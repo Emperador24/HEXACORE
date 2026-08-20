@@ -1,0 +1,359 @@
+---
+title: "Maquinas de Vector Soporte (Support Vector  Machine, SMV)"
+author: "Yesid Rodríguez"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+## Introducción
+
+Dentro de los métodos de clasificación se tiene el SVM, el cual busca determinar un hiperplano que haga una separación de una forma óptima entre los puntos de una clase a la otra, y que han podido ser proyectados en un espacio de dimensionalidad superior.
+
+La idea principal es encontrar el hiperplano que posea la máxima distancia o margen con los puntos que posean la menor distancia con él mismo. Con ello se tiene que los puntos del vector que son clasificados en una categoría estarían de un lado del hiperplano y los casos que se encuentren en la otra categoría estarán del otro lado del hiperplano.
+
+### Ejejemplo 1: Casos separabables linearmente
+
+```{r}
+# Generar dos variables aleatorias de tamaño 10, media 2 y varianza 1
+library(ggplot2)
+
+X1 <- rnorm(n = 10, mean = 2, sd = 1)
+X2 <- rnorm(n = 10, mean = 2, sd = 1)
+
+datos <- data.frame(X1 = c(X1, X1 + 2), X2 = c(X2, X2 + 2) ,
+                            grupo = rep(c(1, -1), each = 10))
+datos$grupo <- as.factor(datos$grupo)
+                      
+ggplot() +
+  geom_point(data = datos, aes(x = X1, y = X2, color = grupo), size = 4) +
+  geom_abline(intercept = 9, slope = -2) +
+  geom_abline(intercept = 8.5, slope = -1.7) +
+  geom_abline(intercept = 8, slope = -1.5) +
+  geom_abline(intercept = 6.5, slope = -1) +
+  geom_abline(intercept = 5.4, slope = -0.75) +
+  theme_bw() +
+  labs(title = "5 Posibles hiperplanos de separación") +
+  theme( legend.position = "none",
+  plot.title = element_text(hjust = 0.5, size = 11))
+```
+
+Un acercamiento a una posible solución a este problema es seleccionar un clasificador óptimo que se conoce como hiperplano óptimo de separación ( o maximal margin hyperplane). Para dar una respuesta se debe calcular la distancia perpendicular de cada observación a un determinado hiperplano. La menor de estas distancias que es conocida como margen, determina cuanto está alejado está el hiperplano de las observaciones de entrenamiento.
+
+```{r}
+library(e1071)
+grupo <- as.factor(datos$grupo)
+svmfit=svm(grupo~.,data=datos,kernel="linear",scale=FALSE)
+print(svmfit)
+summary(svmfit)
+table(grupo,svmfit$fitted)
+
+```
+
+## Ejemplo 2: Casos cuasi-separable 
+
+```{r}
+
+datos1 <- matrix(rnorm(40), 20, 2)
+colnames(datos1) <- c("X11","X22")
+y <- c(rep(-1,10), rep(1,10))
+y <- as.factor(y)
+datos1[y == 1, ] <- datos1[y == 1, ] + 1
+
+datos2 <- data.frame(datos1, y)
+ggplot(data = datos2, aes(x = X11, y = X22, color = as.factor(y))) +
+  geom_point(size = 4) +
+  theme_bw() +
+  labs(title = "Clases no separables linealmente") +
+  theme( legend.position = "none",
+  plot.title = element_text(hjust = 0.5, size = 11))
+```
+
+Con el fin de dar solución a este problema se trabajará con los clasificadores de vector soporte, también conocidos como soft margin classifiers o Support Vector Classifiers. Para lograrlo, se buscará el margen de clasificación más ancho posible que consigue que las observaciones estén en el lado correcto del margen; se permite que ciertas observaciones estén en el lado incorrecto del margen o incluso del hiperplano.
+
+```{r}
+
+datos2$y <- as.factor(datos2$y)
+
+# Para que la función svm() calcule el Support Vector Classifier,
+# se tiene que indicar que la función kernel es lineal.
+# Cuando el valor de C es pequeño, el margen es más ancho, y más observaciones violan el margen, convirtiéndose en vectores soporte. El hiperplano está, por lo tanto, sustentado por más observaciones, lo que aumenta el sesgo pero reduce la varianza. Cuando mayor es el valor de C, menor será el margen, menos observaciones serán vectores soporte y el clasificador resultante tendrá menor sesgo pero mayor varianza.
+
+modelo_svm <- svm(formula = y ~ X11 + X22, data = datos2, kernel = "linear", cost = 10, scale = FALSE)
+
+summary(modelo_svm)
+
+# Índice de las observaciones que actúan como vector soporte
+
+modelo_svm$index
+
+
+plot(modelo_svm, datos2)
+```
+
+Esta representación no muestra el margen ni el hiperplano. Por lo cual realizaremos
+
+```{r}
+datos <- matrix(rnorm(40), 20, 2)
+colnames(datos) <- c("X1","X2")
+y <- c(rep(-1,10), rep(1,10))
+datos[y == 1, ] <- datos[y == 1, ] + 1
+datos <- data.frame(datos, y)
+
+datos$y <- as.factor(datos$y)
+modelo_svm <- svm(formula = y ~ X1 + X2, data = datos, kernel = "linear",
+                  cost = 10, scale = FALSE)
+modelo_svm$index
+
+# SI AL AJUSTAR EL MODELO SE INDICA scale = true, SE TIENEN QUE ESTANDARIZAR
+# TAMBIÉN LAS OBSERVACIONES PARA QUE COINCIDAN LAS COORDENADAS.
+
+# Se interpolan puntos dentro del rango de los dos predictores X1 y X2.
+# Estos nuevos puntos se emplean para predecir la variable respuesta acorde
+# al modelo y así colorear las regiones que separa el hiperplano.
+
+# Rango de los predictores
+rango_X1 <- range(datos$X1)
+rango_X2 <- range(datos$X2)
+
+# Interpolación de puntos
+new_x1 <- seq(from = rango_X1[1], to = rango_X1[2], length = 75)
+new_x2 <- seq(from = rango_X2[1], to = rango_X2[2], length = 75)
+nuevos_puntos <- expand.grid(X1 = new_x1, X2 = new_x2)
+
+# Predicción según el modelo
+predicciones <- predict(object = modelo_svm, newdata = nuevos_puntos)
+
+# Se almacenan los puntos predichos para dar color a las regiones
+color_regiones <- data.frame(nuevos_puntos, y = predicciones)
+
+# Para extraer la ecuación del hiperplano y del margen es necesario aplicar 
+# algebra lineal.
+beta <- drop(t(modelo_svm$coefs) %*% as.matrix(datos[,c("X1","X2")])[modelo_svm$index,])
+beta0 <- modelo_svm$rho
+
+
+ggplot() +
+  # Representación de las 2 regiones empleando los puntos y coloreándolos
+  # según la clase predicha por el modelo
+  geom_point(data = color_regiones, aes(x = X1, y = X2, color = as.factor(y)),
+             size = 0.5) +
+  # Se añaden las observaciones
+  geom_point(data = datos, aes(x = X1, y = X2, color = as.factor(y)),
+             size = 6) +
+  # Se identifican aquellas observaciones que son vectores soporte del modelo
+  geom_point(data = datos[modelo_svm$index, ],
+             aes(x = X1, y = X2, color = as.factor(y)),
+             shape = 21, colour = "black",
+             size = 6) +
+  # Se añaden las rectas del hiperplano y los márgenes
+  geom_abline(intercept = beta0/beta[2], slope = -beta[1]/beta[2]) +
+  geom_abline(intercept = (beta0 - 1)/beta[2], slope = -beta[1]/beta[2],
+              linetype = "dashed") +    
+  geom_abline(intercept = (beta0 + 1)/beta[2], slope = -beta[1]/beta[2],
+              linetype = "dashed") +
+  theme_bw() +
+  theme(legend.position = "none")
+
+
+```
+
+Usando como alternativa se puede hacer el SVM, el cual es una extensión de los support vector classifiers, el cual aumenta la dimensionalidad mediante el uso de kernels. El uso de kernels los cuales son funciones que transformarán un espacio con pocas dimensiones en un espacio de mas dimensiones mediante el uso de transformaciones en los datos. 
+
+Los kernels mas usados son:
+
+1. Kernel Lineal: $K(X_{ij}X{i´j})=\sum_{j=1}^{p} X_{ij}X_{i´j}$
+
+Este kernel cuantifica la similitud de un par de observaciones usando la correlación de Pearson. Con este tipo de kernel, el clasificador que se obtiene es equivalente a un support vector classifier.
+
+2. Kernel radial: $K(X_{ij}X{i´j})=exp^{-\gamma\sum_{j=1}^{p} (X_{ij}-X_{i´j})^2}$
+
+donde $\gamma$ es una constante positiva que cuanto mayor sea, mayor la flexibilidad del SVM.  En este kernel solamente las observaciones del grupo de entrenamiento cercanas a una observación del grupo de prueba tendrán efecto sobre su clasificación.
+
+
+3. Kernel polinómico: $K(X_{ij}X{i´j})=(1+\sum_{j=1}^{p} X_{ij}X_{i´j})^d$
+
+Un kernel polinómico de grado d (siendo d>1) permite un límite de decisión mucho más flexible. Cuando un support vector classifier se combina con un kernel no lineal, se obtiene un support vector machine.
+
+Nota: Es importante tener en cuenta que una mayor flexibilidad no tiene por qué mejorar las predicciones, ya que un modelo muy flexible puede ajustarse demasiado a los datos de entrenamiento.
+
+Para los modelos SVM, además indicar el hiperparámetro de penalización C, se debe especificar el hiperparámetro gamma (para kernel radial) o el grado de polinomio (para kernel polinómico), los cuales también son importantes optimizar mediante validación cruzada.
+
+### Ejemplo 3: SVM, con Kernel polinómico
+
+```{r}
+#Se trabajará con un conjunto de datos pertenecientes al libro "Elements of Statistical Learning" que contiene observaciones simuladas con una función no lineal de dos dimensiones (2 predictores).
+
+load("~/Downloads/ESL.mixture.rda")
+datos <- data.frame(ESL.mixture$x, y = ESL.mixture$y)
+
+datos$y <- as.factor(datos$y)
+head(datos)
+
+ggplot(data = datos, aes(x = X1, y = X2, color = y)) +
+  geom_point(size =2.5) +
+  theme_bw() +
+  theme(legend.position = "none")
+
+svm_poly <- tune(svm, y ~ ., data = datos, 
+               kernel = "polynomial", 
+               ranges = list(cost = c(0.001, 0.01, 0.1, 1, 5, 10, 15), 
+                             degree = c(2, 3)), 
+               scale = TRUE)
+
+summary(svm_poly)
+modelo_svm_rbf <- svm_poly$best.model
+modelo_svm_rbf
+```
+
+```{r}
+
+ggplot(data = svm_poly$performances, aes(x = cost, y = error, color = as.factor(degree)))+
+  geom_line() +
+  geom_point() +
+  labs(title = "Error de clasificación vs hiperparámetros C", color = "degree") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+# Se interpolan puntos dentro del rango de los dos predictores X1 y X2.
+# Estos nuevos puntos se emplean para predecir la variable respuesta acorde
+# al modelo y así colorear las regiones que separa el hiperplano.
+
+# Rango de los predictores
+rango_X1 <- range(datos$X1)
+rango_X2 <- range(datos$X2)
+
+# Interpolación de puntos
+new_x1 <- seq(from = rango_X1[1], to = rango_X1[2], length = 75)
+new_x2 <- seq(from = rango_X2[1], to = rango_X2[2], length = 75)
+nuevos_puntos <- expand.grid(X1 = new_x1, X2 = new_x2)
+
+# Predicción según el modelo de los nuevos puntos
+predicciones <- predict(object = modelo_svm_rbf, newdata = nuevos_puntos)
+
+# Se almacenan los puntos predichos para el color de las regiones en un dataframe
+color_regiones <- data.frame(nuevos_puntos, y = predicciones)
+
+ggplot() +
+  # Representación de las 2 regiones empleando los puntos y coloreándolos
+  # según la clase predicha por el modelo
+  geom_point(data = color_regiones, aes(x = X1, y = X2, color = as.factor(y)),
+             size = 0.5) +
+  # Se añaden las observaciones
+  geom_point(data = datos, aes(x = X1, y = X2, color = as.factor(y)),
+             size = 2.5) +
+  # Se identifican aquellas observaciones que son vectores soporte
+  geom_point(data = datos[modelo_svm_rbf$index, ],
+             aes(x = X1, y = X2, color = as.factor(y)),
+             shape = 21, colour = "black",
+             size = 2.5) +
+  theme_bw() +
+  theme(legend.position = "none")
+
+```
+
+### Ejemplo 4: SVM, con Kernel radial
+
+```{r}
+
+svm_rad <- tune("svm", y ~ X1 + X2, data = datos, kernel = 'radial',
+               ranges = list(cost = c(0.001, 0.01, 0.1, 1, 5, 10, 20),
+                             gamma = c(0.5, 1, 2, 3, 4, 5, 10)))
+
+summary(svm_rad)
+
+```
+
+```{r}
+
+ggplot(data = svm_rad$performances, aes(x = cost, y = error, color = as.factor(gamma)))+
+  geom_line() +
+  geom_point() +
+  labs(title = "Error de clasificación vs hiperparámetros C y gamma", color = "gamma") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+# Se interpolar puntos dentro del rango de los dos predictores X1 y X2.
+# Estos nuevos puntos se emplean para predecir la variable respuesta acorde
+# al modelo y así colorear las regiones que separa el hiperplano.
+
+modelo_svm_rbf <- svm_rad$best.model
+
+# Rango de los predictores
+rango_X1 <- range(datos$X1)
+rango_X2 <- range(datos$X2)
+
+# Interpolación de puntos
+new_x1 <- seq(from = rango_X1[1], to = rango_X1[2], length = 75)
+new_x2 <- seq(from = rango_X2[1], to = rango_X2[2], length = 75)
+nuevos_puntos <- expand.grid(X1 = new_x1, X2 = new_x2)
+
+# Predicción según el modelo de los nuevos puntos
+predicciones <- predict(object = modelo_svm_rbf, newdata = nuevos_puntos)
+
+# Se almacenan los puntos predichos para el color de las regiones en un dataframe
+color_regiones <- data.frame(nuevos_puntos, y = predicciones)
+
+ggplot() +
+  # Representación de las 2 regiones empleando los puntos y coloreándolos
+  # según la clase predicha por el modelo
+  geom_point(data = color_regiones, aes(x = X1, y = X2, color = as.factor(y)),
+             size = 0.5) +
+  # Se añaden las observaciones
+  geom_point(data = datos, aes(x = X1, y = X2, color = as.factor(y)),
+             size = 2.5) +
+  # Se identifican aquellas observaciones que son vectores soporte
+  geom_point(data = datos[modelo_svm_rbf$index, ],
+             aes(x = X1, y = X2, color = as.factor(y)),
+             shape = 21, colour = "black",
+             size = 2.5) +
+  theme_bw() +
+  theme(legend.position = "none")
+```
+
+
+### Ejercicio:
+
+```{r}
+#Simulación de un conjunto de datos bivariante
+x=c(rnorm(500,1000,100),rnorm(500,2000,200),rnorm(500,3000,400))
+y=c(abs(rnorm(500,50,25)),rnorm(500,200,50),rnorm(500,100,30))
+grupo=as.factor(c(rep(1,500),rep(2,500),rep(3,500)))
+datos=data.frame(x,y,grupo)
+
+#Se tiene un conjunto de datos con 3 variables, donde la variable grupo define el clasificador. 
+```
+
+```{r}
+#Solución
+
+#Gráfico sin modelo
+require(lattice);
+xyplot(y~x,group=grupo,data=datos,cex=1,pch=13)
+
+#Aunque los grupos se ven diferenciados, hay dos grupos que tienen algunos
+#elementos que se cruzan
+
+#Se partirá el grupo en dos, teniendo un grupo de entrenamiento
+
+elimina=sample(1:nrow(datos),300)
+muestra=datos[elimina,]
+entrena=datos[-elimina,]
+
+#Nota : Un menor gamma genera una mayor distancia entre las observaciones que separan los subespacios del SVM luego la estimación es más conservadora, sin embargo un mayor parámetro “fastidia” a la función kernel.
+
+modelo=svm(grupo~y+x,data=entrena,method="C-classification",
+kernel="radial",cost=10,gamma=.1)
+
+#Entrenamos el modelo con 1.200 observaciones. El método empleado es el C-classification para clasificar nuestros registros, esto requiere que la variable dependiente sea un factor. La función de núcleo es radial, el coste es una medida que nos limita el error, a mayor coste mayor tiempo de computación y gamma es una medida necesaria para la función kernel excepto en el caso lineal.
+
+#Analizamos el comportamiento
+predic=data.frame(predict(modelo,muestra))
+muestra=cbind(muestra,predic=predic)
+table(muestra$grupo,muestra$predict.modelo..muestra.)
+
+#Análisis gráfico
+plot(modelo,datos)
+
+```
