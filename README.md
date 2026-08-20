@@ -38,6 +38,6 @@ HEXACORE/
 ## Integrantes
 
 Samuel Emperador.
-Sebastian Sanchez.
+Sebastián Sánchez.
 Diego Coronado.
 Daniel Cristancho.
