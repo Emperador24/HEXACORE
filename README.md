@@ -37,4 +37,7 @@ HEXACORE/
 
 ## Integrantes
 
-Samuel Contreras — vía asistente.
+Samuel Emperador.
+Sebastian Sanchez.
+Diego Coronado.
+Daniel Cristancho.
