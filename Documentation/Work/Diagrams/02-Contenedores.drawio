@@ -1,0 +1,144 @@
+<mxGraphModel dx="1600" dy="1000" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1620" pageHeight="1000" math="0" shadow="0">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+    <mxCell id="title" value="Diagrama de Contenedores — Sistema Integral de Gestión de Eventos (Nivel 2, modelo C4)" style="text;html=1;fontSize=18;fontStyle=1;align=left;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="40" y="10" width="1000" height="30" as="geometry" />
+    </mxCell>
+
+    <mxCell id="cliente" value="&lt;b&gt;Cliente&lt;/b&gt;&lt;br&gt;&lt;i&gt;[Persona]&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1F4E79;strokeColor=#12283F;fontColor=#FFFFFF;align=center;verticalAlign=middle;arcSize=8;" vertex="1" parent="1">
+      <mxGeometry x="20" y="60" width="220" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="organizador" value="&lt;b&gt;Organizador&lt;/b&gt;&lt;br&gt;&lt;i&gt;[Persona]&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1F4E79;strokeColor=#12283F;fontColor=#FFFFFF;align=center;verticalAlign=middle;arcSize=8;" vertex="1" parent="1">
+      <mxGeometry x="280" y="60" width="220" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="empleado" value="&lt;b&gt;Empleado&lt;/b&gt;&lt;br&gt;&lt;i&gt;[Persona]&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1F4E79;strokeColor=#12283F;fontColor=#FFFFFF;align=center;verticalAlign=middle;arcSize=8;" vertex="1" parent="1">
+      <mxGeometry x="540" y="60" width="220" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="admin" value="&lt;b&gt;Administrador&lt;/b&gt;&lt;br&gt;&lt;i&gt;[Persona]&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1F4E79;strokeColor=#12283F;fontColor=#FFFFFF;align=center;verticalAlign=middle;arcSize=8;" vertex="1" parent="1">
+      <mxGeometry x="800" y="60" width="220" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="supervisor" value="&lt;b&gt;Supervisor de emergencia&lt;/b&gt;&lt;br&gt;&lt;i&gt;[Persona]&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1F4E79;strokeColor=#12283F;fontColor=#FFFFFF;align=center;verticalAlign=middle;arcSize=8;" vertex="1" parent="1">
+      <mxGeometry x="1060" y="60" width="220" height="70" as="geometry" />
+    </mxCell>
+
+    <mxCell id="appweb" value="&lt;b&gt;App Web / Móvil&lt;/b&gt;&lt;br&gt;&lt;i&gt;[Contenedor: SPA / App móvil]&lt;/i&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;Interfaz de usuario para todos los roles.&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4472C4;strokeColor=#1F4E79;fontColor=#FFFFFF;align=center;verticalAlign=middle;arcSize=8;spacing=6;" vertex="1" parent="1">
+      <mxGeometry x="500" y="220" width="300" height="100" as="geometry" />
+    </mxCell>
+    <mxCell id="apigw" value="&lt;b&gt;API Gateway&lt;/b&gt;&lt;br&gt;&lt;i&gt;[Contenedor: Kong / API Gateway]&lt;/i&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;Enruta y balancea las solicitudes hacia los microservicios.&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4472C4;strokeColor=#1F4E79;fontColor=#FFFFFF;align=center;verticalAlign=middle;arcSize=8;spacing=6;" vertex="1" parent="1">
+      <mxGeometry x="500" y="390" width="300" height="100" as="geometry" />
+    </mxCell>
+
+    <mxCell id="groupBox" value="Microservicios" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#999999;dashed=1;verticalAlign=top;align=left;spacingLeft=10;spacingTop=6;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+      <mxGeometry x="260" y="540" width="740" height="180" as="geometry" />
+    </mxCell>
+    <mxCell id="entradas" value="&lt;b&gt;Servicio de Entradas&lt;/b&gt;&lt;br&gt;&lt;i&gt;[Microservicio]&lt;/i&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;Gestiona entradas, publicaciones y mercado secundario.&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#9DC3E6;strokeColor=#2E5C8A;fontColor=#000000;align=center;verticalAlign=middle;arcSize=8;spacing=6;" vertex="1" parent="1">
+      <mxGeometry x="300" y="575" width="300" height="120" as="geometry" />
+    </mxCell>
+    <mxCell id="eventos" value="&lt;b&gt;Eventos / Emergencias&lt;/b&gt;&lt;br&gt;&lt;i&gt;[Microservicio]&lt;/i&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;Gestiona eventos, aforo y protocolo de emergencia.&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#9DC3E6;strokeColor=#2E5C8A;fontColor=#000000;align=center;verticalAlign=middle;arcSize=8;spacing=6;" vertex="1" parent="1">
+      <mxGeometry x="640" y="575" width="300" height="120" as="geometry" />
+    </mxCell>
+
+    <mxCell id="bd" value="&lt;b&gt;Bases de Datos&lt;/b&gt;&lt;br&gt;&lt;i&gt;[Infraestructura: SQL]&lt;/i&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;Persiste los datos de cada dominio.&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4472C4;strokeColor=#1F4E79;fontColor=#FFFFFF;align=center;verticalAlign=middle;arcSize=8;spacing=6;" vertex="1" parent="1">
+      <mxGeometry x="120" y="780" width="230" height="100" as="geometry" />
+    </mxCell>
+    <mxCell id="redis" value="&lt;b&gt;Redis&lt;/b&gt;&lt;br&gt;&lt;i&gt;[Infraestructura: Redis]&lt;/i&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;Caché y bloqueos temporales de concurrencia.&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4472C4;strokeColor=#1F4E79;fontColor=#FFFFFF;align=center;verticalAlign=middle;arcSize=8;spacing=6;" vertex="1" parent="1">
+      <mxGeometry x="380" y="780" width="230" height="100" as="geometry" />
+    </mxCell>
+    <mxCell id="mq" value="&lt;b&gt;Cola de Mensajes&lt;/b&gt;&lt;br&gt;&lt;i&gt;[Infraestructura: AMQP]&lt;/i&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;Mensajería asíncrona entre servicios.&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4472C4;strokeColor=#1F4E79;fontColor=#FFFFFF;align=center;verticalAlign=middle;arcSize=8;spacing=6;" vertex="1" parent="1">
+      <mxGeometry x="640" y="780" width="230" height="100" as="geometry" />
+    </mxCell>
+    <mxCell id="pagos" value="&lt;b&gt;Pasarela de Pagos&lt;/b&gt;&lt;br&gt;&lt;i&gt;[Sistema externo]&lt;/i&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;Procesa cobros, reventas y reembolsos.&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D9D9D9;strokeColor=#7F7F7F;fontColor=#000000;align=center;verticalAlign=middle;arcSize=8;spacing=6;" vertex="1" parent="1">
+      <mxGeometry x="900" y="780" width="230" height="100" as="geometry" />
+    </mxCell>
+
+    <mxCell id="notif" value="&lt;b&gt;Proveedor de Notificaciones&lt;/b&gt;&lt;br&gt;&lt;i&gt;[Sistema externo]&lt;/i&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;Envía notificaciones push, correo y SMS.&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D9D9D9;strokeColor=#7F7F7F;fontColor=#000000;align=center;verticalAlign=middle;arcSize=8;spacing=6;" vertex="1" parent="1">
+      <mxGeometry x="640" y="930" width="260" height="100" as="geometry" />
+    </mxCell>
+
+    <mxCell id="p1" value="[HTTPS]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=10;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.15;entryY=0;" edge="1" parent="1" source="cliente" target="appweb">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="p2" value="[HTTPS]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=10;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.35;entryY=0;" edge="1" parent="1" source="organizador" target="appweb">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="p3" value="[HTTPS]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=10;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="empleado" target="appweb">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="p4" value="[HTTPS]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=10;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.65;entryY=0;" edge="1" parent="1" source="admin" target="appweb">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="p5" value="[HTTPS]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=10;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.85;entryY=0;" edge="1" parent="1" source="supervisor" target="appweb">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <mxCell id="e1" value="Envía solicitudes del usuario [HTTPS/JSON]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="appweb" target="apigw">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="e2" value="Enruta y balancea la carga [HTTPS/JSON]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="apigw" target="groupBox">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <mxCell id="e3" value="Persiste datos [SQL]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=10;labelBackgroundColor=#ffffff;exitX=0.3;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="entradas" target="bd">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="e4" value="Bloquea publicación [Redis]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=10;labelBackgroundColor=#ffffff;exitX=0.7;exitY=1;entryX=0.3;entryY=0;" edge="1" parent="1" source="entradas" target="redis">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="e5" value="Actualiza aforo [Redis]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=10;labelBackgroundColor=#ffffff;exitX=0.3;exitY=1;entryX=0.7;entryY=0;" edge="1" parent="1" source="eventos" target="redis">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="e6" value="Publica transferencia [AMQP]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=10;labelBackgroundColor=#ffffff;exitX=0.85;exitY=1;entryX=0.2;entryY=0;" edge="1" parent="1" source="entradas" target="mq">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="e7" value="Publica alerta [AMQP]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=10;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="eventos" target="mq">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="e8" value="Procesa cobro [HTTPS/REST]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=10;labelBackgroundColor=#ffffff;exitX=0.9;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="entradas" target="pagos">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint as="offset" x="0" y="14" />
+        <Array as="points"><mxPoint x="570" y="770" /><mxPoint x="1015" y="770" /></Array>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="e9" value="Dispara notificación [HTTPS/REST]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="mq" target="notif">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <mxCell id="legendBox" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#999999;dashed=1;" vertex="1" parent="1">
+      <mxGeometry x="1180" y="240" width="360" height="220" as="geometry" />
+    </mxCell>
+    <mxCell id="legendTitle" value="Leyenda" style="text;html=1;fontSize=12;fontStyle=1;align=left;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="1190" y="244" width="120" height="24" as="geometry" />
+    </mxCell>
+    <mxCell id="sw1" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1F4E79;strokeColor=#12283F;arcSize=20;" vertex="1" parent="1">
+      <mxGeometry x="1190" y="274" width="26" height="18" as="geometry" />
+    </mxCell>
+    <mxCell id="l1" value="Persona" style="text;html=1;fontSize=11;align=left;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="1222" y="270" width="300" height="26" as="geometry" />
+    </mxCell>
+    <mxCell id="sw2" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4472C4;strokeColor=#1F4E79;arcSize=20;" vertex="1" parent="1">
+      <mxGeometry x="1190" y="306" width="26" height="18" as="geometry" />
+    </mxCell>
+    <mxCell id="l2" value="Contenedor propio (app / infraestructura)" style="text;html=1;fontSize=11;align=left;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="1222" y="302" width="300" height="26" as="geometry" />
+    </mxCell>
+    <mxCell id="sw3" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#9DC3E6;strokeColor=#2E5C8A;arcSize=20;" vertex="1" parent="1">
+      <mxGeometry x="1190" y="338" width="26" height="18" as="geometry" />
+    </mxCell>
+    <mxCell id="l3" value="Microservicio" style="text;html=1;fontSize=11;align=left;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="1222" y="334" width="300" height="26" as="geometry" />
+    </mxCell>
+    <mxCell id="sw4" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D9D9D9;strokeColor=#7F7F7F;arcSize=20;" vertex="1" parent="1">
+      <mxGeometry x="1190" y="370" width="26" height="18" as="geometry" />
+    </mxCell>
+    <mxCell id="l4" value="Sistema externo" style="text;html=1;fontSize=11;align=left;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="1222" y="366" width="300" height="26" as="geometry" />
+    </mxCell>
+    <mxCell id="sw5" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#999999;dashed=1;" vertex="1" parent="1">
+      <mxGeometry x="1190" y="402" width="26" height="18" as="geometry" />
+    </mxCell>
+    <mxCell id="l5" value="Frontera de agrupación lógica" style="text;html=1;fontSize=11;align=left;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="1222" y="398" width="300" height="26" as="geometry" />
+    </mxCell>
+  </root>
+</mxGraphModel>

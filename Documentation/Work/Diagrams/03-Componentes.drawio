@@ -1,0 +1,112 @@
+<mxGraphModel dx="1900" dy="900" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1920" pageHeight="740" math="0" shadow="0">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+    <mxCell id="title" value="Diagrama de Componentes — Servicio de Entradas y Mercado Secundario (Nivel 3, modelo C4)" style="text;html=1;fontSize=18;fontStyle=1;align=left;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="20" y="0" width="1100" height="30" as="geometry" />
+    </mxCell>
+
+    <mxCell id="apigw" value="&lt;b&gt;API Gateway&lt;/b&gt;&lt;br&gt;&lt;i&gt;[Contenedor — Nivel 2]&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F2F2F2;strokeColor=#999999;dashed=1;fontColor=#000000;align=center;verticalAlign=middle;arcSize=8;" vertex="1" parent="1">
+      <mxGeometry x="600" y="40" width="300" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="controlador" value="&lt;b&gt;Controlador API&lt;/b&gt;&lt;br&gt;&lt;i&gt;[Componente: REST Controller]&lt;/i&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;Enruta la solicitud del cliente hacia el servicio.&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#9DC3E6;strokeColor=#2E5C8A;fontColor=#000000;align=center;verticalAlign=middle;arcSize=8;spacing=6;" vertex="1" parent="1">
+      <mxGeometry x="600" y="150" width="300" height="90" as="geometry" />
+    </mxCell>
+    <mxCell id="publicacion" value="&lt;b&gt;Servicio de Publicación&lt;/b&gt;&lt;br&gt;&lt;i&gt;[Componente: Application Service]&lt;/i&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;Orquesta la validación y el flujo de reventa.&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#9DC3E6;strokeColor=#2E5C8A;fontColor=#000000;align=center;verticalAlign=middle;arcSize=8;spacing=6;" vertex="1" parent="1">
+      <mxGeometry x="600" y="290" width="300" height="100" as="geometry" />
+    </mxCell>
+
+    <mxCell id="concurrencia" value="&lt;b&gt;Gestor de Concurrencia&lt;/b&gt;&lt;br&gt;&lt;i&gt;[Componente: Lock Manager]&lt;/i&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;Bloquea temporalmente una publicación.&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#9DC3E6;strokeColor=#2E5C8A;fontColor=#000000;align=center;verticalAlign=middle;arcSize=8;spacing=6;" vertex="1" parent="1">
+      <mxGeometry x="20" y="450" width="260" height="110" as="geometry" />
+    </mxCell>
+    <mxCell id="pagoscomp" value="&lt;b&gt;Procesador de Pagos&lt;/b&gt;&lt;br&gt;&lt;i&gt;[Componente: Payment Adapter]&lt;/i&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;Valida y cobra el pago.&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#9DC3E6;strokeColor=#2E5C8A;fontColor=#000000;align=center;verticalAlign=middle;arcSize=8;spacing=6;" vertex="1" parent="1">
+      <mxGeometry x="320" y="450" width="260" height="110" as="geometry" />
+    </mxCell>
+    <mxCell id="qr" value="&lt;b&gt;Generador de QR&lt;/b&gt;&lt;br&gt;&lt;i&gt;[Componente: QR Generator]&lt;/i&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;Invalida el QR anterior y genera uno nuevo.&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#9DC3E6;strokeColor=#2E5C8A;fontColor=#000000;align=center;verticalAlign=middle;arcSize=8;spacing=6;" vertex="1" parent="1">
+      <mxGeometry x="620" y="450" width="260" height="110" as="geometry" />
+    </mxCell>
+    <mxCell id="repo" value="&lt;b&gt;Repositorio de Entradas&lt;/b&gt;&lt;br&gt;&lt;i&gt;[Componente: Repository]&lt;/i&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;Lee y actualiza los datos de la entrada.&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#9DC3E6;strokeColor=#2E5C8A;fontColor=#000000;align=center;verticalAlign=middle;arcSize=8;spacing=6;" vertex="1" parent="1">
+      <mxGeometry x="920" y="450" width="260" height="110" as="geometry" />
+    </mxCell>
+    <mxCell id="pubevt" value="&lt;b&gt;Publicador de Eventos&lt;/b&gt;&lt;br&gt;&lt;i&gt;[Componente: Event Publisher]&lt;/i&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;Publica eventos de dominio.&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#9DC3E6;strokeColor=#2E5C8A;fontColor=#000000;align=center;verticalAlign=middle;arcSize=8;spacing=6;" vertex="1" parent="1">
+      <mxGeometry x="1220" y="450" width="260" height="110" as="geometry" />
+    </mxCell>
+
+    <mxCell id="redis" value="&lt;b&gt;Redis&lt;/b&gt;&lt;br&gt;&lt;i&gt;[Infraestructura — Nivel 2]&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F2F2F2;strokeColor=#999999;dashed=1;fontColor=#000000;align=center;verticalAlign=middle;arcSize=8;" vertex="1" parent="1">
+      <mxGeometry x="20" y="620" width="260" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="pasarela" value="&lt;b&gt;Pasarela de Pagos&lt;/b&gt;&lt;br&gt;&lt;i&gt;[Sistema externo]&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F2F2F2;strokeColor=#999999;dashed=1;fontColor=#000000;align=center;verticalAlign=middle;arcSize=8;" vertex="1" parent="1">
+      <mxGeometry x="320" y="620" width="260" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="bd" value="&lt;b&gt;Base de Datos&lt;/b&gt;&lt;br&gt;&lt;i&gt;[Infraestructura — Nivel 2]&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F2F2F2;strokeColor=#999999;dashed=1;fontColor=#000000;align=center;verticalAlign=middle;arcSize=8;" vertex="1" parent="1">
+      <mxGeometry x="920" y="620" width="260" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="mq" value="&lt;b&gt;Cola de Mensajes&lt;/b&gt;&lt;br&gt;&lt;i&gt;[Infraestructura — Nivel 2]&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F2F2F2;strokeColor=#999999;dashed=1;fontColor=#000000;align=center;verticalAlign=middle;arcSize=8;" vertex="1" parent="1">
+      <mxGeometry x="1220" y="620" width="260" height="70" as="geometry" />
+    </mxCell>
+
+    <mxCell id="e1" value="[HTTPS/JSON]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="apigw" target="controlador">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="e2" value="[Llamada interna]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="controlador" target="publicacion">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <mxCell id="e3" value="[Llamada interna]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=10;labelBackgroundColor=#ffffff;exitX=0.2;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="publicacion" target="concurrencia">
+      <mxGeometry relative="1" as="geometry"><mxPoint as="offset" x="0" y="-16" /></mxGeometry>
+    </mxCell>
+    <mxCell id="e4" value="[Llamada interna]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=10;labelBackgroundColor=#ffffff;exitX=0.4;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="publicacion" target="pagoscomp">
+      <mxGeometry relative="1" as="geometry"><mxPoint as="offset" x="0" y="16" /></mxGeometry>
+    </mxCell>
+    <mxCell id="e5" value="[Llamada interna]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=10;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="publicacion" target="qr">
+      <mxGeometry relative="1" as="geometry"><mxPoint as="offset" x="0" y="-16" /></mxGeometry>
+    </mxCell>
+    <mxCell id="e6" value="[Llamada interna]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=10;labelBackgroundColor=#ffffff;exitX=0.6;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="publicacion" target="repo">
+      <mxGeometry relative="1" as="geometry"><mxPoint as="offset" x="0" y="16" /></mxGeometry>
+    </mxCell>
+    <mxCell id="e7" value="[Llamada interna]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=10;labelBackgroundColor=#ffffff;exitX=0.8;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="publicacion" target="pubevt">
+      <mxGeometry relative="1" as="geometry"><mxPoint as="offset" x="0" y="-16" /></mxGeometry>
+    </mxCell>
+
+    <mxCell id="e8" value="[Redis]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="concurrencia" target="redis">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="e9" value="[HTTPS/REST]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="pagoscomp" target="pasarela">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="e10" value="[SQL]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="repo" target="bd">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="e11" value="[AMQP]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="pubevt" target="mq">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <mxCell id="legendBox" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#999999;dashed=1;" vertex="1" parent="1">
+      <mxGeometry x="1560" y="40" width="330" height="170" as="geometry" />
+    </mxCell>
+    <mxCell id="legendTitle" value="Leyenda" style="text;html=1;fontSize=12;fontStyle=1;align=left;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="1570" y="44" width="120" height="24" as="geometry" />
+    </mxCell>
+    <mxCell id="sw1" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#9DC3E6;strokeColor=#2E5C8A;arcSize=20;" vertex="1" parent="1">
+      <mxGeometry x="1570" y="74" width="26" height="18" as="geometry" />
+    </mxCell>
+    <mxCell id="l1" value="Componente" style="text;html=1;fontSize=11;align=left;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="1602" y="70" width="280" height="26" as="geometry" />
+    </mxCell>
+    <mxCell id="sw2" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F2F2F2;strokeColor=#999999;dashed=1;arcSize=20;" vertex="1" parent="1">
+      <mxGeometry x="1570" y="106" width="26" height="18" as="geometry" />
+    </mxCell>
+    <mxCell id="l2" value="Contenedor o sistema de otro nivel" style="text;html=1;fontSize=11;align=left;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="1602" y="102" width="280" height="26" as="geometry" />
+    </mxCell>
+    <mxCell id="l3" value="(referencia externa, no se detalla aquí)" style="text;html=1;fontSize=10;fontStyle=2;align=left;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="1602" y="122" width="280" height="26" as="geometry" />
+    </mxCell>
+    <mxCell id="l4" value="Alcance: Servicio de Entradas y" style="text;html=1;fontSize=10;align=left;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="1570" y="156" width="300" height="20" as="geometry" />
+    </mxCell>
+    <mxCell id="l5" value="Mercado Secundario (CU-006)" style="text;html=1;fontSize=10;align=left;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="1570" y="174" width="300" height="20" as="geometry" />
+    </mxCell>
+  </root>
+</mxGraphModel>
