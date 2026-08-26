@@ -15,6 +15,7 @@
 \usepackage{float}
 \usepackage{fancyhdr}
 \usepackage{titlesec}
+\usepackage{pdflscape}
 
 \geometry{left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm,headheight=14.5pt}
 \onehalfspacing
@@ -27,6 +28,11 @@
 \definecolor{azul}{RGB}{31,78,121}
 \definecolor{gris}{RGB}{242,242,242}
 \definecolor{grisoscuro}{RGB}{80,80,80}
+
+% Etiquetas en español (sin babel, que no está disponible en este entorno;
+% mismo criterio que ArchitecturalProposal.tex, Summary.tex y C4Diagrams.tex)
+\renewcommand{\figurename}{Figura}
+\renewcommand{\tablename}{Tabla}
 
 \newcommand{\pendiente}[1]{\textit{\textcolor{grisoscuro}{[Pendiente: #1]}}}
 \setlist[itemize]{topsep=2pt, itemsep=2pt}
@@ -79,8 +85,8 @@
 \endhead
 25/08/2026 & Creación de la versión 1.0 del documento, consolidando el trabajo ya elaborado en
 \textit{ArchitecturalProposal.tex} (atributos de calidad y propuesta arquitectónica),
-\textit{C4Diagrams.tex} (los seis diagramas C4), \textit{DistribucionCasosUso.tex} (los 32 casos
-de uso) y \textit{BitacoraArquitectonica.md} (decisiones, alternativas y riesgos). Se añade
+\textit{C4Diagrams.tex} (los seis diagramas C4), \textit{Submission/DistribucionCasosUso.pdf} (los
+32 casos de uso) y \textit{BitacoraArquitectonica.md} (decisiones, alternativas y riesgos). Se añade
 además un primer Árbol de Utilidad (ASR) y los ADR de las decisiones fundacionales, que hasta
 ahora solo existían en la bitácora. & Equipo Hexacore (vía asistente) \\
 \hline
@@ -178,8 +184,8 @@ Evacuación ante Emergencias)}.
 \label{sec:dominio}
 
 \pendiente{el diagrama de clases UML del dominio completo se elaborará en la siguiente iteración
-del SAD (ver \textit{TASKS.md}); la tabla siguiente resume los conceptos identificados hasta ahora
-a partir de los 32 casos de uso.}
+del SAD; la tabla siguiente resume los conceptos identificados hasta ahora a partir de los 32
+casos de uso.}
 
 \begin{center}
 \begin{longtable}{p{3.8cm}p{9.7cm}}
@@ -253,7 +259,7 @@ Proveedor externo & Gestionado por el organizador (módulo Proveedores) & Ser as
 correctamente a los eventos que contrata y recibir la información logística necesaria.\\
 \hline
 Equipo Hexacore (Daniel Cristancho, Samuel Emperador, Sebastián Sánchez, Diego Coronado) &
-semperadorcontreras@gmail.com (contacto del equipo) & Diseñar y sustentar una arquitectura que
+\url{semperadorcontreras@gmail.com} (contacto del equipo) & Diseñar y sustentar una arquitectura que
 satisfaga los atributos de calidad priorizados y cumpla los requisitos del curso.\\
 \hline
 Profesor / Evaluador del curso & Curso de Arquitectura de Software & Verificar que el SAD cumpla
@@ -270,11 +276,16 @@ La Tabla \ref{tab:asr} presenta el primer Árbol de Utilidad del proyecto, deriv
 atributos de calidad priorizados en \textit{ArchitecturalProposal.tex} y de los escenarios ya
 identificados en la bitácora arquitectónica.
 
+% Tabla en landscape: 7 columnas no caben legiblemente en el ancho de una página
+% vertical sin partir palabras largas propias del español (p. ej. "Confidencialidad",
+% "Escalabilidad"), que además no se pueden silabear automáticamente porque el
+% entorno no tiene babel/es disponible (ver nota de la sección \ref{sec:contexto}).
+\begin{landscape}
 \begin{center}
-\begin{longtable}{|p{1.1cm}|p{2.1cm}|p{1.9cm}|p{1.9cm}|p{2.1cm}|p{4cm}|p{1.6cm}|}
+\begin{longtable}{|p{1cm}|p{3cm}|p{2.2cm}|p{2.8cm}|p{2cm}|p{8cm}|p{1.5cm}|}
 \hline
 \textbf{ID ASR} & \textbf{Título} & \textbf{Atributo} & \textbf{Sub-atributo} &
-\textbf{Funcionalidades} & \textbf{Escenario} & \textbf{Prioridad}\\
+\textbf{CU(s)} & \textbf{Escenario} & \textbf{Prioridad}\\
 \hline
 \endhead
 ASR-01 & Bloqueo de doble venta en reventa & Consistencia & Concurrencia de datos & CU-006 & Dos
@@ -282,12 +293,12 @@ compradores intentan adquirir simultáneamente la misma entrada publicada en rev
 garantiza que solo uno complete la compra y el otro reciba de inmediato un mensaje de no
 disponibilidad. & Alta\\
 \hline
-ASR-02 & Disponibilidad durante el ingreso masivo & Disponibilidad & Tolerancia a fallos &
+ASR-02 & Disponibilidad durante el ingreso masivo & Disponibi-lidad & Tolerancia a fallos &
 CU-002, CU-021, CU-022 & Ante la caída de una instancia del servicio de validación de QR durante
 el ingreso al recinto, el balanceador redirige el tráfico a instancias sanas sin interrupción
 perceptible para el asistente. & Alta\\
 \hline
-ASR-03 & Protección de datos de pago y credenciales & Seguridad & Confidencialidad & CU-001,
+ASR-03 & Protección de datos de pago y credenciales & Seguridad & Confiden-cialidad & CU-001,
 CU-024, CU-031 & Un intento de acceso no autorizado a datos de pago o credenciales es rechazado
 por el API Gateway y queda registrado para auditoría. & Alta\\
 \hline
@@ -300,12 +311,12 @@ ASR-05 & Actualización de aforo y zonas en tiempo real & Tiempo real & Actualiz
 CU-010, CU-019 & El aforo y el estado de las zonas se reflejan en los tableros de monitoreo con
 baja latencia tras el registro de un ingreso o un incidente. & Media-Alta\\
 \hline
-ASR-06 & Escalado independiente del servicio de Entradas & Escalabilidad & Escalabilidad
+ASR-06 & Escalado independiente del servicio de Entradas & Escala-bilidad & Escala-bilidad
 horizontal & CU-001, CU-006 & Ante un incremento súbito de tráfico en el servicio de Entradas
 durante una preventa, aumentan sus instancias sin afectar el rendimiento de los demás dominios. &
 Media\\
 \hline
-ASR-07 & Auditoría de transferencias y pagos & Trazabilidad & Auditabilidad & CU-006, CU-031 &
+ASR-07 & Auditoría de transferencias y pagos & Traza-bilidad & Audita-bilidad & CU-006, CU-031 &
 Cada transferencia de entrada, pago o reembolso queda registrada con usuario, fecha y resultado,
 consultable en un reporte de auditoría. & Media\\
 \hline
@@ -313,11 +324,11 @@ ASR-08 & Interfaces especializadas por rol & Usabilidad & Adecuación a la tarea
 (por interfaz) & Un usuario nuevo de cada rol completa su tarea principal en su interfaz
 correspondiente sin capacitación previa. & Baja-Media\\
 \hline
-ASR-09 & Evolución independiente de dominios & Mantenibilidad & Modificabilidad & Todos los CU
+ASR-09 & Evolución independiente de dominios & Manteni-bilidad & Modifica-bilidad & Todos los CU
 (por microservicio) & Un cambio en las reglas de negocio de Parqueaderos se implementa y despliega
 sin requerir cambios ni redespliegue del servicio de Entradas. & Baja-Media\\
 \hline
-ASR-10 & Consumo uniforme vía API & Portabilidad & Independencia de plataforma & Todos los CU &
+ASR-10 & Consumo uniforme vía API & Porta-bilidad & Independencia de plataforma & Todos los CU &
 Una misma funcionalidad de backend se consume igual desde el portal web y desde la app móvil, sin
 duplicar lógica de negocio. & Baja-Media\\
 \hline
@@ -325,6 +336,7 @@ duplicar lógica de negocio. & Baja-Media\\
 \label{tab:asr}
 \end{longtable}
 \end{center}
+\end{landscape}
 
 % ==================== Restricciones ====================
 \section{Restricciones}
@@ -521,8 +533,8 @@ bases de datos, un clúster Redis y un clúster de mensajería.
 \end{figure}
 
 \pendiente{los ambientes de desarrollo y pruebas aún no se han diagramado; se documentarán junto
-con el script de despliegue automatizado exigido para Entrega 2 (ver \textit{TASKS.md}). Se prevé
-que reutilicen la misma topología de producción a menor escala (menos réplicas, sin CDN).}
+con el script de despliegue automatizado exigido para Entrega 2. Se prevé que reutilicen la misma
+topología de producción a menor escala (menos réplicas, sin CDN).}
 
 % ==================== Modelo de datos ====================
 \section{Modelo de datos}
@@ -598,9 +610,9 @@ consistencia eventual y de requerir monitoreo propio de las colas.
 \label{sec:riesgos}
 
 \begin{center}
-\begin{longtable}{|p{2.6cm}|p{1.7cm}|p{1.6cm}|p{1.5cm}|p{2.9cm}|p{2.9cm}|}
+\begin{longtable}{|p{2.4cm}|p{2cm}|p{1.5cm}|p{1.4cm}|p{2.8cm}|p{2.8cm}|}
 \hline
-\textbf{Riesgo} & \textbf{Probabilidad} & \textbf{Impacto} & \textbf{Prioridad} & \textbf{Plan de
+\textbf{Riesgo} & \textbf{Probabili-dad} & \textbf{Impacto} & \textbf{Priori-dad} & \textbf{Plan de
 mitigación} & \textbf{Plan de contingencia} \\
 \hline
 \endhead
@@ -681,7 +693,7 @@ al mismo estado, aunque no de forma instantánea.
 (3rd ed.). Addison-Wesley. (Base teórica del Árbol de Utilidad y los ADR usados en este
 documento.)
 \item Documentos internos del proyecto: \textit{ArchitecturalProposal.tex},
-\textit{C4Diagrams.tex}, \textit{DistribucionCasosUso.tex} y
+\textit{C4Diagrams.tex}, \textit{Submission/DistribucionCasosUso.pdf} y
 \textit{BitacoraArquitectonica.md} (equipo Hexacore, 2026).
 \end{itemize}
 

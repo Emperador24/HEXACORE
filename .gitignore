@@ -1,1 +1,9 @@
 .DS_Store
+
+# Documentation/Work/ solo debe contener fuentes (.tex, .md, diagramas); los
+# resultados compilados (.pdf) van en Documentation/Submission/.
+Documentation/Work/*.pdf
+Documentation/Work/*.aux
+Documentation/Work/*.log
+Documentation/Work/*.out
+Documentation/Work/*.toc
