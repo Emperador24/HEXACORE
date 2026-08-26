@@ -1,0 +1,688 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{setspace}
+\usepackage{parskip}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+
+\geometry{left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm,headheight=14.5pt}
+\onehalfspacing
+\hypersetup{
+    colorlinks=true, linkcolor=black, urlcolor=blue, citecolor=black,
+    pdftitle={Descripción de la Arquitectura del Software (SAD) - Sistema Integral de Gestión de Eventos},
+    pdfauthor={Hexacore}, hidelinks=false
+}
+
+\definecolor{azul}{RGB}{31,78,121}
+\definecolor{gris}{RGB}{242,242,242}
+\definecolor{grisoscuro}{RGB}{80,80,80}
+
+\newcommand{\pendiente}[1]{\textit{\textcolor{grisoscuro}{[Pendiente: #1]}}}
+\setlist[itemize]{topsep=2pt, itemsep=2pt}
+
+\titleformat{\section}{\Large\bfseries\color{azul}}{\thesection.}{0.5em}{}
+\titleformat{\subsection}{\large\bfseries}{\thesubsection.}{0.5em}{}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{Sistema Integral de Gestión de Eventos}
+\fancyhead[R]{\small Descripción de la Arquitectura del Software (SAD)}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\newcolumntype{P}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+\title{\textbf{Descripción de la Arquitectura del Software (SAD)}}
+\author{}
+\date{}
+
+\begin{document}
+
+% ==================== Portada ====================
+\begin{titlepage}
+\centering
+\vspace*{2cm}
+{\LARGE \textbf{Descripción de la Arquitectura del Software (SAD)}}\\[0.4cm]
+{\Large Sistema Integral de Gestión de Eventos}\\[1.5cm]
+{\Large Equipo Hexacore}\\[2cm]
+{\large Versión: 1.0}\\[0.5cm]
+{\large Fecha de entrega: 25/08/2026}\\[2cm]
+{\large Autores:}\\
+{\large Daniel Cristancho}\\
+{\large Samuel Emperador}\\
+{\large Sebastián Sánchez}\\
+{\large Diego Coronado}\\
+\vfill
+{\small Materia: Arquitectura de Software}
+\end{titlepage}
+
+% ==================== Historial de cambios ====================
+\section*{Historial de Cambios}
+\addcontentsline{toc}{section}{Historial de Cambios}
+
+\begin{center}
+\begin{longtable}{|p{2.5cm}|p{7cm}|p{4cm}|}
+\hline
+\textbf{Fecha} & \textbf{Descripción del cambio} & \textbf{Persona(s)} \\
+\hline
+\endhead
+25/08/2026 & Creación de la versión 1.0 del documento, consolidando el trabajo ya elaborado en
+\textit{ArchitecturalProposal.tex} (atributos de calidad y propuesta arquitectónica),
+\textit{C4Diagrams.tex} (los seis diagramas C4), \textit{DistribucionCasosUso.tex} (los 32 casos
+de uso) y \textit{BitacoraArquitectonica.md} (decisiones, alternativas y riesgos). Se añade
+además un primer Árbol de Utilidad (ASR) y los ADR de las decisiones fundacionales, que hasta
+ahora solo existían en la bitácora. & Equipo Hexacore (vía asistente) \\
+\hline
+\end{longtable}
+\end{center}
+
+% ==================== Tabla de contenidos ====================
+\newpage
+\renewcommand{\contentsname}{Tabla de Contenidos}
+\tableofcontents
+\thispagestyle{empty}
+\newpage
+
+% ==================== Introducción ====================
+\section{Introducción}
+
+El \textbf{Sistema Integral de Gestión de Eventos} centraliza en una sola plataforma los procesos
+que hoy suelen estar dispersos en la organización de un evento masivo (conciertos, festivales,
+partidos deportivos): venta de entradas y su mercado secundario, gestión de personal y turnos,
+parqueaderos, pedidos y establecimientos de alimentos, logística y operación del evento, y la
+administración general (usuarios, roles, recintos, proveedores, pagos y reportes). El problema
+central que resuelve es la \textbf{ausencia de un sistema unificado} que coordine estos procesos
+de forma consistente, segura y escalable, evitando información duplicada, errores humanos y falta
+de trazabilidad, especialmente crítico cuando hay miles de asistentes concurrentes durante la
+apertura de venta o el ingreso al recinto.
+
+Los principales objetivos de negocio del sistema son: (1) permitir la venta y reventa segura de
+entradas sin duplicar propietarios ni sobrevender localidades; (2) mantener la disponibilidad del
+servicio durante los picos de tráfico propios de la apertura de venta, el ingreso masivo y las
+emergencias; (3) dar trazabilidad y auditoría a las operaciones financieras y administrativas; y
+(4) ofrecer una experiencia adecuada a cada tipo de usuario (cliente, personal operativo,
+administración) sin que ninguna interfaz duplique lógica de negocio.
+
+Los atributos de calidad de mayor prioridad para la arquitectura son \textbf{consistencia},
+\textbf{disponibilidad}, \textbf{seguridad} y \textbf{rendimiento}, seguidos de \textbf{tiempo
+real}, \textbf{escalabilidad} y \textbf{trazabilidad}; con prioridad baja-media se consideran
+\textbf{usabilidad}, \textbf{mantenibilidad} y \textbf{portabilidad}. La sección
+\ref{sec:asr} detalla estos atributos en formato de Árbol de Utilidad.
+
+Este documento sigue la estructura estándar \textit{arc42} y se organiza así: primero se describen
+los requisitos funcionales y el modelo de dominio (secciones \ref{sec:reqs}-\ref{sec:dominio}),
+luego los interesados y los requisitos arquitectónicamente significativos (secciones
+\ref{sec:stakeholders}-\ref{sec:asr}), después las restricciones del proyecto (sección
+\ref{sec:restricciones}) y las vistas arquitectónicas C4 (contexto, contenedores, componentes,
+procesos y física; secciones \ref{sec:contexto}-\ref{sec:fisica}), y finalmente el modelo de
+datos, los registros de decisión (ADR), los riesgos técnicos, el glosario y las referencias.
+
+% ==================== Requisitos funcionales ====================
+\section{Visión general de los requisitos funcionales}
+\label{sec:reqs}
+
+El sistema define \textbf{32 casos de uso} (CU-001 a CU-032), cada uno con un identificador único
+usado a lo largo de todo el documento. La especificación detallada de cada uno (actores, flujo
+principal, flujos alternativos y excepciones) está en la hoja de cálculo
+\textit{Submission/CU\_eventos\_completo.xlsx}; la Tabla \ref{tab:cu-bloques} resume los bloques
+temáticos en los que se agrupan.
+
+\begin{center}
+\begin{longtable}{p{3.4cm}p{2.6cm}p{8.5cm}}
+\toprule
+\textbf{Bloque temático} & \textbf{Casos de uso} & \textbf{Alcance funcional}\\
+\midrule
+\endhead
+Boletería / Compra de entradas & CU-001 -- CU-005 & Consulta de eventos, compra, validación de QR
+en el ingreso, cancelaciones/devoluciones y promociones.\\[0.3em]
+Mercado secundario y personal para eventos & CU-006 -- CU-010 & Reventa segura de entradas
+(caso complejo), administración y asignación de personal, cambios de turno, registro de
+asistencia y gestión de evacuación ante emergencias (caso complejo).\\[0.3em]
+Pedidos y establecimientos de alimentos & CU-011 -- CU-015 & Pedido de alimentos durante el
+evento, administración de menú/inventario, preparación y entrega validada por QR, y gestión de
+los establecimientos.\\[0.3em]
+Logística y operación del evento & CU-016 -- CU-020 & Planificación logística, asignación de
+personal operativo, gestión de turno/asistencia en campo, monitoreo del evento y gestión de
+incidentes.\\[0.3em]
+Parqueaderos & CU-021 -- CU-025 & Reserva, ingreso/salida de vehículos, asignación de espacios,
+cobro y control de ocupación.\\[0.3em]
+Administración general (CRUD) & CU-026 -- CU-032 & Gestión de eventos, cuentas de usuario, roles
+y permisos, recintos y zonas, proveedores, pagos/conciliación financiera, y reportes y
+analítica.\\
+\bottomrule
+\caption{Bloques temáticos de los 32 casos de uso del sistema.}
+\label{tab:cu-bloques}
+\end{longtable}
+\end{center}
+
+Los casos de uso están repartidos entre los cuatro integrantes del equipo (8 por persona); esa
+distribución, con nombre y descripción completa de cada CU, está documentada en
+\textit{Submission/DistribucionCasosUso.pdf}. Dos casos de uso se destacan como los de mayor
+complejidad arquitectónica y sirven de hilo conductor en las vistas de este documento:
+\textbf{CU-006 (Gestión del Mercado Secundario de Entradas)} y \textbf{CU-010 (Gestionar
+Evacuación ante Emergencias)}.
+
+% ==================== Modelo de dominio ====================
+\section{Modelo de dominio}
+\label{sec:dominio}
+
+\pendiente{el diagrama de clases UML del dominio completo se elaborará en la siguiente iteración
+del SAD (ver \textit{TASKS.md}); la tabla siguiente resume los conceptos identificados hasta ahora
+a partir de los 32 casos de uso.}
+
+\begin{center}
+\begin{longtable}{p{3.8cm}p{9.7cm}}
+\toprule
+\textbf{Concepto} & \textbf{Explicación}\\
+\midrule
+\endhead
+Evento & Actividad (concierto, festival, partido) que un organizador crea, con fecha, recinto,
+localidades, precios y aforo.\\[0.3em]
+Entrada & Boleto asociado a una localidad de un evento, con un código QR único que identifica al
+propietario actual.\\[0.3em]
+Publicación de reventa & Oferta de una entrada ya adquirida, puesta en venta por su propietario en
+el mercado secundario.\\[0.3em]
+Recinto / Zona & Lugar físico donde se realiza el evento y sus subdivisiones (zonas, localidades),
+cada una con capacidad y mapa de distribución.\\[0.3em]
+Usuario / Cuenta & Persona registrada en el sistema (cliente, empleado, organizador o
+administrador), con credenciales y un conjunto de roles asignados.\\[0.3em]
+Rol / Permiso & Conjunto de acciones autorizadas sobre un módulo del sistema, asignado a una
+cuenta de usuario.\\[0.3em]
+Personal / Empleado & Persona que trabaja en la operación de un evento, con un rol operativo
+(seguridad, logística, alimentos, etc.).\\[0.3em]
+Turno / Asignación & Periodo de trabajo de un empleado en un evento, con horario y zona
+asignada.\\[0.3em]
+Registro de asistencia & Marca de ingreso y salida de un empleado durante un turno, usada para
+calcular horas trabajadas.\\[0.3em]
+Parqueadero / Espacio & Zona de estacionamiento del evento y cada unidad de espacio reservable
+dentro de ella.\\[0.3em]
+Pedido & Solicitud de productos de alimentos hecha por un cliente a un establecimiento durante un
+evento.\\[0.3em]
+Establecimiento / Producto & Punto de venta de alimentos dentro del evento y los productos de su
+menú.\\[0.3em]
+Pago & Transacción monetaria asociada a una compra, reventa, pedido o servicio de parqueadero,
+procesada mediante la pasarela de pagos externa.\\[0.3em]
+Proveedor & Tercero externo (catering, sonido, seguridad privada, etc.) contratado para la
+operación de un evento.\\[0.3em]
+Incidente / Protocolo de evacuación & Evento anómalo registrado durante la operación (desde uno
+menor hasta una emergencia que activa un protocolo de evacuación).\\[0.3em]
+Reporte & Consulta agregada (ventas, ocupación, ingresos, personal, incidentes) usada para la
+toma de decisiones.\\
+\bottomrule
+\caption{Conceptos del dominio identificados a partir de los 32 casos de uso.}
+\end{longtable}
+\end{center}
+
+% ==================== Stakeholders ====================
+\section{Stakeholders e intereses}
+\label{sec:stakeholders}
+
+\begin{center}
+\begin{longtable}{|p{3.6cm}|p{3.8cm}|p{6.9cm}|}
+\hline
+\textbf{Rol/Nombre} & \textbf{Información de Contacto} & \textbf{Intereses / expectativas} \\
+\hline
+\endhead
+Cliente & Rol dentro del sistema (se autentica con su cuenta) & Comprar y revender entradas de
+forma confiable, consultar sus pedidos y parqueadero, y recibir su QR sin fallas en el ingreso.\\
+\hline
+Organizador & Rol dentro del sistema & Crear y planificar eventos, asignar personal y
+proveedores, y monitorear la operación en tiempo real.\\
+\hline
+Empleado / Personal operativo & Rol dentro del sistema & Consultar sus turnos y asignaciones,
+solicitar cambios de turno y registrar su asistencia sin fricción.\\
+\hline
+Administrador & Rol dentro del sistema & Gestionar usuarios, roles, recintos y configuración
+general con control de acceso auditable.\\
+\hline
+Supervisor de emergencia & Rol dentro del sistema & Activar y coordinar protocolos de evacuación
+con información confiable y actualizada en tiempo real.\\
+\hline
+Proveedor externo & Gestionado por el organizador (módulo Proveedores) & Ser asignado
+correctamente a los eventos que contrata y recibir la información logística necesaria.\\
+\hline
+Equipo Hexacore (Daniel Cristancho, Samuel Emperador, Sebastián Sánchez, Diego Coronado) &
+semperadorcontreras@gmail.com (contacto del equipo) & Diseñar y sustentar una arquitectura que
+satisfaga los atributos de calidad priorizados y cumpla los requisitos del curso.\\
+\hline
+Profesor / Evaluador del curso & Curso de Arquitectura de Software & Verificar que el SAD cumpla
+la plantilla exigida y que las decisiones arquitectónicas estén justificadas.\\
+\hline
+\end{longtable}
+\end{center}
+
+% ==================== ASR ====================
+\section{Requisitos Arquitectónicamente Significativos (ASR)}
+\label{sec:asr}
+
+La Tabla \ref{tab:asr} presenta el primer Árbol de Utilidad del proyecto, derivado de los
+atributos de calidad priorizados en \textit{ArchitecturalProposal.tex} y de los escenarios ya
+identificados en la bitácora arquitectónica.
+
+\begin{center}
+\begin{longtable}{|p{1.1cm}|p{2.1cm}|p{1.9cm}|p{1.9cm}|p{2.1cm}|p{4cm}|p{1.6cm}|}
+\hline
+\textbf{ID ASR} & \textbf{Título} & \textbf{Atributo} & \textbf{Sub-atributo} &
+\textbf{Funcionalidades} & \textbf{Escenario} & \textbf{Prioridad}\\
+\hline
+\endhead
+ASR-01 & Bloqueo de doble venta en reventa & Consistencia & Concurrencia de datos & CU-006 & Dos
+compradores intentan adquirir simultáneamente la misma entrada publicada en reventa; el sistema
+garantiza que solo uno complete la compra y el otro reciba de inmediato un mensaje de no
+disponibilidad. & Alta\\
+\hline
+ASR-02 & Disponibilidad durante el ingreso masivo & Disponibilidad & Tolerancia a fallos &
+CU-002, CU-021, CU-022 & Ante la caída de una instancia del servicio de validación de QR durante
+el ingreso al recinto, el balanceador redirige el tráfico a instancias sanas sin interrupción
+perceptible para el asistente. & Alta\\
+\hline
+ASR-03 & Protección de datos de pago y credenciales & Seguridad & Confidencialidad & CU-001,
+CU-024, CU-031 & Un intento de acceso no autorizado a datos de pago o credenciales es rechazado
+por el API Gateway y queda registrado para auditoría. & Alta\\
+\hline
+ASR-04 & Respuesta bajo carga en apertura de venta & Rendimiento & Tiempo de respuesta & CU-001,
+CU-005 & Durante la apertura de venta de un evento masivo, miles de usuarios consultan
+disponibilidad y compran de forma simultánea; la mayoría de las solicitudes se resuelve en
+tiempos cortos y estables. & Alta\\
+\hline
+ASR-05 & Actualización de aforo y zonas en tiempo real & Tiempo real & Actualización de estado &
+CU-010, CU-019 & El aforo y el estado de las zonas se reflejan en los tableros de monitoreo con
+baja latencia tras el registro de un ingreso o un incidente. & Media-Alta\\
+\hline
+ASR-06 & Escalado independiente del servicio de Entradas & Escalabilidad & Escalabilidad
+horizontal & CU-001, CU-006 & Ante un incremento súbito de tráfico en el servicio de Entradas
+durante una preventa, aumentan sus instancias sin afectar el rendimiento de los demás dominios. &
+Media\\
+\hline
+ASR-07 & Auditoría de transferencias y pagos & Trazabilidad & Auditabilidad & CU-006, CU-031 &
+Cada transferencia de entrada, pago o reembolso queda registrada con usuario, fecha y resultado,
+consultable en un reporte de auditoría. & Media\\
+\hline
+ASR-08 & Interfaces especializadas por rol & Usabilidad & Adecuación a la tarea & Todos los CU
+(por interfaz) & Un usuario nuevo de cada rol completa su tarea principal en su interfaz
+correspondiente sin capacitación previa. & Baja-Media\\
+\hline
+ASR-09 & Evolución independiente de dominios & Mantenibilidad & Modificabilidad & Todos los CU
+(por microservicio) & Un cambio en las reglas de negocio de Parqueaderos se implementa y despliega
+sin requerir cambios ni redespliegue del servicio de Entradas. & Baja-Media\\
+\hline
+ASR-10 & Consumo uniforme vía API & Portabilidad & Independencia de plataforma & Todos los CU &
+Una misma funcionalidad de backend se consume igual desde el portal web y desde la app móvil, sin
+duplicar lógica de negocio. & Baja-Media\\
+\hline
+\caption{Árbol de Utilidad — primera versión.}
+\label{tab:asr}
+\end{longtable}
+\end{center}
+
+% ==================== Restricciones ====================
+\section{Restricciones}
+\label{sec:restricciones}
+
+\begin{center}
+\begin{longtable}{|p{3.2cm}|p{2.8cm}|p{7cm}|}
+\hline
+\textbf{Restricción} & \textbf{Categoría} & \textbf{Descripción} \\
+\hline
+\endhead
+Arquitectura de microservicios con base de datos independiente por dominio & Técnica & Decisión
+fundacional ya tomada por el equipo (ver ADR-01); cualquier solución a un ASR debe respetar esta
+separación por dominio.\\
+\hline
+Soporte de picos de miles de usuarios concurrentes & Técnica & El sistema debe soportar la
+concurrencia propia de la apertura de venta y el ingreso masivo al recinto sin degradar el
+servicio.\\
+\hline
+Equipo de 4 integrantes, 8 CU por persona & Organizacional & La distribución de trabajo (Daniel
+Cristancho, Samuel Emperador, Sebastián Sánchez, Diego Coronado) condiciona qué componentes
+prototipa cada integrante para Entrega 1 y Entrega 2.\\
+\hline
+Documento basado en el estándar arc42 & Convencional & La plantilla y estructura de este
+documento las exige el curso; no pueden omitirse secciones.\\
+\hline
+Fechas y formato de entrega del curso & Convencional & Entrega 1 (SAD v1) y Entrega 2 (prototipo +
+SAD v2) deben respetar las fechas y reglas de entrega definidas por el curso.\\
+\hline
+\end{longtable}
+\end{center}
+
+% ==================== Contexto y alcance ====================
+\section{Contexto y Alcance}
+\label{sec:contexto}
+
+El sistema interactúa con cinco roles de usuario (Cliente, Organizador, Empleado, Administrador y
+Supervisor de emergencia) y dos sistemas externos (Pasarela de Pagos y Proveedor de
+Notificaciones). La Figura \ref{fig:contexto} muestra el diagrama de contexto (Nivel 1 del modelo
+C4).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Diagrams/01-Contexto.png}
+\caption{Diagrama de contexto (Nivel 1, modelo C4).}
+\label{fig:contexto}
+\end{figure}
+
+\begin{center}
+\begin{longtable}{p{3cm}p{3cm}p{6.5cm}}
+\toprule
+\textbf{Origen} & \textbf{Destino} & \textbf{Descripción}\\
+\midrule
+Cliente & Sistema & Consulta eventos, compra y revende entradas, reserva parqueadero.\\
+Organizador & Sistema & Crea eventos, asigna personal y coordina la operación.\\
+Empleado & Sistema & Consulta turnos y registra ingreso/salida.\\
+Administrador & Sistema & Administra usuarios, personal y configuración.\\
+Supervisor de emergencia & Sistema & Activa y coordina el protocolo de evacuación.\\
+Sistema & Pasarela de Pagos & Procesa compras, reventas y reembolsos.\\
+Sistema & Proveedor de Notificaciones & Envía notificaciones push, correo y SMS.\\
+\bottomrule
+\caption{Relaciones del diagrama de contexto.}
+\end{longtable}
+\end{center}
+
+El diagrama de panorama de sistemas (\textit{System Landscape}, \textit{Diagrams/04-Panorama.png}
+en \textit{C4Diagrams.tex}) amplía este alcance mostrando además cómo el sistema se relaciona con
+otros sistemas de la organización (Contabilidad y Facturación, CRM/Marketing y una plataforma de
+Analítica), fuera del alcance de este documento pero relevantes para entender el ecosistema
+completo.
+
+% ==================== Vista de contenedores ====================
+\section{Vista de contenedores}
+\label{sec:contenedores}
+
+El sistema se divide en cuatro interfaces desplegables (Portal Web del Cliente, Portal Web
+Administrativo/Operativo, App Móvil del Cliente y App Móvil del Personal), todas consumiendo el
+mismo backend a través de un API Gateway. El backend está compuesto por microservicios
+independientes por dominio (Entradas/Mercado Secundario, Personal, Eventos/Emergencias,
+Parqueaderos) y por infraestructura de soporte (Redis, cola de mensajes y bases de datos por
+servicio). La Figura \ref{fig:contenedores} presenta el diagrama de contenedores.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Diagrams/02-Contenedores.png}
+\caption{Diagrama de contenedores (Nivel 2, modelo C4).}
+\label{fig:contenedores}
+\end{figure}
+
+\begin{itemize}
+\item \textbf{API Gateway + balanceador de carga:} punto único de entrada al backend; centraliza
+autenticación, autorización, validación de tokens y enrutamiento hacia el microservicio
+correspondiente.
+\item \textbf{Microservicios:} Entradas/Mercado Secundario, Personal, Eventos/Emergencias y
+Parqueaderos, cada uno con su propia base de datos para reducir el acoplamiento entre dominios.
+\item \textbf{Redis:} bloqueo temporal de recursos en disputa (p. ej. una entrada en reventa
+durante el checkout) y datos de acceso rápido (aforo, ocupación, sesiones).
+\item \textbf{Cola de mensajes (RabbitMQ/Kafka):} desacopla operaciones asíncronas: generación de
+QR, notificaciones, auditoría, liquidación de pagos y alertas de emergencia.
+\item \textbf{Servicios externos:} Pasarela de Pagos y Proveedor de Notificaciones, integrados vía
+API y, en el caso de notificaciones, disparados de forma asíncrona desde la cola de mensajes.
+\end{itemize}
+
+% ==================== Vista de componentes ====================
+\section{Vista de componentes}
+\label{sec:componentes}
+
+Se detalla el contenedor \textbf{Servicio de Entradas y Mercado Secundario}, por ser el que
+resuelve el caso de uso complejo CU-006 (Gestión del Mercado Secundario de Entradas). La Figura
+\ref{fig:componentes} muestra sus componentes internos.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Diagrams/03-Componentes.png}
+\caption{Diagrama de componentes — Servicio de Entradas y Mercado Secundario (Nivel 3, modelo
+C4).}
+\label{fig:componentes}
+\end{figure}
+
+El flujo interno es: el \textbf{Controlador API} recibe la solicitud enrutada por el API Gateway y
+la delega al \textbf{Servicio de Publicación}, que orquesta la operación de reventa. Este componente
+solicita al \textbf{Gestor de Concurrencia} el bloqueo temporal de la entrada en Redis, invoca al
+\textbf{Procesador de Pagos} para cobrar la transacción contra la Pasarela de Pagos, usa el
+\textbf{Generador de QR} para invalidar el código anterior y emitir uno nuevo, persiste el cambio
+de propiedad mediante el \textbf{Repositorio de Entradas}, y finalmente notifica el resultado a
+través del \textbf{Publicador de Eventos} hacia la cola de mensajes.
+
+\pendiente{el resto de contenedores (Personal, Eventos/Emergencias, Parqueaderos) se detallarán a
+nivel de componentes en una próxima iteración; por ahora solo se documenta el caso complejo
+CU-006, priorizado por el curso.}
+
+% ==================== Vista de procesos ====================
+\section{Vista de procesos}
+\label{sec:procesos}
+
+Se documentan los dos procesos más críticos del sistema desde el punto de vista de los atributos
+de calidad: la reventa de una entrada (concurrencia y consistencia) y la evacuación ante una
+emergencia (disponibilidad y tiempo real).
+
+\subsection{Reventa de una entrada (CU-006)}
+
+La Figura \ref{fig:secuencia} muestra, con líneas de vida y mensajes numerados, cómo colaboran los
+contenedores para resolver una compra en el mercado secundario.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Diagrams/05-Secuencia.png}
+\caption{Diagrama de secuencia — reventa de una entrada (CU-006).}
+\label{fig:secuencia}
+\end{figure}
+
+\begin{enumerate}
+\item El comprador confirma la compra de una entrada publicada en el mercado secundario.
+\item El API Gateway enruta la solicitud autenticada hacia el Servicio de Entradas.
+\item El Servicio de Entradas bloquea temporalmente la publicación en Redis, para impedir que otro
+comprador la adquiera de forma simultánea.
+\item Se valida el medio de pago y se cobra el valor de la entrada mediante la Pasarela de Pagos.
+\item Se transfiere la propiedad de la entrada y se invalida el código QR anterior en la base de
+datos.
+\item Se publica el evento \texttt{ENTRADA\_TRANSFERIDA} en la cola de mensajes.
+\item El Proveedor de Notificaciones envía la confirmación y el nuevo código QR al comprador y al
+vendedor, de forma desacoplada del flujo principal.
+\end{enumerate}
+
+\subsection{Evacuación ante emergencias (CU-010)}
+
+\begin{enumerate}
+\item El supervisor activa el protocolo de evacuación desde el Portal Web Administrativo,
+registrando el tipo y ubicación de la emergencia.
+\item El servicio de Eventos/Emergencias identifica las zonas potencialmente afectadas y consulta
+el aforo actual, las salidas disponibles y las rutas configuradas.
+\item El sistema presenta las rutas y zonas recomendadas; el supervisor confirma el protocolo.
+\item Se notifica al personal operativo y se envían instrucciones a los asistentes mediante la
+cola de mensajes y el Proveedor de Notificaciones.
+\item El sistema monitorea las zonas en tiempo real mientras el supervisor atiende alertas
+(ruta bloqueada, zona congestionada, cambio de nivel de emergencia) hasta confirmar la
+finalización.
+\end{enumerate}
+
+% ==================== Vista física ====================
+\section{Vista física}
+\label{sec:fisica}
+
+La Figura \ref{fig:despliegue} muestra el ambiente de \textbf{producción}: los dispositivos del
+usuario acceden vía CDN a los archivos estáticos y vía balanceador + API Gateway al backend, que
+corre en un clúster de aplicación con réplicas por microservicio, respaldado por un clúster de
+bases de datos, un clúster Redis y un clúster de mensajería.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Diagrams/06-Despliegue.png}
+\caption{Diagrama de despliegue — ambiente de producción (modelo C4).}
+\label{fig:despliegue}
+\end{figure}
+
+\pendiente{los ambientes de desarrollo y pruebas aún no se han diagramado; se documentarán junto
+con el script de despliegue automatizado exigido para Entrega 2 (ver \textit{TASKS.md}). Se prevé
+que reutilicen la misma topología de producción a menor escala (menos réplicas, sin CDN).}
+
+% ==================== Modelo de datos ====================
+\section{Modelo de datos}
+\label{sec:datos}
+
+Siguiendo la decisión de una base de datos independiente por microservicio (ADR-01), se prevé al
+menos un esquema relacional por dominio: Entradas/Mercado Secundario, Personal, Eventos/Emergencias
+y Parqueaderos, más los módulos administrativos (Cuentas, Roles y Permisos, Recintos, Proveedores,
+Pagos y Reportes). Las entidades principales de cada uno corresponden a los conceptos listados en
+la Tabla de la sección \ref{sec:dominio} (Evento, Entrada, Publicación de reventa, Personal, Turno,
+Espacio de parqueadero, Pedido, Pago, etc.).
+
+\pendiente{los modelos entidad-relación detallados por microservicio se elaborarán junto con el
+prototipo funcional (Entrega 1/Entrega 2), una vez se defina el motor de base de datos concreto
+por dominio.}
+
+% ==================== ADR ====================
+\section{Registros de Decisiones Arquitectónicas (ADR)}
+\label{sec:adr}
+
+\subsection*{ADR-01 --- Arquitectura de microservicios por dominio}
+\textbf{ASR relacionados:} ASR-06, ASR-09.\\
+\textbf{Problema:} el sistema debe permitir que sus dominios (Entradas, Mercado Secundario,
+Personal, Eventos, Parqueaderos, Emergencias) evolucionen y escalen de forma relativamente
+independiente, sin que un cambio en uno arriesgue la disponibilidad de los demás.\\
+\textbf{Solución:} se adopta una arquitectura de \textbf{microservicios}, uno por dominio, cada
+uno con base de datos propia.\\
+\textbf{Alternativa descartada:} monolito modular — dificulta escalar de forma independiente el
+servicio de Entradas durante una apertura de venta sin sobre-aprovisionar los demás dominios.\\
+\textbf{Consecuencias:} favorece mantenibilidad y escalabilidad independiente, a costa de mayor
+complejidad operativa (más piezas de infraestructura) y de tener que gestionar consistencia
+eventual entre servicios en vez de transacciones ACID únicas.
+
+\subsection*{ADR-02 --- API Gateway y balanceador de carga}
+\textbf{ASR relacionados:} ASR-02, ASR-03.\\
+\textbf{Problema:} se necesita un punto único, seguro y disponible de entrada al backend para las
+cuatro interfaces del sistema.\\
+\textbf{Solución:} un \textbf{API Gateway} centraliza autenticación, autorización y enrutamiento;
+un \textbf{balanceador de carga} distribuye solicitudes entre múltiples instancias de cada
+microservicio.\\
+\textbf{Alternativa descartada:} exponer cada microservicio directamente a los clientes — se
+descartó por duplicar lógica de seguridad en cada interfaz y complicar el enrutamiento.\\
+\textbf{Consecuencias:} centraliza seguridad y facilita el enrutamiento, pero introduce un
+componente crítico que debe replicarse (mitigado con múltiples instancias detrás del
+balanceador) para no convertirse en un punto único de falla.
+
+\subsection*{ADR-03 --- Redis para bloqueo temporal y datos de acceso rápido}
+\textbf{ASR relacionados:} ASR-01, ASR-05.\\
+\textbf{Problema:} evitar que dos compradores completen simultáneamente la compra de la misma
+entrada en reventa, y disponer de datos de aforo/ocupación con baja latencia.\\
+\textbf{Solución:} \textbf{Redis} se usa como bloqueo distribuido temporal durante el checkout de
+una reventa, y como caché de datos de acceso rápido (aforo, ocupación, sesiones).\\
+\textbf{Alternativa descartada:} bloqueo pesimista directamente en la base de datos relacional —
+se descartó por convertirse en cuello de botella bajo la carga concurrente esperada.\\
+\textbf{Consecuencias:} resuelve la doble venta y acelera consultas frecuentes, pero añade un
+punto adicional de falla que requiere su propia estrategia de disponibilidad (réplica/clúster).
+
+\subsection*{ADR-04 --- Cola de mensajes para operaciones asíncronas}
+\textbf{ASR relacionados:} ASR-04, ASR-07.\\
+\textbf{Problema:} operaciones como notificaciones o liquidación de pagos no deben bloquear ni
+hacer fallar la operación principal (compra, transferencia) cuando un servicio externo es lento o
+falla temporalmente.\\
+\textbf{Solución:} una \textbf{cola de mensajes (RabbitMQ/Kafka)} desacopla la generación de QR,
+las notificaciones, la auditoría y la liquidación de pagos del flujo síncrono principal.\\
+\textbf{Alternativa descartada:} comunicación síncrona directa con los servicios externos — se
+descartó porque un fallo temporal del proveedor de notificaciones no debe bloquear la operación
+principal.\\
+\textbf{Consecuencias:} tolera fallos externos y mejora el rendimiento percibido, a costa de
+consistencia eventual y de requerir monitoreo propio de las colas.
+
+% ==================== Riesgos técnicos ====================
+\section{Riesgos técnicos}
+\label{sec:riesgos}
+
+\begin{center}
+\begin{longtable}{|p{2.6cm}|p{1.7cm}|p{1.6cm}|p{1.5cm}|p{2.9cm}|p{2.9cm}|}
+\hline
+\textbf{Riesgo} & \textbf{Probabilidad} & \textbf{Impacto} & \textbf{Prioridad} & \textbf{Plan de
+mitigación} & \textbf{Plan de contingencia} \\
+\hline
+\endhead
+Concurrencia entre compradores en el mercado secundario & Media & Alto & Alta & Bloqueo
+distribuido con TTL en Redis antes de procesar el pago. & Rechazar la segunda transacción y
+notificar de inmediato al comprador no atendido.\\
+\hline
+Caída del API Gateway como punto único de entrada & Baja & Alto & Alta & Múltiples instancias +
+balanceador de carga + \textit{health checks}. & Failover automático hacia una instancia o región
+de respaldo.\\
+\hline
+Indisponibilidad de la pasarela de pagos externa & Media & Alto & Alta & \textit{Timeouts},
+reintentos y cola de reconciliación de pagos. & Marcar la transacción como pendiente y permitir
+reintento manual del usuario.\\
+\hline
+Picos de tráfico en apertura de venta / ingreso masivo & Alta & Medio & Alta & Autoescalado del
+servicio de Entradas + caché en Redis. & Sala de espera virtual (cola de acceso) para limitar la
+concurrencia admitida.\\
+\hline
+Fallo del proveedor de notificaciones durante una emergencia & Baja & Alto & Media & Reintentos
+automáticos + canal secundario (SMS si falla push). & Escalar el aviso de forma manual mediante el
+personal en sitio.\\
+\hline
+Pérdida de conexión de una app móvil durante una evacuación & Media & Medio & Media & Caché local
+de instrucciones + reconexión automática. & El personal de seguridad releva la comunicación
+directamente en sitio.\\
+\hline
+\end{longtable}
+\end{center}
+
+% ==================== Glosario ====================
+\section{Glosario}
+\label{sec:glosario}
+
+\begin{itemize}
+\item \textbf{SAD:} Descripción de la Arquitectura del Software (\textit{Software Architecture
+Description}), este documento.
+\item \textbf{ASR:} Requisito Arquitectónicamente Significativo (\textit{Architecturally
+Significant Requirement}).
+\item \textbf{ADR:} Registro de Decisión Arquitectónica (\textit{Architecture Decision Record}).
+\item \textbf{CU:} Caso de Uso.
+\item \textbf{QA:} Atributo de Calidad (\textit{Quality Attribute}).
+\item \textbf{Modelo C4:} notación de Simon Brown para diagramar arquitectura en niveles
+(Contexto, Contenedores, Componentes, Código).
+\item \textbf{API Gateway:} componente que centraliza el enrutamiento, la autenticación y la
+autorización de las solicitudes al backend.
+\item \textbf{Microservicio:} servicio backend independiente, responsable de un dominio de
+negocio, con su propia base de datos.
+\item \textbf{Redis:} base de datos en memoria usada como caché y para bloqueos distribuidos.
+\item \textbf{RabbitMQ / Kafka:} sistemas de colas de mensajes usados para procesamiento
+asíncrono entre servicios.
+\item \textbf{AMQP:} protocolo de mensajería usado por colas como RabbitMQ.
+\item \textbf{QR:} código de respuesta rápida (\textit{Quick Response}) usado para identificar
+entradas y validar pedidos.
+\item \textbf{Aforo:} cantidad de personas presentes o permitidas en un recinto o zona.
+\item \textbf{Mercado secundario:} reventa de entradas ya adquiridas entre usuarios del sistema.
+\item \textbf{CDN:} red de distribución de contenido (\textit{Content Delivery Network}) usada
+para servir archivos estáticos cerca del usuario.
+\item \textbf{Balanceador de carga:} componente que distribuye solicitudes entre varias instancias
+de un servicio.
+\item \textbf{Bloqueo distribuido:} mecanismo (implementado aquí con Redis) que impide que dos
+procesos modifiquen simultáneamente el mismo recurso.
+\item \textbf{Consistencia eventual:} garantía de que los datos de distintos servicios convergen
+al mismo estado, aunque no de forma instantánea.
+\end{itemize}
+
+% ==================== Referencias ====================
+\section{Referencias}
+\label{sec:referencias}
+
+\begin{itemize}
+\item arc42. \textit{arc42 overview}. \url{https://arc42.org/overview}
+\item Brown, S. \textit{The C4 model for visualising software architecture}.
+\url{https://c4model.com}
+\item Brown, S. \textit{Software architecture diagram review checklist}.
+\url{https://c4model.com/diagrams/checklist}
+\item Bass, L., Clements, P., \& Kazman, R. (2012). \textit{Software Architecture in Practice}
+(3rd ed.). Addison-Wesley. (Base teórica del Árbol de Utilidad y los ADR usados en este
+documento.)
+\item Documentos internos del proyecto: \textit{ArchitecturalProposal.tex},
+\textit{C4Diagrams.tex}, \textit{DistribucionCasosUso.tex} y
+\textit{BitacoraArquitectonica.md} (equipo Hexacore, 2026).
+\end{itemize}
+
+\end{document}
