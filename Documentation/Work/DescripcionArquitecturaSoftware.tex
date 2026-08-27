@@ -16,6 +16,8 @@
 \usepackage{fancyhdr}
 \usepackage{titlesec}
 \usepackage{pdflscape}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta}
 
 \geometry{left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm,headheight=14.5pt}
 \onehalfspacing
@@ -29,8 +31,6 @@
 \definecolor{gris}{RGB}{242,242,242}
 \definecolor{grisoscuro}{RGB}{80,80,80}
 
-% Etiquetas en español (sin babel, que no está disponible en este entorno;
-% mismo criterio que ArchitecturalProposal.tex, Summary.tex y C4Diagrams.tex)
 \renewcommand{\figurename}{Figura}
 \renewcommand{\tablename}{Tabla}
 
@@ -62,8 +62,8 @@
 {\LARGE \textbf{Descripción de la Arquitectura del Software (SAD)}}\\[0.4cm]
 {\Large Sistema Integral de Gestión de Eventos}\\[1.5cm]
 {\Large Equipo Hexacore}\\[2cm]
-{\large Versión: 1.0}\\[0.5cm]
-{\large Fecha de entrega: 25/08/2026}\\[2cm]
+{\large Versión: 1.1}\\[0.5cm]
+{\large Fecha de entrega: 27/08/2026}\\[2cm]
 {\large Autores:}\\
 {\large Daniel Cristancho}\\
 {\large Samuel Emperador}\\
@@ -89,6 +89,11 @@
 32 casos de uso) y \textit{BitacoraArquitectonica.md} (decisiones, alternativas y riesgos). Se añade
 además un primer Árbol de Utilidad (ASR) y los ADR de las decisiones fundacionales, que hasta
 ahora solo existían en la bitácora. & Equipo Hexacore (vía asistente) \\
+\hline
+27/08/2026 & Versión 1.1: se cierran los puntos pendientes de la v1.0 — diagrama de clases UML
+del modelo de dominio, vista de componentes de los contenedores Personal, Eventos/Emergencias y
+Parqueaderos, ambientes de desarrollo y pruebas en la vista física, y modelo de datos detallado
+por microservicio. & Equipo Hexacore (vía asistente) \\
 \hline
 \end{longtable}
 \end{center}
@@ -183,9 +188,11 @@ Evacuación ante Emergencias)}.
 \section{Modelo de dominio}
 \label{sec:dominio}
 
-\pendiente{el diagrama de clases UML del dominio completo se elaborará en la siguiente iteración
-del SAD; la tabla siguiente resume los conceptos identificados hasta ahora a partir de los 32
-casos de uso.}
+La Tabla \ref{tab:dominio} resume los conceptos del dominio identificados a partir de los 32
+casos de uso. La Figura \ref{fig:dominio} presenta el diagrama de clases UML correspondiente
+(versión simplificada, con atributos clave y multiplicidades de las asociaciones principales);
+un modelo con navegabilidad, tipos de dato exactos y restricciones se refinará junto con el
+modelo entidad-relación de cada microservicio (sección \ref{sec:datos}) durante el prototipo.
 
 \begin{center}
 \begin{longtable}{p{3.8cm}p{9.7cm}}
@@ -227,8 +234,61 @@ Reporte & Consulta agregada (ventas, ocupación, ingresos, personal, incidentes)
 toma de decisiones.\\
 \bottomrule
 \caption{Conceptos del dominio identificados a partir de los 32 casos de uso.}
+\label{tab:dominio}
 \end{longtable}
 \end{center}
+
+\begin{landscape}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  class/.style={draw, rectangle, align=left, font=\scriptsize, inner sep=4pt, fill=gris},
+  >={Stealth[length=2mm]}, thick, every node/.style={font=\tiny}
+]
+\node[class] (usuario)         at (0,9)   {\textbf{Usuario}\\id, nombre, email\\credenciales};
+\node[class] (rol)             at (4,9)   {\textbf{Rol}\\id, nombre};
+\node[class] (personal)        at (0,7)   {\textbf{Personal}\\id, rolOperativo};
+\node[class] (turno)           at (4,7)   {\textbf{Turno}\\id, horario, zona};
+\node[class] (asistencia)      at (8,7)   {\textbf{RegistroAsistencia}\\id, entrada, salida};
+\node[class] (evento)          at (0,5)   {\textbf{Evento}\\id, nombre, fecha, aforo};
+\node[class] (recinto)         at (4,5)   {\textbf{Recinto}\\id, nombre, dirección};
+\node[class] (zona)            at (8,5)   {\textbf{Zona}\\id, capacidad};
+\node[class] (entrada)         at (0,3)   {\textbf{Entrada}\\id, códigoQR, estado};
+\node[class] (reventa)         at (4,3)   {\textbf{PublicaciónReventa}\\id, precio, estado};
+\node[class] (pedido)          at (8,3)   {\textbf{Pedido}\\id, estado, total};
+\node[class] (establecimiento) at (12,3)  {\textbf{Establecimiento}\\id, nombre};
+\node[class] (producto)        at (12,5)  {\textbf{Producto}\\id, nombre, precio};
+\node[class] (parqueadero)     at (0,1)   {\textbf{Parqueadero}\\id, capacidad};
+\node[class] (espacio)         at (4,1)   {\textbf{EspacioParqueadero}\\id, estado};
+\node[class] (pago)            at (8,1)   {\textbf{Pago}\\id, monto, estado};
+\node[class] (proveedor)       at (12,1)  {\textbf{Proveedor}\\id, nombre, servicio};
+\node[class] (incidente)       at (0,-1)  {\textbf{Incidente}\\id, tipo, estado};
+\node[class] (reporte)         at (4,-1)  {\textbf{Reporte}\\id, tipo, fecha};
+
+\draw (usuario) -- (rol)             node[midway, above] {1..*};
+\draw (personal) -- (usuario)        node[midway, left]  {especializa};
+\draw (personal) -- (turno)          node[midway, above] {1..*};
+\draw (turno) -- (asistencia)        node[midway, above] {1..1};
+\draw (evento) -- (entrada)          node[midway, left]  {1..*};
+\draw (evento) -- (recinto)          node[midway, above] {1..1};
+\draw (recinto) -- (zona)            node[midway, above] {1..*};
+\draw (entrada) -- (reventa)         node[midway, above] {0..1};
+\draw (evento) -- (parqueadero)      node[midway, left]  {1..*};
+\draw (parqueadero) -- (espacio)     node[midway, above] {1..*};
+\draw (usuario) -- (pedido)          node[midway, right, sloped] {1..*};
+\draw (pedido) -- (establecimiento)  node[midway, above] {*..1};
+\draw (establecimiento) -- (producto) node[midway, above] {1..*};
+\draw (entrada) -- (pago)            node[midway, right] {1..1};
+\draw (pedido) -- (pago)             node[midway, above] {1..1};
+\draw (espacio) -- (pago)            node[midway, right] {1..1};
+\draw (evento) -- (proveedor)        node[midway, right, sloped] {*..*};
+\draw (evento) -- (incidente)        node[midway, left]  {1..*};
+\draw (evento) -- (reporte)          node[midway, below] {1..*};
+\end{tikzpicture}
+\caption{Diagrama de clases UML — modelo de dominio (versión simplificada).}
+\label{fig:dominio}
+\end{figure}
+\end{landscape}
 
 % ==================== Stakeholders ====================
 \section{Stakeholders e intereses}
@@ -276,10 +336,6 @@ La Tabla \ref{tab:asr} presenta el primer Árbol de Utilidad del proyecto, deriv
 atributos de calidad priorizados en \textit{ArchitecturalProposal.tex} y de los escenarios ya
 identificados en la bitácora arquitectónica.
 
-% Tabla en landscape: 7 columnas no caben legiblemente en el ancho de una página
-% vertical sin partir palabras largas propias del español (p. ej. "Confidencialidad",
-% "Escalabilidad"), que además no se pueden silabear automáticamente porque el
-% entorno no tiene babel/es disponible (ver nota de la sección \ref{sec:contexto}).
 \begin{landscape}
 \begin{center}
 \begin{longtable}{|p{1cm}|p{3cm}|p{2.2cm}|p{2.8cm}|p{2cm}|p{8cm}|p{1.5cm}|}
@@ -444,9 +500,10 @@ API y, en el caso de notificaciones, disparados de forma asíncrona desde la col
 \section{Vista de componentes}
 \label{sec:componentes}
 
-Se detalla el contenedor \textbf{Servicio de Entradas y Mercado Secundario}, por ser el que
-resuelve el caso de uso complejo CU-006 (Gestión del Mercado Secundario de Entradas). La Figura
-\ref{fig:componentes} muestra sus componentes internos.
+Se detalla primero el contenedor \textbf{Servicio de Entradas y Mercado Secundario}, por ser el
+que resuelve el caso de uso complejo CU-006 (Gestión del Mercado Secundario de Entradas), y luego,
+al mismo nivel de detalle, los otros tres microservicios de dominio. La Figura
+\ref{fig:componentes} muestra los componentes internos del Servicio de Entradas.
 
 \begin{figure}[H]
 \centering
@@ -464,9 +521,32 @@ solicita al \textbf{Gestor de Concurrencia} el bloqueo temporal de la entrada en
 de propiedad mediante el \textbf{Repositorio de Entradas}, y finalmente notifica el resultado a
 través del \textbf{Publicador de Eventos} hacia la cola de mensajes.
 
-\pendiente{el resto de contenedores (Personal, Eventos/Emergencias, Parqueaderos) se detallarán a
-nivel de componentes en una próxima iteración; por ahora solo se documenta el caso complejo
-CU-006, priorizado por el curso.}
+\subsection{Servicio de Personal}
+
+El \textbf{Controlador API} enruta la solicitud hacia el \textbf{Servicio de Asignación de
+Personal}, que valida rol, disponibilidad y horario del empleado con apoyo del \textbf{Validador
+de Conflictos} antes de confirmar una asignación o un cambio de turno. El \textbf{Gestor de
+Turnos} calcula horarios y, junto con el \textbf{Repositorio de Personal}, persiste asignaciones,
+turnos y registros de asistencia. El \textbf{Publicador de Eventos} notifica, vía cola de
+mensajes, la confirmación de asignaciones y cambios de turno al empleado y al supervisor.
+
+\subsection{Servicio de Eventos / Emergencias}
+
+El \textbf{Controlador API} enruta hacia el \textbf{Servicio de Gestión de Eventos} (CRUD de
+eventos, localidades y aforo) o hacia el \textbf{Servicio de Protocolo de Emergencia}, según la
+operación. Al activarse una evacuación, este último consulta al \textbf{Gestor de Zonas y Aforo}
+(apoyado en Redis para datos de baja latencia) para identificar zonas afectadas, salidas y rutas
+disponibles; persiste el incidente mediante el \textbf{Repositorio de Eventos}; y usa el
+\textbf{Publicador de Eventos} para difundir alertas y actualizaciones de estado a través de la
+cola de mensajes hacia el personal y los asistentes.
+
+\subsection{Servicio de Parqueaderos}
+
+El \textbf{Controlador API} delega en el \textbf{Servicio de Reservas}, que gestiona la reserva
+previa y el ingreso/salida de vehículos. El \textbf{Gestor de Ocupación} mantiene en Redis el
+estado de ocupación por zona en tiempo real. El \textbf{Procesador de Cobro} invoca la Pasarela de
+Pagos para tarifas y reservas. El \textbf{Repositorio de Espacios} persiste las asignaciones, y el
+\textbf{Publicador de Eventos} notifica confirmaciones hacia la cola de mensajes.
 
 % ==================== Vista de procesos ====================
 \section{Vista de procesos}
@@ -532,24 +612,72 @@ bases de datos, un clúster Redis y un clúster de mensajería.
 \label{fig:despliegue}
 \end{figure}
 
-\pendiente{los ambientes de desarrollo y pruebas aún no se han diagramado; se documentarán junto
-con el script de despliegue automatizado exigido para Entrega 2. Se prevé que reutilicen la misma
-topología de producción a menor escala (menos réplicas, sin CDN).}
+Los ambientes de \textbf{desarrollo} y \textbf{pruebas} reutilizan la misma topología del
+diagrama de despliegue de producción, a menor escala: una única réplica por microservicio (sin
+balanceo horizontal), sin CDN (los archivos estáticos se sirven directamente desde el servidor de
+aplicación), y con Redis, la cola de mensajes y las bases de datos desplegadas en un único nodo
+compartido en vez de un clúster. El ambiente de \textbf{desarrollo} se despliega automáticamente
+mediante integración continua ante cada cambio en la rama principal, con datos de prueba mínimos
+para verificación funcional rápida. El ambiente de \textbf{pruebas} se usa para validación
+funcional end-to-end y pruebas de carga previas a cada entrega, con datos sintéticos que simulan
+la concurrencia esperada durante la apertura de venta y el ingreso masivo, de forma que los ASR de
+disponibilidad y rendimiento (sección \ref{sec:asr}) puedan verificarse antes de producción. El
+script de despliegue automatizado que provisiona ambos ambientes se entregará junto con el
+prototipo funcional en la Entrega 2.
 
 % ==================== Modelo de datos ====================
 \section{Modelo de datos}
 \label{sec:datos}
 
-Siguiendo la decisión de una base de datos independiente por microservicio (ADR-01), se prevé al
-menos un esquema relacional por dominio: Entradas/Mercado Secundario, Personal, Eventos/Emergencias
-y Parqueaderos, más los módulos administrativos (Cuentas, Roles y Permisos, Recintos, Proveedores,
-Pagos y Reportes). Las entidades principales de cada uno corresponden a los conceptos listados en
-la Tabla de la sección \ref{sec:dominio} (Evento, Entrada, Publicación de reventa, Personal, Turno,
-Espacio de parqueadero, Pedido, Pago, etc.).
+Siguiendo la decisión de una base de datos independiente por microservicio (ADR-01), cada dominio
+tiene su propio esquema relacional. Las referencias entre dominios (p. ej. el propietario de una
+\textit{Entrada} hacia \textit{Usuario}, que vive en el módulo de administración de cuentas) se
+resuelven a nivel de aplicación mediante el identificador correspondiente, y no con llaves foráneas
+físicas entre bases de datos distintas, lo cual es consistente con la separación de datos
+establecida en ADR-01. A continuación se listan las entidades principales de cada esquema, con sus
+llaves foráneas lógicas.
 
-\pendiente{los modelos entidad-relación detallados por microservicio se elaborarán junto con el
-prototipo funcional (Entrega 1/Entrega 2), una vez se defina el motor de base de datos concreto
-por dominio.}
+\subsection*{Esquema de Entradas / Mercado Secundario}
+\begin{itemize}
+\item \textbf{Entrada}(id, evento\_id, localidad\_id, propietario\_id, codigoQR, estado)
+\item \textbf{PublicacionReventa}(id, entrada\_id, vendedor\_id, precio, estado)
+\end{itemize}
+
+\subsection*{Esquema de Personal}
+\begin{itemize}
+\item \textbf{Personal}(id, usuario\_id, rolOperativo)
+\item \textbf{Turno}(id, personal\_id, evento\_id, zona\_id, horario)
+\item \textbf{RegistroAsistencia}(id, turno\_id, horaEntrada, horaSalida)
+\end{itemize}
+
+\subsection*{Esquema de Eventos / Emergencias}
+\begin{itemize}
+\item \textbf{Evento}(id, nombre, fecha, recinto\_id, aforo)
+\item \textbf{Recinto}(id, nombre, direccion)
+\item \textbf{Zona}(id, recinto\_id, capacidad)
+\item \textbf{Incidente}(id, evento\_id, tipo, estado)
+\end{itemize}
+
+\subsection*{Esquema de Parqueaderos}
+\begin{itemize}
+\item \textbf{Parqueadero}(id, evento\_id, capacidad)
+\item \textbf{EspacioParqueadero}(id, parqueadero\_id, estado)
+\end{itemize}
+
+\subsection*{Esquemas de administración general}
+\begin{itemize}
+\item \textbf{Usuario}(id, nombre, email, credenciales), \textbf{Rol}(id, nombre),
+\textbf{UsuarioRol}(usuario\_id, rol\_id)
+\item \textbf{Proveedor}(id, nombre, servicio)
+\item \textbf{Pago}(id, tipo, monto, estado, referencia\_id, referencia\_tipo) — registra pagos de
+Entradas, Pedidos o Parqueaderos mediante \texttt{referencia\_tipo}
+\item \textbf{Pedido}(id, cliente\_id, establecimiento\_id, estado, total),
+\textbf{Establecimiento}(id, nombre), \textbf{Producto}(id, establecimiento\_id, nombre, precio)
+\item \textbf{Reporte}(id, tipo, fechaGeneracion)
+\end{itemize}
+
+El motor de base de datos concreto por dominio (relacional para los esquemas transaccionales,
+posiblemente documental para Reportes) se definirá junto con el prototipo funcional de Entrega 2.
 
 % ==================== ADR ====================
 \section{Registros de Decisiones Arquitectónicas (ADR)}
