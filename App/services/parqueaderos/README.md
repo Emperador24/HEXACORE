@@ -10,4 +10,6 @@ espacios (CU-021–023); cobro y control de ocupación en tiempo real (CU-024–
 
 **Responsables:** Daniel Cristancho (CU-021–023), Samuel Emperador (CU-024–025).
 
+**Base de datos:** PostgreSQL (esquema propio, ADR-01).
+
 **Estado:** pendiente de implementación (Entrega 2).

@@ -676,8 +676,8 @@ Entradas, Pedidos o Parqueaderos mediante \texttt{referencia\_tipo}
 \item \textbf{Reporte}(id, tipo, fechaGeneracion)
 \end{itemize}
 
-El motor de base de datos concreto por dominio (relacional para los esquemas transaccionales,
-posiblemente documental para Reportes) se definirá junto con el prototipo funcional de Entrega 2.
+El motor de base de datos concreto por dominio es \textbf{PostgreSQL} para los esquemas
+transaccionales y \textbf{MongoDB} para Reportes (ADR-06).
 
 % ==================== ADR ====================
 \section{Registros de Decisiones Arquitectónicas (ADR)}
@@ -732,6 +732,45 @@ descartó porque un fallo temporal del proveedor de notificaciones no debe bloqu
 principal.\\
 \textbf{Consecuencias:} tolera fallos externos y mejora el rendimiento percibido, a costa de
 consistencia eventual y de requerir monitoreo propio de las colas.
+
+\subsection*{ADR-05 --- Stack de frontend por tipo de interfaz}
+\textbf{ASR relacionados:} ASR-08, ASR-10, ASR-05.\\
+\textbf{Problema:} las cuatro interfaces (portal web del cliente, portal web administrativo/operativo,
+app móvil del cliente, app móvil de personal) deben implementarse en un lenguaje/framework concreto,
+sin comprometer el consumo uniforme del backend vía API Gateway (ASR-10) ni la especialización por
+rol de cada interfaz (ASR-08).\\
+\textbf{Solución:} los portales web se construyen en \textbf{Angular + TypeScript} — su estructura de
+módulos, \textit{guards} e \textit{interceptors} favorece el trabajo en paralelo de varios
+integrantes con convenciones consistentes, y RxJS encaja con las actualizaciones en tiempo real de
+ASR-05. Las apps móviles se construyen en \textbf{Kotlin nativo sobre Android Studio} (Jetpack
+Compose para la interfaz, \textit{coroutines}/\textit{Flow} para tiempo real), aprovechando que el
+equipo ya domina ambos lenguajes.\\
+\textbf{Alternativa descartada:} un framework híbrido/\textit{cross-platform} (p. ej. React Native o
+Flutter) para compartir código de interfaz entre web y móvil — se descartó porque ASR-10 ya evita
+duplicar lógica de negocio en el cliente (esta vive en el backend, detrás del API Gateway), por lo
+que compartir código de UI entre plataformas no aporta un beneficio arquitectónico claro frente al
+costo de una capa de abstracción adicional y a la experiencia ya existente del equipo con Angular y
+Kotlin nativos.\\
+\textbf{Consecuencias:} cada interfaz evoluciona con las herramientas nativas de su plataforma sin
+las limitaciones de un framework híbrido, a costa de mantener dos ecosistemas de \textit{build}/
+pruebas distintos (TypeScript/npm y Kotlin/Gradle) y de no compartir código de UI entre web y móvil
+— los contratos comunes quedan limitados a la especificación de la API (ver \texttt{App/shared/}).
+
+\subsection*{ADR-06 --- Motor de base de datos por dominio (\textit{polyglot persistence})}
+\textbf{ASR relacionados:} ASR-01, ASR-07.\\
+\textbf{Problema:} ADR-01 estableció una base de datos propia por microservicio, pero dejó abierto
+el motor concreto; los esquemas transaccionales (Entradas, Personal, Eventos/Emergencias,
+Parqueaderos, cuentas/proveedores/pagos) tienen necesidades de consistencia distintas a las de
+Reportes/analítica, cuyos datos son más variables y semi-estructurados.\\
+\textbf{Solución:} \textbf{PostgreSQL} como motor relacional para todos los esquemas transaccionales
+(uno por microservicio, ADR-01), y \textbf{MongoDB} como motor documental exclusivamente para el
+esquema de Reportes dentro del servicio de administración.\\
+\textbf{Alternativa descartada:} un único motor relacional (PostgreSQL) también para Reportes — se
+descartó para no forzar un esquema rígido sobre datos de reportes cuya estructura varía entre tipos
+de reporte, tal como ya anticipaba la sección de modelo de datos.\\
+\textbf{Consecuencias:} cada esquema usa el motor más adecuado a su naturaleza (ACID para lo
+transaccional, esquema flexible para reportes), a costa de operar y respaldar dos motores de base de
+datos distintos en vez de uno solo.
 
 % ==================== Riesgos técnicos ====================
 \section{Riesgos técnicos}

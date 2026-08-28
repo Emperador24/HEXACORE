@@ -15,5 +15,7 @@ Publicador de Eventos.
 
 **Responsables:** Samuel Emperador (CU-010, CU-026), Diego Coronado (CU-016–020).
 
+**Base de datos:** PostgreSQL (esquema propio, ADR-01).
+
 **Estado:** pendiente de implementación (Entrega 2). La separación entre "gestión de eventos",
 "logística" e "incidentes/emergencias" dentro de este servicio se refinará al prototipar.

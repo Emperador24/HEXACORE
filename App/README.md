@@ -6,28 +6,45 @@ de las vistas de contenedores y componentes del SAD
 carpeta contiene un `README.md` con su rol, los casos de uso que cubre y quién la desarrolla, para que
 cada integrante empiece a trabajar en la suya sin pisar las de los demás.
 
-El stack técnico concreto (lenguaje/framework por servicio) queda abierto — se define al empezar el
-prototipo. Ver `../WORKFLOW.md` para el flujo de ramas y la convención del repo personal de patrones.
+El stack de las cuatro interfaces ya está definido (ver tabla abajo); el lenguaje de los
+microservicios de `services/` y el motor de la cola de mensajes (ADR-04) siguen abiertos — se
+definen al empezar el prototipo. Ver `../WORKFLOW.md` para el flujo de ramas y la convención del
+repo personal de patrones.
+
+## Stack técnico
+
+| Interfaz/capa | Stack | Motivo |
+|---|---|---|
+| `portal-web-cliente`, `portal-web-admin` | **Angular + TypeScript** | Estructura consistente para trabajo en paralelo (guards/interceptors por rol), RxJS encaja con actualizaciones en tiempo real (ASR-05) |
+| `app-movil-cliente`, `app-movil-personal` | **Kotlin nativo** (Android Studio, Jetpack Compose) | Lenguaje ya conocido por el equipo; estándar oficial de Android; coroutines/Flow para tiempo real y notificaciones (evacuación, turnos) |
+| `services/*` (backend) | Por definir | No condicionado por el frontend — solo debe exponer contratos vía API Gateway (ASR-10) |
+| BD transaccional (todos los dominios) | **PostgreSQL** | Motor relacional por microservicio (ADR-01), ACID para flujos concurrentes como la reventa de entradas (junto con el lock de Redis, ADR-03) |
+| BD de Reportes/analítica (`administracion`) | **MongoDB** | Esquema documental para datos semi-estructurados de reportes (polyglot persistence, sección 12 del SAD) |
+| Caché / bloqueo distribuido | **Redis** (ADR-03) | Ya decidido — sin cambios |
+
+Como el frontend web (TypeScript) y el móvil (Kotlin) no comparten lenguaje, los contratos en
+`shared/` deben expresarse como especificación de API (OpenAPI/JSON Schema) y no como código
+compartido — ver `shared/README.md`.
 
 ## Estructura
 
 ```
 App/
 ├── gateway/                             API Gateway + balanceador de carga (ADR-02)
-├── services/                            Microservicios de dominio, cada uno con BD propia (ADR-01)
-│   ├── entradas-mercado-secundario/     CU-001–006
-│   ├── personal/                        CU-007–009
-│   ├── eventos-emergencias/             CU-010, CU-016–020, CU-026
-│   ├── parqueaderos/                    CU-021–025
-│   ├── pedidos/                         CU-011–015
-│   └── administracion/                  CU-027–032
+├── services/                            Microservicios de dominio (lenguaje por definir)
+│   ├── entradas-mercado-secundario/     CU-001–006 — PostgreSQL
+│   ├── personal/                        CU-007–009 — PostgreSQL
+│   ├── eventos-emergencias/             CU-010, CU-016–020, CU-026 — PostgreSQL
+│   ├── parqueaderos/                    CU-021–025 — PostgreSQL
+│   ├── pedidos/                         CU-011–015 — PostgreSQL
+│   └── administracion/                  CU-027–032 — PostgreSQL (cuentas/roles/recintos/proveedores/pagos) + MongoDB (Reportes)
 ├── frontend/                            Las cuatro interfaces desplegables (vista de contenedores)
-│   ├── portal-web-cliente/
-│   ├── portal-web-admin/                Portal Web Administrativo/Operativo
-│   ├── app-movil-cliente/
-│   └── app-movil-personal/
-├── infra/                               Redis, cola de mensajes, bases de datos, despliegue local
-└── shared/                              Contratos/DTOs compartidos entre servicios (si se requieren)
+│   ├── portal-web-cliente/              Angular + TypeScript
+│   ├── portal-web-admin/                Angular + TypeScript — Portal Web Administrativo/Operativo
+│   ├── app-movil-cliente/               Kotlin nativo (Android Studio, Jetpack Compose)
+│   └── app-movil-personal/              Kotlin nativo (Android Studio, Jetpack Compose)
+├── infra/                               Redis, cola de mensajes, PostgreSQL/MongoDB, despliegue local
+└── shared/                              Contratos de API (OpenAPI/JSON Schema) entre servicios y frontends
 ```
 
 ## Mapa de responsables
