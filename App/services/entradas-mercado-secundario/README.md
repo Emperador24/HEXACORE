@@ -15,4 +15,6 @@ venta), ASR-06 (escalado independiente).
 
 **Responsables:** Daniel Cristancho (CU-001–005), Samuel Emperador (CU-006).
 
+**Base de datos:** PostgreSQL (esquema propio, ADR-01).
+
 **Estado:** pendiente de implementación (Entrega 2).

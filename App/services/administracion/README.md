@@ -10,6 +10,9 @@ Proveedor, Pago, Reporte.
 
 **Responsables:** Sebastián Sánchez (CU-027–029), Diego Coronado (CU-030–032).
 
+**Base de datos:** PostgreSQL para Usuario/Rol/UsuarioRol/Proveedor/Pago (esquema transaccional,
+ADR-01); MongoDB para Reporte (esquema documental — polyglot persistence, sección 12 del SAD).
+
 **Estado:** pendiente de implementación (Entrega 2). No está aún detallado como contenedor propio en
 la vista de componentes del SAD v1.1; agrupa las entidades que el modelo de datos ya trata como un
 solo esquema. Si al prototipar conviene separar cuentas/recintos de proveedores/pagos/reportes en dos

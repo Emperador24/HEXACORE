@@ -9,6 +9,8 @@ preparación y entrega validada por QR, y gestión de los establecimientos.
 
 **Responsable:** Sebastián Sánchez.
 
+**Base de datos:** PostgreSQL (esquema propio, ADR-01).
+
 **Estado:** pendiente de implementación (Entrega 2). No está aún detallado como contenedor propio en
 la vista de componentes del SAD v1.1; se separa de `administracion` porque tiene un flujo y un
 responsable claramente distintos (pedido → preparación → entrega por QR).
