@@ -6,9 +6,11 @@ Repositorio de documentación arquitectónica del **Sistema Integral de Gestión
 
 ```
 HEXACORE/
-└── Documentation/
-    ├── Submission/        Entregables finales (PDF y Excel para calificación)
-    └── Work/               Documentos fuente (LaTeX) de los entregables
+├── App/                    Estructura del prototipo (microservicios, frontends, infra) — ver App/README.md
+├── Documentation/
+│   ├── Submission/         Entregables finales (PDF y Excel para calificación)
+│   └── Work/               Documentos fuente (LaTeX) de los entregables
+└── WORKFLOW.md             Flujo de ramas y convención de repo personal de patrones
 ```
 
 ### Entregables (`Documentation/Submission/`)
@@ -49,6 +51,8 @@ HEXACORE/
 
 - Los entregables aprobados viven en `Documentation/Submission/`; las fuentes se editan en `Documentation/Work/` y se recompilan antes de actualizar los PDFs.
 - La rama `main` está protegida: **toda modificación debe entrar mediante pull request** con revisión.
+- Para el código del prototipo (`App/`), el flujo de ramas (`main` ← `develop` ← `feature/<nombre>`) y
+  la convención de repo personal de patrones están en `WORKFLOW.md`.
 
 ## Integrantes
 
