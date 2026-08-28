@@ -10,4 +10,6 @@ Conflictos, Gestor de Turnos, Repositorio de Personal, Publicador de Eventos.
 
 **Responsable:** Samuel Emperador.
 
+**Base de datos:** PostgreSQL (esquema propio, ADR-01).
+
 **Estado:** pendiente de implementación (Entrega 2).
