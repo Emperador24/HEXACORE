@@ -1,0 +1,426 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "HEXACORE — Contenedores",
+    "output": "02-contenedores.html",
+    "quality_profile": "standard",
+    "views": [
+      {
+        "id": "compra-entradas",
+        "label": "Compra de entradas",
+        "focus": [
+          "portal_cliente",
+          "app_cliente",
+          "gateway",
+          "svc_entradas",
+          "db",
+          "redis",
+          "pagos"
+        ],
+        "note": "El camino que resuelve CU-006, el hilo conductor del sistema."
+      },
+      {
+        "id": "operacion-personal",
+        "label": "Operación y personal",
+        "focus": [
+          "portal_admin",
+          "app_personal",
+          "gateway",
+          "svc_personal",
+          "svc_eventos",
+          "queue"
+        ],
+        "note": "Cómo se coordinan organizador, empleados y el protocolo de emergencia."
+      },
+      {
+        "id": "infraestructura-async",
+        "label": "Infraestructura asíncrona",
+        "focus": [
+          "svc_entradas",
+          "svc_eventos",
+          "svc_parqueaderos",
+          "redis",
+          "queue",
+          "notif"
+        ],
+        "note": "Qué microservicios dependen de Redis y de la cola de mensajes."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "app_cliente",
+      "type": "frontend",
+      "label": "App Móvil Cliente",
+      "sublabel": "Kotlin · Jetpack Compose",
+      "tag": "rol: Cliente",
+      "pos": [
+        15.6,
+        31.2
+      ],
+      "size": [
+        171.6,
+        49.9
+      ]
+    },
+    {
+      "id": "portal_cliente",
+      "type": "frontend",
+      "label": "Portal Web Cliente",
+      "sublabel": "Angular",
+      "tag": "rol: Cliente",
+      "pos": [
+        15.6,
+        127.9
+      ],
+      "size": [
+        171.6,
+        49.9
+      ]
+    },
+    {
+      "id": "portal_admin",
+      "type": "frontend",
+      "label": "Portal Web Admin",
+      "sublabel": "Angular",
+      "tag": "rol: Organizador/Admin/Supervisor",
+      "pos": [
+        15.6,
+        224.6
+      ],
+      "size": [
+        171.6,
+        49.9
+      ]
+    },
+    {
+      "id": "app_personal",
+      "type": "frontend",
+      "label": "App Móvil Personal",
+      "sublabel": "Kotlin · Jetpack Compose",
+      "tag": "rol: Empleado",
+      "pos": [
+        15.6,
+        321.4
+      ],
+      "size": [
+        171.6,
+        49.9
+      ]
+    },
+    {
+      "id": "gateway",
+      "type": "security",
+      "label": "API Gateway",
+      "sublabel": "Balanceador de carga",
+      "pos": [
+        257.4,
+        184.1
+      ],
+      "size": [
+        156.0,
+        54.6
+      ]
+    },
+    {
+      "id": "svc_entradas",
+      "type": "backend",
+      "label": "Servicio de Entradas",
+      "sublabel": "Mercado Secundario · PostgreSQL",
+      "tag": "CU-001..006",
+      "pos": [
+        483.6,
+        0.0
+      ],
+      "size": [
+        187.2,
+        46.8
+      ]
+    },
+    {
+      "id": "svc_personal",
+      "type": "backend",
+      "label": "Servicio de Personal",
+      "sublabel": "PostgreSQL",
+      "tag": "CU-007..009",
+      "pos": [
+        483.6,
+        78.0
+      ],
+      "size": [
+        187.2,
+        46.8
+      ]
+    },
+    {
+      "id": "svc_eventos",
+      "type": "backend",
+      "label": "Eventos / Emergencias",
+      "sublabel": "PostgreSQL",
+      "tag": "CU-010, 016..020, 026",
+      "pos": [
+        483.6,
+        156.0
+      ],
+      "size": [
+        187.2,
+        46.8
+      ]
+    },
+    {
+      "id": "svc_parqueaderos",
+      "type": "backend",
+      "label": "Servicio de Parqueaderos",
+      "sublabel": "PostgreSQL",
+      "tag": "CU-021..025",
+      "pos": [
+        483.6,
+        234.0
+      ],
+      "size": [
+        187.2,
+        46.8
+      ]
+    },
+    {
+      "id": "svc_pedidos",
+      "type": "backend",
+      "label": "Servicio de Pedidos",
+      "sublabel": "PostgreSQL",
+      "tag": "CU-011..015",
+      "pos": [
+        483.6,
+        312.0
+      ],
+      "size": [
+        187.2,
+        46.8
+      ]
+    },
+    {
+      "id": "svc_admin",
+      "type": "backend",
+      "label": "Servicio de Administración",
+      "sublabel": "PostgreSQL + MongoDB",
+      "tag": "CU-027..032",
+      "pos": [
+        483.6,
+        390.0
+      ],
+      "size": [
+        187.2,
+        46.8
+      ]
+    },
+    {
+      "id": "redis",
+      "type": "database",
+      "label": "Redis",
+      "sublabel": "bloqueos + datos rápidos",
+      "pos": [
+        826.8,
+        46.8
+      ],
+      "size": [
+        163.8,
+        46.8
+      ]
+    },
+    {
+      "id": "queue",
+      "type": "messagebus",
+      "label": "Cola de Mensajes",
+      "sublabel": "RabbitMQ / Kafka",
+      "pos": [
+        826.8,
+        210.6
+      ],
+      "size": [
+        163.8,
+        46.8
+      ]
+    },
+    {
+      "id": "db",
+      "type": "database",
+      "label": "Bases de Datos",
+      "sublabel": "una por servicio",
+      "pos": [
+        826.8,
+        374.4
+      ],
+      "size": [
+        163.8,
+        46.8
+      ]
+    },
+    {
+      "id": "pagos",
+      "type": "external",
+      "label": "Pasarela de Pagos",
+      "sublabel": "cobros y reembolsos",
+      "pos": [
+        1146.6,
+        124.8
+      ],
+      "size": [
+        163.8,
+        46.8
+      ]
+    },
+    {
+      "id": "notif",
+      "type": "external",
+      "label": "Proveedor de Notificaciones",
+      "sublabel": "push · correo · SMS",
+      "pos": [
+        1126.6,
+        296.4
+      ],
+      "size": [
+        200,
+        46.8
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "app-cliente-gateway",
+      "from": "app_cliente",
+      "to": "gateway",
+      "label": "HTTPS/JSON",
+      "variant": "emphasis"
+    },
+    {
+      "id": "portal-cliente-gateway",
+      "from": "portal_cliente",
+      "to": "gateway",
+      "label": "HTTPS/JSON",
+      "variant": "emphasis"
+    },
+    {
+      "id": "portal-admin-gateway",
+      "from": "portal_admin",
+      "to": "gateway",
+      "label": "HTTPS/JSON"
+    },
+    {
+      "id": "app-personal-gateway",
+      "from": "app_personal",
+      "to": "gateway",
+      "label": "HTTPS/JSON"
+    },
+    {
+      "id": "gateway-entradas",
+      "from": "gateway",
+      "to": "svc_entradas",
+      "label": "enruta",
+      "variant": "emphasis"
+    },
+    {
+      "id": "gateway-personal",
+      "from": "gateway",
+      "to": "svc_personal"
+    },
+    {
+      "id": "gateway-eventos",
+      "from": "gateway",
+      "to": "svc_eventos"
+    },
+    {
+      "id": "gateway-parqueaderos",
+      "from": "gateway",
+      "to": "svc_parqueaderos"
+    },
+    {
+      "id": "gateway-pedidos",
+      "from": "gateway",
+      "to": "svc_pedidos"
+    },
+    {
+      "id": "gateway-admin",
+      "from": "gateway",
+      "to": "svc_admin"
+    },
+    {
+      "id": "entradas-db",
+      "from": "svc_entradas",
+      "to": "db",
+      "label": "SQL",
+      "variant": "emphasis",
+      "route": "orthogonal-h"
+    },
+    {
+      "id": "admin-db",
+      "from": "svc_admin",
+      "to": "db",
+      "label": "SQL + Mongo",
+      "labelAt": [
+        695,
+        386
+      ]
+    },
+    {
+      "id": "entradas-redis",
+      "from": "svc_entradas",
+      "to": "redis",
+      "label": "bloqueo checkout",
+      "variant": "emphasis",
+      "labelDy": -10
+    },
+    {
+      "id": "entradas-queue",
+      "from": "svc_entradas",
+      "to": "queue",
+      "label": "publica evento",
+      "variant": "dashed",
+      "route": "orthogonal-h",
+      "labelDy": 10
+    },
+    {
+      "id": "entradas-pagos",
+      "from": "svc_entradas",
+      "to": "pagos",
+      "label": "cobra compra/reventa",
+      "variant": "emphasis",
+      "labelDy": 12
+    },
+    {
+      "id": "queue-notif",
+      "from": "queue",
+      "to": "notif",
+      "label": "dispara notificación",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Quién usa cada app",
+      "items": [
+        "Cliente → App Móvil Cliente y Portal Web Cliente",
+        "Organizador, Administrador y Supervisor de Emergencia → Portal Web Admin",
+        "Empleado → App Móvil Personal"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Backend por dominio",
+      "items": [
+        "6 microservicios independientes, uno por dominio de negocio",
+        "Cada uno con su propio esquema (ADR-01, polyglot en Administración)",
+        "El API Gateway es el único punto de entrada — ninguna app llama a un microservicio directamente"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Infraestructura de soporte (patrón representativo)",
+      "items": [
+        "Para no saturar el diagrama, solo se dibuja el detalle completo de Entradas — los otros 5 servicios siguen el mismo patrón hacia Bases de Datos y, cuando aplica, Redis/Cola/Pasarela (ver Nivel 3 para el detalle interno de Entradas)",
+        "Redis: bloqueo temporal en checkout de reventa y datos de ocupación en tiempo real (también lo usan Eventos/Emergencias y Parqueaderos)",
+        "Cola de mensajes: desacopla QR, notificaciones, auditoría y liquidación; las notificaciones nunca bloquean la respuesta"
+      ]
+    }
+  ]
+}

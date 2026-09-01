@@ -95,6 +95,12 @@ del modelo de dominio, vista de componentes de los contenedores Personal, Evento
 Parqueaderos, ambientes de desarrollo y pruebas en la vista física, y modelo de datos detallado
 por microservicio. & Equipo Hexacore (vía asistente) \\
 \hline
+28/08/2026 & Versión 1.2: durante la construcción del prototipo de la app móvil (Entrega 2) se
+decide unificar \textbf{App Móvil del Cliente} y \textbf{App Móvil del Personal} en un único
+contenedor \textbf{App Móvil}, que identifica el rol del usuario en el login y navega al conjunto
+de pantallas correspondiente (ver ADR-07). Se actualiza la vista de contenedores (de cuatro a tres
+interfaces desplegables) y ADR-02/ADR-05 en consecuencia. & Equipo Hexacore (vía asistente) \\
+\hline
 \end{longtable}
 \end{center}
 
@@ -468,12 +474,15 @@ completo.
 \section{Vista de contenedores}
 \label{sec:contenedores}
 
-El sistema se divide en cuatro interfaces desplegables (Portal Web del Cliente, Portal Web
-Administrativo/Operativo, App Móvil del Cliente y App Móvil del Personal), todas consumiendo el
-mismo backend a través de un API Gateway. El backend está compuesto por microservicios
-independientes por dominio (Entradas/Mercado Secundario, Personal, Eventos/Emergencias,
-Parqueaderos) y por infraestructura de soporte (Redis, cola de mensajes y bases de datos por
-servicio). La Figura \ref{fig:contenedores} presenta el diagrama de contenedores.
+El sistema se divide en tres interfaces desplegables (Portal Web del Cliente, Portal Web
+Administrativo/Operativo y App Móvil), todas consumiendo el mismo backend a través de un API
+Gateway. La \textbf{App Móvil} es un único binario (Kotlin + Jetpack Compose) que sirve tanto al
+rol Cliente como al rol Personal: el login identifica el rol del usuario autenticado y la
+navegación interna abre el conjunto de pantallas correspondiente — no son dos apps distribuidas
+por separado (ver ADR-07). El backend está compuesto por microservicios independientes por dominio
+(Entradas/Mercado Secundario, Personal, Eventos/Emergencias, Parqueaderos) y por infraestructura de
+soporte (Redis, cola de mensajes y bases de datos por servicio). La Figura \ref{fig:contenedores}
+presenta el diagrama de contenedores.
 
 \begin{figure}[H]
 \centering
@@ -481,6 +490,7 @@ servicio). La Figura \ref{fig:contenedores} presenta el diagrama de contenedores
 \caption{Diagrama de contenedores (Nivel 2, modelo C4).}
 \label{fig:contenedores}
 \end{figure}
+
 
 \begin{itemize}
 \item \textbf{API Gateway + balanceador de carga:} punto único de entrada al backend; centraliza
@@ -699,7 +709,7 @@ eventual entre servicios en vez de transacciones ACID únicas.
 \subsection*{ADR-02 --- API Gateway y balanceador de carga}
 \textbf{ASR relacionados:} ASR-02, ASR-03.\\
 \textbf{Problema:} se necesita un punto único, seguro y disponible de entrada al backend para las
-cuatro interfaces del sistema.\\
+tres interfaces del sistema.\\
 \textbf{Solución:} un \textbf{API Gateway} centraliza autenticación, autorización y enrutamiento;
 un \textbf{balanceador de carga} distribuye solicitudes entre múltiples instancias de cada
 microservicio.\\
@@ -735,16 +745,18 @@ consistencia eventual y de requerir monitoreo propio de las colas.
 
 \subsection*{ADR-05 --- Stack de frontend por tipo de interfaz}
 \textbf{ASR relacionados:} ASR-08, ASR-10, ASR-05.\\
-\textbf{Problema:} las cuatro interfaces (portal web del cliente, portal web administrativo/operativo,
-app móvil del cliente, app móvil de personal) deben implementarse en un lenguaje/framework concreto,
-sin comprometer el consumo uniforme del backend vía API Gateway (ASR-10) ni la especialización por
-rol de cada interfaz (ASR-08).\\
+\textbf{Problema:} las tres interfaces (portal web del cliente, portal web administrativo/operativo,
+app móvil) deben implementarse en un lenguaje/framework concreto, sin comprometer el consumo
+uniforme del backend vía API Gateway (ASR-10) ni la especialización por rol de cada interfaz
+(ASR-08).\\
 \textbf{Solución:} los portales web se construyen en \textbf{Angular + TypeScript} — su estructura de
 módulos, \textit{guards} e \textit{interceptors} favorece el trabajo en paralelo de varios
 integrantes con convenciones consistentes, y RxJS encaja con las actualizaciones en tiempo real de
-ASR-05. Las apps móviles se construyen en \textbf{Kotlin nativo sobre Android Studio} (Jetpack
+ASR-05. La app móvil se construye en \textbf{Kotlin nativo sobre Android Studio} (Jetpack
 Compose para la interfaz, \textit{coroutines}/\textit{Flow} para tiempo real), aprovechando que el
-equipo ya domina ambos lenguajes.\\
+equipo ya domina ambos lenguajes; sirve a los roles Cliente y Personal desde un mismo proyecto
+(ver ADR-07), por lo que ASR-08 se resuelve con navegación condicionada por rol en vez de con
+binarios separados.\\
 \textbf{Alternativa descartada:} un framework híbrido/\textit{cross-platform} (p. ej. React Native o
 Flutter) para compartir código de interfaz entre web y móvil — se descartó porque ASR-10 ya evita
 duplicar lógica de negocio en el cliente (esta vive en el backend, detrás del API Gateway), por lo
@@ -771,6 +783,33 @@ de reporte, tal como ya anticipaba la sección de modelo de datos.\\
 \textbf{Consecuencias:} cada esquema usa el motor más adecuado a su naturaleza (ACID para lo
 transaccional, esquema flexible para reportes), a costa de operar y respaldar dos motores de base de
 datos distintos en vez de uno solo.
+
+\subsection*{ADR-07 --- App móvil unificada para Cliente y Personal}
+\textbf{ASR relacionados:} ASR-08, ASR-10.\\
+\textbf{Problema:} el diseño original (v1.1) proponía dos apps móviles nativas independientes, una
+por rol (Cliente y Personal). Al construir el prototipo de la Entrega 2 con un equipo pequeño, mantener
+dos proyectos Android desde cero duplica configuración de Gradle, tema visual y esqueleto de
+navegación sin que exista todavía una razón operativa concreta (distribución, permisos de
+dispositivo, política de actualización) que obligue a separarlos en esta etapa.\\
+\textbf{Solución:} una única app (\texttt{App/frontend/app-movil-cliente}\footnote{El nombre del
+módulo quedó de la primera versión; se recomienda renombrarlo en una futura iteración para no sugerir
+que es exclusivo del rol Cliente.}) con una pantalla de login compartida. Las credenciales
+identifican el rol del usuario autenticado y la navegación interna (\textit{Jetpack Navigation
+Compose}) abre el conjunto de pantallas del rol correspondiente: Inicio/Entradas/Parqueadero/Pedidos
+para Cliente, Turnos/Asistencia para Personal.\\
+\textbf{Alternativa descartada:} mantener \textbf{App Móvil del Cliente} y \textbf{App Móvil del
+Personal} como dos módulos/APKs independientes (diseño de la v1.1) — se descartó para este
+prototipo porque el beneficio principal de separarlas (aislar del binario público de clientes las
+pantallas y permisos operativos del personal, y poder distribuirlas y versionarlas por canales
+distintos — tiendas públicas vs. MDM interno) todavía no tiene un requisito concreto que lo exija, y
+el costo de mantener dos proyectos no se justifica en esta fase.\\
+\textbf{Consecuencias:} menos código y configuración duplicados mientras el equipo es pequeño, y un
+único punto de login para ambos roles. A cambio, el binario que instala un cliente cualquiera desde
+la tienda pública contiene también las pantallas y — potencialmente — los permisos operativos del
+personal (aunque inaccesibles sin credenciales válidas), lo que amplía la superficie de la app frente
+a la alternativa separada; y ambos roles quedan acoplados a un mismo ciclo de release. Si el rol
+Personal termina necesitando permisos de dispositivo, distribución o cadencia de actualización
+distintos a los del Cliente, esta decisión debe revisarse y volver a separar los binarios.
 
 % ==================== Riesgos técnicos ====================
 \section{Riesgos técnicos}

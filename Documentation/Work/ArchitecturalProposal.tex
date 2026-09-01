@@ -58,7 +58,7 @@
 \node[draw=azul,rounded corners,fill=gris,minimum width=10cm,minimum height=1cm,below=0.4cm of current bounding box.south,align=center]
 {Portal Web Administrativo / Operativo};
 \node[draw=azul,rounded corners,fill=gris,minimum width=10cm,minimum height=1cm,below=0.4cm of current bounding box.south,align=center]
-{Aplicaciones Móviles: Cliente y Personal};
+{Aplicación Móvil: Cliente y Personal};
 \end{tikzpicture}
 \vfill
 \begin{tabular}{rl}
@@ -73,17 +73,24 @@
 
 \section{Introducción}
 
+\textit{Nota de actualización (29/08/2026): al construir el prototipo de la app móvil en la
+Entrega 2 se decidió unificar la Aplicación Móvil del Cliente y la Aplicación Móvil del Personal en
+un único binario, con un login compartido que identifica el rol y navega al conjunto de pantallas
+correspondiente (ver SAD, ADR-07). Este documento se actualiza en consecuencia; la decisión original
+de dos apps separadas queda documentada como alternativa descartada en ese ADR.}
+
 Este documento presenta una segunda versión del análisis de atributos de calidad y de la propuesta de arquitectura para el \textbf{Sistema Integral de Gestión de Eventos}. La propuesta toma como base la primera versión del proyecto, donde se planteó una organización mediana-grande que gestiona eventos masivos, como conciertos, festivales y partidos deportivos, con miles de usuarios concurrentes, especialmente durante la apertura de venta y el ingreso al recinto.
 
 El sistema centraliza procesos de boletería, mercado secundario de entradas, administración de personal, parqueaderos y operación de eventos. En esta segunda versión se define con mayor precisión la distribución de funcionalidades entre las interfaces.
 
-Se contemplan cuatro clientes principales:
+Se contemplan tres clientes principales:
 
 \begin{itemize}
 \item \textbf{Portal Web del Cliente:} compra, consulta y gestión de entradas, reventas, promociones y parqueaderos.
 \item \textbf{Portal Web Administrativo y Operativo:} utilizado por administradores, organizadores y trabajadores autorizados.
-\item \textbf{Aplicación Móvil del Cliente:} principalmente para visualizar entradas y códigos QR, información y notificaciones.
-\item \textbf{Aplicación Móvil del Personal:} para turnos, asistencia, instrucciones, reportes y alertas.
+\item \textbf{Aplicación Móvil (Cliente y Personal):} un único binario cuyo login identifica el rol del
+usuario autenticado. Para el rol Cliente, muestra entradas y códigos QR, información y
+notificaciones; para el rol Personal, turnos, asistencia, instrucciones, reportes y alertas.
 \end{itemize}
 
 La primera propuesta priorizó consistencia, disponibilidad, seguridad y rendimiento. Esta versión mantiene esos atributos y aumenta la relevancia de tiempo real, trazabilidad, escalabilidad, usabilidad y portabilidad.
@@ -128,13 +135,19 @@ Está dirigido a administradores, organizadores y trabajadores autorizados. Incl
 \item Monitoreo del evento.
 \end{itemize}
 
-\subsection{Aplicación Móvil del Cliente}
+\subsection{Aplicación Móvil (Cliente y Personal)}
 
-Permite iniciar sesión, consultar eventos y entradas, visualizar el código QR de cada entrada, consultar información del evento y recibir notificaciones y alertas. Su función crítica es facilitar el acceso rápido a los QR durante el ingreso.
+Un único binario (Kotlin + Jetpack Compose) con una pantalla de login compartida: las credenciales
+identifican el rol del usuario autenticado y la navegación interna abre el conjunto de pantallas
+correspondiente, sin ser dos apps distribuidas por separado.
 
-\subsection{Aplicación Móvil del Personal}
+Para el \textbf{rol Cliente}, permite iniciar sesión, consultar eventos y entradas, visualizar el
+código QR de cada entrada, consultar información del evento y recibir notificaciones y alertas. Su
+función crítica es facilitar el acceso rápido a los QR durante el ingreso.
 
-Permite consultar eventos asignados, turnos, horarios y áreas de trabajo; confirmar asignaciones; solicitar cambios de turno; registrar ingreso y salida; recibir instrucciones; reportar incidentes y recibir alertas de emergencia.
+Para el \textbf{rol Personal}, permite consultar eventos asignados, turnos, horarios y áreas de
+trabajo; confirmar asignaciones; solicitar cambios de turno; registrar ingreso y salida; recibir
+instrucciones; reportar incidentes y recibir alertas de emergencia.
 
 \section{Atributos de calidad priorizados}
 
@@ -170,10 +183,9 @@ arr/.style={-{Latex[length=2mm]},thick}
 ]
 \node[box] (wc) {Portal Web\\Cliente};
 \node[box,right=6mm of wc] (wa) {Portal Web\\Administrativo};
-\node[box,right=6mm of wa] (ac) {App Móvil\\Cliente};
-\node[box,right=6mm of ac] (ap) {App Móvil\\Personal};
+\node[box,right=6mm of wa] (am) {App Móvil\\(Cliente + Personal)};
 
-\node[box,below=10mm of $(wc.south)!0.5!(ap.south)$] (gw) {API Gateway\\Auth + permisos};
+\node[box,below=10mm of $(wc.south)!0.5!(am.south)$] (gw) {API Gateway\\Auth + permisos};
 \node[box,below=of gw] (lb) {Balanceador\\de carga};
 
 \node[box,below left=11mm and 16mm of lb] (en) {Servicio\\Entradas};
@@ -188,7 +200,7 @@ arr/.style={-{Latex[length=2mm]},thick}
 \node[ext,below=of inf,xshift=-28mm] (pg) {Pasarela de pagos};
 \node[ext,below=of inf,xshift=28mm] (no) {Notificaciones\\Push / Email / SMS};
 
-\foreach \x in {wc,wa,ac,ap} \draw[arr] (\x)--(gw);
+\foreach \x in {wc,wa,am} \draw[arr] (\x)--(gw);
 \draw[arr](gw)--(lb);
 \foreach \x in {en,pe,ev} \draw[arr](lb)--(\x);
 \draw[arr](en)--(ms);
@@ -388,6 +400,7 @@ Permitir que un usuario autorizado active, coordine, supervise y finalice un pro
 Un escenario representativo es un concierto en el que se detecta un incendio en una zona. El supervisor activa el protocolo desde el portal administrativo. El servicio de emergencias consulta aforo, zonas y rutas y publica eventos para notificar al personal y a los asistentes.
 
 \begin{center}
+\resizebox{\textwidth}{!}{
 \begin{tikzpicture}[
 box/.style={draw=azul,rounded corners,fill=gris,minimum width=2.8cm,minimum height=0.9cm,align=center},
 arr/.style={-{Latex[length=2mm]},thick}
@@ -395,15 +408,14 @@ arr/.style={-{Latex[length=2mm]},thick}
 \node[box] (s) {Supervisor};
 \node[box,right=9mm of s] (e) {Servicio de\\Emergencias};
 \node[box,right=9mm of e] (q) {RabbitMQ / Kafka};
-\node[box,above right=8mm of q] (p) {App Personal};
-\node[box,below right=8mm of q] (c) {App Cliente};
-\node[box,right=9mm of q] (n) {Notificaciones};
+\node[box,right=9mm of q] (m) {App Móvil\\(Cliente + Personal)};
+\node[box,right=9mm of m] (n) {Notificaciones};
 \draw[arr](s)--(e);
 \draw[arr](e)--(q);
-\draw[arr](q)--(p);
-\draw[arr](q)--(c);
+\draw[arr](q)--(m);
 \draw[arr](q)--(n);
 \end{tikzpicture}
+}
 \end{center}
 
 \section{Relación entre interfaces y microservicios}
@@ -412,12 +424,12 @@ arr/.style={-{Latex[length=2mm]},thick}
 \toprule
 \textbf{Servicio} & \textbf{Interfaces} & \textbf{Responsabilidad}\\
 \midrule
-Entradas & Web Cliente, App Cliente & Compra, disponibilidad, validación y gestión.\\
+Entradas & Web Cliente, App Móvil & Compra, disponibilidad, validación y gestión.\\
 Mercado Secundario & Web Cliente & Publicación, compra y transferencia.\\
-Personal & Web Administrativo, App Personal & Empleados, turnos, asignaciones y asistencia.\\
-Eventos & Web Administrativo, Web Cliente, Apps & Gestión y consulta de eventos.\\
-Parqueaderos & Web Cliente, Web Administrativo, Apps & Reservas, espacios, cobros y ocupación.\\
-Emergencias & Web Administrativo, App Personal, App Cliente & Activación, coordinación, alertas y seguimiento.\\
+Personal & Web Administrativo, App Móvil & Empleados, turnos, asignaciones y asistencia.\\
+Eventos & Web Administrativo, Web Cliente, App Móvil & Gestión y consulta de eventos.\\
+Parqueaderos & Web Cliente, Web Administrativo, App Móvil & Reservas, espacios, cobros y ocupación.\\
+Emergencias & Web Administrativo, App Móvil & Activación, coordinación, alertas y seguimiento.\\
 \bottomrule
 \end{longtable}
 
@@ -446,7 +458,7 @@ Interfaces especializadas & Adaptación al usuario & Usabilidad, portabilidad\\
 
 \section{Conclusión}
 
-La arquitectura propuesta conserva las decisiones fundamentales de la primera versión, pero las adapta a una definición más concreta del sistema: un portal web para clientes, un portal web administrativo y operativo, una aplicación móvil para clientes y una aplicación móvil para el personal.
+La arquitectura propuesta conserva las decisiones fundamentales de la primera versión, pero las adapta a una definición más concreta del sistema: un portal web para clientes, un portal web administrativo y operativo, y una aplicación móvil única para clientes y personal, que distingue el rol mediante el login.
 
 La separación de interfaces permite que cada tipo de usuario tenga las funcionalidades que necesita, mientras que el backend mantiene la lógica de negocio centralizada en servicios independientes.
 

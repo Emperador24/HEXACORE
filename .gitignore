@@ -1,5 +1,8 @@
 .DS_Store
 
+# Config de editor local (rutas de JDK/Android SDK específicas de cada máquina)
+.vscode/
+
 # Documentation/Work/ solo debe contener fuentes (.tex, .md, diagramas); los
 # resultados compilados (.pdf) van en Documentation/Submission/.
 Documentation/Work/*.pdf

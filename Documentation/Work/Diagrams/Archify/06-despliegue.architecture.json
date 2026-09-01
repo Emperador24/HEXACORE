@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "HEXACORE — Despliegue",
+    "output": "06-despliegue.html",
+    "quality_profile": "standard"
+  },
+  "components": [
+    { "id": "usuario", "type": "external", "label": "Dispositivo del usuario", "sublabel": "navegador o app instalada", "pos": [20, 280], "size": [190, 70] },
+
+    { "id": "cdn", "type": "cloud", "label": "CDN / Edge", "sublabel": "estáticos de los portales web", "pos": [300, 100], "size": [200, 64] },
+    { "id": "balanceador", "type": "security", "label": "Balanceador + API Gateway", "sublabel": "público :443", "pos": [300, 320], "size": [200, 64] },
+
+    { "id": "cluster_app", "type": "backend", "label": "Clúster de Aplicación", "sublabel": "réplicas de los 6 microservicios", "pos": [630, 320], "size": [220, 70] },
+
+    { "id": "cluster_bd", "type": "database", "label": "Clúster de Bases de Datos", "sublabel": "PostgreSQL (x6) + MongoDB", "pos": [960, 140], "size": [220, 64] },
+    { "id": "cluster_redis", "type": "database", "label": "Clúster Redis", "sublabel": "multi-nodo", "pos": [960, 320], "size": [220, 64] },
+    { "id": "cluster_mensajeria", "type": "messagebus", "label": "Clúster de Mensajería", "sublabel": "RabbitMQ / Kafka", "pos": [960, 500], "size": [220, 64] },
+
+    { "id": "pagos", "type": "external", "label": "Pasarela de Pagos", "sublabel": "sistema externo", "pos": [1280, 220], "size": [200, 64] },
+    { "id": "notif", "type": "external", "label": "Proveedor de Notificaciones", "sublabel": "sistema externo", "pos": [1280, 500], "size": [200, 64] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "Ambiente de producción en la nube", "wraps": ["cdn", "balanceador", "cluster_app", "cluster_bd", "cluster_redis", "cluster_mensajeria"], "pad": 24 }
+  ],
+  "connections": [
+    { "id": "usuario-cdn", "from": "usuario", "to": "cdn", "label": "descarga estáticos", "variant": "dashed" },
+    { "id": "usuario-balanceador", "from": "usuario", "to": "balanceador", "label": "HTTPS/JSON", "variant": "emphasis" },
+    { "id": "balanceador-cluster", "from": "balanceador", "to": "cluster_app", "label": "enruta y balancea", "variant": "emphasis" },
+
+    { "id": "cluster-bd", "from": "cluster_app", "to": "cluster_bd", "label": "SQL", "route": "orthogonal-h" },
+    { "id": "cluster-redis", "from": "cluster_app", "to": "cluster_redis", "label": "caché + bloqueos" },
+    { "id": "cluster-mensajeria", "from": "cluster_app", "to": "cluster_mensajeria", "label": "publica eventos", "variant": "dashed", "route": "orthogonal-h" },
+    { "id": "cluster-pagos", "from": "cluster_app", "to": "pagos", "label": "cobros y reembolsos", "variant": "emphasis" },
+
+    { "id": "mensajeria-notif", "from": "cluster_mensajeria", "to": "notif", "label": "push, correo, SMS", "variant": "dashed" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Sin balanceo horizontal en dev/pruebas", "items": ["Este despliegue es el de producción — una réplica por microservicio y Redis/cola/BD en un único nodo compartido en desarrollo y pruebas (ver App/infra)"] },
+    { "dot": "amber", "title": "Los cuatro frontends", "items": ["Portal Web Cliente y Portal Web Admin se sirven por CDN/Edge", "App Móvil Cliente y App Móvil Personal llaman directo al Balanceador + API Gateway, sin pasar por el CDN"] }
+  ]
+}
