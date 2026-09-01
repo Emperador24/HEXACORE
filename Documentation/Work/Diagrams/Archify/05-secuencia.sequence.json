@@ -1,0 +1,247 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "HEXACORE — Reventa de una entrada",
+    "subtitle": "CU-006 · Gestión del Mercado Secundario de Entradas",
+    "output": "05-secuencia.html",
+    "quality_profile": "standard",
+    "viewBox": [
+      1250,
+      720
+    ],
+    "column_fit": "spread"
+  },
+  "participants": [
+    {
+      "id": "comprador",
+      "type": "external",
+      "label": "Comprador"
+    },
+    {
+      "id": "portal",
+      "type": "frontend",
+      "label": "Portal Cliente"
+    },
+    {
+      "id": "gateway",
+      "type": "security",
+      "label": "API Gateway"
+    },
+    {
+      "id": "entradas",
+      "type": "backend",
+      "label": "Entradas"
+    },
+    {
+      "id": "redis",
+      "type": "database",
+      "label": "Redis"
+    },
+    {
+      "id": "pagos",
+      "type": "external",
+      "label": "Pasarela Pagos"
+    },
+    {
+      "id": "db",
+      "type": "database",
+      "label": "Base de Datos"
+    },
+    {
+      "id": "cola",
+      "type": "messagebus",
+      "label": "Cola Mensajes"
+    },
+    {
+      "id": "notif",
+      "type": "external",
+      "label": "Notificaciones"
+    }
+  ],
+  "segments": [
+    {
+      "from": 150,
+      "to": 267,
+      "label": "Solicitud"
+    },
+    {
+      "from": 287,
+      "to": 470,
+      "label": "Cobro y transferencia"
+    },
+    {
+      "from": 490,
+      "to": 645,
+      "label": "Confirmación y notificación"
+    }
+  ],
+  "messages": [
+    {
+      "id": "confirma-compra",
+      "from": "comprador",
+      "to": "portal",
+      "y": 185,
+      "label": "confirma compra de entrada en reventa",
+      "variant": "default"
+    },
+    {
+      "id": "solicitud-compra",
+      "from": "portal",
+      "to": "gateway",
+      "y": 225,
+      "label": "solicitud de compra autenticada",
+      "variant": "emphasis"
+    },
+    {
+      "id": "enruta-solicitud",
+      "from": "gateway",
+      "to": "entradas",
+      "y": 265,
+      "label": "enruta solicitud",
+      "variant": "default"
+    },
+    {
+      "id": "bloquea-publicacion",
+      "from": "entradas",
+      "to": "redis",
+      "y": 308,
+      "label": "bloquea publicación (checkout)",
+      "variant": "emphasis"
+    },
+    {
+      "id": "valida-cobra",
+      "from": "entradas",
+      "to": "pagos",
+      "y": 351,
+      "label": "valida medio y cobra",
+      "variant": "emphasis"
+    },
+    {
+      "id": "pago-aprobado",
+      "from": "pagos",
+      "to": "entradas",
+      "y": 388,
+      "label": "pago aprobado",
+      "variant": "return"
+    },
+    {
+      "id": "transfiere-propiedad",
+      "from": "entradas",
+      "to": "db",
+      "y": 431,
+      "label": "transfiere propiedad, invalida QR anterior",
+      "variant": "emphasis"
+    },
+    {
+      "id": "db-ok",
+      "from": "db",
+      "to": "entradas",
+      "y": 468,
+      "label": "ok",
+      "variant": "return"
+    },
+    {
+      "id": "publica-evento",
+      "from": "entradas",
+      "to": "cola",
+      "y": 511,
+      "label": "publica ENTRADA_TRANSFERIDA",
+      "variant": "dashed"
+    },
+    {
+      "id": "confirma-portal",
+      "from": "entradas",
+      "to": "portal",
+      "y": 548,
+      "label": "200 OK, entrada transferida",
+      "variant": "return"
+    },
+    {
+      "id": "dispara-notificacion",
+      "from": "cola",
+      "to": "notif",
+      "y": 591,
+      "label": "dispara notificaciones",
+      "variant": "dashed"
+    },
+    {
+      "id": "notifica-confirmacion",
+      "from": "notif",
+      "to": "comprador",
+      "y": 628,
+      "label": "notifica confirmación y nuevo QR (comprador y vendedor)",
+      "variant": "return"
+    }
+  ],
+  "activations": [
+    {
+      "participant": "portal",
+      "from": 220,
+      "to": 635,
+      "type": "frontend"
+    },
+    {
+      "participant": "gateway",
+      "from": 260,
+      "to": 270,
+      "type": "security"
+    },
+    {
+      "participant": "entradas",
+      "from": 260,
+      "to": 555,
+      "type": "backend"
+    },
+    {
+      "participant": "redis",
+      "from": 303,
+      "to": 315,
+      "type": "database"
+    },
+    {
+      "participant": "pagos",
+      "from": 346,
+      "to": 392,
+      "type": "external"
+    },
+    {
+      "participant": "db",
+      "from": 426,
+      "to": 472,
+      "type": "database"
+    },
+    {
+      "participant": "cola",
+      "from": 506,
+      "to": 595,
+      "type": "messagebus"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Camino principal",
+      "items": [
+        "Portal → Gateway → Entradas coordina todo el checkout",
+        "Redis bloquea la publicación mientras se cobra",
+        "Entradas responde al portal apenas confirma en base de datos"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Notificación desacoplada",
+      "items": [
+        "Publicar y notificar es asíncrono, fuera del camino de respuesta",
+        "El mismo evento notifica a comprador y vendedor"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "No vive en la app móvil",
+      "items": [
+        "La reventa solo se gestiona desde el Portal Web Cliente"
+      ]
+    }
+  ]
+}

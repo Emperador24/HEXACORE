@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "HEXACORE — Componentes",
+    "subtitle": "Servicio de Entradas y Mercado Secundario (CU-006)",
+    "output": "03-componentes.html",
+    "quality_profile": "standard"
+  },
+  "components": [
+    { "id": "ext_gateway", "type": "external", "label": "API Gateway", "sublabel": "otro nivel", "pos": [20, 190], "size": [190, 56] },
+
+    { "id": "controlador", "type": "backend", "label": "Controlador API", "pos": [280, 190], "size": [190, 56] },
+    { "id": "publicacion", "type": "backend", "label": "Servicio de Publicación", "sublabel": "orquesta la reventa", "pos": [550, 190], "size": [220, 56] },
+
+    { "id": "procesador_pagos", "type": "backend", "label": "Procesador de Pagos", "pos": [850, 0], "size": [210, 54] },
+    { "id": "pasarela", "type": "external", "label": "Pasarela de Pagos", "sublabel": "otro nivel", "pos": [1140, 0], "size": [200, 54] },
+
+    { "id": "gestor_concurrencia", "type": "backend", "label": "Gestor de Concurrencia", "pos": [850, 90], "size": [210, 54] },
+    { "id": "redis", "type": "external", "label": "Redis", "sublabel": "otro nivel", "pos": [1140, 90], "size": [200, 54] },
+
+    { "id": "generador_qr", "type": "backend", "label": "Generador de QR", "pos": [850, 180], "size": [210, 54] },
+
+    { "id": "repositorio_entradas", "type": "backend", "label": "Repositorio de Entradas", "pos": [850, 270], "size": [210, 54] },
+    { "id": "basedatos", "type": "external", "label": "Base de Datos", "sublabel": "otro nivel", "pos": [1140, 270], "size": [200, 54] },
+
+    { "id": "publicador_eventos", "type": "backend", "label": "Publicador de Eventos", "pos": [850, 360], "size": [210, 54] },
+    { "id": "cola", "type": "external", "label": "Cola de Mensajes", "sublabel": "otro nivel", "pos": [1140, 360], "size": [200, 54] }
+  ],
+  "connections": [
+    { "id": "gateway-controlador", "from": "ext_gateway", "to": "controlador", "label": "HTTPS/JSON", "variant": "emphasis" },
+    { "id": "controlador-publicacion", "from": "controlador", "to": "publicacion", "label": "delega la reventa", "variant": "emphasis", "labelAt": [510, 260] },
+
+    { "id": "publicacion-pagos", "from": "publicacion", "to": "procesador_pagos", "label": "llamada interna", "route": "orthogonal-h" },
+    { "id": "pagos-pasarela", "from": "procesador_pagos", "to": "pasarela", "label": "HTTPS/REST" },
+
+    { "id": "publicacion-concurrencia", "from": "publicacion", "to": "gestor_concurrencia", "label": "llamada interna", "route": "orthogonal-h" },
+    { "id": "concurrencia-redis", "from": "gestor_concurrencia", "to": "redis", "label": "Redis" },
+
+    { "id": "publicacion-qr", "from": "publicacion", "to": "generador_qr", "label": "llamada interna", "route": "orthogonal-h" },
+
+    { "id": "publicacion-repositorio", "from": "publicacion", "to": "repositorio_entradas", "label": "llamada interna", "route": "orthogonal-h" },
+    { "id": "repositorio-db", "from": "repositorio_entradas", "to": "basedatos", "label": "SQL" },
+
+    { "id": "publicacion-publicador", "from": "publicacion", "to": "publicador_eventos", "label": "llamada interna", "route": "orthogonal-h" },
+    { "id": "publicador-cola", "from": "publicador_eventos", "to": "cola", "label": "AMQP", "variant": "dashed" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Flujo de una reventa", "items": ["Controlador API recibe y delega en Servicio de Publicación", "Este bloquea la entrada, cobra, invalida/genera QR y persiste el cambio de dueño", "Al final publica el evento ENTRADA_TRANSFERIDA para notificar de forma asíncrona"] },
+    { "dot": "amber", "title": "Referencias a otros niveles", "items": ["API Gateway, Redis, Pasarela de Pagos, Base de Datos y Cola de Mensajes ya aparecen en el Nivel 2 — aquí solo se referencian, no se detallan"] }
+  ]
+}
