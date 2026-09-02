@@ -39,6 +39,18 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true // habilita BuildConfig.VERSION_NAME (pantalla de Ajustes)
+    }
+}
+
+// Coil 3.6.0 se publica con un kotlin-stdlib más nuevo (metadata 2.4.0) que el
+// compilador de Kotlin que trae AGP 9.3.2 (lee metadata hasta 2.3.0) puede
+// leer. El stdlib es compatible en tiempo de ejecución, así que se fuerza a
+// la versión que sí trae el proyecto para evitar el error de compilación.
+configurations.all {
+    resolutionStrategy {
+        force("org.jetbrains.kotlin:kotlin-stdlib:2.2.10")
+        force("org.jetbrains.kotlin:kotlin-stdlib-common:2.2.10")
     }
 }
 
@@ -48,9 +60,17 @@ dependencies {
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
+    // Íconos base (Home, List, LocationOn, ShoppingCart) para la barra de navegación.
+    implementation("androidx.compose.material:material-icons-core")
     implementation("androidx.activity:activity-compose:1.10.1")
     implementation("androidx.core:core-ktx:1.15.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.0")
+    // Navegación entre las secciones básicas del cliente (Inicio, Entradas, Parqueadero, Pedidos).
+    implementation("androidx.navigation:navigation-compose:2.9.0")
+    // Carga del poster del evento (subido por el Administrador al crearlo en el
+    // Portal Web y servido como URL por el API Gateway) — ver Evento.imagenUrl.
+    implementation("io.coil-kt.coil3:coil-compose:3.6.0")
+    implementation("io.coil-kt.coil3:coil-network-okhttp:3.6.0")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
