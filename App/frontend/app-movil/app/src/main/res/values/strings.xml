@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">HEXACORE Cliente</string>
+
+    <!-- Login -->
+    <string name="login_subtitulo">Inicia sesión</string>
+    <string name="login_correo">Correo</string>
+    <string name="login_contrasena">Contraseña</string>
+    <string name="login_boton">Ingresar</string>
+    <string name="login_error">Correo o contraseña incorrectos.</string>
+    <string name="login_demo_hint">Demo (clave: 1234) — Cliente: cliente@hexacore.com · Personal: personal@hexacore.com (Entrada), parqueadero@hexacore.com, restaurante@hexacore.com, jefepersonal@hexacore.com</string>
+    <string name="cerrar_sesion">Cerrar sesión</string>
+    <string name="abrir_menu">Abrir menú</string>
+    <string name="regresar">Regresar</string>
+
+    <!-- Menú lateral -->
+    <string name="drawer_perfil">Perfil</string>
+    <string name="drawer_ajustes">Ajustes</string>
+
+    <!-- Perfil -->
+    <string name="perfil_boton_cambiar_foto">Cambiar foto</string>
+    <string name="perfil_telefono">Teléfono</string>
+    <string name="perfil_boton_guardar">Guardar cambios</string>
+    <string name="perfil_guardado">Cambios guardados.</string>
+
+    <!-- Ajustes -->
+    <string name="ajustes_preferencias">Preferencias</string>
+    <string name="ajustes_notificaciones">Notificaciones</string>
+    <string name="ajustes_modo_oscuro">Modo oscuro</string>
+    <string name="ajustes_soporte">Soporte</string>
+    <string name="ajustes_ayuda_texto">¿Necesitas ayuda? Escríbenos a soporte@hexacore.com.</string>
+    <string name="ajustes_acerca_de">Acerca de</string>
+    <string name="ajustes_version">Versión %1$s</string>
+    <string name="ajustes_equipo">HEXACORE — Sistema Integral de Gestión de Eventos</string>
+
+    <!-- Navegación inferior — Cliente -->
+    <string name="nav_inicio">Inicio</string>
+    <string name="nav_parqueadero">Parqueadero</string>
+    <string name="nav_pedidos">Pedidos</string>
+
+    <!-- Navegación inferior — Personal -->
+    <string name="nav_turnos">Turnos</string>
+    <string name="nav_asistencia">Asistencia</string>
+    <string name="nav_validar_entradas">Validar entradas</string>
+    <string name="nav_validar_personal">Validar personal</string>
+    <string name="nav_incidentes">Incidentes</string>
+    <string name="nav_emergencia">Emergencia</string>
+
+    <!-- Turnos / Asistencia -->
+    <string name="turno_horario">%1$s · %2$s a %3$s</string>
+    <string name="asistencia_sin_turno">No tienes turno asignado.</string>
+    <string name="asistencia_sin_registrar">Sin registrar todavía</string>
+    <string name="asistencia_en_turno">En turno desde las %1$s</string>
+    <string name="asistencia_finalizada">Turno registrado: %1$s a %2$s</string>
+    <string name="asistencia_boton_entrada">Registrar entrada</string>
+    <string name="asistencia_boton_salida">Registrar salida</string>
+
+    <!-- Común a validaciones por QR (Entradas, Pedidos, Personal) -->
+    <string name="validar_estado_ok">Validado</string>
+    <string name="pago_prepagado">Ya pagado</string>
+    <string name="pago_pendiente">Pago pendiente</string>
+
+    <!-- Personal — Validar entradas (cargo Entrada) -->
+    <string name="entrada_escanea_instruccion">Apunta la cámara al código QR de la entrada.</string>
+    <string name="entrada_boton_escanear">Escanear código QR</string>
+    <string name="entrada_boton_escanear_otra">Escanear otra entrada</string>
+    <string name="entrada_boton_validar">Validar ingreso</string>
+
+    <!-- Personal — Parqueadero operativo (cargo Parqueadero) -->
+    <string name="parqueadero_por_ingresar">Por ingresar</string>
+    <string name="parqueadero_en_lote">En el parqueadero</string>
+    <string name="parqueadero_boton_asignar">Asignar puesto %1$s</string>
+    <string name="parqueadero_sin_espacios">Sin puestos disponibles</string>
+    <string name="parqueadero_hora_ingreso">Ingreso: %1$s</string>
+    <string name="parqueadero_hora_salida">Salida: %1$s</string>
+    <string name="parqueadero_boton_salida">Registrar salida</string>
+    <string name="parqueadero_cobro">%1$d h · Total a cobrar: $%2$.0f</string>
+
+    <!-- Personal — Pedidos (cargo Restaurante) -->
+    <string name="pedido_escanea_instruccion">Apunta la cámara al código QR del pedido.</string>
+    <string name="pedido_boton_escanear">Escanear código QR</string>
+    <string name="pedido_boton_escanear_otro">Escanear otro pedido</string>
+    <string name="pedido_boton_cobrar_entregar">Cobrar y entregar</string>
+    <string name="pedido_boton_validar_entrega">Validar entrega</string>
+
+    <!-- Personal — Validar personal (cargo Jefe de Personal) -->
+    <string name="personal_escanea_instruccion">Apunta la cámara al código QR del carné del empleado.</string>
+    <string name="personal_boton_escanear">Escanear código QR</string>
+    <string name="personal_boton_escanear_otro">Escanear otro código</string>
+    <string name="personal_boton_ingreso">Validar ingreso</string>
+    <string name="personal_boton_salida">Validar salida</string>
+    <string name="personal_pendiente_ingreso">Ingreso pendiente</string>
+    <string name="personal_ingreso_ok">Ingreso OK</string>
+    <string name="personal_turno_completo">Turno completo</string>
+
+    <!-- Personal — Incidentes (todos menos Jefe de Personal) -->
+    <string name="incidente_nuevo_titulo">Reportar incidente</string>
+    <string name="incidente_campo_titulo">Título</string>
+    <string name="incidente_campo_descripcion">Descripción</string>
+    <string name="incidente_boton_reportar">Reportar</string>
+    <string name="incidente_reportados_titulo">Reportados en este turno</string>
+
+    <!-- Personal — Emergencia (todos menos Jefe de Personal) -->
+    <string name="emergencia_inactiva">No hay ninguna emergencia activa en este momento. El Supervisor de Emergencia la activa desde el Portal Web Administrativo; aquí solo recibirás la alerta.</string>
+    <string name="emergencia_boton_activar">Simular alerta recibida (demo)</string>
+    <string name="emergencia_titulo">Protocolo de evacuación activo</string>
+    <string name="emergencia_sin_instrucciones">No hay instrucciones para tu cargo todavía.</string>
+    <string name="emergencia_ruta">Ruta</string>
+    <string name="emergencia_tu_puesto">Tu puesto</string>
+    <string name="emergencia_que_hacer">Qué debes hacer</string>
+    <string name="emergencia_boton_entendido">Entendido</string>
+
+    <!-- Inicio / eventos -->
+    <string name="inicio_tab_proximos">Próximos</string>
+    <string name="inicio_tab_pasados">Pasados</string>
+    <string name="inicio_vacio_proximos">No tienes eventos próximos.</string>
+    <string name="inicio_vacio_pasados">No tienes eventos pasados.</string>
+
+    <!-- Entradas -->
+    <string name="entradas_vacio">Todavía no tienes entradas para este evento.</string>
+    <string name="entrada_pagina">Entrada %1$d de %2$d</string>
+    <string name="entrada_zona">Zona</string>
+    <string name="entrada_fila">Fila</string>
+    <string name="entrada_silla">Silla</string>
+    <string name="entrada_estado_valida">Válida</string>
+    <string name="entrada_estado_en_reventa">En reventa</string>
+    <string name="entrada_estado_usada">Usada</string>
+    <string name="entrada_numero_ticket">N.º de ticket</string>
+    <string name="entrada_numero_transaccion">N.º de transacción</string>
+
+    <!-- Enviar entrada a otro usuario (sin reventa desde la app móvil) -->
+    <string name="entrada_boton_enviar">Enviar entrada</string>
+    <string name="entrada_enviar_titulo">Enviar entrada</string>
+    <string name="entrada_enviar_instruccion">Se transferirá esta entrada a la cuenta de este correo. Dejarás de tenerla en tu app.</string>
+    <string name="entrada_enviar_campo_correo">Correo del destinatario</string>
+    <string name="entrada_enviar_boton_confirmar">Enviar</string>
+    <string name="entrada_enviar_boton_cancelar">Cancelar</string>
+    <string name="entrada_enviada_confirmacion">Entrada enviada a %1$s.</string>
+
+    <!-- Notificación de entrada recibida -->
+    <string name="notif_canal_nombre">Entradas recibidas</string>
+    <string name="notif_titulo">🎟️ Recibiste una entrada</string>
+    <string name="notif_texto">%1$s te envió su entrada para %2$s.</string>
+
+    <!-- Parqueadero (Cliente) -->
+    <string name="parqueadero_vacio">No tienes reservas de parqueadero.</string>
+    <string name="parqueadero_pagina">Reserva %1$d de %2$d</string>
+    <string name="parqueadero_boton_como_llegar">Cómo llegar</string>
+    <string name="parqueadero_qr_instruccion">Muestra este código QR al personal en la entrada del parqueadero para que valide tu ingreso.</string>
+    <string name="parqueadero_boton_simular_validacion">Simular validación en la entrada (demo)</string>
+    <string name="parqueadero_llevas_aqui">Llevas parqueado</string>
+    <string name="parqueadero_tiempo_en_vivo">%1$dh %2$02dm %3$02ds</string>
+
+    <!-- Pedidos (Cliente) -->
+    <string name="pedido_total">Total: $%1$.0f</string>
+    <string name="pedido_boton_pagar">Pagar pedido</string>
+    <string name="pedido_estado_pendiente_pago">Pendiente de pago</string>
+    <string name="pedido_estado_en_preparacion">En preparación</string>
+    <string name="pedido_estado_listo">Listo</string>
+    <string name="pedido_estado_entregado">Entregado</string>
+    <string name="pedidos_vacio">Todavía no has hecho ningún pedido.</string>
+    <string name="pedidos_tab_restaurantes">Restaurantes</string>
+    <string name="pedidos_tab_mis_pedidos">Mis pedidos</string>
+
+    <!-- Menú de un restaurante -->
+    <string name="menu_boton_agregar">Agregar</string>
+    <string name="menu_agregar">Agregar uno más</string>
+    <string name="menu_quitar">Quitar uno</string>
+    <string name="menu_no_disponible">No disponible</string>
+    <string name="menu_boton_continuar_pago">Continuar al pago</string>
+
+    <!-- Pasarela de pago -->
+    <string name="pago_resumen_titulo">Resumen del pedido</string>
+    <string name="pago_metodo_titulo">Método de pago</string>
+    <string name="pago_metodo_tarjeta">Tarjeta terminada en 4321</string>
+    <string name="pago_metodo_efectivo">Efectivo en el punto de entrega</string>
+    <string name="pago_boton_confirmar">Confirmar pago</string>
+</resources>

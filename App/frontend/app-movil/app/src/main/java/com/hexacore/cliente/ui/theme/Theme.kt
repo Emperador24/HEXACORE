@@ -5,20 +5,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 
-private val HexacorePrimary = Color(0xFF1B1F3B)
-private val HexacoreSecondary = Color(0xFF4C5FD5)
-
-private val LightColors = lightColorScheme(
-    primary = HexacorePrimary,
-    secondary = HexacoreSecondary
-)
-
-private val DarkColors = darkColorScheme(
-    primary = HexacoreSecondary,
-    secondary = HexacorePrimary
-)
+// Paleta estándar de Material 3 (sin personalizar) — placeholder deliberado
+// hasta que se definan los colores de marca de HEXACORE.
+private val LightColors = lightColorScheme()
+private val DarkColors = darkColorScheme()
 
 @Composable
 fun HexacoreClienteTheme(
