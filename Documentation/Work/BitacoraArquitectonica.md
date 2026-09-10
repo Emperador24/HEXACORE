@@ -23,6 +23,56 @@ Cada entrada nueva va arriba (orden cronológico inverso), con este formato:
 
 ---
 
+## 2026-09-10 — Los diagramas C4 pasan a generarse con Archify y se corrige su contenido
+
+**Tipo:** Cambio arquitectónico (documentación)
+
+**Contexto:** Los diagramas C4 del documento se mantenían a mano en draw.io, y se habían
+desactualizado sin que nadie lo notara: el diagrama de contenedores seguía mostrando **cuatro
+interfaces** (App Móvil Cliente y App Móvil Personal como apps separadas) cuando **ADR-07** ya
+había unificado ambas en una sola `app-movil`, y el repositorio solo tiene tres interfaces
+desplegables. Una imagen editada a mano no deja rastro en el diff, así que el documento podía
+contradecir al código sin que se viera en la revisión de un commit.
+
+**Decisión / resultado:**
+1. Los seis diagramas ahora se generan con **Archify** desde una especificación `JSON` versionada
+   (`Work/Diagrams/Archify/`), y se insertan en `C4Diagrams.tex` y
+   `DescripcionArquitecturaSoftware.tex` como PDF vectorial (`Work/Diagrams/ArchifyPDF/`).
+2. Se corrigió el contenido desactualizado: contenedores y despliegue ahora muestran las **tres
+   interfaces** reales, con la App Móvil unificada (Cliente + Personal, ADR-07).
+3. Se actualizó el texto que rodeaba a las figuras, que seguía describiendo los diagramas viejos:
+   pies de figura, las cinco leyendas de colores (Archify colorea por tipo de componente, no por
+   la convención manual anterior) y la tabla de relaciones del Nivel 2, que trataba a las
+   interfaces como una sola caja "App Web / Móvil".
+4. Los `.drawio`/`.png` se conservan en `Work/Diagrams/` como referencia histórica, marcados
+   explícitamente como no vigentes.
+
+**Alternativas consideradas:**
+- **Seguir en draw.io y solo corregir las cajas a mano:** se descartó porque no resuelve la causa
+  —el diagrama vuelve a desactualizarse en el próximo ADR y el diff sigue siendo opaco—, aunque
+  era la opción más rápida.
+- **Mantener los diagramas de Archify solo como material interactivo aparte, dejando los `.png` en
+  el PDF:** se descartó porque deja dos juegos de diagramas contradiciéndose y el documento
+  entregable seguiría mostrando la versión incorrecta.
+- **Exportar los diagramas como PNG en vez de PDF:** se descartó porque el PDF conserva el texto
+  vectorial (se puede hacer zoom y buscar texto), y el `@media print` de Archify ya fuerza la
+  paleta clara para papel.
+
+**Ventajas / desventajas:** El diagrama pasa a ser texto revisable en el diff y regenerable con un
+comando, y quedó una sola fuente de verdad. A cambio, editar el diagrama ya no es arrastrar cajas
+en una interfaz gráfica: hay que editar `JSON` y regenerar, lo que tiene curva de aprendizaje para
+quien no lo haya hecho (el `README.md` de la carpeta documenta el procedimiento exacto).
+
+**Riesgos técnicos:** La exportación a PDF depende de Chrome headless y de `pdfcrop`; si cambia el
+entorno de alguien del equipo, hay que repetir el procedimiento del README. Se detectó además una
+trampa del propio Archify: el campo `tag` queda oculto en el visor pero **se dibuja encima del
+`sublabel` al imprimir**; por eso esa información se movió dentro del `sublabel` y el README
+advierte no volver a usar `tag`.
+
+**Participantes:** Samuel Contreras (vía asistente).
+
+---
+
 ## 2026-09-07 — Árbol de Utilidad con par (Importancia, Dificultad) y 4 ASR nuevos (punto 2, Entrega 1)
 
 **Tipo:** Análisis

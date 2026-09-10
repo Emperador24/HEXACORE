@@ -5418,11 +5418,11 @@
       <div class="card">
         <div class="card-header">
           <div class="card-dot amber"></div>
-          <h3>Los cuatro frontends</h3>
+          <h3>Las tres interfaces</h3>
         </div>
         <ul>
-          <li>&bull; Portal Web Cliente y Portal Web Admin se sirven por CDN/Edge</li>
-          <li>&bull; App Móvil Cliente y App Móvil Personal llaman directo al Balanceador + API Gateway, sin pasar por el CDN</li>
+          <li>&bull; Portal Web Cliente y Portal Web Admin se sirven como estáticos por CDN/Edge</li>
+          <li>&bull; La App Móvil (una sola para Cliente y Personal, ADR-07) va directo al Balanceador + API Gateway, sin pasar por el CDN</li>
         </ul>
       </div>
     </div>

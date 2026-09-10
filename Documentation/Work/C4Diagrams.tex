@@ -98,15 +98,21 @@ tecnología asociada a cada una, en cumplimiento del checklist oficial de
 \href{https://c4model.com/diagrams/checklist}{c4model.com/diagrams/checklist}, verificado al
 final de este documento.
 
-\textbf{Cambios de esta versión (retroalimentación del profesor).} Los seis diagramas se
-rehicieron por completo en \href{https://app.diagrams.net/}{draw.io} (la aplicación web
-\textit{app.diagrams.net}, no un generador de código) siguiendo dos indicaciones puntuales del
-profesor: (1) cada caja de cada diagrama muestra ahora tres líneas de información --- nombre,
-tipo/tecnología entre corchetes y una breve descripción de su responsabilidad --- en vez de solo
-el nombre; y (2) el antiguo \textbf{Diagrama Dinámico} se reemplazó por un
-\textbf{Diagrama de Secuencia} UML (líneas de vida, mensajes numerados y barra de activación), que
-comunica el mismo flujo de forma más estándar y precisa que la notación dinámica de C4. Los seis
-archivos fuente \texttt{.drawio} quedan en \texttt{Work/Diagrams/} para su edición futura.
+\textbf{Cambios de esta versión.} Los seis diagramas se regeneraron con
+\href{https://github.com/tt-a1i/archify}{Archify}, que los produce a partir de una especificación
+\texttt{JSON} versionada en el repositorio. El cambio responde a dos necesidades: (1) mantener las
+indicaciones del profesor --- cada caja muestra nombre, tipo/tecnología y una breve descripción de
+su responsabilidad, y el antiguo \textbf{Diagrama Dinámico} sigue reemplazado por un
+\textbf{Diagrama de Secuencia} UML con líneas de vida, mensajes numerados y barra de activación
+---; y (2) que el diagrama deje de desactualizarse respecto al código: al vivir en un archivo de
+texto, una decisión como ADR-07 (unificar las dos apps móviles en una sola) se refleja editando la
+especificación y regenerando, en vez de reeditando una imagen a mano.
+
+Las fuentes \texttt{JSON} y la versión interactiva (\texttt{HTML} con pan/zoom y tema
+claro/oscuro) quedan en \texttt{Work/Diagrams/Archify/}; los PDF que se insertan en este documento,
+en \texttt{Work/Diagrams/ArchifyPDF/}. Los archivos \texttt{.drawio} de la versión anterior se
+conservan en \texttt{Work/Diagrams/} como referencia histórica, pero \textbf{ya no son la fuente
+de los diagramas de este documento}.
 
 \section{Nivel 1 — Diagrama de contexto}
 
@@ -116,14 +122,15 @@ externos de los que depende. \textbf{Audiencia:} técnica y no técnica.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth,height=0.8\textheight,keepaspectratio]{Diagrams/01-Contexto.png}
-\caption{Diagrama de contexto (Nivel 1, modelo C4). Elaborado en draw.io; cada caja muestra
-nombre, tipo/persona y una breve descripción.}
+\includegraphics[width=\textwidth,height=0.8\textheight,keepaspectratio]{Diagrams/ArchifyPDF/01-contexto.pdf}
+\caption{Diagrama de contexto (Nivel 1, modelo C4). Generado con Archify a partir de una especificación JSON; la versión interactiva
+(pan/zoom, tema claro/oscuro) está en \texttt{Diagrams/Archify/}.}
 \label{fig:contexto}
 \end{figure}
 
-\textbf{Leyenda:} azul oscuro = persona, azul = sistema en alcance de este documento, gris = sistema
-externo.
+\textbf{Leyenda:} cada figura incluye su propia leyenda de colores, generada por Archify a partir
+del tipo de cada caja. En este nivel: verde = el sistema en alcance de este documento; gris =
+personas (roles) y sistemas externos, ambos fuera de la frontera del sistema.
 
 \begin{longtable}{L{3cm}L{3cm}L{6.5cm}L{2.3cm}}
 \caption{Relaciones del diagrama de contexto.}\label{tab:rel-contexto}\\
@@ -158,14 +165,15 @@ aplicaciones desplegables, los microservicios de dominio y la infraestructura de
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth,height=0.8\textheight,keepaspectratio]{Diagrams/02-Contenedores.png}
-\caption{Diagrama de contenedores (Nivel 2, modelo C4). Elaborado en draw.io; cada caja muestra
-nombre, tipo/tecnología y una breve descripción.}
+\includegraphics[width=\textwidth,height=0.8\textheight,keepaspectratio]{Diagrams/ArchifyPDF/02-contenedores.pdf}
+\caption{Diagrama de contenedores (Nivel 2, modelo C4). Generado con Archify a partir de una especificación JSON; la versión
+interactiva está en \texttt{Diagrams/Archify/}.}
 \label{fig:contenedores}
 \end{figure}
 
-\textbf{Leyenda:} azul oscuro = persona, azul = contenedor propio (app/infraestructura), azul claro
-= microservicio, gris = sistema externo.
+\textbf{Leyenda:} cian = interfaz de usuario; verde = microservicio; rojo = API Gateway; violeta =
+almacenamiento (Redis y bases de datos); naranja = cola de mensajes; gris = sistema externo. Las
+flechas punteadas indican interacciones asíncronas.
 
 \begin{longtable}{L{3.2cm}L{3.2cm}L{5.7cm}L{2.3cm}}
 \caption{Relaciones del diagrama de contenedores.}\label{tab:rel-contenedores}\\
@@ -183,12 +191,12 @@ nombre, tipo/tecnología y una breve descripción.}
 \endfoot
 \bottomrule
 \endlastfoot
-Cliente & App Web / Móvil & Consulta eventos, compra y revende entradas, reserva parqueadero. & HTTPS\\
-Organizador & App Web / Móvil & Crea eventos, asigna personal y coordina la operación. & HTTPS\\
-Empleado & App Web / Móvil & Consulta turnos y registra ingreso/salida. & HTTPS\\
-Administrador & App Web / Móvil & Administra usuarios, personal y configuración. & HTTPS\\
-Supervisor de emergencia & App Web / Móvil & Activa y coordina el protocolo de evacuación. & HTTPS\\
-App Web / Móvil & API Gateway & Envía las solicitudes del usuario al backend. & HTTPS/JSON\\
+Cliente & App Móvil / Portal Web Cliente & Consulta eventos, compra y revende entradas, reserva parqueadero. & HTTPS\\
+Organizador & Portal Web Admin & Crea eventos, asigna personal y coordina la operación. & HTTPS\\
+Empleado & App Móvil & Consulta turnos y registra ingreso/salida. & HTTPS\\
+Administrador & Portal Web Admin & Administra usuarios, personal y configuración. & HTTPS\\
+Supervisor de emergencia & Portal Web Admin & Activa y coordina el protocolo de evacuación. & HTTPS\\
+Las tres interfaces & API Gateway & Envía las solicitudes del usuario al backend. & HTTPS/JSON\\
 API Gateway & Microservicios & Enruta cada solicitud al servicio correspondiente y balancea la carga. & HTTPS/JSON\\
 Servicio de Entradas & Bases de Datos & Persiste entradas, publicaciones y transferencias. & SQL\\
 Servicio de Entradas & Redis & Bloquea temporalmente una publicación durante el checkout. & Redis\\
@@ -208,14 +216,15 @@ componentes internos y su relación con los contenedores de los niveles anterior
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth,height=0.8\textheight,keepaspectratio]{Diagrams/03-Componentes.png}
+\includegraphics[width=\textwidth,height=0.8\textheight,keepaspectratio]{Diagrams/ArchifyPDF/03-componentes.pdf}
 \caption{Diagrama de componentes — Servicio de Entradas y Mercado Secundario (Nivel 3, modelo C4).
-Elaborado en draw.io; cada caja muestra nombre, tipo/tecnología y una breve descripción.}
+Generado con Archify a partir de una especificación JSON; la versión
+interactiva está en \texttt{Diagrams/Archify/}.}
 \label{fig:componentes}
 \end{figure}
 
-\textbf{Leyenda:} azul claro = componente, gris punteado = contenedor o sistema de otro nivel
-(referencia externa a este diagrama, no se detalla aquí).
+\textbf{Leyenda:} verde = componente interno del Servicio de Entradas; gris = contenedor o sistema
+de otro nivel, que aquí solo se referencia y no se detalla.
 
 \begin{longtable}{L{3.2cm}L{3.2cm}L{5.7cm}L{2.3cm}}
 \caption{Relaciones del diagrama de componentes.}\label{tab:rel-componentes}\\
@@ -256,14 +265,14 @@ arquitectos empresariales y equipos de otras áreas (finanzas, marketing).
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth,height=0.8\textheight,keepaspectratio]{Diagrams/04-Panorama.png}
-\caption{Diagrama de panorama de sistemas (\textit{System Landscape}, modelo C4). Elaborado en
-draw.io; cada caja muestra nombre, tipo y una breve descripción.}
+\includegraphics[width=\textwidth,height=0.8\textheight,keepaspectratio]{Diagrams/ArchifyPDF/04-panorama.pdf}
+\caption{Diagrama de panorama de sistemas (\textit{System Landscape}, modelo C4). Generado con Archify; la versión interactiva está en
+\texttt{Diagrams/Archify/}.}
 \label{fig:panorama}
 \end{figure}
 
-\textbf{Leyenda:} azul = sistema en alcance de este documento, gris = otro sistema de la
-organización, gris claro = sistema externo.
+\textbf{Leyenda:} verde = el sistema en alcance de este documento; ámbar = otro sistema de la
+organización; gris = sistema externo.
 
 \begin{longtable}{L{3.2cm}L{3.2cm}L{5.7cm}L{2.3cm}}
 \caption{Relaciones del diagrama de panorama de sistemas.}\label{tab:rel-panorama}\\
@@ -304,7 +313,7 @@ notación más precisa y estándar en la industria.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth,height=0.8\textheight,keepaspectratio]{Diagrams/05-Secuencia.png}
+\includegraphics[width=\textwidth,height=0.8\textheight,keepaspectratio]{Diagrams/ArchifyPDF/05-secuencia.pdf}
 \caption{Diagrama de secuencia --- reventa de una entrada (CU-006). Los números en cada mensaje
 indican el orden de la interacción; la barra verde es el periodo de activación del Servicio de
 Entradas.}
@@ -346,14 +355,16 @@ en un ambiente de producción en la nube. \textbf{Audiencia:} arquitectos, DevOp
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth,height=0.8\textheight,keepaspectratio]{Diagrams/06-Despliegue.png}
-\caption{Diagrama de despliegue (\textit{Deployment}, modelo C4). Elaborado en draw.io; cada caja
-muestra nombre, tipo/tecnología y una breve descripción.}
+\includegraphics[width=\textwidth,height=0.8\textheight,keepaspectratio]{Diagrams/ArchifyPDF/06-despliegue.pdf}
+\caption{Diagrama de despliegue (\textit{Deployment}, modelo C4). Generado con Archify; la versión interactiva está en
+\texttt{Diagrams/Archify/}.}
 \label{fig:despliegue}
 \end{figure}
 
-\textbf{Leyenda:} azul oscuro = persona/dispositivo, gris punteado = nodo de infraestructura, azul
-claro = instancia de microservicio dentro del clúster, gris = sistema externo.
+\textbf{Leyenda:} ámbar = nodo de infraestructura (CDN/Edge); verde = clúster de aplicación; violeta
+= clústeres de datos; naranja = clúster de mensajería; rojo = balanceador + API Gateway; gris =
+dispositivo del usuario y sistemas externos. El recuadro punteado delimita el ambiente de
+producción en la nube.
 
 \begin{longtable}{L{3.6cm}L{3.6cm}L{5.2cm}L{2cm}}
 \caption{Relaciones del diagrama de despliegue.}\label{tab:rel-despliegue}\\
@@ -454,8 +465,8 @@ a mensaje, cómo colaboran los contenedores para resolver la reventa de una entr
 clúster de aplicación, clústeres de datos y mensajería). Cada uno de los seis diagramas fue
 verificado contra el checklist oficial de c4model.com, garantizando que título, alcance, leyenda,
 tipos de elemento y tecnologías de cada relación queden explícitos. Los seis se elaboraron en
-draw.io (app.diagrams.net) con nombre, tipo/tecnología y descripción en cada caja, y sus fuentes
-\texttt{.drawio} quedan en \texttt{Work/Diagrams/} para su edición futura. Este documento debe
+Archify con nombre, tipo/tecnología y descripción en cada caja, y sus fuentes
+\texttt{JSON} quedan en \texttt{Work/Diagrams/Archify/} para su regeneración futura. Este documento debe
 leerse en conjunto con \textit{Atributos de Calidad y Propuesta Arquitectónica}, que sustenta las
 decisiones que aquí se representan gráficamente.
 
