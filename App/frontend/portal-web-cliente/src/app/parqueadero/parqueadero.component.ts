@@ -47,16 +47,16 @@ export class ParqueaderoComponent {
     this.pagoService.registrar({
       titulo: `Parqueadero · ${evento.nombre}`,
       lineas: [{ etiqueta: `Cupo · ${this.zonaSeleccionada()}`, cantidad: 1, precioUnitario: this.tarifa }],
-      rutaDestino: '/cliente/parqueadero',
+      rutaDestino: '/parqueadero',
       onConfirmar: () =>
         this.parqueaderoService.reservar({
           eventoId: evento.id,
           eventoNombre: evento.nombre,
-          lugarEvento: evento.lugar,
+          lugarEvento: `${evento.lugar}, ${evento.ciudad}`,
           zona: this.zonaSeleccionada()
         })
     });
-    this.router.navigateByUrl('/cliente/pago');
+    this.router.navigateByUrl('/pago');
   }
 
   enlaceComoLlegar(lugar: string): string {

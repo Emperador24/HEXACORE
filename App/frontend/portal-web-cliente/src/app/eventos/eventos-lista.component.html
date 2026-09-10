@@ -1,16 +1,60 @@
-<h1 class="titulo-seccion">Eventos</h1>
+<section class="buscador">
+  <div class="buscador-fila">
+    <label class="campo">
+      <mat-icon>place</mat-icon>
+      <select [ngModel]="ciudad()" (ngModelChange)="ciudad.set($event)" aria-label="Filtrar por ciudad">
+        <option value="">Todas las ciudades</option>
+        @for (c of ciudades(); track c) {
+          <option [value]="c">{{ c }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="campo">
+      <mat-icon>category</mat-icon>
+      <select [ngModel]="categoria()" (ngModelChange)="categoria.set($event)" aria-label="Filtrar por categoría">
+        <option value="">Todas las categorías</option>
+        @for (c of categorias; track c) {
+          <option [value]="c">{{ c }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="campo campo-texto">
+      <mat-icon>search</mat-icon>
+      <input
+        type="search"
+        placeholder="Buscar por evento o recinto…"
+        [ngModel]="texto()"
+        (ngModelChange)="texto.set($event)"
+        aria-label="Buscar eventos"
+      />
+    </label>
+
+    @if (hayFiltros()) {
+      <button type="button" class="limpiar" (click)="limpiarFiltros()">Limpiar</button>
+    }
+  </div>
+</section>
 
 <mat-tab-group [selectedIndex]="pestana()" (selectedIndexChange)="pestana.set($event)">
   <mat-tab label="Próximos" />
   <mat-tab label="Pasados" />
 </mat-tab-group>
 
-@if (visibles().length === 0) {
-  <p class="vacio">No hay eventos {{ pestana() === 0 ? 'próximos' : 'pasados' }} por ahora.</p>
+@if (filtrados().length === 0) {
+  <div class="vacio">
+    <mat-icon>event_busy</mat-icon>
+    @if (hayFiltros()) {
+      <p>Ningún evento coincide con tu búsqueda.</p>
+      <button mat-stroked-button (click)="limpiarFiltros()">Quitar filtros</button>
+    } @else {
+      <p>No hay eventos {{ pestana() === 0 ? 'próximos' : 'pasados' }} por ahora.</p>
+    }
+  </div>
 } @else {
-  <h2 class="titulo-destacados">Destacado</h2>
-
   @if (destacado(); as evento) {
+    <h2 class="titulo-seccion">Destacado</h2>
     <a class="destacado-link" [routerLink]="[evento.id]">
       <mat-card class="tarjeta-destacada">
         @if (evento.imagenUrl) {
@@ -24,21 +68,24 @@
             <span class="mes">{{ fechaBadge(evento.fecha).mes }}</span>
             <span class="dow">{{ fechaBadge(evento.fecha).dow }}</span>
           </span>
-          <div>
+          <div class="datos-destacado">
+            <span class="etiqueta-categoria">{{ evento.categoria }}</span>
             <h3>{{ evento.nombre }}</h3>
-            <p>{{ evento.lugar }}</p>
+            <p>{{ evento.lugar }} · {{ evento.ciudad }}</p>
             <p class="precio">Desde ${{ evento.precioDesde | number: '1.0-0' }}</p>
           </div>
           <button mat-flat-button color="primary" class="cta-destacado">Ver entradas</button>
         </div>
       </mat-card>
     </a>
+  } @else {
+    <p class="conteo">{{ filtrados().length }} evento{{ filtrados().length === 1 ? '' : 's' }} encontrado{{ filtrados().length === 1 ? '' : 's' }}</p>
   }
 
-  @if (resto().length > 0) {
-    <h2 class="titulo-destacados">Más eventos</h2>
+  @for (seccion of secciones(); track seccion.categoria) {
+    <h2 class="titulo-seccion">{{ seccion.categoria }}</h2>
     <div class="grilla">
-      @for (evento of resto(); track evento.id) {
+      @for (evento of seccion.eventos; track evento.id) {
         <a class="tarjeta-link" [routerLink]="[evento.id]">
           <mat-card class="tarjeta-evento">
             <div class="poster-contenedor">
@@ -54,7 +101,7 @@
             </div>
             <mat-card-content>
               <h3>{{ evento.nombre }}</h3>
-              <p>{{ evento.lugar }}</p>
+              <p>{{ evento.lugar }} · {{ evento.ciudad }}</p>
               <p class="precio">Desde ${{ evento.precioDesde | number: '1.0-0' }}</p>
             </mat-card-content>
           </mat-card>

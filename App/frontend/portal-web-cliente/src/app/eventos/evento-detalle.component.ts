@@ -53,25 +53,33 @@ export class EventoDetalleComponent {
 
   comprar(): void {
     const evento = this.evento();
+    if (!evento) return;
+
+    // El detalle del evento y sus precios son públicos; la sesión se pide
+    // aquí, al comprar, y no al entrar. Tras iniciarla se vuelve a este mismo
+    // evento para que el visitante no pierda el hilo.
     const usuario = this.auth.usuarioActual();
-    if (!evento || !usuario) return;
+    if (!usuario) {
+      this.router.navigate(['/login'], { queryParams: { returnUrl: this.router.url } });
+      return;
+    }
 
     this.pagoService.registrar({
       titulo: `Entradas · ${evento.nombre}`,
       lineas: [{ etiqueta: `Entrada · ${this.zonaSeleccionada()}`, cantidad: this.cantidad(), precioUnitario: this.precioZona() }],
-      rutaDestino: '/cliente/entradas',
+      rutaDestino: '/entradas',
       onConfirmar: () => {
         this.entradasService.comprar({
           eventoId: evento.id,
           eventoNombre: evento.nombre,
           fecha: evento.fecha,
-          lugar: evento.lugar,
+          lugar: `${evento.lugar}, ${evento.ciudad}`,
           zona: this.zonaSeleccionada(),
           cantidad: this.cantidad(),
           propietarioId: usuario.id
         });
       }
     });
-    this.router.navigateByUrl('/cliente/pago');
+    this.router.navigateByUrl('/pago');
   }
 }
