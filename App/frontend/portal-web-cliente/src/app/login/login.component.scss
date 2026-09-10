@@ -37,3 +37,15 @@
   font-size: 0.8rem;
   color: rgba(0, 0, 0, 0.6);
 }
+
+.volver-cartelera {
+  display: inline-block;
+  margin-top: 14px;
+  font-size: 0.88rem;
+  color: var(--hxc-azul);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}

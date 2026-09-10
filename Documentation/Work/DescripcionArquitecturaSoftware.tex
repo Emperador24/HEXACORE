@@ -293,8 +293,9 @@ modelo entidad-relación de cada microservicio (sección \ref{sec:datos}) durant
 \textbf{Concepto} & \textbf{Explicación}\\
 \midrule
 \endhead
-Evento & Actividad (concierto, festival, partido) que un organizador crea, con fecha, recinto,
-localidades, precios y aforo.\\[0.3em]
+Evento & Actividad que un organizador crea, con fecha, recinto, localidades, precios y aforo.
+Su \textbf{categoría} (concierto, teatro, deportes, festival, gastronomía) es un atributo del
+evento y es el criterio con el que el cliente filtra la cartelera.\\[0.3em]
 Entrada & Boleto asociado a una localidad de un evento, con un código QR único que identifica al
 propietario actual.\\[0.3em]
 Publicación de reventa & Oferta de una entrada ya adquirida, puesta en venta por su propietario en
@@ -343,8 +344,8 @@ toma de decisiones.\\
 \node[class] (personal)        at (0,7)   {\textbf{Personal}\\id, rolOperativo};
 \node[class] (turno)           at (4,7)   {\textbf{Turno}\\id, horario, zona};
 \node[class] (asistencia)      at (8,7)   {\textbf{RegistroAsistencia}\\id, entrada, salida};
-\node[class] (evento)          at (0,5)   {\textbf{Evento}\\id, nombre, fecha, aforo};
-\node[class] (recinto)         at (4,5)   {\textbf{Recinto}\\id, nombre, dirección};
+\node[class] (evento)          at (0,5)   {\textbf{Evento}\\id, nombre, fecha,\\categoría, aforo};
+\node[class] (recinto)         at (4,5)   {\textbf{Recinto}\\id, nombre,\\ciudad, dirección};
 \node[class] (zona)            at (8,5)   {\textbf{Zona}\\id, capacidad};
 \node[class] (entrada)         at (0,3)   {\textbf{Entrada}\\id, códigoQR, estado};
 \node[class] (reventa)         at (4,3)   {\textbf{PublicaciónReventa}\\id, precio, estado};
@@ -803,8 +804,8 @@ llaves foráneas lógicas.
 
 \subsection*{Esquema de Eventos / Emergencias}
 \begin{itemize}
-\item \textbf{Evento}(id, nombre, fecha, recinto\_id, aforo)
-\item \textbf{Recinto}(id, nombre, direccion)
+\item \textbf{Evento}(id, nombre, fecha, categoria, recinto\_id, aforo)
+\item \textbf{Recinto}(id, nombre, ciudad, direccion)
 \item \textbf{Zona}(id, recinto\_id, capacidad)
 \item \textbf{Incidente}(id, evento\_id, tipo, estado)
 \end{itemize}

@@ -51,9 +51,9 @@ export class MenuEstablecimientoComponent {
     this.pagoService.registrar({
       titulo: `Pedido · ${establecimiento.nombre}`,
       lineas: this.carrito().map((i) => ({ etiqueta: i.producto.nombre, cantidad: i.cantidad, precioUnitario: i.producto.precio })),
-      rutaDestino: '/cliente/pedidos',
+      rutaDestino: '/pedidos',
       onConfirmar: () => this.pedidosService.confirmarPedido()
     });
-    this.router.navigateByUrl('/cliente/pago');
+    this.router.navigateByUrl('/pago');
   }
 }

@@ -23,6 +23,51 @@ Cada entrada nueva va arriba (orden cronológico inverso), con este formato:
 
 ---
 
+## 2026-09-10 — Categoría del evento y ciudad del recinto en el modelo de datos
+
+**Tipo:** Cambio arquitectónico (modelo de dominio)
+
+**Contexto:** Al ampliar la cartelera del Portal Web Cliente con los filtros que usan las taquillas
+de referencia (ciudad y categoría), el frontend quedó asumiendo dos datos que el modelo de dominio
+del SAD **no declaraba**: la categoría del evento no existía como atributo —solo aparecía de pasada
+en la descripción en prosa, "actividad (concierto, festival, partido)"— y la ciudad estaba
+implícita dentro de `Recinto.direccion`, de donde no se puede filtrar sin parsear texto libre.
+
+**Decisión / resultado:** Se agregaron ambos al modelo, cada uno en la entidad a la que pertenece:
+- **`Evento.categoria`** — conjunto cerrado de valores (concierto, teatro, deportes, festival,
+  gastronomía). Es un atributo del evento, no del recinto: el mismo recinto alberga eventos de
+  categorías distintas.
+- **`Recinto.ciudad`** — columna propia, separada de `direccion`. La ciudad es del recinto y el
+  evento la hereda por su `recinto\_id`; duplicarla en `Evento` habría creado dos fuentes de verdad
+  que se pueden contradecir.
+
+Se actualizaron los tres lugares del SAD donde vive el modelo, para que no queden contradiciéndose:
+la tabla del modelo de dominio, el diagrama de clases UML y el esquema relacional de
+Eventos/Emergencias.
+
+**Alternativas consideradas:**
+- **Dejar la categoría fuera del modelo y derivarla en el frontend** (por palabras del nombre del
+  evento): se descartó porque es frágil y pone lógica de negocio en el cliente, justo lo que
+  prohíbe ASR-10.
+- **Modelar la categoría como entidad propia (`Categoria`) con su tabla:** se descartó por ahora
+  porque es un conjunto cerrado y pequeño que no tiene atributos propios; si más adelante el
+  Organizador necesita crear categorías desde el Portal Admin, se promueve a entidad.
+- **Poner `ciudad` en `Evento`** (como lo tiene hoy el mock del frontend): se descartó por la
+  duplicación explicada arriba; el mock puede seguir denormalizándola porque representa la
+  respuesta ya compuesta del API, no el esquema.
+
+**Ventajas / desventajas:** El modelo ahora soporta los dos filtros de la cartelera con consultas
+directas. La desventaja es que `categoria` como conjunto cerrado obliga a un cambio de esquema (o
+de la restricción `CHECK`/enum) cada vez que se agregue una categoría nueva.
+
+**Riesgos técnicos:** El frontend ya está construido contra estos campos con datos mock; si el
+equipo de backend decide modelar la categoría como entidad, el contrato del API cambia y hay que
+ajustar `EventosService` del portal. Conviene fijarlo antes de implementar CU-026.
+
+**Participantes:** Samuel Contreras (vía asistente).
+
+---
+
 ## 2026-09-10 — Los diagramas C4 pasan a generarse con Archify y se corrige su contenido
 
 **Tipo:** Cambio arquitectónico (documentación)

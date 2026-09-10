@@ -16,12 +16,31 @@ export interface Usuario {
   fotoUrl: string | null;
 }
 
+/**
+ * Categoría comercial del evento. Es lo que el cliente usa para filtrar en la
+ * página de eventos, igual que las taquillas de referencia (Conciertos,
+ * Teatro, Deportes…); no tiene efecto en la lógica de compra.
+ */
+export type CategoriaEvento = 'Conciertos' | 'Teatro' | 'Deportes' | 'Festivales' | 'Gastronomía';
+
+export const CATEGORIAS: CategoriaEvento[] = [
+  'Conciertos',
+  'Teatro',
+  'Deportes',
+  'Festivales',
+  'Gastronomía'
+];
+
 export interface Evento {
   id: string;
   nombre: string;
   /** yyyy-MM-dd, tal como lo entrega un <input type="date">. */
   fecha: string;
+  /** Recinto: "Movistar Arena". Se muestra junto a la ciudad. */
   lugar: string;
+  /** Ciudad del recinto — es uno de los filtros de la página de eventos. */
+  ciudad: string;
+  categoria: CategoriaEvento;
   precioDesde: number;
   /** true si el evento ya ocurrió — separa "Próximos" de "Pasados". */
   pasado: boolean;

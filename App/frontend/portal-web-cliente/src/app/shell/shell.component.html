@@ -3,7 +3,7 @@
     <a routerLink="eventos" class="marca">HEXACORE</a>
 
     <nav class="enlaces" [class.abierto]="menuMovilAbierto()">
-      @for (item of itemsMenu; track item.ruta) {
+      @for (item of itemsMenu(); track item.ruta) {
         <a [routerLink]="item.ruta" routerLinkActive="activo" (click)="menuMovilAbierto.set(false)">
           <mat-icon>{{ item.icono }}</mat-icon>
           {{ item.etiqueta }}
@@ -16,25 +16,32 @@
         <mat-icon>{{ menuMovilAbierto() ? 'close' : 'menu' }}</mat-icon>
       </button>
 
-      <button mat-button class="boton-cuenta" [matMenuTriggerFor]="menuCuenta">
-        <mat-icon>account_circle</mat-icon>
-        <span class="nombre-usuario">{{ usuario()?.nombre }}</span>
-        <mat-icon>arrow_drop_down</mat-icon>
-      </button>
-      <mat-menu #menuCuenta="matMenu">
-        <button mat-menu-item routerLink="perfil">
-          <mat-icon>person</mat-icon>
-          <span>Perfil</span>
+      @if (usuario(); as u) {
+        <button mat-button class="boton-cuenta" [matMenuTriggerFor]="menuCuenta">
+          <mat-icon>account_circle</mat-icon>
+          <span class="nombre-usuario">{{ u.nombre }}</span>
+          <mat-icon>arrow_drop_down</mat-icon>
         </button>
-        <button mat-menu-item routerLink="ajustes">
-          <mat-icon>settings</mat-icon>
-          <span>Ajustes</span>
+        <mat-menu #menuCuenta="matMenu">
+          <button mat-menu-item routerLink="perfil">
+            <mat-icon>person</mat-icon>
+            <span>Perfil</span>
+          </button>
+          <button mat-menu-item routerLink="ajustes">
+            <mat-icon>settings</mat-icon>
+            <span>Ajustes</span>
+          </button>
+          <button mat-menu-item (click)="cerrarSesion()">
+            <mat-icon>logout</mat-icon>
+            <span>Cerrar sesión</span>
+          </button>
+        </mat-menu>
+      } @else {
+        <button mat-flat-button class="boton-login" (click)="irALogin()">
+          <mat-icon>login</mat-icon>
+          Iniciar sesión
         </button>
-        <button mat-menu-item (click)="cerrarSesion()">
-          <mat-icon>logout</mat-icon>
-          <span>Cerrar sesión</span>
-        </button>
-      </mat-menu>
+      }
     </div>
   </div>
 </header>
@@ -42,3 +49,30 @@
 <main class="contenido">
   <router-outlet />
 </main>
+
+<footer class="pie">
+  <div class="pie-contenido">
+    <div class="pie-marca">
+      <span class="marca-pie">HEXACORE</span>
+      <p>Sistema Integral de Gestión de Eventos</p>
+    </div>
+
+    <nav class="pie-enlaces" aria-label="Secciones">
+      <h4>Tu cuenta</h4>
+      <a routerLink="entradas">Mis entradas</a>
+      <a routerLink="pedidos">Mis pedidos</a>
+      <a routerLink="parqueadero">Mis reservas</a>
+      <a routerLink="perfil">Perfil</a>
+    </nav>
+
+    <div class="pie-ayuda">
+      <h4>Ayuda</h4>
+      <p>soporte&#64;hexacore.com</p>
+      <p>Lun a vie, 8:00 a. m. – 6:00 p. m.</p>
+    </div>
+  </div>
+
+  <p class="pie-legal">
+    © 2026 HEXACORE — Proyecto académico, Arquitectura de Software, Pontificia Universidad Javeriana.
+  </p>
+</footer>

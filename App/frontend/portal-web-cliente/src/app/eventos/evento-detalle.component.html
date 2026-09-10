@@ -1,5 +1,5 @@
 @if (evento(); as evento) {
-  <a routerLink="/cliente/eventos" class="volver">← Volver a eventos</a>
+  <a routerLink="/eventos" class="volver">← Volver a eventos</a>
 
   <div class="cabecera">
     @if (evento.imagenUrl) {
@@ -10,7 +10,7 @@
 
     <div class="resumen">
       <h1>{{ evento.nombre }}</h1>
-      <p class="lugar"><mat-icon>place</mat-icon> {{ evento.lugar }}</p>
+      <p class="lugar"><mat-icon>place</mat-icon> {{ evento.lugar }} · {{ evento.ciudad }}</p>
 
       <mat-card class="tarjeta-fecha">
         <span class="hxc-fecha-badge badge-grande">
@@ -20,7 +20,7 @@
         </span>
         <div class="detalle-fecha">
           <p class="evento-fecha">{{ evento.fecha }}</p>
-          <p class="evento-lugar">{{ evento.lugar }}</p>
+          <p class="evento-lugar">{{ evento.lugar }} · {{ evento.ciudad }}</p>
         </div>
         @if (!evento.pasado) {
           <button mat-flat-button color="primary" class="cta-comprar" (click)="comprar()">

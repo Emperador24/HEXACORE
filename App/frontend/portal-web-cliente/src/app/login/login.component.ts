@@ -1,6 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -10,23 +10,33 @@ import { AuthService } from '../core/auth.service';
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [FormsModule, MatCardModule, MatFormFieldModule, MatInputModule, MatButtonModule],
+  imports: [
+    FormsModule,
+    RouterLink,
+    MatCardModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule
+  ],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss'
 })
 export class LoginComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   correo = '';
   contrasena = '';
   readonly error = signal(false);
 
+  /** A dónde volver tras iniciar sesión: lo pone el guard o el botón que trajo al usuario aquí. */
+  private readonly returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') ?? '/eventos';
+
   ingresar(): void {
-    const exito = this.auth.iniciarSesion(this.correo, this.contrasena);
-    if (exito) {
+    if (this.auth.iniciarSesion(this.correo, this.contrasena)) {
       this.error.set(false);
-      this.router.navigateByUrl('/cliente/eventos');
+      this.router.navigateByUrl(this.returnUrl);
     } else {
       this.error.set(true);
     }

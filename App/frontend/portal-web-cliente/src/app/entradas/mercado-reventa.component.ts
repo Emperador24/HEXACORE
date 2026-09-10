@@ -36,15 +36,21 @@ export class MercadoReventaComponent {
 
   comprar(entradaId: string): void {
     const entrada = this.entradasService.obtenerPorId(entradaId);
+    if (!entrada || !entrada.precioReventa) return;
+
+    // Mirar el mercado es público; comprar una publicación exige sesión.
     const usuario = this.auth.usuarioActual();
-    if (!entrada || !usuario || !entrada.precioReventa) return;
+    if (!usuario) {
+      this.router.navigate(['/login'], { queryParams: { returnUrl: this.router.url } });
+      return;
+    }
 
     this.pagoService.registrar({
       titulo: `Reventa · ${entrada.eventoNombre}`,
       lineas: [{ etiqueta: `Entrada · ${entrada.zona}`, cantidad: 1, precioUnitario: entrada.precioReventa }],
-      rutaDestino: '/cliente/entradas',
+      rutaDestino: '/entradas',
       onConfirmar: () => this.entradasService.comprarEnReventa(entrada.id, usuario.id)
     });
-    this.router.navigateByUrl('/cliente/pago');
+    this.router.navigateByUrl('/pago');
   }
 }

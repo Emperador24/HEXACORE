@@ -38,7 +38,7 @@ export class PasarelaPagoComponent {
   }
 
   cancelar(): void {
-    const destino = this.pendiente()?.rutaDestino ?? '/cliente/eventos';
+    const destino = this.pendiente()?.rutaDestino ?? '/eventos';
     this.pagoService.cancelar();
     this.router.navigateByUrl(destino);
   }
