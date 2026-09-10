@@ -1,0 +1,40 @@
+@if (establecimiento(); as establecimiento) {
+  <a routerLink="/cliente/pedidos" class="volver">← Volver a restaurantes</a>
+  <h1>{{ establecimiento.nombre }}</h1>
+
+  <div class="grilla">
+    @for (producto of productos; track producto.id) {
+      <mat-card class="tarjeta">
+        <mat-card-content class="fila">
+          <div>
+            <h3>{{ producto.nombre }}</h3>
+            <p>${{ producto.precio | number: '1.0-0' }}</p>
+          </div>
+
+          @if (!producto.disponible) {
+            <span class="no-disponible">No disponible</span>
+          } @else if (cantidadDe(producto) === 0) {
+            <button mat-stroked-button (click)="agregar(producto)">Agregar</button>
+          } @else {
+            <div class="contador">
+              <button mat-icon-button (click)="quitar(producto)" aria-label="Quitar uno">
+                <mat-icon>remove</mat-icon>
+              </button>
+              <span>{{ cantidadDe(producto) }}</span>
+              <button mat-icon-button (click)="agregar(producto)" aria-label="Agregar uno">
+                <mat-icon>add</mat-icon>
+              </button>
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+    }
+  </div>
+
+  <div class="resumen">
+    <p class="total">Total: ${{ total() | number: '1.0-0' }}</p>
+    <button mat-flat-button color="primary" [disabled]="carrito().length === 0" (click)="continuarAlPago()">
+      Continuar al pago
+    </button>
+  </div>
+}

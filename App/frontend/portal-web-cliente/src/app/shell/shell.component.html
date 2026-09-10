@@ -1,0 +1,44 @@
+<header class="navbar">
+  <div class="fila-superior">
+    <a routerLink="eventos" class="marca">HEXACORE</a>
+
+    <nav class="enlaces" [class.abierto]="menuMovilAbierto()">
+      @for (item of itemsMenu; track item.ruta) {
+        <a [routerLink]="item.ruta" routerLinkActive="activo" (click)="menuMovilAbierto.set(false)">
+          <mat-icon>{{ item.icono }}</mat-icon>
+          {{ item.etiqueta }}
+        </a>
+      }
+    </nav>
+
+    <div class="acciones">
+      <button mat-icon-button class="boton-menu-movil" (click)="menuMovilAbierto.set(!menuMovilAbierto())" aria-label="Abrir menú">
+        <mat-icon>{{ menuMovilAbierto() ? 'close' : 'menu' }}</mat-icon>
+      </button>
+
+      <button mat-button class="boton-cuenta" [matMenuTriggerFor]="menuCuenta">
+        <mat-icon>account_circle</mat-icon>
+        <span class="nombre-usuario">{{ usuario()?.nombre }}</span>
+        <mat-icon>arrow_drop_down</mat-icon>
+      </button>
+      <mat-menu #menuCuenta="matMenu">
+        <button mat-menu-item routerLink="perfil">
+          <mat-icon>person</mat-icon>
+          <span>Perfil</span>
+        </button>
+        <button mat-menu-item routerLink="ajustes">
+          <mat-icon>settings</mat-icon>
+          <span>Ajustes</span>
+        </button>
+        <button mat-menu-item (click)="cerrarSesion()">
+          <mat-icon>logout</mat-icon>
+          <span>Cerrar sesión</span>
+        </button>
+      </mat-menu>
+    </div>
+  </div>
+</header>
+
+<main class="contenido">
+  <router-outlet />
+</main>

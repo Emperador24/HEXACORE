@@ -1,0 +1,24 @@
+.subtitulo {
+  margin-top: -8px;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.vacio {
+  color: rgba(0, 0, 0, 0.6);
+  text-align: center;
+  padding: 32px;
+}
+
+.grilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.precio {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 12px 0 0;
+  color: var(--hxc-azul);
+}

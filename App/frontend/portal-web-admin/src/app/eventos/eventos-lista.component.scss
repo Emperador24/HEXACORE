@@ -1,0 +1,16 @@
+.encabezado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.tabla {
+  width: 100%;
+}
+
+.vacio {
+  color: rgba(0, 0, 0, 0.6);
+  text-align: center;
+  padding: 32px;
+}

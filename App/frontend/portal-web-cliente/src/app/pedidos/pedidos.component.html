@@ -1,0 +1,43 @@
+<h1>Pedidos</h1>
+
+<mat-tab-group [selectedIndex]="pestana()" (selectedIndexChange)="pestana.set($event)">
+  <mat-tab label="Restaurantes" />
+  <mat-tab label="Mis pedidos" />
+</mat-tab-group>
+
+@if (pestana() === 0) {
+  <div class="grilla">
+    @for (establecimiento of establecimientos; track establecimiento.id) {
+      <a class="tarjeta-link" [routerLink]="[establecimiento.id]">
+        <mat-card class="tarjeta">
+          <mat-card-header>
+            <mat-card-title>{{ establecimiento.nombre }}</mat-card-title>
+            <mat-card-subtitle>{{ establecimiento.descripcion }}</mat-card-subtitle>
+          </mat-card-header>
+        </mat-card>
+      </a>
+    }
+  </div>
+} @else {
+  @if (pedidos().length === 0) {
+    <p class="vacio">Todavía no has hecho pedidos.</p>
+  } @else {
+    <div class="grilla">
+      @for (pedido of pedidos(); track pedido.id) {
+        <mat-card class="tarjeta">
+          <mat-card-header>
+            <mat-card-title>{{ pedido.establecimiento }}</mat-card-title>
+            <mat-card-subtitle>{{ pedido.items.join(', ') }}</mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            <mat-chip-set>
+              <mat-chip>{{ etiquetaEstado(pedido.estado) }}</mat-chip>
+            </mat-chip-set>
+            <p class="total">Total: ${{ pedido.total | number: '1.0-0' }}</p>
+            <app-qr-placeholder [codigo]="pedido.codigoQr" />
+          </mat-card-content>
+        </mat-card>
+      }
+    </div>
+  }
+}

@@ -23,6 +23,111 @@ Cada entrada nueva va arriba (orden cronológico inverso), con este formato:
 
 ---
 
+## 2026-09-07 — Árbol de Utilidad con par (Importancia, Dificultad) y 4 ASR nuevos (punto 2, Entrega 1)
+
+**Tipo:** Análisis
+
+**Contexto:** El Árbol de Utilidad del SAD calificaba cada escenario con una sola columna de
+**"Prioridad"** (Alta / Media-Alta / Media / Baja-Media). El método visto en clase exige calificar
+cada escenario con **dos** dimensiones independientes —importancia para el negocio y dificultad
+técnica— porque son las que permiten identificar dónde está el riesgo arquitectónico: un escenario
+importante pero fácil no necesita evidencia especial, mientras que uno importante y difícil sí.
+Con una sola columna esa distinción se pierde. Además, la tabla solo cubría los 10 atributos
+priorizados originalmente, dejando sin escenario a los 4 atributos agregados con los RNF.
+
+**Decisión / resultado:**
+1. Se reemplazó la columna "Prioridad" por el par **(Importancia, Dificultad)** en escala
+   Alta/Media/Baja para los 14 escenarios.
+2. Se agregaron **4 ASR nuevos**: **ASR-11** (Integrabilidad — sustituir la pasarela de pagos sin
+   reescribir el dominio), **ASR-12** (Desplegabilidad — actualizar un servicio con el evento en
+   curso), **ASR-13** (Safety — notificación garantizada de evacuación) y **ASR-14**
+   (Comprobabilidad — probar un microservicio aislado).
+3. Se agregó una columna **RNF** que enlaza cada escenario con el requisito verificable que pone a
+   prueba, de modo que los 18 RNF quedan cubiertos por al menos un ASR y no queda ningún requisito
+   "huérfano" sin escenario que lo tensione.
+
+El resultado señala tres escenarios **(Alta, Alta)** —**ASR-01** (doble venta), **ASR-04**
+(carga en apertura de venta) y **ASR-13** (notificación de evacuación)— como los que concentran
+el riesgo arquitectónico y, por lo tanto, los candidatos a respaldarse con pruebas de concepto
+medidas en vez de solo con razonamiento.
+
+**Alternativas consideradas:**
+- **Mantener la columna única de "Prioridad"**: se descartó porque mezcla importancia con
+  dificultad; ASR-07 (auditoría) y ASR-05 (aforo en tiempo real) tenían ambos prioridad "Media"
+  pese a que el primero es sencillo de implementar y el segundo es de los más difíciles.
+- **Calificar la importancia según la prioridad global del atributo**: se descartó porque
+  distorsiona escenarios puntualmente críticos dentro de atributos de prioridad media —el caso de
+  ASR-13, cuyo atributo (Safety) está priorizado como Medio pero cuyo escenario compromete la
+  integridad de las personas. Se documentó explícitamente esta distinción en el texto de la
+  sección.
+- **Agregar solo 2 ASR (Integrabilidad y Desplegabilidad)**: se descartó porque dejaría sin
+  escenario a Safety y Comprobabilidad, que sí tienen RNF asociado (RNF-17, RNF-18).
+
+**Ventajas / desventajas:** La tabla ahora identifica sola dónde hace falta evidencia medida
+(las casillas Alta/Alta) y trazan RNF → ASR → (más adelante) táctica → PoC. La desventaja es que
+el par (Importancia, Dificultad) sigue siendo una **estimación del equipo**, no el resultado de
+una votación formal con los cuatro integrantes ni de una medición: cada responsable debe revisar
+los escenarios de su atributo antes de la entrega.
+
+**Riesgos técnicos:** Subestimar la dificultad de ASR-05 (aforo en tiempo real, calificado Alta)
+o de ASR-12 (despliegue sin interrupción) llevaría a planear mal Entrega 2. Los tres escenarios
+(Alta, Alta) son los que deberían tener PoC; hoy ninguno lo tiene todavía en este repositorio.
+
+**Participantes:** Samuel Contreras (vía asistente).
+
+---
+
+## 2026-09-07 — Requisitos No Funcionales con métrica y umbral verificable (punto 1, Entrega 1)
+
+**Tipo:** Análisis
+
+**Contexto:** El SAD documentaba los 32 casos de uso (qué hace el sistema) y una tabla de
+atributos de calidad priorizados con su justificación en prosa, pero **no tenía requisitos no
+funcionales**: no existía ninguna afirmación verificable sobre *con qué calidad* debe funcionar el
+sistema. Sin ellos, el Árbol de Utilidad (ASR) no tiene de dónde derivarse y el análisis de
+tácticas no tiene contra qué comprobarse. Es el punto 1 del checklist de Entrega 1.
+
+**Decisión / resultado:** Se agregó la sección **"Requisitos No Funcionales (RNF)"** a
+`DescripcionArquitecturaSoftware.tex`, justo después de la visión general de requisitos
+funcionales, con **RNF-01 a RNF-18** en una tabla de cuatro columnas: ID, requisito, atributo de
+calidad y **métrica con umbral verificable**. La regla que se aplicó es que un requisito no entra
+a la tabla si no se puede comprobar objetivamente: por eso cada fila tiene un número (p. ej.
+RNF-07 "latencia p95 ≤ 500 ms con 2.000 usuarios concurrentes") y no una frase como "el sistema
+debe ser rápido".
+
+Los 18 RNF cubren **14 atributos de calidad**: los 10 que el proyecto ya tenía priorizados
+(Consistencia, Disponibilidad, Seguridad, Rendimiento, Tiempo real, Escalabilidad, Trazabilidad,
+Usabilidad, Mantenibilidad, Portabilidad) más **4 nuevos** que exigen las clases 6–14 y que el
+proyecto no había priorizado: **Desplegabilidad, Integrabilidad, Seguridad física (Safety) y
+Comprobabilidad**. Esos cuatro se agregaron también a la tabla de atributos priorizados de
+`ArchitecturalProposal.tex`, con su justificación, para que ambos documentos sigan siendo
+coherentes entre sí.
+
+**Alternativas consideradas:**
+- **Dejar los RNF implícitos dentro de cada ASR** (como estaba hasta ahora): se descartó porque
+  mezcla dos cosas distintas —el requisito de calidad y el escenario arquitectónicamente
+  significativo que lo pone a prueba— y deja sin umbral a los atributos que hoy no tienen ASR
+  propio.
+- **Redactar RNF en prosa, sin métrica** (más rápido de escribir): se descartó porque un
+  requisito sin umbral no se puede verificar ni sustentar; es exactamente lo que el profesor
+  señala como requisito mal formulado.
+- **Cubrir solo los 10 atributos ya priorizados**: se descartó porque dejaría sin requisito a
+  cuatro de los nueve atributos que las clases 6–14 exigen analizar.
+
+**Ventajas / desventajas:** Cada RNF ahora es comprobable y da un criterio objetivo de "listo"
+para Entrega 2. La desventaja es que **los umbrales numéricos son estimaciones razonadas del
+equipo, no mediciones** sobre un sistema en producción (que todavía no existe); quedan sujetos a
+revisión por el responsable de cada atributo y a validación con las pruebas de concepto.
+
+**Riesgos técnicos:** Comprometerse a umbrales optimistas (p. ej. p95 ≤ 500 ms con 2.000 usuarios
+concurrentes, o ≥ 99,9 % de disponibilidad) sin haberlos medido: si en Entrega 2 la
+implementación real no los alcanza, hay que corregir el número en el SAD y justificar el cambio,
+no esconderlo. Cada responsable debe revisar los umbrales de su atributo antes de la entrega.
+
+**Participantes:** Samuel Contreras (vía asistente).
+
+---
+
 ## 2026-08-27 — Stack técnico de las 4 interfaces y motor de base de datos por dominio
 
 **Tipo:** Decisión de diseño
