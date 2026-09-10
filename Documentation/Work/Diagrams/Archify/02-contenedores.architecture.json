@@ -11,7 +11,7 @@
         "label": "Compra de entradas",
         "focus": [
           "portal_cliente",
-          "app_cliente",
+          "app_movil",
           "gateway",
           "svc_entradas",
           "db",
@@ -25,7 +25,7 @@
         "label": "Operación y personal",
         "focus": [
           "portal_admin",
-          "app_personal",
+          "app_movil",
           "gateway",
           "svc_personal",
           "svc_eventos",
@@ -50,14 +50,13 @@
   },
   "components": [
     {
-      "id": "app_cliente",
+      "id": "app_movil",
       "type": "frontend",
-      "label": "App Móvil Cliente",
-      "sublabel": "Kotlin · Jetpack Compose",
-      "tag": "rol: Cliente",
+      "label": "App Móvil",
+      "sublabel": "Kotlin · Compose — Cliente + Personal",
       "pos": [
         15.6,
-        31.2
+        89.8
       ],
       "size": [
         171.6,
@@ -68,11 +67,10 @@
       "id": "portal_cliente",
       "type": "frontend",
       "label": "Portal Web Cliente",
-      "sublabel": "Angular",
-      "tag": "rol: Cliente",
+      "sublabel": "Angular — rol Cliente",
       "pos": [
         15.6,
-        127.9
+        186.5
       ],
       "size": [
         171.6,
@@ -83,26 +81,10 @@
       "id": "portal_admin",
       "type": "frontend",
       "label": "Portal Web Admin",
-      "sublabel": "Angular",
-      "tag": "rol: Organizador/Admin/Supervisor",
+      "sublabel": "Angular — Organizador/Admin/Supervisor",
       "pos": [
         15.6,
-        224.6
-      ],
-      "size": [
-        171.6,
-        49.9
-      ]
-    },
-    {
-      "id": "app_personal",
-      "type": "frontend",
-      "label": "App Móvil Personal",
-      "sublabel": "Kotlin · Jetpack Compose",
-      "tag": "rol: Empleado",
-      "pos": [
-        15.6,
-        321.4
+        283.2
       ],
       "size": [
         171.6,
@@ -127,8 +109,7 @@
       "id": "svc_entradas",
       "type": "backend",
       "label": "Servicio de Entradas",
-      "sublabel": "Mercado Secundario · PostgreSQL",
-      "tag": "CU-001..006",
+      "sublabel": "CU-001..006 · PostgreSQL",
       "pos": [
         483.6,
         0.0
@@ -142,8 +123,7 @@
       "id": "svc_personal",
       "type": "backend",
       "label": "Servicio de Personal",
-      "sublabel": "PostgreSQL",
-      "tag": "CU-007..009",
+      "sublabel": "CU-007..009 · PostgreSQL",
       "pos": [
         483.6,
         78.0
@@ -157,8 +137,7 @@
       "id": "svc_eventos",
       "type": "backend",
       "label": "Eventos / Emergencias",
-      "sublabel": "PostgreSQL",
-      "tag": "CU-010, 016..020, 026",
+      "sublabel": "CU-010, 016..020, 026 · PostgreSQL",
       "pos": [
         483.6,
         156.0
@@ -172,8 +151,7 @@
       "id": "svc_parqueaderos",
       "type": "backend",
       "label": "Servicio de Parqueaderos",
-      "sublabel": "PostgreSQL",
-      "tag": "CU-021..025",
+      "sublabel": "CU-021..025 · PostgreSQL",
       "pos": [
         483.6,
         234.0
@@ -187,8 +165,7 @@
       "id": "svc_pedidos",
       "type": "backend",
       "label": "Servicio de Pedidos",
-      "sublabel": "PostgreSQL",
-      "tag": "CU-011..015",
+      "sublabel": "CU-011..015 · PostgreSQL",
       "pos": [
         483.6,
         312.0
@@ -202,8 +179,7 @@
       "id": "svc_admin",
       "type": "backend",
       "label": "Servicio de Administración",
-      "sublabel": "PostgreSQL + MongoDB",
-      "tag": "CU-027..032",
+      "sublabel": "CU-027..032 · PostgreSQL + MongoDB",
       "pos": [
         483.6,
         390.0
@@ -286,8 +262,8 @@
   ],
   "connections": [
     {
-      "id": "app-cliente-gateway",
-      "from": "app_cliente",
+      "id": "app-movil-gateway",
+      "from": "app_movil",
       "to": "gateway",
       "label": "HTTPS/JSON",
       "variant": "emphasis"
@@ -302,12 +278,6 @@
     {
       "id": "portal-admin-gateway",
       "from": "portal_admin",
-      "to": "gateway",
-      "label": "HTTPS/JSON"
-    },
-    {
-      "id": "app-personal-gateway",
-      "from": "app_personal",
       "to": "gateway",
       "label": "HTTPS/JSON"
     },
@@ -397,11 +367,11 @@
   "cards": [
     {
       "dot": "cyan",
-      "title": "Quién usa cada app",
+      "title": "Quién usa cada interfaz",
       "items": [
-        "Cliente → App Móvil Cliente y Portal Web Cliente",
-        "Organizador, Administrador y Supervisor de Emergencia → Portal Web Admin",
-        "Empleado → App Móvil Personal"
+        "Cliente → App Móvil y Portal Web Cliente",
+        "Empleado → la misma App Móvil; el login detecta el rol y el cargo, y abre su conjunto de pantallas (ADR-07)",
+        "Organizador, Administrador y Supervisor de Emergencia → Portal Web Admin"
       ]
     },
     {
