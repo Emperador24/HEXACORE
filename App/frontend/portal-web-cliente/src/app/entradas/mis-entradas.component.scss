@@ -1,0 +1,61 @@
+.vacio {
+  color: rgba(0, 0, 0, 0.6);
+  text-align: center;
+  padding: 32px;
+}
+
+.grilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.tarjeta {
+  display: flex;
+  flex-direction: column;
+}
+
+.datos {
+  margin: 12px 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 12px;
+  font-size: 0.85rem;
+
+  dt {
+    color: rgba(0, 0, 0, 0.6);
+  }
+
+  dd {
+    margin: 0;
+    text-align: right;
+  }
+}
+
+.chip-reventa {
+  background: #fff3cd !important;
+}
+
+.datos dd {
+  font-variant-numeric: tabular-nums;
+}
+
+.panel-flotante {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.panel {
+  width: min(400px, 90vw);
+}
+
+.campo {
+  display: block;
+  width: 100%;
+}

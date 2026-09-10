@@ -1,0 +1,73 @@
+/*
+ * Tema de marca del Portal Cliente — guiado por el lenguaje visual de sitios
+ * de boletería como Ticketmaster/TuBoleta (navbar azul sólido, tarjetas de
+ * evento con badge de fecha, tabla de zona/precio): azul corporativo fuerte
+ * como color primario en vez del "azure-blue" genérico de Material que usa
+ * portal-web-admin — este portal vende boletas, no administra.
+ */
+@use '@angular/material' as mat;
+
+@include mat.core();
+
+html {
+  color-scheme: light;
+  @include mat.theme(
+    (
+      color: (
+        theme-type: light,
+        primary: mat.$azure-palette,
+        tertiary: mat.$orange-palette
+      ),
+      typography: (
+        plain-family: 'Roboto, "Helvetica Neue", sans-serif',
+        brand-family: 'Roboto, "Helvetica Neue", sans-serif'
+      ),
+      density: 0
+    )
+  );
+}
+
+// Azul corporativo del portal — mismo tono que usan las taquillas de
+// referencia para su navbar/CTA principal; se reutiliza en los componentes
+// como valor fijo porque las hojas de estilo por componente no pueden leer
+// variables Sass de aquí (encapsulación de vista).
+:root {
+  --hxc-azul: #006eb7;
+  --hxc-azul-oscuro: #004d82;
+  --hxc-naranja: #ff8f1f;
+}
+
+html, body { height: 100%; }
+body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; background: #f4f6f9; }
+
+// Badge de fecha estilo taquilla ("28 · NOV · Sáb") — se usa en toda tarjeta
+// que representa un evento (Eventos, Mis entradas, Reventa, Parqueadero).
+.hxc-fecha-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  min-width: 52px;
+  padding: 6px 4px;
+  border-radius: 8px;
+  background: var(--hxc-azul);
+  color: #fff;
+
+  .dia {
+    font-size: 1.3rem;
+    font-weight: 700;
+  }
+
+  .mes {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+
+  .dow {
+    font-size: 0.65rem;
+    opacity: 0.85;
+  }
+}

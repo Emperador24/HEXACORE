@@ -162,11 +162,21 @@ Alta & Rendimiento & Miles de usuarios pueden realizar operaciones concurrentes 
 Media-Alta & Tiempo real & Aforo, entradas, estado del personal, parqueaderos y emergencias deben actualizarse casi inmediatamente.\\
 Media & Escalabilidad & Debe ser posible aumentar las instancias de los servicios con mayor demanda.\\
 Media & Trazabilidad & Deben auditarse transferencias, pagos, accesos, turnos, operaciones administrativas y emergencias.\\
+Media & Desplegabilidad & Cada microservicio debe poder actualizarse de forma independiente y sin interrumpir el evento en curso, que es cuando el sistema no puede detenerse.\\
+Media & Integrabilidad & El sistema depende de dos servicios externos (pasarela de pagos y proveedor de notificaciones) que deben poder sustituirse sin reescribir la lógica de negocio.\\
+Media & Seguridad física (Safety) & Una falla durante una evacuación (CU-010) tiene consecuencias sobre la integridad de las personas, no solo sobre los datos.\\
+Media & Comprobabilidad & Con seis microservicios independientes, cada dominio debe poder probarse aislado para que el equipo pueda avanzar en paralelo.\\
 Baja-Media & Usabilidad & Las interfaces deben adaptarse a clientes, empleados, supervisores, organizadores y administradores.\\
 Baja-Media & Mantenibilidad & Los cambios en un dominio no deberían afectar innecesariamente a los demás.\\
 Baja-Media & Portabilidad & Las funcionalidades deben poder utilizarse mediante web y aplicaciones móviles.\\
 \bottomrule
 \end{longtable}
+
+Los cuatro atributos añadidos en esta versión (Desplegabilidad, Integrabilidad, Seguridad física
+y Comprobabilidad) provienen de los temas de las clases 6--14 y no estaban en la priorización
+inicial del proyecto; se incorporan porque el análisis de tácticas de la sección
+\textit{``Cómo la arquitectura satisface los atributos de calidad''} los cubre y porque tienen
+requisitos no funcionales asociados (RNF-15 a RNF-18 en \textit{DescripcionArquitecturaSoftware.tex}).
 
 \section{Arquitectura propuesta}
 

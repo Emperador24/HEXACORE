@@ -1,0 +1,117 @@
+.navbar {
+  background: var(--hxc-azul);
+  color: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.fila-superior {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.marca {
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #fff;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.enlaces {
+  flex: 1 1 auto;
+  display: flex;
+  gap: 4px;
+
+  a {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    color: rgba(255, 255, 255, 0.85);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.9rem;
+    white-space: nowrap;
+
+    mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+    }
+
+    &.activo {
+      background: rgba(255, 255, 255, 0.18);
+      color: #fff;
+    }
+  }
+}
+
+.acciones {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.boton-menu-movil {
+  display: none;
+  color: #fff;
+}
+
+.boton-cuenta {
+  color: #fff;
+
+  .nombre-usuario {
+    margin: 0 4px;
+  }
+}
+
+.contenido {
+  padding: 24px 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+@media (max-width: 860px) {
+  .enlaces {
+    position: absolute;
+    top: 64px;
+    left: 0;
+    right: 0;
+    background: var(--hxc-azul-oscuro);
+    flex-direction: column;
+    padding: 8px;
+    gap: 2px;
+    display: none;
+
+    &.abierto {
+      display: flex;
+    }
+
+    a {
+      padding: 12px;
+    }
+  }
+
+  .boton-menu-movil {
+    display: inline-flex;
+  }
+
+  .nombre-usuario {
+    display: none;
+  }
+}

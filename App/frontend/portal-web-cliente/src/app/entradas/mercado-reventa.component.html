@@ -1,0 +1,26 @@
+<h1>Mercado de reventa</h1>
+<p class="subtitulo">Entradas publicadas por otros clientes.</p>
+
+@if (publicadas().length === 0) {
+  <p class="vacio">No hay entradas en reventa por ahora.</p>
+} @else {
+  <div class="grilla">
+    @for (entrada of publicadas(); track entrada.id) {
+      <mat-card class="tarjeta">
+        <mat-card-header>
+          <mat-card-title>{{ entrada.eventoNombre }}</mat-card-title>
+          <mat-card-subtitle>{{ entrada.fecha }} · {{ entrada.lugar }}</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <mat-chip-set>
+            <mat-chip>{{ entrada.zona }}</mat-chip>
+          </mat-chip-set>
+          <p class="precio">${{ entrada.precioReventa | number: '1.0-0' }}</p>
+        </mat-card-content>
+        <mat-card-actions>
+          <button mat-flat-button color="primary" (click)="comprar(entrada.id)">Comprar</button>
+        </mat-card-actions>
+      </mat-card>
+    }
+  </div>
+}

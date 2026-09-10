@@ -1,0 +1,121 @@
+.titulo-seccion {
+  margin: 0 0 4px;
+}
+
+.titulo-destacados {
+  margin: 28px 0 12px;
+  font-size: 1.1rem;
+}
+
+.vacio {
+  color: rgba(0, 0, 0, 0.6);
+  text-align: center;
+  padding: 32px;
+}
+
+.destacado-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.tarjeta-destacada {
+  display: flex;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.poster-destacado {
+  width: 320px;
+  min-height: 220px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.info-destacado {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 20px 24px;
+  flex: 1 1 auto;
+
+  h3 {
+    margin: 0 0 4px;
+    font-size: 1.4rem;
+  }
+
+  p {
+    margin: 0 0 4px;
+    color: rgba(0, 0, 0, 0.6);
+  }
+
+  .precio {
+    font-weight: 700;
+    color: var(--hxc-azul);
+  }
+}
+
+.cta-destacado {
+  margin-left: auto;
+}
+
+.grilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.tarjeta-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.tarjeta-evento {
+  height: 100%;
+  border-radius: 10px;
+  overflow: hidden;
+
+  h3 {
+    margin: 0 0 4px;
+    font-size: 1rem;
+  }
+
+  p {
+    margin: 0 0 4px;
+    color: rgba(0, 0, 0, 0.6);
+    font-size: 0.9rem;
+  }
+
+  .precio {
+    font-weight: 700;
+    color: var(--hxc-azul);
+  }
+}
+
+.poster-contenedor {
+  position: relative;
+}
+
+.poster {
+  display: block;
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+}
+
+.poster-vacio {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  font-weight: 700;
+  background: var(--hxc-azul);
+  color: #fff;
+}
+
+.badge-flotante {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}

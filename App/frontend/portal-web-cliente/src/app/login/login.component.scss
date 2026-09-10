@@ -1,0 +1,39 @@
+.marca-header {
+  background: var(--hxc-azul);
+  color: #fff;
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  padding: 20px;
+}
+
+.login-fondo {
+  min-height: calc(100vh - 64px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f4f6f9;
+  padding: 24px 0;
+}
+
+.login-tarjeta {
+  width: min(420px, 90vw);
+  padding: 8px;
+}
+
+.campo {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+}
+
+.mensaje-error {
+  color: #b3261e;
+  margin: 0 0 4px;
+}
+
+.ayuda-demo {
+  margin-top: 16px;
+  font-size: 0.8rem;
+  color: rgba(0, 0, 0, 0.6);
+}

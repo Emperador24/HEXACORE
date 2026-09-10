@@ -1,0 +1,65 @@
+<h1 class="titulo-seccion">Eventos</h1>
+
+<mat-tab-group [selectedIndex]="pestana()" (selectedIndexChange)="pestana.set($event)">
+  <mat-tab label="Próximos" />
+  <mat-tab label="Pasados" />
+</mat-tab-group>
+
+@if (visibles().length === 0) {
+  <p class="vacio">No hay eventos {{ pestana() === 0 ? 'próximos' : 'pasados' }} por ahora.</p>
+} @else {
+  <h2 class="titulo-destacados">Destacado</h2>
+
+  @if (destacado(); as evento) {
+    <a class="destacado-link" [routerLink]="[evento.id]">
+      <mat-card class="tarjeta-destacada">
+        @if (evento.imagenUrl) {
+          <img [src]="evento.imagenUrl" [alt]="evento.nombre" class="poster-destacado" />
+        } @else {
+          <div class="poster-destacado poster-vacio">{{ evento.nombre.charAt(0) }}</div>
+        }
+        <div class="info-destacado">
+          <span class="hxc-fecha-badge">
+            <span class="dia">{{ fechaBadge(evento.fecha).dia }}</span>
+            <span class="mes">{{ fechaBadge(evento.fecha).mes }}</span>
+            <span class="dow">{{ fechaBadge(evento.fecha).dow }}</span>
+          </span>
+          <div>
+            <h3>{{ evento.nombre }}</h3>
+            <p>{{ evento.lugar }}</p>
+            <p class="precio">Desde ${{ evento.precioDesde | number: '1.0-0' }}</p>
+          </div>
+          <button mat-flat-button color="primary" class="cta-destacado">Ver entradas</button>
+        </div>
+      </mat-card>
+    </a>
+  }
+
+  @if (resto().length > 0) {
+    <h2 class="titulo-destacados">Más eventos</h2>
+    <div class="grilla">
+      @for (evento of resto(); track evento.id) {
+        <a class="tarjeta-link" [routerLink]="[evento.id]">
+          <mat-card class="tarjeta-evento">
+            <div class="poster-contenedor">
+              @if (evento.imagenUrl) {
+                <img [src]="evento.imagenUrl" [alt]="evento.nombre" class="poster" />
+              } @else {
+                <div class="poster poster-vacio">{{ evento.nombre.charAt(0) }}</div>
+              }
+              <span class="hxc-fecha-badge badge-flotante">
+                <span class="dia">{{ fechaBadge(evento.fecha).dia }}</span>
+                <span class="mes">{{ fechaBadge(evento.fecha).mes }}</span>
+              </span>
+            </div>
+            <mat-card-content>
+              <h3>{{ evento.nombre }}</h3>
+              <p>{{ evento.lugar }}</p>
+              <p class="precio">Desde ${{ evento.precioDesde | number: '1.0-0' }}</p>
+            </mat-card-content>
+          </mat-card>
+        </a>
+      }
+    </div>
+  }
+}

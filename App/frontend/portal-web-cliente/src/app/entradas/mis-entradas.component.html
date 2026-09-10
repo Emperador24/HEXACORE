@@ -1,0 +1,88 @@
+<h1>Mis entradas</h1>
+
+@if (mias().length === 0) {
+  <p class="vacio">Todavía no tienes entradas. Cómpralas desde la sección Eventos.</p>
+} @else {
+  <div class="grilla">
+    @for (entrada of mias(); track entrada.id) {
+      <mat-card class="tarjeta">
+        <mat-card-header>
+          <mat-card-title>{{ entrada.eventoNombre }}</mat-card-title>
+          <mat-card-subtitle>{{ entrada.fecha }} · {{ entrada.lugar }}</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <mat-chip-set>
+            <mat-chip>{{ entrada.zona }}</mat-chip>
+            <mat-chip [class.chip-reventa]="entrada.estado === EstadoEntrada.EN_REVENTA">{{ etiquetaEstado(entrada.estado) }}</mat-chip>
+          </mat-chip-set>
+
+          <dl class="datos">
+            <dt>N.º ticket</dt>
+            <dd>{{ entrada.numeroTicket }}</dd>
+            <dt>N.º transacción</dt>
+            <dd>{{ entrada.numeroTransaccion }}</dd>
+            @if (entrada.precioReventa) {
+              <dt>Precio de reventa</dt>
+              <dd>${{ entrada.precioReventa | number: '1.0-0' }}</dd>
+            }
+          </dl>
+
+          <app-qr-placeholder [codigo]="entrada.codigoQr" />
+        </mat-card-content>
+
+        @if (entrada.estado === EstadoEntrada.VALIDA) {
+          <mat-card-actions>
+            <button mat-button (click)="abrirEnvio(entrada)">Enviar a otro cliente</button>
+            <button mat-button (click)="abrirReventa(entrada)">Poner en reventa</button>
+          </mat-card-actions>
+        } @else if (entrada.estado === EstadoEntrada.EN_REVENTA) {
+          <mat-card-actions>
+            <button mat-button (click)="retirarDeReventa(entrada)">Retirar de reventa</button>
+          </mat-card-actions>
+        }
+      </mat-card>
+    }
+  </div>
+}
+
+@if (entradaEnEnvio(); as entrada) {
+  <div class="panel-flotante">
+    <mat-card class="panel">
+      <mat-card-header>
+        <mat-card-title>Enviar entrada</mat-card-title>
+        <mat-card-subtitle>{{ entrada.eventoNombre }} · {{ entrada.zona }}</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <mat-form-field appearance="outline" class="campo">
+          <mat-label>Correo del destinatario</mat-label>
+          <input matInput type="email" [(ngModel)]="correoEnvio" />
+        </mat-form-field>
+      </mat-card-content>
+      <mat-card-actions align="end">
+        <button mat-button (click)="entradaEnEnvio.set(null)">Cancelar</button>
+        <button mat-flat-button color="primary" [disabled]="!correoEnvio().includes('@')" (click)="confirmarEnvio()">Enviar</button>
+      </mat-card-actions>
+    </mat-card>
+  </div>
+}
+
+@if (entradaEnReventa(); as entrada) {
+  <div class="panel-flotante">
+    <mat-card class="panel">
+      <mat-card-header>
+        <mat-card-title>Poner en reventa</mat-card-title>
+        <mat-card-subtitle>{{ entrada.eventoNombre }} · {{ entrada.zona }}</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <mat-form-field appearance="outline" class="campo">
+          <mat-label>Precio de venta</mat-label>
+          <input matInput type="number" min="1" [ngModel]="precioReventa()" (ngModelChange)="precioReventa.set($event)" />
+        </mat-form-field>
+      </mat-card-content>
+      <mat-card-actions align="end">
+        <button mat-button (click)="entradaEnReventa.set(null)">Cancelar</button>
+        <button mat-flat-button color="primary" [disabled]="!precioReventa()" (click)="confirmarReventa()">Publicar</button>
+      </mat-card-actions>
+    </mat-card>
+  </div>
+}

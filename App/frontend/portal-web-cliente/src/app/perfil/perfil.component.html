@@ -1,0 +1,24 @@
+<h1>Perfil</h1>
+
+<mat-card class="tarjeta">
+  <mat-card-content>
+    <div class="avatar">{{ usuario()?.nombre?.charAt(0) }}</div>
+    <h2>{{ usuario()?.nombre }}</h2>
+
+    <mat-form-field appearance="outline" class="campo">
+      <mat-label>Correo</mat-label>
+      <input matInput type="email" [ngModel]="correo()" (ngModelChange)="correo.set($event); guardado.set(false)" />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="campo">
+      <mat-label>Teléfono</mat-label>
+      <input matInput type="tel" [ngModel]="telefono()" (ngModelChange)="telefono.set($event); guardado.set(false)" />
+    </mat-form-field>
+
+    <button mat-flat-button color="primary" (click)="guardar()" class="campo">Guardar</button>
+
+    @if (guardado()) {
+      <p class="mensaje-ok">Cambios guardados.</p>
+    }
+  </mat-card-content>
+</mat-card>

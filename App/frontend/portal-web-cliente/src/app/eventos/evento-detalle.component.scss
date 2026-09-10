@@ -1,0 +1,167 @@
+.volver {
+  display: inline-block;
+  margin-bottom: 16px;
+  color: inherit;
+}
+
+.cabecera {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.poster {
+  width: 320px;
+  max-width: 100%;
+  height: 220px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.poster-vacio {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  font-weight: 700;
+  background: var(--hxc-azul);
+  color: #fff;
+}
+
+.resumen {
+  flex: 1 1 320px;
+
+  h1 {
+    margin: 0 0 4px;
+  }
+
+  .lugar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0 0 16px;
+    color: rgba(0, 0, 0, 0.6);
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+  }
+}
+
+.tarjeta-fecha {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  max-width: 460px;
+  padding: 16px;
+}
+
+.badge-grande {
+  min-width: 64px;
+  padding: 10px 6px;
+
+  .dia {
+    font-size: 1.6rem;
+  }
+}
+
+.detalle-fecha {
+  flex: 1 1 auto;
+
+  p {
+    margin: 0;
+  }
+
+  .evento-fecha {
+    font-weight: 600;
+  }
+
+  .evento-lugar {
+    color: rgba(0, 0, 0, 0.6);
+    font-size: 0.9rem;
+  }
+}
+
+.cta-comprar {
+  margin-left: auto;
+}
+
+.titulo-zonas {
+  margin: 32px 0 12px;
+}
+
+.tabla-zonas {
+  max-width: 480px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.fila-zona {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  padding: 14px 16px;
+  border: none;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  background: #fff;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background: rgba(0, 110, 183, 0.06);
+  }
+
+  &.seleccionada {
+    background: rgba(0, 110, 183, 0.1);
+    font-weight: 600;
+  }
+
+  .nombre-zona {
+    color: var(--hxc-azul);
+  }
+}
+
+.tarjeta-compra {
+  max-width: 480px;
+  margin-top: 16px;
+}
+
+.fila-cantidad {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.contador {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cantidad-valor {
+  min-width: 20px;
+  text-align: center;
+}
+
+.total {
+  font-weight: 700;
+  font-size: 1.1rem;
+  margin: 12px 0;
+}
+
+.boton-continuar {
+  display: block;
+  width: 100%;
+}
+
+.evento-pasado {
+  margin-top: 16px;
+}

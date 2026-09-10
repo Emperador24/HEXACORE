@@ -1,0 +1,75 @@
+@if (evento(); as evento) {
+  <a routerLink="/cliente/eventos" class="volver">← Volver a eventos</a>
+
+  <div class="cabecera">
+    @if (evento.imagenUrl) {
+      <img [src]="evento.imagenUrl" [alt]="evento.nombre" class="poster" />
+    } @else {
+      <div class="poster poster-vacio">{{ evento.nombre.charAt(0) }}</div>
+    }
+
+    <div class="resumen">
+      <h1>{{ evento.nombre }}</h1>
+      <p class="lugar"><mat-icon>place</mat-icon> {{ evento.lugar }}</p>
+
+      <mat-card class="tarjeta-fecha">
+        <span class="hxc-fecha-badge badge-grande">
+          <span class="dia">{{ fechaBadge(evento.fecha).dia }}</span>
+          <span class="mes">{{ fechaBadge(evento.fecha).mes }}</span>
+          <span class="dow">{{ fechaBadge(evento.fecha).dow }}</span>
+        </span>
+        <div class="detalle-fecha">
+          <p class="evento-fecha">{{ evento.fecha }}</p>
+          <p class="evento-lugar">{{ evento.lugar }}</p>
+        </div>
+        @if (!evento.pasado) {
+          <button mat-flat-button color="primary" class="cta-comprar" (click)="comprar()">
+            Comprar
+          </button>
+        }
+      </mat-card>
+    </div>
+  </div>
+
+  @if (!evento.pasado) {
+    <h2 class="titulo-zonas">Ubicación y precio</h2>
+    <div class="tabla-zonas">
+      @for (zona of evento.zonas; track zona.nombre) {
+        <button
+          type="button"
+          class="fila-zona"
+          [class.seleccionada]="zonaSeleccionada() === zona.nombre"
+          (click)="elegirZona(zona.nombre)"
+        >
+          <span class="nombre-zona">{{ zona.nombre }}</span>
+          <span class="precio-zona">${{ zona.precio | number: '1.0-0' }}</span>
+        </button>
+      }
+    </div>
+
+    <mat-card class="tarjeta-compra">
+      <mat-card-content>
+        <div class="fila-cantidad">
+          <span>Cantidad</span>
+          <div class="contador">
+            <button mat-icon-button (click)="cambiarCantidad(-1)" [disabled]="cantidad() <= 1" aria-label="Quitar una entrada">
+              <mat-icon>remove</mat-icon>
+            </button>
+            <span class="cantidad-valor">{{ cantidad() }}</span>
+            <button mat-icon-button (click)="cambiarCantidad(1)" [disabled]="cantidad() >= 10" aria-label="Agregar una entrada">
+              <mat-icon>add</mat-icon>
+            </button>
+          </div>
+        </div>
+
+        <p class="total">Total: ${{ total() | number: '1.0-0' }}</p>
+
+        <button mat-flat-button color="primary" (click)="comprar()" class="boton-continuar">Continuar al pago</button>
+      </mat-card-content>
+    </mat-card>
+  } @else {
+    <p class="evento-pasado">Este evento ya ocurrió — no se pueden comprar entradas.</p>
+  }
+} @else {
+  <p>Este evento no existe.</p>
+}

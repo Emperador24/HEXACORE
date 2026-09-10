@@ -1,0 +1,35 @@
+<div class="login-fondo">
+  <mat-card class="login-tarjeta">
+    <mat-card-header>
+      <mat-card-title>HEXACORE — Portal Administrativo</mat-card-title>
+      <mat-card-subtitle>Inicia sesión</mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <form (ngSubmit)="ingresar()" #formulario="ngForm">
+        <mat-form-field appearance="outline" class="campo">
+          <mat-label>Correo</mat-label>
+          <input matInput name="correo" [(ngModel)]="correo" required autocomplete="username" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="campo">
+          <mat-label>Contraseña</mat-label>
+          <input matInput type="password" name="contrasena" [(ngModel)]="contrasena" required autocomplete="current-password" />
+        </mat-form-field>
+
+        @if (error()) {
+          <p class="mensaje-error">Correo o contraseña incorrectos.</p>
+        }
+
+        <button mat-flat-button color="primary" type="submit" class="campo" [disabled]="formulario.invalid">
+          Ingresar
+        </button>
+      </form>
+
+      <p class="ayuda-demo">
+        Demo (clave: 1234) — organizador&#64;hexacore.com · administrador&#64;hexacore.com ·
+        supervisor&#64;hexacore.com
+      </p>
+    </mat-card-content>
+  </mat-card>
+</div>
