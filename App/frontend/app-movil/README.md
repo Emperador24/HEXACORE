@@ -1,11 +1,26 @@
-# App Móvil Cliente
+# App Móvil HEXACORE
 
-Interfaz móvil para el rol Cliente (SAD §8, vista de contenedores).
+Aplicación Flutter para clientes y personal operativo. Incluye los flujos de eventos y entradas, parqueadero, pedidos, turnos, asistencia, validación e incidencias con datos de demostración locales.
 
-**Responsabilidad:** misma funcionalidad orientada a cliente que el Portal Web Cliente (compra y
-reventa de entradas, QR de ingreso, parqueadero, pedidos), consumiendo el mismo backend vía API
-Gateway (`../../gateway`) sin duplicar lógica de negocio (ASR-10).
+## Requisitos
 
-**Stack:** Kotlin nativo (Android Studio, Jetpack Compose).
+- Flutter SDK estable
 
-**Estado:** pendiente de implementación (Entrega 2).
+## Ejecución
+
+```bash
+flutter pub get
+flutter run
+```
+
+Si el proyecto todavía no tiene sus carpetas de plataforma, ejecute una vez `flutter create .` desde esta carpeta antes de `flutter run`.
+
+## Accesos de demostración
+
+Contraseña para todas las cuentas: `1234`.
+
+- `cliente@hexacore.com`
+- `personal@hexacore.com`
+- `parqueadero@hexacore.com`
+- `restaurante@hexacore.com`
+- `jefepersonal@hexacore.com`
