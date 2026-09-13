@@ -1,0 +1,18 @@
+<h1>Hola, {{ usuario()?.nombre }}</h1>
+<p>Este es el resumen general del sistema.</p>
+
+<div class="tarjetas">
+  <mat-card>
+    <mat-card-content>
+      <p class="numero">{{ totalEventos() }}</p>
+      <p class="etiqueta">Eventos registrados</p>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card>
+    <mat-card-content>
+      <p class="numero">{{ eventosPublicados() }}</p>
+      <p class="etiqueta">Eventos publicados</p>
+    </mat-card-content>
+  </mat-card>
+</div>

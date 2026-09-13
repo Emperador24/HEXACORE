@@ -1,0 +1,35 @@
+.vacio {
+  color: rgba(0, 0, 0, 0.6);
+  text-align: center;
+  padding: 32px;
+}
+
+.tarjeta-form {
+  max-width: 400px;
+  margin-top: 20px;
+}
+
+.campo {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.total {
+  font-weight: 700;
+  margin: 8px 0 16px;
+  color: var(--hxc-azul);
+}
+
+.grilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.tarjeta {
+  p {
+    color: rgba(0, 0, 0, 0.6);
+  }
+}

@@ -95,6 +95,12 @@ del modelo de dominio, vista de componentes de los contenedores Personal, Evento
 Parqueaderos, ambientes de desarrollo y pruebas en la vista física, y modelo de datos detallado
 por microservicio. & Equipo Hexacore (vía asistente) \\
 \hline
+28/08/2026 & Versión 1.2: durante la construcción del prototipo de la app móvil (Entrega 2) se
+decide unificar \textbf{App Móvil del Cliente} y \textbf{App Móvil del Personal} en un único
+contenedor \textbf{App Móvil}, que identifica el rol del usuario en el login y navega al conjunto
+de pantallas correspondiente (ver ADR-07). Se actualiza la vista de contenedores (de cuatro a tres
+interfaces desplegables) y ADR-02/ADR-05 en consecuencia. & Equipo Hexacore (vía asistente) \\
+\hline
 \end{longtable}
 \end{center}
 
@@ -184,6 +190,93 @@ complejidad arquitectónica y sirven de hilo conductor en las vistas de este doc
 \textbf{CU-006 (Gestión del Mercado Secundario de Entradas)} y \textbf{CU-010 (Gestionar
 Evacuación ante Emergencias)}.
 
+% ==================== Requisitos no funcionales ====================
+\section{Requisitos No Funcionales (RNF)}
+\label{sec:rnf}
+
+Mientras los casos de uso de la sección anterior describen \textit{qué} hace el sistema, los
+requisitos no funcionales describen \textit{con qué calidad} debe hacerlo. Cada RNF de la Tabla
+\ref{tab:rnf} se deriva de uno de los atributos de calidad priorizados en
+\textit{ArchitecturalProposal.tex} y se expresa con una \textbf{métrica y un umbral verificable},
+de modo que pueda comprobarse objetivamente si se cumple o no --- un requisito redactado como
+``el sistema debe ser rápido'' no es verificable y por lo tanto no se admite en esta tabla.
+
+Los RNF son la entrada directa de las dos secciones siguientes: los
+\textbf{ASR} (sección \ref{sec:asr}) seleccionan cuáles de estos requisitos tienen impacto
+arquitectónico real, y el análisis de tácticas de \textit{ArchitecturalProposal.tex} justifica
+con qué mecanismo se satisface cada uno.
+
+\textbf{Nota sobre los umbrales.} Los valores numéricos son estimaciones razonadas del equipo a
+partir de los escenarios del proyecto, no mediciones sobre un sistema en producción (que aún no
+existe). Los umbrales de RNF-01 y RNF-02 se respaldan con las pruebas de concepto del proyecto
+(véase \textit{App/PoCs/}); el resto se validará conforme se implemente cada dominio.
+
+\begin{center}
+\begin{longtable}{p{1.3cm}p{5.2cm}p{2.4cm}p{5.4cm}}
+\toprule
+\textbf{ID} & \textbf{Requisito} & \textbf{Atributo} & \textbf{Métrica y umbral verificable}\\
+\midrule
+\endhead
+RNF-01 & Ninguna entrada publicada en el mercado secundario puede venderse a dos compradores
+(CU-006). & Consistencia & Ventas duplicadas bajo concurrencia: \textbf{0\%} con 50 intentos de
+compra simultáneos sobre la misma publicación.\\[0.3em]
+RNF-02 & Al transferirse una entrada, el QR anterior queda invalidado antes de emitir el nuevo
+(CU-006). & Consistencia & Códigos QR antiguos aceptados en validación tras una transferencia:
+\textbf{0}.\\[0.3em]
+RNF-03 & El sistema sigue atendiendo solicitudes ante la caída de una instancia de cualquier
+microservicio (CU-001--005, CU-002). & Disponibilidad & Disponibilidad mensual del API Gateway
+\textbf{$\geq$ 99,9\%} (máx. 43 min de indisponibilidad al mes).\\[0.3em]
+RNF-04 & Ante la caída de una instancia, el sistema se recupera sin intervención manual.
+& Disponibilidad & Tiempo hasta volver a responder el 100\% de las solicitudes:
+\textbf{$\leq$ 30 s}.\\[0.3em]
+RNF-05 & El sistema nunca almacena datos completos de tarjetas de pago (CU-001, CU-011, CU-024).
+& Seguridad & Campos de tarjeta persistidos en cualquier base de datos propia: \textbf{0}; el
+cobro se delega íntegramente a la pasarela.\\[0.3em]
+RNF-06 & Toda petición a un microservicio pasa autenticada y autorizada por rol desde el API
+Gateway. & Seguridad & Endpoints de negocio alcanzables sin token válido: \textbf{0\%} sobre el
+total de rutas expuestas.\\[0.3em]
+RNF-07 & La consulta de disponibilidad de entradas responde con baja latencia durante la apertura
+de venta (CU-001). & Rendimiento & Latencia \textbf{p95 $\leq$ 500 ms} con 2.000 usuarios
+concurrentes.\\[0.3em]
+RNF-08 & La validación del QR en el ingreso no genera filas perceptibles (CU-002, CU-005).
+& Rendimiento & Latencia \textbf{p95 $\leq$ 300 ms} por validación.\\[0.3em]
+RNF-09 & El aforo y la ocupación se reflejan casi de inmediato tras un ingreso o salida (CU-019,
+CU-025). & Tiempo real & Retardo entre el evento y su reflejo en el tablero de monitoreo:
+\textbf{$\leq$ 2 s}.\\[0.3em]
+RNF-10 & El servicio de Entradas escala horizontalmente sin degradar los demás dominios (CU-001,
+CU-006). & Escalabilidad & Al duplicar sus instancias, el throughput crece
+\textbf{$\geq$ 1,7$\times$} (eficiencia $\geq$ 85\%) sin afectar la latencia de otros
+servicios.\\[0.3em]
+RNF-11 & Toda operación financiera queda auditada (CU-006, CU-031). & Trazabilidad & Operaciones
+con registro completo (actor, marca de tiempo, id. de transacción, resultado): \textbf{100\%};
+retención \textbf{$\geq$ 1 año}.\\[0.3em]
+RNF-12 & Un cliente sin capacitación previa completa la compra de una entrada (CU-001).
+& Usabilidad & \textbf{$\geq$ 80\%} de éxito en prueba con 5 usuarios, en
+\textbf{$\leq$ 5 pasos} desde el evento hasta la confirmación.\\[0.3em]
+RNF-13 & Un cambio en las reglas de un dominio no obliga a modificar otro microservicio.
+& Mantenibilidad & Microservicios que deben modificarse y redesplegarse ante un cambio típico de
+negocio: \textbf{1} (más el contrato de API solo si este cambia).\\[0.3em]
+RNF-14 & Toda funcionalidad del rol Cliente está disponible desde web y desde móvil sobre el mismo
+contrato. & Portabilidad & CU del rol Cliente cubiertos por ambas interfaces consumiendo la misma
+API: \textbf{100\%}, con \textbf{0} reglas de negocio duplicadas en el cliente.\\[0.3em]
+RNF-15 & Una versión nueva de un microservicio se despliega sin interrumpir el servicio.
+& Desplega-bilidad & Solicitudes fallidas durante el despliegue: \textbf{0}; ventana de despliegue
+\textbf{$\leq$ 10 min} y reversión \textbf{$\leq$ 5 min}.\\[0.3em]
+RNF-16 & La pasarela de pagos puede sustituirse por otro proveedor sin tocar la lógica de negocio
+(CU-001, CU-024). & Integra-bilidad & Componentes a modificar para el cambio de proveedor:
+\textbf{1} (solo el adaptador), \textbf{0} cambios en el servicio de Entradas.\\[0.3em]
+RNF-17 & Al activarse una evacuación, todo el personal en campo recibe su instrucción (CU-010).
+& Seguridad física (Safety) & Dispositivos que reciben la alerta: \textbf{$\geq$ 99\%} en
+\textbf{$\leq$ 10 s} desde la activación.\\[0.3em]
+RNF-18 & Cada microservicio puede probarse de forma aislada, sin levantar los demás.
+& Comproba-bilidad & Cobertura de pruebas de la lógica de dominio \textbf{$\geq$ 70\%} y
+\textbf{100\%} de las dependencias externas sustituibles por dobles de prueba.\\
+\bottomrule
+\caption{Requisitos no funcionales, con métrica y umbral verificable por atributo de calidad.}
+\label{tab:rnf}
+\end{longtable}
+\end{center}
+
 % ==================== Modelo de dominio ====================
 \section{Modelo de dominio}
 \label{sec:dominio}
@@ -200,8 +293,9 @@ modelo entidad-relación de cada microservicio (sección \ref{sec:datos}) durant
 \textbf{Concepto} & \textbf{Explicación}\\
 \midrule
 \endhead
-Evento & Actividad (concierto, festival, partido) que un organizador crea, con fecha, recinto,
-localidades, precios y aforo.\\[0.3em]
+Evento & Actividad que un organizador crea, con fecha, recinto, localidades, precios y aforo.
+Su \textbf{categoría} (concierto, teatro, deportes, festival, gastronomía) es un atributo del
+evento y es el criterio con el que el cliente filtra la cartelera.\\[0.3em]
 Entrada & Boleto asociado a una localidad de un evento, con un código QR único que identifica al
 propietario actual.\\[0.3em]
 Publicación de reventa & Oferta de una entrada ya adquirida, puesta en venta por su propietario en
@@ -250,8 +344,8 @@ toma de decisiones.\\
 \node[class] (personal)        at (0,7)   {\textbf{Personal}\\id, rolOperativo};
 \node[class] (turno)           at (4,7)   {\textbf{Turno}\\id, horario, zona};
 \node[class] (asistencia)      at (8,7)   {\textbf{RegistroAsistencia}\\id, entrada, salida};
-\node[class] (evento)          at (0,5)   {\textbf{Evento}\\id, nombre, fecha, aforo};
-\node[class] (recinto)         at (4,5)   {\textbf{Recinto}\\id, nombre, dirección};
+\node[class] (evento)          at (0,5)   {\textbf{Evento}\\id, nombre, fecha,\\categoría, aforo};
+\node[class] (recinto)         at (4,5)   {\textbf{Recinto}\\id, nombre,\\ciudad, dirección};
 \node[class] (zona)            at (8,5)   {\textbf{Zona}\\id, capacidad};
 \node[class] (entrada)         at (0,3)   {\textbf{Entrada}\\id, códigoQR, estado};
 \node[class] (reventa)         at (4,3)   {\textbf{PublicaciónReventa}\\id, precio, estado};
@@ -332,64 +426,118 @@ la plantilla exigida y que las decisiones arquitectónicas estén justificadas.\
 \section{Requisitos Arquitectónicamente Significativos (ASR)}
 \label{sec:asr}
 
-La Tabla \ref{tab:asr} presenta el primer Árbol de Utilidad del proyecto, derivado de los
-atributos de calidad priorizados en \textit{ArchitecturalProposal.tex} y de los escenarios ya
-identificados en la bitácora arquitectónica.
+La Tabla \ref{tab:asr} presenta el Árbol de Utilidad del proyecto: los escenarios de calidad que
+tienen impacto arquitectónico real, derivados de los atributos priorizados en
+\textit{ArchitecturalProposal.tex} y de los requisitos no funcionales de la sección
+\ref{sec:rnf}. La columna \textbf{RNF} indica qué requisito verificable pone a prueba cada
+escenario; entre los dos elementos hay una diferencia de propósito: el RNF fija el umbral
+(\textit{cuánto}), el ASR describe la situación concreta que lo tensiona (\textit{cuándo y bajo
+qué condiciones}).
+
+Cada escenario se califica con el par \textbf{(Importancia, Dificultad)} en escala
+Alta/Media/Baja, como pide el método del Árbol de Utilidad:
+
+\begin{itemize}
+  \item \textbf{Importancia}: qué tanto afecta al negocio que ese escenario \textit{no} se
+  cumpla. Es la importancia \textit{del escenario}, que no siempre coincide con la prioridad
+  global de su atributo --- por ejemplo, la Seguridad física está priorizada como Media en el
+  conjunto del sistema, pero el escenario ASR-13 (fallar al notificar una evacuación) tiene
+  importancia Alta porque compromete la integridad de las personas.
+  \item \textbf{Dificultad}: qué tan difícil es técnicamente satisfacerlo con la arquitectura
+  propuesta.
+\end{itemize}
+
+Los escenarios calificados \textbf{(Alta, Alta)} --- ASR-01, ASR-04 y ASR-13 --- son los que
+concentran el riesgo arquitectónico del proyecto y, por lo tanto, los candidatos naturales a
+respaldarse con una prueba de concepto medida en vez de solo con razonamiento.
 
 \begin{landscape}
 \begin{center}
-\begin{longtable}{|p{1cm}|p{3cm}|p{2.2cm}|p{2.8cm}|p{2cm}|p{8cm}|p{1.5cm}|}
+\begin{longtable}{|p{1cm}|p{2.9cm}|p{2.1cm}|p{2.3cm}|p{1.7cm}|p{1.5cm}|p{6.1cm}|p{1.4cm}|p{1.4cm}|}
+\caption{Árbol de Utilidad --- escenarios de calidad con su par (Importancia, Dificultad) y el
+RNF que verifican.}\label{tab:asr}\\
 \hline
 \textbf{ID ASR} & \textbf{Título} & \textbf{Atributo} & \textbf{Sub-atributo} &
-\textbf{CU(s)} & \textbf{Escenario} & \textbf{Prioridad}\\
+\textbf{CU(s)} & \textbf{RNF} & \textbf{Escenario} & \textbf{Impor-tancia} &
+\textbf{Difi-cultad}\\
+\hline
+\endfirsthead
+\multicolumn{9}{l}{\small\textit{Tabla \thetable{} --- continuación}}\\
+\hline
+\textbf{ID ASR} & \textbf{Título} & \textbf{Atributo} & \textbf{Sub-atributo} &
+\textbf{CU(s)} & \textbf{RNF} & \textbf{Escenario} & \textbf{Impor-tancia} &
+\textbf{Difi-cultad}\\
 \hline
 \endhead
-ASR-01 & Bloqueo de doble venta en reventa & Consistencia & Concurrencia de datos & CU-006 & Dos
-compradores intentan adquirir simultáneamente la misma entrada publicada en reventa; el sistema
-garantiza que solo uno complete la compra y el otro reciba de inmediato un mensaje de no
-disponibilidad. & Alta\\
+\hline
+\multicolumn{9}{r}{\small\textit{Continúa en la página siguiente\ldots}}\\
+\endfoot
+\hline
+\endlastfoot
+ASR-01 & Bloqueo de doble venta en reventa & Consistencia & Concurrencia de datos & CU-006 &
+RNF-01, RNF-02 & Dos compradores intentan adquirir simultáneamente la misma entrada publicada en
+reventa; el sistema garantiza que solo uno complete la compra y el otro reciba de inmediato un
+mensaje de no disponibilidad. & Alta & Alta\\
 \hline
 ASR-02 & Disponibilidad durante el ingreso masivo & Disponibi-lidad & Tolerancia a fallos &
-CU-002, CU-021, CU-022 & Ante la caída de una instancia del servicio de validación de QR durante
-el ingreso al recinto, el balanceador redirige el tráfico a instancias sanas sin interrupción
-perceptible para el asistente. & Alta\\
+CU-002, CU-021, CU-022 & RNF-03, RNF-04 & Ante la caída de una instancia del servicio de
+validación de QR durante el ingreso al recinto, el balanceador redirige el tráfico a instancias
+sanas sin interrupción perceptible para el asistente. & Alta & Media\\
 \hline
 ASR-03 & Protección de datos de pago y credenciales & Seguridad & Confiden-cialidad & CU-001,
-CU-024, CU-031 & Un intento de acceso no autorizado a datos de pago o credenciales es rechazado
-por el API Gateway y queda registrado para auditoría. & Alta\\
-\hline
-ASR-04 & Respuesta bajo carga en apertura de venta & Rendimiento & Tiempo de respuesta & CU-001,
-CU-005 & Durante la apertura de venta de un evento masivo, miles de usuarios consultan
-disponibilidad y compran de forma simultánea; la mayoría de las solicitudes se resuelve en
-tiempos cortos y estables. & Alta\\
-\hline
-ASR-05 & Actualización de aforo y zonas en tiempo real & Tiempo real & Actualización de estado &
-CU-010, CU-019 & El aforo y el estado de las zonas se reflejan en los tableros de monitoreo con
-baja latencia tras el registro de un ingreso o un incidente. & Media-Alta\\
-\hline
-ASR-06 & Escalado independiente del servicio de Entradas & Escala-bilidad & Escala-bilidad
-horizontal & CU-001, CU-006 & Ante un incremento súbito de tráfico en el servicio de Entradas
-durante una preventa, aumentan sus instancias sin afectar el rendimiento de los demás dominios. &
+CU-024, CU-031 & RNF-05, RNF-06 & Un intento de acceso no autorizado a datos de pago o
+credenciales es rechazado por el API Gateway y queda registrado para auditoría. & Alta &
 Media\\
 \hline
+ASR-04 & Respuesta bajo carga en apertura de venta & Rendimiento & Tiempo de respuesta & CU-001,
+CU-005 & RNF-07, RNF-08 & Durante la apertura de venta de un evento masivo, miles de usuarios
+consultan disponibilidad y compran de forma simultánea; la mayoría de las solicitudes se resuelve
+en tiempos cortos y estables. & Alta & Alta\\
+\hline
+ASR-05 & Actualización de aforo y zonas en tiempo real & Tiempo real & Actualización de estado &
+CU-010, CU-019 & RNF-09 & El aforo y el estado de las zonas se reflejan en los tableros de
+monitoreo con baja latencia tras el registro de un ingreso o un incidente. & Media & Alta\\
+\hline
+ASR-06 & Escalado independiente del servicio de Entradas & Escala-bilidad & Escala-bilidad
+horizontal & CU-001, CU-006 & RNF-10 & Ante un incremento súbito de tráfico en el servicio de
+Entradas durante una preventa, aumentan sus instancias sin afectar el rendimiento de los demás
+dominios. & Media & Media\\
+\hline
 ASR-07 & Auditoría de transferencias y pagos & Traza-bilidad & Audita-bilidad & CU-006, CU-031 &
-Cada transferencia de entrada, pago o reembolso queda registrada con usuario, fecha y resultado,
-consultable en un reporte de auditoría. & Media\\
+RNF-11 & Cada transferencia de entrada, pago o reembolso queda registrada con usuario, fecha y
+resultado, consultable en un reporte de auditoría. & Media & Baja\\
 \hline
 ASR-08 & Interfaces especializadas por rol & Usabilidad & Adecuación a la tarea & Todos los CU
-(por interfaz) & Un usuario nuevo de cada rol completa su tarea principal en su interfaz
-correspondiente sin capacitación previa. & Baja-Media\\
+(por interfaz) & RNF-12 & Un usuario nuevo de cada rol completa su tarea principal en su interfaz
+correspondiente sin capacitación previa. & Media & Baja\\
 \hline
 ASR-09 & Evolución independiente de dominios & Manteni-bilidad & Modifica-bilidad & Todos los CU
-(por microservicio) & Un cambio en las reglas de negocio de Parqueaderos se implementa y despliega
-sin requerir cambios ni redespliegue del servicio de Entradas. & Baja-Media\\
+(por micro-servicio) & RNF-13 & Un cambio en las reglas de negocio de Parqueaderos se implementa y
+despliega sin requerir cambios ni redespliegue del servicio de Entradas. & Media & Media\\
 \hline
 ASR-10 & Consumo uniforme vía API & Porta-bilidad & Independencia de plataforma & Todos los CU &
-Una misma funcionalidad de backend se consume igual desde el portal web y desde la app móvil, sin
-duplicar lógica de negocio. & Baja-Media\\
+RNF-14 & Una misma funcionalidad de backend se consume igual desde el portal web y desde la app
+móvil, sin duplicar lógica de negocio. & Media & Baja\\
 \hline
-\caption{Árbol de Utilidad — primera versión.}
-\label{tab:asr}
+ASR-11 & Sustitución del proveedor de pagos sin reescribir el dominio & Integra-bilidad &
+Adaptación de interfaces & CU-001, CU-011, CU-024 & RNF-16 & La organización cambia de pasarela de
+pagos por costos; el equipo reemplaza el adaptador de pagos y los servicios de Entradas,
+Parqueaderos y Pedidos siguen funcionando sin modificar su lógica de negocio. & Media & Media\\
+\hline
+ASR-12 & Actualización de un servicio con el evento en curso & Desplega-bilidad & Despliegue sin
+interrupción & Todos los CU (por micro-servicio) & RNF-15 & Se detecta un defecto en el servicio
+de Pedidos durante un evento activo; se despliega la corrección sin detener la venta ni el ingreso
+de asistentes, y con posibilidad de revertir si la versión nueva falla. & Media & Media\\
+\hline
+ASR-13 & Notificación garantizada de evacuación & Seguridad física (Safety) & Respuesta ante
+emergencia & CU-010 & RNF-17 & El supervisor activa el protocolo de evacuación; todo el personal
+en campo recibe su instrucción específica en segundos, incluso si el proveedor de notificaciones
+responde con lentitud o una instancia del servicio falla. & Alta & Alta\\
+\hline
+ASR-14 & Prueba aislada de cada microservicio & Comproba-bilidad & Aislamiento de dependencias &
+Todos los CU (por micro-servicio) & RNF-18 & Un integrante prueba la lógica de su dominio sin
+levantar los otros cinco microservicios ni depender de la pasarela de pagos real, sustituyéndolos
+por dobles de prueba. & Media & Baja\\
 \end{longtable}
 \end{center}
 \end{landscape}
@@ -436,7 +584,7 @@ C4).
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{Diagrams/01-Contexto.png}
+\includegraphics[width=\textwidth]{Diagrams/ArchifyPDF/01-contexto.pdf}
 \caption{Diagrama de contexto (Nivel 1, modelo C4).}
 \label{fig:contexto}
 \end{figure}
@@ -458,7 +606,7 @@ Sistema & Proveedor de Notificaciones & Envía notificaciones push, correo y SMS
 \end{longtable}
 \end{center}
 
-El diagrama de panorama de sistemas (\textit{System Landscape}, \textit{Diagrams/04-Panorama.png}
+El diagrama de panorama de sistemas (\textit{System Landscape}, \textit{Diagrams/ArchifyPDF/04-panorama.pdf}
 en \textit{C4Diagrams.tex}) amplía este alcance mostrando además cómo el sistema se relaciona con
 otros sistemas de la organización (Contabilidad y Facturación, CRM/Marketing y una plataforma de
 Analítica), fuera del alcance de este documento pero relevantes para entender el ecosistema
@@ -468,19 +616,23 @@ completo.
 \section{Vista de contenedores}
 \label{sec:contenedores}
 
-El sistema se divide en cuatro interfaces desplegables (Portal Web del Cliente, Portal Web
-Administrativo/Operativo, App Móvil del Cliente y App Móvil del Personal), todas consumiendo el
-mismo backend a través de un API Gateway. El backend está compuesto por microservicios
-independientes por dominio (Entradas/Mercado Secundario, Personal, Eventos/Emergencias,
-Parqueaderos) y por infraestructura de soporte (Redis, cola de mensajes y bases de datos por
-servicio). La Figura \ref{fig:contenedores} presenta el diagrama de contenedores.
+El sistema se divide en tres interfaces desplegables (Portal Web del Cliente, Portal Web
+Administrativo/Operativo y App Móvil), todas consumiendo el mismo backend a través de un API
+Gateway. La \textbf{App Móvil} es un único binario (Kotlin + Jetpack Compose) que sirve tanto al
+rol Cliente como al rol Personal: el login identifica el rol del usuario autenticado y la
+navegación interna abre el conjunto de pantallas correspondiente — no son dos apps distribuidas
+por separado (ver ADR-07). El backend está compuesto por microservicios independientes por dominio
+(Entradas/Mercado Secundario, Personal, Eventos/Emergencias, Parqueaderos) y por infraestructura de
+soporte (Redis, cola de mensajes y bases de datos por servicio). La Figura \ref{fig:contenedores}
+presenta el diagrama de contenedores.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{Diagrams/02-Contenedores.png}
+\includegraphics[width=\textwidth]{Diagrams/ArchifyPDF/02-contenedores.pdf}
 \caption{Diagrama de contenedores (Nivel 2, modelo C4).}
 \label{fig:contenedores}
 \end{figure}
+
 
 \begin{itemize}
 \item \textbf{API Gateway + balanceador de carga:} punto único de entrada al backend; centraliza
@@ -507,7 +659,7 @@ al mismo nivel de detalle, los otros tres microservicios de dominio. La Figura
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{Diagrams/03-Componentes.png}
+\includegraphics[width=\textwidth]{Diagrams/ArchifyPDF/03-componentes.pdf}
 \caption{Diagrama de componentes — Servicio de Entradas y Mercado Secundario (Nivel 3, modelo
 C4).}
 \label{fig:componentes}
@@ -563,7 +715,7 @@ contenedores para resolver una compra en el mercado secundario.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{Diagrams/05-Secuencia.png}
+\includegraphics[width=\textwidth]{Diagrams/ArchifyPDF/05-secuencia.pdf}
 \caption{Diagrama de secuencia — reventa de una entrada (CU-006).}
 \label{fig:secuencia}
 \end{figure}
@@ -607,7 +759,7 @@ bases de datos, un clúster Redis y un clúster de mensajería.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{Diagrams/06-Despliegue.png}
+\includegraphics[width=\textwidth]{Diagrams/ArchifyPDF/06-despliegue.pdf}
 \caption{Diagrama de despliegue — ambiente de producción (modelo C4).}
 \label{fig:despliegue}
 \end{figure}
@@ -652,8 +804,8 @@ llaves foráneas lógicas.
 
 \subsection*{Esquema de Eventos / Emergencias}
 \begin{itemize}
-\item \textbf{Evento}(id, nombre, fecha, recinto\_id, aforo)
-\item \textbf{Recinto}(id, nombre, direccion)
+\item \textbf{Evento}(id, nombre, fecha, categoria, recinto\_id, aforo)
+\item \textbf{Recinto}(id, nombre, ciudad, direccion)
 \item \textbf{Zona}(id, recinto\_id, capacidad)
 \item \textbf{Incidente}(id, evento\_id, tipo, estado)
 \end{itemize}
@@ -699,7 +851,7 @@ eventual entre servicios en vez de transacciones ACID únicas.
 \subsection*{ADR-02 --- API Gateway y balanceador de carga}
 \textbf{ASR relacionados:} ASR-02, ASR-03.\\
 \textbf{Problema:} se necesita un punto único, seguro y disponible de entrada al backend para las
-cuatro interfaces del sistema.\\
+tres interfaces del sistema.\\
 \textbf{Solución:} un \textbf{API Gateway} centraliza autenticación, autorización y enrutamiento;
 un \textbf{balanceador de carga} distribuye solicitudes entre múltiples instancias de cada
 microservicio.\\
@@ -735,16 +887,18 @@ consistencia eventual y de requerir monitoreo propio de las colas.
 
 \subsection*{ADR-05 --- Stack de frontend por tipo de interfaz}
 \textbf{ASR relacionados:} ASR-08, ASR-10, ASR-05.\\
-\textbf{Problema:} las cuatro interfaces (portal web del cliente, portal web administrativo/operativo,
-app móvil del cliente, app móvil de personal) deben implementarse en un lenguaje/framework concreto,
-sin comprometer el consumo uniforme del backend vía API Gateway (ASR-10) ni la especialización por
-rol de cada interfaz (ASR-08).\\
+\textbf{Problema:} las tres interfaces (portal web del cliente, portal web administrativo/operativo,
+app móvil) deben implementarse en un lenguaje/framework concreto, sin comprometer el consumo
+uniforme del backend vía API Gateway (ASR-10) ni la especialización por rol de cada interfaz
+(ASR-08).\\
 \textbf{Solución:} los portales web se construyen en \textbf{Angular + TypeScript} — su estructura de
 módulos, \textit{guards} e \textit{interceptors} favorece el trabajo en paralelo de varios
 integrantes con convenciones consistentes, y RxJS encaja con las actualizaciones en tiempo real de
-ASR-05. Las apps móviles se construyen en \textbf{Kotlin nativo sobre Android Studio} (Jetpack
+ASR-05. La app móvil se construye en \textbf{Kotlin nativo sobre Android Studio} (Jetpack
 Compose para la interfaz, \textit{coroutines}/\textit{Flow} para tiempo real), aprovechando que el
-equipo ya domina ambos lenguajes.\\
+equipo ya domina ambos lenguajes; sirve a los roles Cliente y Personal desde un mismo proyecto
+(ver ADR-07), por lo que ASR-08 se resuelve con navegación condicionada por rol en vez de con
+binarios separados.\\
 \textbf{Alternativa descartada:} un framework híbrido/\textit{cross-platform} (p. ej. React Native o
 Flutter) para compartir código de interfaz entre web y móvil — se descartó porque ASR-10 ya evita
 duplicar lógica de negocio en el cliente (esta vive en el backend, detrás del API Gateway), por lo
@@ -771,6 +925,33 @@ de reporte, tal como ya anticipaba la sección de modelo de datos.\\
 \textbf{Consecuencias:} cada esquema usa el motor más adecuado a su naturaleza (ACID para lo
 transaccional, esquema flexible para reportes), a costa de operar y respaldar dos motores de base de
 datos distintos en vez de uno solo.
+
+\subsection*{ADR-07 --- App móvil unificada para Cliente y Personal}
+\textbf{ASR relacionados:} ASR-08, ASR-10.\\
+\textbf{Problema:} el diseño original (v1.1) proponía dos apps móviles nativas independientes, una
+por rol (Cliente y Personal). Al construir el prototipo de la Entrega 2 con un equipo pequeño, mantener
+dos proyectos Android desde cero duplica configuración de Gradle, tema visual y esqueleto de
+navegación sin que exista todavía una razón operativa concreta (distribución, permisos de
+dispositivo, política de actualización) que obligue a separarlos en esta etapa.\\
+\textbf{Solución:} una única app (\texttt{App/frontend/app-movil-cliente}\footnote{El nombre del
+módulo quedó de la primera versión; se recomienda renombrarlo en una futura iteración para no sugerir
+que es exclusivo del rol Cliente.}) con una pantalla de login compartida. Las credenciales
+identifican el rol del usuario autenticado y la navegación interna (\textit{Jetpack Navigation
+Compose}) abre el conjunto de pantallas del rol correspondiente: Inicio/Entradas/Parqueadero/Pedidos
+para Cliente, Turnos/Asistencia para Personal.\\
+\textbf{Alternativa descartada:} mantener \textbf{App Móvil del Cliente} y \textbf{App Móvil del
+Personal} como dos módulos/APKs independientes (diseño de la v1.1) — se descartó para este
+prototipo porque el beneficio principal de separarlas (aislar del binario público de clientes las
+pantallas y permisos operativos del personal, y poder distribuirlas y versionarlas por canales
+distintos — tiendas públicas vs. MDM interno) todavía no tiene un requisito concreto que lo exija, y
+el costo de mantener dos proyectos no se justifica en esta fase.\\
+\textbf{Consecuencias:} menos código y configuración duplicados mientras el equipo es pequeño, y un
+único punto de login para ambos roles. A cambio, el binario que instala un cliente cualquiera desde
+la tienda pública contiene también las pantallas y — potencialmente — los permisos operativos del
+personal (aunque inaccesibles sin credenciales válidas), lo que amplía la superficie de la app frente
+a la alternativa separada; y ambos roles quedan acoplados a un mismo ciclo de release. Si el rol
+Personal termina necesitando permisos de dispositivo, distribución o cadencia de actualización
+distintos a los del Cliente, esta decisión debe revisarse y volver a separar los binarios.
 
 % ==================== Riesgos técnicos ====================
 \section{Riesgos técnicos}

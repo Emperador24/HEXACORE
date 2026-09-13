@@ -1,0 +1,17 @@
+<h1>Ajustes</h1>
+
+<mat-card class="tarjeta">
+  <mat-card-content>
+    <h3>Preferencias</h3>
+    <mat-slide-toggle [(ngModel)]="notificaciones" [ngModelOptions]="{ standalone: true }">Notificaciones</mat-slide-toggle>
+
+    <h3>Soporte</h3>
+    <p>¿Necesitas ayuda? Escríbenos a soporte&#64;hexacore.com.</p>
+
+    <h3>Acerca de</h3>
+    <p>HEXACORE — Sistema Integral de Gestión de Eventos</p>
+    <p class="version">Versión 1.0.0</p>
+
+    <button mat-stroked-button color="warn" (click)="cerrarSesion()">Cerrar sesión</button>
+  </mat-card-content>
+</mat-card>

@@ -58,9 +58,7 @@
 \node[draw=azul,rounded corners,fill=gris,minimum width=10cm,minimum height=1cm,below=0.4cm of current bounding box.south,align=center]
 {Portal Web del Cliente};
 \node[draw=morado,rounded corners,fill=violet!8,minimum width=10cm,minimum height=1cm,below=0.4cm of current bounding box.south,align=center]
-{App Móvil del Cliente (QR de entradas)};
-\node[draw=verde,rounded corners,fill=green!8,minimum width=10cm,minimum height=1cm,below=0.4cm of current bounding box.south,align=center]
-{App Móvil del Personal};
+{App Móvil (Cliente y Personal)};
 \end{tikzpicture}
 \vfill
 \begin{tabular}{rl}
@@ -75,6 +73,11 @@
 
 \section{Idea general y problema que resuelve}
 
+\textit{Nota de actualización (29/08/2026): al construir el prototipo de la app móvil en la
+Entrega 2 se decidió unificar la App Móvil del Cliente y la App Móvil del Personal en un único
+binario, con un login compartido que identifica el rol y navega al conjunto de pantallas
+correspondiente (ver SAD, ADR-07). Este documento se actualiza en consecuencia.}
+
 El proyecto centraliza en una sola plataforma todos los procesos que hoy suelen estar dispersos
 en la gestión de un evento: venta de entradas, reventa, personal, parqueaderos, operación del
 evento y administración general. El problema central es la \textbf{ausencia de un sistema
@@ -83,15 +86,17 @@ información duplicada, errores humanos y falta de trazabilidad --- especialment
 hay miles de asistentes concurrentes durante la apertura de venta o el ingreso al recinto.
 
 Esta primera versión del trabajo define explícitamente que el sistema se materializa en
-\textbf{una aplicación web (con dos portales diferenciados)} y \textbf{una aplicación móvil (con
-dos variantes según el tipo de usuario)}, todas consumiendo el mismo backend.
+\textbf{una aplicación web (con dos portales diferenciados)} y \textbf{una aplicación móvil única
+(cuya navegación depende del tipo de usuario autenticado)}, todas consumiendo el mismo backend.
 
 \section{Arquitectura de interfaces}
 
-El sistema se divide en \textbf{cuatro interfaces}, cada una con un propósito y una audiencia
+El sistema se divide en \textbf{tres interfaces}, cada una con un propósito y una audiencia
 clara. Esto separa la lógica de negocio (que vive en el backend) de cómo cada tipo de usuario la
 consume: ninguna interfaz duplica lógica, todas consumen los mismos servicios a través del API
-Gateway.
+Gateway. La App Móvil es una sola de esas tres interfaces, pero sirve a dos audiencias (Cliente y
+Personal): el login identifica el rol y la navegación interna muestra el conjunto de pantallas
+correspondiente.
 
 \begin{longtable}{p{3.3cm}p{3.2cm}p{7.5cm}}
 \toprule
@@ -110,17 +115,15 @@ Portal Web del Cliente &
 Clientes (compradores) &
 Consulta de eventos, compra de entradas, \textbf{mercado secundario} (publicar/comprar
 reventas), cancelaciones y devoluciones, promociones, reserva de parqueadero.\\[0.4em]
-App Móvil del Cliente &
-Clientes &
-Inicio de sesión, visualización del \textbf{código QR} de cada entrada (función crítica para el
-ingreso rápido), consulta de eventos e información, notificaciones y alertas.\\[0.4em]
-App Móvil del Personal &
-Empleados operativos &
-Consulta de turnos y asignaciones, confirmación de asignaciones, solicitud de \textbf{cambios de
-turno}, \textbf{registro de ingreso/salida}, instrucciones, reporte de incidentes y alertas de
-emergencia.\\
+App Móvil (Cliente y Personal) &
+Clientes y empleados operativos, según el rol detectado en el login &
+\textit{Rol Cliente:} visualización del \textbf{código QR} de cada entrada (función crítica para
+el ingreso rápido), consulta de eventos e información, notificaciones y alertas.
+\textit{Rol Personal:} consulta de turnos y asignaciones, confirmación de asignaciones, solicitud
+de \textbf{cambios de turno}, \textbf{registro de ingreso/salida}, instrucciones, reporte de
+incidentes y alertas de emergencia.\\
 \bottomrule
-\caption{Las cuatro interfaces del sistema y su propósito.}
+\caption{Las tres interfaces del sistema y su propósito.}
 \end{longtable}
 
 \section{Actores del sistema}
@@ -152,27 +155,28 @@ integrantes del equipo.
 CU-006 --- Gestión del Mercado Secundario \textit{(complejo)} &
 Reventa de entradas: publicación, compra, pago, transferencia de propiedad, invalidación y
 regeneración de QR. &
-Portal Web del Cliente (+ App Móvil Cliente recibe el nuevo QR).\\[0.5em]
+Portal Web del Cliente (+ App Móvil, rol Cliente, recibe el nuevo QR).\\[0.5em]
 CU-007 --- Gestión de Personal para Eventos \textit{(fusión de Administrar + Asignar Personal)} &
 CRUD de empleados y asignación a eventos con validación de rol, horario y conflictos. &
-Portal Web Administrativo (el empleado confirma desde la App Móvil del Personal).\\[0.5em]
+Portal Web Administrativo (el empleado confirma desde la App Móvil, rol Personal).\\[0.5em]
 CU-008 --- Gestionar Cambios de Turno &
 Solicitud, búsqueda de reemplazo y aprobación de cambios de turno. &
-App Móvil del Personal (solicitud) + Portal Web Administrativo (aprobación del supervisor).\\[0.5em]
+App Móvil, rol Personal (solicitud) + Portal Web Administrativo (aprobación del supervisor).\\[0.5em]
 CU-009 --- Registrar Ingreso y Salida del Personal &
 Control de asistencia vía QR/credencial y cálculo de horas trabajadas. &
-App Móvil del Personal.\\[0.5em]
+App Móvil, rol Personal.\\[0.5em]
 CU-010 --- Gestionar Evacuación ante Emergencias \textit{(complejo)} &
 Activación, coordinación y cierre de un protocolo de evacuación en tiempo real. &
-Portal Web Administrativo (el supervisor activa y monitorea) + ambas apps móviles (reciben
-instrucciones/alertas).\\
+Portal Web Administrativo (el supervisor activa y monitorea) + App Móvil (recibe
+instrucciones/alertas en ambos roles).\\
 \bottomrule
 \caption{Casos de uso asignados, con su interfaz principal de uso.}
 \end{longtable}
 
-Nótese que \textbf{CU-010 es el único caso que toca las tres interfaces a la vez} (web
-administrativo para activar, ambas apps para recibir alertas) --- es el mejor argumento para
-defenderlo como el caso ``no trivial'' en infraestructura y atributos de calidad.
+Nótese que \textbf{CU-010 es el único caso que toca las dos interfaces con usuarios finales a la
+vez} (web administrativo para activar, la app móvil para recibir alertas, tanto en el rol Cliente
+como en el rol Personal) --- es el mejor argumento para defenderlo como el caso ``no trivial'' en
+infraestructura y atributos de calidad.
 
 \section{Atributos de calidad priorizados}
 
@@ -201,7 +205,7 @@ reduce el acoplamiento.\\
 
 \begin{itemize}
 \item \textbf{API Gateway + balanceador de carga:} punto único de entrada, autenticación y
-enrutamiento --- el mismo backend sirve a las cuatro interfaces sin duplicar lógica.
+enrutamiento --- el mismo backend sirve a las tres interfaces sin duplicar lógica.
 \item \textbf{Microservicios independientes:} Entradas/Mercado Secundario, Personal,
 Eventos/Emergencias, Parqueaderos, Autenticación --- cada uno con su propia base de datos.
 \item \textbf{Redis:} bloqueo temporal de concurrencia (evita doble venta) y estado de ocupación
@@ -221,10 +225,9 @@ infra/.style={draw=verde,rounded corners,fill=green!8,minimum width=3.4cm,minimu
 ext/.style={draw=naranja,rounded corners,fill=orange!10,minimum width=3.4cm,minimum height=0.9cm,align=center,font=\small},
 arr/.style={-{Latex[length=2mm]},thick}
 ]
-\node[box] (ac) {App Móvil\\Cliente};
-\node[box,below=6mm of ac] (wc) {Portal Web\\Cliente};
+\node[box] (am) {App Móvil\\(Cliente + Personal)};
+\node[box,below=6mm of am] (wc) {Portal Web\\Cliente};
 \node[box,below=6mm of wc] (wa) {Portal Web\\Administrativo};
-\node[box,below=6mm of wa] (ap) {App Móvil\\Personal};
 
 \node[box,right=22mm of wc,yshift=-4mm] (gw) {API Gateway};
 \node[box,right=20mm of gw] (ms) {Microservicios};
@@ -232,28 +235,30 @@ arr/.style={-{Latex[length=2mm]},thick}
 \node[ext,right=20mm of ms] (pg) {Pasarela de\\pagos};
 \node[ext,below=8mm of pg] (no) {Notificaciones};
 
-\foreach \x in {ac,wc,wa,ap} \draw[arr] (\x) -- (gw);
+\foreach \x in {am,wc,wa} \draw[arr] (\x) -- (gw);
 \draw[arr] (gw) -- (ms);
 \draw[arr] (ms) -- (inf);
 \draw[arr] (ms) -- (pg);
 \draw[arr] (inf) -- (no);
 \end{tikzpicture}
 }
-\caption{Cómo se conecta todo: las cuatro interfaces son distintas puertas de entrada al mismo
+\caption{Cómo se conecta todo: las tres interfaces son distintas puertas de entrada al mismo
 backend.}
 \end{figure}
 
-Las cuatro interfaces son distintas puertas de entrada al mismo backend: cada una expone solo las
-funciones que su tipo de usuario necesita (principio de usabilidad y seguridad por rol), pero
-toda la consistencia, seguridad y trazabilidad se garantiza una sola vez, de forma centralizada,
-en los microservicios detrás del Gateway.
+Las tres interfaces son distintas puertas de entrada al mismo backend: cada una expone solo las
+funciones que su tipo de usuario necesita (principio de usabilidad y seguridad por rol) --- en el
+caso de la App Móvil, esa especialización ocurre por navegación condicionada por rol dentro del
+mismo binario, no por tener una app distinta --- pero toda la consistencia, seguridad y
+trazabilidad se garantiza una sola vez, de forma centralizada, en los microservicios detrás del
+Gateway.
 
 \section{Documentación entregada (modelo C4)}
 
 \begin{itemize}
 \item \textbf{Nivel 1 (Contexto):} el sistema como caja negra frente a los cinco roles de usuario
 y los dos sistemas externos.
-\item \textbf{Nivel 2 (Contenedores):} zoom a las cuatro interfaces, el API Gateway, los
+\item \textbf{Nivel 2 (Contenedores):} zoom a las tres interfaces, el API Gateway, los
 microservicios y la infraestructura.
 \item \textbf{Nivel 3 (Componentes):} zoom interno al Servicio de Entradas y Mercado Secundario
 (el caso complejo CU-006).
@@ -266,13 +271,14 @@ alcance, leyenda y tecnología de cada relación), y se documenta en el archivo 
 
 \section{Conclusión}
 
-Esta primera versión del proyecto define con claridad cuatro superficies de interacción --- dos
-portales web y dos variantes de aplicación móvil --- todas apoyadas en un único backend de
-microservicios. Los cinco casos de uso asignados (CU-006 a CU-010) cubren de forma cohesiva el
-ciclo completo del personal operativo (administración, asignación, cambios de turno, asistencia)
-y el proceso más complejo del sistema desde el punto de vista arquitectónico: la reventa segura
-de entradas. La incorporación explícita de las cuatro interfaces refuerza la justificación de
-atributos como disponibilidad, seguridad, tiempo real y usabilidad, y deja una base clara para
-iterar en próximas versiones del trabajo.
+Esta primera versión del proyecto define con claridad tres superficies de interacción --- dos
+portales web y una aplicación móvil única, cuya navegación se especializa según el rol
+autenticado (Cliente o Personal) --- todas apoyadas en un único backend de microservicios. Los
+cinco casos de uso asignados (CU-006 a CU-010) cubren de forma cohesiva el ciclo completo del
+personal operativo (administración, asignación, cambios de turno, asistencia) y el proceso más
+complejo del sistema desde el punto de vista arquitectónico: la reventa segura de entradas. La
+incorporación explícita de las tres interfaces refuerza la justificación de atributos como
+disponibilidad, seguridad, tiempo real y usabilidad, y deja una base clara para iterar en
+próximas versiones del trabajo.
 
 \end{document}

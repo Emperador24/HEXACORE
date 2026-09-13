@@ -1,0 +1,263 @@
+// Barra de búsqueda sobre banda azul — patrón de las taquillas de referencia.
+.buscador {
+  background: var(--hxc-azul);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 8px;
+}
+
+.buscador-fila {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: stretch;
+}
+
+.campo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border-radius: 8px;
+  padding: 0 12px;
+  min-height: 46px;
+  flex: 0 1 220px;
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    color: var(--hxc-azul);
+    flex-shrink: 0;
+  }
+
+  select,
+  input {
+    border: none;
+    outline: none;
+    background: transparent;
+    font: inherit;
+    font-size: 0.95rem;
+    color: #1a1a1a;
+    width: 100%;
+    min-width: 0;
+    padding: 12px 0;
+  }
+
+  select {
+    cursor: pointer;
+    appearance: none;
+    // Chevron propio: `appearance: none` quita el del navegador.
+    background-image: linear-gradient(45deg, transparent 50%, #006eb7 50%),
+      linear-gradient(135deg, #006eb7 50%, transparent 50%);
+    background-position: right 4px top 50%, right 0px top 50%;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+    padding-right: 18px;
+  }
+}
+
+.campo-texto {
+  flex: 1 1 260px;
+}
+
+.limpiar {
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  background: transparent;
+  color: #fff;
+  border-radius: 8px;
+  padding: 0 18px;
+  min-height: 46px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.14);
+  }
+}
+
+.titulo-seccion {
+  margin: 28px 0 12px;
+  font-size: 1.15rem;
+}
+
+.conteo {
+  margin: 20px 0 0;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: rgba(0, 0, 0, 0.6);
+  padding: 56px 24px;
+
+  mat-icon {
+    font-size: 44px;
+    width: 44px;
+    height: 44px;
+    opacity: 0.5;
+  }
+
+  p {
+    margin: 0;
+  }
+}
+
+// --- Evento destacado ---
+.destacado-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.tarjeta-destacada {
+  // mat-card trae flex-direction: column; hay que forzar la fila o el poster
+  // queda arriba y la información debajo, con un hueco vacío a la derecha.
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.poster-destacado {
+  width: 300px;
+  height: 240px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.info-destacado {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 20px 24px;
+  flex: 1 1 auto;
+}
+
+.datos-destacado {
+  h3 {
+    margin: 4px 0 4px;
+    font-size: 1.4rem;
+  }
+
+  p {
+    margin: 0 0 4px;
+    color: rgba(0, 0, 0, 0.6);
+  }
+
+  .precio {
+    font-weight: 700;
+    color: var(--hxc-azul);
+  }
+}
+
+.etiqueta-categoria {
+  display: inline-block;
+  background: rgba(0, 110, 183, 0.1);
+  color: var(--hxc-azul);
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cta-destacado {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+// --- Grilla por categoría ---
+.grilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.tarjeta-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.tarjeta-evento {
+  height: 100%;
+  border-radius: 10px;
+  overflow: hidden;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.14);
+  }
+
+  h3 {
+    margin: 0 0 4px;
+    font-size: 1rem;
+  }
+
+  p {
+    margin: 0 0 4px;
+    color: rgba(0, 0, 0, 0.6);
+    font-size: 0.9rem;
+  }
+
+  .precio {
+    font-weight: 700;
+    color: var(--hxc-azul);
+  }
+}
+
+.poster-contenedor {
+  position: relative;
+}
+
+.poster {
+  display: block;
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+}
+
+.poster-vacio {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  font-weight: 700;
+  background: var(--hxc-azul);
+  color: #fff;
+}
+
+.badge-flotante {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+@media (max-width: 700px) {
+  .tarjeta-destacada {
+    flex-direction: column;
+  }
+
+  .poster-destacado {
+    width: 100%;
+    min-height: 180px;
+  }
+
+  .info-destacado {
+    flex-wrap: wrap;
+  }
+
+  .cta-destacado {
+    margin-left: 0;
+    width: 100%;
+  }
+}

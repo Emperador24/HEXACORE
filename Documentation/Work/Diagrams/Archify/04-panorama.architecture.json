@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "HEXACORE — Panorama de Sistemas",
+    "output": "04-panorama.html",
+    "quality_profile": "standard"
+  },
+  "components": [
+    { "id": "sistema", "type": "backend", "label": "Sistema Integral de Gestión de Eventos", "sublabel": "HEXACORE", "pos": [20, 160], "size": [260, 90] },
+
+    { "id": "contabilidad", "type": "cloud", "label": "Sistema de Contabilidad y Facturación", "sublabel": "otro sistema de la organización", "pos": [420, 0], "size": [280, 70] },
+    { "id": "crm", "type": "cloud", "label": "CRM y Marketing", "sublabel": "otro sistema de la organización", "pos": [420, 140], "size": [280, 70] },
+    { "id": "bi", "type": "cloud", "label": "Plataforma de Analítica (BI)", "sublabel": "otro sistema de la organización", "pos": [820, 70], "size": [260, 70] },
+    { "id": "pagos", "type": "external", "label": "Pasarela de Pagos", "sublabel": "sistema externo", "pos": [420, 300], "size": [280, 70] }
+  ],
+  "connections": [
+    { "id": "sistema-contabilidad", "from": "sistema", "to": "contabilidad", "label": "ventas, reventas, reembolsos", "route": "orthogonal-h" },
+    { "id": "sistema-crm", "from": "sistema", "to": "crm", "label": "clientes e historial", "variant": "emphasis" },
+    { "id": "sistema-bi", "from": "sistema", "to": "bi", "label": "métricas de aforo y ventas", "fromSide": "top", "toSide": "top", "via": [[150, -40], [950, -40]], "labelAt": [550, -54] },
+    { "id": "crm-bi", "from": "crm", "to": "bi", "label": "segmentos y campañas", "variant": "dashed" },
+    { "id": "sistema-pagos", "from": "sistema", "to": "pagos", "label": "compras, reventas, reembolsos", "variant": "emphasis" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Fuera del sistema en alcance", "items": ["Contabilidad, CRM y BI son sistemas propios de la organización, no de este proyecto", "Se integran por lotes/ETL o HTTPS/REST, nunca comparten base de datos directamente"] }
+  ]
+}
