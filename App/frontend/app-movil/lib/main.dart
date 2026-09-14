@@ -17,6 +17,7 @@ import 'widgets/qr_scanner_sheet.dart';
 import 'models/activity_log.dart';
 import 'models/requests_store.dart';
 import 'services/api_client.dart';
+import 'services/logistica_api_client.dart';
 
 void main() {
   final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
@@ -1723,8 +1724,8 @@ List<StaffDestination> _staffPages(User user) {
           'Validar personal', Icons.badge_outlined, PersonnelValidationPage()),
       const StaffDestination(
           'Promociones', Icons.local_offer_outlined, PromotionsPage()),
-      const StaffDestination(
-          'Solicitudes', Icons.rule_folder_outlined, RequestsReviewPage()),
+      StaffDestination('Solicitudes', Icons.rule_folder_outlined,
+          RequestsReviewPage(supervisorCredencial: user.email)),
     ];
   }
   final operational = switch (position) {
@@ -1737,9 +1738,11 @@ List<StaffDestination> _staffPages(User user) {
   };
   return [
     StaffDestination(
-        'Turnos', Icons.schedule_outlined, ShiftsPage(employeeName: user.name)),
-    const StaffDestination(
-        'Asistencia', Icons.how_to_reg_outlined, AttendancePage()),
+        'Turnos',
+        Icons.schedule_outlined,
+        ShiftsPage(employeeName: user.name, credencial: user.email)),
+    StaffDestination('Asistencia', Icons.how_to_reg_outlined,
+        AttendancePage(credencial: user.email)),
     operational,
     const StaffDestination(
         'Incidentes', Icons.report_outlined, IncidentsPage()),
@@ -1849,8 +1852,72 @@ class _PromotionsPageState extends State<PromotionsPage> {
   }
 }
 
-class RequestsReviewPage extends StatelessWidget {
-  const RequestsReviewPage({super.key});
+// Las cancelaciones de entradas siguen siendo mock (CU-001..006, de otro
+// integrante); los cambios de turno (CU-018, mío) sí vienen del backend
+// real de `eventos-emergencias` — por eso esta pantalla combina un
+// `AnimatedBuilder` (mock, reactivo) con estado propio cargado por HTTP.
+class RequestsReviewPage extends StatefulWidget {
+  const RequestsReviewPage({super.key, required this.supervisorCredencial});
+  final String supervisorCredencial;
+
+  @override
+  State<RequestsReviewPage> createState() => _RequestsReviewPageState();
+}
+
+class _RequestsReviewPageState extends State<RequestsReviewPage> {
+  bool _loading = true;
+  String? _error;
+  List<dynamic> _solicitudesPendientes = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarSolicitudes();
+  }
+
+  Future<void> _cargarSolicitudes() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final pendientes = await logisticaApiClient.solicitudesPendientes();
+      setState(() {
+        _solicitudesPendientes = pendientes;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e is LogisticaApiException
+            ? e.message
+            : 'No se pudo conectar con el backend de logística.';
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _revisar(Map<String, dynamic> solicitud, bool aprobar) async {
+    try {
+      await logisticaApiClient.revisarSolicitud(
+          solicitudId: solicitud['id'] as String,
+          supervisorCredencial: widget.supervisorCredencial,
+          aprobar: aprobar);
+      final turno = solicitud['turno'] as Map?;
+      final empleado = turno?['empleado'] as Map?;
+      activityLog.add(ActivityEntry(
+          type: ActivityType.shiftChange,
+          title: empleado?['nombre']?.toString() ?? 'Empleado',
+          subtitle: aprobar ? 'Cambio de turno aprobado' : 'Cambio de turno rechazado',
+          amount: 0));
+      await _cargarSolicitudes();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(e is LogisticaApiException
+              ? e.message
+              : 'No se pudo conectar con el backend de logística.')));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1862,17 +1929,25 @@ class RequestsReviewPage extends StatelessWidget {
         final pendingCancellations = requestsStore.cancellations
             .where((c) => c.status == RequestStatus.pending)
             .toList();
-        final pendingShifts = requestsStore.shiftChanges
-            .where((s) => s.status == RequestStatus.pending)
-            .toList();
-        if (pendingCancellations.isEmpty && pendingShifts.isEmpty) {
+        if (_loading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (pendingCancellations.isEmpty &&
+            _solicitudesPendientes.isEmpty &&
+            _error == null) {
           return Center(
             child: Text('No hay solicitudes pendientes.',
                 style: textTheme.bodyMedium
                     ?.copyWith(color: scheme.onSurface.withValues(alpha: 0.6))),
           );
         }
-        return ListView(padding: const EdgeInsets.all(16), children: [
+        return RefreshIndicator(
+          onRefresh: _cargarSolicitudes,
+          child: ListView(padding: const EdgeInsets.all(16), children: [
+          if (_error != null) ...[
+            Text(_error!, style: textTheme.bodyMedium?.copyWith(color: _kRed)),
+            const SizedBox(height: 20),
+          ],
           if (pendingCancellations.isNotEmpty) ...[
             Text('Cancelaciones de entradas', style: textTheme.titleMedium),
             const SizedBox(height: 8),
@@ -1924,130 +1999,146 @@ class RequestsReviewPage extends StatelessWidget {
               ),
             const SizedBox(height: 20),
           ],
-          if (pendingShifts.isNotEmpty) ...[
-            Text('Cambios de turno', style: textTheme.titleMedium),
+          if (_solicitudesPendientes.isNotEmpty) ...[
+            Text('Cambios de turno (backend real · CU-018)',
+                style: textTheme.titleMedium),
             const SizedBox(height: 8),
-            for (final request in pendingShifts)
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(request.employeeName, style: textTheme.titleSmall),
-                      Text('${request.currentShift} → ${request.desiredShift}',
-                          style: textTheme.bodySmall),
-                      Text(request.reason,
-                          style: textTheme.bodySmall?.copyWith(
-                              color: scheme.onSurface.withValues(alpha: 0.65))),
-                      const SizedBox(height: 10),
-                      Row(children: [
-                        Expanded(
-                          child: OutlinedButton(
-                              onPressed: () {
-                                requestsStore.resolveShiftChange(
-                                    request, false);
-                                activityLog.add(ActivityEntry(
-                                    type: ActivityType.shiftChange,
-                                    title: request.employeeName,
-                                    subtitle: 'Cambio de turno rechazado',
-                                    amount: 0));
-                              },
-                              child: const Text('Rechazar')),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: FilledButton(
-                              onPressed: () {
-                                requestsStore.resolveShiftChange(request, true);
-                                activityLog.add(ActivityEntry(
-                                    type: ActivityType.shiftChange,
-                                    title: request.employeeName,
-                                    subtitle: 'Cambio de turno aprobado',
-                                    amount: 0));
-                              },
-                              child: const Text('Aprobar')),
-                        ),
-                      ]),
-                    ],
+            for (final solicitud in _solicitudesPendientes)
+              Builder(builder: (context) {
+                final s = solicitud as Map<String, dynamic>;
+                final turno = s['turno'] as Map<String, dynamic>?;
+                final empleado = turno?['empleado'] as Map<String, dynamic>?;
+                final reemplazo = s['empleadoReemplazo'] as Map<String, dynamic>?;
+                return Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(empleado?['nombre']?.toString() ?? 'Empleado',
+                            style: textTheme.titleSmall),
+                        Text(
+                            '${turno?['zona'] ?? ''} · reemplazo propuesto: ${reemplazo?['nombre'] ?? 'ninguno'}',
+                            style: textTheme.bodySmall),
+                        Text(s['motivo']?.toString() ?? '',
+                            style: textTheme.bodySmall?.copyWith(
+                                color: scheme.onSurface.withValues(alpha: 0.65))),
+                        const SizedBox(height: 10),
+                        Row(children: [
+                          Expanded(
+                            child: OutlinedButton(
+                                onPressed: () => _revisar(s, false),
+                                child: const Text('Rechazar')),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: FilledButton(
+                                onPressed: () => _revisar(s, true),
+                                child: const Text('Aprobar')),
+                          ),
+                        ]),
+                      ],
+                    ),
                   ),
-                ),
-              ),
+                );
+              }),
           ],
-        ]);
+        ]),
+        );
       },
     );
   }
 }
 
-class _Shift {
-  const _Shift(this.event, this.zone, this.schedule, this.color);
-  final String event, zone, schedule;
-  final Color color;
-}
-
-const _kShifts = [
-  _Shift('HEXACORE Fest 2026', 'Puerta Norte',
-      '12 dic 2026 · 3:00 p. m. – 11:00 p. m.', _kPink),
-  _Shift('Noche de Rock Nacional', 'Zona de Parqueadero',
-      '20 sep 2026 · 5:00 p. m. – 10:00 p. m.', _kCyan),
-];
-
+// Los turnos ya no son datos mock (`_kShifts`): `ShiftsPage` los consulta
+// en vivo al backend real de CU-018 (`GET /turnos`, filtrado por la
+// credencial del empleado — ver `LogisticaApiClient.miTurno`).
 class ShiftsPage extends StatefulWidget {
-  const ShiftsPage({super.key, required this.employeeName});
+  const ShiftsPage({super.key, required this.employeeName, required this.credencial});
   final String employeeName;
+  final String credencial;
   @override
   State<ShiftsPage> createState() => _ShiftsPageState();
 }
 
 class _ShiftsPageState extends State<ShiftsPage> {
-  final _requests = <int, ShiftChangeRequest>{};
+  bool _loading = true;
+  String? _error;
+  Map<String, dynamic>? _turno;
+  // Última solicitud de cambio enviada en esta sesión (CU-018, pasos 1-2).
+  Map<String, dynamic>? _solicitud;
+  String? _mensajeSinReemplazo;
 
-  void _requestChange(int index) {
-    final desired = TextEditingController();
+  @override
+  void initState() {
+    super.initState();
+    _cargar();
+  }
+
+  Future<void> _cargar() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final turno = await logisticaApiClient.miTurno(widget.credencial);
+      setState(() {
+        _turno = turno;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e is LogisticaApiException
+            ? e.message
+            : 'No se pudo conectar con el backend de logística.';
+        _loading = false;
+      });
+    }
+  }
+
+  void _requestChange() {
     final reason = TextEditingController();
+    // Captura el contexto de la página (no el del diálogo, que se cierra
+    // con Navigator.pop antes de que termine el await de abajo) para poder
+    // mostrar el SnackBar de error de forma segura tras la petición HTTP.
+    final pageContext = context;
     showDialog(
         context: context,
         builder: (context) => AlertDialog(
               title: const Text('Solicitar cambio de turno'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                      controller: desired,
-                      decoration: const InputDecoration(
-                          labelText: 'Turno/horario deseado')),
-                  const SizedBox(height: 10),
-                  TextField(
-                      controller: reason,
-                      maxLines: 2,
-                      decoration: const InputDecoration(labelText: 'Motivo')),
-                ],
-              ),
+              content: TextField(
+                  controller: reason,
+                  maxLines: 2,
+                  autofocus: true,
+                  decoration: const InputDecoration(labelText: 'Motivo')),
               actions: [
                 TextButton(
                     onPressed: () => Navigator.pop(context),
                     child: const Text('Cancelar')),
                 FilledButton(
-                    onPressed: () {
-                      if (desired.text.trim().isEmpty ||
-                          reason.text.trim().isEmpty) {
-                        return;
-                      }
-                      final request = ShiftChangeRequest(
-                          employeeName: widget.employeeName,
-                          currentShift:
-                              '${_kShifts[index].event} · ${_kShifts[index].schedule}',
-                          desiredShift: desired.text.trim(),
-                          reason: reason.text.trim());
-                      requestsStore.submitShiftChange(request);
-                      activityLog.add(ActivityEntry(
-                          type: ActivityType.shiftChange,
-                          title: _kShifts[index].event,
-                          subtitle: 'Cambio de turno solicitado',
-                          amount: 0));
-                      setState(() => _requests[index] = request);
+                    onPressed: () async {
+                      if (reason.text.trim().isEmpty || _turno == null) return;
                       Navigator.pop(context);
+                      try {
+                        final resultado = await logisticaApiClient.solicitarCambioTurno(
+                            turnoId: _turno!['id'] as String,
+                            motivo: reason.text.trim());
+                        setState(() {
+                          _solicitud = resultado['solicitud'] as Map<String, dynamic>?;
+                          _mensajeSinReemplazo = resultado['mensaje'] as String?;
+                        });
+                        activityLog.add(ActivityEntry(
+                            type: ActivityType.shiftChange,
+                            title: _turno!['zona']?.toString() ?? 'Turno',
+                            subtitle: _mensajeSinReemplazo ?? 'Cambio de turno solicitado',
+                            amount: 0));
+                      } catch (e) {
+                        if (!pageContext.mounted) return;
+                        ScaffoldMessenger.of(pageContext).showSnackBar(SnackBar(
+                            content: Text(e is LogisticaApiException
+                                ? e.message
+                                : 'No se pudo conectar con el backend de logística.')));
+                      }
                     },
                     child: const Text('Enviar solicitud'))
               ],
@@ -2055,109 +2146,211 @@ class _ShiftsPageState extends State<ShiftsPage> {
   }
 
   @override
-  Widget build(BuildContext context) => AnimatedBuilder(
-        animation: requestsStore,
-        builder: (context, _) => ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            for (var i = 0; i < _kShifts.length; i++) ...[
-              _SectionCard(
-                  title: _kShifts[i].event,
-                  lines: [_kShifts[i].zone, _kShifts[i].schedule],
-                  icon: Icons.event_available,
-                  color: _kShifts[i].color),
-              const SizedBox(height: 6),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: _requests[i] == null
-                    ? TextButton(
-                        onPressed: () => _requestChange(i),
-                        child: const Text('Solicitar cambio'))
-                    : StatusChip(
-                        label: switch (_requests[i]!.status) {
-                          RequestStatus.pending => 'Cambio solicitado',
-                          RequestStatus.approved => 'Cambio aprobado',
-                          RequestStatus.rejected => 'Cambio rechazado',
-                        },
-                        color: switch (_requests[i]!.status) {
-                          RequestStatus.pending => _kAmber,
-                          RequestStatus.approved => _kGreen,
-                          RequestStatus.rejected => _kRed,
-                        }),
-              ),
-              const SizedBox(height: 12),
-            ],
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_error != null) {
+      return ListView(padding: const EdgeInsets.all(16), children: [
+        LiquidGlassCard(child: Text(_error!, style: textTheme.bodyMedium?.copyWith(color: _kRed))),
+      ]);
+    }
+    if (_turno == null) {
+      return Center(
+          child: Text('No tienes un turno asignado todavía.',
+              style: textTheme.bodyMedium));
+    }
+    final estado = _solicitud?['estado'] as String?;
+    return RefreshIndicator(
+      onRefresh: _cargar,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _SectionCard(
+              title: _turno!['eventoId']?.toString() ?? 'Evento',
+              lines: [
+                _turno!['zona']?.toString() ?? '',
+                '${_turno!['horaInicio']} → ${_turno!['horaFin']}',
+              ],
+              icon: Icons.event_available,
+              color: _kPink),
+          const SizedBox(height: 6),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: estado == null
+                ? TextButton(
+                    onPressed: _requestChange,
+                    child: const Text('Solicitar cambio'))
+                : StatusChip(
+                    label: switch (estado) {
+                      'PENDIENTE' => 'Cambio solicitado',
+                      'APROBADA' => 'Cambio aprobado',
+                      'RECHAZADA' => 'Cambio rechazado',
+                      'BLOQUEADA_POR_HORAS' => 'Bloqueado (límite de horas)',
+                      'SIN_REEMPLAZO' => 'Sin reemplazo disponible',
+                      _ => estado,
+                    },
+                    color: switch (estado) {
+                      'PENDIENTE' => _kAmber,
+                      'APROBADA' => _kGreen,
+                      _ => _kRed,
+                    }),
+          ),
+          if (_mensajeSinReemplazo != null) ...[
+            const SizedBox(height: 8),
+            Text(_mensajeSinReemplazo!,
+                style: textTheme.bodySmall?.copyWith(color: _kAmber)),
           ],
-        ),
-      );
+        ],
+      ),
+    );
+  }
 }
 
 class AttendancePage extends StatefulWidget {
-  const AttendancePage({super.key});
+  const AttendancePage({super.key, required this.credencial});
+  final String credencial;
   @override
   State<AttendancePage> createState() => _AttendancePageState();
 }
 
 class _AttendancePageState extends State<AttendancePage> {
-  String? _entry;
-  String? _exit;
-  String get _time {
-    final now = TimeOfDay.now();
-    return now.format(context);
+  bool _loading = true;
+  bool _sending = false;
+  String? _error;
+  // Último registro real devuelto por el backend (CU-018, pasos 5-8).
+  Map<String, dynamic>? _ultimoRegistro;
+
+  @override
+  void initState() {
+    super.initState();
+    _cargar();
+  }
+
+  Future<void> _cargar() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final registros =
+          await logisticaApiClient.misRegistrosAsistencia(widget.credencial);
+      setState(() {
+        _ultimoRegistro = registros.isEmpty
+            ? null
+            : registros.first as Map<String, dynamic>;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e is LogisticaApiException
+            ? e.message
+            : 'No se pudo conectar con el backend de logística.';
+        _loading = false;
+      });
+    }
+  }
+
+  bool get _enTurno => _ultimoRegistro != null && _ultimoRegistro!['tipo'] == 'ENTRADA';
+
+  Future<void> _registrar(bool entrada) async {
+    setState(() => _sending = true);
+    try {
+      final registro = entrada
+          ? await logisticaApiClient.registrarEntrada(widget.credencial)
+          : await logisticaApiClient.registrarSalida(widget.credencial);
+      setState(() {
+        _ultimoRegistro = registro;
+        _sending = false;
+      });
+      if (!mounted) return;
+      if (registro['anomalia'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            backgroundColor: _kRed,
+            content: Text(registro['motivoAnomalia']?.toString() ??
+                'Registro marcado como anomalía.')));
+      } else {
+        activityLog.add(ActivityEntry(
+            type: ActivityType.attendance,
+            title: entrada ? 'Entrada registrada' : 'Salida registrada',
+            subtitle: entrada
+                ? 'Turno ${registro['turnoId'] ?? '—'}'
+                : 'Horas trabajadas: ${(registro['horasCalculadas'] as num?)?.toStringAsFixed(2) ?? '—'}',
+            amount: 0));
+      }
+    } catch (e) {
+      setState(() => _sending = false);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(e is LogisticaApiException
+              ? e.message
+              : 'No se pudo conectar con el backend de logística.')));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    return ListView(padding: const EdgeInsets.all(16), children: [
-      const _SectionCard(
-          title: 'HEXACORE Fest 2026',
-          lines: ['Puerta Norte', '12 dic 2026 · 3:00 p. m. – 11:00 p. m.'],
-          icon: Icons.schedule),
-      const SizedBox(height: 12),
-      LiquidGlassCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Align(
-              alignment: Alignment.centerLeft,
-              child: StatusChip(
-                label: _entry == null
-                    ? 'Sin registrar'
-                    : _exit == null
-                        ? 'En turno desde $_entry'
-                        : 'Turno finalizado',
-                color: _entry == null
-                    ? _kAmber
-                    : _exit == null
-                        ? _kGreen
-                        : _kIndigo,
-                icon: Icons.schedule,
-              ),
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    return RefreshIndicator(
+      onRefresh: _cargar,
+      child: ListView(padding: const EdgeInsets.all(16), children: [
+        if (_error != null)
+          LiquidGlassCard(
+            child: Text(_error!, style: textTheme.bodyMedium?.copyWith(color: _kRed)),
+          )
+        else ...[
+          const _SectionCard(
+              title: 'Backend real · eventos-emergencias',
+              lines: ['CU-018 · Gestionar turno y asistencia del personal'],
+              icon: Icons.dns_outlined),
+          const SizedBox(height: 12),
+          LiquidGlassCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: StatusChip(
+                    label: _ultimoRegistro == null
+                        ? 'Sin registrar'
+                        : _enTurno
+                            ? 'En turno (entrada registrada)'
+                            : 'Turno finalizado',
+                    color: _ultimoRegistro == null
+                        ? _kAmber
+                        : _enTurno
+                            ? _kGreen
+                            : _kIndigo,
+                    icon: Icons.schedule,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                if (_sending)
+                  const Center(child: CircularProgressIndicator())
+                else if (!_enTurno)
+                  FilledButton(
+                      onPressed: () => _registrar(true),
+                      child: const Text('Registrar entrada'))
+                else
+                  FilledButton(
+                      onPressed: () => _registrar(false),
+                      child: const Text('Registrar salida')),
+                if (_ultimoRegistro != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                      'Último registro: ${_ultimoRegistro!['tipo']} · ${_ultimoRegistro!['timestamp']}',
+                      style: textTheme.bodySmall),
+                ],
+              ],
             ),
-            const SizedBox(height: 14),
-            if (_entry == null)
-              FilledButton(
-                  onPressed: () => setState(() => _entry = _time),
-                  child: const Text('Registrar entrada'))
-            else if (_exit == null)
-              FilledButton(
-                  onPressed: () => setState(() {
-                        _exit = _time;
-                        activityLog.add(ActivityEntry(
-                            type: ActivityType.attendance,
-                            title: 'HEXACORE Fest 2026',
-                            subtitle: 'Entrada: $_entry · Salida: $_exit',
-                            amount: 0));
-                      }),
-                  child: const Text('Registrar salida'))
-            else
-              Text('Entrada: $_entry · Salida: $_exit',
-                  style: textTheme.bodyMedium),
-          ],
-        ),
-      ),
-    ]);
+          ),
+        ],
+      ]),
+    );
   }
 }
 
