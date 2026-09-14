@@ -1,0 +1,9 @@
+broker    modo      p50_ms  p95_ms  max_ms  msg_s  perdidos
+RabbitMQ  rapido    16.31   17.54   17.7    18932  0       
+Kafka     rapido    32.06   36.02   36.9    12418  0       
+RabbitMQ  duradero  162.01  282.13  295.14  1619   0       
+Kafka     duradero  31.6    57.91   59.35   7702   0       
+
+500 mensajes por combinación · evento ENTRADA_TRANSFERIDA
+rapido   = sin confirmación de escritura (RabbitMQ sin persistir, Kafka acks=0)
+duradero = el broker confirma el guardado (RabbitMQ delivery_mode=2 + confirms, Kafka acks=all)

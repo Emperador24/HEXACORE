@@ -5,7 +5,7 @@ Infraestructura de soporte compartida entre microservicios (SAD §8 y §11, vist
 **Contiene (cuando se implemente):**
 - Configuración de **Redis** — bloqueo distribuido temporal (reventa de entradas, ADR-03) y datos de
   acceso rápido (aforo, ocupación, sesiones).
-- Configuración de la **cola de mensajes** (RabbitMQ/Kafka, ADR-04) — desacopla generación de QR,
+- Configuración de la **cola de mensajes** (**RabbitMQ**, ADR-04 y ADR-10) — desacopla generación de QR,
   notificaciones, auditoría, liquidación de pagos y alertas de emergencia.
 - Definición de las **bases de datos por servicio** (una por microservicio, ADR-01): **PostgreSQL**
   para los esquemas transaccionales de todos los dominios, y **MongoDB** para el esquema documental

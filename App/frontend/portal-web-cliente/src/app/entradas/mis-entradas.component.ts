@@ -2,7 +2,6 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
-import { MatChipsModule } from '@angular/material/chips';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -10,6 +9,7 @@ import { EntradasService } from '../core/entradas.service';
 import { AuthService } from '../core/auth.service';
 import { Entrada, EstadoEntrada } from '../core/models';
 import { QrPlaceholderComponent } from '../shared/qr-placeholder.component';
+import { COLOR } from '../shared/acentos';
 
 /**
  * Boletas propias del cliente (CU-009, CU-010), presentadas como tarjetas
@@ -20,7 +20,7 @@ import { QrPlaceholderComponent } from '../shared/qr-placeholder.component';
 @Component({
   selector: 'app-mis-entradas',
   standalone: true,
-  imports: [DecimalPipe, FormsModule, MatCardModule, MatChipsModule, MatButtonModule, MatFormFieldModule, MatInputModule, QrPlaceholderComponent],
+  imports: [DecimalPipe, FormsModule, MatCardModule, MatButtonModule, MatFormFieldModule, MatInputModule, QrPlaceholderComponent],
   templateUrl: './mis-entradas.component.html',
   styleUrl: './mis-entradas.component.scss'
 })
@@ -29,6 +29,17 @@ export class MisEntradasComponent {
   private readonly auth = inject(AuthService);
 
   readonly EstadoEntrada = EstadoEntrada;
+  readonly COLOR = COLOR;
+
+  /** Cada estado tiene su tinte, igual que los StatusChip de la app móvil. */
+  colorEstado(estado: EstadoEntrada): string {
+    const colores: Record<EstadoEntrada, string> = {
+      [EstadoEntrada.VALIDA]: COLOR.verde,
+      [EstadoEntrada.EN_REVENTA]: COLOR.ambar,
+      [EstadoEntrada.USADA]: '#8b93a7'
+    };
+    return colores[estado];
+  }
   readonly mias = computed(() => {
     const usuarioId = this.auth.usuarioActual()?.id;
     return this.entradasService.entradas().filter((e) => e.propietarioId === usuarioId);

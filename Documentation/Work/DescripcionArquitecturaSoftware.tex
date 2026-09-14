@@ -618,10 +618,10 @@ completo.
 
 El sistema se divide en tres interfaces desplegables (Portal Web del Cliente, Portal Web
 Administrativo/Operativo y App Móvil), todas consumiendo el mismo backend a través de un API
-Gateway. La \textbf{App Móvil} es un único binario (Kotlin + Jetpack Compose) que sirve tanto al
-rol Cliente como al rol Personal: el login identifica el rol del usuario autenticado y la
-navegación interna abre el conjunto de pantallas correspondiente — no son dos apps distribuidas
-por separado (ver ADR-07). El backend está compuesto por microservicios independientes por dominio
+Gateway. La \textbf{App Móvil} está construida en \textbf{Flutter} (ADR-08), lo que permite generar
+desde una sola base de código los binarios de Android e iOS, y sirve tanto al rol Cliente como al rol
+Personal: el login identifica el rol del usuario autenticado y la navegación interna abre el conjunto
+de pantallas correspondiente — no son dos apps distribuidas por separado (ver ADR-07). El backend está compuesto por microservicios independientes por dominio
 (Entradas/Mercado Secundario, Personal, Eventos/Emergencias, Parqueaderos) y por infraestructura de
 soporte (Redis, cola de mensajes y bases de datos por servicio). La Figura \ref{fig:contenedores}
 presenta el diagrama de contenedores.
@@ -642,7 +642,7 @@ correspondiente.
 Parqueaderos, cada uno con su propia base de datos para reducir el acoplamiento entre dominios.
 \item \textbf{Redis:} bloqueo temporal de recursos en disputa (p. ej. una entrada en reventa
 durante el checkout) y datos de acceso rápido (aforo, ocupación, sesiones).
-\item \textbf{Cola de mensajes (RabbitMQ/Kafka):} desacopla operaciones asíncronas: generación de
+\item \textbf{Cola de mensajes (RabbitMQ, ADR-10):} desacopla operaciones asíncronas: generación de
 QR, notificaciones, auditoría, liquidación de pagos y alertas de emergencia.
 \item \textbf{Servicios externos:} Pasarela de Pagos y Proveedor de Notificaciones, integrados vía
 API y, en el caso de notificaciones, disparados de forma asíncrona desde la cola de mensajes.
@@ -873,6 +873,9 @@ se descartó por convertirse en cuello de botella bajo la carga concurrente espe
 punto adicional de falla que requiere su propia estrategia de disponibilidad (réplica/clúster).
 
 \subsection*{ADR-04 --- Cola de mensajes para operaciones asíncronas}
+\textbf{Estado:} \textit{completado por ADR-10} --- la decisión de usar una cola sigue vigente; el
+motor concreto, que aquí quedó abierto como ``RabbitMQ/Kafka'', se cerró en ADR-10 con evidencia
+medida.\\
 \textbf{ASR relacionados:} ASR-04, ASR-07.\\
 \textbf{Problema:} operaciones como notificaciones o liquidación de pagos no deben bloquear ni
 hacer fallar la operación principal (compra, transferencia) cuando un servicio externo es lento o
@@ -886,6 +889,9 @@ principal.\\
 consistencia eventual y de requerir monitoreo propio de las colas.
 
 \subsection*{ADR-05 --- Stack de frontend por tipo de interfaz}
+\textbf{Estado:} \textit{parcialmente superado por ADR-08} --- lo relativo a los portales web sigue
+vigente; la decisión sobre el stack de la app móvil fue revertida el 2026-09-07. Se conserva el
+texto original como registro de por qué se decidió así en su momento.\\
 \textbf{ASR relacionados:} ASR-08, ASR-10, ASR-05.\\
 \textbf{Problema:} las tres interfaces (portal web del cliente, portal web administrativo/operativo,
 app móvil) deben implementarse en un lenguaje/framework concreto, sin comprometer el consumo
@@ -933,12 +939,11 @@ por rol (Cliente y Personal). Al construir el prototipo de la Entrega 2 con un e
 dos proyectos Android desde cero duplica configuración de Gradle, tema visual y esqueleto de
 navegación sin que exista todavía una razón operativa concreta (distribución, permisos de
 dispositivo, política de actualización) que obligue a separarlos en esta etapa.\\
-\textbf{Solución:} una única app (\texttt{App/frontend/app-movil-cliente}\footnote{El nombre del
-módulo quedó de la primera versión; se recomienda renombrarlo en una futura iteración para no sugerir
-que es exclusivo del rol Cliente.}) con una pantalla de login compartida. Las credenciales
-identifican el rol del usuario autenticado y la navegación interna (\textit{Jetpack Navigation
-Compose}) abre el conjunto de pantallas del rol correspondiente: Inicio/Entradas/Parqueadero/Pedidos
-para Cliente, Turnos/Asistencia para Personal.\\
+\textbf{Solución:} una única app (\texttt{App/frontend/app-movil}) con una pantalla de login
+compartida. Las credenciales identifican el rol del usuario autenticado y la navegación interna abre
+el conjunto de pantallas del rol correspondiente: Inicio/Entradas/Parqueadero/Pedidos para Cliente,
+Turnos/Asistencia/Validación para Personal. Esta decisión sigue vigente tras el cambio de stack de
+ADR-08: la app Flutter mantiene el mismo esquema de una sola app para ambos roles.\\
 \textbf{Alternativa descartada:} mantener \textbf{App Móvil del Cliente} y \textbf{App Móvil del
 Personal} como dos módulos/APKs independientes (diseño de la v1.1) — se descartó para este
 prototipo porque el beneficio principal de separarlas (aislar del binario público de clientes las
@@ -952,6 +957,185 @@ personal (aunque inaccesibles sin credenciales válidas), lo que amplía la supe
 a la alternativa separada; y ambos roles quedan acoplados a un mismo ciclo de release. Si el rol
 Personal termina necesitando permisos de dispositivo, distribución o cadencia de actualización
 distintos a los del Cliente, esta decisión debe revisarse y volver a separar los binarios.
+
+\subsection*{ADR-08 --- Migración de la app móvil a Flutter}
+\textbf{ASR relacionados:} ASR-08, ASR-09, ASR-10.\\
+\textbf{Problema:} ADR-05 fijó \textbf{Kotlin nativo} para la app móvil y descartó explícitamente los
+frameworks \textit{cross-platform}, con el argumento de que compartir código de interfaz no aportaba
+un beneficio arquitectónico claro. Ese razonamiento omitió un requisito que sí es del proyecto: la
+app debe llegar a \textbf{Android y iOS}. Con el stack nativo, cubrir iOS obliga a escribir y
+mantener una segunda implementación completa (Swift/SwiftUI) de las mismas pantallas, lo que para un
+equipo de cuatro personas duplica el esfuerzo de toda evolución de la interfaz y multiplica el riesgo
+de que ambas plataformas se desincronicen.\\
+\textbf{Solución:} la app móvil se reimplementa en \textbf{Flutter} (Dart), reemplazando la versión
+Kotlin/Jetpack Compose. Una sola base de código produce los binarios de Android e iOS, conservando el
+esquema de ADR-07 (una sola app para los roles Cliente y Personal, con el rol resuelto en el login).
+La implementación incluye un cliente de API centralizado (\texttt{lib/services/api\_client.dart}) que
+concentra el consumo del backend, de modo que la futura integración con el API Gateway quede en un
+solo punto y no disperso por las pantallas (ASR-10).\\
+\textbf{Alternativas consideradas:}
+\begin{itemize}
+  \item \textbf{Mantener Kotlin y añadir una app iOS nativa en Swift/SwiftUI} --- máxima fidelidad al
+  look-and-feel de cada plataforma y acceso inmediato a APIs nuevas del sistema operativo, pero
+  duplica la base de código de interfaz y el esfuerzo de mantenimiento (Modificabilidad, ASR-09).
+  \item \textbf{Kotlin Multiplatform (KMM)} --- comparte la lógica de negocio y de red pero mantiene
+  la interfaz nativa por plataforma; es el término medio, y se descartó porque el grueso del trabajo
+  de este prototipo está justamente en la interfaz, que KMM no comparte.
+  \item \textbf{Flutter} (elegida) --- una sola base de código para interfaz y lógica en ambas
+  plataformas.
+\end{itemize}
+\textbf{Consecuencias:} una sola base de código para Android e iOS, y un único ciclo de build y
+pruebas para la app móvil, a costa de: (1) renunciar a los widgets nativos reales --- Flutter dibuja
+su propia interfaz con su motor de render, de modo que la fidelidad con cada plataforma es una
+aproximación, no el control nativo; (2) sumar un tercer ecosistema de herramientas (Dart/pub) al del
+web (TypeScript/npm) y el del backend; y (3) una curva de aprendizaje en Dart para el equipo. La
+implementación Kotlin previa se elimina del repositorio; queda en el historial de Git si hiciera falta
+recuperarla.\\
+\textbf{Nota sobre la evidencia:} esta decisión se tomó reimplementando la app completa en Flutter y
+comparándola con la versión Kotlin ya existente, no solo con un análisis en papel. La comparación
+sistemática de métricas entre ambas implementaciones (tiempo de desarrollo, líneas de código,
+arranque en frío, fidelidad visual) queda pendiente de documentarse como evidencia formal para la
+Entrega 1.
+
+\subsection*{ADR-09 --- Lenguaje y framework del backend}
+\textbf{ASR relacionados:} ASR-04, ASR-06, ASR-09, ASR-14.\\
+\textbf{Problema:} \texttt{App/services/*} estaba marcado como ``lenguaje por definir''. Es la única
+decisión que bloquea empezar a codificar los seis microservicios, y debía tomarse con evidencia
+medida --- no por preferencia ni por popularidad.\\
+\textbf{Solución:} los microservicios de dominio se implementan en \textbf{NestJS} (Node.js +
+TypeScript).\\
+\textbf{Alternativas consideradas:} \textbf{NestJS} y \textbf{Spring Boot} (Java 17) se compararon
+construyendo el mismo endpoint en ambos y midiéndolos bajo carga (PoC-04, ver
+\texttt{App/PoCs/poc-04-lenguaje-backend/}). Se descartaron sin PoC: \textbf{Go}, porque nadie en el
+equipo lo conoce y sumar un lenguaje nuevo con la entrega encima es el mayor riesgo de cronograma; y
+\textbf{Python/FastAPI}, por su tipado opcional, poco conveniente con seis servicios desarrollados en
+paralelo por cuatro personas.\\
+\textbf{Evidencia (PoC-04):} mismo endpoint, misma respuesta byte por byte, 100 conexiones
+concurrentes, 15 s por medición, cero errores:
+
+\begin{center}
+\begin{tabular}{llrrrr}
+\toprule
+\textbf{Candidato} & \textbf{Escenario} & \textbf{req/s} & \textbf{p50 (ms)} & \textbf{p97,5 (ms)} &
+\textbf{RSS (MB)}\\
+\midrule
+NestJS & sin I/O & 21.071 & 4 & 5 & 156\\
+NestJS & con 2 ms de I/O & 18.530 & 5 & 6 & 158\\
+Spring Boot & sin I/O & 91.441 & 0 & 1 & 335\\
+Spring Boot & con 2 ms de I/O & 32.288 & 3 & 4 & 337\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Arranque hasta la primera respuesta: \textbf{NestJS 0,28 s} frente a \textbf{Spring Boot 1,09 s}.
+
+Tres lecturas de esos números:
+\begin{enumerate}
+  \item \textbf{Ambos cumplen RNF-07 con un margen enorme.} El umbral es p95 $\leq$ 500 ms y el peor
+  caso medido fue 7 ms: setenta veces por debajo. El rendimiento, por lo tanto, \textbf{no es el
+  criterio que decide} esta elección --- ninguno de los dos está cerca de incumplirlo.
+  \item \textbf{Spring Boot rinde más, y conviene decirlo sin matizarlo:} 4,3$\times$ sin I/O. Pero la
+  ventaja cae a 1,7$\times$ al añadir 2 ms de I/O simulada, y contra una base de datos real (5--20 ms)
+  se encogería más. Cuanto más se parece el escenario a producción, menos pesa la diferencia.
+  \item \textbf{NestJS arranca 4$\times$ más rápido y usa menos de la mitad de memoria}, lo que
+  favorece a RNF-15 (despliegue sin interrupción) y al escalado elástico de ASR-06.
+\end{enumerate}
+
+\textbf{Por qué se elige NestJS pese a que Spring Boot rinde más:} porque el rendimiento ya está
+resuelto por ambos con setenta veces de margen, y los criterios que sí quedan abiertos favorecen a
+NestJS. En \textbf{Modificabilidad} (ASR-09) y \textbf{Comprobabilidad} (ASR-14, RNF-18), NestJS
+impone módulos e inyección de dependencias --- el mismo modelo que el equipo ya aplica en los
+portales Angular, y el que hace que sustituir dependencias externas por dobles de prueba sea directo.
+Y el riesgo real del proyecto no es la latencia sino el cronograma: cuatro personas deben entregar
+seis microservicios, y usar el lenguaje que ya escriben en el frontend elimina un cambio de contexto
+completo.\\
+\textbf{Consecuencias:} un solo lenguaje entre los portales web y el backend, con contratos de API que
+pueden generar tipos para ambos lados (\texttt{App/shared/}). A cambio se acepta un techo de
+rendimiento más bajo que el de Spring Boot --- irrelevante frente a los umbrales actuales, pero que
+debería reevaluarse si algún servicio pasa a ser intensivo en CPU (los reportes con Map-Reduce, hoy
+delegados a MongoDB, son el candidato a vigilar). Node ejecuta en un solo hilo por proceso, de modo
+que el escalado es horizontal por réplicas, que es justamente lo que establecen ADR-01 y ASR-06.\\
+\textbf{Validez de la evidencia:} el PoC mide un endpoint sin base de datos real, con cliente y
+servidor en la misma máquina, y no llegó a los 2.000 usuarios concurrentes de RNF-07 (con 100
+conexiones el generador de carga ya era el cuello de botella). Tampoco mide lo que probablemente más
+pesa en la práctica: la velocidad de desarrollo del equipo. \textbf{Si alguno de los integrantes
+tuviera experiencia sólida en Java}, esta decisión sería genuinamente discutible y Spring Boot
+quedaría bien defendido por los datos.
+
+\subsection*{ADR-10 --- Motor de la cola de mensajes: RabbitMQ}
+\textbf{ASR relacionados:} ASR-04, ASR-07, ASR-13.\\
+\textbf{Problema:} ADR-04 estableció que hace falta una cola de mensajes, pero dejó el motor sin
+decidir, escrito como ``RabbitMQ/Kafka'' --- como si fueran intercambiables. No lo son: responden a
+modelos distintos (cola de tareas frente a registro de eventos) y la elección condiciona cómo se
+escriben los consumidores en los seis microservicios.\\
+\textbf{Solución:} \textbf{RabbitMQ}.\\
+\textbf{Evidencia (PoC-05, \texttt{App/PoCs/poc-05-cola-mensajes/}):} se publicó y consumió el evento
+real \texttt{ENTRADA\_TRANSFERIDA} en ambos brokers (los dos en Docker, 500 mensajes por
+combinación), midiendo la latencia de extremo a extremo:
+
+\begin{center}
+\begin{tabular}{llrrr}
+\toprule
+\textbf{Broker} & \textbf{Modo} & \textbf{p50 (ms)} & \textbf{p95 (ms)} & \textbf{msg/s}\\
+\midrule
+RabbitMQ & rápido (sin persistir) & \textbf{16,3} & \textbf{17,5} & 18.932\\
+Kafka & rápido (\texttt{acks=0}) & 32,1 & 36,0 & 12.418\\
+RabbitMQ & duradero (confirmado) & 162,0 & 282,1 & 1.619\\
+Kafka & duradero (\texttt{acks=all}) & \textbf{31,6} & \textbf{57,9} & 7.702\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{El ganador se invierte según el modo}, y conviene decirlo sin matizarlo: sin durabilidad
+RabbitMQ es el doble de rápido, pero \textbf{con durabilidad Kafka es cinco veces mejor} (31,6 ms
+frente a 162 ms de mediana). La razón es estructural: RabbitMQ hace \texttt{fsync} por mensaje al
+persistir y su latencia se multiplica por diez, mientras que Kafka escribe a un log secuencial y la
+durabilidad le sale prácticamente gratis. Y el modo que importa aquí es el duradero: ni una
+transferencia de entrada ni una alerta de evacuación pueden perderse porque el broker se reinició.
+
+Sin embargo, \textbf{ambos cumplen RNF-17 con enorme margen}: el umbral es 10 s y el peor caso medido
+—RabbitMQ duradero, p95— fue \textbf{282 ms}, treinta y cinco veces por debajo. Igual que en ADR-09,
+la latencia no es el criterio que decide.
+
+Se midió entonces lo que sí queda abierto, con el mismo escenario en ambos (10 eventos, 3 rechazados
+a propósito):
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+ & \textbf{RabbitMQ} & \textbf{Kafka}\\
+\midrule
+Cola de mensajes muertos (DLQ) & nativa, 5 líneas declarativas & no existe: hay que construirla\\
+Imagen / memoria en reposo & 275 MB / 147 MB & 634 MB / 309 MB\\
+Líneas para levantarlo & 9 & 15\\
+Consola de administración & incluida & no incluida\\
+Conceptos a dominar & colas, \textit{exchanges}, \textit{bindings} & + particiones, offsets, \textit{consumer groups}, retención\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Por qué RabbitMQ pese a que Kafka es más rápido en modo duradero:} porque el uso que este
+sistema le da a la cola es el de una \textbf{cola de tareas} —disparar una notificación, generar un
+QR, registrar una auditoría, avisar de una evacuación— y no el de un \textit{registro de eventos}
+con reproducción histórica y múltiples consumidores independientes, que es donde Kafka se justifica.
+Para ese uso, RabbitMQ ofrece de fábrica lo que aquí sí hace falta: \textbf{DLQ y reintentos
+nativos}, que ASR-07 y ASR-13 exigen para no perder en silencio un evento que falló. En Kafka eso
+hay que construirlo y mantenerlo a mano. A eso se suma la mitad de memoria, la mitad de
+configuración y una consola incluida, con un equipo de cuatro personas que además debe operar
+PostgreSQL, MongoDB y Redis.\\
+\textbf{Consecuencias:} se acepta una latencia mayor en modo duradero (282 ms de p95 frente a los
+58 ms de Kafka) --- irrelevante frente al umbral de 10 s de RNF-17 --- y un techo de throughput más
+bajo (1.619 msg/s duraderos). Ese techo es holgado para el volumen del sistema: los eventos se
+generan por transferencia, pedido o alerta, no de forma continua. \textbf{Cuándo habría que
+revisar esta decisión:} si aparece la necesidad de reproducir el histórico de eventos, de que varios
+consumidores independientes lean el mismo flujo, o si el volumen se acerca al millar de mensajes por
+segundo sostenido. En cualquiera de esos casos Kafka pasa a estar mejor justificado, y los números de
+este PoC lo respaldarían.\\
+\textbf{Validez de la evidencia:} un solo nodo de cada broker (en producción irían replicados, y ahí
+Kafka replica mejor), todo en la misma máquina sin red de por medio, y 500 mensajes por medición ---
+no se probó el comportamiento con colas de millones de mensajes, que es donde Kafka se separa de
+verdad. Tampoco se midió la recuperación ante caída del broker, que es justamente el escenario que
+motiva el modo duradero.
 
 % ==================== Riesgos técnicos ====================
 \section{Riesgos técnicos}

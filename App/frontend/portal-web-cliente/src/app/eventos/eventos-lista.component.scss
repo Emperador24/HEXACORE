@@ -1,104 +1,113 @@
-// Barra de búsqueda sobre banda azul — patrón de las taquillas de referencia.
+/* ===== Buscador y chips ===== */
 .buscador {
-  background: var(--hxc-azul);
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 8px;
-}
-
-.buscador-fila {
+  padding: 18px;
+  margin-bottom: 22px;
   display: flex;
+  flex-direction: column;
   gap: 12px;
-  flex-wrap: wrap;
-  align-items: stretch;
 }
 
-.campo {
+.campo-busqueda {
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: #fff;
-  border-radius: 8px;
-  padding: 0 12px;
-  min-height: 46px;
-  flex: 0 1 220px;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: var(--hxc-r-campo);
+  padding: 0 14px;
+  min-height: 48px;
+  transition: border-color 0.2s;
+
+  &:focus-within {
+    border-color: var(--hxc-primario);
+  }
 
   mat-icon {
-    font-size: 20px;
-    width: 20px;
-    height: 20px;
-    color: var(--hxc-azul);
+    color: rgba(11, 15, 26, 0.45);
     flex-shrink: 0;
   }
 
-  select,
   input {
     border: none;
     outline: none;
     background: transparent;
     font: inherit;
     font-size: 0.95rem;
-    color: #1a1a1a;
+    color: var(--hxc-tinta);
     width: 100%;
-    min-width: 0;
     padding: 12px 0;
-  }
-
-  select {
-    cursor: pointer;
-    appearance: none;
-    // Chevron propio: `appearance: none` quita el del navegador.
-    background-image: linear-gradient(45deg, transparent 50%, #006eb7 50%),
-      linear-gradient(135deg, #006eb7 50%, transparent 50%);
-    background-position: right 4px top 50%, right 0px top 50%;
-    background-size: 5px 5px, 5px 5px;
-    background-repeat: no-repeat;
-    padding-right: 18px;
   }
 }
 
-.campo-texto {
-  flex: 1 1 260px;
+/* Chips de filtro (ChoiceChip): al seleccionarse se tiñen con su acento. */
+.chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(11, 15, 26, 0.12);
+  background: rgba(255, 255, 255, 0.45);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: rgba(11, 15, 26, 0.7);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--tinte) 45%, transparent);
+  }
+
+  &.activo {
+    background: color-mix(in srgb, var(--tinte) 28%, transparent);
+    border-color: color-mix(in srgb, var(--tinte) 45%, transparent);
+    color: color-mix(in srgb, var(--tinte) 65%, #000);
+  }
 }
 
 .limpiar {
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: none;
   background: transparent;
-  color: #fff;
-  border-radius: 8px;
-  padding: 0 18px;
-  min-height: 46px;
+  color: var(--hxc-primario);
   font: inherit;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
+  padding: 4px 0;
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
 
   &:hover {
-    background: rgba(255, 255, 255, 0.14);
+    text-decoration: underline;
   }
 }
 
-.titulo-seccion {
-  margin: 28px 0 12px;
-  font-size: 1.15rem;
-}
-
-.conteo {
-  margin: 20px 0 0;
-  color: rgba(0, 0, 0, 0.6);
-}
-
+/* ===== Estado vacío ===== */
 .vacio {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  color: rgba(0, 0, 0, 0.6);
-  padding: 56px 24px;
+  padding: 48px 24px;
+  color: rgba(11, 15, 26, 0.6);
+  text-align: center;
 
   mat-icon {
-    font-size: 44px;
-    width: 44px;
-    height: 44px;
+    font-size: 40px;
+    width: 40px;
+    height: 40px;
     opacity: 0.5;
   }
 
@@ -107,157 +116,143 @@
   }
 }
 
-// --- Evento destacado ---
+/* ===== Evento destacado ===== */
 .destacado-link {
   text-decoration: none;
   color: inherit;
   display: block;
+  margin-bottom: 26px;
 }
 
-.tarjeta-destacada {
-  // mat-card trae flex-direction: column; hay que forzar la fila o el poster
-  // queda arriba y la información debajo, con un hueco vacío a la derecha.
+.destacado {
   display: flex;
-  flex-direction: row;
   align-items: stretch;
-  padding: 0;
   overflow: hidden;
-  border-radius: 12px;
+  border-radius: var(--hxc-r-destacado);
+  transition: transform 0.18s cubic-bezier(0.33, 1, 0.68, 1);
+
+  &:hover {
+    transform: translateY(-2px);
+  }
 }
 
+/* Altura fija: sin ella la imagen impone su proporción natural (600x800) y
+   estira la tarjeta, dejando un hueco bajo el texto. */
 .poster-destacado {
-  width: 300px;
-  height: 240px;
+  width: 280px;
+  height: 230px;
   object-fit: cover;
   flex-shrink: 0;
+  align-self: stretch;
 }
 
-.info-destacado {
+.destacado-info {
+  padding: 24px 26px;
   display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 20px 24px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
   flex: 1 1 auto;
-}
 
-.datos-destacado {
-  h3 {
-    margin: 4px 0 4px;
-    font-size: 1.4rem;
+  h2 {
+    margin: 6px 0 0;
   }
 
   p {
-    margin: 0 0 4px;
-    color: rgba(0, 0, 0, 0.6);
+    margin: 0;
+    color: rgba(11, 15, 26, 0.7);
+    font-size: 0.92rem;
   }
 
   .precio {
     font-weight: 700;
-    color: var(--hxc-azul);
+    color: var(--hxc-tinta);
   }
 }
 
-.etiqueta-categoria {
-  display: inline-block;
-  background: rgba(0, 110, 183, 0.1);
-  color: var(--hxc-azul);
-  border-radius: 999px;
-  padding: 2px 10px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+.cta {
+  margin-top: 10px;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    vertical-align: middle;
+  }
 }
 
-.cta-destacado {
-  margin-left: auto;
-  flex-shrink: 0;
-}
-
-// --- Grilla por categoría ---
+/* ===== Grilla de eventos =====
+   La app móvil los apila en filas; en web caben varias por fila, pero la
+   tarjeta conserva su anatomía: badge de fecha, datos y chevron. */
 .grilla {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 12px;
+  margin-bottom: 26px;
 }
 
+/* `display: block` es necesario: un <a> inline envolviendo la tarjeta hereda
+   line-height y hace que las celdas del grid se solapen unos píxeles. */
 .tarjeta-link {
+  display: block;
+  height: 100%;
   text-decoration: none;
   color: inherit;
 }
 
-.tarjeta-evento {
+.tarjeta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
   height: 100%;
-  border-radius: 10px;
-  overflow: hidden;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  border-radius: var(--hxc-r-tarjeta);
+  transition: transform 0.18s cubic-bezier(0.33, 1, 0.68, 1),
+    box-shadow 0.18s cubic-bezier(0.33, 1, 0.68, 1);
 
   &:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.14);
+    transform: translateY(-2px);
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.14);
   }
 
+  &.pasado {
+    opacity: 0.72;
+  }
+}
+
+.tarjeta-datos {
+  flex: 1 1 auto;
+  min-width: 0;
+
   h3 {
-    margin: 0 0 4px;
-    font-size: 1rem;
+    margin: 0 0 2px;
+    font-size: 0.98rem;
   }
 
   p {
-    margin: 0 0 4px;
-    color: rgba(0, 0, 0, 0.6);
-    font-size: 0.9rem;
+    margin: 0;
+    font-size: 0.84rem;
+    color: rgba(11, 15, 26, 0.6);
   }
 
   .precio {
     font-weight: 700;
-    color: var(--hxc-azul);
+    color: rgba(11, 15, 26, 0.8);
   }
 }
 
-.poster-contenedor {
-  position: relative;
+.chevron {
+  color: rgba(11, 15, 26, 0.4);
+  flex-shrink: 0;
 }
 
-.poster {
-  display: block;
-  width: 100%;
-  height: 160px;
-  object-fit: cover;
-}
-
-.poster-vacio {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2.5rem;
-  font-weight: 700;
-  background: var(--hxc-azul);
-  color: #fff;
-}
-
-.badge-flotante {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-}
-
-@media (max-width: 700px) {
-  .tarjeta-destacada {
+@media (max-width: 720px) {
+  .destacado {
     flex-direction: column;
   }
 
   .poster-destacado {
     width: 100%;
     min-height: 180px;
-  }
-
-  .info-destacado {
-    flex-wrap: wrap;
-  }
-
-  .cta-destacado {
-    margin-left: 0;
-    width: 100%;
   }
 }
