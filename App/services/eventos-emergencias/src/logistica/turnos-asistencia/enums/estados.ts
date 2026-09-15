@@ -1,0 +1,19 @@
+export enum EstadoTurno {
+  ASIGNADO = 'ASIGNADO',
+  CAMBIO_SOLICITADO = 'CAMBIO_SOLICITADO',
+  CAMBIADO = 'CAMBIADO',
+  CANCELADO = 'CANCELADO',
+}
+
+export enum EstadoSolicitudCambio {
+  PENDIENTE = 'PENDIENTE',
+  SIN_REEMPLAZO = 'SIN_REEMPLAZO',
+  APROBADA = 'APROBADA',
+  RECHAZADA = 'RECHAZADA',
+  BLOQUEADA_POR_HORAS = 'BLOQUEADA_POR_HORAS',
+}
+
+export enum TipoRegistroAsistencia {
+  ENTRADA = 'ENTRADA',
+  SALIDA = 'SALIDA',
+}
