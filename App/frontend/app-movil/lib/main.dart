@@ -16,6 +16,7 @@ import 'widgets/liquid_glass.dart';
 import 'widgets/qr_scanner_sheet.dart';
 import 'models/activity_log.dart';
 import 'models/requests_store.dart';
+import 'services/reventa_api.dart';
 import 'services/api_client.dart';
 
 void main() {
@@ -106,6 +107,19 @@ const _accounts = {
       position: 'Jefe de personal'),
 };
 
+// Identidad de cada cuenta demo frente al backend.
+//
+// PROVISIONAL. El servicio de Entradas identifica al usuario por UUID, pero
+// esta app todavía no tiene login real: `_accounts` son cuentas de ejemplo
+// en memoria. Este mapa las une con los usuarios que siembra
+// `services/entradas-mercado-secundario` (npm run semilla).
+//
+// Cuando exista el API Gateway (ADR-02), el login devolverá un token y la
+// identidad saldrá de ahí: este mapa desaparece.
+const _idsBackend = {
+  'cliente@hexacore.com': 'a0000001-0000-4000-8000-000000000001', // Ana
+};
+
 class HexacoreApp extends StatefulWidget {
   const HexacoreApp({super.key});
   @override
@@ -135,6 +149,7 @@ class _HexacoreAppState extends State<HexacoreApp> {
     final restored = email == null ? null : _accounts[email];
     final onboardingSeen = prefs.getBool(_onboardingSeenKey) ?? false;
     if (!mounted) return;
+    reventaApi.usuarioId = email == null ? null : _idsBackend[email];
     setState(() {
       _user = restored;
       _checkingSession = false;
@@ -154,6 +169,7 @@ class _HexacoreAppState extends State<HexacoreApp> {
   // existen en `_accounts`, así que actúan como sesión de invitado: viven
   // mientras la app está abierta, pero no sobreviven a cerrarla.
   Future<void> _handleLogin(User user) async {
+    reventaApi.usuarioId = _idsBackend[user.email];
     setState(() => _user = user);
     if (_accounts.containsKey(user.email)) {
       final prefs = await SharedPreferences.getInstance();
@@ -162,6 +178,7 @@ class _HexacoreAppState extends State<HexacoreApp> {
   }
 
   Future<void> _handleLogout() async {
+    reventaApi.usuarioId = null;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_sessionEmailKey);
     setState(() => _user = null);

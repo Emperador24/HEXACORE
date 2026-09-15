@@ -1,0 +1,96 @@
+{
+  "name": "hexacore-entradas-mercado-secundario",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Servicio de Entradas y Mercado Secundario (SAD §9) — CU-006",
+  "scripts": {
+    "build": "nest build",
+    "start": "nest start",
+    "start:dev": "nest start --watch",
+    "start:prod": "node dist/main.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:cov": "jest --coverage",
+    "test:e2e": "jest --config test/jest-e2e.json --runInBand",
+    "lint": "tsc --noEmit",
+    "migracion:correr": "typeorm-ts-node-commonjs migration:run -d src/persistencia/data-source.ts",
+    "migracion:revertir": "typeorm-ts-node-commonjs migration:revert -d src/persistencia/data-source.ts",
+    "migracion:estado": "typeorm-ts-node-commonjs migration:show -d src/persistencia/data-source.ts",
+    "semilla": "ts-node src/persistencia/semillas/sembrar.ts",
+    "contrato:api": "ts-node src/herramientas/exportar-openapi.ts",
+    "test:integracion": "bash pruebas/correr-todas.sh"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.1.6",
+    "@nestjs/config": "^4.0.2",
+    "@nestjs/core": "^11.1.6",
+    "@nestjs/platform-express": "^11.1.6",
+    "@nestjs/schedule": "^12.0.2",
+    "@nestjs/swagger": "^11.2.0",
+    "@nestjs/typeorm": "^12.0.1",
+    "@types/amqplib": "^0.10.8",
+    "amqplib": "^2.0.1",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.2",
+    "ioredis": "^5.11.1",
+    "pg": "^8.23.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "typeorm": "^1.1.1"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^11.0.10",
+    "@nestjs/schematics": "^11.0.8",
+    "@nestjs/testing": "^11.1.6",
+    "@types/express": "^5.0.3",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^22.18.1",
+    "@types/supertest": "^6.0.3",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "dotenv": "^17.4.2",
+    "jest": "^30.1.3",
+    "supertest": "^7.1.4",
+    "ts-jest": "^29.4.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2"
+  },
+  "jest": {
+    "moduleFileExtensions": [
+      "js",
+      "json",
+      "ts"
+    ],
+    "rootDir": "src",
+    "testRegex": ".*\\.spec\\.ts$",
+    "transform": {
+      "^.+\\.(t|j)s$": "ts-jest"
+    },
+    "collectCoverageFrom": [
+      "**/*.ts",
+      "!**/*.spec.ts",
+      "!main.ts",
+      "!**/*.module.ts",
+      "!**/dto/**",
+      "!persistencia/entidades/**",
+      "!persistencia/migraciones/**",
+      "!persistencia/semillas/**",
+      "!persistencia/data-source.ts",
+      "!reventa/reventa.controller.ts",
+      "!reventa/concurrencia/redis.provider.ts",
+      "!herramientas/**"
+    ],
+    "coverageDirectory": "../coverage",
+    "testEnvironment": "node",
+    "moduleNameMapper": {
+      "^@nestjs/typeorm$": "<rootDir>/../test/dobles/nestjs-typeorm.ts",
+      "^@nestjs/schedule$": "<rootDir>/../test/dobles/nestjs-schedule.ts"
+    },
+    "coverageThreshold": {
+      "global": {
+        "statements": 70,
+        "lines": 70
+      }
+    }
+  }
+}

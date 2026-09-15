@@ -112,3 +112,4 @@ la ley de Little) antes de creerle a un resultado.
 ## Decisión
 
 Ver **ADR-09** en `Documentation/Work/DescripcionArquitecturaSoftware.tex`.
+x

@@ -1,0 +1,110 @@
+# Infraestructura de soporte para el ambiente de desarrollo local (SAD §11).
+#
+# Una sola instancia de cada pieza compartida entre microservicios, tal como
+# describe la vista física para desarrollo/pruebas: "una réplica por
+# microservicio, sin balanceo horizontal ni CDN, con Redis/cola/BD en un único
+# nodo compartido" — a diferencia de producción, que usa un clúster de
+# Kubernetes.
+#
+# Los microservicios corren fuera de Docker (npm run start:dev) y se conectan a
+# estos puertos; así el ciclo de edición-recarga sigue siendo inmediato.
+#
+#   docker compose -f App/infra/docker-compose.yml up -d
+#   docker compose -f App/infra/docker-compose.yml down          # conserva datos
+#   docker compose -f App/infra/docker-compose.yml down -v       # borra datos
+
+name: hexacore-infra
+
+services:
+  # PostgreSQL — motor transaccional de todos los dominios (ADR-06).
+  # Una base de datos por microservicio (ADR-01): las crea initdb/01-bases.sql,
+  # que solo se ejecuta la primera vez que se levanta el volumen.
+  postgres:
+    image: postgres:16-alpine
+    container_name: hexacore-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hexacore
+      POSTGRES_PASSWORD: hexacore
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-datos:/var/lib/postgresql/data
+      - ./initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hexacore"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Redis — bloqueo distribuido temporal del checkout de reventa (ADR-03,
+  # ASR-01) y caché de datos de acceso rápido.
+  #
+  # appendonly sí: el lock es efímero por diseño (tiene TTL), pero perder el
+  # AOF en un reinicio liberaría locks vivos y abriría la ventana de doble
+  # venta que RNF-01 prohíbe.
+  #
+  # Puerto 6380 en el host y no el 6379 de siempre: es muy común tener un Redis
+  # instalado con Homebrew escuchando ya en 6379 (nos pasó al levantar esto), y
+  # en ese caso `up` falla con "address already in use". Con 6380 el compose
+  # arranca igual haya o no un Redis local, y no hay riesgo de que el servicio
+  # acabe hablando por error con el Redis equivocado.
+  redis:
+    image: redis:7-alpine
+    container_name: hexacore-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis-datos:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # RabbitMQ — cola de tareas para operaciones asíncronas (ADR-10, medido en
+  # PoC-05): notificaciones, liquidación de pagos y auditoría.
+  # Consola de administración en http://localhost:15672 (hexacore / hexacore).
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: hexacore-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: hexacore
+      RABBITMQ_DEFAULT_PASS: hexacore
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq-datos:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+  # Pasarela de Pagos simulada — sistema externo del CU-006.
+  #
+  # Va en un contenedor y no como doble de prueba dentro del servicio de
+  # Entradas para que la llamada sea HTTP real: es la única forma de ejercitar
+  # el camino CU-006I ("falla la comunicación con la pasarela"), que con un
+  # doble en memoria no ocurriría nunca.
+  pasarela:
+    build: ./pasarela-pagos-simulada
+    container_name: hexacore-pasarela
+    restart: unless-stopped
+    ports:
+      - "3099:3099"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3099/salud',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres-datos:
+  redis-datos:
+  rabbitmq-datos:
