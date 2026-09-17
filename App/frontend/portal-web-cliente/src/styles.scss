@@ -1,73 +1,304 @@
 /*
- * Tema de marca del Portal Cliente — guiado por el lenguaje visual de sitios
- * de boletería como Ticketmaster/TuBoleta (navbar azul sólido, tarjetas de
- * evento con badge de fecha, tabla de zona/precio): azul corporativo fuerte
- * como color primario en vez del "azure-blue" genérico de Material que usa
- * portal-web-admin — este portal vende boletas, no administra.
+ * Sistema de diseño "Liquid Glass" — la traducción a web del tema de la app
+ * móvil Flutter. Las constantes salen de dos archivos de esa app y deben
+ * mantenerse sincronizadas con ellos:
+ *   - app-movil/lib/theme/app_theme.dart      (paleta, tipografía)
+ *   - app-movil/lib/widgets/liquid_glass.dart (vidrio, manchas, insignias)
+ *
+ * El diseño: un fondo con manchas de color muy difuminadas (FondoAtmosfera) y,
+ * encima, superficies translúcidas con desenfoque real que dejan ver ese color.
+ *
+ * DOS TEMAS, como la app: oscuro por defecto y claro opcional (TemaService).
+ * Los componentes NO usan colores fijos: usan las variables de abajo, que
+ * cambian con la clase `tema-oscuro` en <html>.
  */
 @use '@angular/material' as mat;
 
 @include mat.core();
 
 html {
+  // `color-scheme` hace que Material elija sus colores claros u oscuros solo.
   color-scheme: light;
   @include mat.theme(
     (
       color: (
-        theme-type: light,
+        theme-type: color-scheme,
         primary: mat.$azure-palette,
-        tertiary: mat.$orange-palette
+        tertiary: mat.$violet-palette
       ),
       typography: (
-        plain-family: 'Roboto, "Helvetica Neue", sans-serif',
-        brand-family: 'Roboto, "Helvetica Neue", sans-serif'
+        plain-family: 'Manrope, system-ui, sans-serif',
+        brand-family: '"Space Grotesk", Manrope, system-ui, sans-serif'
       ),
       density: 0
     )
   );
 }
 
-// Azul corporativo del portal — mismo tono que usan las taquillas de
-// referencia para su navbar/CTA principal; se reutiliza en los componentes
-// como valor fijo porque las hojas de estilo por componente no pueden leer
-// variables Sass de aquí (encapsulación de vista).
-:root {
-  --hxc-azul: #006eb7;
-  --hxc-azul-oscuro: #004d82;
-  --hxc-naranja: #ff8f1f;
+html.tema-oscuro {
+  color-scheme: dark;
 }
 
-html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; background: #f4f6f9; }
+/* ===== Paleta ===== */
+:root {
+  // Constantes (app_theme.dart + main.dart): no cambian con el tema.
+  --hxc-primario: #2f6bff;
+  --hxc-rosa: #ff3d7f;
+  --hxc-cian: #22d3ee;
+  --hxc-indigo: #3b5bff;
+  --hxc-ambar: #ffb020;
+  --hxc-verde: #34d399;
+  --hxc-rojo: #ff5a5f;
 
-// Badge de fecha estilo taquilla ("28 · NOV · Sáb") — se usa en toda tarjeta
-// que representa un evento (Eventos, Mis entradas, Reventa, Parqueadero).
-.hxc-fecha-badge {
+  // Radios (los mismos números del tema Flutter).
+  --hxc-r-tarjeta: 22px;
+  --hxc-r-vidrio: 28px;
+  --hxc-r-destacado: 32px;
+  --hxc-r-campo: 16px;
+  --hxc-r-badge: 14px;
+  --hxc-vidrio-blur: 24px;
+
+  // --- Tema claro (_lightBackground) ---
+  --hxc-fondo: #f5f5f7;
+  // Color del texto. Se llama "tinta" por _kInk; en oscuro es _darkOnSurface.
+  --hxc-tinta: #0b0f1a;
+  // El mismo color en componentes, para usarlo con transparencia:
+  //   color: rgb(var(--hxc-texto-rgb) / 0.6)
+  --hxc-texto-rgb: 11 15 26;
+  // Superficie de las tarjetas de vidrio (scheme.surface), también por componentes.
+  --hxc-superficie-rgb: 255 255 255;
+  --hxc-vidrio-fondo: rgb(255 255 255 / 0.48);
+  --hxc-vidrio-borde: rgb(255 255 255 / 0.65);
+  --hxc-vidrio-sombra: 0 12px 30px rgb(0 0 0 / 0.1);
+  --hxc-campo-fondo: rgb(255 255 255 / 0.5);
+  --hxc-linea: rgb(11 15 26 / 0.12);
+  // Con qué se mezcla un color de acento para escribir encima de su propio
+  // tinte: más oscuro en claro, más claro en oscuro.
+  --hxc-mezcla-texto: #000;
+  // El primario usado como texto o ícono sobre el fondo (scheme.primary).
+  --hxc-primario-texto: #2f6bff;
+
+  // Manchas del fondo (AtmosphereBackground, tema claro).
+  --hxc-mancha-1: rgb(255 92 150 / 0.55);
+  --hxc-mancha-2: rgb(47 209 236 / 0.46);
+  --hxc-mancha-3: rgb(92 127 255 / 0.55);
+  --hxc-mancha-4: rgb(255 170 51 / 0.4);
+}
+
+// --- Tema oscuro (_darkBackground, _darkOnSurface) ---
+html.tema-oscuro {
+  --hxc-fondo: #0b0f1a;
+  --hxc-tinta: #f5f3ef;
+  --hxc-texto-rgb: 245 243 239;
+  // scheme.surface del tema oscuro generado con la semilla #2F6BFF.
+  --hxc-superficie-rgb: 17 19 24;
+  --hxc-vidrio-fondo: rgb(17 19 24 / 0.45);
+  --hxc-vidrio-borde: rgb(255 255 255 / 0.1);
+  --hxc-vidrio-sombra: 0 12px 30px rgb(0 0 0 / 0.35);
+  --hxc-campo-fondo: rgb(17 19 24 / 0.4);
+  --hxc-linea: rgb(245 243 239 / 0.14);
+  --hxc-mezcla-texto: #fff;
+  --hxc-primario-texto: #b4c5ff;
+
+  --hxc-mancha-1: rgb(255 61 127 / 0.5);
+  --hxc-mancha-2: rgb(34 211 238 / 0.36);
+  --hxc-mancha-3: rgb(59 91 255 / 0.46);
+  --hxc-mancha-4: rgb(255 176 32 / 0.26);
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: Manrope, system-ui, sans-serif;
+  background: var(--hxc-fondo);
+  color: var(--hxc-tinta);
+  min-height: 100%;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+a {
+  color: var(--hxc-primario-texto);
+}
+
+/* ===== Tipografía =====
+   Space Grotesk con tracking negativo para títulos; Manrope con más interlínea
+   para cuerpo — exactamente el copyWith del textTheme de Flutter. */
+h1,
+h2,
+h3,
+h4,
+.hxc-display {
+  font-family: 'Space Grotesk', Manrope, system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  margin: 0;
+}
+
+h1 {
+  font-size: 1.75rem;
+  letter-spacing: -0.6px;
+}
+h2 {
+  font-size: 1.3rem;
+}
+h3 {
+  font-size: 1.05rem;
+  letter-spacing: -0.3px;
+}
+
+p {
+  line-height: 1.35;
+}
+
+/* Texto secundario, como el `onSurface` al 60 % de la app. */
+.hxc-suave {
+  color: rgb(var(--hxc-texto-rgb) / 0.6);
+}
+
+/* Rótulo de sección: mayúsculas pequeñas y tenues, como el "Próximos" de la app. */
+.hxc-rotulo-seccion {
+  font-family: 'Space Grotesk', Manrope, sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  color: rgb(var(--hxc-texto-rgb) / 0.55);
+  margin: 0 0 10px;
+}
+
+/* ===== Superficie de vidrio (LiquidGlassCard) ===== */
+.hxc-vidrio {
+  background: var(--hxc-vidrio-fondo);
+  border: 1px solid var(--hxc-vidrio-borde);
+  border-radius: var(--hxc-r-vidrio);
+  box-shadow: var(--hxc-vidrio-sombra);
+  backdrop-filter: blur(var(--hxc-vidrio-blur));
+  -webkit-backdrop-filter: blur(var(--hxc-vidrio-blur));
+}
+
+/* ===== Insignias tintadas (TintedBadge) =====
+   Fondo al 16 % del color y borde al 40 %; el texto es el mismo color mezclado
+   para que contraste sin salirse de la familia cromática. */
+.hxc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  background: color-mix(in srgb, var(--tinte) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tinte) 40%, transparent);
+  color: color-mix(in srgb, var(--tinte) 65%, var(--hxc-mezcla-texto));
+}
+
+/* Insignia de fecha: día y mes apilados en un cuadrado (TintedDateBadge). */
+.hxc-badge-fecha {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  line-height: 1;
-  min-width: 52px;
-  padding: 6px 4px;
-  border-radius: 8px;
-  background: var(--hxc-azul);
-  color: #fff;
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  border-radius: var(--hxc-r-badge);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.15;
+  background: color-mix(in srgb, var(--tinte) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tinte) 35%, transparent);
+  color: color-mix(in srgb, var(--tinte) 65%, var(--hxc-mezcla-texto));
 
   .dia {
-    font-size: 1.3rem;
-    font-weight: 700;
+    font-size: 15px;
   }
+}
 
-  .mes {
-    font-size: 0.7rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
-  }
+/* Insignia cuadrada con ícono (TintedIconBadge). */
+.hxc-badge-icono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--tinte) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tinte) 35%, transparent);
+  color: color-mix(in srgb, var(--tinte) 65%, var(--hxc-mezcla-texto));
+}
 
-  .dow {
-    font-size: 0.65rem;
-    opacity: 0.85;
-  }
+/* ===== Separador punteado (DashedDivider) — el talón del boleto ===== */
+.hxc-punteado {
+  height: 1px;
+  border: 0;
+  background-image: linear-gradient(
+    to right,
+    rgb(var(--hxc-texto-rgb) / 0.24) 0 6px,
+    transparent 6px 11px
+  );
+  background-size: 11px 1px;
+  background-repeat: repeat-x;
+}
+
+/* ===== Mensajes bajo los formularios ===== */
+.hxc-error {
+  color: var(--hxc-rojo);
+  font-weight: 600;
+  margin: 10px 0 0;
+  white-space: pre-line;
+}
+.hxc-ok {
+  color: var(--hxc-verde);
+  font-weight: 600;
+  margin: 10px 0 0;
+}
+
+/* ===== Ajustes a Angular Material =====
+   Material pinta sus superficies opacas por defecto; aquí se vuelven vidrio
+   para que no rompan el lenguaje visual. */
+.mat-mdc-card {
+  background: var(--hxc-vidrio-fondo) !important;
+  border: 1px solid var(--hxc-vidrio-borde);
+  border-radius: var(--hxc-r-tarjeta) !important;
+  box-shadow: none !important;
+  backdrop-filter: blur(var(--hxc-vidrio-blur));
+  -webkit-backdrop-filter: blur(var(--hxc-vidrio-blur));
+  color: var(--hxc-tinta) !important;
+}
+
+.mat-mdc-unelevated-button,
+.mat-mdc-raised-button,
+.mat-mdc-outlined-button,
+.mat-mdc-button {
+  border-radius: 999px !important;
+  font-family: Manrope, sans-serif !important;
+  font-weight: 600 !important;
+  letter-spacing: 0 !important;
+}
+
+/* El botón principal usa la semilla de la app en los dos temas. */
+.mat-mdc-unelevated-button.mat-primary:not(:disabled) {
+  background-color: var(--hxc-primario) !important;
+  color: #fff !important;
+}
+
+/* Campos de texto translúcidos, con el mismo radio del tema Flutter. */
+.mat-mdc-text-field-wrapper {
+  border-radius: var(--hxc-r-campo) !important;
+  background: var(--hxc-campo-fondo) !important;
+}
+
+/* Menús y avisos, también de vidrio. */
+.mat-mdc-menu-panel {
+  background: var(--hxc-vidrio-fondo) !important;
+  border: 1px solid var(--hxc-vidrio-borde);
+  border-radius: 18px !important;
+  backdrop-filter: blur(var(--hxc-vidrio-blur));
+  -webkit-backdrop-filter: blur(var(--hxc-vidrio-blur));
 }

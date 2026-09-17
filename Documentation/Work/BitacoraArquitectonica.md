@@ -23,6 +23,194 @@ Cada entrada nueva va arriba (orden cronológico inverso), con este formato:
 
 ---
 
+## 2026-09-13 — Cola de mensajes decidida con evidencia medida: RabbitMQ (PoC-05, ADR-10)
+
+**Tipo:** PoC + Decisión de diseño
+
+**Contexto:** ADR-04 decía **"RabbitMQ/Kafka"** como si fueran intercambiables. No lo son: responden
+a modelos distintos —cola de tareas frente a registro de eventos— y la elección condiciona cómo se
+escriben los consumidores en los seis microservicios. Era la última decisión abierta del stack.
+
+**Decisión / resultado:** **RabbitMQ**. Registrado como **ADR-10**, que completa el ADR-04 (ese no se
+reescribió: se marcó como *completado por ADR-10*, igual que se hizo con ADR-05 y ADR-08).
+
+**Evidencia (PoC-05):** se publicó y consumió el evento real `ENTRADA_TRANSFERIDA` en ambos brokers,
+los dos levantados en Docker para que la comparación no dependiera del método de instalación, con
+500 mensajes por combinación:
+
+| Broker | Modo | p50 | p95 | msg/s |
+|---|---|---|---|---|
+| RabbitMQ | rápido (sin persistir) | **16,3 ms** | **17,5 ms** | 18.932 |
+| Kafka | rápido (`acks=0`) | 32,1 ms | 36,0 ms | 12.418 |
+| RabbitMQ | duradero (confirmado) | 162,0 ms | 282,1 ms | 1.619 |
+| Kafka | duradero (`acks=all`) | **31,6 ms** | **57,9 ms** | 7.702 |
+
+**El ganador se invierte según el modo, y ese fue el hallazgo principal.** Sin durabilidad RabbitMQ
+es el doble de rápido; **con durabilidad Kafka es cinco veces mejor**. La razón es estructural:
+RabbitMQ hace `fsync` por mensaje al persistir y su latencia se multiplica por diez (16 → 162 ms),
+mientras Kafka escribe a un log secuencial y la durabilidad le sale casi gratis (32 → 31,6 ms). Y el
+modo que importa aquí es el duradero: ni una transferencia ni una alerta de evacuación pueden
+perderse porque el broker se reinició.
+
+**Por qué se eligió RabbitMQ pese a ese dato en contra:** porque, igual que en ADR-09, la latencia
+resultó no ser el criterio decisivo — el umbral de RNF-17 es 10 s y el peor caso medido fue 282 ms,
+treinta y cinco veces por debajo. Lo que sí quedaba abierto se midió aparte, con el mismo escenario
+en ambos (10 eventos, 3 rechazados a propósito):
+
+- **DLQ y reintentos**: RabbitMQ los trae nativos (5 líneas declarativas con
+  `x-dead-letter-exchange`, y el broker mueve el mensaje solo). **Kafka no tiene DLQ**: hay que
+  republicar a otro tópico a mano y decidir por cuenta propia metadatos, reintentos y offsets. ASR-07
+  y ASR-13 exigen no perder en silencio un evento fallido.
+- **Costo operativo**: 275 MB de imagen y 147 MB de memoria frente a 634 MB y 309 MB; 9 líneas para
+  levantarlo frente a 15; consola de administración incluida frente a ninguna.
+- **Patrón de uso**: este sistema usa la cola como **cola de tareas** (disparar notificación, generar
+  QR, registrar auditoría), no como registro de eventos con reproducción histórica y múltiples
+  consumidores independientes — que es donde Kafka se justifica.
+
+**Ventajas / desventajas:** se gana simplicidad operativa y DLQ de fábrica, con un equipo de cuatro
+personas que además debe operar PostgreSQL, MongoDB y Redis. Se acepta una latencia mayor en modo
+duradero (282 ms de p95 frente a 58 ms) y un techo de 1.619 msg/s, holgado para un volumen que se
+genera por transferencia, pedido o alerta, no de forma continua.
+
+**Riesgos técnicos:** (1) El PoC usó **un solo nodo** de cada broker; en producción irían replicados
+y ahí Kafka replica mejor. (2) No se probó con colas de millones de mensajes ni la recuperación ante
+caída del broker —justo el escenario que motiva el modo duradero—. (3) **Cuándo revisar esta
+decisión**: si aparece la necesidad de reproducir el histórico, de que varios consumidores
+independientes lean el mismo flujo, o si el volumen se acerca al millar de mensajes por segundo
+sostenido; en esos casos los números de este mismo PoC respaldarían pasarse a Kafka.
+
+**Participantes:** Samuel Contreras (vía asistente).
+
+---
+
+## 2026-09-13 — Lenguaje del backend decidido con evidencia medida: NestJS (PoC-04, ADR-09)
+
+**Tipo:** PoC + Decisión de diseño
+
+**Contexto:** `App/services/*` llevaba desde el inicio marcado como *"lenguaje por definir"*. Era la
+única decisión que bloqueaba empezar a codificar los seis microservicios, y la guía de Entrega 1 la
+marcaba como prioritaria. Se decidió **construyendo y midiendo**, no razonando en papel.
+
+**Decisión / resultado:** **NestJS** (Node.js + TypeScript) para los microservicios de dominio.
+Registrado como **ADR-09**, con la evidencia en `App/PoCs/poc-04-lenguaje-backend/`.
+
+**Alternativas consideradas:** se implementó **el mismo endpoint** en **NestJS** y en **Spring Boot**
+(Java 17), devolviendo byte por byte la misma respuesta, y se midieron bajo idéntica carga. Se
+descartaron sin PoC **Go** (nadie del equipo lo conoce: riesgo de cronograma) y **Python/FastAPI**
+(tipado opcional, poco conveniente con seis servicios en paralelo).
+
+**Evidencia — 100 conexiones concurrentes, 15 s por medición, cero errores:**
+
+| Candidato | Escenario | req/s | p50 | p97,5 | RSS | Arranque |
+|---|---|---|---|---|---|---|
+| NestJS | sin I/O | 21.071 | 4 ms | 5 ms | 156 MB | **0,28 s** |
+| NestJS | con 2 ms de I/O | 18.530 | 5 ms | 6 ms | 158 MB | |
+| Spring Boot | sin I/O | **91.441** | 0 ms | 1 ms | 335 MB | 1,09 s |
+| Spring Boot | con 2 ms de I/O | **32.288** | 3 ms | 4 ms | 337 MB | |
+
+**Por qué se eligió NestJS aunque Spring Boot rinde más:** porque el rendimiento resultó **no ser el
+criterio que decide**. El umbral de RNF-07 es p95 ≤ 500 ms y el peor caso medido fue **7 ms**:
+setenta veces por debajo. Ambos cumplen con margen enorme, así que la elección la determinan los
+criterios que quedan abiertos, y ahí NestJS gana: arranca 4× más rápido y usa la mitad de memoria
+(favorece RNF-15 y el escalado de ASR-06), impone módulos e inyección de dependencias —el mismo
+modelo de los portales Angular, y lo que hace directo el RNF-18 de dobles de prueba—, y sobre todo es
+el lenguaje que el equipo **ya escribe**. El riesgo real del proyecto no es la latencia: es que
+cuatro personas entreguen seis microservicios a tiempo.
+
+Nota de honestidad, anotada también en el ADR: **si algún integrante tuviera experiencia sólida en
+Java, la decisión sería genuinamente discutible** y Spring Boot quedaría bien defendido por los datos.
+
+**El PoC dio dos veces resultados falsos antes de dar uno válido**, y vale la pena registrarlo porque
+es la lección más reutilizable de este ejercicio. Las primeras corridas mostraban a Spring con 91.599
+req/s pero **13.060 errores** y un p50 de 75 ms — cifras que se contradicen entre sí (por la ley de
+Little, 100 conexiones a esa tasa implican ~1,1 ms, no 75). Las causas estaban en el montaje, no en
+los frameworks:
+1. **Tomcat cierra la conexión cada 100 peticiones** (`maxKeepAliveRequests=100` por defecto) y Node
+   no tiene ese límite: se estaban comparando políticas de *keep-alive*, no frameworks.
+2. **NestJS corría con `ts-node`**, que compila TypeScript en memoria y disparaba su RSS a 706 MB
+   frente a los 156 MB del JS compilado — penalizándolo por el modo de ejecución, no por el
+   framework.
+3. Spring respondía `Transfer-Encoding: chunked` sin `Content-Length` mientras NestJS enviaba
+   `Content-Length` + `keep-alive`; hubo que igualarlo para que las respuestas fueran comparables.
+
+**Ventajas / desventajas:** un solo lenguaje entre portales web y backend, con contratos que pueden
+generar tipos para ambos lados. A cambio se acepta un techo de rendimiento más bajo que el de Spring
+—irrelevante frente a los umbrales actuales— y Node ejecuta en un hilo por proceso, de modo que el
+escalado es horizontal por réplicas (justo lo que ya establecen ADR-01 y ASR-06).
+
+**Riesgos técnicos:** (1) El PoC mide un endpoint **sin base de datos real**, con cliente y servidor
+en la misma máquina, y **no llegó a los 2.000 usuarios concurrentes** de RNF-07 (con 100 conexiones
+el generador de carga ya era el cuello de botella). (2) Si algún servicio pasa a ser intensivo en CPU
+—los reportes con Map-Reduce son el candidato a vigilar— habría que reevaluar esta decisión para ese
+servicio en particular.
+
+**Participantes:** Samuel Contreras (vía asistente).
+
+---
+
+## 2026-09-12 — La app móvil migra a Flutter (ADR-08) y el portal web adopta su diseño
+
+**Tipo:** Cambio arquitectónico
+
+**Contexto:** Diego Coronado reemplazó la app móvil Kotlin/Jetpack Compose por una implementación
+completa en **Flutter**, con un rediseño visual propio ("Liquid Glass"). El cambio revierte
+parcialmente **ADR-05**, que había descartado explícitamente los frameworks *cross-platform*. Ese
+ADR omitía un requisito real del proyecto: la app debe llegar a **Android y iOS**, y con stack nativo
+eso obliga a mantener una segunda implementación completa en Swift/SwiftUI.
+
+Al llegar ese cambio, la documentación y el portal web quedaron desalineados con el código: el SAD
+seguía diciendo "Kotlin + Jetpack Compose", `App/README.md` listaba dos apps móviles que ya no
+existen, y el portal web usaba un lenguaje visual distinto (azul corporativo estilo taquilla) al de
+la app.
+
+**Decisión / resultado:**
+1. **ADR-08 — Migración de la app móvil a Flutter**, nuevo en el SAD, con las tres alternativas
+   consideradas (seguir nativo y añadir iOS en Swift, Kotlin Multiplatform, Flutter) y sus
+   consecuencias. **ADR-05 no se reescribió**: se marcó como *parcialmente superado por ADR-08*,
+   conservando su texto original —incluido el párrafo donde descarta Flutter— porque un ADR es un
+   registro histórico de por qué se decidió algo en su momento, no un documento que se corrige.
+2. **ADR-07 sigue vigente**: la app Flutter mantiene una sola aplicación para Cliente y Personal. Se
+   eliminó de ese ADR la nota que pedía renombrar el módulo, porque ya se renombró a `app-movil`.
+3. **Documentos actualizados**: vista de contenedores del SAD, sección de la app móvil en
+   `ArchitecturalProposal.tex`, tabla de stack y árbol de directorios de `App/README.md`, y el
+   diagrama C4 de contenedores (Archify) con su PDF regenerado.
+4. **El portal web adopta el diseño de la app** (`portal-web-cliente`): mismas fuentes (Space Grotesk
+   para títulos, Manrope para cuerpo), misma paleta (primario `#2F6BFF`, acentos rosa/cian/ámbar/
+   índigo que rotan por fila), fondo atmosférico con manchas difuminadas, superficies de vidrio con
+   desenfoque real, insignias tintadas y el talón punteado del boleto. Los valores se tomaron
+   directamente de `app-movil/lib/theme/app_theme.dart` y `lib/widgets/liquid_glass.dart`, no
+   aproximados a ojo.
+5. **Limpieza**: se eliminaron 890 archivos huérfanos del proyecto Kotlin (`app-movil/app/build/`,
+   `.gradle/`, `local.properties`, ~65 MB) que sobrevivieron al reemplazo porque estaban ignorados
+   por git y por lo tanto el merge no los tocó.
+
+**Alternativas consideradas (para el punto 4, diseño del portal):**
+- **Dejar cada interfaz con su propio lenguaje visual**: se descartó porque son el mismo producto
+  para el mismo usuario; un cliente que compra en la web y consulta su QR en la app vería dos marcas
+  distintas.
+- **Replicar la app pantalla por pantalla** (listas apiladas, navegación inferior): se descartó
+  porque traslada a una pantalla ancha decisiones tomadas para uno estrecho. Se replicó el *sistema*
+  —tipografía, color, vidrio, insignias, anatomía de la tarjeta— y se adaptó el layout al medio: la
+  web usa grilla donde el móvil apila, y navbar superior donde el móvil usa barra inferior.
+
+**Ventajas / desventajas:** Una sola base de código móvil para Android e iOS, y un lenguaje visual
+consistente entre web y móvil. A cambio: Flutter no usa widgets nativos reales (dibuja su propia
+interfaz), se suma un tercer ecosistema de herramientas (Dart/pub) y el equipo no tiene experiencia
+previa en Dart. El efecto de vidrio depende de `backdrop-filter`, que es costoso de renderizar y
+degrada en navegadores viejos —donde la superficie se ve translúcida pero sin desenfoque, que es una
+degradación aceptable.
+
+**Riesgos técnicos:** (1) La decisión de Flutter **todavía no tiene evidencia medida** comparándola
+con la versión Kotlin (tiempo de desarrollo, líneas de código, arranque en frío, fidelidad visual);
+la guía de Entrega 1 pide exactamente esa comparación y queda pendiente —está anotado como nota en el
+propio ADR-08. (2) Si web y móvil evolucionan por separado, los tokens de diseño se desincronizan:
+hoy están duplicados a mano en `styles.scss` y en `app_theme.dart`, sin un origen común.
+
+**Participantes:** Diego Coronado (migración a Flutter), Samuel Contreras (documentación y portal web,
+vía asistente).
+
+---
+
 ## 2026-09-10 — Categoría del evento y ciudad del recinto en el modelo de datos
 
 **Tipo:** Cambio arquitectónico (modelo de dominio)

@@ -11,12 +11,21 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
   google_fonts: ^6.2.1
+  # Llamadas al Servicio de Entradas y Mercado Secundario (CU-006).
+  http: ^1.2.2
   flutter_native_splash: ^2.4.3
   shared_preferences: ^2.3.3
-  mobile_scanner: ^6.0.2
-  http: ^1.2.2
+  # 7.x y no 6.x: la 6 usa Google ML Kit, que no trae versión para el
+  # simulador de iPhone ("Unsupported Swift architecture"). El uso del escáner
+  # es el mismo en las dos ramas.
+  mobile_scanner: ^7.4.2
+  # Llavero del dispositivo (Keychain / Keystore) para los tokens de sesión (CU-027).
+  flutter_secure_storage: ^11.2.0
 
 dev_dependencies:
+  # Pruebas de extremo a extremo en un simulador contra el backend real.
+  integration_test:
+    sdk: flutter
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0

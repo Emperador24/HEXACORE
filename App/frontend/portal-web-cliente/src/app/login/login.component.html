@@ -1,36 +1,55 @@
-<header class="marca-header">HEXACORE</header>
+<app-tarjeta-cuenta icono="hexagon" titulo="HEXACORE" explicacion="Bienvenida de nuevo">
+  @if (aviso()) {
+    <p class="hxc-ok aviso" role="status">{{ aviso() }}</p>
+  }
+  @if (motivoCierre()) {
+    <p class="hxc-error aviso" role="alert">{{ motivoCierre() }}</p>
+  }
 
-<div class="login-fondo">
-  <mat-card class="login-tarjeta">
-    <mat-card-header>
-      <mat-card-title>Portal Cliente</mat-card-title>
-      <mat-card-subtitle>Inicia sesión para comprar tus entradas</mat-card-subtitle>
-    </mat-card-header>
+  <form (ngSubmit)="ingresar()">
+    <mat-form-field appearance="outline" class="campo" subscriptSizing="dynamic">
+      <mat-label>Correo</mat-label>
+      <input matInput name="correo" type="email" [(ngModel)]="correo" autocomplete="username" data-prueba="login-correo" />
+    </mat-form-field>
 
-    <mat-card-content>
-      <form (ngSubmit)="ingresar()" #formulario="ngForm">
-        <mat-form-field appearance="outline" class="campo">
-          <mat-label>Correo</mat-label>
-          <input matInput name="correo" [(ngModel)]="correo" required autocomplete="username" />
-        </mat-form-field>
+    <mat-form-field appearance="outline" class="campo" subscriptSizing="dynamic">
+      <mat-label>Contraseña</mat-label>
+      <input
+        matInput
+        name="contrasena"
+        [type]="verContrasena() ? 'text' : 'password'"
+        [(ngModel)]="contrasena"
+        autocomplete="current-password"
+        data-prueba="login-contrasena"
+      />
+      <button mat-icon-button matSuffix type="button" (click)="verContrasena.set(!verContrasena())" [attr.aria-label]="verContrasena() ? 'Ocultar contraseña' : 'Mostrar contraseña'">
+        <mat-icon>{{ verContrasena() ? 'visibility_off' : 'visibility' }}</mat-icon>
+      </button>
+    </mat-form-field>
 
-        <mat-form-field appearance="outline" class="campo">
-          <mat-label>Contraseña</mat-label>
-          <input matInput type="password" name="contrasena" [(ngModel)]="contrasena" required autocomplete="current-password" />
-        </mat-form-field>
+    <div class="derecha">
+      <a routerLink="/recuperar" [queryParams]="{ correo: correo }">¿Olvidaste tu contraseña?</a>
+    </div>
 
-        @if (error()) {
-          <p class="mensaje-error">Correo o contraseña incorrectos.</p>
-        }
+    @if (error()) {
+      <p class="hxc-error" role="alert" data-prueba="login-error">{{ error() }}</p>
+    }
+    @if (sinVerificar()) {
+      <a class="enlace-secundario" routerLink="/cuenta/verificar" [queryParams]="{ correo: correo }">Tengo el enlace de activación</a>
+    }
 
-        <button mat-flat-button color="primary" type="submit" class="campo" [disabled]="formulario.invalid">
-          Ingresar
-        </button>
-      </form>
+    <button mat-flat-button color="primary" type="submit" class="principal" [disabled]="enviando()" data-prueba="login-ingresar">
+      {{ enviando() ? 'Ingresando…' : 'Ingresar' }}
+    </button>
+  </form>
 
-      <p class="ayuda-demo">Demo (clave: 1234) — cliente&#64;hexacore.com</p>
+  @if (desarrollo) {
+    <p class="pista hxc-suave">Desarrollo · cuentas de ejemplo con contraseña hexacore2026</p>
+  }
 
-      <a routerLink="/eventos" class="volver-cartelera">← Seguir viendo la cartelera</a>
-    </mat-card-content>
-  </mat-card>
-</div>
+  <div class="enlaces">
+    <a routerLink="/registro">¿No tienes cuenta? Regístrate</a>
+    <a routerLink="/cuenta/verificar">Activar una cuenta con el enlace</a>
+    <a routerLink="/eventos" class="hxc-suave">← Seguir viendo la cartelera</a>
+  </div>
+</app-tarjeta-cuenta>

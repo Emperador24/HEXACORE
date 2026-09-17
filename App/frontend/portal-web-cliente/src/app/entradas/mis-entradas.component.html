@@ -11,10 +11,12 @@
           <mat-card-subtitle>{{ entrada.fecha }} · {{ entrada.lugar }}</mat-card-subtitle>
         </mat-card-header>
         <mat-card-content>
-          <mat-chip-set>
-            <mat-chip>{{ entrada.zona }}</mat-chip>
-            <mat-chip [class.chip-reventa]="entrada.estado === EstadoEntrada.EN_REVENTA">{{ etiquetaEstado(entrada.estado) }}</mat-chip>
-          </mat-chip-set>
+          <div class="insignias">
+            <span class="hxc-badge" [style.--tinte]="COLOR.indigo">{{ entrada.zona }}</span>
+            <span class="hxc-badge" [style.--tinte]="colorEstado(entrada.estado)">
+              {{ etiquetaEstado(entrada.estado) }}
+            </span>
+          </div>
 
           <dl class="datos">
             <dt>N.º ticket</dt>
@@ -26,6 +28,8 @@
               <dd>${{ entrada.precioReventa | number: '1.0-0' }}</dd>
             }
           </dl>
+
+          <hr class="hxc-punteado" />
 
           <app-qr-placeholder [codigo]="entrada.codigoQr" />
         </mat-card-content>

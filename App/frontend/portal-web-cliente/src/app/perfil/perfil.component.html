@@ -5,20 +5,37 @@
     <div class="avatar">{{ usuario()?.nombre?.charAt(0) }}</div>
     <h2>{{ usuario()?.nombre }}</h2>
 
-    <mat-form-field appearance="outline" class="campo">
-      <mat-label>Correo</mat-label>
-      <input matInput type="email" [ngModel]="correo()" (ngModelChange)="correo.set($event); guardado.set(false)" />
-    </mat-form-field>
+    <form (ngSubmit)="guardar()">
+      <mat-form-field appearance="outline" class="campo">
+        <mat-label>Nombre</mat-label>
+        <input matInput name="nombre" [(ngModel)]="nombre" (ngModelChange)="guardado.set(null)" autocomplete="name" data-prueba="perfil-nombre" />
+      </mat-form-field>
 
-    <mat-form-field appearance="outline" class="campo">
-      <mat-label>Teléfono</mat-label>
-      <input matInput type="tel" [ngModel]="telefono()" (ngModelChange)="telefono.set($event); guardado.set(false)" />
-    </mat-form-field>
+      <div class="dato">
+        <mat-icon>mail_outline</mat-icon>
+        <div>
+          <span class="rotulo">Correo</span>
+          <span>{{ usuario()?.correo }}</span>
+        </div>
+      </div>
+      <div class="dato">
+        <mat-icon>badge</mat-icon>
+        <div>
+          <span class="rotulo">Rol</span>
+          <span>{{ usuario()?.roles?.join(', ') }}</span>
+        </div>
+      </div>
 
-    <button mat-flat-button color="primary" (click)="guardar()" class="campo">Guardar</button>
+      <button mat-flat-button color="primary" type="submit" class="campo" [disabled]="enviando()" data-prueba="perfil-guardar">
+        {{ enviando() ? 'Guardando…' : 'Guardar cambios' }}
+      </button>
+    </form>
 
     @if (guardado()) {
-      <p class="mensaje-ok">Cambios guardados.</p>
+      <p class="hxc-ok" role="status">{{ guardado() }}</p>
+    }
+    @if (error()) {
+      <p class="hxc-error" role="alert">{{ error() }}</p>
     }
   </mat-card-content>
 </mat-card>

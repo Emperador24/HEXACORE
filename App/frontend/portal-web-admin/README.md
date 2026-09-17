@@ -10,7 +10,7 @@ reportes — consumiendo el backend únicamente a través del API Gateway (`../.
 **Stack:** Angular 19 + TypeScript, Angular Material.
 
 **Estado:** en construcción (Entrega 2). Ya están el login (con detección de rol, un solo login para
-los tres roles — mismo patrón que `app-movil-cliente`), el shell con menú lateral filtrado por rol, y
+los tres roles — mismo patrón que `app-movil`), el shell con menú lateral filtrado por rol, y
 la sección de **Eventos** completa (CU-026 CRUD + campos de CU-016) con datos mock. El resto de
 secciones del menú (Personal, Monitoreo, Incidentes, Emergencias, Cuentas, Roles, Recintos,
 Proveedores, Pagos, Reportes) ya tienen su ruta y su entrada en el menú, pero muestran un placeholder

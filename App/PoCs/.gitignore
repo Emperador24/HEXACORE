@@ -1,0 +1,5 @@
+# Artefactos de compilación de los PoCs — se regeneran con los comandos del README
+node_modules/
+dist/
+target/
+.venv/

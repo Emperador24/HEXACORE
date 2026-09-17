@@ -1,27 +1,35 @@
+/* Navbar de vidrio flotante — la versión web de GlassNavigationBar +
+   GlassAppBar de la app móvil: fondo translúcido con blur real, borde claro y
+   el ítem activo resaltado con un fondo tintado del color primario. */
 .navbar {
-  background: var(--hxc-azul);
-  color: #fff;
   position: sticky;
-  top: 0;
+  top: 12px;
   z-index: 10;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  margin: 12px 16px 0;
+  border-radius: var(--hxc-r-vidrio);
+  background: rgb(var(--hxc-superficie-rgb) / 0.55);
+  border: 1px solid var(--hxc-vidrio-borde);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
 }
 
 .fila-superior {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 18px;
   height: 64px;
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 20px;
 }
 
 .marca {
-  font-size: 1.4rem;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  color: #fff;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  color: var(--hxc-tinta);
   text-decoration: none;
   white-space: nowrap;
 }
@@ -35,13 +43,15 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 8px 12px;
-    border-radius: 6px;
-    color: rgba(255, 255, 255, 0.85);
+    padding: 8px 14px;
+    border-radius: var(--hxc-r-badge);
+    color: rgb(var(--hxc-texto-rgb) / 0.55);
     text-decoration: none;
-    font-weight: 500;
-    font-size: 0.9rem;
+    font-weight: 600;
+    font-size: 0.88rem;
     white-space: nowrap;
+    // Misma transición que el AnimatedContainer del _NavItem.
+    transition: background 0.22s cubic-bezier(0.33, 1, 0.68, 1), color 0.22s;
 
     mat-icon {
       font-size: 20px;
@@ -50,13 +60,13 @@
     }
 
     &:hover {
-      background: rgba(255, 255, 255, 0.12);
-      color: #fff;
+      color: var(--hxc-tinta);
     }
 
+    // El ítem activo lleva el fondo tintado al 18% del primario.
     &.activo {
-      background: rgba(255, 255, 255, 0.18);
-      color: #fff;
+      background: color-mix(in srgb, var(--hxc-primario) 18%, transparent);
+      color: var(--hxc-primario-texto);
     }
   }
 }
@@ -69,23 +79,23 @@
 
 .boton-menu-movil {
   display: none;
-  color: #fff;
+  color: var(--hxc-tinta);
 }
 
 .boton-cuenta {
-  color: #fff;
+  color: var(--hxc-tinta);
 
   .nombre-usuario {
     margin: 0 4px;
+    font-weight: 600;
   }
 }
 
-// Botón blanco sobre la banda azul: es la acción principal para un visitante
-// sin sesión, así que debe destacarse sobre el resto del navbar.
+/* Acción principal para el visitante: sólida sobre el vidrio para que destaque. */
 .boton-login {
-  background: #fff;
-  color: var(--hxc-azul);
-  font-weight: 600;
+  background: var(--hxc-primario);
+  color: #fff;
+  font-weight: 700;
   white-space: nowrap;
 
   mat-icon {
@@ -96,7 +106,7 @@
   }
 
   &:hover {
-    background: #eef4fa;
+    background: color-mix(in srgb, var(--hxc-primario) 88%, #000);
   }
 }
 
@@ -104,17 +114,23 @@
   padding: 24px 20px 48px;
   max-width: 1200px;
   margin: 0 auto;
-  min-height: calc(100vh - 64px - 260px); // empuja el pie al fondo en páginas cortas
+  min-height: calc(100vh - 76px - 260px);
 }
 
+/* ===== Pie ===== */
 .pie {
-  background: var(--hxc-azul-oscuro);
-  color: rgba(255, 255, 255, 0.85);
-  padding: 32px 20px 16px;
+  margin: 0 16px 16px;
+  padding: 28px 24px 14px;
+  border-radius: var(--hxc-r-vidrio);
+  background: rgb(var(--hxc-superficie-rgb) / 0.42);
+  border: 1px solid var(--hxc-vidrio-borde);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  color: rgb(var(--hxc-texto-rgb) / 0.7);
 }
 
 .pie-contenido {
-  max-width: 1200px;
+  max-width: 1160px;
   margin: 0 auto;
   display: flex;
   flex-wrap: wrap;
@@ -122,8 +138,8 @@
 
   h4 {
     margin: 0 0 10px;
-    color: #fff;
-    font-size: 0.95rem;
+    color: var(--hxc-tinta);
+    font-size: 0.92rem;
   }
 
   p {
@@ -136,10 +152,11 @@
   flex: 1 1 240px;
 
   .marca-pie {
-    font-size: 1.3rem;
-    font-weight: 800;
-    letter-spacing: 0.02em;
-    color: #fff;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: -0.4px;
+    color: var(--hxc-tinta);
   }
 
   p {
@@ -153,24 +170,23 @@
   gap: 6px;
 
   a {
-    color: rgba(255, 255, 255, 0.85);
+    color: rgb(var(--hxc-texto-rgb) / 0.7);
     text-decoration: none;
     font-size: 0.85rem;
 
     &:hover {
-      color: #fff;
-      text-decoration: underline;
+      color: var(--hxc-primario-texto);
     }
   }
 }
 
 .pie-legal {
-  max-width: 1200px;
-  margin: 28px auto 0;
+  max-width: 1160px;
+  margin: 24px auto 0;
   padding-top: 14px;
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  border-top: 1px solid rgb(var(--hxc-texto-rgb) / 0.12);
   font-size: 0.78rem;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgb(var(--hxc-texto-rgb) / 0.55);
 }
 
 @media (max-width: 860px) {
@@ -179,11 +195,14 @@
     top: 64px;
     left: 0;
     right: 0;
-    background: var(--hxc-azul-oscuro);
     flex-direction: column;
     padding: 8px;
     gap: 2px;
     display: none;
+    border-radius: 0 0 var(--hxc-r-vidrio) var(--hxc-r-vidrio);
+    background: rgb(var(--hxc-superficie-rgb) / 0.9);
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
 
     &.abierto {
       display: flex;

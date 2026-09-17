@@ -1,110 +1,140 @@
-<section class="buscador">
-  <div class="buscador-fila">
-    <label class="campo">
-      <mat-icon>place</mat-icon>
-      <select [ngModel]="ciudad()" (ngModelChange)="ciudad.set($event)" aria-label="Filtrar por ciudad">
-        <option value="">Todas las ciudades</option>
-        @for (c of ciudades(); track c) {
-          <option [value]="c">{{ c }}</option>
-        }
-      </select>
-    </label>
+<!-- Buscador + chips de filtro, el mismo orden de la app móvil -->
+<div class="buscador hxc-vidrio">
+  <label class="campo-busqueda">
+    <mat-icon>search</mat-icon>
+    <input
+      type="search"
+      placeholder="Buscar eventos o lugares"
+      [ngModel]="texto()"
+      (ngModelChange)="texto.set($event)"
+      aria-label="Buscar eventos"
+    />
+  </label>
 
-    <label class="campo">
-      <mat-icon>category</mat-icon>
-      <select [ngModel]="categoria()" (ngModelChange)="categoria.set($event)" aria-label="Filtrar por categoría">
-        <option value="">Todas las categorías</option>
-        @for (c of categorias; track c) {
-          <option [value]="c">{{ c }}</option>
-        }
-      </select>
-    </label>
-
-    <label class="campo campo-texto">
-      <mat-icon>search</mat-icon>
-      <input
-        type="search"
-        placeholder="Buscar por evento o recinto…"
-        [ngModel]="texto()"
-        (ngModelChange)="texto.set($event)"
-        aria-label="Buscar eventos"
-      />
-    </label>
-
-    @if (hayFiltros()) {
-      <button type="button" class="limpiar" (click)="limpiarFiltros()">Limpiar</button>
+  <div class="chips" role="group" aria-label="Filtrar por categoría">
+    @for (c of categorias; track c; let i = $index) {
+      <button
+        type="button"
+        class="chip"
+        [class.activo]="categoria() === c"
+        [style.--tinte]="c === 'Todas' ? COLOR.primario : acento(i)"
+        (click)="categoria.set(c)"
+      >
+        {{ c }}
+      </button>
     }
   </div>
-</section>
 
-<mat-tab-group [selectedIndex]="pestana()" (selectedIndexChange)="pestana.set($event)">
-  <mat-tab label="Próximos" />
-  <mat-tab label="Pasados" />
-</mat-tab-group>
+  <div class="chips" role="group" aria-label="Filtrar por fecha">
+    @for (f of filtrosFecha; track f) {
+      <button
+        type="button"
+        class="chip"
+        [class.activo]="filtroFecha() === f"
+        [style.--tinte]="COLOR.primario"
+        (click)="filtroFecha.set(f)"
+      >
+        {{ f }}
+      </button>
+    }
+  </div>
 
-@if (filtrados().length === 0) {
-  <div class="vacio">
+  <div class="chips" role="group" aria-label="Filtrar por ciudad">
+    <button
+      type="button"
+      class="chip"
+      [class.activo]="ciudad() === ''"
+      [style.--tinte]="COLOR.primario"
+      (click)="ciudad.set('')"
+    >
+      Todas las ciudades
+    </button>
+    @for (c of ciudades(); track c) {
+      <button
+        type="button"
+        class="chip"
+        [class.activo]="ciudad() === c"
+        [style.--tinte]="COLOR.primario"
+        (click)="ciudad.set(c)"
+      >
+        {{ c }}
+      </button>
+    }
+  </div>
+
+  @if (hayFiltros()) {
+    <button type="button" class="limpiar" (click)="limpiarFiltros()">
+      <mat-icon>close</mat-icon> Limpiar filtros
+    </button>
+  }
+</div>
+
+@if (sinResultados()) {
+  <div class="vacio hxc-vidrio">
     <mat-icon>event_busy</mat-icon>
+    <p>No encontramos eventos con esos filtros.</p>
     @if (hayFiltros()) {
-      <p>Ningún evento coincide con tu búsqueda.</p>
       <button mat-stroked-button (click)="limpiarFiltros()">Quitar filtros</button>
-    } @else {
-      <p>No hay eventos {{ pestana() === 0 ? 'próximos' : 'pasados' }} por ahora.</p>
     }
   </div>
 } @else {
   @if (destacado(); as evento) {
-    <h2 class="titulo-seccion">Destacado</h2>
     <a class="destacado-link" [routerLink]="[evento.id]">
-      <mat-card class="tarjeta-destacada">
+      <article class="destacado hxc-vidrio">
         @if (evento.imagenUrl) {
           <img [src]="evento.imagenUrl" [alt]="evento.nombre" class="poster-destacado" />
-        } @else {
-          <div class="poster-destacado poster-vacio">{{ evento.nombre.charAt(0) }}</div>
         }
-        <div class="info-destacado">
-          <span class="hxc-fecha-badge">
-            <span class="dia">{{ fechaBadge(evento.fecha).dia }}</span>
-            <span class="mes">{{ fechaBadge(evento.fecha).mes }}</span>
-            <span class="dow">{{ fechaBadge(evento.fecha).dow }}</span>
-          </span>
-          <div class="datos-destacado">
-            <span class="etiqueta-categoria">{{ evento.categoria }}</span>
-            <h3>{{ evento.nombre }}</h3>
-            <p>{{ evento.lugar }} · {{ evento.ciudad }}</p>
-            <p class="precio">Desde ${{ evento.precioDesde | number: '1.0-0' }}</p>
-          </div>
-          <button mat-flat-button color="primary" class="cta-destacado">Ver entradas</button>
+        <div class="destacado-info">
+          <span class="hxc-badge" [style.--tinte]="COLOR.ambar">DESTACADO</span>
+          <h2>{{ evento.nombre }}</h2>
+          <p>{{ evento.fecha }} · {{ evento.lugar }} · {{ evento.ciudad }}</p>
+          <p class="precio">Desde ${{ evento.precioDesde | number: '1.0-0' }}</p>
+          <button mat-flat-button color="primary" class="cta">
+            Ver entradas <mat-icon>chevron_right</mat-icon>
+          </button>
         </div>
-      </mat-card>
+      </article>
     </a>
-  } @else {
-    <p class="conteo">{{ filtrados().length }} evento{{ filtrados().length === 1 ? '' : 's' }} encontrado{{ filtrados().length === 1 ? '' : 's' }}</p>
   }
 
-  @for (seccion of secciones(); track seccion.categoria) {
-    <h2 class="titulo-seccion">{{ seccion.categoria }}</h2>
+  @if (resto().length > 0) {
+    <p class="hxc-rotulo-seccion">PRÓXIMOS</p>
     <div class="grilla">
-      @for (evento of seccion.eventos; track evento.id) {
+      @for (evento of resto(); track evento.id; let i = $index) {
         <a class="tarjeta-link" [routerLink]="[evento.id]">
-          <mat-card class="tarjeta-evento">
-            <div class="poster-contenedor">
-              @if (evento.imagenUrl) {
-                <img [src]="evento.imagenUrl" [alt]="evento.nombre" class="poster" />
-              } @else {
-                <div class="poster poster-vacio">{{ evento.nombre.charAt(0) }}</div>
-              }
-              <span class="hxc-fecha-badge badge-flotante">
-                <span class="dia">{{ fechaBadge(evento.fecha).dia }}</span>
-                <span class="mes">{{ fechaBadge(evento.fecha).mes }}</span>
-              </span>
-            </div>
-            <mat-card-content>
+          <article class="tarjeta hxc-vidrio">
+            <span class="hxc-badge-fecha" [style.--tinte]="acento(i)">
+              <span class="dia">{{ fechaBadge(evento.fecha).dia }}</span>
+              <span>{{ fechaBadge(evento.fecha).mes }}</span>
+            </span>
+            <div class="tarjeta-datos">
               <h3>{{ evento.nombre }}</h3>
               <p>{{ evento.lugar }} · {{ evento.ciudad }}</p>
               <p class="precio">Desde ${{ evento.precioDesde | number: '1.0-0' }}</p>
-            </mat-card-content>
-          </mat-card>
+            </div>
+            <mat-icon class="chevron">chevron_right</mat-icon>
+          </article>
+        </a>
+      }
+    </div>
+  }
+
+  @if (anteriores().length > 0) {
+    <p class="hxc-rotulo-seccion">ANTERIORES</p>
+    <div class="grilla">
+      @for (evento of anteriores(); track evento.id) {
+        <a class="tarjeta-link" [routerLink]="[evento.id]">
+          <article class="tarjeta hxc-vidrio pasado">
+            <span class="hxc-badge-fecha" [style.--tinte]="'#8b93a7'">
+              <span class="dia">{{ fechaBadge(evento.fecha).dia }}</span>
+              <span>{{ fechaBadge(evento.fecha).mes }}</span>
+            </span>
+            <div class="tarjeta-datos">
+              <h3>{{ evento.nombre }}</h3>
+              <p>{{ evento.lugar }} · {{ evento.ciudad }}</p>
+            </div>
+            <mat-icon class="chevron">chevron_right</mat-icon>
+          </article>
         </a>
       }
     </div>

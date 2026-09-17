@@ -1,5 +1,5 @@
 .vacio {
-  color: rgba(0, 0, 0, 0.6);
+  color: rgb(var(--hxc-texto-rgb) / 0.6);
   text-align: center;
   padding: 32px;
 }
@@ -18,7 +18,7 @@
 .total {
   font-weight: 700;
   margin: 8px 0 16px;
-  color: var(--hxc-azul);
+  color: var(--hxc-primario-texto);
 }
 
 .grilla {
@@ -30,6 +30,6 @@
 
 .tarjeta {
   p {
-    color: rgba(0, 0, 0, 0.6);
+    color: rgb(var(--hxc-texto-rgb) / 0.6);
   }
 }

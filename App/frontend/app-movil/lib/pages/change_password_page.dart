@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 
+import '../services/cuentas_api.dart';
 import '../widgets/liquid_glass.dart';
 
-// cambio de contraseña simulado, falta conectar con el backend
+/// Cambio de contraseña desde la sesión — CU-027C.
+///
+/// Pide la actual aunque ya haya sesión. Los fallos cuentan para el bloqueo de
+/// CU-027D; si se bloquea, el servidor cierra todas las sesiones y la app
+/// vuelve al login. Si sale bien, se cierran las sesiones de los demás
+/// dispositivos y esta sigue abierta.
 class ChangePasswordPage extends StatefulWidget {
   const ChangePasswordPage({super.key});
 
@@ -32,11 +38,10 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
       setState(() => _error = 'Ingresa tu contraseña actual.');
       return;
     }
-    if (_newPassword.text.length < 8 ||
-        !RegExp(r'[A-Z]').hasMatch(_newPassword.text) ||
-        !RegExp(r'[0-9]').hasMatch(_newPassword.text)) {
-      setState(() => _error =
-          'La nueva contraseña debe tener al menos 8 caracteres, una mayúscula y un número.');
+    // La política la aplica el servidor (RNF-14): aquí solo lo que no depende
+    // de ninguna regla.
+    if (_newPassword.text.isEmpty) {
+      setState(() => _error = 'Escribe tu contraseña nueva.');
       return;
     }
     if (_newPassword.text != _confirm.text) {
@@ -44,11 +49,20 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
       return;
     }
     setState(() => _error = null);
-    await Future.delayed(const Duration(milliseconds: 700));
-    if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('Contraseña actualizada.')));
-    Navigator.of(context).pop();
+    final mensajero = ScaffoldMessenger.of(context);
+    final navegador = Navigator.of(context);
+    try {
+      final mensaje = await cuentasApi.cambiarContrasena(
+          actual: _current.text, nueva: _newPassword.text);
+      mensajero.showSnackBar(SnackBar(content: Text(mensaje)));
+      navegador.pop();
+    } on CuentasApiException catch (error) {
+      // Si la cuenta se bloqueó, la sesión ya se cerró y la app vuelve sola al
+      // login; el mensaje lo muestra ella.
+      if (mounted && error.codigo != 'CUENTA_BLOQUEADA') {
+        setState(() => _error = error.mensaje);
+      }
+    }
   }
 
   @override

@@ -12,12 +12,15 @@
     </nav>
 
     <div class="acciones">
+      <button mat-icon-button class="boton-tema" (click)="tema.alternar()" [attr.aria-label]="tema.oscuro() ? 'Usar tema claro' : 'Usar tema oscuro'" data-prueba="shell-tema">
+        <mat-icon>{{ tema.oscuro() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+      </button>
       <button mat-icon-button class="boton-menu-movil" (click)="menuMovilAbierto.set(!menuMovilAbierto())" aria-label="Abrir menú">
         <mat-icon>{{ menuMovilAbierto() ? 'close' : 'menu' }}</mat-icon>
       </button>
 
       @if (usuario(); as u) {
-        <button mat-button class="boton-cuenta" [matMenuTriggerFor]="menuCuenta">
+        <button mat-button class="boton-cuenta" [matMenuTriggerFor]="menuCuenta" data-prueba="shell-cuenta">
           <mat-icon>account_circle</mat-icon>
           <span class="nombre-usuario">{{ u.nombre }}</span>
           <mat-icon>arrow_drop_down</mat-icon>
@@ -31,7 +34,7 @@
             <mat-icon>settings</mat-icon>
             <span>Ajustes</span>
           </button>
-          <button mat-menu-item (click)="cerrarSesion()">
+          <button mat-menu-item (click)="cerrarSesion()" data-prueba="shell-cerrar-sesion">
             <mat-icon>logout</mat-icon>
             <span>Cerrar sesión</span>
           </button>

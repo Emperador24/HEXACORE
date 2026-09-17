@@ -13,9 +13,9 @@
       <p class="lugar"><mat-icon>place</mat-icon> {{ evento.lugar }} · {{ evento.ciudad }}</p>
 
       <mat-card class="tarjeta-fecha">
-        <span class="hxc-fecha-badge badge-grande">
+        <span class="hxc-badge-fecha badge-grande" [style.--tinte]="COLOR.indigo">
           <span class="dia">{{ fechaBadge(evento.fecha).dia }}</span>
-          <span class="mes">{{ fechaBadge(evento.fecha).mes }}</span>
+          <span>{{ fechaBadge(evento.fecha).mes }}</span>
           <span class="dow">{{ fechaBadge(evento.fecha).dow }}</span>
         </span>
         <div class="detalle-fecha">

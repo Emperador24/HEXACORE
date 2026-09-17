@@ -95,7 +95,7 @@
       "id": "cluster_mensajeria",
       "type": "messagebus",
       "label": "Clúster de Mensajería",
-      "sublabel": "RabbitMQ / Kafka",
+      "sublabel": "RabbitMQ",
       "pos": [
         960,
         500

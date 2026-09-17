@@ -9,6 +9,7 @@ import { EntradasService } from '../core/entradas.service';
 import { AuthService } from '../core/auth.service';
 import { PagoService } from '../core/pago.service';
 import { fechaBadge } from '../shared/fecha-badge';
+import { COLOR } from '../shared/acentos';
 
 /**
  * Detalle de un evento con la compra de entradas (CU-006) — guiado por la
@@ -33,6 +34,7 @@ export class EventoDetalleComponent {
 
   readonly evento = computed(() => this.eventosService.obtenerPorId(this.route.snapshot.params['id']));
   readonly fechaBadge = fechaBadge;
+  readonly COLOR = COLOR;
 
   readonly zonaSeleccionada = signal(this.evento()?.zonas[0]?.nombre ?? '');
   readonly cantidad = signal(1);

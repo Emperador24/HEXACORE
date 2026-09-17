@@ -53,7 +53,7 @@
       "id": "app_movil",
       "type": "frontend",
       "label": "App Móvil",
-      "sublabel": "Kotlin · Compose — Cliente + Personal",
+      "sublabel": "Flutter — Cliente + Personal",
       "pos": [
         15.6,
         89.8
@@ -207,7 +207,7 @@
       "id": "queue",
       "type": "messagebus",
       "label": "Cola de Mensajes",
-      "sublabel": "RabbitMQ / Kafka",
+      "sublabel": "RabbitMQ",
       "pos": [
         826.8,
         210.6
@@ -370,7 +370,7 @@
       "title": "Quién usa cada interfaz",
       "items": [
         "Cliente → App Móvil y Portal Web Cliente",
-        "Empleado → la misma App Móvil; el login detecta el rol y el cargo, y abre su conjunto de pantallas (ADR-07)",
+        "Empleado → la misma App Móvil (Flutter); el login detecta el rol y el cargo, y abre su conjunto de pantallas (ADR-07)",
         "Organizador, Administrador y Supervisor de Emergencia → Portal Web Admin"
       ]
     },
