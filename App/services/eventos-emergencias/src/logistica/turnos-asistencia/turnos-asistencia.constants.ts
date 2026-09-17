@@ -1,0 +1,2 @@
+export const MAX_HORAS_POR_TURNO = 12;
+export const MAX_HORAS_DIARIAS_EMPLEADO = 14;
