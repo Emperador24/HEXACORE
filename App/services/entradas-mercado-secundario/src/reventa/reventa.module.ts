@@ -1,4 +1,7 @@
 import { Module } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
+import { SesionValida } from '../comun/autenticacion/sesion-valida.guard';
+import { CONFIGURACION, ConfiguracionServicio } from '../config/configuracion';
 import { PersistenciaModule } from '../persistencia/persistencia.module';
 import { CheckoutService } from './checkout.service';
 import { GestorConcurrencia } from './concurrencia/gestor-concurrencia.service';
@@ -23,10 +26,23 @@ import { ReventaController } from './reventa.controller';
  * cambio en las reglas de un dominio no obliga a modificar otro"*).
  */
 @Module({
-  imports: [PersistenciaModule],
+  imports: [
+    PersistenciaModule,
+    // Solo verifica: sin clave privada, este servicio no puede emitir tokens.
+    JwtModule.registerAsync({
+      inject: [CONFIGURACION],
+      useFactory: (config: ConfiguracionServicio) => ({
+        publicKey: config.autenticacion.clavePublica.pem,
+        // Algoritmo fijado: sin esto se aceptaría el que declare el propio
+        // token, incluido `none` o un HS256 "firmado" con la clave pública.
+        verifyOptions: { algorithms: ['RS256'], issuer: config.autenticacion.emisor },
+      }),
+    }),
+  ],
   controllers: [ReventaController],
   providers: [
     proveedorRedis,
+    SesionValida,
     GestorConcurrencia,
     GeneradorQr,
     // El dominio depende de la interfaz, no de este adaptador concreto:

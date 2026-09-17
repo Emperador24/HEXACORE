@@ -33,9 +33,53 @@ vean como el mismo producto. Los valores están tomados de `app-movil/lib/theme/
   desenfoque real (`backdrop-filter`). Por eso ninguna tarjeta es blanca opaca.
 - **Componentes:** insignias tintadas (fondo al 16 % del color, borde al 40 %), badge de fecha
   apilado, talón punteado en las entradas.
+- **Dos temas, como la app:** **oscuro por defecto**, con las manchas de color intensas de la app, y
+  claro opcional. Se cambia desde el ícono del navbar o desde Ajustes → Modo oscuro, y se recuerda.
+- **Fondo (`shared/fondo-atmosfera.component.ts`):** cuatro círculos de verdad con `blur(70px)`,
+  igual que `AtmosphereBackground`, que crecen con la ventana para conservar la proporción.
 
-Los tokens viven en `src/styles.scss`. **Si cambia el tema de la app móvil, hay que actualizarlos a
-mano aquí**: hoy están duplicados y no tienen un origen común.
+Los tokens viven en `src/styles.scss`. **Los componentes no usan colores fijos**: usan variables
+(`--hxc-tinta`, `rgb(var(--hxc-texto-rgb) / 0.6)`, `--hxc-vidrio-fondo`, `--hxc-primario-texto`…)
+que se redefinen en `html.tema-oscuro`. Un color nuevo escrito a mano se verá bien en un tema y mal
+en el otro. **Si cambia el tema de la app móvil, hay que actualizarlos a mano aquí**: están
+duplicados y no tienen un origen común.
+
+## Cuentas y sesión (CU-027)
+
+Conectado al **Servicio de Administración** (`../../services/administracion`, puerto 3002):
+
+| Ruta | Qué hace |
+|---|---|
+| `/login` | Inicio de sesión (pasos 8-9) |
+| `/registro` | Registro con rol Cliente (pasos 1-4) |
+| `/cuenta/verificar` | Activación con el enlace del correo (pasos 5-7) |
+| `/recuperar` | Pedir el enlace de recuperación (CU-027A) |
+| `/cuenta/restablecer` | Contraseña nueva con el enlace (CU-027A) |
+| `/perfil` | Cambiar el nombre (CU-027C) |
+| `/ajustes` | Cambiar la contraseña, tema y cerrar sesión |
+
+`/cuenta/verificar` y `/cuenta/restablecer` son las direcciones a las que apuntan los correos
+(`CORREO_URL_BASE_ENLACES` del backend). Al abrirlas, el token se quita de la barra de direcciones, y
+la cuenta **no se activa sola**: hay que pulsar el botón, porque algunos programas abren los enlaces
+de los correos para revisarlos y gastarían el enlace.
+
+**Dónde viven los tokens** (DECISIONES.md §22 del backend):
+
+- **Acceso** (15 min): solo en memoria. Nunca en `localStorage`, donde cualquier script inyectado
+  podría leerlo.
+- **Renovación** (30 días sin uso): en una cookie `HttpOnly`, `SameSite=Strict`, limitada a
+  `/api/v1/sesiones`. JavaScript no puede leerla. Al recargar la página, la sesión se recupera en
+  silencio con ella.
+
+Como en la app, **una sola renovación a la vez**, y una petición que recibe 401 renueva y se repite
+una vez. Si la sesión se cerró desde fuera (otro dispositivo, cambio de contraseña, cuenta
+desactivada), el portal vuelve al login y dice por qué, también si eso ocurrió con la página
+cerrada.
+
+Solo entran cuentas con rol **Cliente**; el resto recibe un mensaje que las dirige a la app o al
+portal de administración.
+
+Los mensajes de error vienen del servidor (RNF-14): el portal no repite la política de contraseñas.
 
 ## Cómo correrlo
 
@@ -45,33 +89,57 @@ npm install   # si no se hizo ya
 npm start     # sirve en http://localhost:4200
 ```
 
-Usuario demo (clave `1234`): `cliente@hexacore.com`.
+Necesita el backend en marcha (desde `App/infra`):
+
+```bash
+docker compose --profile servicios up -d --build
+```
+
+Cuentas de ejemplo con contraseña `hexacore2026`: `cliente@hexacore.com`, `bruno@hexacore.com`,
+`carla@hexacore.com` (la crea la semilla del servicio de Administración).
+
+En desarrollo los correos no se envían: están en <http://localhost:3098/correos>, y las pantallas
+de activación y recuperación lo recuerdan.
+
+### Prueba de extremo a extremo
+
+```bash
+npm run test:login     # con el backend y `npm start` en marcha
+```
+
+Maneja un Chrome de verdad: registro, correo, activación, login, sesión tras recargar, perfil,
+cambio de contraseña, sesión cerrada desde otro dispositivo (con la página abierta y cerrada),
+recuperación, cierre de sesión, mensajes del servidor y el cambio de tema. Comprueba además que
+ningún token queda en `localStorage` y que la cookie es `HttpOnly`.
 
 ## Estructura
 
 ```
 src/app/
-├── core/            Modelos, autenticación mock, guard de sesión, servicios de dominio, PagoService, ítems del menú
-├── login/           Login del rol Cliente
+├── core/            Modelos, sesión real (AuthService), tema, guards, servicios de dominio, PagoService, menú
+├── login/           Login del rol Cliente (CU-027)
+├── cuenta/          Registro, activación, recuperación y restablecimiento (CU-027, CU-027A)
 ├── shell/           Navbar de vidrio + <router-outlet> + pie
 ├── eventos/         CU-001..CU-006 — cartelera con filtros y detalle con compra de entradas
 ├── entradas/        CU-007..CU-010 — mis entradas (enviar/reventa) y mercado de reventa
 ├── parqueadero/     CU-021..CU-025 — reservar y consultar reservas
 ├── pedidos/         CU-011..CU-015 — restaurantes, menú y mis pedidos
 ├── pago/            Pasarela de pago compartida por los tres flujos de compra
-├── perfil/          Datos editables del cliente
-├── ajustes/         Preferencias, soporte y cierre de sesión
-└── shared/          Acentos, badge de fecha y QrPlaceholder — mismo criterio que en la app móvil
+├── perfil/          Nombre editable (CU-027C)
+├── ajustes/         Tema, cambio de contraseña, soporte y cierre de sesión
+└── shared/          Fondo de manchas, tarjeta de cuenta, medidor de contraseña, acentos, badge de fecha, QR
 ```
 
 ## Estado
 
-Funciona de extremo a extremo sobre **datos mock**: no hay backend todavía. Los servicios de `core/`
-son la capa que se reemplazará por llamadas HTTP al API Gateway; la forma de los componentes no debe
-cambiar cuando eso ocurra.
+**Las cuentas y la sesión son reales** (ver arriba). El resto —cartelera, entradas, reventa,
+parqueadero, pedidos, pago— sigue sobre **datos mock**. En particular, **el mercado de reventa de
+la web aún no está conectado** al Servicio de Entradas, aunque la app móvil sí lo está (RNF-14
+pendiente). Las entradas de ejemplo pertenecen a los ids reales de Ana, Bruno y Carla, para que "Mis
+entradas" muestre algo al entrar con esas cuentas.
 
-Dos limitaciones conocidas:
-- **La sesión no persiste entre recargas** (vive en memoria); al refrescar se vuelve al estado
-  público. Se resuelve cuando el backend emita un token.
+Limitaciones conocidas:
+- **En desarrollo el portal llama directo a los puertos 3001 y 3002** (con CORS). Detrás del API
+  Gateway todo compartiría origen.
 - **Los filtros se resuelven en el navegador** sobre la cartelera completa. Con el API real deben
   pasar a ser parámetros de consulta del servidor.

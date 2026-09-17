@@ -6,8 +6,15 @@
 # nodo compartido" — a diferencia de producción, que usa un clúster de
 # Kubernetes.
 #
-# Los microservicios corren fuera de Docker (npm run start:dev) y se conectan a
-# estos puertos; así el ciclo de edición-recarga sigue siendo inmediato.
+# Para desarrollar, los microservicios corren fuera de Docker (npm run
+# start:dev) y se conectan a estos puertos; así el ciclo de edición-recarga
+# sigue siendo inmediato.
+#
+# También pueden correr en contenedor, con reinicio automático (RNF-04), con el
+# perfil `servicios`. Usan los mismos puertos, así que antes hay que parar los
+# que estén corriendo con npm:
+#
+#   docker compose -f App/infra/docker-compose.yml --profile servicios up -d --build
 #
 #   docker compose -f App/infra/docker-compose.yml up -d
 #   docker compose -f App/infra/docker-compose.yml down          # conserva datos
@@ -103,6 +110,91 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # Proveedor de Notificaciones simulado — solo correo.
+  #
+  # Igual que la pasarela: en contenedor y no como doble dentro del servicio,
+  # porque el camino CU-027E ("el correo no puede enviarse por falla del
+  # proveedor") solo ocurre de verdad si hay una llamada de red que falle.
+  # Además permite leer los correos enviados desde una prueba y sacar de ahí el
+  # enlace de verificación, como haría una persona abriendo su buzón.
+  correo:
+    build: ./correo-simulado
+    container_name: hexacore-correo
+    restart: unless-stopped
+    ports:
+      - "3098:3098"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3098/salud',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # --- Microservicios (perfil `servicios`) -----------------------------------
+  #
+  # `restart: unless-stopped` es lo que cubre RNF-04 en este ambiente: si el
+  # proceso muere, Docker lo levanta de nuevo sin intervención. Lo que Docker
+  # Compose NO hace es reiniciar un contenedor que sigue vivo pero `unhealthy`
+  # (colgado); eso es trabajo de la sonda de vida de Kubernetes en producción
+  # (SAD §11). Ver services/administracion/DECISIONES.md §18.
+  #
+  # NODE_ENV=development porque usan las claves JWT de desarrollo, que en
+  # producción se rechazan a propósito.
+
+  # Servicio de Administración — CU-027 (cuentas, login, sesiones).
+  administracion:
+    profiles: ["servicios"]
+    build: ../services/administracion
+    container_name: hexacore-administracion
+    restart: unless-stopped
+    # Un init mínimo como PID 1: reenvía las señales a node y recoge procesos
+    # huérfanos. Sin él, node es el PID 1 y el kernel le trata las señales de
+    # forma especial.
+    init: true
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+    x-entorno: &entorno-comun
+      NODE_ENV: development
+      POSTGRES_HOST: postgres
+      REDIS_HOST: redis
+      REDIS_PUERTO: "6379"
+      RABBITMQ_URL: amqp://hexacore:hexacore@rabbitmq:5672
+      AUTH_JWT_CLAVE_PUBLICA_ARCHIVO: /claves/jwt-publica.pem
+    # Solo en este servicio se monta también la privada: es el único que firma.
+    environment:
+      <<: *entorno-comun
+      AUTH_JWT_CLAVE_PRIVADA_ARCHIVO: /claves/jwt-privada.pem
+      CORREO_PROVEEDOR_URL: http://correo:3098
+    volumes:
+      - ./claves-desarrollo/jwt-privada.pem:/claves/jwt-privada.pem:ro
+      - ./claves-desarrollo/jwt-publica.pem:/claves/jwt-publica.pem:ro
+    ports:
+      - "3002:3002"
+
+  # Servicio de Entradas y Mercado Secundario — CU-006.
+  entradas-mercado-secundario:
+    profiles: ["servicios"]
+    build: ../services/entradas-mercado-secundario
+    container_name: hexacore-entradas
+    restart: unless-stopped
+    # Un init mínimo como PID 1: reenvía las señales a node y recoge procesos
+    # huérfanos. Sin él, node es el PID 1 y el kernel le trata las señales de
+    # forma especial.
+    init: true
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+      pasarela: { condition: service_healthy }
+    environment:
+      <<: *entorno-comun
+      PASARELA_URL: http://pasarela:3099
+    volumes:
+      - ./claves-desarrollo/jwt-publica.pem:/claves/jwt-publica.pem:ro
+    ports:
+      - "3001:3001"
 
 volumes:
   postgres-datos:

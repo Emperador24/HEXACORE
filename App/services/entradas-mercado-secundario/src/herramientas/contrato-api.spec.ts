@@ -17,8 +17,8 @@ describe('contrato OpenAPI publicado', () => {
   ) as {
     openapi: string;
     info: { title: string; version: string };
-    paths: Record<string, Record<string, { summary?: string }>>;
-    components: { schemas: Record<string, unknown> };
+    paths: Record<string, Record<string, { summary?: string; security?: unknown[] }>>;
+    components: { schemas: Record<string, unknown>; securitySchemes?: Record<string, { scheme?: string }> };
   };
 
   it('es una especificación OpenAPI 3 válida en lo esencial', () => {
@@ -70,5 +70,21 @@ describe('contrato OpenAPI publicado', () => {
   it('el DTO de pago recibe un token, nunca datos de tarjeta', () => {
     const pagar = contrato.components.schemas.PagarDto as { properties: Record<string, unknown> };
     expect(Object.keys(pagar.properties).sort()).toEqual(['metodoPago', 'token']);
+  });
+
+  // RNF-06: el contrato debe decirle a los clientes que hace falta un token, y
+  // no seguir anunciando la cabecera que permitía hacerse pasar por otro.
+  it('exige token Bearer en todas las rutas de negocio y ya no menciona X-Usuario-Id', () => {
+    expect(contrato.components.securitySchemes?.bearer?.scheme).toBe('bearer');
+    // `/salud` queda fuera a propósito: la consulta el balanceador (ADR-02),
+    // que no tiene sesión, y no expone nada de negocio.
+    const deNegocio = Object.entries(contrato.paths).filter(([ruta]) => ruta !== '/salud');
+    expect(deNegocio.length).toBeGreaterThan(0);
+    for (const [ruta, metodos] of deNegocio) {
+      for (const [metodo, operacion] of Object.entries(metodos)) {
+        expect([ruta, metodo, operacion.security]).toEqual([ruta, metodo, [{ bearer: [] }]]);
+      }
+    }
+    expect(JSON.stringify(contrato).toLowerCase()).not.toContain('x-usuario-id');
   });
 });

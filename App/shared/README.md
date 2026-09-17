@@ -17,9 +17,17 @@ contratos no pueden ser código compartido literal: se expresan como especificac
 shared/
 ├── api/
 │   └── entradas-mercado-secundario.openapi.json   API REST del CU-006
-└── eventos/
-    └── entrada-transferida.schema.json            Evento ENTRADA_TRANSFERIDA
+├── eventos/
+│   └── entrada-transferida.schema.json            Evento ENTRADA_TRANSFERIDA
+└── seguridad/
+    └── token-sesion.md                            Token de sesión y su revocación (RNF-06)
 ```
+
+### `seguridad/token-sesion.md`
+
+Qué lleva el token que emite el Servicio de Administración, con qué se firma y verifica, y cómo se
+anuncia en Redis una sesión cerrada. Es la única parte de la autenticación que los servicios tienen
+que acordar.
 
 
 ### `api/entradas-mercado-secundario.openapi.json`

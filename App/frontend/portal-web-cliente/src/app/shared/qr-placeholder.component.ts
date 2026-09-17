@@ -24,18 +24,23 @@ import { Component, input } from '@angular/core';
         align-items: center;
         gap: 4px;
       }
+      /* Un QR se lee oscuro sobre claro: la caja es blanca en los dos temas,
+         como el QR real que mostrará la app. */
       .caja {
         width: 96px;
         height: 96px;
         display: flex;
         align-items: center;
         justify-content: center;
-        border: 1px solid rgba(0, 0, 0, 0.3);
+        border-radius: 12px;
+        background: #fff;
+        color: #0b0f1a;
+        border: 1px solid rgb(0 0 0 / 0.12);
         font-weight: 600;
       }
       .codigo {
         font-size: 0.75rem;
-        color: rgba(0, 0, 0, 0.6);
+        color: rgb(var(--hxc-texto-rgb) / 0.6);
       }
     `
   ]

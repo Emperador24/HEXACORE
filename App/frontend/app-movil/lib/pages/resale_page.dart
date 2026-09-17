@@ -358,15 +358,15 @@ class _ResaleMarketplacePageState extends State<ResaleMarketplacePage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
+            const Row(
               children: [
-                const TintedIconBadge(
+                TintedIconBadge(
                     icon: Icons.check_circle, color: _kGreen, size: 40),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: Text('¡Entrada transferida!',
-                      style: const TextStyle(
-                          fontSize: 20, fontWeight: FontWeight.w600)),
+                      style:
+                          TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
                 ),
               ],
             ),

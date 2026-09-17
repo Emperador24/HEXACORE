@@ -31,6 +31,9 @@ import urllib.error
 import urllib.request
 import uuid
 
+from identidad import cabeceras
+from redis_reventa import limpiar_reventa
+
 API = 'http://localhost:3001/api/v1'
 ANA = 'a0000001-0000-4000-8000-000000000001'
 E1 = '20000000-0000-4000-8000-000000000001'
@@ -46,10 +49,10 @@ COLA_NOTIF = 'reventa.notificaciones'
 DLQ_NOTIF = 'reventa.notificaciones.dlq'
 
 
-def pedir(metodo, ruta, usuario, cuerpo=None):
+def pedir(metodo, ruta, usuario, cuerpo=None, roles=('Cliente',)):
     datos = json.dumps(cuerpo).encode() if cuerpo is not None else None
     req = urllib.request.Request(f'{API}/{ruta}', data=datos, method=metodo,
-                                 headers={'x-usuario-id': usuario, 'Content-Type': 'application/json'})
+                                 headers=cabeceras(usuario, roles))
     try:
         with urllib.request.urlopen(req, timeout=40) as r:
             return r.status, json.load(r)
@@ -106,7 +109,7 @@ def vender():
 
 def resembrar():
     subprocess.run(['npm', 'run', 'semilla'], capture_output=True, check=True)
-    subprocess.run(['redis-cli', '-p', '6380', 'FLUSHALL'], capture_output=True)
+    limpiar_reventa()
     for cola in (COLA_NOTIF, DLQ_NOTIF, 'reventa.liquidaciones', 'reventa.liquidaciones.dlq'):
         rabbit('purge_queue', cola)
 

@@ -1,6 +1,13 @@
 import { Injectable, signal } from '@angular/core';
 import { Entrada, EstadoEntrada } from './models';
 
+// Datos de ejemplo (la compra de entradas, CU-001, aún no tiene servicio). Los
+// dueños son los ids reales de las cuentas de demostración del Servicio de
+// Administración, para que "Mis entradas" muestre algo al entrar con ellas.
+const ANA = 'a0000001-0000-4000-8000-000000000001'; // cliente@hexacore.com
+const BRUNO = 'a0000002-0000-4000-8000-000000000002'; // bruno@hexacore.com
+const CARLA = 'a0000003-0000-4000-8000-000000000003'; // carla@hexacore.com
+
 let contadorTicket = 100;
 let contadorTransaccion = 500;
 
@@ -42,7 +49,7 @@ export class EntradasService {
       estado: EstadoEntrada.VALIDA,
       numeroTicket: 'TCK-2026-000123',
       numeroTransaccion: 'TXN-2026-000501',
-      propietarioId: 'usr-cliente-1'
+      propietarioId: ANA
     },
     {
       id: 'ent-3',
@@ -55,7 +62,7 @@ export class EntradasService {
       estado: EstadoEntrada.USADA,
       numeroTicket: 'TCK-2026-000099',
       numeroTransaccion: 'TXN-2026-000399',
-      propietarioId: 'usr-cliente-1'
+      propietarioId: ANA
     },
     // --- Reventa publicada por otros clientes, para poblar el mercado ---
     {
@@ -69,7 +76,7 @@ export class EntradasService {
       estado: EstadoEntrada.EN_REVENTA,
       numeroTicket: 'TCK-2026-000124',
       numeroTransaccion: 'TXN-2026-000502',
-      propietarioId: 'usr-cliente-2',
+      propietarioId: BRUNO,
       precioReventa: 90000
     },
     {
@@ -83,7 +90,7 @@ export class EntradasService {
       estado: EstadoEntrada.EN_REVENTA,
       numeroTicket: 'TCK-2026-000201',
       numeroTransaccion: 'TXN-2026-000503',
-      propietarioId: 'usr-cliente-3',
+      propietarioId: CARLA,
       precioReventa: 390000
     }
   ]);

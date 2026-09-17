@@ -25,7 +25,7 @@
   font-size: 3rem;
   font-weight: 700;
   background: color-mix(in srgb, var(--hxc-primario) 20%, transparent);
-  color: var(--hxc-primario);
+  color: var(--hxc-primario-texto);
 }
 
 .resumen {
@@ -40,7 +40,7 @@
     align-items: center;
     gap: 4px;
     margin: 0 0 16px;
-    color: rgba(11, 15, 26, 0.6);
+    color: rgb(var(--hxc-texto-rgb) / 0.6);
 
     mat-icon {
       font-size: 18px;
@@ -83,7 +83,7 @@
   }
 
   .evento-lugar {
-    color: rgba(11, 15, 26, 0.6);
+    color: rgb(var(--hxc-texto-rgb) / 0.6);
     font-size: 0.9rem;
   }
 }
@@ -111,7 +111,7 @@
   width: 100%;
   padding: 15px 18px;
   border: none;
-  border-bottom: 1px solid rgba(11, 15, 26, 0.08);
+  border-bottom: 1px solid rgb(var(--hxc-texto-rgb) / 0.08);
   background: transparent;
   font: inherit;
   cursor: pointer;
@@ -132,7 +132,7 @@
   }
 
   .nombre-zona {
-    color: var(--hxc-primario);
+    color: var(--hxc-primario-texto);
     font-weight: 600;
   }
 }

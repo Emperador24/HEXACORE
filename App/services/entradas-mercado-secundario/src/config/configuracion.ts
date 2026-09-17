@@ -1,3 +1,5 @@
+import { cargarClavePublica, ClavePublica } from '../comun/autenticacion/clave-publica';
+
 /**
  * Configuración del servicio, leída del entorno y validada al arrancar.
  *
@@ -65,6 +67,15 @@ export interface ConfiguracionServicio {
     timeoutMs: number;
   };
   reventa: ReglasReventa;
+  /**
+   * Verificación de los tokens de sesión (RNF-06). Solo la clave pública: este
+   * servicio verifica tokens, no los emite.
+   */
+  autenticacion: {
+    clavePublica: ClavePublica;
+    /** Quién debe haber firmado el token. Contrato con el Servicio de Administración. */
+    emisor: string;
+  };
 }
 
 /**
@@ -161,6 +172,10 @@ export function cargarConfiguracion(): ConfiguracionServicio {
       timeoutMs: timeoutPasarelaMs,
     },
     reventa,
+    autenticacion: {
+      clavePublica: cargarClavePublica(entorno === 'production'),
+      emisor: texto('AUTH_JWT_EMISOR', 'hexacore-administracion'),
+    },
   };
 }
 

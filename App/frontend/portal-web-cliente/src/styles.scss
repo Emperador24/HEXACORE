@@ -1,24 +1,28 @@
 /*
  * Sistema de diseño "Liquid Glass" — la traducción a web del tema de la app
- * móvil Flutter. Las constantes de aquí salen de dos archivos de esa app y
- * deben mantenerse sincronizadas con ellos:
+ * móvil Flutter. Las constantes salen de dos archivos de esa app y deben
+ * mantenerse sincronizadas con ellos:
  *   - app-movil/lib/theme/app_theme.dart      (paleta, tipografía)
- *   - app-movil/lib/widgets/liquid_glass.dart (vidrio, blobs, badges)
+ *   - app-movil/lib/widgets/liquid_glass.dart (vidrio, manchas, insignias)
  *
- * La idea del diseño: un fondo con manchas de color muy difuminadas y, encima,
- * superficies translúcidas con desenfoque real (backdrop-filter) que dejan ver
- * ese color a través. Por eso ninguna tarjeta es blanca opaca.
+ * El diseño: un fondo con manchas de color muy difuminadas (FondoAtmosfera) y,
+ * encima, superficies translúcidas con desenfoque real que dejan ver ese color.
+ *
+ * DOS TEMAS, como la app: oscuro por defecto y claro opcional (TemaService).
+ * Los componentes NO usan colores fijos: usan las variables de abajo, que
+ * cambian con la clase `tema-oscuro` en <html>.
  */
 @use '@angular/material' as mat;
 
 @include mat.core();
 
 html {
+  // `color-scheme` hace que Material elija sus colores claros u oscuros solo.
   color-scheme: light;
   @include mat.theme(
     (
       color: (
-        theme-type: light,
+        theme-type: color-scheme,
         primary: mat.$azure-palette,
         tertiary: mat.$violet-palette
       ),
@@ -31,13 +35,14 @@ html {
   );
 }
 
-:root {
-  // --- Paleta (app_theme.dart + main.dart) ---
-  --hxc-primario: #2f6bff; // seed
-  --hxc-fondo: #f5f5f7; // _lightBackground
-  --hxc-tinta: #0b0f1a; // _kInk / _darkBackground
+html.tema-oscuro {
+  color-scheme: dark;
+}
 
-  // Acentos que rotan por fila (_rowAccents) y tiñen badges y chips.
+/* ===== Paleta ===== */
+:root {
+  // Constantes (app_theme.dart + main.dart): no cambian con el tema.
+  --hxc-primario: #2f6bff;
   --hxc-rosa: #ff3d7f;
   --hxc-cian: #22d3ee;
   --hxc-indigo: #3b5bff;
@@ -45,19 +50,60 @@ html {
   --hxc-verde: #34d399;
   --hxc-rojo: #ff5a5f;
 
-  // --- Vidrio ---
-  // El alfa bajo es deliberado: la tarjeta debe dejar ver los blobs del fondo.
-  --hxc-vidrio-fondo: rgba(255, 255, 255, 0.48);
-  --hxc-vidrio-borde: rgba(255, 255, 255, 0.65);
-  --hxc-vidrio-blur: 24px;
-  --hxc-vidrio-sombra: 0 12px 30px rgba(0, 0, 0, 0.1);
-
-  // --- Radios (los mismos números del tema Flutter) ---
+  // Radios (los mismos números del tema Flutter).
   --hxc-r-tarjeta: 22px;
   --hxc-r-vidrio: 28px;
   --hxc-r-destacado: 32px;
   --hxc-r-campo: 16px;
   --hxc-r-badge: 14px;
+  --hxc-vidrio-blur: 24px;
+
+  // --- Tema claro (_lightBackground) ---
+  --hxc-fondo: #f5f5f7;
+  // Color del texto. Se llama "tinta" por _kInk; en oscuro es _darkOnSurface.
+  --hxc-tinta: #0b0f1a;
+  // El mismo color en componentes, para usarlo con transparencia:
+  //   color: rgb(var(--hxc-texto-rgb) / 0.6)
+  --hxc-texto-rgb: 11 15 26;
+  // Superficie de las tarjetas de vidrio (scheme.surface), también por componentes.
+  --hxc-superficie-rgb: 255 255 255;
+  --hxc-vidrio-fondo: rgb(255 255 255 / 0.48);
+  --hxc-vidrio-borde: rgb(255 255 255 / 0.65);
+  --hxc-vidrio-sombra: 0 12px 30px rgb(0 0 0 / 0.1);
+  --hxc-campo-fondo: rgb(255 255 255 / 0.5);
+  --hxc-linea: rgb(11 15 26 / 0.12);
+  // Con qué se mezcla un color de acento para escribir encima de su propio
+  // tinte: más oscuro en claro, más claro en oscuro.
+  --hxc-mezcla-texto: #000;
+  // El primario usado como texto o ícono sobre el fondo (scheme.primary).
+  --hxc-primario-texto: #2f6bff;
+
+  // Manchas del fondo (AtmosphereBackground, tema claro).
+  --hxc-mancha-1: rgb(255 92 150 / 0.55);
+  --hxc-mancha-2: rgb(47 209 236 / 0.46);
+  --hxc-mancha-3: rgb(92 127 255 / 0.55);
+  --hxc-mancha-4: rgb(255 170 51 / 0.4);
+}
+
+// --- Tema oscuro (_darkBackground, _darkOnSurface) ---
+html.tema-oscuro {
+  --hxc-fondo: #0b0f1a;
+  --hxc-tinta: #f5f3ef;
+  --hxc-texto-rgb: 245 243 239;
+  // scheme.surface del tema oscuro generado con la semilla #2F6BFF.
+  --hxc-superficie-rgb: 17 19 24;
+  --hxc-vidrio-fondo: rgb(17 19 24 / 0.45);
+  --hxc-vidrio-borde: rgb(255 255 255 / 0.1);
+  --hxc-vidrio-sombra: 0 12px 30px rgb(0 0 0 / 0.35);
+  --hxc-campo-fondo: rgb(17 19 24 / 0.4);
+  --hxc-linea: rgb(245 243 239 / 0.14);
+  --hxc-mezcla-texto: #fff;
+  --hxc-primario-texto: #b4c5ff;
+
+  --hxc-mancha-1: rgb(255 61 127 / 0.5);
+  --hxc-mancha-2: rgb(34 211 238 / 0.36);
+  --hxc-mancha-3: rgb(59 91 255 / 0.46);
+  --hxc-mancha-4: rgb(255 176 32 / 0.26);
 }
 
 html,
@@ -70,29 +116,12 @@ body {
   font-family: Manrope, system-ui, sans-serif;
   background: var(--hxc-fondo);
   color: var(--hxc-tinta);
-  // El fondo atmosférico se pinta con ::before en position:fixed, así que el
-  // scroll no lo arrastra — igual que AtmosphereBackground, que vive detrás
-  // del Scaffold y no se desplaza con el contenido.
-  position: relative;
   min-height: 100%;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
-/* ===== Fondo atmosférico =====
-   Cuatro manchas de color difuminadas en las esquinas (AtmosphereBackground).
-   Van en un pseudo-elemento fijo para que el contenido quede siempre encima. */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  background:
-    radial-gradient(340px 340px at -60px -20px, rgba(255, 92, 150, 0.55), transparent 70%),
-    radial-gradient(300px 300px at calc(100% + 50px) 120px, rgba(47, 209, 236, 0.46), transparent 70%),
-    radial-gradient(360px 360px at 0 calc(100% + 40px), rgba(92, 127, 255, 0.55), transparent 70%),
-    radial-gradient(260px 260px at calc(100% + 40px) calc(100% - 140px), rgba(255, 170, 51, 0.4), transparent 70%);
-  // Suaviza aún más los bordes del degradado, como el blur 70 del widget.
-  filter: blur(40px);
-  pointer-events: none;
+a {
+  color: var(--hxc-primario-texto);
 }
 
 /* ===== Tipografía =====
@@ -125,14 +154,18 @@ p {
   line-height: 1.35;
 }
 
-/* Rótulo de sección: mayúsculas pequeñas y tenues, como el "Próximos" /
-   "Anteriores" de la app. */
+/* Texto secundario, como el `onSurface` al 60 % de la app. */
+.hxc-suave {
+  color: rgb(var(--hxc-texto-rgb) / 0.6);
+}
+
+/* Rótulo de sección: mayúsculas pequeñas y tenues, como el "Próximos" de la app. */
 .hxc-rotulo-seccion {
   font-family: 'Space Grotesk', Manrope, sans-serif;
   font-size: 0.82rem;
   font-weight: 600;
   letter-spacing: 0.4px;
-  color: rgba(11, 15, 26, 0.55);
+  color: rgb(var(--hxc-texto-rgb) / 0.55);
   margin: 0 0 10px;
 }
 
@@ -147,8 +180,8 @@ p {
 }
 
 /* ===== Insignias tintadas (TintedBadge) =====
-   Fondo al 16% del color y borde al 40%; el texto es el mismo color mezclado
-   con negro para que contraste sin salirse de la familia cromática. */
+   Fondo al 16 % del color y borde al 40 %; el texto es el mismo color mezclado
+   para que contraste sin salirse de la familia cromática. */
 .hxc-badge {
   display: inline-flex;
   align-items: center;
@@ -160,7 +193,7 @@ p {
   line-height: 1;
   background: color-mix(in srgb, var(--tinte) 16%, transparent);
   border: 1px solid color-mix(in srgb, var(--tinte) 40%, transparent);
-  color: color-mix(in srgb, var(--tinte) 65%, #000);
+  color: color-mix(in srgb, var(--tinte) 65%, var(--hxc-mezcla-texto));
 }
 
 /* Insignia de fecha: día y mes apilados en un cuadrado (TintedDateBadge). */
@@ -179,7 +212,7 @@ p {
   line-height: 1.15;
   background: color-mix(in srgb, var(--tinte) 18%, transparent);
   border: 1px solid color-mix(in srgb, var(--tinte) 35%, transparent);
-  color: color-mix(in srgb, var(--tinte) 65%, #000);
+  color: color-mix(in srgb, var(--tinte) 65%, var(--hxc-mezcla-texto));
 
   .dia {
     font-size: 15px;
@@ -197,7 +230,7 @@ p {
   border-radius: 14px;
   background: color-mix(in srgb, var(--tinte) 18%, transparent);
   border: 1px solid color-mix(in srgb, var(--tinte) 35%, transparent);
-  color: color-mix(in srgb, var(--tinte) 65%, #000);
+  color: color-mix(in srgb, var(--tinte) 65%, var(--hxc-mezcla-texto));
 }
 
 /* ===== Separador punteado (DashedDivider) — el talón del boleto ===== */
@@ -206,11 +239,24 @@ p {
   border: 0;
   background-image: linear-gradient(
     to right,
-    rgba(11, 15, 26, 0.24) 0 6px,
+    rgb(var(--hxc-texto-rgb) / 0.24) 0 6px,
     transparent 6px 11px
   );
   background-size: 11px 1px;
   background-repeat: repeat-x;
+}
+
+/* ===== Mensajes bajo los formularios ===== */
+.hxc-error {
+  color: var(--hxc-rojo);
+  font-weight: 600;
+  margin: 10px 0 0;
+  white-space: pre-line;
+}
+.hxc-ok {
+  color: var(--hxc-verde);
+  font-weight: 600;
+  margin: 10px 0 0;
 }
 
 /* ===== Ajustes a Angular Material =====
@@ -223,6 +269,7 @@ p {
   box-shadow: none !important;
   backdrop-filter: blur(var(--hxc-vidrio-blur));
   -webkit-backdrop-filter: blur(var(--hxc-vidrio-blur));
+  color: var(--hxc-tinta) !important;
 }
 
 .mat-mdc-unelevated-button,
@@ -235,8 +282,23 @@ p {
   letter-spacing: 0 !important;
 }
 
+/* El botón principal usa la semilla de la app en los dos temas. */
+.mat-mdc-unelevated-button.mat-primary:not(:disabled) {
+  background-color: var(--hxc-primario) !important;
+  color: #fff !important;
+}
+
 /* Campos de texto translúcidos, con el mismo radio del tema Flutter. */
 .mat-mdc-text-field-wrapper {
   border-radius: var(--hxc-r-campo) !important;
-  background: rgba(255, 255, 255, 0.5) !important;
+  background: var(--hxc-campo-fondo) !important;
+}
+
+/* Menús y avisos, también de vidrio. */
+.mat-mdc-menu-panel {
+  background: var(--hxc-vidrio-fondo) !important;
+  border: 1px solid var(--hxc-vidrio-borde);
+  border-radius: 18px !important;
+  backdrop-filter: blur(var(--hxc-vidrio-blur));
+  -webkit-backdrop-filter: blur(var(--hxc-vidrio-blur));
 }

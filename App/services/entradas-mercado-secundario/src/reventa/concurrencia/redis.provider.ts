@@ -28,6 +28,13 @@ export const proveedorRedis: Provider = {
       maxRetriesPerRequest: 1,
       enableOfflineQueue: false,
       lazyConnect: false,
+      // Límite por comando. Las dos opciones de arriba solo actúan cuando la
+      // conexión se cae; un Redis colgado —la conexión abierta pero sin
+      // responder— dejaba cada petición esperando indefinidamente. Se descubrió
+      // al pausar el contenedor en la prueba de RNF-06: más de 30 s sin
+      // respuesta en lugar de un 503. Dos segundos sobran para un SET o un
+      // EXISTS, que tardan menos de un milisegundo.
+      commandTimeout: 2000,
     });
 
     const destino = `${config.redis.host}:${config.redis.puerto}`;

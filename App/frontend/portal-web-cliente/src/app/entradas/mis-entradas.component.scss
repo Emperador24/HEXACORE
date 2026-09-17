@@ -1,5 +1,5 @@
 .vacio {
-  color: rgba(11, 15, 26, 0.6);
+  color: rgb(var(--hxc-texto-rgb) / 0.6);
   text-align: center;
   padding: 32px;
 }
@@ -24,7 +24,7 @@
   font-size: 0.85rem;
 
   dt {
-    color: rgba(11, 15, 26, 0.6);
+    color: rgb(var(--hxc-texto-rgb) / 0.6);
   }
 
   dd {

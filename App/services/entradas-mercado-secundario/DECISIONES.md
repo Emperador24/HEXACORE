@@ -342,6 +342,42 @@ arreglo y pasan después.
 
 ---
 
+## 11. Autenticación: el servicio verifica el token por su cuenta — **ADR-02 lo pone en el gateway**
+
+Hasta ahora la identidad llegaba en `X-Usuario-Id`, que cualquiera podía rellenar con el
+identificador de otra persona. ADR-02 y RNF-06 ponen la validación del token en el API Gateway, que
+todavía no existe.
+
+**Decisión:** este servicio verifica el token él mismo, con la **clave pública** del Servicio de
+Administración (RS256), y consulta en Redis si la sesión fue cerrada. Contrato completo en
+`App/shared/seguridad/token-sesion.md`.
+
+**Por qué también cuando exista el gateway:** RNF-06 mide *"endpoints alcanzables sin token válido:
+0 %"*. Si la validación viviera solo en el gateway, cualquier camino que lo esquivara —una red
+interna mal configurada, una prueba que apunta al puerto directo— llegaría con identidad
+falsificable. Verificar aquí cuesta una comprobación de firma y un `EXISTS` en Redis.
+
+**Por qué con clave pública y no con un secreto compartido:** con HS256, este servicio tendría una
+clave capaz de **fabricar** tokens de administrador. Con RS256 solo puede verificarlos.
+
+**Por qué la revocación en Redis y no preguntando a Administración:** ADR-03 ya prevé Redis para
+"sesiones", el servicio ya depende de él para el checkout, y así un login caído no tumba la
+reventa de quien ya tenía sesión. Si Redis no responde se devuelve **503**: aceptar un token sin
+poder comprobar si se revocó sería aceptar uno robado justo cuando no se puede saber.
+
+**Autorización por rol:** la reventa exige `Cliente` (el actor del CU-006); el barrido de
+mantenimiento, `Administrador`.
+
+**Consecuencia para las pruebas:** los compradores aleatorios no tienen cuenta, así que las suites
+fabrican sus tokens con la clave privada de desarrollo (`pruebas/identidad.py`). Y ya no pueden
+hacer `FLUSHALL` sobre Redis: borraría las revocaciones de Administración.
+
+**Hallazgo al probarlo:** con Redis colgado (conexión abierta, sin respuesta), las peticiones
+esperaban para siempre, porque `maxRetriesPerRequest` y `enableOfflineQueue` solo actúan cuando la
+conexión se cae. Se añadió `commandTimeout: 2000`. Afectaba también al checkout.
+
+---
+
 ## Errata detectada de paso
 
 El prototipo Angular etiqueta la reventa como **CU-007/CU-008**

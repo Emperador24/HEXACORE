@@ -5,6 +5,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
 import { AuthService } from '../core/auth.service';
 import { NAV_ITEMS } from '../core/nav-items';
+import { TemaService } from '../core/tema.service';
 
 /**
  * Shell del portal: navbar horizontal azul + <router-outlet> + pie — guiado
@@ -27,6 +28,7 @@ export class ShellComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
 
+  readonly tema = inject(TemaService);
   readonly usuario = this.auth.usuarioActual;
   readonly menuMovilAbierto = signal(false);
 
@@ -41,8 +43,9 @@ export class ShellComponent {
     this.router.navigate(['/login'], { queryParams: { returnUrl: this.router.url } });
   }
 
-  cerrarSesion(): void {
-    this.auth.cerrarSesion();
-    this.router.navigateByUrl('/eventos');
+  async cerrarSesion(): Promise<void> {
+    // Se cierra también en el servidor: el token deja de valer en todo el sistema.
+    await this.auth.cerrarSesion();
+    await this.router.navigateByUrl('/eventos');
   }
 }

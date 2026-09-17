@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -16,8 +17,10 @@ import 'widgets/liquid_glass.dart';
 import 'widgets/qr_scanner_sheet.dart';
 import 'models/activity_log.dart';
 import 'models/requests_store.dart';
-import 'services/reventa_api.dart';
+import 'pages/verificar_cuenta_page.dart';
 import 'services/api_client.dart';
+import 'services/cuentas_api.dart';
+import 'services/sesion.dart';
 
 void main() {
   final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
@@ -91,34 +94,32 @@ final _events = [
       day: DateTime(2026, 6, 15), past: true, category: 'Cultural'),
 ];
 
-const _accounts = {
-  'cliente@hexacore.com': User('Ana Torres', 'cliente@hexacore.com', 'Cliente'),
-  'personal@hexacore.com': User(
-      'Luis Ramírez', 'personal@hexacore.com', 'Personal',
-      position: 'Entrada'),
-  'parqueadero@hexacore.com': User(
-      'Marta Gómez', 'parqueadero@hexacore.com', 'Personal',
-      position: 'Parqueadero'),
-  'restaurante@hexacore.com': User(
-      'Carlos Peña', 'restaurante@hexacore.com', 'Personal',
-      position: 'Restaurante'),
-  'jefepersonal@hexacore.com': User(
-      'Isabel Rojas', 'jefepersonal@hexacore.com', 'Personal',
-      position: 'Jefe de personal'),
+// Área operativa de cada cuenta de Personal.
+//
+// PROVISIONAL. El área (Entrada, Parqueadero, Restaurante, Jefe de personal)
+// es un dato del dominio de Personal (CU-007), que aún no tiene servicio. El
+// token del CU-027 solo dice que la cuenta tiene rol Personal. Hasta que ese
+// servicio exista, las cuentas de demostración de Personal se asignan aquí; el
+// resto va a Entrada.
+const _areasPersonal = {
+  'parqueadero@hexacore.com': 'Parqueadero',
+  'restaurante@hexacore.com': 'Restaurante',
+  'jefepersonal@hexacore.com': 'Jefe de personal',
 };
 
-// Identidad de cada cuenta demo frente al backend.
-//
-// PROVISIONAL. El servicio de Entradas identifica al usuario por UUID, pero
-// esta app todavía no tiene login real: `_accounts` son cuentas de ejemplo
-// en memoria. Este mapa las une con los usuarios que siembra
-// `services/entradas-mercado-secundario` (npm run semilla).
-//
-// Cuando exista el API Gateway (ADR-02), el login devolverá un token y la
-// identidad saldrá de ahí: este mapa desaparece.
-const _idsBackend = {
-  'cliente@hexacore.com': 'a0000001-0000-4000-8000-000000000001', // Ana
-};
+// La app es para Clientes y Personal (ADR-07). Una cuenta que solo sea
+// Organizador o Administrador usa el portal web.
+User? _usuarioDeApp(UsuarioSesion u) {
+  if (u.roles.contains('Cliente')) return User(u.nombre, u.email, 'Cliente');
+  if (u.roles.contains('Personal')) {
+    return User(u.nombre, u.email, 'Personal',
+        position: _areasPersonal[u.email] ?? 'Entrada');
+  }
+  return null;
+}
+
+const _rolesSinApp =
+    'Esta app es para clientes y personal. Con tu cuenta, usa el portal web.';
 
 class HexacoreApp extends StatefulWidget {
   const HexacoreApp({super.key});
@@ -126,35 +127,93 @@ class HexacoreApp extends StatefulWidget {
   State<HexacoreApp> createState() => _HexacoreAppState();
 }
 
-const _sessionEmailKey = 'session_email';
+// Clave de la versión anterior, cuando la "sesión" era solo el correo de una
+// cuenta de ejemplo. Se borra al arrancar.
+const _legacySessionEmailKey = 'session_email';
 const _onboardingSeenKey = 'onboarding_seen';
 
 class _HexacoreAppState extends State<HexacoreApp> {
-  User? _user;
+  final _navegador = GlobalKey<NavigatorState>();
+  final _mensajero = GlobalKey<ScaffoldMessengerState>();
   bool _dark = true;
   bool _checkingSession = true;
   bool _showOnboarding = false;
+  // Si la app estaba mostrando la pantalla de una cuenta (no el login).
+  bool _dentro = false;
+
+  // El usuario sale siempre de la sesión: no hay otra fuente de identidad.
+  User? get _user {
+    final u = sesion.usuario;
+    return u == null || !sesion.abierta ? null : _usuarioDeApp(u);
+  }
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance
         .addPostFrameCallback((_) => FlutterNativeSplash.remove());
+    // La sesión renueva sus tokens a través del cliente de cuentas. Se registra
+    // aquí porque `cuentasApi` se crea la primera vez que alguien lo usa, y la
+    // reventa puede necesitar renovar antes de que nadie lo haya tocado.
+    sesion.renovador = cuentasApi.renovarSesion;
+    sesion.addListener(_alCambiarSesion);
     _restoreSession();
+  }
+
+  @override
+  void dispose() {
+    sesion.removeListener(_alCambiarSesion);
+    super.dispose();
   }
 
   Future<void> _restoreSession() async {
     final prefs = await SharedPreferences.getInstance();
-    final email = prefs.getString(_sessionEmailKey);
-    final restored = email == null ? null : _accounts[email];
+    await prefs.remove(_legacySessionEmailKey);
     final onboardingSeen = prefs.getBool(_onboardingSeenKey) ?? false;
+    await sesion.restaurar();
     if (!mounted) return;
-    reventaApi.usuarioId = email == null ? null : _idsBackend[email];
     setState(() {
-      _user = restored;
       _checkingSession = false;
-      _showOnboarding = restored == null && !onboardingSeen;
+      _showOnboarding = !sesion.abierta && !onboardingSeen;
+      _dentro = _user != null;
     });
+    // Se confirma con el servidor sin hacer esperar a nadie: si el token se
+    // revocó en otro sitio, `comprobarSesion` cierra la sesión y la app
+    // vuelve sola al login. Sin red se sigue con los datos guardados.
+    if (sesion.abierta) {
+      cuentasApi.comprobarSesion().catchError((_) => sesion.usuario!);
+    }
+  }
+
+  // Cualquier cambio de sesión —login, logout, caducidad, cambio de nombre—
+  // pasa por aquí.
+  void _alCambiarSesion() {
+    if (!mounted) return;
+    // Una renovación trae los roles actuales. Si a alguien que ya estaba
+    // dentro no le queda ninguno con cabida en la app (le quitaron Cliente y
+    // Personal), se cierra. Al iniciar sesión no: de eso se encarga el login.
+    final usuario = sesion.usuario;
+    final dentro = _dentro;
+    _dentro = _user != null;
+    if (dentro &&
+        sesion.abierta &&
+        usuario != null &&
+        _usuarioDeApp(usuario) == null) {
+      cuentasApi.cerrarSesion().then((_) => _mensajero.currentState
+          ?.showSnackBar(const SnackBar(content: Text(_rolesSinApp))));
+      return;
+    }
+    if (!sesion.abierta) {
+      // Las pantallas abiertas encima (reventa, ajustes…) se cierran: sin
+      // sesión no tienen nada que mostrar.
+      _navegador.currentState?.popUntil((ruta) => ruta.isFirst);
+      final motivo = sesion.motivoCierre;
+      if (motivo != null) {
+        sesion.motivoCierre = null;
+        _mensajero.currentState?.showSnackBar(SnackBar(content: Text(motivo)));
+      }
+    }
+    setState(() {});
   }
 
   Future<void> _finishOnboarding() async {
@@ -163,30 +222,14 @@ class _HexacoreAppState extends State<HexacoreApp> {
     setState(() => _showOnboarding = false);
   }
 
-  // Solo las 5 cuentas demo fijas en `_accounts` persisten entre reinicios:
-  // son las únicas que se pueden "restaurar" con datos consistentes. Las
-  // cuentas creadas por registro o login social (Google/Apple simulado) no
-  // existen en `_accounts`, así que actúan como sesión de invitado: viven
-  // mientras la app está abierta, pero no sobreviven a cerrarla.
-  Future<void> _handleLogin(User user) async {
-    reventaApi.usuarioId = _idsBackend[user.email];
-    setState(() => _user = user);
-    if (_accounts.containsKey(user.email)) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_sessionEmailKey, user.email);
-    }
-  }
-
-  Future<void> _handleLogout() async {
-    reventaApi.usuarioId = null;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_sessionEmailKey);
-    setState(() => _user = null);
-  }
+  Future<void> _handleLogout() => cuentasApi.cerrarSesion();
 
   @override
   Widget build(BuildContext context) {
+    final user = _user;
     return MaterialApp(
+      navigatorKey: _navegador,
+      scaffoldMessengerKey: _mensajero,
       title: 'HEXACORE',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
@@ -198,17 +241,17 @@ class _HexacoreAppState extends State<HexacoreApp> {
             )
           : _showOnboarding
               ? OnboardingPage(onDone: _finishOnboarding)
-              : _user == null
-                  ? LoginPage(onLogin: _handleLogin)
-                  : _user!.role == 'Cliente'
+              : user == null
+                  ? const LoginPage()
+                  : user.role == 'Cliente'
                       ? ClientShell(
-                          user: _user!,
+                          user: user,
                           dark: _dark,
                           onDarkChanged: (value) =>
                               setState(() => _dark = value),
                           onLogout: _handleLogout)
                       : StaffShell(
-                          user: _user!,
+                          user: user,
                           dark: _dark,
                           onDarkChanged: (value) =>
                               setState(() => _dark = value),
@@ -217,17 +260,22 @@ class _HexacoreAppState extends State<HexacoreApp> {
   }
 }
 
+/// Inicio de sesión — CU-027 pasos 8-9.
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key, required this.onLogin});
-  final ValueChanged<User> onLogin;
+  const LoginPage({super.key});
   @override
   State<LoginPage> createState() => _LoginPageState();
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final _email = TextEditingController(text: 'cliente@hexacore.com');
-  final _password = TextEditingController(text: '1234');
+  // En desarrollo se rellena el correo de la cuenta de ejemplo. La contraseña
+  // nunca: ni siquiera la de demostración va escrita en la app.
+  final _email =
+      TextEditingController(text: kDebugMode ? 'cliente@hexacore.com' : null);
+  final _password = TextEditingController();
   String? _error;
+  bool _sinVerificar = false;
+
   @override
   void dispose() {
     _email.dispose();
@@ -236,17 +284,36 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _submit() async {
-    await apiClient.login(_email.text.trim(), _password.text);
-    if (!mounted) return;
-    final user = _password.text == '1234'
-        ? _accounts[_email.text.trim().toLowerCase()]
-        : null;
-    if (user == null) {
-      setState(() => _error = 'Correo o contraseña inválidos.');
+    if (_email.text.trim().isEmpty || _password.text.isEmpty) {
+      setState(() => _error = 'Ingresa tu correo y contraseña.');
       return;
     }
-    widget.onLogin(user);
+    setState(() {
+      _error = null;
+      _sinVerificar = false;
+    });
+    try {
+      final usuario =
+          await cuentasApi.iniciarSesion(_email.text, _password.text);
+      if (_usuarioDeApp(usuario) == null) {
+        // Rol sin cabida en la app: se cierra también en el servidor, para no
+        // dejar un token vivo que nadie va a usar.
+        await cuentasApi.cerrarSesion();
+        if (mounted) setState(() => _error = _rolesSinApp);
+        return;
+      }
+      // La app cambia de pantalla sola al abrirse la sesión.
+    } on CuentasApiException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _error = error.mensaje;
+        _sinVerificar = error.codigo == 'CUENTA_NO_VERIFICADA';
+      });
+    }
   }
+
+  void _abrir(Widget pagina) =>
+      Navigator.of(context).push(MaterialPageRoute(builder: (_) => pagina));
 
   @override
   Widget build(BuildContext context) {
@@ -281,23 +348,27 @@ class _LoginPageState extends State<LoginPage> {
                                       scheme.onSurface.withValues(alpha: 0.6))),
                       const SizedBox(height: 28),
                       TextField(
+                          key: const Key('login-correo'),
                           controller: _email,
                           keyboardType: TextInputType.emailAddress,
+                          autocorrect: false,
                           decoration:
                               const InputDecoration(labelText: 'Correo')),
                       const SizedBox(height: 14),
                       TextField(
+                          key: const Key('login-contrasena'),
                           controller: _password,
                           obscureText: true,
+                          autocorrect: false,
+                          enableSuggestions: false,
                           onSubmitted: (_) => _submit(),
                           decoration:
                               const InputDecoration(labelText: 'Contraseña')),
                       Align(
                         alignment: Alignment.centerRight,
                         child: TextButton(
-                          onPressed: () => Navigator.of(context).push(
-                              MaterialPageRoute(
-                                  builder: (_) => const ForgotPasswordPage())),
+                          onPressed: () => _abrir(
+                              ForgotPasswordPage(email: _email.text.trim())),
                           child: const Text('¿Olvidaste tu contraseña?'),
                         ),
                       ),
@@ -305,27 +376,40 @@ class _LoginPageState extends State<LoginPage> {
                         Padding(
                             padding: const EdgeInsets.only(top: 10),
                             child: Text(_error!,
+                                key: const Key('login-error'),
                                 style: const TextStyle(color: _kRed))),
+                      if (_sinVerificar)
+                        TextButton(
+                          onPressed: () => _abrir(
+                              VerificarCuentaPage(email: _email.text.trim())),
+                          child: const Text('Tengo el enlace de activación'),
+                        ),
                       const SizedBox(height: 20),
                       LoadingFilledButton(
                           label: 'Ingresar', onPressed: _submit),
-                      const SizedBox(height: 12),
-                      Text('Datos de demostración · contraseña: 1234',
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodySmall
-                              ?.copyWith(
-                                  color:
-                                      scheme.onSurface.withValues(alpha: 0.5))),
+                      if (kDebugMode) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                            'Desarrollo · cuentas de ejemplo con contraseña hexacore2026',
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(
+                                    color: scheme.onSurface
+                                        .withValues(alpha: 0.5))),
+                      ],
                       const SizedBox(height: 8),
                       Center(
                         child: TextButton(
-                          onPressed: () => Navigator.of(context).push(
-                              MaterialPageRoute(
-                                  builder: (_) => RegisterPage(
-                                      onRegistered: widget.onLogin))),
+                          onPressed: () => _abrir(const RegisterPage()),
                           child: const Text('¿No tienes cuenta? Regístrate'),
+                        ),
+                      ),
+                      Center(
+                        child: TextButton(
+                          onPressed: () => _abrir(const VerificarCuentaPage()),
+                          child: const Text('Activar una cuenta con el enlace'),
                         ),
                       ),
                     ]),
@@ -2802,22 +2886,43 @@ class ProfilePage extends StatefulWidget {
   State<ProfilePage> createState() => _ProfilePageState();
 }
 
+// Perfil — CU-027C: "el sistema valida los nuevos datos antes de guardarlos".
+//
+// Solo el nombre es editable. El correo es la identidad de la cuenta y no se
+// cambia desde aquí (DECISIONES.md §14 del servicio de Administración). El
+// teléfono no existe en el modelo de cuentas, así que no se ofrece.
 class _ProfilePageState extends State<ProfilePage> {
-  late final TextEditingController _email =
-      TextEditingController(text: widget.user.email);
-  late final TextEditingController _phone =
-      TextEditingController(text: '300 123 4567');
-  bool _saved = false;
+  late final TextEditingController _nombre =
+      TextEditingController(text: widget.user.name);
+  String? _error;
+  String? _guardado;
+
   @override
   void dispose() {
-    _email.dispose();
-    _phone.dispose();
+    _nombre.dispose();
     super.dispose();
+  }
+
+  Future<void> _guardar() async {
+    setState(() {
+      _error = null;
+      _guardado = null;
+    });
+    try {
+      final usuario = await cuentasApi.editarNombre(_nombre.text);
+      if (!mounted) return;
+      _nombre.text = usuario.nombre;
+      setState(() => _guardado = 'Perfil guardado.');
+    } on CuentasApiException catch (error) {
+      if (mounted) setState(() => _error = error.mensaje);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    // El nombre mostrado sigue a la sesión: se actualiza al guardar.
+    final nombre = sesion.usuario?.nombre ?? widget.user.name;
     return GlassScaffold(
       appBar: const GlassAppBar(title: Text('Perfil')),
       body: ListView(
@@ -2828,38 +2933,26 @@ class _ProfilePageState extends State<ProfilePage> {
               child: CircleAvatar(
                   radius: 42,
                   backgroundColor: scheme.primary.withValues(alpha: 0.22),
-                  child: Text(widget.user.name.substring(0, 1),
+                  child: Text(nombre.isEmpty ? '?' : nombre.substring(0, 1),
                       style: TextStyle(fontSize: 32, color: scheme.primary)))),
-          const SizedBox(height: 14),
-          OutlinedButton.icon(
-              onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text(
-                          'El selector de foto se conectará al servicio de archivos.'))),
-              icon: const Icon(Icons.photo_camera_outlined),
-              label: const Text('Cambiar foto')),
           const SizedBox(height: 16),
           LiquidGlassCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                TextField(
+                    key: const Key('perfil-nombre'),
+                    controller: _nombre,
+                    textCapitalization: TextCapitalization.words,
+                    decoration: const InputDecoration(labelText: 'Nombre')),
+                const SizedBox(height: 4),
                 Material(
                     type: MaterialType.transparency,
                     child: ListTile(
                         contentPadding: EdgeInsets.zero,
-                        leading: const Icon(Icons.person_outline),
-                        title: const Text('Nombre'),
-                        subtitle: Text(widget.user.name))),
-                TextField(
-                    controller: _email,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(labelText: 'Correo')),
-                const SizedBox(height: 12),
-                TextField(
-                    controller: _phone,
-                    keyboardType: TextInputType.phone,
-                    decoration: const InputDecoration(labelText: 'Teléfono')),
-                const SizedBox(height: 4),
+                        leading: const Icon(Icons.mail_outline),
+                        title: const Text('Correo'),
+                        subtitle: Text(widget.user.email))),
                 Material(
                     type: MaterialType.transparency,
                     child: ListTile(
@@ -2869,13 +2962,17 @@ class _ProfilePageState extends State<ProfilePage> {
                         subtitle:
                             Text(widget.user.position ?? widget.user.role))),
                 const SizedBox(height: 8),
-                FilledButton(
-                    onPressed: () => setState(() => _saved = true),
-                    child: const Text('Guardar cambios')),
-                if (_saved)
+                LoadingFilledButton(
+                    label: 'Guardar cambios', onPressed: _guardar),
+                if (_error != null)
                   Padding(
                       padding: const EdgeInsets.only(top: 10),
-                      child: Text('Perfil guardado.',
+                      child:
+                          Text(_error!, style: TextStyle(color: scheme.error))),
+                if (_guardado != null)
+                  Padding(
+                      padding: const EdgeInsets.only(top: 10),
+                      child: Text(_guardado!,
                           style: Theme.of(context)
                               .textTheme
                               .bodySmall

@@ -7,13 +7,13 @@
  * ambos clientes hablen el mismo lenguaje frente al mismo backend.
  */
 
+/** Quien tiene la sesión abierta, tal como lo devuelve el Servicio de Administración (CU-027). */
 export interface Usuario {
   id: string;
   nombre: string;
   correo: string;
-  telefono: string;
-  /** URL/dataURL de la foto de perfil; sin valor hasta que el cliente suba una. */
-  fotoUrl: string | null;
+  /** Roles del CU-028. El portal solo admite cuentas con `Cliente`. */
+  roles: string[];
 }
 
 /**

@@ -1,10 +1,10 @@
-import { ExecutionContext } from '@nestjs/common';
-import { CABECERA_USUARIO, UsuarioActual } from './usuario-actual.decorator';
+import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import { UsuarioActual } from './usuario-actual.decorator';
 
 /**
- * La identidad es provisional —la aportará el API Gateway (ADR-02, RNF-06)—
- * pero mientras tanto es la única puerta, y una cabecera mal validada dejaría
- * pasar cualquier cosa como identificador de usuario.
+ * El decorador ya no lee cabeceras: devuelve el usuario de la sesión que
+ * verificó `SesionValida`. Lo que importa probar es que **nunca** devuelve una
+ * identidad que el guard no haya verificado.
  *
  * Los decoradores de parámetro de Nest guardan su función en los metadatos;
  * para probarla se extrae de ahí, que es la forma habitual de hacerlo.
@@ -29,47 +29,26 @@ function extraerFactoria(decorador: typeof UsuarioActual): Factoria {
 
 describe('UsuarioActual', () => {
   const obtener = extraerFactoria(UsuarioActual);
+  const UUID = 'a0000001-0000-4000-8000-000000000001';
 
-  function contextoCon(cabeceras: Record<string, unknown>): ExecutionContext {
+  function contextoCon(peticion: Record<string, unknown>): ExecutionContext {
     return {
-      switchToHttp: () => ({ getRequest: () => ({ headers: cabeceras }) }),
+      switchToHttp: () => ({ getRequest: () => peticion }),
     } as unknown as ExecutionContext;
   }
 
-  const UUID = 'a0000001-0000-4000-8000-000000000001';
-
-  it('devuelve el identificador cuando la cabecera es un UUID válido', () => {
-    expect(obtener(undefined, contextoCon({ [CABECERA_USUARIO]: UUID }))).toBe(UUID);
+  it('devuelve el usuario de la sesión verificada', () => {
+    const sesion = { usuarioId: UUID, roles: ['Cliente'], jti: 'x' };
+    expect(obtener(undefined, contextoCon({ headers: {}, sesion }))).toBe(UUID);
   });
 
-  /** Ejecuta y devuelve el cuerpo de la excepción que lanzó Nest. */
-  function errorDe(cabeceras: Record<string, unknown>): { codigo: string; mensaje: string } {
-    try {
-      obtener(undefined, contextoCon(cabeceras));
-    } catch (error) {
-      return (error as { response: { codigo: string; mensaje: string } }).response;
-    }
-    throw new Error('se esperaba una excepción');
-  }
-
-  it('rechaza una petición sin cabecera de identidad', () => {
-    expect(errorDe({}).codigo).toBe('SIN_IDENTIDAD');
+  it('falla cerrado si la ruta no pasó por el guard', () => {
+    expect(() => obtener(undefined, contextoCon({ headers: {} }))).toThrow(UnauthorizedException);
   });
 
-  it('rechaza una cabecera vacía', () => {
-    expect(errorDe({ [CABECERA_USUARIO]: '' }).codigo).toBe('SIN_IDENTIDAD');
-  });
-
-  it.each([['no-es-uuid'], ['12345'], ["' OR 1=1 --"], ['a0000001-0000-4000-8000']])(
-    'rechaza un identificador que no es UUID (%s)',
-    (valor) => {
-      // Sin esto, cualquier cadena llegaría hasta una consulta como si fuera un
-      // identificador de usuario.
-      expect(errorDe({ [CABECERA_USUARIO]: valor }).codigo).toBe('IDENTIDAD_INVALIDA');
-    },
-  );
-
-  it('toma el primer valor si la cabecera llega repetida', () => {
-    expect(obtener(undefined, contextoCon({ [CABECERA_USUARIO]: [UUID, 'otro'] }))).toBe(UUID);
+  it('ignora la antigua cabecera X-Usuario-Id', () => {
+    // Era la puerta por la que cualquiera se hacía pasar por otra persona.
+    const peticion = { headers: { 'x-usuario-id': UUID } };
+    expect(() => obtener(undefined, contextoCon(peticion))).toThrow(UnauthorizedException);
   });
 });

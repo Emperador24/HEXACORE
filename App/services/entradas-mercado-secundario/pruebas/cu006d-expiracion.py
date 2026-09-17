@@ -30,19 +30,25 @@ import urllib.error
 import urllib.request
 import uuid
 
+from identidad import cabeceras
+from redis_reventa import limpiar_reventa
+
 API = 'http://localhost:3001/api/v1'
 ANA = 'a0000001-0000-4000-8000-000000000001'
 BRUNO = 'a0000002-0000-4000-8000-000000000002'
+# El barrido es una operación de administrador (RNF-06). Mismo id que en la
+# semilla del Servicio de Administración.
+ADMIN = 'a0000005-0000-4000-8000-000000000005'
 CARLA = 'a0000003-0000-4000-8000-000000000003'
 E1 = '20000000-0000-4000-8000-000000000001'
 E2 = '20000000-0000-4000-8000-000000000002'
 E3 = '20000000-0000-4000-8000-000000000003'
 
 
-def pedir(metodo, ruta, usuario, cuerpo=None):
+def pedir(metodo, ruta, usuario, cuerpo=None, roles=('Cliente',)):
     datos = json.dumps(cuerpo).encode() if cuerpo is not None else None
     req = urllib.request.Request(f'{API}/{ruta}', data=datos, method=metodo,
-                                 headers={'x-usuario-id': usuario, 'Content-Type': 'application/json'})
+                                 headers=cabeceras(usuario, roles))
     try:
         with urllib.request.urlopen(req, timeout=40) as r:
             return r.status, json.load(r)
@@ -59,7 +65,7 @@ def sql(consulta):
 
 def resembrar():
     subprocess.run(['npm', 'run', 'semilla'], capture_output=True, check=True)
-    subprocess.run(['redis-cli', '-p', '6380', 'FLUSHALL'], capture_output=True)
+    limpiar_reventa()
 
 
 def vencer(publicacion_id):
@@ -69,7 +75,7 @@ def vencer(publicacion_id):
 
 
 def barrer():
-    estado, resultado = pedir('POST', 'reventa/mantenimiento/expirar-publicaciones', ANA)
+    estado, resultado = pedir('POST', 'reventa/mantenimiento/expirar-publicaciones', ADMIN, roles=('Administrador',))
     assert estado == 200, (estado, resultado)
     return resultado
 

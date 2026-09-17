@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard } from './core/auth.guard';
+import { authGuard, soloInvitadosGuard } from './core/auth.guard';
 
 /**
  * La cartelera y el mercado de reventa son **públicos**: un visitante puede
@@ -14,9 +14,29 @@ import { authGuard } from './core/auth.guard';
  * para que el visitante no perciba dos sitios distintos.
  */
 export const routes: Routes = [
+  // ---- Cuenta (CU-027), fuera del shell: pantallas propias, como en la app ----
   {
     path: 'login',
+    canActivate: [soloInvitadosGuard],
     loadComponent: () => import('./login/login.component').then((m) => m.LoginComponent)
+  },
+  {
+    path: 'registro',
+    canActivate: [soloInvitadosGuard],
+    loadComponent: () => import('./cuenta/registro.component').then((m) => m.RegistroComponent)
+  },
+  {
+    path: 'recuperar',
+    loadComponent: () => import('./cuenta/recuperar.component').then((m) => m.RecuperarComponent)
+  },
+  // Destinos de los enlaces de los correos (CORREO_URL_BASE_ENLACES del backend).
+  {
+    path: 'cuenta/verificar',
+    loadComponent: () => import('./cuenta/verificar.component').then((m) => m.VerificarComponent)
+  },
+  {
+    path: 'cuenta/restablecer',
+    loadComponent: () => import('./cuenta/restablecer.component').then((m) => m.RestablecerComponent)
   },
   {
     path: '',

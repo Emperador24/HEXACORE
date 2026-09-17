@@ -1,55 +1,55 @@
-/* El login no pinta fondo propio: deja ver el fondo atmosférico del body
-   (las manchas de color), igual que las pantallas de la app móvil. */
-.marca-header {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 1.4rem;
-  font-weight: 700;
-  letter-spacing: -0.4px;
-  color: var(--hxc-tinta);
-  padding: 24px 28px;
-}
-
-.login-fondo {
-  min-height: calc(100vh - 80px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px 16px 48px;
-}
-
-.login-tarjeta {
-  width: min(420px, 92vw);
-  padding: 12px;
-  border-radius: var(--hxc-r-destacado) !important;
-}
-
 .campo {
   display: block;
   width: 100%;
-  margin-top: 12px;
+  // Sin hueco reservado para mensajes de ayuda (no hay): con él, el espacio
+  // invisible del campo tapaba el enlace de "¿Olvidaste tu contraseña?".
+  margin-bottom: 14px;
 }
 
-.mensaje-error {
-  color: var(--hxc-rojo);
-  font-weight: 600;
-  margin: 0 0 4px;
-}
-
-.ayuda-demo {
-  margin-top: 16px;
-  font-size: 0.8rem;
-  color: rgba(11, 15, 26, 0.6);
-}
-
-.volver-cartelera {
-  display: inline-block;
-  margin-top: 14px;
+.derecha {
+  text-align: right;
+  margin: -4px 0 6px;
   font-size: 0.88rem;
-  font-weight: 600;
-  color: var(--hxc-primario);
-  text-decoration: none;
+}
 
-  &:hover {
-    text-decoration: underline;
+.aviso {
+  text-align: center;
+  margin: 0 0 16px;
+}
+
+.principal {
+  width: 100%;
+  height: 48px;
+  margin-top: 18px;
+}
+
+.enlace-secundario {
+  display: block;
+  margin-top: 8px;
+  font-weight: 600;
+}
+
+.pista {
+  text-align: center;
+  font-size: 0.78rem;
+  margin: 14px 0 0;
+}
+
+.enlaces {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 18px;
+  font-size: 0.9rem;
+  font-weight: 600;
+
+  a {
+    text-decoration: none;
   }
+}
+
+a {
+  text-decoration: none;
+  font-weight: 600;
 }

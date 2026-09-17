@@ -10,9 +10,11 @@ import {
   Patch,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiHeader, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { CABECERA_USUARIO, UsuarioActual } from '../comun/usuario-actual.decorator';
+import { ApiBearerAuth, ApiForbiddenResponse, ApiOperation, ApiResponse, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
+import { RolesPermitidos, SesionValida } from '../comun/autenticacion/sesion-valida.guard';
+import { UsuarioActual } from '../comun/usuario-actual.decorator';
 import { CheckoutService } from './checkout.service';
 import { ExpiracionService, ResultadoExpiracion } from './expiracion.service';
 import { CheckoutDto } from './dto/checkout.dto';
@@ -30,11 +32,13 @@ import { PublicacionService } from './publicacion.service';
  * Aquí no hay ninguna regla de negocio.
  */
 @ApiTags('reventa')
-@ApiHeader({
-  name: CABECERA_USUARIO,
-  description: 'Identidad del usuario. Provisional: la sustituirá el API Gateway (ADR-02, RNF-06).',
-  required: true,
-})
+@ApiBearerAuth()
+@ApiUnauthorizedResponse({ description: 'Sin token, o token caducado, falsificado o de una sesión cerrada' })
+@ApiForbiddenResponse({ description: 'El rol de la sesión no permite esta operación' })
+// RNF-06: toda ruta de este controlador exige sesión. La reventa es cosa de
+// clientes (actor del CU-006); el barrido de mantenimiento lo cambia abajo.
+@UseGuards(SesionValida)
+@RolesPermitidos('Cliente')
 @Controller('reventa')
 export class ReventaController {
   constructor(
@@ -44,6 +48,7 @@ export class ReventaController {
   ) {}
 
   @Post('mantenimiento/expirar-publicaciones')
+  @RolesPermitidos('Administrador')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Forzar el barrido de publicaciones vencidas (CU-006D)',
@@ -51,8 +56,8 @@ export class ReventaController {
       'Operación de mantenimiento: hace ahora lo que el trabajo programado hace cada diez minutos. ' +
       'Existe para poder ponerse al día sin esperar al siguiente ciclo —por ejemplo si el trabajo ' +
       'falló durante la noche— y para poder probarlo. ' +
-      'En producción debe quedar detrás de autorización de administrador en el API Gateway (RNF-06): ' +
-      'no expone datos ni cobra nada, pero tampoco es una operación de cliente.',
+      'Solo para administradores (RNF-06): no expone datos ni cobra nada, pero tampoco es una ' +
+      'operación de cliente.',
   })
   @ApiResponse({ status: 200, description: 'Cuántas publicaciones se revisaron y cuántas se expiraron' })
   expirarPublicaciones(): Promise<ResultadoExpiracion> {

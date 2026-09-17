@@ -1,35 +1,23 @@
 import 'dart:convert';
-import 'dart:io' show Platform;
 
 import 'package:http/http.dart' as http;
 
+import 'servidor.dart';
+import 'sesion.dart';
+
 /// Cliente del Servicio de Entradas y Mercado Secundario (CU-006).
 ///
-/// En producción estas peticiones van al **API Gateway** (ADR-02), que
-/// autentica y enruta; en desarrollo se habla directo con el microservicio.
-/// Por eso la URL base es configurable y no una constante.
+/// En producción estas peticiones van al **API Gateway** (ADR-02); en
+/// desarrollo se habla directo con el microservicio. La dirección la resuelve
+/// [Servidor].
+///
+/// Todas las peticiones llevan el token de la sesión (RNF-06). Si el servidor
+/// responde 401, la sesión se cierra y la app vuelve al login.
 ///
 /// Cubre los pasos 1 a 11 del CU-006 —publicar, consultar el mercado,
 /// reservar, pagar y recibir el QR nuevo— y los caminos alternos CU-006A,
 /// CU-006B y CU-006C. Notificar y liquidar (pasos 12-13) son asíncronos y no
 /// pasan por aquí: salen por la cola de mensajes del backend.
-
-/// URL base del backend.
-///
-/// El emulador de Android no ve el `localhost` de la máquina anfitriona: para
-/// él `localhost` es el propio emulador. `10.0.2.2` es el alias que Android
-/// reserva justo para esto. El simulador de iOS sí comparte red con el Mac.
-///
-/// Se puede forzar otra (un dispositivo físico, un backend desplegado) con:
-///   flutter run --dart-define=HEXACORE_API=http://192.168.1.50:3001
-String _urlBase() {
-  const definida = String.fromEnvironment('HEXACORE_API');
-  if (definida.isNotEmpty) return definida;
-  if (Platform.isAndroid) return 'http://10.0.2.2:3001';
-  return 'http://localhost:3001';
-}
-
-const _prefijo = 'api/v1';
 
 /// Error devuelto por el backend, con el código del camino del CU-006.
 ///
@@ -275,7 +263,8 @@ class ResultadoCompra {
     required this.precio,
   });
 
-  factory ResultadoCompra.desdeJson(Map<String, dynamic> json) => ResultadoCompra(
+  factory ResultadoCompra.desdeJson(Map<String, dynamic> json) =>
+      ResultadoCompra(
         numeroTransaccion: json['numeroTransaccion'] as String,
         codigoQr: json['codigoQr'] as String,
         numeroTicket: json['numeroTicket'] as String,
@@ -303,29 +292,39 @@ class ReventaApi {
   /// colgada indefinidamente.
   static const _espera = Duration(seconds: 10);
 
-  /// Identidad del usuario.
+  Uri _uri(String ruta) =>
+      Uri.parse('${Servidor.entradas}/${Servidor.prefijo}/$ruta');
+
+  /// Envía la petición con el token de la sesión (CU-027 paso 9), que el
+  /// servicio verifica por su cuenta. Sustituye a la antigua cabecera
+  /// `X-Usuario-Id`, con la que cualquiera podía hacerse pasar por otra
+  /// persona.
   ///
-  /// **Provisional**: la app la envía en la cabecera `X-Usuario-Id` porque el
-  /// API Gateway todavía no existe. Cuando exista, aquí irá el token que
-  /// devuelva el login y el backend sacará la identidad de él (ADR-02, RNF-06).
-  String? usuarioId;
-
-  Uri _uri(String ruta) => Uri.parse('${_urlBase()}/$_prefijo/$ruta');
-
-  Map<String, String> _cabeceras() {
-    final id = usuarioId;
-    if (id == null) {
-      throw ReventaApiException(
-          'SIN_SESION', 'Inicia sesión para usar el mercado de reventa.', 401);
+  /// [Sesion.conAcceso] renueva el token si está por caducar y repite la
+  /// petición una vez si el servidor responde 401.
+  Future<http.Response> _conSesion(
+      Future<http.Response> Function(Map<String, String> cabeceras)
+          enviar) async {
+    try {
+      return await sesion.conAcceso<http.Response>(
+        (token) => enviar({
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token'
+        }),
+        estado: (r) => r.statusCode,
+        sinSesion: () => throw ReventaApiException('SIN_SESION',
+            'Inicia sesión para usar el mercado de reventa.', 401),
+      );
+    } on RenovacionNoDisponible catch (error) {
+      throw ReventaApiException('SIN_CONEXION', error.mensaje, 0);
     }
-    return {'Content-Type': 'application/json', 'x-usuario-id': id};
   }
 
   /// Paso 1 del CU-006: las entradas de la cuenta, con su veredicto.
   Future<List<EntradaPropia>> misEntradas() async {
-    final respuesta = await _cliente
-        .get(_uri('reventa/mis-entradas'), headers: _cabeceras())
-        .timeout(_espera);
+    final respuesta = await _conSesion((cabeceras) => _cliente
+        .get(_uri('reventa/mis-entradas'), headers: cabeceras)
+        .timeout(_espera));
     final cuerpo = _leer(respuesta);
     return (cuerpo as List<dynamic>)
         .map((e) => EntradaPropia.desdeJson(e as Map<String, dynamic>))
@@ -349,10 +348,10 @@ class ReventaApi {
       'desplazamiento': '$desplazamiento',
       if (eventoId != null) 'eventoId': eventoId,
     };
-    final respuesta = await _cliente
+    final respuesta = await _conSesion((cabeceras) => _cliente
         .get(_uri('reventa/publicaciones').replace(queryParameters: parametros),
-            headers: _cabeceras())
-        .timeout(_espera);
+            headers: cabeceras)
+        .timeout(_espera));
     return Mercado.desdeJson(_leer(respuesta) as Map<String, dynamic>);
   }
 
@@ -363,9 +362,9 @@ class ReventaApi {
   /// pasar minutos, y en ese rato otra persona pudo comprarla o el vendedor
   /// retirarla. Esta llamada es la que trae el estado de ahora.
   Future<PublicacionMercado> detallePublicacion(String publicacionId) async {
-    final respuesta = await _cliente
-        .get(_uri('reventa/publicaciones/$publicacionId'), headers: _cabeceras())
-        .timeout(_espera);
+    final respuesta = await _conSesion((cabeceras) => _cliente
+        .get(_uri('reventa/publicaciones/$publicacionId'), headers: cabeceras)
+        .timeout(_espera));
     return PublicacionMercado.desdeJson(
         _leer(respuesta) as Map<String, dynamic>);
   }
@@ -376,10 +375,10 @@ class ReventaApi {
   /// mismo momento. Si quien pide ya tenía una reserva abierta sobre esta
   /// publicación, el backend le devuelve la suya en lugar de rechazarlo.
   Future<Checkout> iniciarCheckout(String publicacionId) async {
-    final respuesta = await _cliente
+    final respuesta = await _conSesion((cabeceras) => _cliente
         .post(_uri('reventa/publicaciones/$publicacionId/checkout'),
-            headers: _cabeceras())
-        .timeout(_espera);
+            headers: cabeceras)
+        .timeout(_espera));
     return Checkout.desdeJson(_leer(respuesta) as Map<String, dynamic>);
   }
 
@@ -397,14 +396,15 @@ class ReventaApi {
     required String metodoPago,
     required String token,
   }) async {
-    final respuesta = await _cliente
-        .post(_uri('reventa/checkout/$checkoutId/pagar'),
-            headers: _cabeceras(),
-            body: jsonEncode({'metodoPago': metodoPago, 'token': token}))
+    final respuesta =
         // Más margen que el resto: al otro lado hay una pasarela de pagos, y
         // el backend ya tiene su propio timeout de 10 s contra ella. Cortar
         // antes que él dejaría al comprador sin saber en qué quedó el cobro.
-        .timeout(const Duration(seconds: 30));
+        await _conSesion((cabeceras) => _cliente
+            .post(_uri('reventa/checkout/$checkoutId/pagar'),
+                headers: cabeceras,
+                body: jsonEncode({'metodoPago': metodoPago, 'token': token}))
+            .timeout(const Duration(seconds: 30)));
     return ResultadoCompra.desdeJson(_leer(respuesta) as Map<String, dynamic>);
   }
 
@@ -413,39 +413,39 @@ class ReventaApi {
   /// Cancelar libera el bloqueo al instante y devuelve la entrada al mercado,
   /// en vez de dejarla reservada hasta que caduque la reserva.
   Future<Checkout> cancelarCheckout(String checkoutId) async {
-    final respuesta = await _cliente
-        .delete(_uri('reventa/checkout/$checkoutId'), headers: _cabeceras())
-        .timeout(_espera);
+    final respuesta = await _conSesion((cabeceras) => _cliente
+        .delete(_uri('reventa/checkout/$checkoutId'), headers: cabeceras)
+        .timeout(_espera));
     return Checkout.desdeJson(_leer(respuesta) as Map<String, dynamic>);
   }
 
   /// Pasos 3-4 del CU-006: publicar una entrada propia al precio indicado.
   Future<Publicacion> publicar(
       {required String entradaId, required double precio}) async {
-    final respuesta = await _cliente
+    final respuesta = await _conSesion((cabeceras) => _cliente
         .post(_uri('reventa/publicaciones'),
-            headers: _cabeceras(),
+            headers: cabeceras,
             body: jsonEncode({'entradaId': entradaId, 'precio': precio}))
-        .timeout(_espera);
+        .timeout(_espera));
     return Publicacion.desdeJson(_leer(respuesta) as Map<String, dynamic>);
   }
 
   /// Flujo alterno CU-006A: cambiar el precio antes de que la compren.
   Future<Publicacion> cambiarPrecio(
       {required String publicacionId, required double precio}) async {
-    final respuesta = await _cliente
+    final respuesta = await _conSesion((cabeceras) => _cliente
         .patch(_uri('reventa/publicaciones/$publicacionId'),
-            headers: _cabeceras(), body: jsonEncode({'precio': precio}))
-        .timeout(_espera);
+            headers: cabeceras, body: jsonEncode({'precio': precio}))
+        .timeout(_espera));
     return Publicacion.desdeJson(_leer(respuesta) as Map<String, dynamic>);
   }
 
   /// Flujo alterno CU-006B: retirar la entrada del mercado secundario.
   Future<Publicacion> retirar(String publicacionId) async {
-    final respuesta = await _cliente
+    final respuesta = await _conSesion((cabeceras) => _cliente
         .delete(_uri('reventa/publicaciones/$publicacionId'),
-            headers: _cabeceras())
-        .timeout(_espera);
+            headers: cabeceras)
+        .timeout(_espera));
     return Publicacion.desdeJson(_leer(respuesta) as Map<String, dynamic>);
   }
 
@@ -456,6 +456,14 @@ class ReventaApi {
 
     if (respuesta.statusCode >= 200 && respuesta.statusCode < 300) {
       return cuerpo;
+    }
+
+    // El token ya no vale (caducó, o se cerró la sesión en otro sitio): la app
+    // vuelve al login. `sesion.caducada` no espera a nadie para avisar.
+    if (respuesta.statusCode == 401) {
+      final mensaje =
+          cuerpo is Map<String, dynamic> ? cuerpo['mensaje'] as String? : null;
+      sesion.caducada(mensaje ?? 'Tu sesión terminó. Inicia sesión de nuevo.');
     }
 
     if (cuerpo is Map<String, dynamic>) {

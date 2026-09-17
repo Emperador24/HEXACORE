@@ -23,13 +23,19 @@ cp .env.example .env
 npm run start:dev
 ```
 
+También puede correr en contenedor con reinicio automático (perfil `servicios`, ver
+`App/infra/README.md`).
+
+Para usar la API hace falta un token: se obtiene iniciando sesión en el Servicio de Administración
+(`POST http://localhost:3002/api/v1/sesiones`), así que ese servicio también debe estar en marcha.
+
 - API: <http://localhost:3001/api/v1>
 - Documentación OpenAPI: <http://localhost:3001/api/v1/docs> (solo fuera de producción)
 - Sonda de vida: <http://localhost:3001/api/v1/salud>
 - Consola de RabbitMQ: <http://localhost:15672> (`hexacore` / `hexacore`)
 
-En producción este servicio **no se expone directo**: se consume a través del API Gateway (ADR-02),
-que es quien autentica y autoriza por rol antes de enrutar (RNF-06).
+En producción este servicio **no se expone directo**: se consume a través del API Gateway (ADR-02).
+Aun así verifica el token por su cuenta (RNF-06, DECISIONES.md §11).
 
 ## Estado de implementación
 
@@ -97,10 +103,18 @@ directamente en la base y no expone ningún endpoint de alta de entradas.
 
 ## Endpoints
 
-Todos exigen la cabecera `X-Usuario-Id`. **Es provisional**: la identidad la aportará el API Gateway
-(ADR-02, RNF-06) y esa cabecera es falsificable — por eso la *autorización* (que quien publica sea
-de verdad el dueño de la entrada) se comprueba siempre contra la base de datos, nunca contra lo que
-diga el cliente.
+Todos exigen **`Authorization: Bearer <token>`**, el token que emite el Servicio de Administración
+al iniciar sesión (RNF-06), y el rol **Cliente**; el barrido de mantenimiento exige
+**Administrador**. El contrato del token está en
+[`App/shared/seguridad/token-sesion.md`](../../shared/seguridad/token-sesion.md).
+
+La antigua cabecera `X-Usuario-Id`, que cualquiera podía rellenar con el identificador de otra
+persona, **ya no se lee**. El servicio verifica el token por su cuenta con la clave pública —aunque
+exista el API Gateway, nada debe poder alcanzarlo sin token— y consulta en Redis si la sesión se
+cerró. Ver DECISIONES.md §11.
+
+El token dice *quién* es; *qué le pertenece* (que quien publica sea el dueño de la entrada) se sigue
+comprobando contra la base de datos.
 
 | Método | Ruta | CU-006 |
 |---|---|---|
