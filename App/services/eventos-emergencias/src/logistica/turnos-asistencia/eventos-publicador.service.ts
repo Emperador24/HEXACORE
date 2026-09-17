@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as amqplib from 'amqplib';
+import { conectarConReintento } from './rabbitmq-conexion.util.js';
 
 export const COLA_CAMBIOS_TURNO = 'turnos.cambios';
 
@@ -36,7 +37,7 @@ export class EventosPublicadorService implements OnModuleInit, OnModuleDestroy {
   async onModuleInit() {
     const url = this.config.get<string>('RABBITMQ_URL', 'amqp://localhost:5672');
     try {
-      this.conexion = await amqplib.connect(url);
+      this.conexion = await conectarConReintento(url);
       this.canal = await this.conexion.createChannel();
       await this.canal.assertQueue(COLA_CAMBIOS_TURNO, { durable: true });
       this.logger.log(`Conectado a RabbitMQ (${url}), cola "${COLA_CAMBIOS_TURNO}" lista.`);

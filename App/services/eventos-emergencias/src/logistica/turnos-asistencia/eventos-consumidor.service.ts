@@ -10,6 +10,7 @@ import * as amqplib from 'amqplib';
 import { Repository } from 'typeorm';
 import { Notificacion } from './entities/notificacion.entity.js';
 import { CambioTurnoEvento, COLA_CAMBIOS_TURNO } from './eventos-publicador.service.js';
+import { conectarConReintento } from './rabbitmq-conexion.util.js';
 
 /**
  * Consumidor de la cola "turnos.cambios". Representa el módulo de
@@ -32,7 +33,7 @@ export class EventosConsumidorService implements OnModuleInit, OnModuleDestroy {
   async onModuleInit() {
     const url = this.config.get<string>('RABBITMQ_URL', 'amqp://localhost:5672');
     try {
-      this.conexion = await amqplib.connect(url);
+      this.conexion = await conectarConReintento(url);
       this.canal = await this.conexion.createChannel();
       await this.canal.assertQueue(COLA_CAMBIOS_TURNO, { durable: true });
       await this.canal.consume(COLA_CAMBIOS_TURNO, (msg) => this.procesar(msg));
@@ -54,7 +55,11 @@ export class EventosConsumidorService implements OnModuleInit, OnModuleDestroy {
       return;
     }
     const evento = JSON.parse(msg.content.toString()) as CambioTurnoEvento;
-    const latenciaMs = Date.now() - new Date(evento.publicadoEn).getTime();
+    // Publicador y consumidor pueden correr en procesos/máquinas distintas
+    // (host vs. contenedor); un desfase de reloj de pocos milisegundos entre
+    // ambos es normal y puede dar una resta negativa — no es una violación
+    // de causalidad real, así que se acota a 0 en vez de mostrar "-2ms".
+    const latenciaMs = Math.max(0, Date.now() - new Date(evento.publicadoEn).getTime());
 
     const notificacion = this.notificaciones.create({
       tipo: evento.tipo,

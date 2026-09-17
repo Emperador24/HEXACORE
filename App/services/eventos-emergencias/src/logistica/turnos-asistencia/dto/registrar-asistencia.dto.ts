@@ -1,6 +1,8 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsDateString, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class RegistrarAsistenciaDto {
+  @ApiProperty({ example: 'personal@hexacore.com' })
   @IsString()
   @IsNotEmpty()
   credencial: string;
@@ -11,6 +13,7 @@ export class RegistrarAsistenciaDto {
    * (dispositivo en línea). Si el punto de control operó offline, debe
    * enviar aquí la hora local capturada en el momento del evento.
    */
+  @ApiPropertyOptional({ example: '2026-09-17T13:05:00.000Z' })
   @IsOptional()
   @IsDateString()
   clientTimestamp?: string;
@@ -21,6 +24,7 @@ export class RegistrarAsistenciaDto {
    * permite reintentar la sincronización sin duplicar ni generar una
    * falsa anomalía de "registro duplicado".
    */
+  @ApiPropertyOptional({ example: 'offline-3f1a2b' })
   @IsOptional()
   @IsString()
   idempotencyKey?: string;
