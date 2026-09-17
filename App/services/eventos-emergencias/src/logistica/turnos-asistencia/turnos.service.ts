@@ -1,10 +1,11 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { LessThan, MoreThan, Not, Repository } from 'typeorm';
+import { LessThan, MoreThan, Not, QueryFailedError, Repository } from 'typeorm';
 import { CrearEmpleadoDto } from './dto/crear-empleado.dto.js';
 import { CrearTurnoDto } from './dto/crear-turno.dto.js';
 import { RevisarSolicitudDto } from './dto/revisar-solicitud.dto.js';
@@ -31,9 +32,19 @@ export class TurnosService {
     private readonly eventosPublicador: EventosPublicadorService,
   ) {}
 
-  crearEmpleado(dto: CrearEmpleadoDto) {
+  async crearEmpleado(dto: CrearEmpleadoDto) {
     const empleado = this.empleados.create(dto);
-    return this.empleados.save(empleado);
+    try {
+      return await this.empleados.save(empleado);
+    } catch (error) {
+      // Violación de la restricción unique(credencial) en Postgres.
+      if (error instanceof QueryFailedError && (error.driverError as { code?: string })?.code === '23505') {
+        throw new ConflictException(
+          `Ya existe un empleado con la credencial "${dto.credencial}".`,
+        );
+      }
+      throw error;
+    }
   }
 
   listarEmpleados() {
@@ -44,6 +55,9 @@ export class TurnosService {
     const empleado = await this.empleados.findOneBy({ id: dto.empleadoId });
     if (!empleado) {
       throw new NotFoundException('Empleado no encontrado.');
+    }
+    if (new Date(dto.horaFin) <= new Date(dto.horaInicio)) {
+      throw new BadRequestException('horaFin debe ser posterior a horaInicio.');
     }
     const turno = this.turnos.create({
       ...dto,

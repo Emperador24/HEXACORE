@@ -234,6 +234,34 @@ describe('CU-LOG-003 · Gestionar turno y asistencia del personal (e2e)', () => 
       .expect(404);
   });
 
+  it('rechaza crear un turno con horaFin anterior o igual a horaInicio', async () => {
+    const empleado = await crearEmpleado('horario-invalido');
+    const ahora = Date.now();
+    await request(server)
+      .post('/turnos')
+      .send({
+        empleadoId: empleado.id,
+        eventoId: 'evento-x',
+        zona: 'zona-x',
+        horaInicio: new Date(ahora).toISOString(),
+        horaFin: new Date(ahora - 60 * 60 * 1000).toISOString(),
+      })
+      .expect(400);
+  });
+
+  it('409 al crear un empleado con una credencial ya usada', async () => {
+    const credencial = `duplicada-${randomUUID()}`;
+    await request(server)
+      .post('/empleados')
+      .send({ nombre: 'Primero', rol: 'x', credencial })
+      .expect(201);
+
+    await request(server)
+      .post('/empleados')
+      .send({ nombre: 'Segundo', rol: 'x', credencial })
+      .expect(409);
+  });
+
   it('lista los empleados registrados', async () => {
     await crearEmpleado('inventario');
     const res = await request(server).get('/empleados').expect(200);
