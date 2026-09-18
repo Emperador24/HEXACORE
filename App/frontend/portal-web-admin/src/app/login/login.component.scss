@@ -1,0 +1,29 @@
+.login-fondo {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f2f2f7;
+}
+
+.login-tarjeta {
+  width: min(420px, 90vw);
+  padding: 8px;
+}
+
+.campo {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+}
+
+.mensaje-error {
+  color: #b3261e;
+  margin: 0 0 4px;
+}
+
+.ayuda-demo {
+  margin-top: 16px;
+  font-size: 0.8rem;
+  color: rgba(0, 0, 0, 0.6);
+}

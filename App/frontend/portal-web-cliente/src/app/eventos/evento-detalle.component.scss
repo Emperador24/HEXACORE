@@ -1,0 +1,177 @@
+.volver {
+  display: inline-block;
+  margin-bottom: 16px;
+  color: inherit;
+}
+
+.cabecera {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.poster {
+  width: 320px;
+  max-width: 100%;
+  height: 220px;
+  border-radius: var(--hxc-r-tarjeta);
+  object-fit: cover;
+}
+
+.poster-vacio {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  font-weight: 700;
+  background: color-mix(in srgb, var(--hxc-primario) 20%, transparent);
+  color: var(--hxc-primario-texto);
+}
+
+.resumen {
+  flex: 1 1 320px;
+
+  h1 {
+    margin: 0 0 4px;
+  }
+
+  .lugar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0 0 16px;
+    color: rgb(var(--hxc-texto-rgb) / 0.6);
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+  }
+}
+
+.tarjeta-fecha {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  max-width: 460px;
+  padding: 16px;
+}
+
+.badge-grande {
+  width: 64px;
+  height: 64px;
+
+  .dia {
+    font-size: 1.5rem;
+  }
+
+  .dow {
+    opacity: 0.75;
+  }
+}
+
+.detalle-fecha {
+  flex: 1 1 auto;
+
+  p {
+    margin: 0;
+  }
+
+  .evento-fecha {
+    font-weight: 600;
+  }
+
+  .evento-lugar {
+    color: rgb(var(--hxc-texto-rgb) / 0.6);
+    font-size: 0.9rem;
+  }
+}
+
+.cta-comprar {
+  margin-left: auto;
+}
+
+.titulo-zonas {
+  margin: 32px 0 12px;
+}
+
+.tabla-zonas {
+  max-width: 480px;
+  border-radius: var(--hxc-r-vidrio);
+  overflow: hidden;
+}
+
+/* Cada zona es una fila seleccionable; la elegida se tiñe con el primario,
+   igual que el ítem activo del nav de la app móvil. */
+.fila-zona {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 15px 18px;
+  border: none;
+  border-bottom: 1px solid rgb(var(--hxc-texto-rgb) / 0.08);
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.2s;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background: color-mix(in srgb, var(--hxc-primario) 8%, transparent);
+  }
+
+  &.seleccionada {
+    background: color-mix(in srgb, var(--hxc-primario) 16%, transparent);
+    font-weight: 700;
+  }
+
+  .nombre-zona {
+    color: var(--hxc-primario-texto);
+    font-weight: 600;
+  }
+}
+
+.tarjeta-compra {
+  max-width: 480px;
+  margin-top: 16px;
+}
+
+.fila-cantidad {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.contador {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cantidad-valor {
+  min-width: 20px;
+  text-align: center;
+}
+
+.total {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 1.15rem;
+  letter-spacing: -0.3px;
+  margin: 12px 0;
+}
+
+.boton-continuar {
+  display: block;
+  width: 100%;
+}
+
+.evento-pasado {
+  margin-top: 16px;
+}

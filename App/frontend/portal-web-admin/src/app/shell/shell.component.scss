@@ -1,0 +1,38 @@
+.contenedor {
+  height: 100vh;
+}
+
+.menu-lateral {
+  width: 260px;
+  display: flex;
+  flex-direction: column;
+}
+
+.usuario {
+  padding: 20px 16px 8px;
+
+  .nombre {
+    margin: 0;
+    font-weight: 600;
+  }
+
+  .correo {
+    margin: 2px 0 0;
+    font-size: 0.8rem;
+    color: rgba(0, 0, 0, 0.6);
+  }
+}
+
+.activo {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.espaciador {
+  flex: 1 1 auto;
+}
+
+.contenido {
+  padding: 24px;
+  max-width: 1100px;
+  margin: 0 auto;
+}

@@ -1,0 +1,61 @@
+<h1>Ajustes</h1>
+
+<h3 class="hxc-rotulo-seccion">PREFERENCIAS</h3>
+<mat-card class="tarjeta">
+  <mat-card-content>
+    <mat-slide-toggle [(ngModel)]="notificaciones" [ngModelOptions]="{ standalone: true }">Notificaciones</mat-slide-toggle>
+    <mat-slide-toggle [checked]="tema.oscuro()" (change)="tema.usar($event.checked)" data-prueba="ajustes-oscuro">Modo oscuro</mat-slide-toggle>
+  </mat-card-content>
+</mat-card>
+
+<h3 class="hxc-rotulo-seccion">SEGURIDAD</h3>
+<mat-card class="tarjeta">
+  <mat-card-content>
+    <h2>Cambiar contraseña</h2>
+    <p class="hxc-suave">Cerraremos las sesiones abiertas en tus otros dispositivos.</p>
+    <form (ngSubmit)="cambiarContrasena()">
+      <mat-form-field appearance="outline" class="campo">
+        <mat-label>Contraseña actual</mat-label>
+        <input matInput name="actual" type="password" [(ngModel)]="actual" autocomplete="current-password" data-prueba="ajustes-actual" />
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="campo">
+        <mat-label>Nueva contraseña</mat-label>
+        <input matInput name="nueva" type="password" [(ngModel)]="nueva" autocomplete="new-password" data-prueba="ajustes-nueva" />
+      </mat-form-field>
+      <app-fuerza-contrasena [contrasena]="nueva" />
+      <mat-form-field appearance="outline" class="campo">
+        <mat-label>Confirmar nueva contraseña</mat-label>
+        <input matInput name="confirmacion" type="password" [(ngModel)]="confirmacion" autocomplete="new-password" data-prueba="ajustes-confirmacion" />
+      </mat-form-field>
+      @if (mensajeContrasena()) {
+        <p class="hxc-ok" role="status">{{ mensajeContrasena() }}</p>
+      }
+      @if (errorContrasena()) {
+        <p class="hxc-error" role="alert">{{ errorContrasena() }}</p>
+      }
+      <button mat-flat-button color="primary" type="submit" [disabled]="cambiando()" data-prueba="ajustes-guardar-contrasena">
+        {{ cambiando() ? 'Guardando…' : 'Guardar contraseña' }}
+      </button>
+    </form>
+  </mat-card-content>
+</mat-card>
+
+<h3 class="hxc-rotulo-seccion">SOPORTE</h3>
+<mat-card class="tarjeta">
+  <mat-card-content>
+    <p>¿Necesitas ayuda? Escríbenos a soporte&#64;hexacore.com.</p>
+  </mat-card-content>
+</mat-card>
+
+<h3 class="hxc-rotulo-seccion">ACERCA DE</h3>
+<mat-card class="tarjeta">
+  <mat-card-content>
+    <p>HEXACORE — Sistema Integral de Gestión de Eventos</p>
+    <p class="hxc-suave version">Versión 1.0.0 · Equipo HEXACORE</p>
+  </mat-card-content>
+</mat-card>
+
+<button mat-stroked-button class="salir" (click)="cerrarSesion()" data-prueba="ajustes-cerrar-sesion">
+  <mat-icon>logout</mat-icon>
+  Cerrar sesión
+</button>

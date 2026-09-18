@@ -1,0 +1,142 @@
+<!-- Buscador + chips de filtro, el mismo orden de la app móvil -->
+<div class="buscador hxc-vidrio">
+  <label class="campo-busqueda">
+    <mat-icon>search</mat-icon>
+    <input
+      type="search"
+      placeholder="Buscar eventos o lugares"
+      [ngModel]="texto()"
+      (ngModelChange)="texto.set($event)"
+      aria-label="Buscar eventos"
+    />
+  </label>
+
+  <div class="chips" role="group" aria-label="Filtrar por categoría">
+    @for (c of categorias; track c; let i = $index) {
+      <button
+        type="button"
+        class="chip"
+        [class.activo]="categoria() === c"
+        [style.--tinte]="c === 'Todas' ? COLOR.primario : acento(i)"
+        (click)="categoria.set(c)"
+      >
+        {{ c }}
+      </button>
+    }
+  </div>
+
+  <div class="chips" role="group" aria-label="Filtrar por fecha">
+    @for (f of filtrosFecha; track f) {
+      <button
+        type="button"
+        class="chip"
+        [class.activo]="filtroFecha() === f"
+        [style.--tinte]="COLOR.primario"
+        (click)="filtroFecha.set(f)"
+      >
+        {{ f }}
+      </button>
+    }
+  </div>
+
+  <div class="chips" role="group" aria-label="Filtrar por ciudad">
+    <button
+      type="button"
+      class="chip"
+      [class.activo]="ciudad() === ''"
+      [style.--tinte]="COLOR.primario"
+      (click)="ciudad.set('')"
+    >
+      Todas las ciudades
+    </button>
+    @for (c of ciudades(); track c) {
+      <button
+        type="button"
+        class="chip"
+        [class.activo]="ciudad() === c"
+        [style.--tinte]="COLOR.primario"
+        (click)="ciudad.set(c)"
+      >
+        {{ c }}
+      </button>
+    }
+  </div>
+
+  @if (hayFiltros()) {
+    <button type="button" class="limpiar" (click)="limpiarFiltros()">
+      <mat-icon>close</mat-icon> Limpiar filtros
+    </button>
+  }
+</div>
+
+@if (sinResultados()) {
+  <div class="vacio hxc-vidrio">
+    <mat-icon>event_busy</mat-icon>
+    <p>No encontramos eventos con esos filtros.</p>
+    @if (hayFiltros()) {
+      <button mat-stroked-button (click)="limpiarFiltros()">Quitar filtros</button>
+    }
+  </div>
+} @else {
+  @if (destacado(); as evento) {
+    <a class="destacado-link" [routerLink]="[evento.id]">
+      <article class="destacado hxc-vidrio">
+        @if (evento.imagenUrl) {
+          <img [src]="evento.imagenUrl" [alt]="evento.nombre" class="poster-destacado" />
+        }
+        <div class="destacado-info">
+          <span class="hxc-badge" [style.--tinte]="COLOR.ambar">DESTACADO</span>
+          <h2>{{ evento.nombre }}</h2>
+          <p>{{ evento.fecha }} · {{ evento.lugar }} · {{ evento.ciudad }}</p>
+          <p class="precio">Desde ${{ evento.precioDesde | number: '1.0-0' }}</p>
+          <button mat-flat-button color="primary" class="cta">
+            Ver entradas <mat-icon>chevron_right</mat-icon>
+          </button>
+        </div>
+      </article>
+    </a>
+  }
+
+  @if (resto().length > 0) {
+    <p class="hxc-rotulo-seccion">PRÓXIMOS</p>
+    <div class="grilla">
+      @for (evento of resto(); track evento.id; let i = $index) {
+        <a class="tarjeta-link" [routerLink]="[evento.id]">
+          <article class="tarjeta hxc-vidrio">
+            <span class="hxc-badge-fecha" [style.--tinte]="acento(i)">
+              <span class="dia">{{ fechaBadge(evento.fecha).dia }}</span>
+              <span>{{ fechaBadge(evento.fecha).mes }}</span>
+            </span>
+            <div class="tarjeta-datos">
+              <h3>{{ evento.nombre }}</h3>
+              <p>{{ evento.lugar }} · {{ evento.ciudad }}</p>
+              <p class="precio">Desde ${{ evento.precioDesde | number: '1.0-0' }}</p>
+            </div>
+            <mat-icon class="chevron">chevron_right</mat-icon>
+          </article>
+        </a>
+      }
+    </div>
+  }
+
+  @if (anteriores().length > 0) {
+    <p class="hxc-rotulo-seccion">ANTERIORES</p>
+    <div class="grilla">
+      @for (evento of anteriores(); track evento.id) {
+        <a class="tarjeta-link" [routerLink]="[evento.id]">
+          <article class="tarjeta hxc-vidrio pasado">
+            <span class="hxc-badge-fecha" [style.--tinte]="'#8b93a7'">
+              <span class="dia">{{ fechaBadge(evento.fecha).dia }}</span>
+              <span>{{ fechaBadge(evento.fecha).mes }}</span>
+            </span>
+            <div class="tarjeta-datos">
+              <h3>{{ evento.nombre }}</h3>
+              <p>{{ evento.lugar }} · {{ evento.ciudad }}</p>
+            </div>
+            <mat-icon class="chevron">chevron_right</mat-icon>
+          </article>
+        </a>
+      }
+    </div>
+  }
+}

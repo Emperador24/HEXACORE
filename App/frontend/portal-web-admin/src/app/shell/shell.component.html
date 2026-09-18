@@ -1,0 +1,32 @@
+<mat-sidenav-container class="contenedor">
+  <mat-sidenav mode="side" opened class="menu-lateral">
+    <div class="usuario">
+      <p class="nombre">{{ usuario()?.nombre }}</p>
+      <p class="correo">{{ usuario()?.correo }}</p>
+    </div>
+
+    <mat-nav-list>
+      @for (item of itemsMenu(); track item.ruta) {
+        <a mat-list-item [routerLink]="item.ruta" routerLinkActive="activo">
+          <mat-icon matListItemIcon>{{ item.icono }}</mat-icon>
+          <span matListItemTitle>{{ item.etiqueta }}</span>
+        </a>
+      }
+    </mat-nav-list>
+  </mat-sidenav>
+
+  <mat-sidenav-content>
+    <mat-toolbar color="primary">
+      <span>HEXACORE — Portal Administrativo</span>
+      <span class="espaciador"></span>
+      <button mat-button (click)="cerrarSesion()">
+        <mat-icon>logout</mat-icon>
+        Cerrar sesión
+      </button>
+    </mat-toolbar>
+
+    <main class="contenido">
+      <router-outlet />
+    </main>
+  </mat-sidenav-content>
+</mat-sidenav-container>

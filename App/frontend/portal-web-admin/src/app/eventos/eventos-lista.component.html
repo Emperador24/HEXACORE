@@ -1,0 +1,55 @@
+<div class="encabezado">
+  <h1>Eventos</h1>
+  <button mat-flat-button color="primary" routerLink="nuevo">
+    <mat-icon>add</mat-icon>
+    Nuevo evento
+  </button>
+</div>
+
+<table mat-table [dataSource]="eventos()" class="tabla">
+  <ng-container matColumnDef="nombre">
+    <th mat-header-cell *matHeaderCellDef>Nombre</th>
+    <td mat-cell *matCellDef="let evento">{{ evento.nombre }}</td>
+  </ng-container>
+
+  <ng-container matColumnDef="fecha">
+    <th mat-header-cell *matHeaderCellDef>Fecha</th>
+    <td mat-cell *matCellDef="let evento">{{ evento.fecha }}</td>
+  </ng-container>
+
+  <ng-container matColumnDef="recinto">
+    <th mat-header-cell *matHeaderCellDef>Recinto</th>
+    <td mat-cell *matCellDef="let evento">{{ evento.recinto }}</td>
+  </ng-container>
+
+  <ng-container matColumnDef="aforo">
+    <th mat-header-cell *matHeaderCellDef>Aforo</th>
+    <td mat-cell *matCellDef="let evento">{{ evento.aforo }}</td>
+  </ng-container>
+
+  <ng-container matColumnDef="estado">
+    <th mat-header-cell *matHeaderCellDef>Estado</th>
+    <td mat-cell *matCellDef="let evento">
+      <mat-chip>{{ etiquetaEstado(evento.estado) }}</mat-chip>
+    </td>
+  </ng-container>
+
+  <ng-container matColumnDef="acciones">
+    <th mat-header-cell *matHeaderCellDef></th>
+    <td mat-cell *matCellDef="let evento">
+      <button mat-icon-button [routerLink]="[evento.id]" aria-label="Editar">
+        <mat-icon>edit</mat-icon>
+      </button>
+      <button mat-icon-button (click)="eliminar(evento.id)" aria-label="Eliminar">
+        <mat-icon>delete</mat-icon>
+      </button>
+    </td>
+  </ng-container>
+
+  <tr mat-header-row *matHeaderRowDef="columnas"></tr>
+  <tr mat-row *matRowDef="let row; columns: columnas"></tr>
+</table>
+
+@if (eventos().length === 0) {
+  <p class="vacio">Todavía no hay eventos registrados.</p>
+}

@@ -1,0 +1,43 @@
+<mat-card class="tarjeta">
+  <mat-card-header>
+    <mat-card-title>{{ esEdicion ? 'Editar evento' : 'Nuevo evento' }}</mat-card-title>
+  </mat-card-header>
+
+  <mat-card-content>
+    <form [formGroup]="formulario" (ngSubmit)="guardar()">
+      <mat-form-field appearance="outline" class="campo">
+        <mat-label>Nombre</mat-label>
+        <input matInput formControlName="nombre" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="campo">
+        <mat-label>Fecha</mat-label>
+        <input matInput type="date" formControlName="fecha" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="campo">
+        <mat-label>Recinto</mat-label>
+        <input matInput formControlName="recinto" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="campo">
+        <mat-label>Aforo</mat-label>
+        <input matInput type="number" formControlName="aforo" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="campo">
+        <mat-label>Estado</mat-label>
+        <mat-select formControlName="estado">
+          @for (estado of estados; track estado) {
+            <mat-option [value]="estado">{{ estado }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <div class="acciones">
+        <button mat-button type="button" routerLink="/admin/eventos">Cancelar</button>
+        <button mat-flat-button color="primary" type="submit" [disabled]="formulario.invalid">Guardar</button>
+      </div>
+    </form>
+  </mat-card-content>
+</mat-card>

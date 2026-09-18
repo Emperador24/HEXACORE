@@ -1,0 +1,52 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hexacore
+      POSTGRES_PASSWORD: hexacore
+      POSTGRES_DB: eventos_emergencias
+    ports:
+      - '5433:5432'
+    volumes:
+      - eventos_emergencias_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U hexacore -d eventos_emergencias']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    restart: unless-stopped
+    ports:
+      - '5672:5672'
+      - '15672:15672' # panel de administración: http://localhost:15672 (guest/guest)
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', '-q', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - '3016:3016'
+    environment:
+      PORT: 3016
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: hexacore
+      DB_PASSWORD: hexacore
+      DB_NAME: eventos_emergencias
+      DB_SYNCHRONIZE: 'true'
+      RABBITMQ_URL: amqp://rabbitmq:5672
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+volumes:
+  eventos_emergencias_db:

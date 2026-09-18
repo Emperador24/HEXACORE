@@ -1,0 +1,1022 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/salud": {
+      "get": {
+        "operationId": "SaludController_estado",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "La instancia puede atender tráfico"
+          },
+          "503": {
+            "description": "Le falta alguna dependencia; no debería recibir tráfico"
+          }
+        },
+        "summary": "Estado de esta instancia y de sus dependencias",
+        "tags": [
+          "salud"
+        ]
+      }
+    },
+    "/reventa/mantenimiento/expirar-publicaciones": {
+      "post": {
+        "description": "Operación de mantenimiento: hace ahora lo que el trabajo programado hace cada diez minutos. Existe para poder ponerse al día sin esperar al siguiente ciclo —por ejemplo si el trabajo falló durante la noche— y para poder probarlo. Solo para administradores (RNF-06): no expone datos ni cobra nada, pero tampoco es una operación de cliente.",
+        "operationId": "ReventaController_expirarPublicaciones",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Cuántas publicaciones se revisaron y cuántas se expiraron"
+          },
+          "401": {
+            "description": "Sin token, o token caducado, falsificado o de una sesión cerrada"
+          },
+          "403": {
+            "description": "El rol de la sesión no permite esta operación"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Forzar el barrido de publicaciones vencidas (CU-006D)",
+        "tags": [
+          "reventa"
+        ]
+      }
+    },
+    "/reventa/mis-entradas": {
+      "get": {
+        "description": "Paso 1 del CU-006. Cada entrada llega con `puedePublicarse` ya resuelto y, si no puede, con el código del camino que lo impide — el cliente no recalcula reglas (RNF-14).",
+        "operationId": "ReventaController_listarMisEntradas",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EntradaPropiaDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin token, o token caducado, falsificado o de una sesión cerrada"
+          },
+          "403": {
+            "description": "El rol de la sesión no permite esta operación"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Entradas de la cuenta del vendedor",
+        "tags": [
+          "reventa"
+        ]
+      }
+    },
+    "/reventa/publicaciones": {
+      "get": {
+        "description": "Paso 5 del CU-006. Devuelve solo publicaciones activas, dentro de su ventana de reventa y que no sean del propio solicitante.",
+        "operationId": "ReventaController_consultarMercado",
+        "parameters": [
+          {
+            "name": "eventoId",
+            "required": false,
+            "in": "query",
+            "description": "Limitar a las publicaciones de un evento",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "orden",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "recientes",
+              "type": "string",
+              "enum": [
+                "recientes",
+                "precio_asc",
+                "precio_desc",
+                "evento_proximo"
+              ]
+            }
+          },
+          {
+            "name": "limite",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "desplazamiento",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 0,
+              "default": 0,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MercadoDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin token, o token caducado, falsificado o de una sesión cerrada"
+          },
+          "403": {
+            "description": "El rol de la sesión no permite esta operación"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Consultar el mercado secundario",
+        "tags": [
+          "reventa"
+        ]
+      },
+      "post": {
+        "description": "Pasos 2-4 del CU-006: validar propiedad, estado y políticas del evento, y publicar.",
+        "operationId": "ReventaController_publicar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicarEntradaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicacionDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin token, o token caducado, falsificado o de una sesión cerrada"
+          },
+          "403": {
+            "description": "La entrada no es del solicitante (pre-condición 1)"
+          },
+          "409": {
+            "description": "CU-006E entrada usada/anulada · CU-006F evento sin reventa · CU-006D ventana cerrada"
+          },
+          "422": {
+            "description": "El precio supera el tope de reventa"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Publicar una entrada en el mercado secundario",
+        "tags": [
+          "reventa"
+        ]
+      }
+    },
+    "/reventa/publicaciones/{id}": {
+      "get": {
+        "description": "La otra mitad del paso 5 (\"y selecciona una para comprar\"). Devuelve también las que ya no están activas, con su estado, para poder decir \"ya se vendió\" en vez de un 404.",
+        "operationId": "ReventaController_detallePublicacion",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicacionMercadoDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin token, o token caducado, falsificado o de una sesión cerrada"
+          },
+          "403": {
+            "description": "El rol de la sesión no permite esta operación"
+          },
+          "404": {
+            "description": "No existe la publicación"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Detalle de una publicación",
+        "tags": [
+          "reventa"
+        ]
+      },
+      "patch": {
+        "description": "Flujo alterno CU-006A.",
+        "operationId": "ReventaController_cambiarPrecio",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CambiarPrecioDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicacionDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin token, o token caducado, falsificado o de una sesión cerrada"
+          },
+          "403": {
+            "description": "El rol de la sesión no permite esta operación"
+          },
+          "409": {
+            "description": "La publicación ya no está activa"
+          },
+          "422": {
+            "description": "El precio supera el tope de reventa"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cambiar el precio de una publicación",
+        "tags": [
+          "reventa"
+        ]
+      },
+      "delete": {
+        "description": "Flujo alterno CU-006B.",
+        "operationId": "ReventaController_retirar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicacionDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin token, o token caducado, falsificado o de una sesión cerrada"
+          },
+          "403": {
+            "description": "El rol de la sesión no permite esta operación"
+          },
+          "409": {
+            "description": "La publicación ya no está activa"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Retirar una entrada del mercado secundario",
+        "tags": [
+          "reventa"
+        ]
+      }
+    },
+    "/reventa/publicaciones/{id}/checkout": {
+      "post": {
+        "description": "Paso 6 del CU-006: bloquea temporalmente la publicación en Redis (ADR-03) para que dos compradores no puedan pagarla a la vez, y abre la transacción. Si quien pide ya tenía un checkout abierto sobre esta publicación, se le devuelve el suyo en vez de rechazarlo.",
+        "operationId": "ReventaController_iniciarCheckout",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin token, o token caducado, falsificado o de una sesión cerrada"
+          },
+          "403": {
+            "description": "El rol de la sesión no permite esta operación"
+          },
+          "409": {
+            "description": "CU-006H otra persona la está comprando · publicación no activa o caducada"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reservar una publicación para comprarla",
+        "tags": [
+          "reventa"
+        ]
+      }
+    },
+    "/reventa/checkout/{id}": {
+      "get": {
+        "description": "Incluye los segundos que le quedan a la reserva, leídos del TTL real de Redis.",
+        "operationId": "ReventaController_consultarCheckout",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin token, o token caducado, falsificado o de una sesión cerrada"
+          },
+          "403": {
+            "description": "El rol de la sesión no permite esta operación"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Estado de un checkout",
+        "tags": [
+          "reventa"
+        ]
+      },
+      "delete": {
+        "description": "Flujo alterno CU-006C. Libera el bloqueo al instante, sin esperar a que caduque.",
+        "operationId": "ReventaController_cancelarCheckout",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin token, o token caducado, falsificado o de una sesión cerrada"
+          },
+          "403": {
+            "description": "El rol de la sesión no permite esta operación"
+          },
+          "409": {
+            "description": "El checkout ya no está pendiente"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cancelar un checkout",
+        "tags": [
+          "reventa"
+        ]
+      }
+    },
+    "/reventa/checkout/{id}/pagar": {
+      "post": {
+        "description": "Pasos 7-11 del CU-006: cobra en la pasarela, transfiere la propiedad, invalida el QR anterior y emite uno nuevo, y registra la transferencia en el historial de propietarios. Recibe un token del medio de pago, nunca datos de tarjeta (RNF-05).",
+        "operationId": "ReventaController_pagar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PagarDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultadoCompraDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin token, o token caducado, falsificado o de una sesión cerrada"
+          },
+          "403": {
+            "description": "El rol de la sesión no permite esta operación"
+          },
+          "409": {
+            "description": "CU-006G el pago fue rechazado · la reserva ya no está vigente"
+          },
+          "503": {
+            "description": "CU-006I no hubo respuesta de la pasarela; requiere conciliación"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Pagar y completar la transferencia",
+        "tags": [
+          "reventa"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "Entradas y Mercado Secundario",
+    "description": "CU-006 — Gestión del Mercado Secundario de Entradas.\n\nEn producción este servicio se consume a través del API Gateway (ADR-02), que autentica y autoriza por rol antes de enrutar (RNF-06); nunca se expone directo.\n\nGenerado con `npm run contrato:api` desde el código del servicio: no editar a mano.",
+    "version": "0.1.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http"
+      }
+    },
+    "schemas": {
+      "PublicacionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "entradaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "vendedorId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "precio": {
+            "type": "number",
+            "example": 300000
+          },
+          "precioOriginal": {
+            "type": "number",
+            "description": "Precio de la venta primaria; el cliente lo usa para mostrar el ahorro",
+            "example": 250000
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "ACTIVA",
+              "VENDIDA",
+              "RETIRADA",
+              "EXPIRADA"
+            ]
+          },
+          "eventoId": {
+            "type": "string"
+          },
+          "eventoNombre": {
+            "type": "string",
+            "example": "HEXACORE Fest 2026"
+          },
+          "lugar": {
+            "type": "string",
+            "example": "Movistar Arena"
+          },
+          "localidadNombre": {
+            "type": "string",
+            "example": "General"
+          },
+          "fechaEvento": {
+            "type": "string"
+          },
+          "fechaPublicacion": {
+            "type": "string"
+          },
+          "fechaExpiracion": {
+            "type": "string",
+            "description": "Cuándo deja de poder venderse (CU-006D)"
+          },
+          "precioMaximo": {
+            "type": "number",
+            "description": "Máximo que este vendedor puede pedir por esta entrada"
+          }
+        },
+        "required": [
+          "id",
+          "entradaId",
+          "vendedorId",
+          "precio",
+          "precioOriginal",
+          "estado",
+          "eventoId",
+          "eventoNombre",
+          "lugar",
+          "localidadNombre",
+          "fechaEvento",
+          "fechaPublicacion",
+          "fechaExpiracion"
+        ]
+      },
+      "EntradaPropiaDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "numeroTicket": {
+            "type": "string",
+            "example": "TCK-2026-000001"
+          },
+          "eventoId": {
+            "type": "string"
+          },
+          "eventoNombre": {
+            "type": "string",
+            "example": "HEXACORE Fest 2026"
+          },
+          "lugar": {
+            "type": "string",
+            "example": "Movistar Arena"
+          },
+          "localidadNombre": {
+            "type": "string",
+            "example": "General"
+          },
+          "precioOriginal": {
+            "type": "number",
+            "example": 250000
+          },
+          "estado": {
+            "type": "string",
+            "example": "VALIDA"
+          },
+          "fechaEvento": {
+            "type": "string"
+          },
+          "puedePublicarse": {
+            "type": "boolean",
+            "description": "Si puede publicarse ahora mismo"
+          },
+          "motivoBloqueo": {
+            "type": "string",
+            "description": "Código del camino del CU-006 que lo impide (CU-006E, CU-006F, CU-006D…)"
+          },
+          "detalleBloqueo": {
+            "type": "string",
+            "description": "Explicación legible del bloqueo"
+          },
+          "precioMaximo": {
+            "type": "number",
+            "description": "Precio máximo permitido si se publica"
+          },
+          "publicacion": {
+            "description": "Publicación activa de esta entrada, si ya está en el mercado",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PublicacionDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "numeroTicket",
+          "eventoId",
+          "eventoNombre",
+          "lugar",
+          "localidadNombre",
+          "precioOriginal",
+          "estado",
+          "fechaEvento",
+          "puedePublicarse"
+        ]
+      },
+      "PublicacionMercadoDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "entradaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "precio": {
+            "type": "number",
+            "example": 300000
+          },
+          "precioOriginal": {
+            "type": "number",
+            "description": "Precio de la venta primaria, para mostrar el ahorro",
+            "example": 250000
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "ACTIVA",
+              "VENDIDA",
+              "RETIRADA",
+              "EXPIRADA"
+            ]
+          },
+          "eventoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "eventoNombre": {
+            "type": "string",
+            "example": "HEXACORE Fest 2026"
+          },
+          "lugar": {
+            "type": "string",
+            "example": "Movistar Arena"
+          },
+          "ciudad": {
+            "type": "string",
+            "example": "Bogotá"
+          },
+          "localidadNombre": {
+            "type": "string",
+            "example": "General"
+          },
+          "fechaEvento": {
+            "type": "string"
+          },
+          "fechaPublicacion": {
+            "type": "string"
+          },
+          "fechaExpiracion": {
+            "type": "string",
+            "description": "Cuándo deja de poder comprarse (CU-006D)"
+          },
+          "esPropia": {
+            "type": "boolean",
+            "description": "Si la publicación es del propio solicitante"
+          }
+        },
+        "required": [
+          "id",
+          "entradaId",
+          "precio",
+          "precioOriginal",
+          "estado",
+          "eventoId",
+          "eventoNombre",
+          "lugar",
+          "ciudad",
+          "localidadNombre",
+          "fechaEvento",
+          "fechaPublicacion",
+          "fechaExpiracion",
+          "esPropia"
+        ]
+      },
+      "MercadoDto": {
+        "type": "object",
+        "properties": {
+          "publicaciones": {
+            "description": "Publicaciones que cumplen el filtro, ya paginadas",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicacionMercadoDto"
+            }
+          },
+          "total": {
+            "type": "number",
+            "description": "Total de publicaciones que cumplen el filtro, sin paginar"
+          },
+          "limite": {
+            "type": "number"
+          },
+          "desplazamiento": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "publicaciones",
+          "total",
+          "limite",
+          "desplazamiento"
+        ]
+      },
+      "PublicarEntradaDto": {
+        "type": "object",
+        "properties": {
+          "entradaId": {
+            "type": "string",
+            "description": "Entrada propia que se quiere publicar",
+            "format": "uuid"
+          },
+          "precio": {
+            "type": "number",
+            "description": "Precio de venta en el mercado secundario",
+            "example": 300000
+          }
+        },
+        "required": [
+          "entradaId",
+          "precio"
+        ]
+      },
+      "CheckoutDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Identificador del checkout; es también el id de la transacción",
+            "format": "uuid"
+          },
+          "numeroTransaccion": {
+            "type": "string",
+            "example": "TXN-2026-000001"
+          },
+          "publicacionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "PENDIENTE",
+              "APROBADA",
+              "RECHAZADA",
+              "FALLIDA",
+              "CANCELADA"
+            ]
+          },
+          "precio": {
+            "type": "number",
+            "description": "Lo que se le cobrará al comprador",
+            "example": 300000
+          },
+          "comision": {
+            "type": "number",
+            "description": "Retención de la plataforma sobre el precio",
+            "example": 30000
+          },
+          "netoVendedor": {
+            "type": "number",
+            "description": "Lo que recibirá el vendedor al liquidarse (paso 13)",
+            "example": 270000
+          },
+          "reservaHasta": {
+            "type": "string",
+            "description": "Instante en que el bloqueo caduca"
+          },
+          "segundosRestantes": {
+            "type": "number",
+            "description": "Segundos que quedan de reserva",
+            "example": 120
+          },
+          "publicacion": {
+            "description": "Qué se está comprando",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PublicacionMercadoDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "numeroTransaccion",
+          "publicacionId",
+          "estado",
+          "precio",
+          "comision",
+          "netoVendedor",
+          "reservaHasta",
+          "segundosRestantes",
+          "publicacion"
+        ]
+      },
+      "PagarDto": {
+        "type": "object",
+        "properties": {
+          "metodoPago": {
+            "type": "string",
+            "enum": [
+              "TARJETA",
+              "PSE"
+            ],
+            "example": "TARJETA"
+          },
+          "token": {
+            "type": "string",
+            "description": "Token opaco del medio de pago; nunca datos de tarjeta",
+            "example": "tok_ok_demo"
+          }
+        },
+        "required": [
+          "metodoPago",
+          "token"
+        ]
+      },
+      "ResultadoCompraDto": {
+        "type": "object",
+        "properties": {
+          "numeroTransaccion": {
+            "type": "string",
+            "example": "TXN-2026-000001"
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "APROBADA"
+            ]
+          },
+          "transferida": {
+            "type": "boolean",
+            "description": "Salida 1 del CU-006: confirmación de la transferencia"
+          },
+          "codigoQr": {
+            "type": "string",
+            "description": "Salida 2 del CU-006: nuevo código QR para el comprador"
+          },
+          "entradaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "numeroTicket": {
+            "type": "string",
+            "example": "TCK-2026-000001"
+          },
+          "eventoNombre": {
+            "type": "string",
+            "example": "HEXACORE Fest 2026"
+          },
+          "localidadNombre": {
+            "type": "string",
+            "example": "General"
+          },
+          "precio": {
+            "type": "number",
+            "example": 300000
+          },
+          "referenciaPasarela": {
+            "type": "string",
+            "description": "Referencia del cobro en la pasarela, para conciliar"
+          }
+        },
+        "required": [
+          "numeroTransaccion",
+          "estado",
+          "transferida",
+          "codigoQr",
+          "entradaId",
+          "numeroTicket",
+          "eventoNombre",
+          "localidadNombre",
+          "precio",
+          "referenciaPasarela"
+        ]
+      },
+      "CambiarPrecioDto": {
+        "type": "object",
+        "properties": {
+          "precio": {
+            "type": "number",
+            "description": "Nuevo precio de venta",
+            "example": 280000
+          }
+        },
+        "required": [
+          "precio"
+        ]
+      }
+    }
+  }
+}

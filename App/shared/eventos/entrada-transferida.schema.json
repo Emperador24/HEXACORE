@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hexacore.javeriana.edu.co/esquemas/eventos/entrada-transferida-v1.json",
+  "title": "ENTRADA_TRANSFERIDA",
+  "description": "Evento que publica el Servicio de Entradas al completarse una reventa (CU-006, pasos 12 y 13). Lo consumen los procesos asíncronos de notificación, liquidación y auditoría. Contrato versionado: los consumidores de otros microservicios dependen de él, así que un cambio incompatible exige una versión nueva, no una edición de esta.",
+  "type": "object",
+  "required": [
+    "evento",
+    "version",
+    "id",
+    "ocurridoEn",
+    "entrada",
+    "transferencia",
+    "importes"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "evento": {
+      "const": "ENTRADA_TRANSFERIDA",
+      "description": "Nombre del evento. Permite a un consumidor con varias suscripciones distinguirlos sin mirar la cola de la que vino."
+    },
+    "version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Versión del contrato. Un consumidor que reciba una versión que no entiende debe rechazar el mensaje a la DLQ en vez de interpretarlo a medias."
+    },
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Identificador único de este evento. Es el id de la transacción de reventa, a propósito: la cola garantiza entrega 'al menos una vez', así que un consumidor puede recibir el mismo evento dos veces y necesita una clave con la que descartar el repetido."
+    },
+    "ocurridoEn": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Momento en que se completó la transferencia, en ISO 8601 con zona."
+    },
+    "entrada": {
+      "type": "object",
+      "required": ["id", "numeroTicket", "eventoId", "eventoNombre", "localidadNombre", "codigoQrNuevo"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "numeroTicket": { "type": "string", "examples": ["TCK-2026-000001"] },
+        "eventoId": { "type": "string", "format": "uuid" },
+        "eventoNombre": { "type": "string", "examples": ["HEXACORE Fest 2026"] },
+        "localidadNombre": { "type": "string", "examples": ["General"] },
+        "codigoQrNuevo": {
+          "type": "string",
+          "description": "Código de ingreso emitido para el comprador. Es lo que el proceso de notificación le envía.",
+          "examples": ["HXC-QR-B9eTBBwYt1tiPokz"]
+        }
+      }
+    },
+    "transferencia": {
+      "type": "object",
+      "required": ["vendedorId", "compradorId", "publicacionId", "transaccionId", "numeroTransaccion"],
+      "additionalProperties": false,
+      "properties": {
+        "vendedorId": { "type": "string", "format": "uuid" },
+        "compradorId": { "type": "string", "format": "uuid" },
+        "publicacionId": { "type": "string", "format": "uuid" },
+        "transaccionId": { "type": "string", "format": "uuid" },
+        "numeroTransaccion": { "type": "string", "examples": ["TXN-2026-000001"] }
+      }
+    },
+    "importes": {
+      "type": "object",
+      "description": "Reparto del cobro. Lo necesita el proceso de liquidación (paso 13 del CU-006) para abonar al vendedor.",
+      "required": ["precio", "comision", "netoVendedor", "moneda", "referenciaPasarela"],
+      "additionalProperties": false,
+      "properties": {
+        "precio": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Lo que pagó el comprador. Siempre igual a comision + netoVendedor."
+        },
+        "comision": { "type": "number", "minimum": 0, "description": "Retención de la plataforma." },
+        "netoVendedor": { "type": "number", "minimum": 0, "description": "Lo que se le abona al vendedor." },
+        "moneda": { "type": "string", "pattern": "^[A-Z]{3}$", "examples": ["COP"] },
+        "referenciaPasarela": {
+          "type": "string",
+          "description": "Identificador opaco del cobro en la pasarela, para conciliar. NUNCA datos de tarjeta: RNF-05 exige 0 campos de tarjeta persistidos, y este evento se guarda en la cola."
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "evento": "ENTRADA_TRANSFERIDA",
+      "version": 1,
+      "id": "7f3c1e2a-5d4b-4c8e-9a1f-2b3c4d5e6f70",
+      "ocurridoEn": "2026-09-14T04:50:00.474Z",
+      "entrada": {
+        "id": "20000000-0000-4000-8000-000000000001",
+        "numeroTicket": "TCK-2026-000001",
+        "eventoId": "e0000001-0000-4000-8000-000000000001",
+        "eventoNombre": "HEXACORE Fest 2026",
+        "localidadNombre": "General",
+        "codigoQrNuevo": "HXC-QR-B9eTBBwYt1tiPokz"
+      },
+      "transferencia": {
+        "vendedorId": "a0000001-0000-4000-8000-000000000001",
+        "compradorId": "b4e291f2-dc20-4abd-b893-9fdaafbffe49",
+        "publicacionId": "202c51ef-8a1b-4c2d-9e3f-4a5b6c7d8e9f",
+        "transaccionId": "7f3c1e2a-5d4b-4c8e-9a1f-2b3c4d5e6f70",
+        "numeroTransaccion": "TXN-2026-000008"
+      },
+      "importes": {
+        "precio": 300000,
+        "comision": 30000,
+        "netoVendedor": 270000,
+        "moneda": "COP",
+        "referenciaPasarela": "pas_c198f612-5523-4c46-9a7b-1d2e3f4a5b6c"
+      }
+    }
+  ]
+}

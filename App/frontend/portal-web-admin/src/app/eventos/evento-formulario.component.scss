@@ -1,0 +1,16 @@
+.tarjeta {
+  max-width: 480px;
+}
+
+.campo {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
