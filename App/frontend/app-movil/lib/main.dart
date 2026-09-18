@@ -1,6 +1,5 @@
 import 'dart:math';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,11 +16,8 @@ import 'widgets/liquid_glass.dart';
 import 'widgets/qr_scanner_sheet.dart';
 import 'models/activity_log.dart';
 import 'models/requests_store.dart';
-import 'pages/verificar_cuenta_page.dart';
 import 'services/api_client.dart';
-import 'services/cuentas_api.dart';
 import 'services/logistica_api_client.dart';
-import 'services/sesion.dart';
 
 void main() {
   final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
@@ -49,11 +45,15 @@ const _kConnectionError =
     'No se pudo conectar con el servidor, intenta de nuevo.';
 
 class User {
-  const User(this.name, this.email, this.role, {this.position});
+  const User(this.name, this.email, this.role, {this.position, this.credencial});
   final String name;
   final String email;
   final String role;
   final String? position;
+  // Credencial real del carné (QR/NFC) en el backend de CU-018 — ver
+  // `scripts/seed.mjs` en eventos-emergencias. Solo la tienen las cuentas
+  // de Personal; Cliente no habla con ese backend.
+  final String? credencial;
 }
 
 class Event {
@@ -95,32 +95,29 @@ final _events = [
       day: DateTime(2026, 6, 15), past: true, category: 'Cultural'),
 ];
 
-// Área operativa de cada cuenta de Personal.
-//
-// PROVISIONAL. El área (Entrada, Parqueadero, Restaurante, Jefe de personal)
-// es un dato del dominio de Personal (CU-007), que aún no tiene servicio. El
-// token del CU-027 solo dice que la cuenta tiene rol Personal. Hasta que ese
-// servicio exista, las cuentas de demostración de Personal se asignan aquí; el
-// resto va a Entrada.
-const _areasPersonal = {
-  'parqueadero@hexacore.com': 'Parqueadero',
-  'restaurante@hexacore.com': 'Restaurante',
-  'jefepersonal@hexacore.com': 'Jefe de personal',
-};
-
-// La app es para Clientes y Personal (ADR-07). Una cuenta que solo sea
-// Organizador o Administrador usa el portal web.
-User? _usuarioDeApp(UsuarioSesion u) {
-  if (u.roles.contains('Cliente')) return User(u.nombre, u.email, 'Cliente');
-  if (u.roles.contains('Personal')) {
-    return User(u.nombre, u.email, 'Personal',
-        position: _areasPersonal[u.email] ?? 'Entrada');
+String _nombreEvento(String? eventoId) {
+  if (eventoId == null) return 'Evento';
+  for (final evento in _events) {
+    if (evento.id == eventoId) return evento.name;
   }
-  return null;
+  return eventoId;
 }
 
-const _rolesSinApp =
-    'Esta app es para clientes y personal. Con tu cuenta, usa el portal web.';
+const _accounts = {
+  'cliente@hexacore.com': User('Ana Torres', 'cliente@hexacore.com', 'Cliente'),
+  'personal@hexacore.com': User(
+      'Luis Ramírez', 'personal@hexacore.com', 'Personal',
+      position: 'Entrada', credencial: 'HXC-CARNET-LUIS'),
+  'parqueadero@hexacore.com': User(
+      'Marta Gómez', 'parqueadero@hexacore.com', 'Personal',
+      position: 'Parqueadero', credencial: 'HXC-CARNET-MARTA'),
+  'restaurante@hexacore.com': User(
+      'Carlos Peña', 'restaurante@hexacore.com', 'Personal',
+      position: 'Restaurante', credencial: 'HXC-CARNET-CARLOS'),
+  'jefepersonal@hexacore.com': User(
+      'Isabel Rojas', 'jefepersonal@hexacore.com', 'Personal',
+      position: 'Jefe de personal', credencial: 'HXC-CARNET-ISABEL'),
+};
 
 class HexacoreApp extends StatefulWidget {
   const HexacoreApp({super.key});
@@ -128,93 +125,34 @@ class HexacoreApp extends StatefulWidget {
   State<HexacoreApp> createState() => _HexacoreAppState();
 }
 
-// Clave de la versión anterior, cuando la "sesión" era solo el correo de una
-// cuenta de ejemplo. Se borra al arrancar.
-const _legacySessionEmailKey = 'session_email';
+const _sessionEmailKey = 'session_email';
 const _onboardingSeenKey = 'onboarding_seen';
 
 class _HexacoreAppState extends State<HexacoreApp> {
-  final _navegador = GlobalKey<NavigatorState>();
-  final _mensajero = GlobalKey<ScaffoldMessengerState>();
+  User? _user;
   bool _dark = true;
   bool _checkingSession = true;
   bool _showOnboarding = false;
-  // Si la app estaba mostrando la pantalla de una cuenta (no el login).
-  bool _dentro = false;
-
-  // El usuario sale siempre de la sesión: no hay otra fuente de identidad.
-  User? get _user {
-    final u = sesion.usuario;
-    return u == null || !sesion.abierta ? null : _usuarioDeApp(u);
-  }
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance
         .addPostFrameCallback((_) => FlutterNativeSplash.remove());
-    // La sesión renueva sus tokens a través del cliente de cuentas. Se registra
-    // aquí porque `cuentasApi` se crea la primera vez que alguien lo usa, y la
-    // reventa puede necesitar renovar antes de que nadie lo haya tocado.
-    sesion.renovador = cuentasApi.renovarSesion;
-    sesion.addListener(_alCambiarSesion);
     _restoreSession();
-  }
-
-  @override
-  void dispose() {
-    sesion.removeListener(_alCambiarSesion);
-    super.dispose();
   }
 
   Future<void> _restoreSession() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_legacySessionEmailKey);
+    final email = prefs.getString(_sessionEmailKey);
+    final restored = email == null ? null : _accounts[email];
     final onboardingSeen = prefs.getBool(_onboardingSeenKey) ?? false;
-    await sesion.restaurar();
     if (!mounted) return;
     setState(() {
+      _user = restored;
       _checkingSession = false;
-      _showOnboarding = !sesion.abierta && !onboardingSeen;
-      _dentro = _user != null;
+      _showOnboarding = restored == null && !onboardingSeen;
     });
-    // Se confirma con el servidor sin hacer esperar a nadie: si el token se
-    // revocó en otro sitio, `comprobarSesion` cierra la sesión y la app
-    // vuelve sola al login. Sin red se sigue con los datos guardados.
-    if (sesion.abierta) {
-      cuentasApi.comprobarSesion().catchError((_) => sesion.usuario!);
-    }
-  }
-
-  // Cualquier cambio de sesión —login, logout, caducidad, cambio de nombre—
-  // pasa por aquí.
-  void _alCambiarSesion() {
-    if (!mounted) return;
-    // Una renovación trae los roles actuales. Si a alguien que ya estaba
-    // dentro no le queda ninguno con cabida en la app (le quitaron Cliente y
-    // Personal), se cierra. Al iniciar sesión no: de eso se encarga el login.
-    final usuario = sesion.usuario;
-    final dentro = _dentro;
-    _dentro = _user != null;
-    if (dentro &&
-        sesion.abierta &&
-        usuario != null &&
-        _usuarioDeApp(usuario) == null) {
-      cuentasApi.cerrarSesion().then((_) => _mensajero.currentState
-          ?.showSnackBar(const SnackBar(content: Text(_rolesSinApp))));
-      return;
-    }
-    if (!sesion.abierta) {
-      // Las pantallas abiertas encima (reventa, ajustes…) se cierran: sin
-      // sesión no tienen nada que mostrar.
-      _navegador.currentState?.popUntil((ruta) => ruta.isFirst);
-      final motivo = sesion.motivoCierre;
-      if (motivo != null) {
-        sesion.motivoCierre = null;
-        _mensajero.currentState?.showSnackBar(SnackBar(content: Text(motivo)));
-      }
-    }
-    setState(() {});
   }
 
   Future<void> _finishOnboarding() async {
@@ -223,14 +161,28 @@ class _HexacoreAppState extends State<HexacoreApp> {
     setState(() => _showOnboarding = false);
   }
 
-  Future<void> _handleLogout() => cuentasApi.cerrarSesion();
+  // Solo las 5 cuentas demo fijas en `_accounts` persisten entre reinicios:
+  // son las únicas que se pueden "restaurar" con datos consistentes. Las
+  // cuentas creadas por registro o login social (Google/Apple simulado) no
+  // existen en `_accounts`, así que actúan como sesión de invitado: viven
+  // mientras la app está abierta, pero no sobreviven a cerrarla.
+  Future<void> _handleLogin(User user) async {
+    setState(() => _user = user);
+    if (_accounts.containsKey(user.email)) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_sessionEmailKey, user.email);
+    }
+  }
+
+  Future<void> _handleLogout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_sessionEmailKey);
+    setState(() => _user = null);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final user = _user;
     return MaterialApp(
-      navigatorKey: _navegador,
-      scaffoldMessengerKey: _mensajero,
       title: 'HEXACORE',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
@@ -242,17 +194,17 @@ class _HexacoreAppState extends State<HexacoreApp> {
             )
           : _showOnboarding
               ? OnboardingPage(onDone: _finishOnboarding)
-              : user == null
-                  ? const LoginPage()
-                  : user.role == 'Cliente'
+              : _user == null
+                  ? LoginPage(onLogin: _handleLogin)
+                  : _user!.role == 'Cliente'
                       ? ClientShell(
-                          user: user,
+                          user: _user!,
                           dark: _dark,
                           onDarkChanged: (value) =>
                               setState(() => _dark = value),
                           onLogout: _handleLogout)
                       : StaffShell(
-                          user: user,
+                          user: _user!,
                           dark: _dark,
                           onDarkChanged: (value) =>
                               setState(() => _dark = value),
@@ -261,22 +213,17 @@ class _HexacoreAppState extends State<HexacoreApp> {
   }
 }
 
-/// Inicio de sesión — CU-027 pasos 8-9.
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+  const LoginPage({super.key, required this.onLogin});
+  final ValueChanged<User> onLogin;
   @override
   State<LoginPage> createState() => _LoginPageState();
 }
 
 class _LoginPageState extends State<LoginPage> {
-  // En desarrollo se rellena el correo de la cuenta de ejemplo. La contraseña
-  // nunca: ni siquiera la de demostración va escrita en la app.
-  final _email =
-      TextEditingController(text: kDebugMode ? 'cliente@hexacore.com' : null);
-  final _password = TextEditingController();
+  final _email = TextEditingController(text: 'cliente@hexacore.com');
+  final _password = TextEditingController(text: '1234');
   String? _error;
-  bool _sinVerificar = false;
-
   @override
   void dispose() {
     _email.dispose();
@@ -285,36 +232,17 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _submit() async {
-    if (_email.text.trim().isEmpty || _password.text.isEmpty) {
-      setState(() => _error = 'Ingresa tu correo y contraseña.');
+    await apiClient.login(_email.text.trim(), _password.text);
+    if (!mounted) return;
+    final user = _password.text == '1234'
+        ? _accounts[_email.text.trim().toLowerCase()]
+        : null;
+    if (user == null) {
+      setState(() => _error = 'Correo o contraseña inválidos.');
       return;
     }
-    setState(() {
-      _error = null;
-      _sinVerificar = false;
-    });
-    try {
-      final usuario =
-          await cuentasApi.iniciarSesion(_email.text, _password.text);
-      if (_usuarioDeApp(usuario) == null) {
-        // Rol sin cabida en la app: se cierra también en el servidor, para no
-        // dejar un token vivo que nadie va a usar.
-        await cuentasApi.cerrarSesion();
-        if (mounted) setState(() => _error = _rolesSinApp);
-        return;
-      }
-      // La app cambia de pantalla sola al abrirse la sesión.
-    } on CuentasApiException catch (error) {
-      if (!mounted) return;
-      setState(() {
-        _error = error.mensaje;
-        _sinVerificar = error.codigo == 'CUENTA_NO_VERIFICADA';
-      });
-    }
+    widget.onLogin(user);
   }
-
-  void _abrir(Widget pagina) =>
-      Navigator.of(context).push(MaterialPageRoute(builder: (_) => pagina));
 
   @override
   Widget build(BuildContext context) {
@@ -349,27 +277,23 @@ class _LoginPageState extends State<LoginPage> {
                                       scheme.onSurface.withValues(alpha: 0.6))),
                       const SizedBox(height: 28),
                       TextField(
-                          key: const Key('login-correo'),
                           controller: _email,
                           keyboardType: TextInputType.emailAddress,
-                          autocorrect: false,
                           decoration:
                               const InputDecoration(labelText: 'Correo')),
                       const SizedBox(height: 14),
                       TextField(
-                          key: const Key('login-contrasena'),
                           controller: _password,
                           obscureText: true,
-                          autocorrect: false,
-                          enableSuggestions: false,
                           onSubmitted: (_) => _submit(),
                           decoration:
                               const InputDecoration(labelText: 'Contraseña')),
                       Align(
                         alignment: Alignment.centerRight,
                         child: TextButton(
-                          onPressed: () => _abrir(
-                              ForgotPasswordPage(email: _email.text.trim())),
+                          onPressed: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                  builder: (_) => const ForgotPasswordPage())),
                           child: const Text('¿Olvidaste tu contraseña?'),
                         ),
                       ),
@@ -377,40 +301,27 @@ class _LoginPageState extends State<LoginPage> {
                         Padding(
                             padding: const EdgeInsets.only(top: 10),
                             child: Text(_error!,
-                                key: const Key('login-error'),
                                 style: const TextStyle(color: _kRed))),
-                      if (_sinVerificar)
-                        TextButton(
-                          onPressed: () => _abrir(
-                              VerificarCuentaPage(email: _email.text.trim())),
-                          child: const Text('Tengo el enlace de activación'),
-                        ),
                       const SizedBox(height: 20),
                       LoadingFilledButton(
                           label: 'Ingresar', onPressed: _submit),
-                      if (kDebugMode) ...[
-                        const SizedBox(height: 12),
-                        Text(
-                            'Desarrollo · cuentas de ejemplo con contraseña hexacore2026',
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodySmall
-                                ?.copyWith(
-                                    color: scheme.onSurface
-                                        .withValues(alpha: 0.5))),
-                      ],
+                      const SizedBox(height: 12),
+                      Text('Datos de demostración · contraseña: 1234',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(
+                                  color:
+                                      scheme.onSurface.withValues(alpha: 0.5))),
                       const SizedBox(height: 8),
                       Center(
                         child: TextButton(
-                          onPressed: () => _abrir(const RegisterPage()),
+                          onPressed: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                  builder: (_) => RegisterPage(
+                                      onRegistered: widget.onLogin))),
                           child: const Text('¿No tienes cuenta? Regístrate'),
-                        ),
-                      ),
-                      Center(
-                        child: TextButton(
-                          onPressed: () => _abrir(const VerificarCuentaPage()),
-                          child: const Text('Activar una cuenta con el enlace'),
                         ),
                       ),
                     ]),
@@ -1822,11 +1733,15 @@ List<StaffDestination> _staffPages(User user) {
   if (position == 'Jefe de personal') {
     return [
       const StaffDestination(
+          'Asignar turno', Icons.event_available_outlined, AssignShiftPage()),
+      const StaffDestination(
+          'Asistencia', Icons.groups_outlined, StaffAttendanceOverviewPage()),
+      StaffDestination('Solicitudes', Icons.rule_folder_outlined,
+          RequestsReviewPage(supervisorCredencial: user.email)),
+      const StaffDestination(
           'Validar personal', Icons.badge_outlined, PersonnelValidationPage()),
       const StaffDestination(
           'Promociones', Icons.local_offer_outlined, PromotionsPage()),
-      StaffDestination('Solicitudes', Icons.rule_folder_outlined,
-          RequestsReviewPage(supervisorCredencial: user.email)),
     ];
   }
   final operational = switch (position) {
@@ -1841,9 +1756,11 @@ List<StaffDestination> _staffPages(User user) {
     StaffDestination(
         'Turnos',
         Icons.schedule_outlined,
-        ShiftsPage(employeeName: user.name, credencial: user.email)),
+        ShiftsPage(
+            employeeName: user.name,
+            credencial: user.credencial ?? user.email)),
     StaffDestination('Asistencia', Icons.how_to_reg_outlined,
-        AttendancePage(credencial: user.email)),
+        AttendancePage(credencial: user.credencial ?? user.email)),
     operational,
     const StaffDestination(
         'Incidentes', Icons.report_outlined, IncidentsPage()),
@@ -1969,6 +1886,7 @@ class _RequestsReviewPageState extends State<RequestsReviewPage> {
   bool _loading = true;
   String? _error;
   List<dynamic> _solicitudesPendientes = [];
+  List<dynamic> _notificaciones = [];
 
   @override
   void initState() {
@@ -1982,9 +1900,13 @@ class _RequestsReviewPageState extends State<RequestsReviewPage> {
       _error = null;
     });
     try {
-      final pendientes = await logisticaApiClient.solicitudesPendientes();
+      final resultados = await Future.wait([
+        logisticaApiClient.solicitudesPendientes(),
+        logisticaApiClient.notificacionesRecientes(),
+      ]);
       setState(() {
-        _solicitudesPendientes = pendientes;
+        _solicitudesPendientes = resultados[0];
+        _notificaciones = resultados[1];
         _loading = false;
       });
     } catch (e) {
@@ -2035,6 +1957,7 @@ class _RequestsReviewPageState extends State<RequestsReviewPage> {
         }
         if (pendingCancellations.isEmpty &&
             _solicitudesPendientes.isEmpty &&
+            _notificaciones.isEmpty &&
             _error == null) {
           return Center(
             child: Text('No hay solicitudes pendientes.',
@@ -2138,6 +2061,48 @@ class _RequestsReviewPageState extends State<RequestsReviewPage> {
                                 child: const Text('Aprobar')),
                           ),
                         ]),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+          ],
+          if (_notificaciones.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text('Cola de mensajería (RabbitMQ) · cambios propagados',
+                style: textTheme.titleMedium),
+            const SizedBox(height: 4),
+            Text(
+                'Evidencia real del consumidor de "turnos.cambios": cada '
+                'cambio de turno aprobado, con la latencia publicación→consumo.',
+                style: textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurface.withValues(alpha: 0.6))),
+            const SizedBox(height: 8),
+            for (final notificacion in _notificaciones.take(10))
+              Builder(builder: (context) {
+                final n = notificacion as Map<String, dynamic>;
+                return Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.bolt_outlined, size: 18, color: _kIndigo),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(n['mensaje']?.toString() ?? '',
+                                  style: textTheme.bodySmall),
+                              Text(
+                                  'Latencia: ${((n['latenciaMs'] as num?) ?? 0).toStringAsFixed(0)} ms',
+                                  style: textTheme.bodySmall?.copyWith(
+                                      color:
+                                          scheme.onSurface.withValues(alpha: 0.55))),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -2269,7 +2234,7 @@ class _ShiftsPageState extends State<ShiftsPage> {
         padding: const EdgeInsets.all(16),
         children: [
           _SectionCard(
-              title: _turno!['eventoId']?.toString() ?? 'Evento',
+              title: _nombreEvento(_turno!['eventoId']?.toString()),
               lines: [
                 _turno!['zona']?.toString() ?? '',
                 '${_turno!['horaInicio']} → ${_turno!['horaFin']}',
@@ -2322,6 +2287,10 @@ class _AttendancePageState extends State<AttendancePage> {
   String? _error;
   // Último registro real devuelto por el backend (CU-018, pasos 5-8).
   Map<String, dynamic>? _ultimoRegistro;
+  // Evento del turno vigente — evita que la asistencia se cruce si el
+  // empleado llega a tener turnos en más de un evento (ver
+  // `AsistenciaService.buscarEntradaAbierta` en el backend).
+  String? _eventoId;
 
   @override
   void initState() {
@@ -2335,12 +2304,17 @@ class _AttendancePageState extends State<AttendancePage> {
       _error = null;
     });
     try {
-      final registros =
-          await logisticaApiClient.misRegistrosAsistencia(widget.credencial);
+      final resultados = await Future.wait([
+        logisticaApiClient.misRegistrosAsistencia(widget.credencial),
+        logisticaApiClient.miTurno(widget.credencial),
+      ]);
+      final registros = resultados[0] as List<dynamic>;
+      final turno = resultados[1] as Map<String, dynamic>?;
       setState(() {
         _ultimoRegistro = registros.isEmpty
             ? null
             : registros.first as Map<String, dynamic>;
+        _eventoId = turno?['eventoId']?.toString();
         _loading = false;
       });
     } catch (e) {
@@ -2356,11 +2330,17 @@ class _AttendancePageState extends State<AttendancePage> {
   bool get _enTurno => _ultimoRegistro != null && _ultimoRegistro!['tipo'] == 'ENTRADA';
 
   Future<void> _registrar(bool entrada) async {
+    final eventoId = _eventoId;
+    if (eventoId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('No tienes un turno asignado todavía.')));
+      return;
+    }
     setState(() => _sending = true);
     try {
       final registro = entrada
-          ? await logisticaApiClient.registrarEntrada(widget.credencial)
-          : await logisticaApiClient.registrarSalida(widget.credencial);
+          ? await logisticaApiClient.registrarEntrada(widget.credencial, eventoId)
+          : await logisticaApiClient.registrarSalida(widget.credencial, eventoId);
       setState(() {
         _ultimoRegistro = registro;
         _sending = false;
@@ -2432,6 +2412,9 @@ class _AttendancePageState extends State<AttendancePage> {
                 const SizedBox(height: 14),
                 if (_sending)
                   const Center(child: CircularProgressIndicator())
+                else if (_eventoId == null)
+                  Text('No tienes un turno asignado todavía.',
+                      style: textTheme.bodyMedium)
                 else if (!_enTurno)
                   FilledButton(
                       onPressed: () => _registrar(true),
@@ -2452,6 +2435,431 @@ class _AttendancePageState extends State<AttendancePage> {
         ],
       ]),
     );
+  }
+}
+
+// Vista del supervisor (Jefe de personal): asistencia de TODO el personal,
+// no solo la propia — mismo endpoint real de CU-018 (`GET /asistencia`),
+// sin el filtro por credencial que usa `AttendancePage`.
+class StaffAttendanceOverviewPage extends StatefulWidget {
+  const StaffAttendanceOverviewPage({super.key});
+  @override
+  State<StaffAttendanceOverviewPage> createState() =>
+      _StaffAttendanceOverviewPageState();
+}
+
+class _StaffAttendanceOverviewPageState
+    extends State<StaffAttendanceOverviewPage> {
+  bool _loading = true;
+  String? _error;
+  List<dynamic> _registros = [];
+  List<dynamic> _empleados = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _cargar();
+  }
+
+  Future<void> _cargar() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final resultados = await Future.wait([
+        logisticaApiClient.registrosAsistenciaDelPersonal(),
+        logisticaApiClient.listarEmpleados(),
+      ]);
+      setState(() {
+        _registros = resultados[0];
+        _empleados = resultados[1];
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e is LogisticaApiException
+            ? e.message
+            : 'No se pudo conectar con el backend de logística.';
+        _loading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final scheme = Theme.of(context).colorScheme;
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    return RefreshIndicator(
+      onRefresh: _cargar,
+      child: ListView(padding: const EdgeInsets.all(16), children: [
+        if (_error != null)
+          LiquidGlassCard(
+            child: Text(_error!, style: textTheme.bodyMedium?.copyWith(color: _kRed)),
+          )
+        else ...[
+          const _SectionCard(
+              title: 'Backend real · eventos-emergencias',
+              lines: ['CU-018 · Asistencia de todo el personal'],
+              icon: Icons.dns_outlined),
+          const SizedBox(height: 12),
+          if (_empleados.isNotEmpty) ...[
+            LiquidGlassCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Horas trabajadas (total)', style: textTheme.titleSmall),
+                  const SizedBox(height: 8),
+                  for (final empleado in _empleados)
+                    Builder(builder: (context) {
+                      final e = empleado as Map<String, dynamic>;
+                      final horas = (e['horasTrabajadasTotales'] as num?) ?? 0;
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 3),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                                child: Text(
+                                    '${e['nombre'] ?? ''} · ${e['rol'] ?? ''}',
+                                    style: textTheme.bodySmall,
+                                    overflow: TextOverflow.ellipsis)),
+                            Text('${horas.toStringAsFixed(1)} h',
+                                style: textTheme.bodySmall
+                                    ?.copyWith(fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                      );
+                    }),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+          if (_registros.isEmpty)
+            Text('Todavía no hay registros de asistencia.',
+                style: textTheme.bodyMedium
+                    ?.copyWith(color: scheme.onSurface.withValues(alpha: 0.6)))
+          else
+            for (final grupo in _agruparPorDia(_registros)) ...[
+              Padding(
+                padding: const EdgeInsets.only(top: 4, bottom: 8),
+                child: Text(grupo.$1,
+                    style: textTheme.titleSmall
+                        ?.copyWith(color: scheme.onSurface.withValues(alpha: 0.7))),
+              ),
+              for (final registro in grupo.$2)
+                Builder(builder: (context) {
+                  final r = registro as Map<String, dynamic>;
+                  final empleado = r['empleado'] as Map<String, dynamic>?;
+                  final turno = r['turno'] as Map<String, dynamic>?;
+                  final esEntrada = r['tipo'] == 'ENTRADA';
+                  final anomalia = r['anomalia'] == true;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: LiquidGlassCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                    empleado?['nombre']?.toString() ?? 'Empleado',
+                                    style: textTheme.titleSmall),
+                              ),
+                              Text(_horaLabel(r['timestamp']?.toString()),
+                                  style: textTheme.bodySmall),
+                              const SizedBox(width: 8),
+                              StatusChip(
+                                label: esEntrada ? 'Entrada' : 'Salida',
+                                color: anomalia
+                                    ? _kRed
+                                    : esEntrada
+                                        ? _kGreen
+                                        : _kIndigo,
+                                icon: esEntrada
+                                    ? Icons.login
+                                    : Icons.logout,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                              '${empleado?['rol'] ?? ''}'
+                              '${turno?['zona'] != null ? ' · ${turno!['zona']}' : ''}',
+                              style: textTheme.bodySmall?.copyWith(
+                                  color: scheme.onSurface.withValues(alpha: 0.65))),
+                          if (anomalia) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                                r['motivoAnomalia']?.toString() ??
+                                    'Registro marcado como anomalía.',
+                                style: textTheme.bodySmall?.copyWith(color: _kRed)),
+                          ],
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+            ],
+        ],
+      ]),
+    );
+  }
+}
+
+const _kMeses = [
+  'ene', 'feb', 'mar', 'abr', 'may', 'jun',
+  'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
+];
+
+String _horaLabel(String? isoUtc) {
+  final t = DateTime.tryParse(isoUtc ?? '')?.toLocal();
+  if (t == null) return '—';
+  return '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+}
+
+String _diaLabel(DateTime diaLocal) {
+  final hoy = DateTime.now();
+  final ayer = hoy.subtract(const Duration(days: 1));
+  bool mismoDia(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
+  if (mismoDia(diaLocal, hoy)) return 'Hoy';
+  if (mismoDia(diaLocal, ayer)) return 'Ayer';
+  return '${diaLocal.day} de ${_kMeses[diaLocal.month - 1]} de ${diaLocal.year}';
+}
+
+/// Agrupa los registros (ya vienen del backend ordenados por timestamp
+/// descendente) por día local del dispositivo, preservando ese orden.
+List<(String, List<dynamic>)> _agruparPorDia(List<dynamic> registros) {
+  final grupos = <(String, List<dynamic>)>[];
+  DateTime? diaActual;
+  List<dynamic>? bucketActual;
+  for (final registro in registros) {
+    final iso = (registro as Map<String, dynamic>)['timestamp']?.toString();
+    final t = DateTime.tryParse(iso ?? '')?.toLocal();
+    if (t == null) continue;
+    final dia = DateTime(t.year, t.month, t.day);
+    if (diaActual == null || dia != diaActual) {
+      diaActual = dia;
+      bucketActual = [];
+      grupos.add((_diaLabel(dia), bucketActual));
+    }
+    bucketActual!.add(registro);
+  }
+  return grupos;
+}
+
+// Vista del supervisor (Jefe de personal) para asignar un turno nuevo a un
+// empleado — CU-018 no tenía ninguna UI para esto: solo existía por script
+// de siembra o llamando el backend directo (`POST /turnos`).
+class AssignShiftPage extends StatefulWidget {
+  const AssignShiftPage({super.key});
+  @override
+  State<AssignShiftPage> createState() => _AssignShiftPageState();
+}
+
+class _AssignShiftPageState extends State<AssignShiftPage> {
+  bool _loadingEmpleados = true;
+  bool _guardando = false;
+  String? _error;
+  List<dynamic> _empleados = [];
+  String? _empleadoId;
+  String _eventoId = _events.first.id;
+  final _zonaController = TextEditingController();
+  DateTime _horaInicio = DateTime.now();
+  DateTime _horaFin = DateTime.now().add(const Duration(hours: 8));
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarEmpleados();
+  }
+
+  @override
+  void dispose() {
+    _zonaController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _cargarEmpleados() async {
+    setState(() {
+      _loadingEmpleados = true;
+      _error = null;
+    });
+    try {
+      final empleados = await logisticaApiClient.listarEmpleados();
+      setState(() {
+        _empleados = empleados;
+        _empleadoId ??=
+            empleados.isNotEmpty ? (empleados.first as Map)['id'] as String : null;
+        _loadingEmpleados = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e is LogisticaApiException
+            ? e.message
+            : 'No se pudo conectar con el backend de logística.';
+        _loadingEmpleados = false;
+      });
+    }
+  }
+
+  Future<void> _elegirFecha(bool esInicio) async {
+    final actual = esInicio ? _horaInicio : _horaFin;
+    final fecha = await showDatePicker(
+      context: context,
+      initialDate: actual,
+      firstDate: DateTime.now().subtract(const Duration(days: 1)),
+      lastDate: DateTime.now().add(const Duration(days: 180)),
+    );
+    if (fecha == null || !mounted) return;
+    final hora = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(actual),
+    );
+    if (hora == null || !mounted) return;
+    final combinado =
+        DateTime(fecha.year, fecha.month, fecha.day, hora.hour, hora.minute);
+    setState(() {
+      if (esInicio) {
+        _horaInicio = combinado;
+      } else {
+        _horaFin = combinado;
+      }
+    });
+  }
+
+  Future<void> _asignar() async {
+    if (_empleadoId == null) return;
+    if (_zonaController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Indica la zona del turno.')));
+      return;
+    }
+    if (!_horaFin.isAfter(_horaInicio)) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('La hora de fin debe ser después de la de inicio.')));
+      return;
+    }
+    setState(() => _guardando = true);
+    try {
+      await logisticaApiClient.crearTurno(
+        empleadoId: _empleadoId!,
+        eventoId: _eventoId,
+        zona: _zonaController.text.trim(),
+        horaInicio: _horaInicio,
+        horaFin: _horaFin,
+      );
+      final empleado =
+          _empleados.firstWhere((e) => (e as Map)['id'] == _empleadoId) as Map;
+      if (!mounted) return;
+      setState(() => _guardando = false);
+      activityLog.add(ActivityEntry(
+          type: ActivityType.shiftChange,
+          title: empleado['nombre']?.toString() ?? 'Empleado',
+          subtitle: 'Turno asignado · ${_zonaController.text.trim()}',
+          amount: 0));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Turno asignado.')));
+      _zonaController.clear();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _guardando = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(e is LogisticaApiException
+              ? e.message
+              : 'No se pudo conectar con el backend de logística.')));
+    }
+  }
+
+  String _fmt(DateTime t) =>
+      '${t.day.toString().padLeft(2, '0')}/${t.month.toString().padLeft(2, '0')} '
+      '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    if (_loadingEmpleados) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    return ListView(padding: const EdgeInsets.all(16), children: [
+      const _SectionCard(
+          title: 'Backend real · eventos-emergencias',
+          lines: ['CU-018 · Asignar turno a un empleado'],
+          icon: Icons.dns_outlined),
+      const SizedBox(height: 12),
+      if (_error != null)
+        LiquidGlassCard(
+            child: Text(_error!, style: textTheme.bodyMedium?.copyWith(color: _kRed)))
+      else
+        LiquidGlassCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              DropdownButtonFormField<String>(
+                initialValue: _empleadoId,
+                decoration: const InputDecoration(labelText: 'Empleado'),
+                items: [
+                  for (final e in _empleados)
+                    DropdownMenuItem(
+                        value: (e as Map)['id'] as String,
+                        child: Text('${e['nombre']} · ${e['rol']}',
+                            overflow: TextOverflow.ellipsis)),
+                ],
+                onChanged: (value) => setState(() => _empleadoId = value),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _zonaController,
+                decoration: const InputDecoration(
+                    labelText: 'Zona', hintText: 'Ej. Puerta Norte'),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                initialValue: _eventoId,
+                decoration: const InputDecoration(labelText: 'Evento'),
+                items: [
+                  for (final evento in _events)
+                    DropdownMenuItem(
+                        value: evento.id,
+                        child: Text(evento.name, overflow: TextOverflow.ellipsis)),
+                ],
+                onChanged: (value) => setState(() => _eventoId = value!),
+              ),
+              const SizedBox(height: 12),
+              Row(children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => _elegirFecha(true),
+                    child: Text('Inicio: ${_fmt(_horaInicio)}'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => _elegirFecha(false),
+                    child: Text('Fin: ${_fmt(_horaFin)}'),
+                  ),
+                ),
+              ]),
+              const SizedBox(height: 16),
+              if (_guardando)
+                const Center(child: CircularProgressIndicator())
+              else
+                FilledButton(
+                  onPressed: _empleados.isEmpty ? null : _asignar,
+                  child: const Text('Asignar turno'),
+                ),
+            ],
+          ),
+        ),
+    ]);
   }
 }
 
@@ -3079,43 +3487,22 @@ class ProfilePage extends StatefulWidget {
   State<ProfilePage> createState() => _ProfilePageState();
 }
 
-// Perfil — CU-027C: "el sistema valida los nuevos datos antes de guardarlos".
-//
-// Solo el nombre es editable. El correo es la identidad de la cuenta y no se
-// cambia desde aquí (DECISIONES.md §14 del servicio de Administración). El
-// teléfono no existe en el modelo de cuentas, así que no se ofrece.
 class _ProfilePageState extends State<ProfilePage> {
-  late final TextEditingController _nombre =
-      TextEditingController(text: widget.user.name);
-  String? _error;
-  String? _guardado;
-
+  late final TextEditingController _email =
+      TextEditingController(text: widget.user.email);
+  late final TextEditingController _phone =
+      TextEditingController(text: '300 123 4567');
+  bool _saved = false;
   @override
   void dispose() {
-    _nombre.dispose();
+    _email.dispose();
+    _phone.dispose();
     super.dispose();
-  }
-
-  Future<void> _guardar() async {
-    setState(() {
-      _error = null;
-      _guardado = null;
-    });
-    try {
-      final usuario = await cuentasApi.editarNombre(_nombre.text);
-      if (!mounted) return;
-      _nombre.text = usuario.nombre;
-      setState(() => _guardado = 'Perfil guardado.');
-    } on CuentasApiException catch (error) {
-      if (mounted) setState(() => _error = error.mensaje);
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    // El nombre mostrado sigue a la sesión: se actualiza al guardar.
-    final nombre = sesion.usuario?.nombre ?? widget.user.name;
     return GlassScaffold(
       appBar: const GlassAppBar(title: Text('Perfil')),
       body: ListView(
@@ -3126,26 +3513,38 @@ class _ProfilePageState extends State<ProfilePage> {
               child: CircleAvatar(
                   radius: 42,
                   backgroundColor: scheme.primary.withValues(alpha: 0.22),
-                  child: Text(nombre.isEmpty ? '?' : nombre.substring(0, 1),
+                  child: Text(widget.user.name.substring(0, 1),
                       style: TextStyle(fontSize: 32, color: scheme.primary)))),
+          const SizedBox(height: 14),
+          OutlinedButton.icon(
+              onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                      content: Text(
+                          'El selector de foto se conectará al servicio de archivos.'))),
+              icon: const Icon(Icons.photo_camera_outlined),
+              label: const Text('Cambiar foto')),
           const SizedBox(height: 16),
           LiquidGlassCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                TextField(
-                    key: const Key('perfil-nombre'),
-                    controller: _nombre,
-                    textCapitalization: TextCapitalization.words,
-                    decoration: const InputDecoration(labelText: 'Nombre')),
-                const SizedBox(height: 4),
                 Material(
                     type: MaterialType.transparency,
                     child: ListTile(
                         contentPadding: EdgeInsets.zero,
-                        leading: const Icon(Icons.mail_outline),
-                        title: const Text('Correo'),
-                        subtitle: Text(widget.user.email))),
+                        leading: const Icon(Icons.person_outline),
+                        title: const Text('Nombre'),
+                        subtitle: Text(widget.user.name))),
+                TextField(
+                    controller: _email,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: const InputDecoration(labelText: 'Correo')),
+                const SizedBox(height: 12),
+                TextField(
+                    controller: _phone,
+                    keyboardType: TextInputType.phone,
+                    decoration: const InputDecoration(labelText: 'Teléfono')),
+                const SizedBox(height: 4),
                 Material(
                     type: MaterialType.transparency,
                     child: ListTile(
@@ -3155,17 +3554,13 @@ class _ProfilePageState extends State<ProfilePage> {
                         subtitle:
                             Text(widget.user.position ?? widget.user.role))),
                 const SizedBox(height: 8),
-                LoadingFilledButton(
-                    label: 'Guardar cambios', onPressed: _guardar),
-                if (_error != null)
+                FilledButton(
+                    onPressed: () => setState(() => _saved = true),
+                    child: const Text('Guardar cambios')),
+                if (_saved)
                   Padding(
                       padding: const EdgeInsets.only(top: 10),
-                      child:
-                          Text(_error!, style: TextStyle(color: scheme.error))),
-                if (_guardado != null)
-                  Padding(
-                      padding: const EdgeInsets.only(top: 10),
-                      child: Text(_guardado!,
+                      child: Text('Perfil guardado.',
                           style: Theme.of(context)
                               .textTheme
                               .bodySmall

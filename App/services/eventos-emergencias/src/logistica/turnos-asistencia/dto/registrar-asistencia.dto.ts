@@ -29,4 +29,16 @@ export class RegistrarAsistenciaDto {
   @IsOptional()
   @IsString()
   idempotencyKey?: string;
+
+  /**
+   * Evento al que pertenece el turno que se está marcando. La asistencia
+   * de un empleado no debe cruzarse entre eventos simultáneos: sin esto,
+   * una salida podría cerrar por error la entrada de un evento distinto.
+   * Opcional por compatibilidad con integraciones que no lo envían — en
+   * ese caso se conserva el comportamiento previo (sin distinguir evento).
+   */
+  @ApiPropertyOptional({ example: 'evt-1' })
+  @IsOptional()
+  @IsString()
+  eventoId?: string;
 }

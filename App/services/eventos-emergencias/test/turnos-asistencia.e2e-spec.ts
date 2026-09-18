@@ -60,20 +60,20 @@ describe('CU-018 · Gestionar turno y asistencia del personal (e2e)', () => {
 
   async function crearTurno(
     empleadoId: string,
-    opts: { horaInicio: Date; horaFin: Date; zona?: string },
+    opts: { horaInicio: Date; horaFin: Date; zona?: string; eventoId?: string },
   ) {
     const res = await request(server)
       .post(`${RUTA}/turnos`)
       .set('Authorization', auth)
       .send({
         empleadoId,
-        eventoId: `evento-${randomUUID()}`,
+        eventoId: opts.eventoId ?? `evento-${randomUUID()}`,
         zona: opts.zona ?? 'zona-norte',
         horaInicio: opts.horaInicio.toISOString(),
         horaFin: opts.horaFin.toISOString(),
       })
       .expect(201);
-    return res.body as { id: string; empleadoId: string };
+    return res.body as { id: string; empleadoId: string; eventoId: string };
   }
 
   function turnoVigente(horas = 4) {
@@ -579,5 +579,68 @@ describe('CU-018 · Gestionar turno y asistencia del personal (e2e)', () => {
 
     expect(salida.body.anomalia).toBe(true);
     expect(salida.body.motivoAnomalia).toMatch(/sin una entrada previa/i);
+  });
+
+  // --- Asistencia no debe cruzarse entre eventos simultáneos ---
+
+  it('la salida de un evento no cierra la entrada abierta de otro evento simultáneo', async () => {
+    const empleado = await crearEmpleado();
+    const { horaInicio, horaFin } = turnoVigente();
+    const turnoEventoA = await crearTurno(empleado.id, {
+      horaInicio,
+      horaFin,
+      eventoId: 'evento-A',
+      zona: 'zona-A',
+    });
+    const turnoEventoB = await crearTurno(empleado.id, {
+      horaInicio,
+      horaFin,
+      eventoId: 'evento-B',
+      zona: 'zona-B',
+    });
+
+    // El mismo empleado entra a los dos eventos que corren en simultáneo.
+    const entradaA = await request(server)
+      .post(`${RUTA}/asistencia/entrada`)
+      .set('Authorization', auth)
+      .send({ credencial: empleado.credencial, eventoId: 'evento-A' })
+      .expect(201);
+    expect(entradaA.body.anomalia).toBe(false);
+    expect(entradaA.body.turnoId).toBe(turnoEventoA.id);
+
+    const entradaB = await request(server)
+      .post(`${RUTA}/asistencia/entrada`)
+      .set('Authorization', auth)
+      .send({ credencial: empleado.credencial, eventoId: 'evento-B' })
+      .expect(201);
+    expect(entradaB.body.anomalia).toBe(false);
+    expect(entradaB.body.turnoId).toBe(turnoEventoB.id);
+
+    // Marca salida del evento A: debe cerrar la entrada de A, no la de B.
+    const salidaA = await request(server)
+      .post(`${RUTA}/asistencia/salida`)
+      .set('Authorization', auth)
+      .send({ credencial: empleado.credencial, eventoId: 'evento-A' })
+      .expect(201);
+    expect(salidaA.body.anomalia).toBeFalsy();
+    expect(salidaA.body.turnoId).toBe(turnoEventoA.id);
+
+    // El evento B sigue con la entrada abierta: otra salida de A debería
+    // fallar por "sin entrada previa" (la de A ya se cerró), mientras que
+    // B todavía puede cerrarse con su propia salida.
+    const segundaSalidaA = await request(server)
+      .post(`${RUTA}/asistencia/salida`)
+      .set('Authorization', auth)
+      .send({ credencial: empleado.credencial, eventoId: 'evento-A' })
+      .expect(201);
+    expect(segundaSalidaA.body.anomalia).toBe(true);
+
+    const salidaB = await request(server)
+      .post(`${RUTA}/asistencia/salida`)
+      .set('Authorization', auth)
+      .send({ credencial: empleado.credencial, eventoId: 'evento-B' })
+      .expect(201);
+    expect(salidaB.body.anomalia).toBeFalsy();
+    expect(salidaB.body.turnoId).toBe(turnoEventoB.id);
   });
 });
