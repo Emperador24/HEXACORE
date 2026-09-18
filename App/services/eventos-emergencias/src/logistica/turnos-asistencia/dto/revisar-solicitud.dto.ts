@@ -1,16 +1,18 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsNotEmpty, IsString } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsBoolean, IsOptional, IsString } from 'class-validator';
 
 export class RevisarSolicitudDto {
   /**
-   * Identificador del supervisor que revisa (aquí, su credencial/email —
-   * no hay todavía un servicio de autenticación real que emita un id
-   * propio de empleado en la sesión del cliente).
+   * El controlador SIEMPRE lo sobreescribe con el usuario de la sesión
+   * (`SesionValida`) antes de llegar al servicio — de lo contrario cualquiera
+   * podría aprobar su propio cambio declarándose supervisor en el cuerpo de
+   * la petición. Queda opcional aquí solo para que la validación no rechace
+   * una petición que no lo manda.
    */
-  @ApiProperty({ example: 'jefepersonal@hexacore.com' })
+  @ApiPropertyOptional({ readOnly: true })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  supervisorId: string;
+  supervisorId?: string;
 
   @ApiProperty()
   @IsBoolean()

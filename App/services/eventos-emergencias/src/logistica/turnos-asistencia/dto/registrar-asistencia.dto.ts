@@ -2,7 +2,8 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsDateString, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class RegistrarAsistenciaDto {
-  @ApiProperty({ example: 'personal@hexacore.com' })
+  /** Lo que se escanea en el punto de control: QR o NFC del carné. */
+  @ApiProperty({ example: 'HXC-CARNET-00231' })
   @IsString()
   @IsNotEmpty()
   credencial: string;
