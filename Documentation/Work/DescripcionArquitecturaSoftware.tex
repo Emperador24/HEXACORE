@@ -211,71 +211,8 @@ partir de los escenarios del proyecto, no mediciones sobre un sistema en producc
 existe). Los umbrales de RNF-01 y RNF-02 se respaldan con las pruebas de concepto del proyecto
 (véase \textit{App/PoCs/}); el resto se validará conforme se implemente cada dominio.
 
-\begin{center}
-\begin{longtable}{p{1.3cm}p{5.2cm}p{2.4cm}p{5.4cm}}
-\toprule
-\textbf{ID} & \textbf{Requisito} & \textbf{Atributo} & \textbf{Métrica y umbral verificable}\\
-\midrule
-\endhead
-RNF-01 & Ninguna entrada publicada en el mercado secundario puede venderse a dos compradores
-(CU-006). & Consistencia & Ventas duplicadas bajo concurrencia: \textbf{0\%} con 50 intentos de
-compra simultáneos sobre la misma publicación.\\[0.3em]
-RNF-02 & Al transferirse una entrada, el QR anterior queda invalidado antes de emitir el nuevo
-(CU-006). & Consistencia & Códigos QR antiguos aceptados en validación tras una transferencia:
-\textbf{0}.\\[0.3em]
-RNF-03 & El sistema sigue atendiendo solicitudes ante la caída de una instancia de cualquier
-microservicio (CU-001--005, CU-002). & Disponibilidad & Disponibilidad mensual del API Gateway
-\textbf{$\geq$ 99,9\%} (máx. 43 min de indisponibilidad al mes).\\[0.3em]
-RNF-04 & Ante la caída de una instancia, el sistema se recupera sin intervención manual.
-& Disponibilidad & Tiempo hasta volver a responder el 100\% de las solicitudes:
-\textbf{$\leq$ 30 s}.\\[0.3em]
-RNF-05 & El sistema nunca almacena datos completos de tarjetas de pago (CU-001, CU-011, CU-024).
-& Seguridad & Campos de tarjeta persistidos en cualquier base de datos propia: \textbf{0}; el
-cobro se delega íntegramente a la pasarela.\\[0.3em]
-RNF-06 & Toda petición a un microservicio pasa autenticada y autorizada por rol desde el API
-Gateway. & Seguridad & Endpoints de negocio alcanzables sin token válido: \textbf{0\%} sobre el
-total de rutas expuestas.\\[0.3em]
-RNF-07 & La consulta de disponibilidad de entradas responde con baja latencia durante la apertura
-de venta (CU-001). & Rendimiento & Latencia \textbf{p95 $\leq$ 500 ms} con 2.000 usuarios
-concurrentes.\\[0.3em]
-RNF-08 & La validación del QR en el ingreso no genera filas perceptibles (CU-002, CU-005).
-& Rendimiento & Latencia \textbf{p95 $\leq$ 300 ms} por validación.\\[0.3em]
-RNF-09 & El aforo y la ocupación se reflejan casi de inmediato tras un ingreso o salida (CU-019,
-CU-025). & Tiempo real & Retardo entre el evento y su reflejo en el tablero de monitoreo:
-\textbf{$\leq$ 2 s}.\\[0.3em]
-RNF-10 & El servicio de Entradas escala horizontalmente sin degradar los demás dominios (CU-001,
-CU-006). & Escalabilidad & Al duplicar sus instancias, el throughput crece
-\textbf{$\geq$ 1,7$\times$} (eficiencia $\geq$ 85\%) sin afectar la latencia de otros
-servicios.\\[0.3em]
-RNF-11 & Toda operación financiera queda auditada (CU-006, CU-031). & Trazabilidad & Operaciones
-con registro completo (actor, marca de tiempo, id. de transacción, resultado): \textbf{100\%};
-retención \textbf{$\geq$ 1 año}.\\[0.3em]
-RNF-12 & Un cliente sin capacitación previa completa la compra de una entrada (CU-001).
-& Usabilidad & \textbf{$\geq$ 80\%} de éxito en prueba con 5 usuarios, en
-\textbf{$\leq$ 5 pasos} desde el evento hasta la confirmación.\\[0.3em]
-RNF-13 & Un cambio en las reglas de un dominio no obliga a modificar otro microservicio.
-& Mantenibilidad & Microservicios que deben modificarse y redesplegarse ante un cambio típico de
-negocio: \textbf{1} (más el contrato de API solo si este cambia).\\[0.3em]
-RNF-14 & Toda funcionalidad del rol Cliente está disponible desde web y desde móvil sobre el mismo
-contrato. & Portabilidad & CU del rol Cliente cubiertos por ambas interfaces consumiendo la misma
-API: \textbf{100\%}, con \textbf{0} reglas de negocio duplicadas en el cliente.\\[0.3em]
-RNF-15 & Una versión nueva de un microservicio se despliega sin interrumpir el servicio.
-& Desplega-bilidad & Solicitudes fallidas durante el despliegue: \textbf{0}; ventana de despliegue
-\textbf{$\leq$ 10 min} y reversión \textbf{$\leq$ 5 min}.\\[0.3em]
-RNF-16 & La pasarela de pagos puede sustituirse por otro proveedor sin tocar la lógica de negocio
-(CU-001, CU-024). & Integra-bilidad & Componentes a modificar para el cambio de proveedor:
-\textbf{1} (solo el adaptador), \textbf{0} cambios en el servicio de Entradas.\\[0.3em]
-RNF-17 & Al activarse una evacuación, todo el personal en campo recibe su instrucción (CU-010).
-& Seguridad física (Safety) & Dispositivos que reciben la alerta: \textbf{$\geq$ 99\%} en
-\textbf{$\leq$ 10 s} desde la activación.\\[0.3em]
-RNF-18 & Cada microservicio puede probarse de forma aislada, sin levantar los demás.
-& Comproba-bilidad & Cobertura de pruebas de la lógica de dominio \textbf{$\geq$ 70\%} y
-\textbf{100\%} de las dependencias externas sustituibles por dobles de prueba.\\
-\bottomrule
-\caption{Requisitos no funcionales, con métrica y umbral verificable por atributo de calidad.}
-\label{tab:rnf}
-\end{longtable}
-\end{center}
+% La tabla vive en RequisitosNoFuncionales.tex, compartida con el SRS.
+\input{RequisitosNoFuncionales}
 
 % ==================== Modelo de dominio ====================
 \section{Modelo de dominio}
