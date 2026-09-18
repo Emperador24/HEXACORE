@@ -40,4 +40,12 @@ export class Turno {
 
   @Column({ type: 'enum', enum: EstadoTurno, default: EstadoTurno.ASIGNADO })
   estado: EstadoTurno;
+
+  /**
+   * CU-017: la zona de evento que este turno cubre, cuando se creó a través
+   * de la asignación de personal operativo (no por el flujo simple de
+   * `POST /turnos`, que puede seguir sin ella — de ahí nullable).
+   */
+  @Column('uuid', { nullable: true })
+  zonaEventoId: string | null;
 }
