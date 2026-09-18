@@ -26,6 +26,99 @@ avanza (marcar los `[ ]` como `[x]`).
 
 ---
 
+---
+
+## Estado al 17 de septiembre de 2026 (revisión contra el repositorio)
+
+Esta guía se escribió cuando el backend no tenía lenguaje decidido, la cola
+estaba sin elegir y la app móvil era doble (Kotlin + Swift). **Casi todo eso
+ya se cerró.** Lo que sigue es la foto real, comprobada archivo por archivo;
+el resto del documento se conserva porque su metodología sigue valiendo, pero
+donde diga "pendiente" hay que leer primero esta sección.
+
+### Lo que se cerró desde entonces
+
+| Punto de la guía | Estado real hoy | Evidencia en el repositorio |
+|---|---|---|
+| Auditoría #2 — lenguaje del backend | ✅ **Cerrado**: NestJS (ADR-09) | `App/PoCs/poc-04-lenguaje-backend/`, bitácora 2026-09-13 |
+| Auditoría #3 — RabbitMQ vs. Kafka | ✅ **Cerrado**: RabbitMQ (ADR-10) | `App/PoCs/poc-05-cola-mensajes/`, bitácora 2026-09-13 |
+| Auditoría #8 — stack móvil | ✅ **Cerrado**: Flutter (ADR-08), una sola app | bitácora 2026-09-12; `App/frontend/app-movil/` |
+| Punto 1 — RNF | ✅ Ampliado de 16 a **18 RNF**, con métrica y umbral | `Documentation/Work/RequisitosNoFuncionales.tex` |
+| Punto 2 — ASR | ✅ Ampliado de 12 a **14 ASR** con par (Importancia, Dificultad) | SAD §7 |
+| PDFs en `Submission/` | ✅ Ya no son borradores | `Documentation/Submission/` |
+| Tabla "Stack técnico" de `App/README.md` | ✅ Actualizada con las tres decisiones | `App/README.md` |
+| Decisión UUID vs. JWT para el QR (PoC-02) | ✅ **Resuelta de hecho en el código**: código opaco de 96 bits de entropía criptográfica, no JWT | `entradas-mercado-secundario/src/reventa/qr/generador-qr.service.ts` |
+
+### Lo que sigue pendiente de esta guía
+
+- [ ] **PoC-03 (failover activo vs. pasivo)** — sigue sin construirse. Pero
+      hoy hay algo mejor que un PoC de laboratorio: el **API Gateway real**
+      (`App/gateway/`) demuestra failover y balanceo medidos sobre el sistema
+      de verdad (20 de 20 peticiones en 200 con una réplica caída; reparto
+      11/9 entre dos instancias). Decidir si eso **sustituye** al PoC-03 —
+      defendible— o si se construye igual.
+- [ ] **ADR de autenticación.** Hay 10 ADR y ninguno cubre la decisión de
+      firmar los tokens con RS256 en vez de un secreto compartido, ni la de
+      los dos tokens (acceso + renovación). Hoy viven solo en
+      `App/services/administracion/DECISIONES.md` §§7 y 21, que no es un
+      entregable. Es el hueco más claro del ítem "ADR" de la rúbrica.
+- [ ] **Punto 6 — tabla de alcance comprometido para Entrega 2.** La
+      propuesta está redactada más abajo, pero **nunca se pegó en el SAD**.
+      Verificado: el SAD no tiene esa sección.
+- [ ] **Punto 5 — prototipo por integrante.** Ver abajo.
+
+### Correcciones a lo que dice el resto del documento
+
+Cosas que la guía da por ciertas y ya no lo son. Se listan para que nadie
+pierda tiempo buscándolas:
+
+- **`PoC-01` y `PoC-02` no existen en este repositorio.** La guía los da por
+  hechos y `App/README.md` cita el PoC-01 como evidencia del ADR-03 (Redis).
+  No están en `App/PoCs/` ni en el historial de git. O se reconstruyen, o se
+  quita esa cita: sostener en la sustentación una evidencia que no se puede
+  abrir es peor que no citarla.
+- **Las rutas cambiaron**: donde el documento dice `Proyecto/App/...`, hoy es
+  `App/...`.
+- **`Cronograma.md` y `TASKS.md` no existen** en el repositorio, y la guía se
+  apoya en ellos para el reparto de atributos por integrante (I1-I4).
+- **`app-ios` ya no existe**: la migración a Flutter (ADR-08) dejó una sola
+  app móvil.
+
+### Punto 5 — prototipo funcional, que es donde está el riesgo
+
+Es el único punto de los seis que sigue realmente abierto, y pesa 23 %
+individual:
+
+| Integrante | CU complejo | Estado |
+|---|---|---|
+| Samuel Emperador | CU-006 (mercado secundario) | ✅ Completo de extremo a extremo, con CU-027 (autenticación) también implementado |
+| Samuel Emperador | CU-010 (evacuación) | ❌ Sin implementar — el SAD lo nombra "hilo conductor" junto con CU-006 |
+| Diego Coronado | CU-018 (turnos y asistencia) | 🟡 GUI, backend, base y cola funcionando; **sin autenticación**, que la asignación exige cuando un CU depende de otro |
+| Daniel Cristancho | CU-001–005, CU-021–023 | ❌ Sin implementar |
+| Sebastián Sánchez | CU-011–015, CU-027–029 | ❌ Sin implementar (el CU-027 que le tocaba lo implementó Samuel) |
+
+Tres de los seis microservicios tienen código: Entradas, Administración y
+Eventos/Emergencias. Personal, Pedidos y Parqueaderos siguen siendo solo su
+`README.md`.
+
+### Lo que apareció después y esta guía no contempla
+
+La guía cubre los 6 puntos del SAD v1. La asignación de la **1.ª
+sustentación** pide además cosas que no están aquí:
+
+- **SRS** como entregable propio — primera versión ya hecha:
+  `Documentation/Submission/EspecificacionRequisitos.pdf` (66 páginas).
+- **Cobertura de pruebas de integración del 100 %** sobre el backend — hoy no
+  se mide. Lo medible hoy es cobertura unitaria: Entradas 67,4 %,
+  Administración 5,2 % sobre todo el fuente.
+- **Desplegabilidad**: sistema repartido en dos o más computadores, arranque
+  con un único script, y **pipeline CI/CD**. Hay CI (`.github/workflows/ci.yml`,
+  siete trabajos) pero no CD, no hay script único y todo corre en una máquina.
+- **Diapositivas** de la presentación.
+- **Bitácoras individuales** (enlaces a los repositorios de cada uno).
+
+
+
 ## Regla de oro: la plantilla de decisión (úsala siempre)
 
 Cada vez que el equipo elija una tecnología, patrón o táctica — no solo en
@@ -480,7 +573,7 @@ aprobación del profesor** (regla de Clase 1).
 
 ## Checklist de cierre antes de entregar
 
-- [x] RNF redactados (punto 1) y agregados al SAD — **RNF-01 a RNF-16** en
+- [x] RNF redactados (punto 1) — hoy son **RNF-01 a RNF-18**, en
       `DescripcionArquitecturaSoftware.tex` § "Requisitos No Funcionales"
       (2026-09-06).
 - [x] Árbol de Utilidad con formato (Importancia, Dificultad) correcto y
@@ -497,8 +590,10 @@ aprobación del profesor** (regla de Clase 1).
       técnicas razonadas, no medidas) salvo las que se apoyan en los PoCs
       del punto 4; cada responsable (tabla de `Cronograma.md`) debe
       revisar la suya.
-- [x] **2 PoCs corridos**, con README de resultados reales, en
-      `Proyecto/App/PoCs/` (punto 4, 2026-09-06):
+- [x] **PoCs corridos**, con README de resultados reales, en `App/PoCs/`.
+      Hoy el directorio contiene **PoC-04** (lenguaje del backend) y **PoC-05**
+      (cola de mensajes). Los dos de abajo, que esta guía daba por hechos, **no
+      están en el repositorio**:
       - PoC-01 (bloqueo de concurrencia): confirma ADR-03 con evidencia
         real (30/30 trials con venta duplicada sin protección, 0/30 con
         Redis u optimista).
@@ -508,22 +603,19 @@ aprobación del profesor** (regla de Clase 1).
         en red.
       **Falta el 3er PoC recomendado** (failover activo vs. pasivo) — ver
       `PoCs/README.md`.
-- [ ] **Decidir el lenguaje/framework del backend de `services/*`**
-      (auditoría #2) — pasos exactos y candidatos sugeridos ya escritos
-      arriba ("Cómo cerrar la decisión #2"); produce `poc-04-lenguaje-backend/`
-      y ADR nuevo. **Sigue pendiente.**
-- [ ] **Decidir RabbitMQ vs. Kafka** (auditoría #3) — pasos exactos ya
-      escritos arriba ("Cómo cerrar la decisión #3"); cierra el ADR-04
-      existente. **Sigue pendiente.**
-- [ ] **Construir el demo de Flutter y redactar el ADR-05 del stack móvil**
-      (auditoría #8, desarrollado a fondo arriba) — es el ejemplo que
-      motivó esta versión de la guía. **Sigue pendiente** (requiere
-      instalar el SDK de Flutter).
-- [ ] **Construir PoC-03 (failover)** — pasos exactos ya escritos en el
-      punto 4 ("Tarea específica pendiente — 3er PoC"). **Sigue pendiente.**
-- [ ] **Cerrar la decisión UUID vs. JWT para el QR** (surgida del PoC-02) —
-      pasos exactos ya escritos en el punto 4 (agregar latencia simulada,
-      re-correr, documentar en ADR-06). **Sigue pendiente.**
+- [x] **Lenguaje/framework del backend decidido** (auditoría #2): **NestJS**,
+      con PoC-04 medido y **ADR-09** redactado (2026-09-13).
+- [x] **Cola de mensajes decidida** (auditoría #3): **RabbitMQ**, con PoC-05
+      medido y **ADR-10** redactado (2026-09-13).
+- [x] **Stack móvil decidido** (auditoría #8): se migró a **Flutter**, una
+      sola app para Android e iOS, con **ADR-08** (2026-09-12). El SDK ya está
+      instalado y la app compila para las dos plataformas.
+- [ ] **PoC-03 (failover)** — sin construir, pero el **API Gateway real**
+      (`App/gateway/`) ya demuestra failover y balanceo medidos sobre el
+      sistema de verdad. Decidir si eso lo sustituye.
+- [x] **Decisión del QR cerrada en el código**: código opaco con 96 bits de
+      entropía criptográfica (`GeneradorQr`), no JWT. **Falta** llevarla a un
+      ADR: hoy solo está en los comentarios del servicio.
 - [ ] Auditar el resto de la tabla de decisiones (filas #1, #4, #5, #6, #7)
       y conseguir al menos evidencia liviana (documentación citada) donde
       no alcance el tiempo para un PoC propio.
@@ -531,14 +623,16 @@ aprobación del profesor** (regla de Clase 1).
       (punto 5) — Samuel Emperador ya tiene los suyos identificados
       (CU-006, CU-010); Daniel/Sebastián/Diego siguen el procedimiento del
       punto 5 para elegir el propio.
-- [x] Tabla de alcance para Entrega 2 (punto 6) — **propuesta de arranque
-      ya redactada** arriba, a partir de los dueños reales de cada bloque
-      de CU; falta que el equipo la confirme/ajuste y se pegue en
-      `DescripcionArquitecturaSoftware.tex`.
-- [x] `Work/DescripcionArquitecturaSoftware.tex` (22 páginas) y
-      `Work/ArchitecturalProposal.tex` (30 páginas) compilan sin errores
-      con los cambios de 2026-09-06. **Sigue sin copiarse a
-      `Submission/`** — siguen siendo borradores.
-- [ ] Actualizar `Proyecto/App/README.md` (tabla "Stack técnico") una vez
-      se resuelvan las decisiones pendientes de la auditoría.
-- [ ] Actualizar `TASKS.md` y esta guía conforme se cierre cada punto.
+- [ ] Tabla de alcance para Entrega 2 (punto 6) — la propuesta está redactada
+      más abajo, pero **verificado: nunca se pegó en el SAD**. Falta que el
+      equipo la confirme y se agregue a `DescripcionArquitecturaSoftware.tex`.
+- [x] Los documentos compilan y **sus PDF ya están en `Submission/`**: SAD
+      (33 páginas) y, desde el 17/09, el **SRS** (66 páginas).
+- [x] `App/README.md` (tabla "Stack técnico") actualizada con las tres
+      decisiones cerradas: NestJS, RabbitMQ y Flutter.
+- [ ] **Redactar el ADR de autenticación** (RS256 y los dos tokens): hoy vive
+      en `services/administracion/DECISIONES.md`, que no es un entregable.
+- [ ] **Reconstruir o retirar la cita a PoC-01**: `App/README.md` la usa como
+      evidencia del ADR-03 y ese PoC no está en el repositorio.
+- [ ] Mantener esta guía al día conforme se cierre cada punto. (`TASKS.md` y
+      `Cronograma.md`, que el documento cita, no existen en el repositorio.)

@@ -1,0 +1,385 @@
+% Especificación de Requisitos del Software (SRS).
+%
+% Dos archivos se incluyen y NO se editan aquí:
+%   - RequisitosCasosUso.tex      generado por generar-requisitos-cu.py desde el
+%                                 .xlsx de casos de uso (fuente de verdad).
+%   - RequisitosNoFuncionales.tex tabla de RNF compartida con el SAD.
+%
+% Compilar:  latexmk -pdf EspecificacionRequisitos.tex
+
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-noquoting]{babel}
+\usepackage{geometry}
+\usepackage{setspace}
+\usepackage{parskip}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+
+\geometry{left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm,headheight=14.5pt}
+\onehalfspacing
+\hypersetup{
+    colorlinks=true, linkcolor=black, urlcolor=blue, citecolor=black,
+    pdftitle={Especificación de Requisitos del Software (SRS) - Sistema Integral de Gestión de Eventos},
+    pdfauthor={Hexacore}, hidelinks=false
+}
+
+\definecolor{azul}{RGB}{31,78,121}
+\definecolor{grisoscuro}{RGB}{80,80,80}
+
+\renewcommand{\figurename}{Figura}
+\renewcommand{\tablename}{Tabla}
+
+\newcommand{\pendiente}[1]{\textit{\textcolor{grisoscuro}{[Pendiente: #1]}}}
+\setlist[itemize]{topsep=2pt, itemsep=2pt}
+
+\titleformat{\section}{\Large\bfseries\color{azul}}{\thesection.}{0.5em}{}
+\titleformat{\subsection}{\large\bfseries}{\thesubsection.}{0.5em}{}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{Sistema Integral de Gestión de Eventos}
+\fancyhead[R]{\small Especificación de Requisitos (SRS)}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\newcolumntype{P}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+\begin{document}
+
+% ==================== Portada ====================
+\begin{titlepage}
+\centering
+\vspace*{2cm}
+{\LARGE \textbf{Especificación de Requisitos del Software (SRS)}}\\[0.4cm]
+{\Large Sistema Integral de Gestión de Eventos}\\[1.5cm]
+{\Large Equipo Hexacore}\\[2cm]
+{\large Versión: 1.0}\\[0.5cm]
+{\large Fecha: 17/09/2026}\\[2cm]
+{\large Autores:}\\
+{\large Daniel Cristancho}\\
+{\large Samuel Emperador}\\
+{\large Sebastián Sánchez}\\
+{\large Diego Coronado}\\
+\vfill
+{\small Materia: Arquitectura de Software}
+\end{titlepage}
+
+% ==================== Historial de cambios ====================
+\section*{Historial de Cambios}
+\addcontentsline{toc}{section}{Historial de Cambios}
+
+\begin{center}
+\begin{tabular}{P{1.6cm}P{2.4cm}P{3.6cm}P{6.4cm}}
+\toprule
+\textbf{Versión} & \textbf{Fecha} & \textbf{Autor} & \textbf{Descripción}\\
+\midrule
+1.0 & 17/09/2026 & Equipo Hexacore & Primera versión. Reúne en un solo documento los 32 casos
+de uso (hasta ahora solo en la hoja de cálculo), los requisitos no funcionales y el marco que
+faltaba: propósito, alcance, actores, interfaces externas, restricciones y supuestos.\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\tableofcontents
+\newpage
+
+% ==================== 1. Introducción ====================
+\section{Introducción}
+
+\subsection{Propósito}
+
+Este documento especifica \textbf{qué} debe hacer el Sistema Integral de Gestión de Eventos y con
+qué nivel de calidad, sin comprometerse con \textbf{cómo} se construye. Esa segunda pregunta ---
+qué microservicios existen, qué tecnología usa cada uno y por qué--- se responde en el documento
+\textit{Descripción de la Arquitectura del Software} (SAD), que toma este documento como entrada.
+
+La separación no es burocrática. Un requisito bien escrito sobrevive a un cambio de tecnología: si
+mañana el backend dejara de ser NestJS, todo lo que dice este documento seguiría siendo cierto y
+habría que reescribir el SAD entero. Por eso aquí no se nombran motores de base de datos, lenguajes
+ni bibliotecas.
+
+Sus destinatarios son el equipo de desarrollo, que lo usa como contrato de alcance; el docente, que
+lo usa para evaluar; y cualquier integrante nuevo que necesite entender el sistema sin leer código.
+
+\subsection{Alcance del producto}
+
+El sistema gestiona el ciclo completo de un evento masivo --- conciertos, partidos, ferias --- desde
+la venta de entradas hasta la operación en campo el día del evento. Cubre seis frentes:
+
+\begin{itemize}
+  \item \textbf{Boletería:} publicación de eventos, venta de entradas con código QR, validación en
+        el ingreso, cancelaciones y promociones.
+  \item \textbf{Mercado secundario:} reventa de entradas entre clientes con transferencia segura de
+        propiedad e invalidación del QR anterior.
+  \item \textbf{Personal y logística:} contratación, asignación a eventos, turnos, cambios de turno
+        y registro de asistencia en campo.
+  \item \textbf{Alimentos y bebidas:} pedidos durante el evento, gestión de menú e inventario,
+        preparación y entrega validada.
+  \item \textbf{Parqueaderos:} reserva, ingreso y salida de vehículos, asignación de espacios y
+        control de ocupación.
+  \item \textbf{Administración y emergencias:} cuentas, roles y permisos, recintos, proveedores,
+        conciliación financiera, reportes y el protocolo de evacuación.
+\end{itemize}
+
+\textbf{Queda fuera del alcance:} el procesamiento de pagos (se delega a una pasarela externa), el
+envío físico de notificaciones (se delega a un proveedor externo), la contabilidad de la empresa
+organizadora, y cualquier integración con sistemas de venta de terceros.
+
+\subsection{Definiciones, acrónimos y abreviaturas}
+
+\begin{description}[leftmargin=!, labelwidth=2.6cm, style=nextline, topsep=3pt]
+  \item[Aforo] Número máximo de personas admitidas en un recinto o en una de sus zonas.
+  \item[ASR] \textit{Architecturally Significant Requirement}: requisito con impacto en la
+        arquitectura. Se especifican en el SAD.
+  \item[CU] Caso de uso. Se identifican como CU-001 a CU-032.
+  \item[Entrada] Derecho de acceso a un evento, representado por un código QR asociado a un único
+        propietario en cada momento.
+  \item[Localidad] División comercial del recinto (platea, general, palco) con precio propio.
+  \item[Mercado secundario] Espacio donde un cliente revende a otro cliente una entrada ya
+        comprada.
+  \item[Recinto] Lugar físico donde ocurre el evento, dividido en zonas.
+  \item[RNF] Requisito no funcional.
+  \item[SRS] \textit{Software Requirements Specification}: este documento.
+  \item[Turno] Franja horaria asignada a un empleado en una zona de un evento.
+  \item[Zona] Subdivisión operativa del recinto (puertas, gradas, parqueadero) con aforo propio.
+\end{description}
+
+\subsection{Referencias}
+
+\begin{itemize}
+  \item \textit{CU\_eventos\_completo.xlsx} --- fichas de los 32 casos de uso. Es la fuente de la
+        sección \ref{sec:funcionales} de este documento, que se genera a partir de ella.
+  \item \textit{DescripcionArquitecturaSoftware.pdf} (SAD) --- cómo se satisfacen estos requisitos.
+  \item \textit{ArchitecturalProposal.pdf} --- atributos de calidad priorizados y tácticas.
+  \item \textit{DistribucionCasosUso.pdf} --- reparto de los casos de uso entre los integrantes.
+  \item IEEE 830 / ISO-IEC-IEEE 29148, que dan la estructura de este documento.
+\end{itemize}
+
+\subsection{Organización del documento}
+
+La sección \ref{sec:general} describe el sistema en conjunto: quién lo usa, con qué sistemas
+externos habla y bajo qué restricciones se construye. La sección \ref{sec:funcionales} contiene la
+especificación detallada de los 32 casos de uso. La sección \ref{sec:nofuncionales} recoge los
+requisitos no funcionales con métrica y umbral verificable. La sección \ref{sec:trazabilidad}
+cierra con la trazabilidad entre requisitos, casos de uso y responsables.
+
+% ==================== 2. Descripción general ====================
+\section{Descripción general}
+\label{sec:general}
+
+\subsection{Perspectiva del producto}
+
+Es un sistema nuevo, no el reemplazo de uno existente, y no hereda datos de ningún otro. Funciona
+como el único sistema de registro de todo lo que ocurre alrededor del evento: quién tiene cada
+entrada, quién trabaja en qué turno, cuántos vehículos hay en el parqueadero y cuánta gente hay en
+cada zona.
+
+Depende de dos sistemas externos para funciones que no le corresponden --- cobrar dinero y entregar
+mensajes --- y se apoya en ellos a través de interfaces bien delimitadas (sección
+\ref{sec:externas}), de modo que cualquiera de los dos pueda sustituirse por otro proveedor.
+
+\subsection{Actores y roles}
+
+\begin{center}
+\begin{longtable}{P{3.2cm}P{11.3cm}}
+\toprule
+\textbf{Actor} & \textbf{Qué hace en el sistema}\\
+\midrule
+\endhead
+Cliente & Consulta la cartelera, compra entradas, las revende o las compra en el mercado
+secundario, pide comida durante el evento y reserva parqueadero.\\[0.3em]
+Empleado & Personal en campo. Consulta sus turnos, solicita cambios, registra ingreso y salida,
+valida entradas en las puertas, atiende pedidos y reporta incidentes.\\[0.3em]
+Organizador & Crea y configura eventos, define localidades y aforo, asigna personal y consulta
+reportes de su evento.\\[0.3em]
+Administrador & Gestiona cuentas, roles y permisos, recintos, proveedores y la conciliación
+financiera.\\[0.3em]
+Supervisor de emergencia & Activa y coordina el protocolo de evacuación, y da seguimiento a los
+incidentes críticos.\\[0.3em]
+Pasarela de pagos & \textit{Sistema externo.} Procesa cobros, reembolsos y liquidaciones.\\[0.3em]
+Proveedor de notificaciones & \textit{Sistema externo.} Entrega correos, mensajes push y SMS.\\
+\bottomrule
+\caption{Actores del sistema y su responsabilidad principal.}
+\label{tab:actores}
+\end{longtable}
+\end{center}
+
+Un mismo usuario puede tener más de un rol: quien trabaja en un evento también puede comprar
+entradas para otro como cliente.
+
+\subsection{Interfaces de usuario}
+
+El sistema se usa desde tres interfaces, cada una pensada para un tipo de tarea y no para un tipo
+de dispositivo:
+
+\begin{itemize}
+  \item \textbf{Portal web de clientes:} cartelera pública, compra, reventa y gestión de la cuenta.
+  \item \textbf{Portal web administrativo:} configuración de eventos, personal, recintos y
+        reportes. Pensado para trabajo de escritorio prolongado.
+  \item \textbf{Aplicación móvil:} la única interfaz que se usa \textit{dentro} del evento, tanto
+        por clientes (entrada con QR, pedidos) como por personal (turnos, asistencia, validación,
+        incidentes). Debe funcionar con conectividad intermitente.
+\end{itemize}
+
+Toda funcionalidad del rol Cliente debe estar disponible tanto en web como en móvil (RNF-14).
+
+\subsection{Interfaces externas}
+\label{sec:externas}
+
+\begin{center}
+\begin{longtable}{P{3.4cm}P{4.6cm}P{6.5cm}}
+\toprule
+\textbf{Sistema externo} & \textbf{Qué se le pide} & \textbf{Qué exige el sistema}\\
+\midrule
+\endhead
+Pasarela de pagos & Autorizar un cobro, reembolsar, liquidar el pago a un vendedor del mercado
+secundario. & El sistema nunca almacena datos completos de tarjeta (RNF-05) y debe poder cambiar de
+proveedor sin tocar la lógica de negocio (RNF-16).\\[0.3em]
+Proveedor de notificaciones & Entregar correos, notificaciones push y SMS. & El envío no puede
+bloquear la operación que lo origina, y un fallo del proveedor no puede perder el mensaje
+(RNF-17).\\
+\bottomrule
+\caption{Interfaces con sistemas externos.}
+\label{tab:externas}
+\end{longtable}
+\end{center}
+
+\subsection{Restricciones}
+
+\begin{itemize}
+  \item \textbf{Equipo y reparto:} cuatro integrantes, ocho casos de uso por persona. El reparto
+        está en la tabla \ref{tab:reparto}.
+  \item \textbf{Escala esperada:} picos de miles de usuarios simultáneos en la apertura de venta y
+        en el ingreso al recinto.
+  \item \textbf{Independencia de dominios:} cada dominio evoluciona su información sin depender del
+        esquema de otro (RNF-13).
+  \item \textbf{Calendario del curso:} los requisitos se congelan en cada entrega; los cambios
+        posteriores se registran en el historial de cambios de este documento.
+\end{itemize}
+
+\subsection{Supuestos y dependencias}
+
+\begin{itemize}
+  \item Cada persona tiene una única cuenta, verificada por correo, y sus roles se le asignan desde
+        la administración (CU-027, CU-028).
+  \item El personal en campo lleva un dispositivo móvil con la aplicación instalada y una
+        credencial que lo identifica.
+  \item La pasarela de pagos y el proveedor de notificaciones están disponibles; el sistema debe
+        seguir siendo correcto cuando no lo estén, aunque no pueda completar la operación.
+  \item Un evento tiene un único recinto, y un recinto se divide en zonas con aforo propio.
+\end{itemize}
+
+\subsection{Visión general de los requisitos funcionales}
+\label{sec:vision}
+
+Los 32 casos de uso se agrupan en seis bloques temáticos. La tabla \ref{tab:bloques} da el mapa
+general; la especificación completa de cada uno está en la sección \ref{sec:funcionales}.
+
+\begin{center}
+\begin{longtable}{P{3.4cm}P{2.6cm}P{8.4cm}}
+\toprule
+\textbf{Bloque} & \textbf{Casos de uso} & \textbf{Alcance funcional}\\
+\midrule
+\endhead
+Boletería & CU-001 -- CU-005 & Consulta de eventos, compra, validación de QR en el ingreso,
+cancelaciones y devoluciones, promociones.\\[0.3em]
+Mercado secundario y personal & CU-006 -- CU-010 & Reventa segura de entradas \textit{(caso
+complejo)}, administración y asignación de personal, cambios de turno, asistencia y gestión de
+evacuación ante emergencias \textit{(caso complejo)}.\\[0.3em]
+Alimentos y bebidas & CU-011 -- CU-015 & Pedidos durante el evento, menú e inventario, preparación,
+entrega validada por QR y gestión de establecimientos.\\[0.3em]
+Logística y operación & CU-016 -- CU-020 & Planificación logística, asignación de personal
+operativo, turnos y asistencia en campo, monitoreo del evento y gestión de incidentes.\\[0.3em]
+Parqueaderos & CU-021 -- CU-025 & Reserva, ingreso y salida de vehículos, asignación de espacios,
+cobro y control de ocupación.\\[0.3em]
+Administración general & CU-026 -- CU-032 & Eventos, cuentas de usuario, roles y permisos, recintos
+y zonas, proveedores, pagos y conciliación, reportes y analítica.\\
+\bottomrule
+\caption{Bloques temáticos de los 32 casos de uso.}
+\label{tab:bloques}
+\end{longtable}
+\end{center}
+
+Dos casos de uso destacan por su complejidad y sirven de hilo conductor en el SAD:
+\textbf{CU-006 (Gestión del Mercado Secundario de Entradas)}, por la concurrencia sobre un recurso
+único, y \textbf{CU-010 (Gestionar Evacuación ante Emergencias)}, por la entrega garantizada de
+instrucciones bajo presión de tiempo.
+
+% ==================== 3. Requisitos funcionales ====================
+\section{Requisitos funcionales}
+\label{sec:funcionales}
+
+Cada caso de uso se especifica con la misma plantilla: objetivo, actores, entradas y salidas,
+pre y post-condiciones, flujo básico de éxito paso a paso, flujos alternativos, caminos de
+excepción, atributos de calidad asociados e infraestructura no trivial que requiere.
+
+Los dos últimos campos merecen una nota, porque no son habituales en un SRS: se incluyen porque
+son los que conectan cada caso de uso con la arquitectura. Un caso de uso que declara
+``consistencia'' o ``cola de mensajes'' está anticipando una decisión que el SAD tendrá que
+justificar, y esa trazabilidad es justamente lo que se evalúa.
+
+\textit{Esta sección se genera automáticamente desde} \textit{CU\_eventos\_completo.xlsx}
+\textit{con el guion} \texttt{generar-requisitos-cu.py}\textit{: la hoja de cálculo sigue siendo la
+fuente de verdad y el documento no puede quedar desactualizado respecto de ella.}
+
+\input{RequisitosCasosUso}
+
+% ==================== 4. Requisitos no funcionales ====================
+\section{Requisitos no funcionales}
+\label{sec:nofuncionales}
+
+Mientras los casos de uso describen \textit{qué} hace el sistema, los requisitos no funcionales
+describen \textit{con qué calidad} debe hacerlo. Cada uno se expresa con una \textbf{métrica y un
+umbral verificable}, de modo que pueda comprobarse objetivamente si se cumple: un requisito
+redactado como ``el sistema debe ser rápido'' no es verificable y por eso no se admite en esta
+tabla.
+
+Los umbrales son estimaciones razonadas del equipo a partir de los escenarios del proyecto. Los de
+RNF-01 y RNF-02 se respaldan con las pruebas de concepto del proyecto; el resto se valida conforme
+se implementa cada dominio.
+
+\input{RequisitosNoFuncionales}
+
+% ==================== 5. Trazabilidad ====================
+\section{Trazabilidad y responsables}
+\label{sec:trazabilidad}
+
+Los 32 casos de uso se reparten en bloques de ocho, de manera que cada integrante sea responsable
+de su especificación, su implementación y su sustentación.
+
+\begin{center}
+\begin{longtable}{P{3.8cm}P{10.7cm}}
+\toprule
+\textbf{Integrante} & \textbf{Casos de uso}\\
+\midrule
+\endhead
+Daniel Cristancho & CU-001 a CU-005 (boletería), CU-021 a CU-023 (parqueaderos).\\[0.3em]
+Samuel Emperador & CU-006 (mercado secundario), CU-007 a CU-010 (personal y emergencias),
+CU-024 y CU-025 (parqueaderos), CU-026 (eventos).\\[0.3em]
+Sebastián Sánchez & CU-011 a CU-015 (alimentos y bebidas), CU-027 a CU-029 (cuentas, roles y
+permisos).\\[0.3em]
+Diego Coronado & CU-016 a CU-020 (logística y operación), CU-030 a CU-032 (proveedores, pagos y
+reportes).\\
+\bottomrule
+\caption{Reparto de los casos de uso entre los integrantes del equipo.}
+\label{tab:reparto}
+\end{longtable}
+\end{center}
+
+La trazabilidad en el otro sentido --- de cada requisito no funcional a los casos de uso que lo
+originan --- está en la propia tabla de la sección \ref{sec:nofuncionales}: cada RNF cita entre
+paréntesis los casos de uso a los que aplica. Y la trazabilidad de los requisitos a las decisiones
+que los satisfacen (ASR, tácticas y ADR) es el contenido del SAD.
+
+\end{document}
