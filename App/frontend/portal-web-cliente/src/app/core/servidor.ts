@@ -1,23 +1,28 @@
 /**
- * Dónde están los servicios del backend.
+ * Dónde está el backend.
  *
- * En producción todo iría al API Gateway (ADR-02) con una sola dirección; en
- * desarrollo se habla directo con cada microservicio, igual que la app móvil
- * (`app-movil/lib/services/servidor.dart`):
+ * Una sola dirección: el **API Gateway** (ADR-02), que autentica y enruta hacia
+ * el microservicio que corresponda. Antes había que conocer el puerto de cada
+ * servicio; ahora el portal no sabe cuántos hay ni dónde están.
  *
- * | Servicio | Puerto |
+ * | Ruta | Va a |
  * |---|---|
- * | Entradas y Mercado Secundario (CU-006) | 3001 |
- * | Administración: cuentas y sesiones (CU-027) | 3002 |
- * | Buzón del correo simulado (solo desarrollo) | 3098 |
+ * | `/api/v1/sesiones`, `/api/v1/cuentas`, `/api/v1/admin` | Administración (CU-027) |
+ * | `/api/v1/reventa` | Entradas y Mercado Secundario (CU-006) |
  *
- * Se usa el mismo nombre de máquina con que se abrió el portal: así funciona
+ * Se usa el mismo nombre de máquina con que se abrió el portal, así funciona
  * igual en `localhost` que abriéndolo desde otro equipo de la red.
  */
 const host = typeof window === 'undefined' ? 'localhost' : window.location.hostname;
 
 export const Servidor = {
-  cuentas: `http://${host}:3002/api/v1`,
-  entradas: `http://${host}:3001/api/v1`,
+  /** API Gateway: el único punto de entrada al backend. */
+  api: `http://${host}:8080/api/v1`,
+
+  /**
+   * Buzón del correo simulado. **Solo desarrollo**, y no pasa por el gateway:
+   * no es parte del sistema, sino el proveedor de notificaciones simulado
+   * (`App/infra/correo-simulado`), donde se leen los enlaces de los correos.
+   */
   buzonDesarrollo: `http://${host}:3098/correos`
 } as const;

@@ -293,7 +293,7 @@ class ReventaApi {
   static const _espera = Duration(seconds: 10);
 
   Uri _uri(String ruta) =>
-      Uri.parse('${Servidor.entradas}/${Servidor.prefijo}/$ruta');
+      Uri.parse('${Servidor.api}/${Servidor.prefijo}/$ruta');
 
   /// Envía la petición con el token de la sesión (CU-027 paso 9), que el
   /// servicio verifica por su cuenta. Sustituye a la antigua cabecera

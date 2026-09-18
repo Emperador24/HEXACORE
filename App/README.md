@@ -3,9 +3,11 @@
 Estructura del **Sistema Integral de Gestión de Eventos** (prototipo funcional, Entrega 2), derivada
 de las vistas de contenedores y componentes del SAD
 (`Documentation/Work/DescripcionArquitecturaSoftware.tex`, secciones 8-9). Las **tres interfaces** de
-`frontend/` ya tienen código funcionando sobre datos mock; `services/` y `gateway/` todavía son solo
-un `README.md` con su rol, los casos de uso que cubre y quién la desarrolla, para que cada integrante
-empiece a trabajar en la suya sin pisar las de los demás.
+`frontend/` tienen código funcionando; en `services/` están implementados **Entradas y Mercado
+Secundario** (CU-006, CU-018) y **Administración** (CU-027), y `gateway/` ya es el punto único de
+entrada al backend (ADR-02). El resto de carpetas siguen siendo un `README.md` con su rol, los casos
+de uso que cubre y quién la desarrolla, para que cada integrante empiece a trabajar en la suya sin
+pisar las de los demás.
 
 El stack completo ya está definido (ver tabla abajo): interfaces, backend y cola de mensajes, estas
 dos últimas elegidas con evidencia medida en `PoCs/`. Ver `../WORKFLOW.md` para el flujo de ramas y la
@@ -31,7 +33,7 @@ compartido — ver `shared/README.md`.
 
 ```
 App/
-├── gateway/                             API Gateway + balanceador de carga (ADR-02)
+├── gateway/                             API Gateway + balanceador de carga (ADR-02) — Nginx, puerto 8080
 ├── services/                            Microservicios de dominio (NestJS, ADR-09)
 │   ├── entradas-mercado-secundario/     CU-001–006 — PostgreSQL
 │   ├── personal/                        CU-007–009 — PostgreSQL

@@ -74,6 +74,23 @@ Administración vuelve a publicar todas las revocaciones vigentes por si Redis p
 **Nadie debe hacer `FLUSHALL`** sobre el Redis compartido: reabriría las sesiones cerradas. Cada
 servicio limpia solo sus propias claves (`reventa:*`, por ejemplo).
 
+## El API Gateway valida antes, y no sustituye a nadie
+
+Todo el tráfico de los clientes entra por el **API Gateway** (ADR-02, `App/gateway/`). Antes de
+enrutar una ruta protegida, el gateway pregunta a `GET /api/v1/sesiones/verificar` del Servicio de
+Administración, que aplica exactamente estas mismas reglas y responde:
+
+| Respuesta | Cabeceras | Significa |
+|---|---|---|
+| `204 No Content` | `X-Usuario-Id`, `X-Usuario-Roles` (separados por coma) | Token válido y sesión abierta |
+| `401` | — | Cualquier otro caso |
+
+El gateway reenvía la petición solo tras un 204, y añade esas dos cabeceras. **Un servicio no debe
+confiar en ellas**: son una comodidad para trazas y logs, no una credencial. Cada servicio sigue
+verificando el `Authorization: Bearer` por su cuenta (RNF-06), porque un atacante dentro de la red
+puede llamar al servicio directamente y poner la cabecera que quiera. Comprobado en
+`App/gateway/pruebas/gateway.py`.
+
 ## Respuestas de error
 
 | Código | `codigo` | Cuándo |
@@ -87,3 +104,4 @@ servicio limpia solo sus propias claves (`reventa:*`, por ejemplo).
 - Emisión: `services/administracion/src/sesiones/`
 - Verificación: `services/entradas-mercado-secundario/src/comun/autenticacion/sesion-valida.guard.ts`
 - Prueba entre servicios: `services/entradas-mercado-secundario/pruebas/rnf06-autenticacion.py`
+- Validación en el borde: `gateway/nginx.conf` (`auth_request`) y `gateway/pruebas/gateway.py`

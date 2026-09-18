@@ -261,7 +261,7 @@ def cliente_web():
     abridor = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
 
     def web(ruta, metodo='POST', cuerpo=None, token=None, cabecera_web=True):
-        cabeceras = {'Content-Type': 'application/json', 'Origin': 'http://localhost:4200'}
+        cabeceras = {'Content-Type': 'application/json'}
         if cabecera_web:
             cabeceras['X-Hexacore-Cliente'] = 'web'
         if token:
@@ -279,8 +279,6 @@ def cliente_web():
     galleta = cab.get('Set-Cookie')
     for atributo in ('hxc_renovacion=', 'HttpOnly', 'SameSite=Strict', 'Path=/api/v1/sesiones'):
         assert atributo in galleta, galleta
-    assert cab.get('Access-Control-Allow-Origin') == 'http://localhost:4200'
-    assert cab.get('Access-Control-Allow-Credentials') == 'true'
     print('  login: el cuerpo no trae el token de renovación; la cookie es HttpOnly, SameSite=Strict, solo para /sesiones')
 
     estado, r, cab = web('sesiones/renovar')
@@ -313,12 +311,8 @@ def cliente_web():
     assert 'hxc_renovacion=;' in cab.get('Set-Cookie', '')
     print('  cookie de una sesión cerrada: SESION_TERMINADA (el portal avisa) y se borra')
 
-    # CORS: solo los portales conocidos.
-    req = urllib.request.Request(f'{API}/sesiones', method='OPTIONS', headers={
-        'Origin': 'http://sitio-ajeno.com', 'Access-Control-Request-Method': 'POST'})
-    with urllib.request.urlopen(req) as res:
-        assert res.headers.get('Access-Control-Allow-Origin') is None
-    print('  CORS: un origen ajeno no recibe permiso')
+    # El CORS ya no es de este servicio, sino del API Gateway (ADR-02): se
+    # comprueba en App/gateway/pruebas/gateway.py.
 
 
 if __name__ == '__main__':

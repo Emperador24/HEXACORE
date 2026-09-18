@@ -46,7 +46,7 @@ duplicados y no tienen un origen común.
 
 ## Cuentas y sesión (CU-027)
 
-Conectado al **Servicio de Administración** (`../../services/administracion`, puerto 3002):
+Conectado al **Servicio de Administración** a través del **API Gateway** (<http://localhost:8080/api/v1>, ADR-02), que es la única dirección que conoce el portal:
 
 | Ruta | Qué hace |
 |---|---|
@@ -139,7 +139,8 @@ pendiente). Las entradas de ejemplo pertenecen a los ids reales de Ana, Bruno y 
 entradas" muestre algo al entrar con esas cuentas.
 
 Limitaciones conocidas:
-- **En desarrollo el portal llama directo a los puertos 3001 y 3002** (con CORS). Detrás del API
-  Gateway todo compartiría origen.
+- **El portal y el API siguen en orígenes distintos** (4200 y 8080), así que el CORS hace falta; lo
+  resuelve el gateway en un solo sitio. Sirviendo el portal detrás del mismo gateway compartirían
+  origen y dejaría de hacer falta.
 - **Los filtros se resuelven en el navegador** sobre la cartelera completa. Con el API real deben
   pasar a ser parámetros de consulta del servidor.

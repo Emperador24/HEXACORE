@@ -57,7 +57,7 @@ class CuentasApi {
       'No se pudo conectar con el servidor. Revisa tu conexión e intenta de nuevo.';
 
   Uri _uri(String ruta) =>
-      Uri.parse('${Servidor.cuentas}/${Servidor.prefijo}/$ruta');
+      Uri.parse('${Servidor.api}/${Servidor.prefijo}/$ruta');
 
   // --- Sin sesión ----------------------------------------------------------
 

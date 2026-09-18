@@ -44,6 +44,11 @@ docker compose -f ../../infra/docker-compose.yml --profile servicios up -d --bui
 
 Convive con el servicio de Entradas, que usa el 3001.
 
+**Los clientes no usan este puerto.** La app móvil y los portales entran por el **API Gateway**
+(<http://localhost:8080/api/v1>, ADR-02), que autentica y enruta. El 3002 queda para las pruebas de
+este servicio y para desarrollar con recarga en caliente; en producción no se publica. Ver
+`App/gateway/README.md`.
+
 ## Estado de implementación
 
 | Paso | Alcance | Estado |
@@ -59,6 +64,7 @@ Convive con el servicio de Entradas, que usa el 3001.
 | 9 | Administración de cuentas — activar, desactivar (CU-027B) y eliminar | ✅ |
 | 10 | Renovación de sesiones — acceso de 15 min, renovación de 30 días sin uso | ✅ |
 | 11 | Login real en el portal web de clientes; token de renovación en cookie `HttpOnly` | ✅ |
+| 12 | API Gateway (ADR-02): punto único de entrada, autenticación centralizada y balanceo | ✅ |
 
 CU-029–032 pertenecen a este dominio y se añadirán como módulos hermanos.
 
@@ -128,6 +134,7 @@ a0000003-…  Carla Ruiz <carla@hexacore.com>
 | `POST` | `/sesiones/renovar` | Token de acceso nuevo con el de renovación; rota este último |
 | `GET` | `/sesiones/actual` | Datos de la cuenta del token (requiere `Authorization: Bearer`) |
 | `DELETE` | `/sesiones/actual` | Cerrar sesión: revoca el token en el servidor |
+| `GET` | `/sesiones/verificar` | Para el API Gateway: 204 con `X-Usuario-Id`/`X-Usuario-Roles`, o 401 |
 | `POST` | `/cuentas/recuperacion` | CU-027A — pedir un enlace para restablecer la contraseña |
 | `POST` | `/cuentas/restablecer` | CU-027A — usar el enlace y elegir contraseña nueva |
 | `GET` | `/cuentas/perfil` | CU-027C — ver el propio perfil (requiere sesión) |

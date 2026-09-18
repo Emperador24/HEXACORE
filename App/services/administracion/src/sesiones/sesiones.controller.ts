@@ -125,6 +125,25 @@ export class SesionesController {
     }
   }
 
+  @Get('verificar')
+  @UseGuards(SesionRequerida)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Validar un token (lo usa el API Gateway)',
+    description:
+      'Comprueba firma, expiración y que la sesión no esté cerrada, y devuelve la identidad en ' +
+      'cabeceras: `X-Usuario-Id` y `X-Usuario-Roles`.\n\n' +
+      'Es lo que el **API Gateway** (ADR-02) consulta antes de enrutar, para que la autenticación ' +
+      'esté centralizada como manda RNF-06. No devuelve cuerpo: solo 204 o 401.',
+  })
+  @ApiResponse({ status: 204, description: 'El token vale; la identidad va en las cabeceras' })
+  @ApiResponse({ status: 401, description: 'Sin token, o caducado, falsificado o de una sesión cerrada' })
+  verificar(@SesionActual() sesion: ContenidoToken, @Res({ passthrough: true }) respuesta: Response): void {
+    respuesta.setHeader('X-Usuario-Id', sesion.sub);
+    respuesta.setHeader('X-Usuario-Roles', sesion.roles.join(','));
+  }
+
   @Get('actual')
   @UseGuards(SesionRequerida)
   @ApiBearerAuth()

@@ -292,7 +292,7 @@ export class AuthService {
   // --- Transporte -------------------------------------------------------------
 
   private url(ruta: string): string {
-    return `${Servidor.cuentas}/${ruta}`;
+    return `${Servidor.api}/${ruta}`;
   }
 
   /**
