@@ -1,0 +1,60 @@
+<h1>Parqueadero</h1>
+
+<mat-tab-group [selectedIndex]="pestana()" (selectedIndexChange)="pestana.set($event)">
+  <mat-tab label="Reservar" />
+  <mat-tab label="Mis reservas" />
+</mat-tab-group>
+
+@if (pestana() === 0) {
+  @if (eventosProximos().length === 0) {
+    <p class="vacio">No hay eventos próximos para reservar parqueadero.</p>
+  } @else {
+    <mat-card class="tarjeta-form">
+      <mat-card-content>
+        <mat-form-field appearance="outline" class="campo">
+          <mat-label>Evento</mat-label>
+          <mat-select [value]="eventoSeleccionado()" (selectionChange)="eventoSeleccionado.set($event.value)">
+            @for (evento of eventosProximos(); track evento.id) {
+              <mat-option [value]="evento.id">{{ evento.nombre }} — {{ evento.fecha }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="campo">
+          <mat-label>Zona</mat-label>
+          <mat-select [value]="zonaSeleccionada()" (selectionChange)="zonaSeleccionada.set($event.value)">
+            @for (zona of zonas; track zona) {
+              <mat-option [value]="zona">{{ zona }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <p class="total">Total: ${{ tarifa | number: '1.0-0' }}</p>
+
+        <button mat-flat-button color="primary" (click)="reservar()" class="campo">Continuar al pago</button>
+      </mat-card-content>
+    </mat-card>
+  }
+} @else {
+  @if (reservas().length === 0) {
+    <p class="vacio">Todavía no tienes reservas de parqueadero.</p>
+  } @else {
+    <div class="grilla">
+      @for (reserva of reservas(); track reserva.id) {
+        <mat-card class="tarjeta">
+          <mat-card-header>
+            <mat-card-title>{{ reserva.eventoNombre }}</mat-card-title>
+            <mat-card-subtitle>{{ reserva.lugarEvento }}</mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            <p>{{ reserva.zona }} · Espacio {{ reserva.espacioId }}</p>
+            <app-qr-placeholder [codigo]="reserva.codigoQr" />
+          </mat-card-content>
+          <mat-card-actions>
+            <a mat-button [href]="enlaceComoLlegar(reserva.lugarEvento)" target="_blank" rel="noopener">Cómo llegar</a>
+          </mat-card-actions>
+        </mat-card>
+      }
+    </div>
+  }
+}

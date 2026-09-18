@@ -1,0 +1,258 @@
+/* ===== Buscador y chips ===== */
+.buscador {
+  padding: 18px;
+  margin-bottom: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.campo-busqueda {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgb(var(--hxc-superficie-rgb) / 0.5);
+  border: 1px solid var(--hxc-vidrio-borde);
+  border-radius: var(--hxc-r-campo);
+  padding: 0 14px;
+  min-height: 48px;
+  transition: border-color 0.2s;
+
+  &:focus-within {
+    border-color: var(--hxc-primario);
+  }
+
+  mat-icon {
+    color: rgb(var(--hxc-texto-rgb) / 0.45);
+    flex-shrink: 0;
+  }
+
+  input {
+    border: none;
+    outline: none;
+    background: transparent;
+    font: inherit;
+    font-size: 0.95rem;
+    color: var(--hxc-tinta);
+    width: 100%;
+    padding: 12px 0;
+  }
+}
+
+/* Chips de filtro (ChoiceChip): al seleccionarse se tiñen con su acento. */
+.chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid rgb(var(--hxc-texto-rgb) / 0.12);
+  background: rgb(var(--hxc-superficie-rgb) / 0.45);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: rgb(var(--hxc-texto-rgb) / 0.7);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--tinte) 45%, transparent);
+  }
+
+  &.activo {
+    background: color-mix(in srgb, var(--tinte) 28%, transparent);
+    border-color: color-mix(in srgb, var(--tinte) 45%, transparent);
+    color: color-mix(in srgb, var(--tinte) 65%, var(--hxc-mezcla-texto));
+  }
+}
+
+.limpiar {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: transparent;
+  color: var(--hxc-primario-texto);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 0;
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+/* ===== Estado vacío ===== */
+.vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 48px 24px;
+  color: rgb(var(--hxc-texto-rgb) / 0.6);
+  text-align: center;
+
+  mat-icon {
+    font-size: 40px;
+    width: 40px;
+    height: 40px;
+    opacity: 0.5;
+  }
+
+  p {
+    margin: 0;
+  }
+}
+
+/* ===== Evento destacado ===== */
+.destacado-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  margin-bottom: 26px;
+}
+
+.destacado {
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+  border-radius: var(--hxc-r-destacado);
+  transition: transform 0.18s cubic-bezier(0.33, 1, 0.68, 1);
+
+  &:hover {
+    transform: translateY(-2px);
+  }
+}
+
+/* Altura fija: sin ella la imagen impone su proporción natural (600x800) y
+   estira la tarjeta, dejando un hueco bajo el texto. */
+.poster-destacado {
+  width: 280px;
+  height: 230px;
+  object-fit: cover;
+  flex-shrink: 0;
+  align-self: stretch;
+}
+
+.destacado-info {
+  padding: 24px 26px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  flex: 1 1 auto;
+
+  h2 {
+    margin: 6px 0 0;
+  }
+
+  p {
+    margin: 0;
+    color: rgb(var(--hxc-texto-rgb) / 0.7);
+    font-size: 0.92rem;
+  }
+
+  .precio {
+    font-weight: 700;
+    color: var(--hxc-tinta);
+  }
+}
+
+.cta {
+  margin-top: 10px;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    vertical-align: middle;
+  }
+}
+
+/* ===== Grilla de eventos =====
+   La app móvil los apila en filas; en web caben varias por fila, pero la
+   tarjeta conserva su anatomía: badge de fecha, datos y chevron. */
+.grilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 12px;
+  margin-bottom: 26px;
+}
+
+/* `display: block` es necesario: un <a> inline envolviendo la tarjeta hereda
+   line-height y hace que las celdas del grid se solapen unos píxeles. */
+.tarjeta-link {
+  display: block;
+  height: 100%;
+  text-decoration: none;
+  color: inherit;
+}
+
+.tarjeta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  height: 100%;
+  border-radius: var(--hxc-r-tarjeta);
+  transition: transform 0.18s cubic-bezier(0.33, 1, 0.68, 1),
+    box-shadow 0.18s cubic-bezier(0.33, 1, 0.68, 1);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.14);
+  }
+
+  &.pasado {
+    opacity: 0.72;
+  }
+}
+
+.tarjeta-datos {
+  flex: 1 1 auto;
+  min-width: 0;
+
+  h3 {
+    margin: 0 0 2px;
+    font-size: 0.98rem;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.84rem;
+    color: rgb(var(--hxc-texto-rgb) / 0.6);
+  }
+
+  .precio {
+    font-weight: 700;
+    color: rgb(var(--hxc-texto-rgb) / 0.8);
+  }
+}
+
+.chevron {
+  color: rgb(var(--hxc-texto-rgb) / 0.4);
+  flex-shrink: 0;
+}
+
+@media (max-width: 720px) {
+  .destacado {
+    flex-direction: column;
+  }
+
+  .poster-destacado {
+    width: 100%;
+    min-height: 180px;
+  }
+}

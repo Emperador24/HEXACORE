@@ -210,7 +210,7 @@ enrutamiento --- el mismo backend sirve a las tres interfaces sin duplicar lógi
 Eventos/Emergencias, Parqueaderos, Autenticación --- cada uno con su propia base de datos.
 \item \textbf{Redis:} bloqueo temporal de concurrencia (evita doble venta) y estado de ocupación
 en tiempo real.
-\item \textbf{Cola de mensajes (RabbitMQ/Kafka):} desacopla generación de QR, notificaciones
+\item \textbf{Cola de mensajes (RabbitMQ, ADR-10):} desacopla generación de QR, notificaciones
 push/email/SMS y liquidación de pagos.
 \item \textbf{Pasarela de pagos externa:} se integra de forma asíncrona vía cola, sin bloquear la
 transacción del usuario.

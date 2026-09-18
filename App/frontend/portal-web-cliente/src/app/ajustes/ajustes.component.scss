@@ -1,0 +1,41 @@
+:host {
+  display: block;
+  max-width: 520px;
+}
+
+h1 {
+  margin-bottom: 20px;
+}
+
+.hxc-rotulo-seccion {
+  margin: 22px 0 6px 4px;
+}
+
+.tarjeta mat-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+h2 {
+  font-size: 1.1rem;
+}
+
+p {
+  margin: 0;
+}
+
+.campo {
+  display: block;
+  width: 100%;
+}
+
+.version {
+  font-size: 0.8rem;
+}
+
+.salir {
+  margin-top: 24px;
+  width: 100%;
+  height: 46px;
+}

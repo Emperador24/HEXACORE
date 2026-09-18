@@ -190,6 +190,93 @@ complejidad arquitectónica y sirven de hilo conductor en las vistas de este doc
 \textbf{CU-006 (Gestión del Mercado Secundario de Entradas)} y \textbf{CU-010 (Gestionar
 Evacuación ante Emergencias)}.
 
+% ==================== Requisitos no funcionales ====================
+\section{Requisitos No Funcionales (RNF)}
+\label{sec:rnf}
+
+Mientras los casos de uso de la sección anterior describen \textit{qué} hace el sistema, los
+requisitos no funcionales describen \textit{con qué calidad} debe hacerlo. Cada RNF de la Tabla
+\ref{tab:rnf} se deriva de uno de los atributos de calidad priorizados en
+\textit{ArchitecturalProposal.tex} y se expresa con una \textbf{métrica y un umbral verificable},
+de modo que pueda comprobarse objetivamente si se cumple o no --- un requisito redactado como
+``el sistema debe ser rápido'' no es verificable y por lo tanto no se admite en esta tabla.
+
+Los RNF son la entrada directa de las dos secciones siguientes: los
+\textbf{ASR} (sección \ref{sec:asr}) seleccionan cuáles de estos requisitos tienen impacto
+arquitectónico real, y el análisis de tácticas de \textit{ArchitecturalProposal.tex} justifica
+con qué mecanismo se satisface cada uno.
+
+\textbf{Nota sobre los umbrales.} Los valores numéricos son estimaciones razonadas del equipo a
+partir de los escenarios del proyecto, no mediciones sobre un sistema en producción (que aún no
+existe). Los umbrales de RNF-01 y RNF-02 se respaldan con las pruebas de concepto del proyecto
+(véase \textit{App/PoCs/}); el resto se validará conforme se implemente cada dominio.
+
+\begin{center}
+\begin{longtable}{p{1.3cm}p{5.2cm}p{2.4cm}p{5.4cm}}
+\toprule
+\textbf{ID} & \textbf{Requisito} & \textbf{Atributo} & \textbf{Métrica y umbral verificable}\\
+\midrule
+\endhead
+RNF-01 & Ninguna entrada publicada en el mercado secundario puede venderse a dos compradores
+(CU-006). & Consistencia & Ventas duplicadas bajo concurrencia: \textbf{0\%} con 50 intentos de
+compra simultáneos sobre la misma publicación.\\[0.3em]
+RNF-02 & Al transferirse una entrada, el QR anterior queda invalidado antes de emitir el nuevo
+(CU-006). & Consistencia & Códigos QR antiguos aceptados en validación tras una transferencia:
+\textbf{0}.\\[0.3em]
+RNF-03 & El sistema sigue atendiendo solicitudes ante la caída de una instancia de cualquier
+microservicio (CU-001--005, CU-002). & Disponibilidad & Disponibilidad mensual del API Gateway
+\textbf{$\geq$ 99,9\%} (máx. 43 min de indisponibilidad al mes).\\[0.3em]
+RNF-04 & Ante la caída de una instancia, el sistema se recupera sin intervención manual.
+& Disponibilidad & Tiempo hasta volver a responder el 100\% de las solicitudes:
+\textbf{$\leq$ 30 s}.\\[0.3em]
+RNF-05 & El sistema nunca almacena datos completos de tarjetas de pago (CU-001, CU-011, CU-024).
+& Seguridad & Campos de tarjeta persistidos en cualquier base de datos propia: \textbf{0}; el
+cobro se delega íntegramente a la pasarela.\\[0.3em]
+RNF-06 & Toda petición a un microservicio pasa autenticada y autorizada por rol desde el API
+Gateway. & Seguridad & Endpoints de negocio alcanzables sin token válido: \textbf{0\%} sobre el
+total de rutas expuestas.\\[0.3em]
+RNF-07 & La consulta de disponibilidad de entradas responde con baja latencia durante la apertura
+de venta (CU-001). & Rendimiento & Latencia \textbf{p95 $\leq$ 500 ms} con 2.000 usuarios
+concurrentes.\\[0.3em]
+RNF-08 & La validación del QR en el ingreso no genera filas perceptibles (CU-002, CU-005).
+& Rendimiento & Latencia \textbf{p95 $\leq$ 300 ms} por validación.\\[0.3em]
+RNF-09 & El aforo y la ocupación se reflejan casi de inmediato tras un ingreso o salida (CU-019,
+CU-025). & Tiempo real & Retardo entre el evento y su reflejo en el tablero de monitoreo:
+\textbf{$\leq$ 2 s}.\\[0.3em]
+RNF-10 & El servicio de Entradas escala horizontalmente sin degradar los demás dominios (CU-001,
+CU-006). & Escalabilidad & Al duplicar sus instancias, el throughput crece
+\textbf{$\geq$ 1,7$\times$} (eficiencia $\geq$ 85\%) sin afectar la latencia de otros
+servicios.\\[0.3em]
+RNF-11 & Toda operación financiera queda auditada (CU-006, CU-031). & Trazabilidad & Operaciones
+con registro completo (actor, marca de tiempo, id. de transacción, resultado): \textbf{100\%};
+retención \textbf{$\geq$ 1 año}.\\[0.3em]
+RNF-12 & Un cliente sin capacitación previa completa la compra de una entrada (CU-001).
+& Usabilidad & \textbf{$\geq$ 80\%} de éxito en prueba con 5 usuarios, en
+\textbf{$\leq$ 5 pasos} desde el evento hasta la confirmación.\\[0.3em]
+RNF-13 & Un cambio en las reglas de un dominio no obliga a modificar otro microservicio.
+& Mantenibilidad & Microservicios que deben modificarse y redesplegarse ante un cambio típico de
+negocio: \textbf{1} (más el contrato de API solo si este cambia).\\[0.3em]
+RNF-14 & Toda funcionalidad del rol Cliente está disponible desde web y desde móvil sobre el mismo
+contrato. & Portabilidad & CU del rol Cliente cubiertos por ambas interfaces consumiendo la misma
+API: \textbf{100\%}, con \textbf{0} reglas de negocio duplicadas en el cliente.\\[0.3em]
+RNF-15 & Una versión nueva de un microservicio se despliega sin interrumpir el servicio.
+& Desplega-bilidad & Solicitudes fallidas durante el despliegue: \textbf{0}; ventana de despliegue
+\textbf{$\leq$ 10 min} y reversión \textbf{$\leq$ 5 min}.\\[0.3em]
+RNF-16 & La pasarela de pagos puede sustituirse por otro proveedor sin tocar la lógica de negocio
+(CU-001, CU-024). & Integra-bilidad & Componentes a modificar para el cambio de proveedor:
+\textbf{1} (solo el adaptador), \textbf{0} cambios en el servicio de Entradas.\\[0.3em]
+RNF-17 & Al activarse una evacuación, todo el personal en campo recibe su instrucción (CU-010).
+& Seguridad física (Safety) & Dispositivos que reciben la alerta: \textbf{$\geq$ 99\%} en
+\textbf{$\leq$ 10 s} desde la activación.\\[0.3em]
+RNF-18 & Cada microservicio puede probarse de forma aislada, sin levantar los demás.
+& Comproba-bilidad & Cobertura de pruebas de la lógica de dominio \textbf{$\geq$ 70\%} y
+\textbf{100\%} de las dependencias externas sustituibles por dobles de prueba.\\
+\bottomrule
+\caption{Requisitos no funcionales, con métrica y umbral verificable por atributo de calidad.}
+\label{tab:rnf}
+\end{longtable}
+\end{center}
+
 % ==================== Modelo de dominio ====================
 \section{Modelo de dominio}
 \label{sec:dominio}
@@ -206,8 +293,9 @@ modelo entidad-relación de cada microservicio (sección \ref{sec:datos}) durant
 \textbf{Concepto} & \textbf{Explicación}\\
 \midrule
 \endhead
-Evento & Actividad (concierto, festival, partido) que un organizador crea, con fecha, recinto,
-localidades, precios y aforo.\\[0.3em]
+Evento & Actividad que un organizador crea, con fecha, recinto, localidades, precios y aforo.
+Su \textbf{categoría} (concierto, teatro, deportes, festival, gastronomía) es un atributo del
+evento y es el criterio con el que el cliente filtra la cartelera.\\[0.3em]
 Entrada & Boleto asociado a una localidad de un evento, con un código QR único que identifica al
 propietario actual.\\[0.3em]
 Publicación de reventa & Oferta de una entrada ya adquirida, puesta en venta por su propietario en
@@ -256,8 +344,8 @@ toma de decisiones.\\
 \node[class] (personal)        at (0,7)   {\textbf{Personal}\\id, rolOperativo};
 \node[class] (turno)           at (4,7)   {\textbf{Turno}\\id, horario, zona};
 \node[class] (asistencia)      at (8,7)   {\textbf{RegistroAsistencia}\\id, entrada, salida};
-\node[class] (evento)          at (0,5)   {\textbf{Evento}\\id, nombre, fecha, aforo};
-\node[class] (recinto)         at (4,5)   {\textbf{Recinto}\\id, nombre, dirección};
+\node[class] (evento)          at (0,5)   {\textbf{Evento}\\id, nombre, fecha,\\categoría, aforo};
+\node[class] (recinto)         at (4,5)   {\textbf{Recinto}\\id, nombre,\\ciudad, dirección};
 \node[class] (zona)            at (8,5)   {\textbf{Zona}\\id, capacidad};
 \node[class] (entrada)         at (0,3)   {\textbf{Entrada}\\id, códigoQR, estado};
 \node[class] (reventa)         at (4,3)   {\textbf{PublicaciónReventa}\\id, precio, estado};
@@ -338,64 +426,118 @@ la plantilla exigida y que las decisiones arquitectónicas estén justificadas.\
 \section{Requisitos Arquitectónicamente Significativos (ASR)}
 \label{sec:asr}
 
-La Tabla \ref{tab:asr} presenta el primer Árbol de Utilidad del proyecto, derivado de los
-atributos de calidad priorizados en \textit{ArchitecturalProposal.tex} y de los escenarios ya
-identificados en la bitácora arquitectónica.
+La Tabla \ref{tab:asr} presenta el Árbol de Utilidad del proyecto: los escenarios de calidad que
+tienen impacto arquitectónico real, derivados de los atributos priorizados en
+\textit{ArchitecturalProposal.tex} y de los requisitos no funcionales de la sección
+\ref{sec:rnf}. La columna \textbf{RNF} indica qué requisito verificable pone a prueba cada
+escenario; entre los dos elementos hay una diferencia de propósito: el RNF fija el umbral
+(\textit{cuánto}), el ASR describe la situación concreta que lo tensiona (\textit{cuándo y bajo
+qué condiciones}).
+
+Cada escenario se califica con el par \textbf{(Importancia, Dificultad)} en escala
+Alta/Media/Baja, como pide el método del Árbol de Utilidad:
+
+\begin{itemize}
+  \item \textbf{Importancia}: qué tanto afecta al negocio que ese escenario \textit{no} se
+  cumpla. Es la importancia \textit{del escenario}, que no siempre coincide con la prioridad
+  global de su atributo --- por ejemplo, la Seguridad física está priorizada como Media en el
+  conjunto del sistema, pero el escenario ASR-13 (fallar al notificar una evacuación) tiene
+  importancia Alta porque compromete la integridad de las personas.
+  \item \textbf{Dificultad}: qué tan difícil es técnicamente satisfacerlo con la arquitectura
+  propuesta.
+\end{itemize}
+
+Los escenarios calificados \textbf{(Alta, Alta)} --- ASR-01, ASR-04 y ASR-13 --- son los que
+concentran el riesgo arquitectónico del proyecto y, por lo tanto, los candidatos naturales a
+respaldarse con una prueba de concepto medida en vez de solo con razonamiento.
 
 \begin{landscape}
 \begin{center}
-\begin{longtable}{|p{1cm}|p{3cm}|p{2.2cm}|p{2.8cm}|p{2cm}|p{8cm}|p{1.5cm}|}
+\begin{longtable}{|p{1cm}|p{2.9cm}|p{2.1cm}|p{2.3cm}|p{1.7cm}|p{1.5cm}|p{6.1cm}|p{1.4cm}|p{1.4cm}|}
+\caption{Árbol de Utilidad --- escenarios de calidad con su par (Importancia, Dificultad) y el
+RNF que verifican.}\label{tab:asr}\\
 \hline
 \textbf{ID ASR} & \textbf{Título} & \textbf{Atributo} & \textbf{Sub-atributo} &
-\textbf{CU(s)} & \textbf{Escenario} & \textbf{Prioridad}\\
+\textbf{CU(s)} & \textbf{RNF} & \textbf{Escenario} & \textbf{Impor-tancia} &
+\textbf{Difi-cultad}\\
+\hline
+\endfirsthead
+\multicolumn{9}{l}{\small\textit{Tabla \thetable{} --- continuación}}\\
+\hline
+\textbf{ID ASR} & \textbf{Título} & \textbf{Atributo} & \textbf{Sub-atributo} &
+\textbf{CU(s)} & \textbf{RNF} & \textbf{Escenario} & \textbf{Impor-tancia} &
+\textbf{Difi-cultad}\\
 \hline
 \endhead
-ASR-01 & Bloqueo de doble venta en reventa & Consistencia & Concurrencia de datos & CU-006 & Dos
-compradores intentan adquirir simultáneamente la misma entrada publicada en reventa; el sistema
-garantiza que solo uno complete la compra y el otro reciba de inmediato un mensaje de no
-disponibilidad. & Alta\\
+\hline
+\multicolumn{9}{r}{\small\textit{Continúa en la página siguiente\ldots}}\\
+\endfoot
+\hline
+\endlastfoot
+ASR-01 & Bloqueo de doble venta en reventa & Consistencia & Concurrencia de datos & CU-006 &
+RNF-01, RNF-02 & Dos compradores intentan adquirir simultáneamente la misma entrada publicada en
+reventa; el sistema garantiza que solo uno complete la compra y el otro reciba de inmediato un
+mensaje de no disponibilidad. & Alta & Alta\\
 \hline
 ASR-02 & Disponibilidad durante el ingreso masivo & Disponibi-lidad & Tolerancia a fallos &
-CU-002, CU-021, CU-022 & Ante la caída de una instancia del servicio de validación de QR durante
-el ingreso al recinto, el balanceador redirige el tráfico a instancias sanas sin interrupción
-perceptible para el asistente. & Alta\\
+CU-002, CU-021, CU-022 & RNF-03, RNF-04 & Ante la caída de una instancia del servicio de
+validación de QR durante el ingreso al recinto, el balanceador redirige el tráfico a instancias
+sanas sin interrupción perceptible para el asistente. & Alta & Media\\
 \hline
 ASR-03 & Protección de datos de pago y credenciales & Seguridad & Confiden-cialidad & CU-001,
-CU-024, CU-031 & Un intento de acceso no autorizado a datos de pago o credenciales es rechazado
-por el API Gateway y queda registrado para auditoría. & Alta\\
-\hline
-ASR-04 & Respuesta bajo carga en apertura de venta & Rendimiento & Tiempo de respuesta & CU-001,
-CU-005 & Durante la apertura de venta de un evento masivo, miles de usuarios consultan
-disponibilidad y compran de forma simultánea; la mayoría de las solicitudes se resuelve en
-tiempos cortos y estables. & Alta\\
-\hline
-ASR-05 & Actualización de aforo y zonas en tiempo real & Tiempo real & Actualización de estado &
-CU-010, CU-019 & El aforo y el estado de las zonas se reflejan en los tableros de monitoreo con
-baja latencia tras el registro de un ingreso o un incidente. & Media-Alta\\
-\hline
-ASR-06 & Escalado independiente del servicio de Entradas & Escala-bilidad & Escala-bilidad
-horizontal & CU-001, CU-006 & Ante un incremento súbito de tráfico en el servicio de Entradas
-durante una preventa, aumentan sus instancias sin afectar el rendimiento de los demás dominios. &
+CU-024, CU-031 & RNF-05, RNF-06 & Un intento de acceso no autorizado a datos de pago o
+credenciales es rechazado por el API Gateway y queda registrado para auditoría. & Alta &
 Media\\
 \hline
+ASR-04 & Respuesta bajo carga en apertura de venta & Rendimiento & Tiempo de respuesta & CU-001,
+CU-005 & RNF-07, RNF-08 & Durante la apertura de venta de un evento masivo, miles de usuarios
+consultan disponibilidad y compran de forma simultánea; la mayoría de las solicitudes se resuelve
+en tiempos cortos y estables. & Alta & Alta\\
+\hline
+ASR-05 & Actualización de aforo y zonas en tiempo real & Tiempo real & Actualización de estado &
+CU-010, CU-019 & RNF-09 & El aforo y el estado de las zonas se reflejan en los tableros de
+monitoreo con baja latencia tras el registro de un ingreso o un incidente. & Media & Alta\\
+\hline
+ASR-06 & Escalado independiente del servicio de Entradas & Escala-bilidad & Escala-bilidad
+horizontal & CU-001, CU-006 & RNF-10 & Ante un incremento súbito de tráfico en el servicio de
+Entradas durante una preventa, aumentan sus instancias sin afectar el rendimiento de los demás
+dominios. & Media & Media\\
+\hline
 ASR-07 & Auditoría de transferencias y pagos & Traza-bilidad & Audita-bilidad & CU-006, CU-031 &
-Cada transferencia de entrada, pago o reembolso queda registrada con usuario, fecha y resultado,
-consultable en un reporte de auditoría. & Media\\
+RNF-11 & Cada transferencia de entrada, pago o reembolso queda registrada con usuario, fecha y
+resultado, consultable en un reporte de auditoría. & Media & Baja\\
 \hline
 ASR-08 & Interfaces especializadas por rol & Usabilidad & Adecuación a la tarea & Todos los CU
-(por interfaz) & Un usuario nuevo de cada rol completa su tarea principal en su interfaz
-correspondiente sin capacitación previa. & Baja-Media\\
+(por interfaz) & RNF-12 & Un usuario nuevo de cada rol completa su tarea principal en su interfaz
+correspondiente sin capacitación previa. & Media & Baja\\
 \hline
 ASR-09 & Evolución independiente de dominios & Manteni-bilidad & Modifica-bilidad & Todos los CU
-(por microservicio) & Un cambio en las reglas de negocio de Parqueaderos se implementa y despliega
-sin requerir cambios ni redespliegue del servicio de Entradas. & Baja-Media\\
+(por micro-servicio) & RNF-13 & Un cambio en las reglas de negocio de Parqueaderos se implementa y
+despliega sin requerir cambios ni redespliegue del servicio de Entradas. & Media & Media\\
 \hline
 ASR-10 & Consumo uniforme vía API & Porta-bilidad & Independencia de plataforma & Todos los CU &
-Una misma funcionalidad de backend se consume igual desde el portal web y desde la app móvil, sin
-duplicar lógica de negocio. & Baja-Media\\
+RNF-14 & Una misma funcionalidad de backend se consume igual desde el portal web y desde la app
+móvil, sin duplicar lógica de negocio. & Media & Baja\\
 \hline
-\caption{Árbol de Utilidad — primera versión.}
-\label{tab:asr}
+ASR-11 & Sustitución del proveedor de pagos sin reescribir el dominio & Integra-bilidad &
+Adaptación de interfaces & CU-001, CU-011, CU-024 & RNF-16 & La organización cambia de pasarela de
+pagos por costos; el equipo reemplaza el adaptador de pagos y los servicios de Entradas,
+Parqueaderos y Pedidos siguen funcionando sin modificar su lógica de negocio. & Media & Media\\
+\hline
+ASR-12 & Actualización de un servicio con el evento en curso & Desplega-bilidad & Despliegue sin
+interrupción & Todos los CU (por micro-servicio) & RNF-15 & Se detecta un defecto en el servicio
+de Pedidos durante un evento activo; se despliega la corrección sin detener la venta ni el ingreso
+de asistentes, y con posibilidad de revertir si la versión nueva falla. & Media & Media\\
+\hline
+ASR-13 & Notificación garantizada de evacuación & Seguridad física (Safety) & Respuesta ante
+emergencia & CU-010 & RNF-17 & El supervisor activa el protocolo de evacuación; todo el personal
+en campo recibe su instrucción específica en segundos, incluso si el proveedor de notificaciones
+responde con lentitud o una instancia del servicio falla. & Alta & Alta\\
+\hline
+ASR-14 & Prueba aislada de cada microservicio & Comproba-bilidad & Aislamiento de dependencias &
+Todos los CU (por micro-servicio) & RNF-18 & Un integrante prueba la lógica de su dominio sin
+levantar los otros cinco microservicios ni depender de la pasarela de pagos real, sustituyéndolos
+por dobles de prueba. & Media & Baja\\
 \end{longtable}
 \end{center}
 \end{landscape}
@@ -442,7 +584,7 @@ C4).
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{Diagrams/01-Contexto.png}
+\includegraphics[width=\textwidth]{Diagrams/ArchifyPDF/01-contexto.pdf}
 \caption{Diagrama de contexto (Nivel 1, modelo C4).}
 \label{fig:contexto}
 \end{figure}
@@ -464,7 +606,7 @@ Sistema & Proveedor de Notificaciones & Envía notificaciones push, correo y SMS
 \end{longtable}
 \end{center}
 
-El diagrama de panorama de sistemas (\textit{System Landscape}, \textit{Diagrams/04-Panorama.png}
+El diagrama de panorama de sistemas (\textit{System Landscape}, \textit{Diagrams/ArchifyPDF/04-panorama.pdf}
 en \textit{C4Diagrams.tex}) amplía este alcance mostrando además cómo el sistema se relaciona con
 otros sistemas de la organización (Contabilidad y Facturación, CRM/Marketing y una plataforma de
 Analítica), fuera del alcance de este documento pero relevantes para entender el ecosistema
@@ -476,17 +618,17 @@ completo.
 
 El sistema se divide en tres interfaces desplegables (Portal Web del Cliente, Portal Web
 Administrativo/Operativo y App Móvil), todas consumiendo el mismo backend a través de un API
-Gateway. La \textbf{App Móvil} es un único binario (Kotlin + Jetpack Compose) que sirve tanto al
-rol Cliente como al rol Personal: el login identifica el rol del usuario autenticado y la
-navegación interna abre el conjunto de pantallas correspondiente — no son dos apps distribuidas
-por separado (ver ADR-07). El backend está compuesto por microservicios independientes por dominio
+Gateway. La \textbf{App Móvil} está construida en \textbf{Flutter} (ADR-08), lo que permite generar
+desde una sola base de código los binarios de Android e iOS, y sirve tanto al rol Cliente como al rol
+Personal: el login identifica el rol del usuario autenticado y la navegación interna abre el conjunto
+de pantallas correspondiente — no son dos apps distribuidas por separado (ver ADR-07). El backend está compuesto por microservicios independientes por dominio
 (Entradas/Mercado Secundario, Personal, Eventos/Emergencias, Parqueaderos) y por infraestructura de
 soporte (Redis, cola de mensajes y bases de datos por servicio). La Figura \ref{fig:contenedores}
 presenta el diagrama de contenedores.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{Diagrams/02-Contenedores.png}
+\includegraphics[width=\textwidth]{Diagrams/ArchifyPDF/02-contenedores.pdf}
 \caption{Diagrama de contenedores (Nivel 2, modelo C4).}
 \label{fig:contenedores}
 \end{figure}
@@ -500,7 +642,7 @@ correspondiente.
 Parqueaderos, cada uno con su propia base de datos para reducir el acoplamiento entre dominios.
 \item \textbf{Redis:} bloqueo temporal de recursos en disputa (p. ej. una entrada en reventa
 durante el checkout) y datos de acceso rápido (aforo, ocupación, sesiones).
-\item \textbf{Cola de mensajes (RabbitMQ/Kafka):} desacopla operaciones asíncronas: generación de
+\item \textbf{Cola de mensajes (RabbitMQ, ADR-10):} desacopla operaciones asíncronas: generación de
 QR, notificaciones, auditoría, liquidación de pagos y alertas de emergencia.
 \item \textbf{Servicios externos:} Pasarela de Pagos y Proveedor de Notificaciones, integrados vía
 API y, en el caso de notificaciones, disparados de forma asíncrona desde la cola de mensajes.
@@ -517,7 +659,7 @@ al mismo nivel de detalle, los otros tres microservicios de dominio. La Figura
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{Diagrams/03-Componentes.png}
+\includegraphics[width=\textwidth]{Diagrams/ArchifyPDF/03-componentes.pdf}
 \caption{Diagrama de componentes — Servicio de Entradas y Mercado Secundario (Nivel 3, modelo
 C4).}
 \label{fig:componentes}
@@ -573,7 +715,7 @@ contenedores para resolver una compra en el mercado secundario.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{Diagrams/05-Secuencia.png}
+\includegraphics[width=\textwidth]{Diagrams/ArchifyPDF/05-secuencia.pdf}
 \caption{Diagrama de secuencia — reventa de una entrada (CU-006).}
 \label{fig:secuencia}
 \end{figure}
@@ -617,7 +759,7 @@ bases de datos, un clúster Redis y un clúster de mensajería.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{Diagrams/06-Despliegue.png}
+\includegraphics[width=\textwidth]{Diagrams/ArchifyPDF/06-despliegue.pdf}
 \caption{Diagrama de despliegue — ambiente de producción (modelo C4).}
 \label{fig:despliegue}
 \end{figure}
@@ -662,8 +804,8 @@ llaves foráneas lógicas.
 
 \subsection*{Esquema de Eventos / Emergencias}
 \begin{itemize}
-\item \textbf{Evento}(id, nombre, fecha, recinto\_id, aforo)
-\item \textbf{Recinto}(id, nombre, direccion)
+\item \textbf{Evento}(id, nombre, fecha, categoria, recinto\_id, aforo)
+\item \textbf{Recinto}(id, nombre, ciudad, direccion)
 \item \textbf{Zona}(id, recinto\_id, capacidad)
 \item \textbf{Incidente}(id, evento\_id, tipo, estado)
 \end{itemize}
@@ -731,6 +873,9 @@ se descartó por convertirse en cuello de botella bajo la carga concurrente espe
 punto adicional de falla que requiere su propia estrategia de disponibilidad (réplica/clúster).
 
 \subsection*{ADR-04 --- Cola de mensajes para operaciones asíncronas}
+\textbf{Estado:} \textit{completado por ADR-10} --- la decisión de usar una cola sigue vigente; el
+motor concreto, que aquí quedó abierto como ``RabbitMQ/Kafka'', se cerró en ADR-10 con evidencia
+medida.\\
 \textbf{ASR relacionados:} ASR-04, ASR-07.\\
 \textbf{Problema:} operaciones como notificaciones o liquidación de pagos no deben bloquear ni
 hacer fallar la operación principal (compra, transferencia) cuando un servicio externo es lento o
@@ -744,6 +889,9 @@ principal.\\
 consistencia eventual y de requerir monitoreo propio de las colas.
 
 \subsection*{ADR-05 --- Stack de frontend por tipo de interfaz}
+\textbf{Estado:} \textit{parcialmente superado por ADR-08} --- lo relativo a los portales web sigue
+vigente; la decisión sobre el stack de la app móvil fue revertida el 2026-09-07. Se conserva el
+texto original como registro de por qué se decidió así en su momento.\\
 \textbf{ASR relacionados:} ASR-08, ASR-10, ASR-05.\\
 \textbf{Problema:} las tres interfaces (portal web del cliente, portal web administrativo/operativo,
 app móvil) deben implementarse en un lenguaje/framework concreto, sin comprometer el consumo
@@ -791,12 +939,11 @@ por rol (Cliente y Personal). Al construir el prototipo de la Entrega 2 con un e
 dos proyectos Android desde cero duplica configuración de Gradle, tema visual y esqueleto de
 navegación sin que exista todavía una razón operativa concreta (distribución, permisos de
 dispositivo, política de actualización) que obligue a separarlos en esta etapa.\\
-\textbf{Solución:} una única app (\texttt{App/frontend/app-movil-cliente}\footnote{El nombre del
-módulo quedó de la primera versión; se recomienda renombrarlo en una futura iteración para no sugerir
-que es exclusivo del rol Cliente.}) con una pantalla de login compartida. Las credenciales
-identifican el rol del usuario autenticado y la navegación interna (\textit{Jetpack Navigation
-Compose}) abre el conjunto de pantallas del rol correspondiente: Inicio/Entradas/Parqueadero/Pedidos
-para Cliente, Turnos/Asistencia para Personal.\\
+\textbf{Solución:} una única app (\texttt{App/frontend/app-movil}) con una pantalla de login
+compartida. Las credenciales identifican el rol del usuario autenticado y la navegación interna abre
+el conjunto de pantallas del rol correspondiente: Inicio/Entradas/Parqueadero/Pedidos para Cliente,
+Turnos/Asistencia/Validación para Personal. Esta decisión sigue vigente tras el cambio de stack de
+ADR-08: la app Flutter mantiene el mismo esquema de una sola app para ambos roles.\\
 \textbf{Alternativa descartada:} mantener \textbf{App Móvil del Cliente} y \textbf{App Móvil del
 Personal} como dos módulos/APKs independientes (diseño de la v1.1) — se descartó para este
 prototipo porque el beneficio principal de separarlas (aislar del binario público de clientes las
@@ -810,6 +957,185 @@ personal (aunque inaccesibles sin credenciales válidas), lo que amplía la supe
 a la alternativa separada; y ambos roles quedan acoplados a un mismo ciclo de release. Si el rol
 Personal termina necesitando permisos de dispositivo, distribución o cadencia de actualización
 distintos a los del Cliente, esta decisión debe revisarse y volver a separar los binarios.
+
+\subsection*{ADR-08 --- Migración de la app móvil a Flutter}
+\textbf{ASR relacionados:} ASR-08, ASR-09, ASR-10.\\
+\textbf{Problema:} ADR-05 fijó \textbf{Kotlin nativo} para la app móvil y descartó explícitamente los
+frameworks \textit{cross-platform}, con el argumento de que compartir código de interfaz no aportaba
+un beneficio arquitectónico claro. Ese razonamiento omitió un requisito que sí es del proyecto: la
+app debe llegar a \textbf{Android y iOS}. Con el stack nativo, cubrir iOS obliga a escribir y
+mantener una segunda implementación completa (Swift/SwiftUI) de las mismas pantallas, lo que para un
+equipo de cuatro personas duplica el esfuerzo de toda evolución de la interfaz y multiplica el riesgo
+de que ambas plataformas se desincronicen.\\
+\textbf{Solución:} la app móvil se reimplementa en \textbf{Flutter} (Dart), reemplazando la versión
+Kotlin/Jetpack Compose. Una sola base de código produce los binarios de Android e iOS, conservando el
+esquema de ADR-07 (una sola app para los roles Cliente y Personal, con el rol resuelto en el login).
+La implementación incluye un cliente de API centralizado (\texttt{lib/services/api\_client.dart}) que
+concentra el consumo del backend, de modo que la futura integración con el API Gateway quede en un
+solo punto y no disperso por las pantallas (ASR-10).\\
+\textbf{Alternativas consideradas:}
+\begin{itemize}
+  \item \textbf{Mantener Kotlin y añadir una app iOS nativa en Swift/SwiftUI} --- máxima fidelidad al
+  look-and-feel de cada plataforma y acceso inmediato a APIs nuevas del sistema operativo, pero
+  duplica la base de código de interfaz y el esfuerzo de mantenimiento (Modificabilidad, ASR-09).
+  \item \textbf{Kotlin Multiplatform (KMM)} --- comparte la lógica de negocio y de red pero mantiene
+  la interfaz nativa por plataforma; es el término medio, y se descartó porque el grueso del trabajo
+  de este prototipo está justamente en la interfaz, que KMM no comparte.
+  \item \textbf{Flutter} (elegida) --- una sola base de código para interfaz y lógica en ambas
+  plataformas.
+\end{itemize}
+\textbf{Consecuencias:} una sola base de código para Android e iOS, y un único ciclo de build y
+pruebas para la app móvil, a costa de: (1) renunciar a los widgets nativos reales --- Flutter dibuja
+su propia interfaz con su motor de render, de modo que la fidelidad con cada plataforma es una
+aproximación, no el control nativo; (2) sumar un tercer ecosistema de herramientas (Dart/pub) al del
+web (TypeScript/npm) y el del backend; y (3) una curva de aprendizaje en Dart para el equipo. La
+implementación Kotlin previa se elimina del repositorio; queda en el historial de Git si hiciera falta
+recuperarla.\\
+\textbf{Nota sobre la evidencia:} esta decisión se tomó reimplementando la app completa en Flutter y
+comparándola con la versión Kotlin ya existente, no solo con un análisis en papel. La comparación
+sistemática de métricas entre ambas implementaciones (tiempo de desarrollo, líneas de código,
+arranque en frío, fidelidad visual) queda pendiente de documentarse como evidencia formal para la
+Entrega 1.
+
+\subsection*{ADR-09 --- Lenguaje y framework del backend}
+\textbf{ASR relacionados:} ASR-04, ASR-06, ASR-09, ASR-14.\\
+\textbf{Problema:} \texttt{App/services/*} estaba marcado como ``lenguaje por definir''. Es la única
+decisión que bloquea empezar a codificar los seis microservicios, y debía tomarse con evidencia
+medida --- no por preferencia ni por popularidad.\\
+\textbf{Solución:} los microservicios de dominio se implementan en \textbf{NestJS} (Node.js +
+TypeScript).\\
+\textbf{Alternativas consideradas:} \textbf{NestJS} y \textbf{Spring Boot} (Java 17) se compararon
+construyendo el mismo endpoint en ambos y midiéndolos bajo carga (PoC-04, ver
+\texttt{App/PoCs/poc-04-lenguaje-backend/}). Se descartaron sin PoC: \textbf{Go}, porque nadie en el
+equipo lo conoce y sumar un lenguaje nuevo con la entrega encima es el mayor riesgo de cronograma; y
+\textbf{Python/FastAPI}, por su tipado opcional, poco conveniente con seis servicios desarrollados en
+paralelo por cuatro personas.\\
+\textbf{Evidencia (PoC-04):} mismo endpoint, misma respuesta byte por byte, 100 conexiones
+concurrentes, 15 s por medición, cero errores:
+
+\begin{center}
+\begin{tabular}{llrrrr}
+\toprule
+\textbf{Candidato} & \textbf{Escenario} & \textbf{req/s} & \textbf{p50 (ms)} & \textbf{p97,5 (ms)} &
+\textbf{RSS (MB)}\\
+\midrule
+NestJS & sin I/O & 21.071 & 4 & 5 & 156\\
+NestJS & con 2 ms de I/O & 18.530 & 5 & 6 & 158\\
+Spring Boot & sin I/O & 91.441 & 0 & 1 & 335\\
+Spring Boot & con 2 ms de I/O & 32.288 & 3 & 4 & 337\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Arranque hasta la primera respuesta: \textbf{NestJS 0,28 s} frente a \textbf{Spring Boot 1,09 s}.
+
+Tres lecturas de esos números:
+\begin{enumerate}
+  \item \textbf{Ambos cumplen RNF-07 con un margen enorme.} El umbral es p95 $\leq$ 500 ms y el peor
+  caso medido fue 7 ms: setenta veces por debajo. El rendimiento, por lo tanto, \textbf{no es el
+  criterio que decide} esta elección --- ninguno de los dos está cerca de incumplirlo.
+  \item \textbf{Spring Boot rinde más, y conviene decirlo sin matizarlo:} 4,3$\times$ sin I/O. Pero la
+  ventaja cae a 1,7$\times$ al añadir 2 ms de I/O simulada, y contra una base de datos real (5--20 ms)
+  se encogería más. Cuanto más se parece el escenario a producción, menos pesa la diferencia.
+  \item \textbf{NestJS arranca 4$\times$ más rápido y usa menos de la mitad de memoria}, lo que
+  favorece a RNF-15 (despliegue sin interrupción) y al escalado elástico de ASR-06.
+\end{enumerate}
+
+\textbf{Por qué se elige NestJS pese a que Spring Boot rinde más:} porque el rendimiento ya está
+resuelto por ambos con setenta veces de margen, y los criterios que sí quedan abiertos favorecen a
+NestJS. En \textbf{Modificabilidad} (ASR-09) y \textbf{Comprobabilidad} (ASR-14, RNF-18), NestJS
+impone módulos e inyección de dependencias --- el mismo modelo que el equipo ya aplica en los
+portales Angular, y el que hace que sustituir dependencias externas por dobles de prueba sea directo.
+Y el riesgo real del proyecto no es la latencia sino el cronograma: cuatro personas deben entregar
+seis microservicios, y usar el lenguaje que ya escriben en el frontend elimina un cambio de contexto
+completo.\\
+\textbf{Consecuencias:} un solo lenguaje entre los portales web y el backend, con contratos de API que
+pueden generar tipos para ambos lados (\texttt{App/shared/}). A cambio se acepta un techo de
+rendimiento más bajo que el de Spring Boot --- irrelevante frente a los umbrales actuales, pero que
+debería reevaluarse si algún servicio pasa a ser intensivo en CPU (los reportes con Map-Reduce, hoy
+delegados a MongoDB, son el candidato a vigilar). Node ejecuta en un solo hilo por proceso, de modo
+que el escalado es horizontal por réplicas, que es justamente lo que establecen ADR-01 y ASR-06.\\
+\textbf{Validez de la evidencia:} el PoC mide un endpoint sin base de datos real, con cliente y
+servidor en la misma máquina, y no llegó a los 2.000 usuarios concurrentes de RNF-07 (con 100
+conexiones el generador de carga ya era el cuello de botella). Tampoco mide lo que probablemente más
+pesa en la práctica: la velocidad de desarrollo del equipo. \textbf{Si alguno de los integrantes
+tuviera experiencia sólida en Java}, esta decisión sería genuinamente discutible y Spring Boot
+quedaría bien defendido por los datos.
+
+\subsection*{ADR-10 --- Motor de la cola de mensajes: RabbitMQ}
+\textbf{ASR relacionados:} ASR-04, ASR-07, ASR-13.\\
+\textbf{Problema:} ADR-04 estableció que hace falta una cola de mensajes, pero dejó el motor sin
+decidir, escrito como ``RabbitMQ/Kafka'' --- como si fueran intercambiables. No lo son: responden a
+modelos distintos (cola de tareas frente a registro de eventos) y la elección condiciona cómo se
+escriben los consumidores en los seis microservicios.\\
+\textbf{Solución:} \textbf{RabbitMQ}.\\
+\textbf{Evidencia (PoC-05, \texttt{App/PoCs/poc-05-cola-mensajes/}):} se publicó y consumió el evento
+real \texttt{ENTRADA\_TRANSFERIDA} en ambos brokers (los dos en Docker, 500 mensajes por
+combinación), midiendo la latencia de extremo a extremo:
+
+\begin{center}
+\begin{tabular}{llrrr}
+\toprule
+\textbf{Broker} & \textbf{Modo} & \textbf{p50 (ms)} & \textbf{p95 (ms)} & \textbf{msg/s}\\
+\midrule
+RabbitMQ & rápido (sin persistir) & \textbf{16,3} & \textbf{17,5} & 18.932\\
+Kafka & rápido (\texttt{acks=0}) & 32,1 & 36,0 & 12.418\\
+RabbitMQ & duradero (confirmado) & 162,0 & 282,1 & 1.619\\
+Kafka & duradero (\texttt{acks=all}) & \textbf{31,6} & \textbf{57,9} & 7.702\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{El ganador se invierte según el modo}, y conviene decirlo sin matizarlo: sin durabilidad
+RabbitMQ es el doble de rápido, pero \textbf{con durabilidad Kafka es cinco veces mejor} (31,6 ms
+frente a 162 ms de mediana). La razón es estructural: RabbitMQ hace \texttt{fsync} por mensaje al
+persistir y su latencia se multiplica por diez, mientras que Kafka escribe a un log secuencial y la
+durabilidad le sale prácticamente gratis. Y el modo que importa aquí es el duradero: ni una
+transferencia de entrada ni una alerta de evacuación pueden perderse porque el broker se reinició.
+
+Sin embargo, \textbf{ambos cumplen RNF-17 con enorme margen}: el umbral es 10 s y el peor caso medido
+—RabbitMQ duradero, p95— fue \textbf{282 ms}, treinta y cinco veces por debajo. Igual que en ADR-09,
+la latencia no es el criterio que decide.
+
+Se midió entonces lo que sí queda abierto, con el mismo escenario en ambos (10 eventos, 3 rechazados
+a propósito):
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+ & \textbf{RabbitMQ} & \textbf{Kafka}\\
+\midrule
+Cola de mensajes muertos (DLQ) & nativa, 5 líneas declarativas & no existe: hay que construirla\\
+Imagen / memoria en reposo & 275 MB / 147 MB & 634 MB / 309 MB\\
+Líneas para levantarlo & 9 & 15\\
+Consola de administración & incluida & no incluida\\
+Conceptos a dominar & colas, \textit{exchanges}, \textit{bindings} & + particiones, offsets, \textit{consumer groups}, retención\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Por qué RabbitMQ pese a que Kafka es más rápido en modo duradero:} porque el uso que este
+sistema le da a la cola es el de una \textbf{cola de tareas} —disparar una notificación, generar un
+QR, registrar una auditoría, avisar de una evacuación— y no el de un \textit{registro de eventos}
+con reproducción histórica y múltiples consumidores independientes, que es donde Kafka se justifica.
+Para ese uso, RabbitMQ ofrece de fábrica lo que aquí sí hace falta: \textbf{DLQ y reintentos
+nativos}, que ASR-07 y ASR-13 exigen para no perder en silencio un evento que falló. En Kafka eso
+hay que construirlo y mantenerlo a mano. A eso se suma la mitad de memoria, la mitad de
+configuración y una consola incluida, con un equipo de cuatro personas que además debe operar
+PostgreSQL, MongoDB y Redis.\\
+\textbf{Consecuencias:} se acepta una latencia mayor en modo duradero (282 ms de p95 frente a los
+58 ms de Kafka) --- irrelevante frente al umbral de 10 s de RNF-17 --- y un techo de throughput más
+bajo (1.619 msg/s duraderos). Ese techo es holgado para el volumen del sistema: los eventos se
+generan por transferencia, pedido o alerta, no de forma continua. \textbf{Cuándo habría que
+revisar esta decisión:} si aparece la necesidad de reproducir el histórico de eventos, de que varios
+consumidores independientes lean el mismo flujo, o si el volumen se acerca al millar de mensajes por
+segundo sostenido. En cualquiera de esos casos Kafka pasa a estar mejor justificado, y los números de
+este PoC lo respaldarían.\\
+\textbf{Validez de la evidencia:} un solo nodo de cada broker (en producción irían replicados, y ahí
+Kafka replica mejor), todo en la misma máquina sin red de por medio, y 500 mensajes por medición ---
+no se probó el comportamiento con colas de millones de mensajes, que es donde Kafka se separa de
+verdad. Tampoco se midió la recuperación ante caída del broker, que es justamente el escenario que
+motiva el modo duradero.
 
 % ==================== Riesgos técnicos ====================
 \section{Riesgos técnicos}

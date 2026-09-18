@@ -1,0 +1,54 @@
+.tarjeta {
+  max-width: 440px;
+  text-align: center;
+  margin-top: 16px;
+}
+
+.avatar {
+  width: 88px;
+  height: 88px;
+  margin: 8px auto 12px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 2.2rem;
+  font-weight: 700;
+  // Como el CircleAvatar de la app: el primario al 22 %.
+  background: color-mix(in srgb, var(--hxc-primario) 22%, transparent);
+  color: var(--hxc-primario-texto);
+}
+
+h2 {
+  margin: 0 0 16px;
+}
+
+.campo {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  text-align: left;
+}
+
+.dato {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 4px;
+  text-align: left;
+
+  mat-icon {
+    color: rgb(var(--hxc-texto-rgb) / 0.6);
+  }
+
+  div {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .rotulo {
+    font-size: 0.78rem;
+    color: rgb(var(--hxc-texto-rgb) / 0.6);
+  }
+}

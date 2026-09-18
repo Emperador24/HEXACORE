@@ -1,8 +1,41 @@
+# Reglas para TODO el repositorio. Cada proyecto tiene además su propio
+# .gitignore; estas son la red de seguridad común, para que nada compilado
+# entre por una carpeta nueva que nadie recordó ignorar.
+
 .DS_Store
 
 # Config de editor local (rutas de JDK/Android SDK específicas de cada máquina)
 .vscode/
+.idea/
 
+# ---- Dependencias y resultados de compilación ----
+# Se regeneran con `npm ci`, `flutter pub get`, `pod install`… y pesan mucho.
+node_modules/
+dist/
+build/
+out/
+coverage/
+.angular/
+.dart_tool/
+.pub-cache/
+Pods/
+*.tsbuildinfo
+
+# Python: entornos y caché de las pruebas de integración
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# ---- Secretos y configuración de cada máquina ----
+# .env.example SÍ va al repositorio; .env no: lleva credenciales.
+.env
+.env.local
+*.pem
+!App/infra/claves-desarrollo/*.pem
+
+# ---- Documentación ----
 # Documentation/Work/ solo debe contener fuentes (.tex, .md, diagramas); los
 # resultados compilados (.pdf) van en Documentation/Submission/.
 Documentation/Work/*.pdf
@@ -10,3 +43,5 @@ Documentation/Work/*.aux
 Documentation/Work/*.log
 Documentation/Work/*.out
 Documentation/Work/*.toc
+Documentation/Work/*.fls
+Documentation/Work/*.fdb_latexmk

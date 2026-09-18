@@ -23,6 +23,394 @@ Cada entrada nueva va arriba (orden cronológico inverso), con este formato:
 
 ---
 
+## 2026-09-13 — Cola de mensajes decidida con evidencia medida: RabbitMQ (PoC-05, ADR-10)
+
+**Tipo:** PoC + Decisión de diseño
+
+**Contexto:** ADR-04 decía **"RabbitMQ/Kafka"** como si fueran intercambiables. No lo son: responden
+a modelos distintos —cola de tareas frente a registro de eventos— y la elección condiciona cómo se
+escriben los consumidores en los seis microservicios. Era la última decisión abierta del stack.
+
+**Decisión / resultado:** **RabbitMQ**. Registrado como **ADR-10**, que completa el ADR-04 (ese no se
+reescribió: se marcó como *completado por ADR-10*, igual que se hizo con ADR-05 y ADR-08).
+
+**Evidencia (PoC-05):** se publicó y consumió el evento real `ENTRADA_TRANSFERIDA` en ambos brokers,
+los dos levantados en Docker para que la comparación no dependiera del método de instalación, con
+500 mensajes por combinación:
+
+| Broker | Modo | p50 | p95 | msg/s |
+|---|---|---|---|---|
+| RabbitMQ | rápido (sin persistir) | **16,3 ms** | **17,5 ms** | 18.932 |
+| Kafka | rápido (`acks=0`) | 32,1 ms | 36,0 ms | 12.418 |
+| RabbitMQ | duradero (confirmado) | 162,0 ms | 282,1 ms | 1.619 |
+| Kafka | duradero (`acks=all`) | **31,6 ms** | **57,9 ms** | 7.702 |
+
+**El ganador se invierte según el modo, y ese fue el hallazgo principal.** Sin durabilidad RabbitMQ
+es el doble de rápido; **con durabilidad Kafka es cinco veces mejor**. La razón es estructural:
+RabbitMQ hace `fsync` por mensaje al persistir y su latencia se multiplica por diez (16 → 162 ms),
+mientras Kafka escribe a un log secuencial y la durabilidad le sale casi gratis (32 → 31,6 ms). Y el
+modo que importa aquí es el duradero: ni una transferencia ni una alerta de evacuación pueden
+perderse porque el broker se reinició.
+
+**Por qué se eligió RabbitMQ pese a ese dato en contra:** porque, igual que en ADR-09, la latencia
+resultó no ser el criterio decisivo — el umbral de RNF-17 es 10 s y el peor caso medido fue 282 ms,
+treinta y cinco veces por debajo. Lo que sí quedaba abierto se midió aparte, con el mismo escenario
+en ambos (10 eventos, 3 rechazados a propósito):
+
+- **DLQ y reintentos**: RabbitMQ los trae nativos (5 líneas declarativas con
+  `x-dead-letter-exchange`, y el broker mueve el mensaje solo). **Kafka no tiene DLQ**: hay que
+  republicar a otro tópico a mano y decidir por cuenta propia metadatos, reintentos y offsets. ASR-07
+  y ASR-13 exigen no perder en silencio un evento fallido.
+- **Costo operativo**: 275 MB de imagen y 147 MB de memoria frente a 634 MB y 309 MB; 9 líneas para
+  levantarlo frente a 15; consola de administración incluida frente a ninguna.
+- **Patrón de uso**: este sistema usa la cola como **cola de tareas** (disparar notificación, generar
+  QR, registrar auditoría), no como registro de eventos con reproducción histórica y múltiples
+  consumidores independientes — que es donde Kafka se justifica.
+
+**Ventajas / desventajas:** se gana simplicidad operativa y DLQ de fábrica, con un equipo de cuatro
+personas que además debe operar PostgreSQL, MongoDB y Redis. Se acepta una latencia mayor en modo
+duradero (282 ms de p95 frente a 58 ms) y un techo de 1.619 msg/s, holgado para un volumen que se
+genera por transferencia, pedido o alerta, no de forma continua.
+
+**Riesgos técnicos:** (1) El PoC usó **un solo nodo** de cada broker; en producción irían replicados
+y ahí Kafka replica mejor. (2) No se probó con colas de millones de mensajes ni la recuperación ante
+caída del broker —justo el escenario que motiva el modo duradero—. (3) **Cuándo revisar esta
+decisión**: si aparece la necesidad de reproducir el histórico, de que varios consumidores
+independientes lean el mismo flujo, o si el volumen se acerca al millar de mensajes por segundo
+sostenido; en esos casos los números de este mismo PoC respaldarían pasarse a Kafka.
+
+**Participantes:** Samuel Contreras (vía asistente).
+
+---
+
+## 2026-09-13 — Lenguaje del backend decidido con evidencia medida: NestJS (PoC-04, ADR-09)
+
+**Tipo:** PoC + Decisión de diseño
+
+**Contexto:** `App/services/*` llevaba desde el inicio marcado como *"lenguaje por definir"*. Era la
+única decisión que bloqueaba empezar a codificar los seis microservicios, y la guía de Entrega 1 la
+marcaba como prioritaria. Se decidió **construyendo y midiendo**, no razonando en papel.
+
+**Decisión / resultado:** **NestJS** (Node.js + TypeScript) para los microservicios de dominio.
+Registrado como **ADR-09**, con la evidencia en `App/PoCs/poc-04-lenguaje-backend/`.
+
+**Alternativas consideradas:** se implementó **el mismo endpoint** en **NestJS** y en **Spring Boot**
+(Java 17), devolviendo byte por byte la misma respuesta, y se midieron bajo idéntica carga. Se
+descartaron sin PoC **Go** (nadie del equipo lo conoce: riesgo de cronograma) y **Python/FastAPI**
+(tipado opcional, poco conveniente con seis servicios en paralelo).
+
+**Evidencia — 100 conexiones concurrentes, 15 s por medición, cero errores:**
+
+| Candidato | Escenario | req/s | p50 | p97,5 | RSS | Arranque |
+|---|---|---|---|---|---|---|
+| NestJS | sin I/O | 21.071 | 4 ms | 5 ms | 156 MB | **0,28 s** |
+| NestJS | con 2 ms de I/O | 18.530 | 5 ms | 6 ms | 158 MB | |
+| Spring Boot | sin I/O | **91.441** | 0 ms | 1 ms | 335 MB | 1,09 s |
+| Spring Boot | con 2 ms de I/O | **32.288** | 3 ms | 4 ms | 337 MB | |
+
+**Por qué se eligió NestJS aunque Spring Boot rinde más:** porque el rendimiento resultó **no ser el
+criterio que decide**. El umbral de RNF-07 es p95 ≤ 500 ms y el peor caso medido fue **7 ms**:
+setenta veces por debajo. Ambos cumplen con margen enorme, así que la elección la determinan los
+criterios que quedan abiertos, y ahí NestJS gana: arranca 4× más rápido y usa la mitad de memoria
+(favorece RNF-15 y el escalado de ASR-06), impone módulos e inyección de dependencias —el mismo
+modelo de los portales Angular, y lo que hace directo el RNF-18 de dobles de prueba—, y sobre todo es
+el lenguaje que el equipo **ya escribe**. El riesgo real del proyecto no es la latencia: es que
+cuatro personas entreguen seis microservicios a tiempo.
+
+Nota de honestidad, anotada también en el ADR: **si algún integrante tuviera experiencia sólida en
+Java, la decisión sería genuinamente discutible** y Spring Boot quedaría bien defendido por los datos.
+
+**El PoC dio dos veces resultados falsos antes de dar uno válido**, y vale la pena registrarlo porque
+es la lección más reutilizable de este ejercicio. Las primeras corridas mostraban a Spring con 91.599
+req/s pero **13.060 errores** y un p50 de 75 ms — cifras que se contradicen entre sí (por la ley de
+Little, 100 conexiones a esa tasa implican ~1,1 ms, no 75). Las causas estaban en el montaje, no en
+los frameworks:
+1. **Tomcat cierra la conexión cada 100 peticiones** (`maxKeepAliveRequests=100` por defecto) y Node
+   no tiene ese límite: se estaban comparando políticas de *keep-alive*, no frameworks.
+2. **NestJS corría con `ts-node`**, que compila TypeScript en memoria y disparaba su RSS a 706 MB
+   frente a los 156 MB del JS compilado — penalizándolo por el modo de ejecución, no por el
+   framework.
+3. Spring respondía `Transfer-Encoding: chunked` sin `Content-Length` mientras NestJS enviaba
+   `Content-Length` + `keep-alive`; hubo que igualarlo para que las respuestas fueran comparables.
+
+**Ventajas / desventajas:** un solo lenguaje entre portales web y backend, con contratos que pueden
+generar tipos para ambos lados. A cambio se acepta un techo de rendimiento más bajo que el de Spring
+—irrelevante frente a los umbrales actuales— y Node ejecuta en un hilo por proceso, de modo que el
+escalado es horizontal por réplicas (justo lo que ya establecen ADR-01 y ASR-06).
+
+**Riesgos técnicos:** (1) El PoC mide un endpoint **sin base de datos real**, con cliente y servidor
+en la misma máquina, y **no llegó a los 2.000 usuarios concurrentes** de RNF-07 (con 100 conexiones
+el generador de carga ya era el cuello de botella). (2) Si algún servicio pasa a ser intensivo en CPU
+—los reportes con Map-Reduce son el candidato a vigilar— habría que reevaluar esta decisión para ese
+servicio en particular.
+
+**Participantes:** Samuel Contreras (vía asistente).
+
+---
+
+## 2026-09-12 — La app móvil migra a Flutter (ADR-08) y el portal web adopta su diseño
+
+**Tipo:** Cambio arquitectónico
+
+**Contexto:** Diego Coronado reemplazó la app móvil Kotlin/Jetpack Compose por una implementación
+completa en **Flutter**, con un rediseño visual propio ("Liquid Glass"). El cambio revierte
+parcialmente **ADR-05**, que había descartado explícitamente los frameworks *cross-platform*. Ese
+ADR omitía un requisito real del proyecto: la app debe llegar a **Android y iOS**, y con stack nativo
+eso obliga a mantener una segunda implementación completa en Swift/SwiftUI.
+
+Al llegar ese cambio, la documentación y el portal web quedaron desalineados con el código: el SAD
+seguía diciendo "Kotlin + Jetpack Compose", `App/README.md` listaba dos apps móviles que ya no
+existen, y el portal web usaba un lenguaje visual distinto (azul corporativo estilo taquilla) al de
+la app.
+
+**Decisión / resultado:**
+1. **ADR-08 — Migración de la app móvil a Flutter**, nuevo en el SAD, con las tres alternativas
+   consideradas (seguir nativo y añadir iOS en Swift, Kotlin Multiplatform, Flutter) y sus
+   consecuencias. **ADR-05 no se reescribió**: se marcó como *parcialmente superado por ADR-08*,
+   conservando su texto original —incluido el párrafo donde descarta Flutter— porque un ADR es un
+   registro histórico de por qué se decidió algo en su momento, no un documento que se corrige.
+2. **ADR-07 sigue vigente**: la app Flutter mantiene una sola aplicación para Cliente y Personal. Se
+   eliminó de ese ADR la nota que pedía renombrar el módulo, porque ya se renombró a `app-movil`.
+3. **Documentos actualizados**: vista de contenedores del SAD, sección de la app móvil en
+   `ArchitecturalProposal.tex`, tabla de stack y árbol de directorios de `App/README.md`, y el
+   diagrama C4 de contenedores (Archify) con su PDF regenerado.
+4. **El portal web adopta el diseño de la app** (`portal-web-cliente`): mismas fuentes (Space Grotesk
+   para títulos, Manrope para cuerpo), misma paleta (primario `#2F6BFF`, acentos rosa/cian/ámbar/
+   índigo que rotan por fila), fondo atmosférico con manchas difuminadas, superficies de vidrio con
+   desenfoque real, insignias tintadas y el talón punteado del boleto. Los valores se tomaron
+   directamente de `app-movil/lib/theme/app_theme.dart` y `lib/widgets/liquid_glass.dart`, no
+   aproximados a ojo.
+5. **Limpieza**: se eliminaron 890 archivos huérfanos del proyecto Kotlin (`app-movil/app/build/`,
+   `.gradle/`, `local.properties`, ~65 MB) que sobrevivieron al reemplazo porque estaban ignorados
+   por git y por lo tanto el merge no los tocó.
+
+**Alternativas consideradas (para el punto 4, diseño del portal):**
+- **Dejar cada interfaz con su propio lenguaje visual**: se descartó porque son el mismo producto
+  para el mismo usuario; un cliente que compra en la web y consulta su QR en la app vería dos marcas
+  distintas.
+- **Replicar la app pantalla por pantalla** (listas apiladas, navegación inferior): se descartó
+  porque traslada a una pantalla ancha decisiones tomadas para uno estrecho. Se replicó el *sistema*
+  —tipografía, color, vidrio, insignias, anatomía de la tarjeta— y se adaptó el layout al medio: la
+  web usa grilla donde el móvil apila, y navbar superior donde el móvil usa barra inferior.
+
+**Ventajas / desventajas:** Una sola base de código móvil para Android e iOS, y un lenguaje visual
+consistente entre web y móvil. A cambio: Flutter no usa widgets nativos reales (dibuja su propia
+interfaz), se suma un tercer ecosistema de herramientas (Dart/pub) y el equipo no tiene experiencia
+previa en Dart. El efecto de vidrio depende de `backdrop-filter`, que es costoso de renderizar y
+degrada en navegadores viejos —donde la superficie se ve translúcida pero sin desenfoque, que es una
+degradación aceptable.
+
+**Riesgos técnicos:** (1) La decisión de Flutter **todavía no tiene evidencia medida** comparándola
+con la versión Kotlin (tiempo de desarrollo, líneas de código, arranque en frío, fidelidad visual);
+la guía de Entrega 1 pide exactamente esa comparación y queda pendiente —está anotado como nota en el
+propio ADR-08. (2) Si web y móvil evolucionan por separado, los tokens de diseño se desincronizan:
+hoy están duplicados a mano en `styles.scss` y en `app_theme.dart`, sin un origen común.
+
+**Participantes:** Diego Coronado (migración a Flutter), Samuel Contreras (documentación y portal web,
+vía asistente).
+
+---
+
+## 2026-09-10 — Categoría del evento y ciudad del recinto en el modelo de datos
+
+**Tipo:** Cambio arquitectónico (modelo de dominio)
+
+**Contexto:** Al ampliar la cartelera del Portal Web Cliente con los filtros que usan las taquillas
+de referencia (ciudad y categoría), el frontend quedó asumiendo dos datos que el modelo de dominio
+del SAD **no declaraba**: la categoría del evento no existía como atributo —solo aparecía de pasada
+en la descripción en prosa, "actividad (concierto, festival, partido)"— y la ciudad estaba
+implícita dentro de `Recinto.direccion`, de donde no se puede filtrar sin parsear texto libre.
+
+**Decisión / resultado:** Se agregaron ambos al modelo, cada uno en la entidad a la que pertenece:
+- **`Evento.categoria`** — conjunto cerrado de valores (concierto, teatro, deportes, festival,
+  gastronomía). Es un atributo del evento, no del recinto: el mismo recinto alberga eventos de
+  categorías distintas.
+- **`Recinto.ciudad`** — columna propia, separada de `direccion`. La ciudad es del recinto y el
+  evento la hereda por su `recinto\_id`; duplicarla en `Evento` habría creado dos fuentes de verdad
+  que se pueden contradecir.
+
+Se actualizaron los tres lugares del SAD donde vive el modelo, para que no queden contradiciéndose:
+la tabla del modelo de dominio, el diagrama de clases UML y el esquema relacional de
+Eventos/Emergencias.
+
+**Alternativas consideradas:**
+- **Dejar la categoría fuera del modelo y derivarla en el frontend** (por palabras del nombre del
+  evento): se descartó porque es frágil y pone lógica de negocio en el cliente, justo lo que
+  prohíbe ASR-10.
+- **Modelar la categoría como entidad propia (`Categoria`) con su tabla:** se descartó por ahora
+  porque es un conjunto cerrado y pequeño que no tiene atributos propios; si más adelante el
+  Organizador necesita crear categorías desde el Portal Admin, se promueve a entidad.
+- **Poner `ciudad` en `Evento`** (como lo tiene hoy el mock del frontend): se descartó por la
+  duplicación explicada arriba; el mock puede seguir denormalizándola porque representa la
+  respuesta ya compuesta del API, no el esquema.
+
+**Ventajas / desventajas:** El modelo ahora soporta los dos filtros de la cartelera con consultas
+directas. La desventaja es que `categoria` como conjunto cerrado obliga a un cambio de esquema (o
+de la restricción `CHECK`/enum) cada vez que se agregue una categoría nueva.
+
+**Riesgos técnicos:** El frontend ya está construido contra estos campos con datos mock; si el
+equipo de backend decide modelar la categoría como entidad, el contrato del API cambia y hay que
+ajustar `EventosService` del portal. Conviene fijarlo antes de implementar CU-026.
+
+**Participantes:** Samuel Contreras (vía asistente).
+
+---
+
+## 2026-09-10 — Los diagramas C4 pasan a generarse con Archify y se corrige su contenido
+
+**Tipo:** Cambio arquitectónico (documentación)
+
+**Contexto:** Los diagramas C4 del documento se mantenían a mano en draw.io, y se habían
+desactualizado sin que nadie lo notara: el diagrama de contenedores seguía mostrando **cuatro
+interfaces** (App Móvil Cliente y App Móvil Personal como apps separadas) cuando **ADR-07** ya
+había unificado ambas en una sola `app-movil`, y el repositorio solo tiene tres interfaces
+desplegables. Una imagen editada a mano no deja rastro en el diff, así que el documento podía
+contradecir al código sin que se viera en la revisión de un commit.
+
+**Decisión / resultado:**
+1. Los seis diagramas ahora se generan con **Archify** desde una especificación `JSON` versionada
+   (`Work/Diagrams/Archify/`), y se insertan en `C4Diagrams.tex` y
+   `DescripcionArquitecturaSoftware.tex` como PDF vectorial (`Work/Diagrams/ArchifyPDF/`).
+2. Se corrigió el contenido desactualizado: contenedores y despliegue ahora muestran las **tres
+   interfaces** reales, con la App Móvil unificada (Cliente + Personal, ADR-07).
+3. Se actualizó el texto que rodeaba a las figuras, que seguía describiendo los diagramas viejos:
+   pies de figura, las cinco leyendas de colores (Archify colorea por tipo de componente, no por
+   la convención manual anterior) y la tabla de relaciones del Nivel 2, que trataba a las
+   interfaces como una sola caja "App Web / Móvil".
+4. Los `.drawio`/`.png` se conservan en `Work/Diagrams/` como referencia histórica, marcados
+   explícitamente como no vigentes.
+
+**Alternativas consideradas:**
+- **Seguir en draw.io y solo corregir las cajas a mano:** se descartó porque no resuelve la causa
+  —el diagrama vuelve a desactualizarse en el próximo ADR y el diff sigue siendo opaco—, aunque
+  era la opción más rápida.
+- **Mantener los diagramas de Archify solo como material interactivo aparte, dejando los `.png` en
+  el PDF:** se descartó porque deja dos juegos de diagramas contradiciéndose y el documento
+  entregable seguiría mostrando la versión incorrecta.
+- **Exportar los diagramas como PNG en vez de PDF:** se descartó porque el PDF conserva el texto
+  vectorial (se puede hacer zoom y buscar texto), y el `@media print` de Archify ya fuerza la
+  paleta clara para papel.
+
+**Ventajas / desventajas:** El diagrama pasa a ser texto revisable en el diff y regenerable con un
+comando, y quedó una sola fuente de verdad. A cambio, editar el diagrama ya no es arrastrar cajas
+en una interfaz gráfica: hay que editar `JSON` y regenerar, lo que tiene curva de aprendizaje para
+quien no lo haya hecho (el `README.md` de la carpeta documenta el procedimiento exacto).
+
+**Riesgos técnicos:** La exportación a PDF depende de Chrome headless y de `pdfcrop`; si cambia el
+entorno de alguien del equipo, hay que repetir el procedimiento del README. Se detectó además una
+trampa del propio Archify: el campo `tag` queda oculto en el visor pero **se dibuja encima del
+`sublabel` al imprimir**; por eso esa información se movió dentro del `sublabel` y el README
+advierte no volver a usar `tag`.
+
+**Participantes:** Samuel Contreras (vía asistente).
+
+---
+
+## 2026-09-07 — Árbol de Utilidad con par (Importancia, Dificultad) y 4 ASR nuevos (punto 2, Entrega 1)
+
+**Tipo:** Análisis
+
+**Contexto:** El Árbol de Utilidad del SAD calificaba cada escenario con una sola columna de
+**"Prioridad"** (Alta / Media-Alta / Media / Baja-Media). El método visto en clase exige calificar
+cada escenario con **dos** dimensiones independientes —importancia para el negocio y dificultad
+técnica— porque son las que permiten identificar dónde está el riesgo arquitectónico: un escenario
+importante pero fácil no necesita evidencia especial, mientras que uno importante y difícil sí.
+Con una sola columna esa distinción se pierde. Además, la tabla solo cubría los 10 atributos
+priorizados originalmente, dejando sin escenario a los 4 atributos agregados con los RNF.
+
+**Decisión / resultado:**
+1. Se reemplazó la columna "Prioridad" por el par **(Importancia, Dificultad)** en escala
+   Alta/Media/Baja para los 14 escenarios.
+2. Se agregaron **4 ASR nuevos**: **ASR-11** (Integrabilidad — sustituir la pasarela de pagos sin
+   reescribir el dominio), **ASR-12** (Desplegabilidad — actualizar un servicio con el evento en
+   curso), **ASR-13** (Safety — notificación garantizada de evacuación) y **ASR-14**
+   (Comprobabilidad — probar un microservicio aislado).
+3. Se agregó una columna **RNF** que enlaza cada escenario con el requisito verificable que pone a
+   prueba, de modo que los 18 RNF quedan cubiertos por al menos un ASR y no queda ningún requisito
+   "huérfano" sin escenario que lo tensione.
+
+El resultado señala tres escenarios **(Alta, Alta)** —**ASR-01** (doble venta), **ASR-04**
+(carga en apertura de venta) y **ASR-13** (notificación de evacuación)— como los que concentran
+el riesgo arquitectónico y, por lo tanto, los candidatos a respaldarse con pruebas de concepto
+medidas en vez de solo con razonamiento.
+
+**Alternativas consideradas:**
+- **Mantener la columna única de "Prioridad"**: se descartó porque mezcla importancia con
+  dificultad; ASR-07 (auditoría) y ASR-05 (aforo en tiempo real) tenían ambos prioridad "Media"
+  pese a que el primero es sencillo de implementar y el segundo es de los más difíciles.
+- **Calificar la importancia según la prioridad global del atributo**: se descartó porque
+  distorsiona escenarios puntualmente críticos dentro de atributos de prioridad media —el caso de
+  ASR-13, cuyo atributo (Safety) está priorizado como Medio pero cuyo escenario compromete la
+  integridad de las personas. Se documentó explícitamente esta distinción en el texto de la
+  sección.
+- **Agregar solo 2 ASR (Integrabilidad y Desplegabilidad)**: se descartó porque dejaría sin
+  escenario a Safety y Comprobabilidad, que sí tienen RNF asociado (RNF-17, RNF-18).
+
+**Ventajas / desventajas:** La tabla ahora identifica sola dónde hace falta evidencia medida
+(las casillas Alta/Alta) y trazan RNF → ASR → (más adelante) táctica → PoC. La desventaja es que
+el par (Importancia, Dificultad) sigue siendo una **estimación del equipo**, no el resultado de
+una votación formal con los cuatro integrantes ni de una medición: cada responsable debe revisar
+los escenarios de su atributo antes de la entrega.
+
+**Riesgos técnicos:** Subestimar la dificultad de ASR-05 (aforo en tiempo real, calificado Alta)
+o de ASR-12 (despliegue sin interrupción) llevaría a planear mal Entrega 2. Los tres escenarios
+(Alta, Alta) son los que deberían tener PoC; hoy ninguno lo tiene todavía en este repositorio.
+
+**Participantes:** Samuel Contreras (vía asistente).
+
+---
+
+## 2026-09-07 — Requisitos No Funcionales con métrica y umbral verificable (punto 1, Entrega 1)
+
+**Tipo:** Análisis
+
+**Contexto:** El SAD documentaba los 32 casos de uso (qué hace el sistema) y una tabla de
+atributos de calidad priorizados con su justificación en prosa, pero **no tenía requisitos no
+funcionales**: no existía ninguna afirmación verificable sobre *con qué calidad* debe funcionar el
+sistema. Sin ellos, el Árbol de Utilidad (ASR) no tiene de dónde derivarse y el análisis de
+tácticas no tiene contra qué comprobarse. Es el punto 1 del checklist de Entrega 1.
+
+**Decisión / resultado:** Se agregó la sección **"Requisitos No Funcionales (RNF)"** a
+`DescripcionArquitecturaSoftware.tex`, justo después de la visión general de requisitos
+funcionales, con **RNF-01 a RNF-18** en una tabla de cuatro columnas: ID, requisito, atributo de
+calidad y **métrica con umbral verificable**. La regla que se aplicó es que un requisito no entra
+a la tabla si no se puede comprobar objetivamente: por eso cada fila tiene un número (p. ej.
+RNF-07 "latencia p95 ≤ 500 ms con 2.000 usuarios concurrentes") y no una frase como "el sistema
+debe ser rápido".
+
+Los 18 RNF cubren **14 atributos de calidad**: los 10 que el proyecto ya tenía priorizados
+(Consistencia, Disponibilidad, Seguridad, Rendimiento, Tiempo real, Escalabilidad, Trazabilidad,
+Usabilidad, Mantenibilidad, Portabilidad) más **4 nuevos** que exigen las clases 6–14 y que el
+proyecto no había priorizado: **Desplegabilidad, Integrabilidad, Seguridad física (Safety) y
+Comprobabilidad**. Esos cuatro se agregaron también a la tabla de atributos priorizados de
+`ArchitecturalProposal.tex`, con su justificación, para que ambos documentos sigan siendo
+coherentes entre sí.
+
+**Alternativas consideradas:**
+- **Dejar los RNF implícitos dentro de cada ASR** (como estaba hasta ahora): se descartó porque
+  mezcla dos cosas distintas —el requisito de calidad y el escenario arquitectónicamente
+  significativo que lo pone a prueba— y deja sin umbral a los atributos que hoy no tienen ASR
+  propio.
+- **Redactar RNF en prosa, sin métrica** (más rápido de escribir): se descartó porque un
+  requisito sin umbral no se puede verificar ni sustentar; es exactamente lo que el profesor
+  señala como requisito mal formulado.
+- **Cubrir solo los 10 atributos ya priorizados**: se descartó porque dejaría sin requisito a
+  cuatro de los nueve atributos que las clases 6–14 exigen analizar.
+
+**Ventajas / desventajas:** Cada RNF ahora es comprobable y da un criterio objetivo de "listo"
+para Entrega 2. La desventaja es que **los umbrales numéricos son estimaciones razonadas del
+equipo, no mediciones** sobre un sistema en producción (que todavía no existe); quedan sujetos a
+revisión por el responsable de cada atributo y a validación con las pruebas de concepto.
+
+**Riesgos técnicos:** Comprometerse a umbrales optimistas (p. ej. p95 ≤ 500 ms con 2.000 usuarios
+concurrentes, o ≥ 99,9 % de disponibilidad) sin haberlos medido: si en Entrega 2 la
+implementación real no los alcanza, hay que corregir el número en el SAD y justificar el cambio,
+no esconderlo. Cada responsable debe revisar los umbrales de su atributo antes de la entrega.
+
+**Participantes:** Samuel Contreras (vía asistente).
+
+---
+
 ## 2026-08-27 — Stack técnico de las 4 interfaces y motor de base de datos por dominio
 
 **Tipo:** Decisión de diseño

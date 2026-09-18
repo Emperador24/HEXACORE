@@ -137,9 +137,10 @@ Está dirigido a administradores, organizadores y trabajadores autorizados. Incl
 
 \subsection{Aplicación Móvil (Cliente y Personal)}
 
-Un único binario (Kotlin + Jetpack Compose) con una pantalla de login compartida: las credenciales
-identifican el rol del usuario autenticado y la navegación interna abre el conjunto de pantallas
-correspondiente, sin ser dos apps distribuidas por separado.
+Una sola aplicación construida en \textbf{Flutter}, que desde una única base de código genera los
+binarios de Android e iOS. Tiene una pantalla de login compartida: las credenciales identifican el rol
+del usuario autenticado y la navegación interna abre el conjunto de pantallas correspondiente, sin ser
+dos apps distribuidas por separado.
 
 Para el \textbf{rol Cliente}, permite iniciar sesión, consultar eventos y entradas, visualizar el
 código QR de cada entrada, consultar información del evento y recibir notificaciones y alertas. Su
@@ -162,15 +163,25 @@ Alta & Rendimiento & Miles de usuarios pueden realizar operaciones concurrentes 
 Media-Alta & Tiempo real & Aforo, entradas, estado del personal, parqueaderos y emergencias deben actualizarse casi inmediatamente.\\
 Media & Escalabilidad & Debe ser posible aumentar las instancias de los servicios con mayor demanda.\\
 Media & Trazabilidad & Deben auditarse transferencias, pagos, accesos, turnos, operaciones administrativas y emergencias.\\
+Media & Desplegabilidad & Cada microservicio debe poder actualizarse de forma independiente y sin interrumpir el evento en curso, que es cuando el sistema no puede detenerse.\\
+Media & Integrabilidad & El sistema depende de dos servicios externos (pasarela de pagos y proveedor de notificaciones) que deben poder sustituirse sin reescribir la lógica de negocio.\\
+Media & Seguridad física (Safety) & Una falla durante una evacuación (CU-010) tiene consecuencias sobre la integridad de las personas, no solo sobre los datos.\\
+Media & Comprobabilidad & Con seis microservicios independientes, cada dominio debe poder probarse aislado para que el equipo pueda avanzar en paralelo.\\
 Baja-Media & Usabilidad & Las interfaces deben adaptarse a clientes, empleados, supervisores, organizadores y administradores.\\
 Baja-Media & Mantenibilidad & Los cambios en un dominio no deberían afectar innecesariamente a los demás.\\
 Baja-Media & Portabilidad & Las funcionalidades deben poder utilizarse mediante web y aplicaciones móviles.\\
 \bottomrule
 \end{longtable}
 
+Los cuatro atributos añadidos en esta versión (Desplegabilidad, Integrabilidad, Seguridad física
+y Comprobabilidad) provienen de los temas de las clases 6--14 y no estaban en la priorización
+inicial del proyecto; se incorporan porque el análisis de tácticas de la sección
+\textit{``Cómo la arquitectura satisface los atributos de calidad''} los cubre y porque tienen
+requisitos no funcionales asociados (RNF-15 a RNF-18 en \textit{DescripcionArquitecturaSoftware.tex}).
+
 \section{Arquitectura propuesta}
 
-Se propone una arquitectura distribuida basada en \textbf{microservicios}, con API Gateway, balanceador de carga, Redis, RabbitMQ o Kafka y bases de datos independientes por dominio.
+Se propone una arquitectura distribuida basada en \textbf{microservicios}, con API Gateway, balanceador de carga, Redis, RabbitMQ y bases de datos independientes por dominio.
 
 \begin{figure}[H]
 \centering
@@ -196,7 +207,7 @@ arr/.style={-{Latex[length=2mm]},thick}
 \node[box,below=of pe] (pa) {Parqueaderos};
 \node[box,below=of ev] (em) {Emergencias};
 
-\node[infra,below=13mm of $(ms.south)!0.5!(em.south)$] (inf) {Redis \quad | \quad RabbitMQ / Kafka \quad | \quad Bases de datos};
+\node[infra,below=13mm of $(ms.south)!0.5!(em.south)$] (inf) {Redis \quad | \quad RabbitMQ \quad | \quad Bases de datos};
 \node[ext,below=of inf,xshift=-28mm] (pg) {Pasarela de pagos};
 \node[ext,below=of inf,xshift=28mm] (no) {Notificaciones\\Push / Email / SMS};
 
@@ -239,7 +250,7 @@ Redis se utiliza para información de acceso rápido y control de concurrencia. 
 
 También puede apoyar información temporal de aforo, disponibilidad, sesiones y estados que requieran consultas rápidas.
 
-\subsection{RabbitMQ / Kafka}
+\subsection{RabbitMQ}
 
 Las colas desacoplan operaciones asíncronas como generación de QR, notificaciones, auditoría, liquidación de pagos y propagación de alertas.
 
@@ -407,7 +418,7 @@ arr/.style={-{Latex[length=2mm]},thick}
 ]
 \node[box] (s) {Supervisor};
 \node[box,right=9mm of s] (e) {Servicio de\\Emergencias};
-\node[box,right=9mm of e] (q) {RabbitMQ / Kafka};
+\node[box,right=9mm of e] (q) {RabbitMQ};
 \node[box,right=9mm of q] (m) {App Móvil\\(Cliente + Personal)};
 \node[box,right=9mm of m] (n) {Notificaciones};
 \draw[arr](s)--(e);
@@ -446,7 +457,7 @@ Microservicios & Separación de dominios y escalamiento & Escalabilidad, manteni
 API Gateway & Punto central de acceso y seguridad & Seguridad, mantenibilidad\\
 Balanceador & Distribución de solicitudes & Disponibilidad, rendimiento\\
 Redis & Acceso rápido y bloqueo temporal & Consistencia, tiempo real, rendimiento\\
-RabbitMQ/Kafka & Procesamiento asíncrono & Rendimiento, escalabilidad\\
+RabbitMQ & Procesamiento asíncrono & Rendimiento, escalabilidad\\
 BD por servicio & Evitar acoplamiento de datos & Mantenibilidad, escalabilidad\\
 Notificaciones & Comunicación desacoplada & Rendimiento, tiempo real\\
 Pasarela de pagos & Transacciones externas & Seguridad, consistencia\\
