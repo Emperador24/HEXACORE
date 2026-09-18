@@ -158,7 +158,10 @@ export class TurnosService {
    * o rechaza el cambio; si aprueba, se valida el límite de horas antes de
    * reasignar el turno.
    */
-  async revisarSolicitud(solicitudId: string, dto: RevisarSolicitudDto) {
+  async revisarSolicitud(
+    solicitudId: string,
+    dto: RevisarSolicitudDto & { supervisorId: string },
+  ) {
     const solicitud = await this.solicitudes.findOneBy({ id: solicitudId });
     if (!solicitud) {
       throw new NotFoundException('Solicitud no encontrada.');

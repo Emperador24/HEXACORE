@@ -1,5 +1,10 @@
 import { Module } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { cargarClavePublica } from '../../comun/autenticacion/clave-publica.js';
+import { proveedorRedis } from '../../comun/autenticacion/redis.provider.js';
+import { SesionValida } from '../../comun/autenticacion/sesion-valida.guard.js';
 import { AsistenciaController } from './asistencia.controller.js';
 import { AsistenciaService } from './asistencia.service.js';
 import { Empleado } from './entities/empleado.entity.js';
@@ -22,6 +27,18 @@ import { TurnosService } from './turnos.service.js';
       RegistroAsistencia,
       Notificacion,
     ]),
+    // Solo verifica tokens (RNF-06): sin clave privada, este servicio no
+    // puede emitirlos. Ver App/shared/seguridad/token-sesion.md.
+    JwtModule.registerAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        publicKey: cargarClavePublica(config.get('NODE_ENV') === 'production').pem,
+        verifyOptions: {
+          algorithms: ['RS256'],
+          issuer: config.get('AUTH_JWT_EMISOR', 'hexacore-administracion'),
+        },
+      }),
+    }),
   ],
   controllers: [TurnosController, AsistenciaController, NotificacionesController],
   providers: [
@@ -29,6 +46,8 @@ import { TurnosService } from './turnos.service.js';
     AsistenciaService,
     EventosPublicadorService,
     EventosConsumidorService,
+    proveedorRedis,
+    SesionValida,
   ],
 })
 export class TurnosAsistenciaModule {}

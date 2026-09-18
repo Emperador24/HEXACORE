@@ -1,33 +1,16 @@
+# Este servicio ya NO levanta su propio Postgres/RabbitMQ: se conecta a la
+# infraestructura COMPARTIDA de todo el equipo en `App/infra/docker-compose.yml`
+# (una sola instancia por pieza, "vista física" del SAD §11 — no una réplica
+# aislada por microservicio). Antes de levantar esto, arranca esa infra:
+#
+#   docker compose -f App/infra/docker-compose.yml up -d
+#   docker compose -f App/infra/docker-compose.yml exec postgres \
+#     psql -U hexacore -d eventos_emergencias   # (una vez) confirmar que existe
+#
+# `host.docker.internal` es cómo un contenedor llega a los puertos publicados
+# por OTRO docker-compose corriendo en el mismo Mac (funciona en Docker
+# Desktop sin configurar redes a mano).
 services:
-  db:
-    image: postgres:16-alpine
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: hexacore
-      POSTGRES_PASSWORD: hexacore
-      POSTGRES_DB: eventos_emergencias
-    ports:
-      - '5433:5432'
-    volumes:
-      - eventos_emergencias_db:/var/lib/postgresql/data
-    healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U hexacore -d eventos_emergencias']
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
-  rabbitmq:
-    image: rabbitmq:3-management-alpine
-    restart: unless-stopped
-    ports:
-      - '5672:5672'
-      - '15672:15672' # panel de administración: http://localhost:15672 (guest/guest)
-    healthcheck:
-      test: ['CMD', 'rabbitmq-diagnostics', '-q', 'ping']
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
   app:
     build: .
     restart: unless-stopped
@@ -35,18 +18,19 @@ services:
       - '3016:3016'
     environment:
       PORT: 3016
-      DB_HOST: db
+      DB_HOST: host.docker.internal
       DB_PORT: 5432
       DB_USER: hexacore
       DB_PASSWORD: hexacore
       DB_NAME: eventos_emergencias
-      DB_SYNCHRONIZE: 'true'
-      RABBITMQ_URL: amqp://rabbitmq:5672
-    depends_on:
-      db:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-
-volumes:
-  eventos_emergencias_db:
+      RABBITMQ_URL: amqp://hexacore:hexacore@host.docker.internal:5672
+      REDIS_HOST: host.docker.internal
+      REDIS_PUERTO: 6380
+      AUTH_JWT_EMISOR: hexacore-administracion
+      # La clave de desarrollo no viaja en la imagen (no es código del
+      # servicio): se monta de solo lectura desde la infra compartida.
+      AUTH_JWT_CLAVE_PUBLICA_ARCHIVO: /claves/jwt-publica.pem
+    volumes:
+      - ../../infra/claves-desarrollo/jwt-publica.pem:/claves/jwt-publica.pem:ro
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'

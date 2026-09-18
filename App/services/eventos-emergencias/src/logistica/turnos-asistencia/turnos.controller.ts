@@ -1,11 +1,14 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import type { PeticionConSesion } from '../../comun/autenticacion/sesion-valida.guard.js';
+import { SesionValida } from '../../comun/autenticacion/sesion-valida.guard.js';
 import { CrearEmpleadoDto } from './dto/crear-empleado.dto.js';
 import { CrearTurnoDto } from './dto/crear-turno.dto.js';
 import { RevisarSolicitudDto } from './dto/revisar-solicitud.dto.js';
 import { SolicitarCambioTurnoDto } from './dto/solicitar-cambio-turno.dto.js';
 import { TurnosService } from './turnos.service.js';
 
-@Controller()
+@Controller('logistica')
+@UseGuards(SesionValida)
 export class TurnosController {
   constructor(private readonly turnosService: TurnosService) {}
 
@@ -46,7 +49,14 @@ export class TurnosController {
   revisarSolicitud(
     @Param('solicitudId') solicitudId: string,
     @Body() dto: RevisarSolicitudDto,
+    @Req() peticion: PeticionConSesion,
   ) {
-    return this.turnosService.revisarSolicitud(solicitudId, dto);
+    // El supervisor que revisa es quien tiene la sesión, no lo que diga el
+    // cuerpo de la petición — de lo contrario cualquiera podría aprobar su
+    // propio cambio de turno declarándose supervisor.
+    return this.turnosService.revisarSolicitud(solicitudId, {
+      ...dto,
+      supervisorId: peticion.sesion!.usuarioId,
+    });
   }
 }
