@@ -37,11 +37,14 @@ IP del computador, en la misma red wifi:
 flutter run --dart-define=HEXACORE_HOST=192.168.18.16
 ```
 
-| Servicio | Puerto | Para qué |
-|---|---|---|
-| Administración | 3002 | Registro, login, sesión, perfil, recuperación (CU-027) |
-| Entradas y Mercado Secundario | 3001 | Reventa (CU-006) |
-| Buzón de correo simulado | 3098 | Los correos de verificación y recuperación (solo desarrollo) |
+La app conoce **una sola dirección**: el **API Gateway** en el puerto `8080` (ADR-02). No sabe
+cuántos microservicios hay ni en qué puerto está cada uno; el gateway autentica cada petición y la
+enruta. Con `--dart-define=HEXACORE_API=…` se apunta a un gateway desplegado en otro sitio.
+
+| Puerto | Qué es |
+|---|---|
+| 8080 | **API Gateway** — todo el backend: cuentas, sesiones (CU-027) y reventa (CU-006) |
+| 3098 | Buzón de correo simulado: los enlaces de verificación y recuperación (solo desarrollo, es un sistema externo y no pasa por el gateway) |
 
 ## Cuentas y sesión (CU-027)
 

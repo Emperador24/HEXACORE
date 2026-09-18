@@ -33,19 +33,8 @@ async function bootstrap(): Promise<void> {
     }),
   );
 
-  // Los portales web llaman desde otro origen (otro puerto en desarrollo). Se
-  // nombran uno a uno: con `credentials` —la cookie de renovación— el
-  // navegador no acepta `*`. En producción, detrás del API Gateway, todo
-  // compartiría origen y esto dejaría de hacer falta.
-  if (config.origenesWeb.length > 0) {
-    app.enableCors({
-      origin: config.origenesWeb,
-      credentials: true,
-      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Hexacore-Cliente'],
-      maxAge: 600,
-    });
-  }
+  // Sin CORS aquí: los navegadores hablan con el API Gateway (ADR-02), que es
+  // quien mantiene la lista de orígenes permitidos. Ver App/gateway.
 
   app.enableShutdownHooks();
 

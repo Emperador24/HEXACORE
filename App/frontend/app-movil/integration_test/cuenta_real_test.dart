@@ -44,6 +44,17 @@ void main() {
     fail('No apareció: $buscado');
   }
 
+  /// Lo contrario de [esperar]: bombea hasta que [buscado] ya no esté.
+  Future<void> esperarSalida(WidgetTester tester, Finder buscado,
+      {Duration limite = const Duration(seconds: 20)}) async {
+    final fin = DateTime.now().add(limite);
+    while (DateTime.now().isBefore(fin)) {
+      await tester.pump(const Duration(milliseconds: 200));
+      if (buscado.evaluate().isEmpty) return;
+    }
+    fail('No desapareció: $buscado');
+  }
+
   Future<void> escribir(WidgetTester tester, Finder campo, String texto) async {
     final editable = find.descendant(of: campo, matching: find.byType(EditableText));
     await tester.enterText(editable.evaluate().isEmpty ? campo : editable, texto);
@@ -64,6 +75,19 @@ void main() {
 
   Future<void> abrirReventa(WidgetTester tester) async {
     await tocar(tester, find.text('Reventa').last);
+  }
+
+  /// Sale de la reventa y vuelve, que es lo que provoca una carga nueva.
+  ///
+  /// Hay que esperar a que la pantalla anterior **desaparezca de verdad**: el
+  /// `AnimatedSwitcher` del shell mantiene la saliente 260 ms, así que volver
+  /// enseguida reaparece la misma pantalla —con sus entradas ya pintadas— sin
+  /// que nadie vuelva a pedir nada al servidor. La prueba pasaba por delante de
+  /// la petición que quería comprobar.
+  Future<void> recargarReventa(WidgetTester tester) async {
+    await tocar(tester, find.text('Inicio').last);
+    await esperarSalida(tester, find.textContaining('TCK-2026-'));
+    await abrirReventa(tester);
   }
 
   testWidgets('registro → correo → activación → login → reventa (cuenta nueva)', (tester) async {
@@ -133,14 +157,13 @@ void main() {
     // Alguien cierra esta sesión en otro sitio (o se cambió la contraseña en
     // otro dispositivo): el token deja de valer en todo el sistema.
     final revocado = await http.delete(
-      Uri.parse('${Servidor.cuentas}/${Servidor.prefijo}/sesiones/actual'),
+      Uri.parse('${Servidor.api}/${Servidor.prefijo}/sesiones/actual'),
       headers: {'Authorization': 'Bearer ${sesion.token}'},
     );
     expect(revocado.statusCode, 200);
 
     // La siguiente petición de la reventa recibe 401 y la app vuelve al login.
-    await tocar(tester, find.text('Inicio').last);
-    await abrirReventa(tester);
+    await recargarReventa(tester);
     await esperar(tester, find.byType(LoginPage));
     expect(find.textContaining('sesión'), findsWidgets);
     expect(sesion.abierta, isFalse);
@@ -163,8 +186,7 @@ void main() {
 
     // Pasaron los 15 minutos. La siguiente carga de la reventa renueva sola.
     sesion.caducarAccesoParaPruebas();
-    await tocar(tester, find.text('Inicio').last);
-    await abrirReventa(tester);
+    await recargarReventa(tester);
     await esperar(tester, find.textContaining('TCK-2026-'));
 
     expect(find.byType(LoginPage), findsNothing);
@@ -174,13 +196,12 @@ void main() {
 
     // El token de renovación viejo ya no sirve: usarlo cierra la sesión.
     final robado = await http.post(
-      Uri.parse('${Servidor.cuentas}/${Servidor.prefijo}/sesiones/renovar'),
+      Uri.parse('${Servidor.api}/${Servidor.prefijo}/sesiones/renovar'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'tokenRenovacion': renovacionAntes}),
     );
     expect(robado.statusCode, 401);
-    await tocar(tester, find.text('Inicio').last);
-    await abrirReventa(tester);
+    await recargarReventa(tester);
     await esperar(tester, find.byType(LoginPage));
     expect(find.textContaining('Por seguridad'), findsOneWidget);
   });

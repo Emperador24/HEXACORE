@@ -1,0 +1,17 @@
+# Ajuste para demostrar el balanceo y la tolerancia a fallos (RNF-03, RNF-10).
+#
+# En el día a día, el Servicio de Entradas publica el puerto 3001 en la máquina:
+# así las pruebas de integración pueden llamarlo directo y comprobar que también
+# valida el token por su cuenta, sin pasar por el gateway.
+#
+# Ese puerto fijo impide tener varias instancias (dos contenedores no pueden
+# ocupar el mismo puerto). Este archivo lo quita, dejando el acceso únicamente
+# por el API Gateway — que es como se despliega en producción (SAD §11).
+#
+#   docker compose -f docker-compose.yml -f docker-compose.escalado.yml \
+#     --profile servicios up -d --scale entradas-mercado-secundario=2
+#
+# Para volver a lo de siempre, basta con levantar sin este archivo.
+services:
+  entradas-mercado-secundario:
+    ports: !reset []

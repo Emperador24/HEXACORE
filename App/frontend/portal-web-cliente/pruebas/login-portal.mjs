@@ -16,7 +16,7 @@ import puppeteer from 'puppeteer-core';
 import assert from 'node:assert/strict';
 
 const PORTAL = 'http://localhost:4200';
-const API = 'http://localhost:3002/api/v1';
+const API = 'http://localhost:8080/api/v1'; // API Gateway (ADR-02)
 const BUZON = 'http://localhost:3098/correos';
 const CAPTURAS = process.argv[2];
 const DEMO = 'hexacore2026';

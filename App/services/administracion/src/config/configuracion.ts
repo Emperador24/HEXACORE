@@ -114,11 +114,6 @@ export interface ConfiguracionServicio {
    * de microservicios dejen de aceptarlas sin tener que preguntar a este.
    */
   redis: { host: string; puerto: number };
-  /**
-   * Orígenes de los portales web que pueden llamar a este servicio desde el
-   * navegador (CORS). Con cookies de por medio no vale `*`: hay que nombrarlos.
-   */
-  origenesWeb: string[];
   seguridad: ReglasSeguridad;
 }
 
@@ -214,10 +209,6 @@ export function cargarConfiguracion(): ConfiguracionServicio {
       urlBaseEnlaces: texto('CORREO_URL_BASE_ENLACES', 'http://localhost:4200/cuenta'),
     },
     jwt,
-    origenesWeb: texto('CORS_ORIGENES', 'http://localhost:4200,http://localhost:4201')
-      .split(',')
-      .map((o) => o.trim())
-      .filter(Boolean),
     redis: {
       host: texto('REDIS_HOST', 'localhost'),
       // 6380: el puerto en que lo expone App/infra/docker-compose.yml.

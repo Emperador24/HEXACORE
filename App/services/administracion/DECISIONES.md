@@ -491,9 +491,10 @@ como es una cabecera no estándar, el navegador exige una comprobación CORS pre
 puede enviarla. Es la protección contra CSRF, además de `SameSite`. La app móvil no envía la
 cabecera y sigue igual.
 
-**CORS:** con cookies no vale `Access-Control-Allow-Origin: *`; los orígenes permitidos se nombran en
-`CORS_ORIGENES` (por defecto, los portales en 4200 y 4201). Detrás del API Gateway, portal y API
-compartirían origen y esto dejaría de hacer falta.
+**CORS:** con cookies no vale `Access-Control-Allow-Origin: *`, hay que devolver el origen exacto.
+Esa lista **ya no vive en este servicio**: la mantiene el API Gateway, que es quien habla con los
+navegadores (§23). El `Path` de la cookie sigue funcionando igual, porque el gateway conserva la
+ruta: el portal ve `http://gateway:8080/api/v1/sesiones/…`.
 
 **Detalles:**
 
@@ -503,6 +504,39 @@ compartirían origen y esto dejaría de hacer falta.
 - **Visitante o sesión cerrada:** renovar **sin ningún token** responde `SIN_SESION`, distinto de
   `SESION_TERMINADA`. Así el portal distingue a un visitante (no avisa nada) de alguien cuya sesión
   se cerró mientras la página estaba cerrada (le explica por qué vuelve al login).
+
+---
+
+## 23. El gateway autentica preguntando a este servicio
+
+El ADR-02 pone un **API Gateway** como punto único de entrada, y RNF-06 exige que ninguna petición
+llegue a un servicio sin autenticar. La pregunta era **con qué** valida el gateway.
+
+**Lo que se descartó:** darle la clave pública y que verifique el JWT él mismo. Verificar la firma es
+la parte fácil; la difícil es saber si la sesión **sigue abierta**, que está en Redis y en la base de
+este servicio. Un gateway que solo mirara la firma dejaría pasar tokens de sesiones ya cerradas
+durante sus 15 minutos de vida, y para evitarlo habría que darle acceso a Redis y enseñarle el
+formato de las revocaciones: la lógica de sesiones repartida en dos sitios, uno de ellos un archivo
+de configuración de Nginx.
+
+**Decisión:** el gateway hace una subpetición (`auth_request` de Nginx) a
+`GET /api/v1/sesiones/verificar`, que hace exactamente lo mismo que el guard interno —firma,
+expiración y sesión abierta— y responde **204** con `X-Usuario-Id` y `X-Usuario-Roles`, o **401**.
+Solo si dice 204 se reenvía la petición, con esas dos cabeceras añadidas.
+
+**El coste** es una llamada extra por petición protegida, dentro de la red de Docker y sin tocar la
+base (la comprobación de sesión abierta se resuelve en Redis). A cambio, la decisión de "esta sesión
+vale" se toma en un solo lugar del sistema.
+
+**Los servicios siguen validando igual** (defensa en profundidad). La cabecera `X-Usuario-Id` que
+añade el gateway **no** autentica a nadie: si alguien llama directo a un servicio y la falsifica,
+recibe 401, porque el servicio verifica el token como siempre. Hay una prueba para ese intento en
+`App/gateway/pruebas/gateway.py`.
+
+**Lo que se mudó al gateway:** el CORS (§22) y el conocimiento de los puertos. La app móvil y los
+portales conocen **una sola dirección** —el `8080`— y ya no una por microservicio; añadir un servicio
+no obliga a tocar los clientes. Los puertos `3001`/`3002` siguen publicados solo porque las pruebas
+de cada servicio hablan directo con él.
 
 ---
 

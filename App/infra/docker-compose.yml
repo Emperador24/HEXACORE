@@ -141,6 +141,27 @@ services:
   # NODE_ENV=development porque usan las claves JWT de desarrollo, que en
   # producción se rechazan a propósito.
 
+  # API Gateway + balanceador (ADR-02): el punto único de entrada al backend.
+  # Autentica cada petición contra el Servicio de Administración antes de
+  # enrutarla, y reparte entre las réplicas de cada servicio.
+  api-gateway:
+    profiles: ["servicios"]
+    image: nginx:1.27-alpine
+    container_name: hexacore-gateway
+    restart: unless-stopped
+    depends_on:
+      administracion: { condition: service_healthy }
+      entradas-mercado-secundario: { condition: service_healthy }
+    volumes:
+      - ../gateway/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/salud || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
   # Servicio de Administración — CU-027 (cuentas, login, sesiones).
   administracion:
     profiles: ["servicios"]
@@ -177,7 +198,8 @@ services:
   entradas-mercado-secundario:
     profiles: ["servicios"]
     build: ../services/entradas-mercado-secundario
-    container_name: hexacore-entradas
+    # Sin `container_name`: es el que se replica para demostrar el balanceo
+    # (`--scale entradas-mercado-secundario=2`), y un nombre fijo lo impediría.
     restart: unless-stopped
     # Un init mínimo como PID 1: reenvía las señales a node y recoge procesos
     # huérfanos. Sin él, node es el PID 1 y el kernel le trata las señales de
