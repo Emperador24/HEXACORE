@@ -1,9 +1,27 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { ExecutionContext, INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import type { App } from 'supertest/types';
 import { randomUUID } from 'node:crypto';
 import { AppModule } from './../src/app.module.js';
+import { SesionValida } from './../src/comun/autenticacion/sesion-valida.guard.js';
+
+/**
+ * Sesión con la que corren estas pruebas.
+ *
+ * Son pruebas del **dominio** —horas máximas, búsqueda de reemplazo, anomalías
+ * de asistencia—, no de la autenticación: esa se comprueba de extremo a extremo
+ * en `App/gateway/pruebas/gateway.py`, contra el sistema entero. Aquí se
+ * sustituye el guard para no tener que firmar un token en cada petición.
+ *
+ * El rol es Administrador porque varias operaciones lo exigen (dar de alta a un
+ * empleado, revisar una solicitud).
+ */
+const SESION_DE_PRUEBA = {
+  usuarioId: '00000000-0000-4000-8000-000000000001',
+  roles: ['Administrador'],
+  jti: '00000000-0000-4000-8000-0000000000ff',
+};
 
 describe('CU-LOG-003 · Gestionar turno y asistencia del personal (e2e)', () => {
   let app: INestApplication<App>;
@@ -12,7 +30,15 @@ describe('CU-LOG-003 · Gestionar turno y asistencia del personal (e2e)', () => 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideGuard(SesionValida)
+      .useValue({
+        canActivate: (contexto: ExecutionContext) => {
+          contexto.switchToHttp().getRequest().sesion = SESION_DE_PRUEBA;
+          return true;
+        },
+      })
+      .compile();
 
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
@@ -28,7 +54,7 @@ describe('CU-LOG-003 · Gestionar turno y asistencia del personal (e2e)', () => 
     const credencial = `cred-${randomUUID()}`;
     const res = await request(server)
       .post('/empleados')
-      .send({ nombre: `Empleado ${credencial}`, rol, credencial })
+      .send({ usuarioId: randomUUID(), nombre: `Empleado ${credencial}`, rol, credencial })
       .expect(201);
     return res.body as { id: string; credencial: string };
   }
@@ -86,7 +112,7 @@ describe('CU-LOG-003 · Gestionar turno y asistencia del personal (e2e)', () => 
 
     const revisada = await request(server)
       .patch(`/solicitudes-cambio/${solicitud.body.solicitud.id}/revisar`)
-      .send({ supervisorId: randomUUID(), aprobar: true })
+      .send({ aprobar: true })
       .expect(200);
 
     expect(revisada.body.estado).toBe('APROBADA');
@@ -128,7 +154,7 @@ describe('CU-LOG-003 · Gestionar turno y asistencia del personal (e2e)', () => 
 
     await request(server)
       .patch(`/solicitudes-cambio/${solicitudId}/revisar`)
-      .send({ supervisorId: randomUUID(), aprobar: true })
+      .send({ aprobar: true })
       .expect(200);
 
     const pendientesLuego = await request(server)
@@ -158,7 +184,7 @@ describe('CU-LOG-003 · Gestionar turno y asistencia del personal (e2e)', () => 
 
     await request(server)
       .patch(`/solicitudes-cambio/${solicitud.body.solicitud.id}/revisar`)
-      .send({ supervisorId: randomUUID(), aprobar: true })
+      .send({ aprobar: true })
       .expect(200);
 
     // El consumidor procesa de forma asíncrona; se sondea hasta 5s.
@@ -260,7 +286,7 @@ describe('CU-LOG-003 · Gestionar turno y asistencia del personal (e2e)', () => 
   it('404 al revisar una solicitud de cambio inexistente', async () => {
     await request(server)
       .patch(`/solicitudes-cambio/${randomUUID()}/revisar`)
-      .send({ supervisorId: randomUUID(), aprobar: true })
+      .send({ aprobar: true })
       .expect(404);
   });
 
@@ -276,12 +302,12 @@ describe('CU-LOG-003 · Gestionar turno y asistencia del personal (e2e)', () => 
 
     await request(server)
       .patch(`/solicitudes-cambio/${solicitud.body.solicitud.id}/revisar`)
-      .send({ supervisorId: randomUUID(), aprobar: false })
+      .send({ aprobar: false })
       .expect(200);
 
     await request(server)
       .patch(`/solicitudes-cambio/${solicitud.body.solicitud.id}/revisar`)
-      .send({ supervisorId: randomUUID(), aprobar: true })
+      .send({ aprobar: true })
       .expect(400);
   });
 
@@ -337,7 +363,7 @@ describe('CU-LOG-003 · Gestionar turno y asistencia del personal (e2e)', () => 
 
     const revisada = await request(server)
       .patch(`/solicitudes-cambio/${solicitud.body.solicitud.id}/revisar`)
-      .send({ supervisorId: randomUUID(), aprobar: false })
+      .send({ aprobar: false })
       .expect(200);
 
     expect(revisada.body.estado).toBe('RECHAZADA');
@@ -366,7 +392,7 @@ describe('CU-LOG-003 · Gestionar turno y asistencia del personal (e2e)', () => 
 
     const revisada = await request(server)
       .patch(`/solicitudes-cambio/${solicitud.body.solicitud.id}/revisar`)
-      .send({ supervisorId: randomUUID(), aprobar: true })
+      .send({ aprobar: true })
       .expect(200);
 
     expect(revisada.body.estado).toBe('BLOQUEADA_POR_HORAS');

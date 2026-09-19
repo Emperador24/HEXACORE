@@ -1,114 +1,126 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Servicio de Eventos / Emergencias
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+SAD §9 (vista de componentes), CU-010, CU-016–CU-020, CU-026.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+**Responsabilidad:** CRUD de eventos, localidades y aforo (CU-026); planificación logística,
+asignación de personal operativo en campo, monitoreo del evento y gestión de incidentes
+(CU-016–020); y gestión de evacuación ante emergencias (CU-010, caso complejo — segundo hilo
+conductor del SAD, junto con CU-006).
 
-## Description
+**Componentes internos (SAD §9):** Controlador API, Servicio de Gestión de Eventos, Servicio de
+Protocolo de Emergencia, Gestor de Zonas y Aforo (apoyado en Redis), Repositorio de Eventos,
+Publicador de Eventos.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+**ASR relacionados:** ASR-05 (actualización de aforo y zonas en tiempo real).
 
-## Project setup
+**Responsables:** Samuel Emperador (CU-010, CU-026), Diego Coronado (CU-016–020).
 
-```bash
-$ npm install
-```
+**Base de datos:** PostgreSQL (esquema propio, ADR-01).
 
-## Compile and run the project
+## Estado
+
+| Caso de uso | Estado |
+|---|---|
+| **CU-018 — Gestionar turno y asistencia del personal** | ✅ Implementado: turnos, solicitudes de cambio con búsqueda de reemplazo, registro de asistencia y propagación por cola |
+| CU-016, CU-017, CU-019, CU-020 | Pendientes |
+| CU-010 (evacuación), CU-026 (eventos) | Pendientes |
+
+## Cómo levantarlo
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+cd ../../infra && ./iniciar.sh          # con todo el sistema
 ```
 
-## Run tests
+O suelto, contra la infraestructura compartida:
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+cp .env.example .env && npm install
+npm run start:dev                        # puerto 3016
+npm run seed                             # empleados y turno de ejemplo
 ```
 
-## Deployment
+**El `.env` debe apuntar a la infraestructura compartida** (`App/infra/docker-compose.yml`), no al
+`docker-compose.yml` de esta carpeta: aquel levanta un RabbitMQ en los mismos puertos que el
+compartido y los dos no pueden convivir. La base `eventos_emergencias` ya existe en el PostgreSQL
+compartido.
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+**Los clientes no usan el 3016.** Entran por el **API Gateway** (ADR-02), que enruta
+`/api/v1/logistica/...` hasta aquí.
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+## CU-018 — quién es quién
+
+La pieza que conecta este servicio con el resto del sistema es `empleados.usuario_id`.
+
+Las **cuentas** viven en el Servicio de Administración (CU-027): correo, contraseña y roles. Aquí
+está la **ficha operativa** de quien trabaja en el evento —su área, su credencial, sus horas— ligada
+a esa cuenta por su identificador. Es una referencia lógica, no una llave foránea: cada dominio
+tiene su base (ADR-01).
+
+De ahí salen tres reglas:
+
+1. **Un empleado no se registra solo.** `POST /empleados` exige rol `Administrador`. Alguien con
+   autoridad decide que esa persona trabaja en el evento, en qué área y con qué credencial.
+2. **El área decide lo que se ve.** Al iniciar sesión, la app pregunta `GET /empleados/yo` y muestra
+   únicamente las pantallas de esa área. Quien está en Parqueadero no ve la validación de entradas.
+   Antes la app adivinaba el área por el correo, con un mapa escrito dentro de la app que se
+   quedaba viejo en cuanto se daba de alta a alguien nuevo.
+3. **Una cuenta de Personal sin ficha no entra.** No es un error del sistema: es alguien a quien
+   todavía no han dado de alta, y se le dice eso mismo.
+
+El área es **texto libre** a propósito: qué áreas existen depende del evento y del recinto. La app
+reconoce `Entrada`, `Parqueadero`, `Restaurante` y `Jefe de personal`; a cualquier otra le muestra
+las pantallas comunes del personal.
+
+## Datos para probar
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+npm run seed      # 5 empleados de ejemplo, ligados a las cuentas de la semilla
+npm run carga     # da ficha y turnos a las cuentas de Personal de la carga masiva
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+La carga reparte áreas con pesos realistas (la mitad en Entrada, un jefe cada
+veinte personas) y asigna turnos vigentes, pasados y futuros — incluidos algunos
+empleados **sin turno**, que es el caso de quien acaba de ser contratado.
 
-## Observability
+Requiere haber corrido antes `cd ../administracion && npm run carga`: sin
+cuentas no hay a quién dar de alta.
 
-In production applications, observability is essential for understanding how your system behaves, detecting issues early, and maintaining reliable performance.
+## Endpoints
 
-[NestJS Observe](https://observe.nestjs.com) automatically instruments your NestJS application, giving you deep visibility into your system with minimal setup:
+Todos exigen sesión (RNF-06): token en `Authorization: Bearer`, verificado con la clave pública
+(ADR-11) y contrastado con Redis por si la sesión se cerró.
 
-- **Distributed tracing:** Follow requests across services and understand how they flow through your system.
-- **Waterfall analysis:** Visualize request execution and identify slow operations, bottlenecks, and unexpected delays.
-- **Performance analysis:** Analyze application performance in real time and quickly pinpoint areas that need optimization.
-- **Metrics:** Track key application and infrastructure metrics to understand system health and performance trends.
-- **Logging:** Centralize and correlate logs with traces and other telemetry to make debugging easier.
-- **Error tracking:** Detect errors quickly and investigate their root causes with the surrounding context.
-- **SLA monitoring:** Track service-level objectives and identify when your application is approaching or exceeding defined thresholds.
-- **Alarms and alerts:** Set up alerts for critical errors, performance degradation, SLA violations, and other anomalies so your team can react quickly.
+| Método | Ruta | Quién |
+|---|---|---|
+| `POST` | `/empleados` | Administrador |
+| `GET` | `/empleados` | Administrador, Organizador |
+| `GET` | `/empleados/yo` | Cualquiera con sesión — su propia ficha y turno vigente |
+| `POST` | `/turnos` | Con sesión |
+| `GET` | `/turnos` | Con sesión |
+| `POST` | `/turnos/:id/solicitudes-cambio` | Con sesión — el sistema busca reemplazo (mismo rol y zona, sin choque de horario) |
+| `GET` | `/solicitudes-cambio` | Con sesión |
+| `PATCH` | `/solicitudes-cambio/:id/revisar` | **Jefe de personal** o Administrador |
+| `POST` | `/asistencia/entrada`, `/asistencia/salida` | Con sesión |
+| `GET` | `/asistencia`, `/notificaciones` | Con sesión |
 
-## Resources
+Quién aprueba un cambio de turno **sale del token**, no del cuerpo de la petición. Antes el cliente
+mandaba un `supervisorId`, lo que permitía firmar una aprobación con el nombre de otro.
 
-Check out a few resources that may come in handy when working with NestJS:
+## Pruebas
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Auto-instrument your application with [NestJS Observer](https://observer.nestjs.com). Distributed tracing, metrics, and logging made easy. Error tracking and performance monitoring for your NestJS applications.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+```bash
+npm run test:e2e     # 20 pruebas de integración, con PostgreSQL y RabbitMQ reales
+npm test             # unitarias: todavía no hay (pasa en verde, no falla el CI)
+```
 
-## Support
+Las e2e sustituyen el guard de sesión: son pruebas del **dominio** —horas máximas, búsqueda de
+reemplazo, anomalías de asistencia—. La autenticación se comprueba de extremo a extremo contra el
+sistema entero en `App/gateway/pruebas/gateway.py`.
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+## Pendiente
 
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+- **Reintentos y DLQ** en el consumidor de la cola: hoy confirma el mensaje siempre, así que un
+  fallo al procesarlo lo pierde. El ADR-10 eligió RabbitMQ precisamente por traerlos de fábrica.
+- **Reconexión del publicador**: si RabbitMQ no está arriba al iniciar, los eventos se descartan en
+  silencio hasta reiniciar el servicio.
+- **Migraciones** en vez de `DB_SYNCHRONIZE=true`, como en los otros dos servicios.

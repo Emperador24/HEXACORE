@@ -94,10 +94,10 @@ jobs:
         run: npm run build
 
   # --------------------------------------------------------------------------
-  # Servicio de Eventos/Emergencias (CU-018). Sin `npm test` a propósito: sus
-  # pruebas están en `test/` y se corren con `npm run test:e2e`, que necesita
-  # Postgres y RabbitMQ; `npm test` no encuentra ninguna y devuelve error.
-  # Cuando se arregle el `include` de vitest.config.ts, se añade aquí.
+  # Servicio de Eventos/Emergencias (CU-018). Sus 20 pruebas son de integración
+  # y necesitan PostgreSQL y RabbitMQ (`npm run test:e2e`), así que aquí solo se
+  # compila y se pasa el lint. `npm test` corre y queda en verde aunque no haya
+  # unitarias, para que el pipeline no dé rojo por una ausencia conocida.
   # --------------------------------------------------------------------------
   logistica:
     name: Servicio eventos-emergencias
@@ -117,6 +117,8 @@ jobs:
       - run: npm ci
       - name: Lint
         run: npm run lint
+      - name: Pruebas unitarias
+        run: npm test
       - name: Compilar
         run: npm run build
 

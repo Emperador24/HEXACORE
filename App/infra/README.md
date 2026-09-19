@@ -10,6 +10,43 @@ usa un clúster de Kubernetes (ver la Figura "Diagrama de despliegue" en
 Para desarrollar, los microservicios corren **fuera** de Docker (`npm run start:dev`) y se conectan
 a estos puertos, para no perder la recarga en caliente.
 
+## Arrancar todo con una sola orden
+
+```bash
+cd App/infra
+./iniciar.sh                       # sistema completo en este computador
+./iniciar.sh --replicas 2          # con 2 instancias del Servicio de Entradas
+./iniciar.sh --parar               # bajarlo, conservando los datos
+```
+
+Levanta la capa de datos, los microservicios y el API Gateway, espera a que
+respondan, siembra los datos de ejemplo e imprime las direcciones y las cuentas.
+Desde cero tarda alrededor de **1 min 20 s**.
+
+### Repartido en dos computadores
+
+Es el requisito de desplegabilidad. En el computador **A** (capa de datos):
+
+```bash
+./iniciar.sh --rol datos           # imprime su IP al terminar
+```
+
+En el computador **B** (microservicios y gateway):
+
+```bash
+./iniciar.sh --rol servicios --datos 192.168.1.20
+```
+
+Las variables `HOST_POSTGRES`, `HOST_REDIS`, `HOST_RABBIT`, `HOST_CORREO` y
+`HOST_PASARELA` del compose son las que permiten esto; el script las exporta y
+añade `docker-compose.remoto.yml`, que quita las dependencias locales para que
+Docker no levante una base de datos en la máquina equivocada.
+
+Las interfaces se arrancan aparte, apuntando al gateway del computador B
+(`npm start` en el portal, `flutter run --dart-define=HEXACORE_HOST=<IP de B>`).
+
+## Órdenes de Docker Compose directas
+
 ```bash
 docker compose -f App/infra/docker-compose.yml up -d      # levantar
 docker compose -f App/infra/docker-compose.yml ps         # estado

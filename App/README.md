@@ -22,7 +22,7 @@ convención del repo personal de patrones.
 | `services/*` (backend) | **NestJS** (Node.js + TypeScript) | Elegido con evidencia medida en PoC-04 (ADR-09): ambos candidatos cumplen RNF-07 con 70× de margen, y NestJS gana en arranque, memoria y —sobre todo— en ser el lenguaje que el equipo ya escribe en los portales |
 | BD transaccional (todos los dominios) | **PostgreSQL** | Motor relacional por microservicio (ADR-01), ACID para flujos concurrentes como la reventa de entradas (junto con el lock de Redis, ADR-03) |
 | BD de Reportes/analítica (`administracion`) | **MongoDB** | Esquema documental para datos semi-estructurados de reportes (polyglot persistence, sección 12 del SAD) |
-| Caché / bloqueo distribuido | **Redis** (ADR-03) | Ya decidido — confirmado con evidencia en PoC-01 |
+| Caché / bloqueo distribuido | **Redis** (ADR-03) | Bloqueo del checkout de reventa y lista de sesiones revocadas; comprobado con `rnf01-concurrencia.py` sobre el servicio real |
 | Cola de mensajes | **RabbitMQ** (ADR-10) | Elegido con evidencia medida en PoC-05: el uso aquí es cola de tareas, no *event streaming*; DLQ y reintentos nativos (ASR-07, ASR-13), la mitad de memoria y de configuración que Kafka |
 
 Como el frontend web (TypeScript) y el móvil (Dart) no comparten lenguaje, los contratos en

@@ -206,6 +206,31 @@ void main() {
     expect(find.textContaining('Por seguridad'), findsOneWidget);
   });
 
+  testWidgets('cada empleado entra al área que le asignó el administrador',
+      (tester) async {
+    // El área no está escrita en la app: la asigna un administrador al dar de
+    // alta al empleado (CU-018) y la app la consulta al entrar. Dos cuentas de
+    // Personal, dos áreas distintas, dos juegos de pantallas.
+    await tester.pumpWidget(const HexacoreApp());
+    await esperar(tester, find.byType(LoginPage));
+    await ingresar(tester, 'parqueadero@hexacore.com', 'hexacore2026');
+    await esperar(tester, find.byType(StaffShell));
+
+    expect(sesion.usuario!.roles, contains('Personal'));
+    expect(find.text('Parqueadero'), findsWidgets);
+    // Y no ve lo que no le toca.
+    expect(find.text('Validar entradas'), findsNothing);
+    expect(find.byType(ClientShell), findsNothing);
+
+    await cuentasApi.cerrarSesion();
+    await esperar(tester, find.byType(LoginPage));
+
+    await ingresar(tester, 'personal@hexacore.com', 'hexacore2026');
+    await esperar(tester, find.byType(StaffShell));
+    expect(find.text('Validar entradas'), findsWidgets);
+    expect(find.text('Parqueadero'), findsNothing);
+  });
+
   testWidgets('la sesión sobrevive a reiniciar la app (llavero)', (tester) async {
     await cuentasApi.iniciarSesion('cliente@hexacore.com', 'hexacore2026');
     // Una sesión nueva, vacía, que solo puede salir del almacén seguro.

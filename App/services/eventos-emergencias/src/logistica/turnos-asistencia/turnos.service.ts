@@ -1,5 +1,7 @@
 import {
   BadRequestException,
+  ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -15,6 +17,7 @@ import { Turno } from './entities/turno.entity.js';
 import { EstadoSolicitudCambio, EstadoTurno } from './enums/estados.js';
 import { EventosPublicadorService } from './eventos-publicador.service.js';
 import {
+  JEFE_DE_PERSONAL,
   MAX_HORAS_DIARIAS_EMPLEADO,
   MAX_HORAS_POR_TURNO,
 } from './turnos-asistencia.constants.js';
@@ -31,13 +34,56 @@ export class TurnosService {
     private readonly eventosPublicador: EventosPublicadorService,
   ) {}
 
-  crearEmpleado(dto: CrearEmpleadoDto) {
+  /**
+   * Alta de un empleado por parte de un administrador (CU-018, paso previo).
+   *
+   * Dos motivos para que falle, y los dos se explican en claro: que esa cuenta
+   * ya tenga ficha, o que la credencial ya esté en uso. Dejar salir el error
+   * crudo de Postgres diría `duplicate key value violates unique constraint`,
+   * que no le sirve a quien está dando de alta a alguien.
+   */
+  async crearEmpleado(dto: CrearEmpleadoDto) {
+    const yaTiene = await this.empleados.findOneBy({ usuarioId: dto.usuarioId });
+    if (yaTiene) {
+      throw new ConflictException(
+        `Esa cuenta ya está dada de alta como empleado (${yaTiene.nombre}, ${yaTiene.rol}).`,
+      );
+    }
+    const credencialUsada = await this.empleados.findOneBy({ credencial: dto.credencial });
+    if (credencialUsada) {
+      throw new ConflictException('Esa credencial ya pertenece a otro empleado.');
+    }
     const empleado = this.empleados.create(dto);
     return this.empleados.save(empleado);
   }
 
   listarEmpleados() {
     return this.empleados.find();
+  }
+
+  /**
+   * La ficha del empleado de una cuenta, o `null` si esa cuenta no es empleada.
+   *
+   * Es lo que la app pregunta nada más iniciar sesión para saber **a qué área
+   * pertenece quien entró**, y por tanto qué pantallas mostrarle. Devuelve
+   * `null` en vez de lanzar: no ser empleado no es un error, es el caso de
+   * cualquier cliente.
+   */
+  async fichaDeUsuario(usuarioId: string) {
+    const empleado = await this.empleados.findOneBy({ usuarioId, activo: true });
+    if (!empleado) return null;
+
+    const ahora = new Date();
+    const turnoVigente = await this.turnos.findOne({
+      where: {
+        empleadoId: empleado.id,
+        horaInicio: LessThan(ahora),
+        horaFin: MoreThan(ahora),
+        estado: Not(EstadoTurno.CAMBIADO),
+      },
+    });
+
+    return { empleado, turnoVigente: turnoVigente ?? null };
   }
 
   async crearTurno(dto: CrearTurnoDto) {
@@ -140,11 +186,39 @@ export class TurnosService {
   }
 
   /**
+   * Comprueba que quien revisa una solicitud puede hacerlo, y devuelve su id de
+   * empleado.
+   *
+   * La regla no se puede expresar solo con el rol del token: todo el personal
+   * tiene el mismo rol `Personal`, y lo que distingue al jefe es su **área**,
+   * que vive en este servicio. Un administrador también puede revisar, porque
+   * puede todo.
+   */
+  private async exigirJefeDePersonal(revisor: {
+    usuarioId: string;
+    roles: string[];
+  }): Promise<string | null> {
+    const empleado = await this.empleados.findOneBy({ usuarioId: revisor.usuarioId, activo: true });
+    if (empleado?.rol === JEFE_DE_PERSONAL) return empleado.id;
+    if (revisor.roles.includes('Administrador')) return empleado?.id ?? null;
+
+    throw new ForbiddenException({
+      codigo: 'ROL_INSUFICIENTE',
+      mensaje: 'Solo el jefe de personal puede aprobar o rechazar un cambio de turno.',
+    });
+  }
+
+  /**
    * CU-LOG-003, pasos 3-4 + alterno B + excepción C: el supervisor aprueba
    * o rechaza el cambio; si aprueba, se valida el límite de horas antes de
    * reasignar el turno.
    */
-  async revisarSolicitud(solicitudId: string, dto: RevisarSolicitudDto) {
+  async revisarSolicitud(
+    solicitudId: string,
+    dto: RevisarSolicitudDto,
+    revisor: { usuarioId: string; roles: string[] },
+  ) {
+    const empleadoRevisor = await this.exigirJefeDePersonal(revisor);
     const solicitud = await this.solicitudes.findOneBy({ id: solicitudId });
     if (!solicitud) {
       throw new NotFoundException('Solicitud no encontrada.');
@@ -163,7 +237,7 @@ export class TurnosService {
     if (!dto.aprobar) {
       // CU-LOG-003B: el supervisor rechaza, se mantiene el turno original.
       solicitud.estado = EstadoSolicitudCambio.RECHAZADA;
-      solicitud.revisadoPorId = dto.supervisorId;
+      solicitud.revisadoPorId = empleadoRevisor;
       solicitud.fechaRevision = new Date();
       turno.estado = EstadoTurno.ASIGNADO;
       await this.turnos.save(turno);
@@ -184,7 +258,7 @@ export class TurnosService {
         MAX_HORAS_DIARIAS_EMPLEADO
     ) {
       solicitud.estado = EstadoSolicitudCambio.BLOQUEADA_POR_HORAS;
-      solicitud.revisadoPorId = dto.supervisorId;
+      solicitud.revisadoPorId = empleadoRevisor;
       solicitud.fechaRevision = new Date();
       solicitud.motivoRechazoOBloqueo =
         'El cambio solicitado supera el límite de horas permitidas por turno.';
@@ -195,7 +269,7 @@ export class TurnosService {
     }
 
     solicitud.estado = EstadoSolicitudCambio.APROBADA;
-    solicitud.revisadoPorId = dto.supervisorId;
+    solicitud.revisadoPorId = empleadoRevisor;
     solicitud.fechaRevision = new Date();
 
     const empleadoAnteriorId = turno.empleadoId;

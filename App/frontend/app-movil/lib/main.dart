@@ -97,30 +97,36 @@ final _events = [
 
 // Área operativa de cada cuenta de Personal.
 //
-// PROVISIONAL. El área (Entrada, Parqueadero, Restaurante, Jefe de personal)
-// es un dato del dominio de Personal (CU-007), que aún no tiene servicio. El
-// token del CU-027 solo dice que la cuenta tiene rol Personal. Hasta que ese
-// servicio exista, las cuentas de demostración de Personal se asignan aquí; el
-// resto va a Entrada.
-const _areasPersonal = {
-  'parqueadero@hexacore.com': 'Parqueadero',
-  'restaurante@hexacore.com': 'Restaurante',
-  'jefepersonal@hexacore.com': 'Jefe de personal',
-};
-
 // La app es para Clientes y Personal (ADR-07). Una cuenta que solo sea
 // Organizador o Administrador usa el portal web.
-User? _usuarioDeApp(UsuarioSesion u) {
+bool _rolConCabida(UsuarioSesion u) =>
+    u.roles.contains('Cliente') || u.roles.contains('Personal');
+
+/// Quién entra y a qué pantallas.
+///
+/// El **área** de quien es Personal (Entrada, Parqueadero, Restaurante, Jefe de
+/// personal) no la decide la app: la asigna un administrador al dar de alta al
+/// empleado en el servicio de Logística (CU-018), y la app la consulta al
+/// entrar. Antes había aquí un mapa de correos a áreas, que era una copia de la
+/// realidad condenada a quedarse vieja: alta un empleado nuevo y la app no se
+/// enteraba.
+///
+/// Con `area` en `null` quien es solo Personal no tiene todavía dónde entrar —
+/// o porque la ficha no ha llegado, o porque esa cuenta no está dada de alta.
+User? _usuarioDeApp(UsuarioSesion u, String? area) {
   if (u.roles.contains('Cliente')) return User(u.nombre, u.email, 'Cliente');
-  if (u.roles.contains('Personal')) {
-    return User(u.nombre, u.email, 'Personal',
-        position: _areasPersonal[u.email] ?? 'Entrada');
+  if (u.roles.contains('Personal') && area != null) {
+    return User(u.nombre, u.email, 'Personal', position: area);
   }
   return null;
 }
 
 const _rolesSinApp =
     'Esta app es para clientes y personal. Con tu cuenta, usa el portal web.';
+
+const _sinFichaDeEmpleado =
+    'Tu cuenta todavía no está dada de alta como empleado. '
+    'Pídele a un administrador que te registre y te asigne un área.';
 
 class HexacoreApp extends StatefulWidget {
   const HexacoreApp({super.key});
@@ -142,10 +148,58 @@ class _HexacoreAppState extends State<HexacoreApp> {
   // Si la app estaba mostrando la pantalla de una cuenta (no el login).
   bool _dentro = false;
 
+  /// Área de trabajo de quien entró, traída del servicio de Logística. Solo
+  /// tiene valor para el personal; un cliente no tiene área.
+  String? _area;
+
+  /// Mientras se pregunta el área no se puede decidir qué pantalla mostrar: si
+  /// se decidiera ya, el personal vería un parpadeo del login antes de entrar.
+  bool _cargandoArea = false;
+
   // El usuario sale siempre de la sesión: no hay otra fuente de identidad.
   User? get _user {
     final u = sesion.usuario;
-    return u == null || !sesion.abierta ? null : _usuarioDeApp(u);
+    return u == null || !sesion.abierta ? null : _usuarioDeApp(u, _area);
+  }
+
+  /// Pregunta al servidor qué empleado es quien tiene la sesión abierta.
+  ///
+  /// Solo hace falta para quien es Personal y no Cliente: si la cuenta también
+  /// es de cliente, entra por ahí y el área no decide nada.
+  Future<void> _cargarArea() async {
+    final usuario = sesion.usuario;
+    if (usuario == null ||
+        !sesion.abierta ||
+        usuario.roles.contains('Cliente') ||
+        !usuario.roles.contains('Personal')) {
+      if (_area != null && mounted) setState(() => _area = null);
+      return;
+    }
+
+    setState(() => _cargandoArea = true);
+    try {
+      final ficha = await logisticaApiClient.miFicha();
+      if (!mounted) return;
+      if (ficha == null) {
+        // Rol Personal pero sin ficha: no hay pantallas que mostrarle. Se
+        // cierra la sesión y se explica, en vez de dejarla en un limbo.
+        setState(() => _cargandoArea = false);
+        await cuentasApi.cerrarSesion();
+        _mensajero.currentState
+            ?.showSnackBar(const SnackBar(content: Text(_sinFichaDeEmpleado)));
+        return;
+      }
+      setState(() {
+        _area = ficha.area;
+        _cargandoArea = false;
+        _dentro = _user != null;
+      });
+    } catch (_) {
+      // Sin red o con el servicio caído no se puede saber el área. Se deja
+      // como estaba: quien ya estaba dentro sigue, y quien acaba de entrar
+      // verá el login con el mensaje de la propia excepción.
+      if (mounted) setState(() => _cargandoArea = false);
+    }
   }
 
   @override
@@ -183,6 +237,7 @@ class _HexacoreAppState extends State<HexacoreApp> {
     // vuelve sola al login. Sin red se sigue con los datos guardados.
     if (sesion.abierta) {
       cuentasApi.comprobarSesion().catchError((_) => sesion.usuario!);
+      _cargarArea();
     }
   }
 
@@ -196,10 +251,23 @@ class _HexacoreAppState extends State<HexacoreApp> {
     final usuario = sesion.usuario;
     final dentro = _dentro;
     _dentro = _user != null;
+
+    // Sesión recién abierta por alguien de personal: hay que preguntar su área
+    // antes de poder mostrarle nada.
+    if (sesion.abierta &&
+        usuario != null &&
+        !usuario.roles.contains('Cliente') &&
+        usuario.roles.contains('Personal') &&
+        _area == null &&
+        !_cargandoArea) {
+      _cargarArea();
+    }
+    if (!sesion.abierta) _area = null;
+
     if (dentro &&
         sesion.abierta &&
         usuario != null &&
-        _usuarioDeApp(usuario) == null) {
+        !_rolConCabida(usuario)) {
       cuentasApi.cerrarSesion().then((_) => _mensajero.currentState
           ?.showSnackBar(const SnackBar(content: Text(_rolesSinApp))));
       return;
@@ -236,7 +304,7 @@ class _HexacoreAppState extends State<HexacoreApp> {
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: _dark ? ThemeMode.dark : ThemeMode.light,
-      home: _checkingSession
+      home: _checkingSession || _cargandoArea
           ? const GlassScaffold(
               body: Center(child: CircularProgressIndicator()),
             )
@@ -296,7 +364,7 @@ class _LoginPageState extends State<LoginPage> {
     try {
       final usuario =
           await cuentasApi.iniciarSesion(_email.text, _password.text);
-      if (_usuarioDeApp(usuario) == null) {
+      if (!_rolConCabida(usuario)) {
         // Rol sin cabida en la app: se cierra también en el servidor, para no
         // dejar un token vivo que nadie va a usar.
         await cuentasApi.cerrarSesion();
@@ -1983,6 +2051,7 @@ class _RequestsReviewPageState extends State<RequestsReviewPage> {
     });
     try {
       final pendientes = await logisticaApiClient.solicitudesPendientes();
+      if (!mounted) return;
       setState(() {
         _solicitudesPendientes = pendientes;
         _loading = false;
@@ -1999,10 +2068,10 @@ class _RequestsReviewPageState extends State<RequestsReviewPage> {
 
   Future<void> _revisar(Map<String, dynamic> solicitud, bool aprobar) async {
     try {
+      // Quién revisa ya no lo dice la app: sale del token, y el servidor
+      // comprueba que esa persona sea jefe de personal.
       await logisticaApiClient.revisarSolicitud(
-          solicitudId: solicitud['id'] as String,
-          supervisorCredencial: widget.supervisorCredencial,
-          aprobar: aprobar);
+          solicitudId: solicitud['id'] as String, aprobar: aprobar);
       final turno = solicitud['turno'] as Map?;
       final empleado = turno?['empleado'] as Map?;
       activityLog.add(ActivityEntry(
@@ -2182,12 +2251,17 @@ class _ShiftsPageState extends State<ShiftsPage> {
       _error = null;
     });
     try {
-      final turno = await logisticaApiClient.miTurno(widget.credencial);
+      final turno = await logisticaApiClient.miTurno();
+      // La petición puede terminar después de que la persona haya salido de
+      // esta pantalla (o cerrado sesión): entonces ya no hay estado que
+      // actualizar, y hacerlo revienta.
+      if (!mounted) return;
       setState(() {
         _turno = turno;
         _loading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e is LogisticaApiException
             ? e.message
@@ -2337,6 +2411,7 @@ class _AttendancePageState extends State<AttendancePage> {
     try {
       final registros =
           await logisticaApiClient.misRegistrosAsistencia(widget.credencial);
+      if (!mounted) return;
       setState(() {
         _ultimoRegistro = registros.isEmpty
             ? null
@@ -2361,6 +2436,7 @@ class _AttendancePageState extends State<AttendancePage> {
       final registro = entrada
           ? await logisticaApiClient.registrarEntrada(widget.credencial)
           : await logisticaApiClient.registrarSalida(widget.credencial);
+      if (!mounted) return;
       setState(() {
         _ultimoRegistro = registro;
         _sending = false;
