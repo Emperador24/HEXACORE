@@ -68,15 +68,15 @@
 		</array>
 		<key>UIStatusBarHidden</key>
 		<false/>
-		<!-- Solo redes locales: permite hablar con el backend de desarrollo en
-		     http://localhost sin abrir ATS para todo Internet. En producción el
-		     tráfico va por HTTPS al API Gateway (ADR-02, RNF-05). -->
-		<key>NSAppTransportSecurity</key>
-		<dict>
-			<key>NSAllowsLocalNetworking</key>
-			<true/>
-		</dict>
 		<key>NSCameraUsageDescription</key>
 		<string>HEXACORE necesita la cámara para escanear códigos QR de entradas, personal y pedidos.</string>
+		<!-- Dev-only: el backend de eventos-emergencias corre en HTTP plano en
+		     la red local durante desarrollo (sin gateway/TLS todavía). iOS
+		     bloquea HTTP sin cifrar por defecto (App Transport Security). -->
+		<key>NSAppTransportSecurity</key>
+		<dict>
+			<key>NSAllowsArbitraryLoads</key>
+			<true/>
+		</dict>
 	</dict>
 </plist>
