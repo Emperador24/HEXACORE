@@ -5,13 +5,22 @@ import { Notificacion } from '../logistica/turnos-asistencia/entities/notificaci
 import { RegistroAsistencia } from '../logistica/turnos-asistencia/entities/registro-asistencia.entity.js';
 import { SolicitudCambioTurno } from '../logistica/turnos-asistencia/entities/solicitud-cambio-turno.entity.js';
 import { Turno } from '../logistica/turnos-asistencia/entities/turno.entity.js';
+import { ZonaEvento } from '../logistica/turnos-asistencia/entities/zona-evento.entity.js';
 import { EsquemaInicialCu0181789718400000 } from './migraciones/1789718400000-EsquemaInicialCu018.js';
+import { Cu017PersonalOperativo1789750000000 } from './migraciones/1789750000000-Cu017PersonalOperativo.js';
 
 cargarEnv();
 
-export const ENTIDADES = [Empleado, Turno, SolicitudCambioTurno, RegistroAsistencia, Notificacion];
+export const ENTIDADES = [
+  Empleado,
+  Turno,
+  SolicitudCambioTurno,
+  RegistroAsistencia,
+  Notificacion,
+  ZonaEvento,
+];
 
-export const MIGRACIONES = [EsquemaInicialCu0181789718400000];
+export const MIGRACIONES = [EsquemaInicialCu0181789718400000, Cu017PersonalOperativo1789750000000];
 
 export function opcionesDataSource(): DataSourceOptions {
   return {

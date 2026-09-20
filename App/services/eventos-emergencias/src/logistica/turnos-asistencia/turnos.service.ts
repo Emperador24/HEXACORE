@@ -231,9 +231,11 @@ export class TurnosService {
     // Infraestructura no trivial de CU-018: propaga el cambio por cola de
     // mensajes en vez de notificar síncronamente dentro de esta petición.
     await this.eventosPublicador.publicarCambioTurno({
+      tipo: 'TURNO_CAMBIADO',
       turnoId: turno.id,
       empleadoAnteriorId,
       empleadoNuevoId: reemplazo!.id,
+      mensaje: `Se te asignó el turno ${turno.id} por cambio aprobado.`,
     });
 
     return guardada;

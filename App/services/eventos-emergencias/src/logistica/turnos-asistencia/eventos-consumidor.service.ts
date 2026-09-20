@@ -133,7 +133,7 @@ export class EventosConsumidorService implements OnModuleInit, OnModuleDestroy {
         tipo: evento.tipo,
         turnoId: evento.turnoId,
         empleadoId: evento.empleadoNuevoId,
-        mensaje: `Se te asignó el turno ${evento.turnoId} por cambio aprobado.`,
+        mensaje: evento.mensaje,
         latenciaMs,
       });
       await this.notificaciones.save(notificacion);

@@ -20,10 +20,13 @@ export interface CambioTurnoEvento {
    * vez de notificar dos veces.
    */
   id: string;
-  tipo: 'TURNO_CAMBIADO';
+  // TURNO_CAMBIADO: CU-018, cambio de turno aprobado.
+  // PERSONAL_ASIGNADO: CU-017, asignación de personal a una zona (paso 9).
+  tipo: 'TURNO_CAMBIADO' | 'PERSONAL_ASIGNADO';
   turnoId: string;
-  empleadoAnteriorId: string;
+  empleadoAnteriorId?: string;
   empleadoNuevoId: string;
+  mensaje: string;
   publicadoEn: string;
 }
 
@@ -103,14 +106,13 @@ export class EventosPublicadorService implements OnModuleInit, OnModuleDestroy {
     await this.conexion?.close();
   }
 
-  async publicarCambioTurno(evento: Omit<CambioTurnoEvento, 'tipo' | 'publicadoEn' | 'id'>) {
+  async publicarCambioTurno(evento: Omit<CambioTurnoEvento, 'id' | 'publicadoEn'>) {
     if (!this.canal) {
       this.logger.warn('Canal de RabbitMQ no disponible; se omite la publicación del evento.');
       return;
     }
     const mensaje: CambioTurnoEvento = {
       id: randomUUID(),
-      tipo: 'TURNO_CAMBIADO',
       ...evento,
       publicadoEn: new Date().toISOString(),
     };
