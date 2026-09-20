@@ -75,10 +75,10 @@ export const USUARIOS: UsuarioDemo[] = [
     roles: [NombreRol.ADMINISTRADOR, NombreRol.PERSONAL],
     paraQue: 'Administrador con dos roles: prueba que la asignación múltiple funciona',
   },
-  // Las tres siguientes existen porque la app móvil ya las usaba como cuentas
-  // de ejemplo de Personal, cada una con un área operativa distinta. El área
-  // es del dominio de Personal (CU-007) y la app la asigna por correo mientras
-  // ese servicio no exista.
+  // Las siguientes son cuentas de Personal, una por área operativa. El área ya
+  // no la adivina la app: la asigna un administrador al dar de alta al empleado
+  // en el servicio de Logística (CU-018), que guarda la ficha ligada a esta
+  // cuenta por su identificador.
   {
     id: 'a0000008-0000-4000-8000-000000000008',
     nombre: 'Marta Gómez',
@@ -102,6 +102,15 @@ export const USUARIOS: UsuarioDemo[] = [
     estado: EstadoCuenta.ACTIVA,
     roles: [NombreRol.PERSONAL],
     paraQue: 'Jefe de personal en la app móvil',
+  },
+  {
+    id: 'a0000011-0000-4000-8000-000000000011',
+    nombre: 'Sofía Vargas',
+    email: 'reemplazo@hexacore.com',
+    estado: EstadoCuenta.ACTIVA,
+    roles: [NombreRol.PERSONAL],
+    paraQue:
+      'Personal de Entrada sin turno asignado: es quien puede cubrir un cambio de turno (CU-018)',
   },
   {
     id: 'a0000006-0000-4000-8000-000000000006',

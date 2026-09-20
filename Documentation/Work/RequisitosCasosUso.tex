@@ -1,0 +1,2252 @@
+% ARCHIVO GENERADO por generar-requisitos-cu.py — no editar a mano.
+% Fuente: Submission/CU_eventos_completo.xlsx (32 casos de uso).
+
+\subsection{CU-001 --- Compra de entradas}
+\label{cu:cu-001}
+\textit{Responsable: Daniel Cristancho.}
+
+\begin{description}[leftmargin=!, labelwidth=3.4cm, style=nextline, topsep=3pt]
+\item[Objetivo] El usuario consulta los eventos disponibles, selecciona uno, elige la localidad y cantidad de entradas, realiza el pago y recibe sus boletos digitales con código QR.
+
+\item[Actores] Cliente
+
+\item[CU relacionados] CU-005: Consultar evento
+
+\item[Entradas] Evento, localidad, cantidad de entradas, datos de pago
+
+\item[Pre-condiciones] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. Que el evento tenga disponibilidad de entradas.
+  \item 2. Que el usuario esté autenticado en el sistema.
+\end{itemize}
+
+\item[Salidas] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. Entradas digitales con código QR.
+  \item 2. Confirmación de compra enviada por correo.
+\end{itemize}
+
+\item[Post-condiciones] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. Registro de la compra en la base de datos.
+  \item 2. Actualización de la disponibilidad del evento.
+\end{itemize}
+
+\end{description}
+
+\paragraph{Flujo básico de éxito}
+\begin{longtable}{P{1.1cm}P{1.8cm}P{10.5cm}}
+\toprule
+\textbf{Paso} & \textbf{Quién} & \textbf{Acción}\\
+\midrule
+\endhead
+1 & Actor & El usuario consulta los eventos disponibles y selecciona uno.\\
+2 & Sistema & Mostrar detalles del evento y disponibilidad.\\
+3 & Actor & El usuario elige el evento, localidad y cantidad de entradas.\\
+4 & Sistema & Confirmar selección y calcular el total.\\
+5 & Actor & El usuario realiza el pago.\\
+6 & Sistema & Procesar el pago.\\
+7 & Sistema & Generar el código QR para cada entrada.\\
+8 & Sistema & Enviar confirmación y boletos por correo.\\
+\bottomrule
+\end{longtable}
+
+\paragraph{Flujos alternativos}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item CU-001A: Si no hay disponibilidad el sistema informa al usuario y no permite continuar.
+  \item CU-001B: Si el tiempo de compra expira se cancela la reserva y se reinicia el proceso.
+  \item CU-001C: Si el pago es rechazado el sistema muestra un mensaje de error y permite reintentar.
+\end{itemize}
+
+\paragraph{Extensiones}
+No hay extensiones conocidas
+
+\paragraph{Atributos de calidad asociados}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Rendimiento: procesar el pago y generar el código QR en segundos, incluso en la apertura de venta de un evento muy demandado.
+  \item Consistencia: no vender más entradas que el aforo disponible; controlar la concurrencia entre compradores simultáneos.
+  \item Seguridad: proteger los datos de pago del cliente y cumplir estándares de la industria (PCI-DSS).
+  \item Disponibilidad: el sistema debe soportar picos de tráfico en el momento de apertura de venta de un evento.
+\end{itemize}
+
+\paragraph{Infraestructura no trivial}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Cola de mensajes (RabbitMQ/Kafka): para desacoplar la generación del QR y el envío del correo de confirmación del flujo de pago, evitando bloqueos síncronos.
+  \item Caché en memoria (Redis): para bloquear temporalmente el inventario de entradas durante el checkout y evitar la sobreventa.
+  \item API Gateway + balanceador de carga: para absorber los picos de tráfico en la apertura de venta de eventos populares.
+\end{itemize}
+
+\subsection{CU-002 --- Validar QR}
+\label{cu:cu-002}
+\textit{Responsable: Daniel Cristancho.}
+
+\begin{description}[leftmargin=!, labelwidth=3.4cm, style=nextline, topsep=3pt]
+\item[Objetivo] Al llegar al evento, el asistente presenta su código QR. El sistema valida que la entrada sea auténtica, que no haya sido utilizada y registra el ingreso.
+
+\item[Actores] Personal de ingreso, Cliente
+
+\item[CU relacionados] CU-001: Compra de entradas
+
+\item[Entradas] Código QR de la entrada
+
+\item[Pre-condiciones] 1. Que la entrada haya sido comprada y el cliente cuente con su código QR.
+
+\item[Salidas] 1. Mensaje de ingreso autorizado.
+
+\item[Post-condiciones] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. Registro de la hora de acceso.
+  \item 2. Actualización del aforo del evento.
+\end{itemize}
+
+\end{description}
+
+\paragraph{Flujo básico de éxito}
+\begin{longtable}{P{1.1cm}P{1.8cm}P{10.5cm}}
+\toprule
+\textbf{Paso} & \textbf{Quién} & \textbf{Acción}\\
+\midrule
+\endhead
+1 & Actor & El asistente presenta su código QR en el punto de acceso.\\
+2 & Sistema & Escanea el código QR.\\
+3 & Sistema & Verifica que el código corresponda a una entrada válida del evento.\\
+4 & Sistema & Verifica que la entrada no haya sido utilizada previamente.\\
+5 & Sistema & Verifica que el aforo del evento no haya alcanzado el límite máximo.\\
+6 & Sistema & Registra la hora de ingreso.\\
+7 & Sistema & Marca el código QR como utilizado para impedir un segundo ingreso.\\
+8 & Sistema & Actualiza el aforo del evento.\\
+9 & Actor & El personal de ingreso confirma visualmente que el asistente corresponde a la entrada presentada.\\
+10 & Sistema & Autoriza el ingreso y muestra la confirmación al personal.\\
+\bottomrule
+\end{longtable}
+
+\paragraph{Flujos alternativos}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item CU-002A: Si el código QR es inválido, el sistema muestra un mensaje de error y no autoriza el ingreso.
+  \item CU-002B: Si el aforo del evento está en su límite, el sistema niega el ingreso y sugiere una zona de espera.
+  \item CU-002C: Si el personal de ingreso detecta una inconsistencia entre el asistente y los datos de la entrada, puede solicitar una identificación adicional antes de autorizar el ingreso.
+\end{itemize}
+
+\paragraph{Extensiones}
+No hay extensiones conocidas
+
+\paragraph{Atributos de calidad asociados}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Rendimiento: la validación del código QR debe completarse en milisegundos para no generar filas en el acceso.
+  \item Disponibilidad: el punto de acceso debe seguir operando aunque la conexión a internet sea intermitente.
+  \item Seguridad: evitar QR falsificados o reutilizados.
+  \item Consistencia: un mismo QR no puede validar dos ingresos simultáneos.
+\end{itemize}
+
+\paragraph{Infraestructura no trivial}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Caché en memoria (Redis) con el estado de los QR válidos/usados, para permitir validaciones rápidas y operar en modo local ante cortes de red.
+  \item Sincronización asíncrona con la base de datos central cuando se recupera la conexión.
+  \item Dispositivo/app móvil ligera para el personal de ingreso.
+\end{itemize}
+
+\subsection{CU-003 --- Cancelaciones y devoluciones}
+\label{cu:cu-003}
+\textit{Responsable: Daniel Cristancho.}
+
+\begin{description}[leftmargin=!, labelwidth=3.4cm, style=nextline, topsep=3pt]
+\item[Objetivo] El usuario solicita la cancelación de una compra, se verifica las condiciones del evento y procesa el reembolso.
+
+\item[Actores] Cliente
+
+\item[CU relacionados] CU-001: Compra de entradas
+
+\item[Entradas] Solicitud de cancelación, datos de la compra.
+
+\item[Pre-condiciones] 1. Que el usuario tenga una compra activa y sea elegible para cancelación.
+
+\item[Salidas] 1. Mensaje de confirmación de reembolso aprobado o rechazado.
+
+\item[Post-condiciones] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. Entradas anuladas.
+  \item 2. Registro del reembolso en la base de datos.
+  \item 3. Notificación enviada al cliente.
+\end{itemize}
+
+\end{description}
+
+\paragraph{Flujo básico de éxito}
+\begin{longtable}{P{1.1cm}P{1.8cm}P{10.5cm}}
+\toprule
+\textbf{Paso} & \textbf{Quién} & \textbf{Acción}\\
+\midrule
+\endhead
+1 & Actor & El usuario solicita la cancelación de su compra e indica el motivo.\\
+2 & Sistema & Verifica que la compra exista y pertenezca al usuario.\\
+3 & Sistema & Verifica las condiciones de cancelación del evento (plazos y políticas aplicables).\\
+4 & Sistema & Calcula el monto a reembolsar según la política aplicable.\\
+5 & Actor & El usuario confirma la solicitud de cancelación con el monto informado.\\
+6 & Sistema & Procesa el reembolso a través de la pasarela de pagos.\\
+7 & Sistema & Anula las entradas asociadas a la compra e invalida sus códigos QR.\\
+8 & Sistema & Registra la cancelación y el reembolso en el historial de la compra.\\
+9 & Sistema & Notifica al cliente sobre la cancelación y el reembolso por correo.\\
+\bottomrule
+\end{longtable}
+
+\paragraph{Flujos alternativos}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item CU-003A: Si el reembolso aplicable es parcial según la política de tiempo del evento, el sistema informa el monto parcial antes de que el usuario confirme.
+  \item CU-003B: El usuario cancela solo algunas de las entradas de una compra con varias entradas, y el sistema recalcula el reembolso solo sobre esas entradas.
+\end{itemize}
+
+\paragraph{Extensiones}
+No hay extensiones conocidas
+
+\paragraph{Atributos de calidad asociados}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Consistencia: el estado de la entrada y el resultado del reembolso deben quedar sincronizados.
+  \item Seguridad: validar que la solicitud de cancelación provenga del titular de la compra.
+  \item Trazabilidad: todo reembolso debe quedar registrado y ser auditable.
+\end{itemize}
+
+\paragraph{Infraestructura no trivial}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Integración con la pasarela de pagos externa para procesar los reembolsos.
+  \item Cola de mensajes para desacoplar la notificación al cliente del procesamiento del reembolso, evitando bloqueos si la pasarela responde con lentitud.
+\end{itemize}
+
+\subsection{CU-004 --- Promociones}
+\label{cu:cu-004}
+\textit{Responsable: Daniel Cristancho.}
+
+\begin{description}[leftmargin=!, labelwidth=3.4cm, style=nextline, topsep=3pt]
+\item[Objetivo] Durante el proceso de compra el cliente aplica un código promocional para obtener un descuento.
+
+\item[Actores] Cliente
+
+\item[CU relacionados] CU-001: Compra de entradas
+
+\item[Entradas] Código promocional
+
+\item[Pre-condiciones] 1. Que el usuario se encuentre en el proceso de compra.
+
+\item[Salidas] 1. Total de la compra actualizado con el descuento aplicado.
+
+\item[Post-condiciones] 1. Registro del uso del cupón en la base de datos.
+
+\end{description}
+
+\paragraph{Flujo básico de éxito}
+\begin{longtable}{P{1.1cm}P{1.8cm}P{10.5cm}}
+\toprule
+\textbf{Paso} & \textbf{Quién} & \textbf{Acción}\\
+\midrule
+\endhead
+1 & Actor & El usuario ingresa un código promocional durante el proceso de compra.\\
+2 & Sistema & Verifica que el código promocional exista y esté vigente.\\
+3 & Sistema & Verifica que el código no haya alcanzado su límite de usos.\\
+4 & Sistema & Verifica que el código sea aplicable al evento o localidad seleccionada.\\
+5 & Sistema & Calcula el descuento correspondiente.\\
+6 & Sistema & Aplica el descuento al total de la compra.\\
+7 & Sistema & Registra el uso del cupón asociado al usuario.\\
+8 & Sistema & Muestra el total actualizado al usuario.\\
+9 & Actor & El usuario confirma el total con el descuento aplicado y continúa con el pago.\\
+\bottomrule
+\end{longtable}
+
+\paragraph{Flujos alternativos}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item CU-004A: Si el código promocional aplica solo a ciertas localidades o eventos, el sistema informa cuáles entradas del carrito reciben el descuento.
+  \item CU-004B: Si el usuario retira el código promocional antes de pagar, el sistema recalcula el total sin el descuento.
+\end{itemize}
+
+\paragraph{Extensiones}
+No hay extensiones conocidas
+
+\paragraph{Atributos de calidad asociados}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Rendimiento: la validación del cupón debe ser prácticamente instantánea dentro del flujo de compra.
+  \item Consistencia: controlar el límite de usos por cupón para evitar aplicaciones duplicadas bajo concurrencia.
+  \item Seguridad: evitar la manipulación del descuento desde el cliente.
+\end{itemize}
+
+\paragraph{Infraestructura no trivial}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Caché en memoria para consultar rápidamente las reglas y la disponibilidad de cupones sin golpear la base de datos en cada intento.
+  \item Contador atómico (Redis) para controlar el cupo de usos por cupón bajo alta concurrencia.
+\end{itemize}
+
+\subsection{CU-005 --- Consultar evento}
+\label{cu:cu-005}
+\textit{Responsable: Daniel Cristancho.}
+
+\begin{description}[leftmargin=!, labelwidth=3.4cm, style=nextline, topsep=3pt]
+\item[Objetivo] El usuario puede explorar los eventos filtrando por categoría, fecha, ciudad o artista y consultar detalles como horarios, localidades, precios y disponibilidad.
+
+\item[Actores] Cliente
+
+\item[CU relacionados] No hay requisitos asociados
+
+\item[Entradas] Filtros de búsqueda (categoría, fecha, ciudad, artista)
+
+\item[Pre-condiciones] 1. Que existan eventos registrados en el sistema.
+
+\item[Salidas] 1. Lista de eventos con su información.
+
+\item[Post-condiciones] 1. Consulta registrada sin modificar el estado del evento.
+
+\end{description}
+
+\paragraph{Flujo básico de éxito}
+\begin{longtable}{P{1.1cm}P{1.8cm}P{10.5cm}}
+\toprule
+\textbf{Paso} & \textbf{Quién} & \textbf{Acción}\\
+\midrule
+\endhead
+1 & Actor & El usuario accede a la sección de eventos y aplica filtros de búsqueda (categoría, fecha, ciudad, artista).\\
+2 & Sistema & Valida los filtros ingresados.\\
+3 & Sistema & Consulta los eventos según los filtros aplicados.\\
+4 & Sistema & Ordena los resultados según relevancia o fecha.\\
+5 & Sistema & Muestra la lista de eventos disponibles con su información resumida.\\
+6 & Actor & El usuario selecciona un evento para ver el detalle.\\
+7 & Sistema & Consulta la disponibilidad y las localidades del evento seleccionado.\\
+8 & Sistema & Muestra la información completa del evento (horarios, localidades, precios y disponibilidad).\\
+\bottomrule
+\end{longtable}
+
+\paragraph{Flujos alternativos}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item CU-005A: Si el usuario no aplica filtros, el sistema muestra el listado general de eventos disponibles ordenado por fecha.
+  \item CU-005B: Si el usuario cambia los filtros, el sistema actualiza el listado sin recargar toda la página.
+\end{itemize}
+
+\paragraph{Extensiones}
+No hay extensiones conocidas
+
+\paragraph{Atributos de calidad asociados}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Rendimiento: los filtros y búsquedas deben responder rápido incluso con un catálogo grande de eventos.
+  \item Disponibilidad: es la puerta de entrada al sistema, por lo que requiere alta disponibilidad.
+  \item Escalabilidad: debe soportar picos de consulta durante campañas de marketing o lanzamientos de eventos.
+\end{itemize}
+
+\paragraph{Infraestructura no trivial}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Motor/índice de búsqueda (por ejemplo Elasticsearch) para los filtros por categoría, fecha, ciudad o artista.
+  \item CDN y caché de contenido para imágenes y datos de eventos de alta demanda.
+  \item Balanceador de carga para distribuir las consultas entre instancias del servicio.
+\end{itemize}
+
+\subsection{CU-006 --- Gestión del Mercado Secundario de Entradas}
+\label{cu:cu-006}
+\textit{Responsable: Samuel Emperador.}
+
+\begin{description}[leftmargin=!, labelwidth=3.4cm, style=nextline, topsep=3pt]
+\item[Objetivo] Permitir que un usuario que ya adquirió una entrada la publique para reventa y que otro usuario la compre de forma segura, garantizando el cambio de propiedad, la invalidación del QR anterior y la generación de un nuevo QR.
+
+\item[Actores] Vendedor, Comprador, Pasarela de pagos
+
+\item[CU relacionados] CU-001: Compra de entradas (requisito previo para poseer una entrada a revender).
+
+\item[Entradas] Entrada a publicar, precio de venta, datos de pago del comprador.
+
+\item[Pre-condiciones] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. El vendedor debe ser propietario válido de la entrada.
+  \item 2. La entrada no debe haber sido utilizada.
+  \item 3. El evento debe permitir reventa.
+\end{itemize}
+
+\item[Salidas] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. Confirmación de la transferencia.
+  \item 2. Nuevo código QR para el comprador.
+\end{itemize}
+
+\item[Post-condiciones] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. La propiedad de la entrada se actualiza en la base de datos.
+  \item 2. El QR anterior queda invalidado y se genera uno nuevo.
+  \item 3. Se registra la transacción en el historial de propietarios.
+\end{itemize}
+
+\end{description}
+
+\paragraph{Flujo básico de éxito}
+\begin{longtable}{P{1.1cm}P{1.8cm}P{10.5cm}}
+\toprule
+\textbf{Paso} & \textbf{Quién} & \textbf{Acción}\\
+\midrule
+\endhead
+1 & Actor & El vendedor selecciona una entrada de su cuenta y solicita publicarla en el mercado secundario.\\
+2 & Sistema & Validar que la entrada pueda revenderse (propiedad, estado y políticas del evento).\\
+3 & Actor & Establece el precio de venta y confirma la publicación.\\
+4 & Sistema & Publicar la entrada en el mercado secundario.\\
+5 & Actor & El comprador consulta las entradas disponibles y selecciona una para comprar.\\
+6 & Sistema & Bloquear temporalmente la publicación para evitar compras simultáneas.\\
+7 & Actor & El comprador realiza el pago a través de la pasarela de pagos.\\
+8 & Sistema & Validar la transacción con la pasarela de pagos.\\
+9 & Sistema & Transferir la propiedad de la entrada al comprador.\\
+10 & Sistema & Invalidar el QR anterior y generar un nuevo código QR.\\
+11 & Sistema & Registrar la transferencia en el historial de propietarios.\\
+12 & Sistema & Notificar al comprador y al vendedor sobre la transacción.\\
+13 & Sistema & Liquidar el pago correspondiente al vendedor.\\
+\bottomrule
+\end{longtable}
+
+\paragraph{Flujos alternativos}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item CU-006A: El vendedor cambia el precio de la publicación antes de que sea comprada.
+  \item CU-006B: El vendedor retira la entrada del mercado secundario.
+  \item CU-006C: El comprador cancela la compra antes de finalizar el pago.
+  \item CU-006D: La publicación expira sin haberse vendido.
+\end{itemize}
+
+\paragraph{Extensiones}
+No hay extensiones conocidas
+
+\paragraph{Atributos de calidad asociados}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Consistencia: la entrada solo puede pertenecer a un propietario a la vez; el sistema debe evitar que dos compradores adquieran la misma publicación (bloqueo temporal al iniciar el pago).
+  \item Seguridad: se debe impedir fraude, transferencias no autorizadas y falsificación de códigos QR.
+  \item Disponibilidad: el mercado secundario debe permanecer operativo especialmente en los días previos al evento.
+  \item Rendimiento: la validación, el pago y la transferencia deben procesarse en segundos, incluso con muchas solicitudes simultáneas.
+  \item Trazabilidad: debe quedar un historial auditable de todos los propietarios de cada entrada.
+\end{itemize}
+
+\paragraph{Infraestructura no trivial}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Cola de mensajes (RabbitMQ/Kafka): para desacoplar el proceso de pago, la generación del nuevo QR y el envío de notificaciones, evitando bloqueos síncronos y garantizando que ningún paso se pierda si un servicio falla momentáneamente.
+  \item Caché en memoria (Redis): para bloquear temporalmente una publicación durante el checkout y controlar la concurrencia entre compradores que intentan adquirir la misma entrada al mismo tiempo.
+  \item API Gateway + balanceador de carga: para distribuir las solicitudes entre instancias del servicio de entradas durante picos de tráfico (por ejemplo, al abrir la reventa de un evento muy demandado).
+\end{itemize}
+
+\subsection{CU-007 --- Gestión de Personal para Eventos (Administración y Asignación)}
+\label{cu:cu-007}
+\textit{Responsable: Samuel Emperador.}
+
+\begin{description}[leftmargin=!, labelwidth=3.4cm, style=nextline, topsep=3pt]
+\item[Objetivo] Permitir administrar la información del personal que participa en los eventos (crear, consultar, actualizar y desactivar) y asignarlo a un evento validando su rol, disponibilidad y horario, evitando conflictos de asignación. Este caso de uso fusiona lo que antes eran dos casos separados (Administrar Personal y Asignar Personal al Evento), ya que la gestión de datos del empleado y su asignación a un evento forman parte de un mismo proceso operativo de personal.
+
+\item[Actores] Administrador, Organizador, Empleado
+
+\item[CU relacionados] Ninguno directo dentro del alcance del equipo; es la base de la que dependen CU-008 (Gestionar Cambios de Turno) y CU-009 (Registrar Ingreso y Salida del Personal).
+
+\item[Entradas] Datos del empleado (nombre, documento, correo, teléfono, rol, estado) y datos de la asignación (evento, área de trabajo, horario).
+
+\item[Pre-condiciones] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. El administrador u organizador debe estar autenticado y contar con permisos.
+  \item 2. Para asignar personal, el empleado debe existir y estar activo en el sistema.
+  \item 3. El evento debe existir y estar configurado.
+\end{itemize}
+
+\item[Salidas] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. Confirmación de la operación administrativa (creación, actualización o desactivación).
+  \item 2. Confirmación de la asignación del empleado al evento.
+\end{itemize}
+
+\item[Post-condiciones] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. La información del empleado queda actualizada en la base de datos.
+  \item 2. El empleado queda asignado al evento con área y horario definidos (cuando aplica).
+  \item 3. La disponibilidad del empleado se actualiza y la operación queda registrada para auditoría.
+\end{itemize}
+
+\end{description}
+
+\paragraph{Flujo básico de éxito}
+\begin{longtable}{P{1.1cm}P{1.8cm}P{10.5cm}}
+\toprule
+\textbf{Paso} & \textbf{Quién} & \textbf{Acción}\\
+\midrule
+\endhead
+1 & Actor & Accede al módulo de personal y selecciona la operación a realizar (gestionar datos o asignar a un evento).\\
+2 & Sistema & Muestra el listado de empleados registrados.\\
+3 & Actor & Crea o actualiza la información del empleado (documento, rol, contacto, estado).\\
+4 & Sistema & Valida los datos ingresados y verifica que no existan duplicados (documento o correo).\\
+5 & Sistema & Guarda la información del empleado en la base de datos.\\
+6 & Actor & El organizador selecciona un evento y consulta el personal disponible.\\
+7 & Sistema & Muestra los empleados activos con su rol y disponibilidad.\\
+8 & Actor & Selecciona un empleado y define el área de trabajo y el horario de la asignación.\\
+9 & Sistema & Verifica que no existan conflictos de horario y que el empleado tenga el rol requerido.\\
+10 & Actor & Confirma la asignación.\\
+11 & Sistema & Registra la asignación y actualiza la disponibilidad del empleado.\\
+12 & Sistema & Notifica al empleado sobre la nueva asignación.\\
+13 & Actor & El empleado confirma la asignación; el sistema actualiza su estado a "Confirmada".\\
+\bottomrule
+\end{longtable}
+
+\paragraph{Flujos alternativos}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item CU-007A: El administrador consulta o desactiva un empleado en lugar de crear/actualizar.
+  \item CU-007B: El empleado rechaza la asignación propuesta.
+  \item CU-007C: El organizador cambia el horario o selecciona otro empleado disponible.
+\end{itemize}
+
+\paragraph{Extensiones}
+No hay extensiones conocidas
+
+\paragraph{Atributos de calidad asociados}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Consistencia: evitar documentos/correos duplicados y conflictos de horario al asignar personal.
+  \item Seguridad: solo administradores u organizadores autorizados pueden gestionar al personal.
+  \item Trazabilidad: toda alta, edición, desactivación o asignación debe quedar registrada para auditoría.
+  \item Disponibilidad: es la base de CU-008 y CU-009, por lo que debe estar disponible durante toda la etapa de planeación.
+\end{itemize}
+
+\paragraph{Infraestructura no trivial}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Base de datos relacional con restricciones de unicidad (documento/correo) e índices para validar conflictos de horario de forma eficiente.
+  \item Servicio de notificaciones (push/correo) para avisar al empleado de una nueva asignación.
+\end{itemize}
+
+\subsection{CU-008 --- Gestionar Cambios de Turno}
+\label{cu:cu-008}
+\textit{Responsable: Samuel Emperador.}
+
+\begin{description}[leftmargin=!, labelwidth=3.4cm, style=nextline, topsep=3pt]
+\item[Objetivo] Permitir que un empleado solicite un cambio de turno y que el supervisor lo apruebe asignando un reemplazo adecuado, sin generar conflictos de horario.
+
+\item[Actores] Empleado, Supervisor
+
+\item[CU relacionados] CU-007: Gestión de Personal para Eventos (debe existir una asignación previa de turno).
+
+\item[Entradas] Turno a cambiar, motivo de la solicitud, reemplazo propuesto.
+
+\item[Pre-condiciones] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. El empleado debe tener un turno asignado.
+  \item 2. Debe existir al menos un posible reemplazo con el mismo rol y disponibilidad.
+\end{itemize}
+
+\item[Salidas] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. Confirmación del cambio de turno.
+  \item 2. Notificación al empleado original y al reemplazo.
+\end{itemize}
+
+\item[Post-condiciones] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. El turno queda actualizado con el nuevo empleado asignado.
+  \item 2. Se registra el historial del cambio.
+\end{itemize}
+
+\end{description}
+
+\paragraph{Flujo básico de éxito}
+\begin{longtable}{P{1.1cm}P{1.8cm}P{10.5cm}}
+\toprule
+\textbf{Paso} & \textbf{Quién} & \textbf{Acción}\\
+\midrule
+\endhead
+1 & Actor & Consulta sus turnos asignados y selecciona el turno a cambiar.\\
+2 & Actor & Solicita el cambio de turno indicando el motivo.\\
+3 & Sistema & Registra la solicitud de cambio.\\
+4 & Sistema & Notifica la solicitud al supervisor.\\
+5 & Actor & El supervisor revisa la solicitud.\\
+6 & Sistema & Consulta posibles reemplazos con el mismo rol y disponibilidad.\\
+7 & Actor & El supervisor selecciona un reemplazo entre las opciones disponibles.\\
+8 & Sistema & Verifica la disponibilidad del reemplazo.\\
+9 & Actor & El supervisor aprueba el cambio de turno.\\
+10 & Sistema & Actualiza el turno con el nuevo empleado asignado.\\
+11 & Sistema & Notifica al empleado original sobre la aprobación.\\
+12 & Sistema & Notifica al reemplazo sobre su nueva asignación.\\
+13 & Sistema & Registra el historial del cambio de turno.\\
+\bottomrule
+\end{longtable}
+
+\paragraph{Flujos alternativos}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item CU-008A: El supervisor rechaza la solicitud de cambio.
+  \item CU-008B: El empleado cancela su solicitud antes de ser aprobada.
+  \item CU-008C: El reemplazo seleccionado rechaza la asignación.
+\end{itemize}
+
+\paragraph{Extensiones}
+No hay extensiones conocidas
+
+\paragraph{Atributos de calidad asociados}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Consistencia: no permitir que un mismo empleado quede con dos turnos simultáneos.
+  \item Disponibilidad: debe seguir funcionando aunque la solicitud se haga cerca del inicio del evento.
+  \item Trazabilidad: el historial de cambios de turno debe quedar registrado y ser auditable.
+\end{itemize}
+
+\paragraph{Infraestructura no trivial}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Servicio de notificaciones para avisar al empleado original, al supervisor y al reemplazo.
+  \item Cola de mensajes para desacoplar el envío de notificaciones de la aprobación del cambio.
+\end{itemize}
+
+\subsection{CU-009 --- Registrar Ingreso y Salida del Personal}
+\label{cu:cu-009}
+\textit{Responsable: Samuel Emperador.}
+
+\begin{description}[leftmargin=!, labelwidth=3.4cm, style=nextline, topsep=3pt]
+\item[Objetivo] Controlar la asistencia del personal durante el evento mediante el registro de entrada y salida, y calcular automáticamente las horas trabajadas.
+
+\item[Actores] Empleado, Supervisor
+
+\item[CU relacionados] CU-007: Gestión de Personal para Eventos (el empleado debe estar asignado al evento).
+
+\item[Entradas] Código QR o credencial del empleado.
+
+\item[Pre-condiciones] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. El empleado debe estar asignado al evento.
+  \item 2. La credencial o código QR debe ser válida.
+\end{itemize}
+
+\item[Salidas] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. Registro de hora de ingreso o salida.
+  \item 2. Cálculo de horas trabajadas.
+\end{itemize}
+
+\item[Post-condiciones] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. El registro de asistencia queda almacenado en el sistema.
+  \item 2. El estado del empleado se actualiza ("En turno" / "Fuera de turno").
+\end{itemize}
+
+\end{description}
+
+\paragraph{Flujo básico de éxito}
+\begin{longtable}{P{1.1cm}P{1.8cm}P{10.5cm}}
+\toprule
+\textbf{Paso} & \textbf{Quién} & \textbf{Acción}\\
+\midrule
+\endhead
+1 & Actor & Llega al evento y presenta su credencial o código QR.\\
+2 & Sistema & Escanea el código y valida la identidad del empleado.\\
+3 & Sistema & Verifica que el empleado esté asignado al evento y al horario correspondiente.\\
+4 & Sistema & Registra la hora de entrada.\\
+5 & Sistema & Actualiza el estado del empleado a "En turno".\\
+6 & Actor & Realiza su jornada laboral.\\
+7 & Actor & Presenta nuevamente su credencial al finalizar su turno.\\
+8 & Sistema & Registra la hora de salida.\\
+9 & Sistema & Calcula las horas trabajadas.\\
+10 & Sistema & Actualiza el estado del empleado a "Fuera de turno".\\
+11 & Sistema & Guarda el registro de asistencia en el sistema.\\
+12 & Actor & El supervisor consulta el registro de asistencia cuando lo requiere.\\
+13 & Sistema & Muestra el reporte de horas trabajadas al supervisor.\\
+\bottomrule
+\end{longtable}
+
+\paragraph{Flujos alternativos}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item CU-009A: Registro de entrada anticipada respecto al horario asignado.
+  \item CU-009B: Registro de entrada tardía.
+  \item CU-009C: Registro de salida anticipada o posterior al horario asignado.
+\end{itemize}
+
+\paragraph{Extensiones}
+No hay extensiones conocidas
+
+\paragraph{Atributos de calidad asociados}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Rendimiento: el registro de asistencia por QR o credencial debe ser prácticamente instantáneo.
+  \item Disponibilidad: debe operar incluso con fallas de red intermitentes en el punto de control.
+  \item Consistencia: evitar registros duplicados de entrada o salida para un mismo empleado.
+\end{itemize}
+
+\paragraph{Infraestructura no trivial}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Modo offline-first en los dispositivos de control de acceso, con sincronización posterior de los registros pendientes.
+  \item Caché local del estado "en turno" / "fuera de turno" del empleado.
+  \item Cola de mensajes para sincronizar los registros cuando se recupera la conexión.
+\end{itemize}
+
+\subsection{CU-010 --- Gestionar Evacuación ante Emergencias}
+\label{cu:cu-010}
+\textit{Responsable: Samuel Emperador.}
+
+\begin{description}[leftmargin=!, labelwidth=3.4cm, style=nextline, topsep=3pt]
+\item[Objetivo] Permitir que el personal autorizado active, coordine y finalice un protocolo de evacuación durante una emergencia (incendio, amenaza de seguridad, emergencia médica masiva, falla estructural, inundación, evacuación preventiva, entre otras), utilizando información en tiempo real sobre personas presentes, zonas ocupadas, salidas disponibles, rutas de evacuación y personal operativo, con el fin de facilitar una evacuación organizada y mantener informados a los responsables y asistentes.
+
+\item[Actores] Supervisor de emergencia / Organizador (principal); Personal de seguridad, Personal médico, Asistentes, Sistema de notificaciones y Sistema de monitoreo (secundarios).
+
+\item[CU relacionados] CU-007: Gestión de Personal para Eventos (requiere conocer el personal operativo asignado para poder coordinarlo durante la emergencia).
+
+\item[Entradas] Tipo de emergencia, ubicación y nivel de la emergencia, zona afectada, estado de salidas y rutas, aforo actual, reportes del personal e información de sensores (si existen).
+
+\item[Pre-condiciones] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. El evento debe estar creado y el recinto debe tener zonas, salidas de emergencia y rutas de evacuación configuradas.
+  \item 2. El usuario debe tener permisos para activar una evacuación.
+  \item 3. El personal de emergencia debe estar registrado en el sistema.
+\end{itemize}
+
+\item[Salidas] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. Alertas y notificaciones a personal y asistentes.
+  \item 2. Rutas de evacuación recomendadas por zona.
+  \item 3. Estado de la evacuación y reporte final de auditoría.
+\end{itemize}
+
+\item[Post-condiciones] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. La emergencia queda registrada con hora de inicio, hora de finalización y estado final de cada zona.
+  \item 2. Se registra quién activó y quién finalizó el protocolo, junto con el historial de notificaciones.
+  \item 3. Se genera un reporte de la evacuación para auditoría.
+\end{itemize}
+
+\end{description}
+
+\paragraph{Flujo básico de éxito}
+\begin{longtable}{P{1.1cm}P{1.8cm}P{10.5cm}}
+\toprule
+\textbf{Paso} & \textbf{Quién} & \textbf{Acción}\\
+\midrule
+\endhead
+1 & Actor & El supervisor inicia sesión, selecciona "Activar evacuación" y registra el tipo y la ubicación de la emergencia.\\
+2 & Sistema & Identifica las zonas potencialmente afectadas.\\
+3 & Sistema & Consulta el aforo actual de las zonas.\\
+4 & Sistema & Identifica las salidas de emergencia disponibles.\\
+5 & Sistema & Determina las rutas de evacuación configuradas para las zonas afectadas.\\
+6 & Sistema & Presenta al supervisor las rutas y zonas recomendadas para la evacuación.\\
+7 & Actor & Confirma la activación del protocolo.\\
+8 & Sistema & Notifica al personal operativo y de seguridad.\\
+9 & Sistema & Envía instrucciones de evacuación a los asistentes mediante los canales disponibles.\\
+10 & Sistema & Monitorea en tiempo real el estado de las zonas y el flujo de personas.\\
+11 & Actor & Consulta el avance de la evacuación y atiende las alertas generadas por el sistema.\\
+12 & Actor & Confirma la finalización una vez que las zonas han sido evacuadas.\\
+13 & Sistema & Cierra el protocolo y genera el registro/reporte de la emergencia.\\
+\bottomrule
+\end{longtable}
+
+\paragraph{Flujos alternativos}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item CU-010A (Ruta bloqueada): el sistema detecta una salida no disponible, descarta esa ruta, busca una alternativa configurada y actualiza instrucciones y notificaciones.
+  \item CU-010B (Zona congestionada): el sistema genera una alerta al detectar sobreocupación de una zona; el supervisor confirma una ruta alternativa propuesta por el sistema.
+  \item CU-010C (Evacuación parcial): el supervisor activa el protocolo solo para la zona afectada; el resto del evento continúa bajo monitoreo normal.
+  \item CU-010D (Cambio de nivel de emergencia): el supervisor escala el nivel de la emergencia; el sistema recalcula zonas y rutas afectadas, amplía las notificaciones y coordina personal adicional.
+\end{itemize}
+
+\paragraph{Extensiones}
+No hay extensiones conocidas
+
+\paragraph{Atributos de calidad asociados}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Disponibilidad: es un proceso crítico que no puede fallar durante una emergencia real.
+  \item Rendimiento: las notificaciones e instrucciones de evacuación deben propagarse en segundos.
+  \item Seguridad: solo personal autorizado puede activar o modificar el protocolo de evacuación.
+  \item Tolerancia a fallos: el sistema debe seguir operando con información local si se pierde la conexión con servicios externos.
+\end{itemize}
+
+\paragraph{Infraestructura no trivial}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Cola de mensajes de alta prioridad para difundir notificaciones masivas a personal y asistentes.
+  \item Integración con sensores y el sistema de monitoreo de aforo en tiempo real.
+  \item Almacenamiento y réplica local de la información crítica (zonas, rutas, aforo) para operar ante fallas de comunicación.
+  \item Sistema de notificaciones multicanal (push, SMS, altavoces) para llegar a asistentes y personal.
+\end{itemize}
+
+\subsection{CU-011 --- Gestión integral de pedidos}
+\label{cu:cu-011}
+\textit{Responsable: Sebastián Sánchez.}
+
+\begin{description}[leftmargin=!, labelwidth=3.4cm, style=nextline, topsep=3pt]
+\item[Objetivo] Permitir al cliente realizar un pedido de alimentos durante un evento, desde la selección del establecimiento y los productos hasta el pago, registro del pedido y generación del código QR.
+
+\item[Actores] Cliente, Sistema, Establecimiento
+
+\item[CU relacionados] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item CU-012: Administrar menú e inventario.
+  \item CU-013: Gestionar preparación del pedido.
+  \item CU-014: Validar y entregar pedido.
+  \item CU-015: Gestionar cancelaciones y reembolsos.
+\end{itemize}
+
+\item[Entradas] Evento seleccionado; establecimiento; productos y cantidades; método de entrega; datos de pago.
+
+\item[Pre-condiciones] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. El evento se encuentra disponible.
+  \item 2. Existe al menos un establecimiento disponible para el evento.
+  \item 3. Los productos seleccionados tienen inventario disponible.
+  \item 4. El cliente dispone de un medio de pago válido.
+\end{itemize}
+
+\item[Salidas] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. Pedido confirmado.
+  \item 2. Pago procesado.
+  \item 3. Código QR generado.
+  \item 4. Confirmación enviada al cliente.
+  \item 5. Pedido enviado al establecimiento.
+\end{itemize}
+
+\item[Post-condiciones] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. El pedido queda registrado.
+  \item 2. El inventario queda descontado/actualizado.
+  \item 3. El establecimiento recibe el pedido para iniciar su preparación.
+\end{itemize}
+
+\end{description}
+
+\paragraph{Flujo básico de éxito}
+\begin{longtable}{P{1.1cm}P{1.8cm}P{10.5cm}}
+\toprule
+\textbf{Paso} & \textbf{Quién} & \textbf{Acción}\\
+\midrule
+\endhead
+1 & Actor & El cliente consulta los establecimientos disponibles para el evento.\\
+2 & Sistema & Mostrar los establecimientos disponibles.\\
+3 & Actor & El cliente selecciona un establecimiento, los productos y sus cantidades.\\
+4 & Sistema & Validar la disponibilidad de los productos y del inventario.\\
+5 & Actor & El cliente selecciona el método de entrega y confirma el pedido.\\
+6 & Sistema & Mostrar el total del pedido y solicitar el pago.\\
+7 & Actor & El cliente realiza el pago.\\
+8 & Sistema & Procesar el pago y registrar el pedido.\\
+9 & Sistema & Descontar las cantidades correspondientes del inventario.\\
+10 & Sistema & Enviar el pedido al establecimiento para su preparación.\\
+11 & Sistema & Generar un código QR asociado al pedido.\\
+12 & Sistema & Enviar la confirmación del pedido al cliente.\\
+\bottomrule
+\end{longtable}
+
+\paragraph{Flujos alternativos}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item CU-011A: Si un producto está agotado, el sistema informa al cliente y solicita modificar la selección.
+  \item CU-011B: Si el inventario es insuficiente para la cantidad solicitada, el sistema informa la cantidad disponible y solicita ajustar el pedido.
+  \item CU-011C: Si el establecimiento está cerrado o saturado, el sistema informa que no puede recibir el pedido y permite seleccionar otro establecimiento.
+  \item CU-011D: Si el tiempo de compra expira, el sistema cancela el proceso de compra y solicita iniciarlo nuevamente.
+  \item CU-011E: Si el pago es rechazado, el sistema informa el rechazo y permite intentar nuevamente con un medio de pago válido.
+  \item CU-011F: Si el establecimiento cancela el pedido, el sistema actualiza su estado y notifica al cliente.
+\end{itemize}
+
+\paragraph{Extensiones}
+Se relaciona con CU-013 para la preparación, CU-014 para la entrega y CU-015 si se solicita una cancelación o reembolso.
+
+\paragraph{Atributos de calidad asociados}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Consistencia: el inventario debe descontarse de forma atómica para evitar sobreventa entre pedidos concurrentes.
+  \item Rendimiento: el flujo de pago y confirmación debe completarse en segundos en las horas pico del evento.
+  \item Disponibilidad: el módulo debe soportar la demanda simultánea de múltiples establecimientos.
+  \item Trazabilidad: cada pedido y su pago deben quedar registrados.
+\end{itemize}
+
+\paragraph{Infraestructura no trivial}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Cola de mensajes para desacoplar el envío del pedido al establecimiento, la generación del QR y el envío de notificaciones.
+  \item Caché en memoria (Redis) para bloquear temporalmente el inventario durante el checkout.
+  \item Integración con la pasarela de pagos.
+\end{itemize}
+
+\subsection{CU-012 --- Administrar menú e inventario}
+\label{cu:cu-012}
+\textit{Responsable: Sebastián Sánchez.}
+
+\begin{description}[leftmargin=!, labelwidth=3.4cm, style=nextline, topsep=3pt]
+\item[Objetivo] Permitir al proveedor administrar los productos de su menú y su disponibilidad para la venta durante los eventos.
+
+\item[Actores] Proveedor / Establecimiento
+
+\item[CU relacionados] CU-011: Gestión integral de pedidos.
+
+\item[Entradas] Nombre del producto; descripción; precio; cantidad disponible; restricciones alimentarias; estado del producto.
+
+\item[Pre-condiciones] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. El proveedor se encuentra habilitado para administrar su establecimiento.
+  \item 2. El establecimiento existe en el sistema.
+\end{itemize}
+
+\item[Salidas] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. Producto registrado o actualizado.
+  \item 2. Menú actualizado.
+  \item 3. Inventario disponible actualizado.
+  \item 4. Estado del producto actualizado.
+\end{itemize}
+
+\item[Post-condiciones] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. La información del menú queda almacenada.
+  \item 2. La cantidad disponible queda reflejada en el inventario.
+  \item 3. El producto queda disponible o no disponible según su estado.
+\end{itemize}
+
+\end{description}
+
+\paragraph{Flujo básico de éxito}
+\begin{longtable}{P{1.1cm}P{1.8cm}P{10.5cm}}
+\toprule
+\textbf{Paso} & \textbf{Quién} & \textbf{Acción}\\
+\midrule
+\endhead
+1 & Actor & El proveedor accede a la administración del menú e inventario.\\
+2 & Sistema & Mostrar los productos registrados y las opciones para registrar, consultar, actualizar o desactivar.\\
+3 & Actor & El proveedor selecciona la operación que desea realizar.\\
+4 & Sistema & Solicitar o mostrar los datos del producto según la operación.\\
+5 & Actor & El proveedor ingresa o modifica el nombre, descripción, precio, cantidad disponible y restricciones alimentarias.\\
+6 & Sistema & Validar que los datos obligatorios, el precio y la cantidad sean válidos.\\
+7 & Actor & El proveedor confirma la operación.\\
+8 & Sistema & Registrar o actualizar la información del producto y su inventario.\\
+9 & Sistema & Actualizar el estado del producto como disponible o no disponible.\\
+10 & Sistema & Mostrar la confirmación de la operación.\\
+\bottomrule
+\end{longtable}
+
+\paragraph{Flujos alternativos}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item CU-012A: Si el producto ya está registrado, el sistema informa la situación y evita crear un registro duplicado.
+  \item CU-012B: Si faltan datos obligatorios, el sistema solicita completar la información antes de continuar.
+  \item CU-012C: Si el precio o la cantidad ingresada es inválida, el sistema informa el error y solicita corregir el valor.
+\end{itemize}
+
+\paragraph{Extensiones}
+La disponibilidad registrada en este caso de uso es consultada por CU-011 durante la creación de pedidos.
+
+\paragraph{Atributos de calidad asociados}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Consistencia: la disponibilidad mostrada al cliente en CU-011 debe reflejar el inventario real.
+  \item Rendimiento: la actualización del inventario debe reflejarse casi en tiempo real.
+  \item Disponibilidad: los proveedores deben poder actualizar su menú en cualquier momento durante el evento.
+\end{itemize}
+
+\paragraph{Infraestructura no trivial}
+Caché en memoria para exponer rápidamente el catálogo y la disponibilidad a CU-011, con invalidación al actualizar el inventario.
+
+\subsection{CU-013 --- Gestionar preparación y entrega del pedido}
+\label{cu:cu-013}
+\textit{Responsable: Sebastián Sánchez.}
+
+\begin{description}[leftmargin=!, labelwidth=3.4cm, style=nextline, topsep=3pt]
+\item[Objetivo] Permitir al establecimiento gestionar un pedido confirmado desde su recepción y preparación hasta la validación del cliente y la entrega final, garantizando que el pedido correcto sea entregado una sola vez.
+
+\item[Actores] Cliente, Establecimiento
+
+
+\item[Entradas] Pedido confirmado; estado del pedido; tiempo estimado de preparación; código QR del pedido; punto de entrega.
+
+\item[Pre-condiciones] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. El pedido existe, fue confirmado y pagado.
+  \item 2. El pedido fue enviado al establecimiento.
+  \item 3. El establecimiento tiene acceso a la gestión del pedido.
+\end{itemize}
+
+\item[Salidas] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. Estado del pedido actualizado durante su preparación.
+  \item 2. Cliente notificado sobre el avance.
+  \item 3. Código QR validado.
+  \item 4. Pedido entregado y registrado como entregado.
+  \item 5. Hora de entrega registrada y código QR invalidado.
+\end{itemize}
+
+\item[Post-condiciones] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. El pedido queda registrado como entregado.
+  \item 2. El código QR ya no puede volver a utilizarse.
+  \item 3. Queda registrada la hora de entrega.
+  \item 4. El cliente ha recibido su pedido.
+\end{itemize}
+
+\end{description}
+
+\paragraph{Flujo básico de éxito}
+\begin{longtable}{P{1.1cm}P{1.8cm}P{10.5cm}}
+\toprule
+\textbf{Paso} & \textbf{Quién} & \textbf{Acción}\\
+\midrule
+\endhead
+1 & Actor & El establecimiento consulta los pedidos confirmados recibidos.\\
+2 & Sistema & Mostrar los pedidos pendientes y su estado actual.\\
+3 & Actor & El establecimiento selecciona un pedido e inicia su preparación, registrando el tiempo estimado.\\
+4 & Sistema & Actualizar el estado a “en preparación”, registrar el tiempo estimado y notificar al cliente.\\
+5 & Actor & El establecimiento finaliza la preparación del pedido.\\
+6 & Sistema & Actualizar el estado a “listo para entregar” y notificar al cliente.\\
+7 & Actor & El cliente presenta el código QR en el punto de entrega y el establecimiento lo escanea o ingresa.\\
+8 & Sistema & Validar que el QR corresponda al pedido, que esté pagado, listo para entregar, no haya sido entregado y corresponda al punto de entrega.\\
+9 & Sistema & Autorizar la entrega del pedido.\\
+10 & Actor & El establecimiento entrega el pedido al cliente.\\
+11 & Sistema & Marcar el pedido como entregado, registrar la hora de entrega e invalidar el código QR.\\
+12 & Sistema & Mostrar la confirmación de entrega.\\
+\bottomrule
+\end{longtable}
+
+\paragraph{Flujos alternativos}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item CU-003A: Si un producto o ingrediente se agota durante la preparación, el establecimiento reporta la situación y el sistema actualiza el pedido según corresponda.
+  \item CU-003B: Si existe un retraso, el establecimiento actualiza el tiempo estimado y el sistema notifica al cliente.
+  \item CU-003C: Si el pedido todavía no está listo, el sistema no autoriza la entrega e informa su estado actual.
+  \item CU-003D: Si el pedido fue cancelado, el sistema detiene el proceso y rechaza la entrega.
+  \item CU-003E: Si el pedido ya fue entregado o el punto de entrega es incorrecto, el sistema no autoriza una nueva entrega.
+\end{itemize}
+
+\paragraph{Extensiones}
+Puede relacionarse con CU-004 cuando se solicita cancelar el pedido antes de su entrega.
+
+\subsection{CU-014 --- Validar y entregar pedido}
+\label{cu:cu-014}
+\textit{Responsable: Sebastián Sánchez.}
+
+\begin{description}[leftmargin=!, labelwidth=3.4cm, style=nextline, topsep=3pt]
+\item[Objetivo] Validar el código QR presentado por el cliente y autorizar la entrega únicamente cuando el pedido exista, esté pagado, esté listo y no haya sido entregado previamente.
+
+\item[Actores] Cliente, Establecimiento
+
+\item[CU relacionados] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item CU-011: Gestión integral de pedidos.
+  \item CU-013: Gestionar preparación del pedido.
+\end{itemize}
+
+\item[Entradas] Código QR del pedido; pedido asociado; punto de entrega.
+
+\item[Pre-condiciones] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. El pedido existe.
+  \item 2. El pedido se encuentra pagado.
+  \item 3. El pedido está marcado como listo para entregar.
+  \item 4. El cliente se encuentra en el punto de entrega correspondiente.
+\end{itemize}
+
+\item[Salidas] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. Entrega autorizada.
+  \item 2. Pedido marcado como entregado.
+  \item 3. Hora de entrega registrada.
+  \item 4. Código QR invalidado.
+\end{itemize}
+
+\item[Post-condiciones] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. El pedido queda registrado como entregado.
+  \item 2. El código QR ya no puede volver a utilizarse.
+  \item 3. Queda registrada la hora de entrega.
+\end{itemize}
+
+\end{description}
+
+\paragraph{Flujo básico de éxito}
+\begin{longtable}{P{1.1cm}P{1.8cm}P{10.5cm}}
+\toprule
+\textbf{Paso} & \textbf{Quién} & \textbf{Acción}\\
+\midrule
+\endhead
+1 & Actor & El cliente presenta el código QR del pedido en el punto de entrega.\\
+2 & Actor & El establecimiento escanea o ingresa el código QR.\\
+3 & Sistema & Validar que el código QR corresponda a un pedido existente.\\
+4 & Sistema & Verificar que el pedido esté pagado.\\
+5 & Sistema & Verificar que el pedido se encuentre listo para entregar.\\
+6 & Sistema & Verificar que el pedido no haya sido entregado previamente y corresponda al punto de entrega.\\
+7 & Sistema & Autorizar la entrega del pedido.\\
+8 & Actor & El establecimiento entrega el pedido al cliente.\\
+9 & Sistema & Marcar el pedido como entregado y registrar la hora de entrega.\\
+10 & Sistema & Invalidar el código QR del pedido.\\
+\bottomrule
+\end{longtable}
+
+\paragraph{Flujos alternativos}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item CU-014A: Si el pedido todavía no está listo, el sistema no autoriza la entrega e informa su estado actual.
+  \item CU-014B: Si el pedido fue cancelado, el sistema rechaza la entrega e informa la cancelación.
+  \item CU-014C: Si el pedido ya fue entregado, el sistema rechaza un nuevo intento de entrega.
+  \item CU-014D: Si el cliente se encuentra en un punto de entrega incorrecto, el sistema no autoriza la entrega e informa la inconsistencia.
+\end{itemize}
+
+\paragraph{Extensiones}
+No hay extensiones adicionales conocidas.
+
+\paragraph{Atributos de calidad asociados}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Rendimiento: la validación del código QR debe ser instantánea para no generar filas en el punto de entrega.
+  \item Seguridad: evitar entregas duplicadas o el uso de códigos QR falsificados.
+  \item Consistencia: un pedido no puede entregarse más de una vez.
+\end{itemize}
+
+\paragraph{Infraestructura no trivial}
+Caché en memoria con el estado de los QR válidos/entregados para una validación rápida en el punto de entrega, sincronizada con el servicio de pedidos.
+
+\subsection{CU-015 --- Gestionar establecimientos de alimentos}
+\label{cu:cu-015}
+\textit{Responsable: Sebastián Sánchez.}
+
+\begin{description}[leftmargin=!, labelwidth=3.4cm, style=nextline, topsep=3pt]
+\item[Objetivo] Permitir al organizador o administrador registrar, consultar, actualizar, habilitar o deshabilitar los establecimientos de alimentos asociados a un evento, definiendo su información operativa y su punto de entrega.
+
+\item[Actores] Organizador / Administrador del evento
+
+\item[CU relacionados] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item CU-001: Gestión integral de pedidos.
+  \item CU-002: Administrar menú e inventario.
+\end{itemize}
+
+\item[Entradas] Datos del establecimiento; evento asociado; nombre; información de contacto; ubicación o punto de entrega; horario de atención; estado de disponibilidad.
+
+\item[Pre-condiciones] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. El organizador o administrador se encuentra autenticado y autorizado.
+  \item 2. El evento existe en el sistema.
+  \item 3. Se dispone de la información necesaria del establecimiento.
+\end{itemize}
+
+\item[Salidas] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. Establecimiento registrado o actualizado.
+  \item 2. Establecimiento asociado al evento.
+  \item 3. Horario y punto de entrega almacenados.
+  \item 4. Estado de disponibilidad actualizado.
+\end{itemize}
+
+\item[Post-condiciones] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. La información del establecimiento queda almacenada.
+  \item 2. El establecimiento queda disponible o no disponible para los clientes según su estado.
+  \item 3. El establecimiento puede administrar su menú e inventario cuando esté habilitado.
+\end{itemize}
+
+\end{description}
+
+\paragraph{Flujo básico de éxito}
+\begin{longtable}{P{1.1cm}P{1.8cm}P{10.5cm}}
+\toprule
+\textbf{Paso} & \textbf{Quién} & \textbf{Acción}\\
+\midrule
+\endhead
+1 & Actor & El organizador o administrador accede a la gestión de establecimientos del evento.\\
+2 & Sistema & Mostrar los establecimientos asociados al evento y las opciones de gestión disponibles.\\
+3 & Actor & El organizador selecciona registrar un nuevo establecimiento o modificar uno existente.\\
+4 & Sistema & Solicitar o mostrar la información del establecimiento según la operación seleccionada.\\
+5 & Actor & El organizador ingresa o actualiza el nombre, información de contacto, punto de entrega, horario y estado.\\
+6 & Sistema & Validar que los datos obligatorios sean correctos y que el establecimiento pueda asociarse al evento.\\
+7 & Actor & El organizador confirma la operación.\\
+8 & Sistema & Registrar o actualizar el establecimiento y asociarlo al evento.\\
+9 & Sistema & Actualizar su estado como habilitado o deshabilitado para recibir pedidos.\\
+10 & Sistema & Mostrar la confirmación de la operación.\\
+\bottomrule
+\end{longtable}
+
+\paragraph{Flujos alternativos}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item CU-005A: Si el establecimiento ya se encuentra registrado en el evento, el sistema informa la situación y permite actualizar sus datos en lugar de duplicarlo.
+  \item CU-005B: Si faltan datos obligatorios, el sistema solicita completar la información antes de continuar.
+  \item CU-005C: Si se modifica el horario o el estado de disponibilidad, el sistema actualiza inmediatamente si el establecimiento puede recibir nuevos pedidos.
+\end{itemize}
+
+\paragraph{Extensiones}
+Los establecimientos habilitados son consultados por CU-001. Una vez registrado y habilitado, el establecimiento puede administrar sus productos mediante CU-002.
+
+\subsection{CU-016 --- Planificar logística del evento}
+\label{cu:cu-016}
+\textit{Responsable: Diego Coronado.}
+
+\begin{description}[leftmargin=!, labelwidth=3.4cm, style=nextline, topsep=3pt]
+\item[Objetivo] El coordinador logístico organiza todos los recursos, personal y proveedores necesarios para garantizar el correcto desarrollo del evento.
+
+\item[Actores] Coordinador Logístico
+
+\item[CU relacionados] CU-017: Asignar personal operativo.
+
+\item[Entradas] Fecha y lugar del evento, recursos disponibles, personal disponible, proveedores registrados.
+
+\item[Pre-condiciones] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. Que el evento esté registrado en el sistema.
+  \item 2. Que existan recursos, personal y proveedores registrados para asignar.
+\end{itemize}
+
+\item[Salidas] 1. Plan logístico aprobado con recursos, personal y proveedores asignados.
+
+\item[Post-condiciones] 1. El cronograma del evento queda generado y disponible para consulta.
+
+\end{description}
+
+\paragraph{Flujo básico de éxito}
+\begin{longtable}{P{1.1cm}P{1.8cm}P{10.5cm}}
+\toprule
+\textbf{Paso} & \textbf{Quién} & \textbf{Acción}\\
+\midrule
+\endhead
+1 & Actor & El coordinador accede a la planificación logística del evento.\\
+2 & Sistema & Muestra los recursos, el personal y los proveedores disponibles.\\
+3 & Actor & Define el cronograma preliminar y selecciona los recursos, personal y proveedores necesarios.\\
+4 & Sistema & Verifica la disponibilidad de cada recurso, personal y proveedor seleccionado.\\
+5 & Sistema & Detecta y señala posibles conflictos de horario o de asignación.\\
+6 & Actor & Ajusta la selección para resolver los conflictos señalados.\\
+7 & Sistema & Calcula el costo estimado del plan logístico.\\
+8 & Actor & Aprueba el plan logístico generado.\\
+9 & Sistema & Genera el cronograma definitivo y guarda el plan logístico.\\
+10 & Sistema & Notifica a los proveedores y al personal asignado sobre el plan aprobado.\\
+\bottomrule
+\end{longtable}
+
+\paragraph{Flujos alternativos}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item CU-016A: Si no hay disponibilidad de personal, el sistema permite solicitar personal adicional.
+  \item CU-016B: Si un proveedor no está disponible, el sistema propone proveedores alternativos.
+  \item CU-016C: Si los recursos son insuficientes, el sistema genera una alerta para adquirir más recursos.
+  \item CU-016D: Si cambia la fecha del evento, el cronograma se actualiza automáticamente.
+  \item CU-016E: Si el costo estimado del plan supera el presupuesto del evento, el sistema alerta al coordinador antes de aprobar.
+\end{itemize}
+
+\paragraph{Extensiones}
+No hay extensiones conocidas.
+
+\paragraph{Atributos de calidad asociados}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Consistencia: evitar asignar el mismo recurso, personal o proveedor a dos eventos en conflicto de horario.
+  \item Disponibilidad: debe estar accesible durante toda la etapa de planeación del evento.
+  \item Trazabilidad: el plan logístico aprobado debe quedar registrado y ser auditable.
+\end{itemize}
+
+\paragraph{Infraestructura no trivial}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Base de datos relacional con validaciones de disponibilidad de recursos, personal y proveedores.
+  \item Generación de un cronograma persistido y consultable por otros módulos del sistema.
+\end{itemize}
+
+\subsection{CU-017 --- Asignar personal operativo}
+\label{cu:cu-017}
+\textit{Responsable: Diego Coronado.}
+
+\begin{description}[leftmargin=!, labelwidth=3.4cm, style=nextline, topsep=3pt]
+\item[Objetivo] El coordinador logístico distribuye el personal disponible en las diferentes zonas del evento.
+
+\item[Actores] Coordinador Logístico
+
+\item[CU relacionados] CU-016: Planificar logística del evento.
+
+\item[Entradas] Zonas del evento, personal disponible y su rol.
+
+\item[Pre-condiciones] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. Que el evento tenga un plan logístico aprobado.
+  \item 2. Que exista personal registrado y disponible.
+\end{itemize}
+
+\item[Salidas] 1. Mensaje de confirmación de personal asignado.
+
+\item[Post-condiciones] 1. Los horarios y zonas asignadas quedan registrados en el sistema.
+
+\end{description}
+
+\paragraph{Flujo básico de éxito}
+\begin{longtable}{P{1.1cm}P{1.8cm}P{10.5cm}}
+\toprule
+\textbf{Paso} & \textbf{Quién} & \textbf{Acción}\\
+\midrule
+\endhead
+1 & Actor & El coordinador selecciona el evento y accede a la asignación de personal.\\
+2 & Sistema & Muestra las zonas del evento y el personal disponible por rol.\\
+3 & Actor & Selecciona los empleados y las zonas a las que se asignarán.\\
+4 & Sistema & Verifica la disponibilidad de horario de cada empleado.\\
+5 & Sistema & Verifica que cada empleado tenga el rol requerido para la zona.\\
+6 & Sistema & Calcula la cobertura de personal por zona y señala zonas con déficit.\\
+7 & Actor & Ajusta la asignación para cubrir las zonas con déficit de personal.\\
+8 & Sistema & Genera los horarios definitivos de cada empleado asignado.\\
+9 & Sistema & Notifica a los empleados asignados sobre su zona y horario.\\
+\bottomrule
+\end{longtable}
+
+\paragraph{Flujos alternativos}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item CU-017A: Si un empleado no está disponible, el sistema sugiere un reemplazo.
+  \item CU-017B: Si falta personal para una zona, el sistema genera una alerta.
+  \item CU-017C: Si un empleado supera las horas permitidas, el sistema solicita seleccionar otro empleado.
+  \item CU-017D: Si una zona queda sin cobertura suficiente de personal, el sistema la marca como crítica y notifica al coordinador.
+\end{itemize}
+
+\paragraph{Extensiones}
+No hay extensiones conocidas.
+
+\paragraph{Atributos de calidad asociados}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Consistencia: evitar la doble asignación de un mismo empleado a dos zonas u horarios simultáneos.
+  \item Rendimiento: la verificación de disponibilidad debe ser rápida al asignar múltiples zonas.
+  \item Trazabilidad: los horarios generados quedan como registro auditable.
+\end{itemize}
+
+\paragraph{Infraestructura no trivial}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Servicio de notificaciones para avisar a los empleados asignados.
+  \item Índices sobre disponibilidad y rol del personal para acelerar la verificación de conflictos.
+\end{itemize}
+
+\subsection{CU-018 --- Gestionar turno y asistencia del personal}
+\label{cu:cu-018}
+\textit{Responsable: Diego Coronado.}
+
+\begin{description}[leftmargin=!, labelwidth=3.4cm, style=nextline, topsep=3pt]
+\item[Objetivo] Permite que el personal operativo solicite cambios de turno y registre su ingreso y salida real durante el evento.
+
+\item[Actores] Personal operativo, Supervisor
+
+\item[CU relacionados] CU-017: Asignar personal operativo.
+
+\item[Entradas] Turno a cambiar y motivo (si aplica), credencial o código QR del empleado.
+
+\item[Pre-condiciones] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. Que el empleado tenga un turno asignado.
+  \item 2. Que la credencial o código QR sea válido.
+\end{itemize}
+
+\item[Salidas] 1. Mensaje de confirmación del cambio de turno o del registro de asistencia.
+
+\item[Post-condiciones] 1. La programación del personal y su asistencia quedan actualizadas.
+
+\end{description}
+
+\paragraph{Flujo básico de éxito}
+\begin{longtable}{P{1.1cm}P{1.8cm}P{10.5cm}}
+\toprule
+\textbf{Paso} & \textbf{Quién} & \textbf{Acción}\\
+\midrule
+\endhead
+1 & Actor & El empleado solicita el cambio de turno.\\
+2 & Sistema & Verifica la disponibilidad de un reemplazo.\\
+3 & Actor & El supervisor revisa y aprueba o rechaza la solicitud.\\
+4 & Sistema & Actualiza la programación y notifica a los empleados involucrados.\\
+5 & Actor & El empleado presenta su credencial o código QR en el punto de control.\\
+6 & Sistema & Valida la asignación del empleado al evento.\\
+7 & Sistema & Registra la hora de entrada o salida.\\
+8 & Sistema & Calcula las horas trabajadas y actualiza el estado del empleado.\\
+\bottomrule
+\end{longtable}
+
+\paragraph{Flujos alternativos}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item CU-018A: Si no existe un reemplazo disponible, el sistema informa al empleado que no es posible el cambio.
+  \item CU-018B: Si el supervisor rechaza la solicitud, el sistema notifica al empleado y mantiene el turno original.
+\end{itemize}
+
+\paragraph{Extensiones}
+No hay extensiones conocidas.
+
+\paragraph{Atributos de calidad asociados}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Disponibilidad: debe operar durante todo el evento, incluso con conexión intermitente en los puntos de control.
+  \item Consistencia: evitar registros de asistencia duplicados.
+  \item Rendimiento: la validación de credencial o QR debe resolverse en segundos.
+\end{itemize}
+
+\paragraph{Infraestructura no trivial}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Modo offline-first en los dispositivos de control, con sincronización posterior de los registros pendientes.
+  \item Cola de mensajes para propagar los cambios de turno ya aprobados.
+\end{itemize}
+
+\subsection{CU-019 --- Monitorear el evento}
+\label{cu:cu-019}
+\textit{Responsable: Diego Coronado.}
+
+\begin{description}[leftmargin=!, labelwidth=3.4cm, style=nextline, topsep=3pt]
+\item[Objetivo] Supervisar el desarrollo del evento en tiempo real.
+
+\item[Actores] Supervisor
+
+\item[CU relacionados] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item CU-017: Asignar personal operativo.
+  \item CU-018: Gestionar turno y asistencia del personal.
+\end{itemize}
+
+\item[Entradas] Indicadores de aforo, accesos, parqueaderos e incidencias.
+
+\item[Pre-condiciones] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. Que el evento esté en curso.
+  \item 2. Que los indicadores estén siendo registrados por el sistema.
+\end{itemize}
+
+\item[Salidas] 1. Estado actualizado del evento y alertas generadas.
+
+\item[Post-condiciones] 1. Las decisiones tomadas por el supervisor quedan registradas.
+
+\end{description}
+
+\paragraph{Flujo básico de éxito}
+\begin{longtable}{P{1.1cm}P{1.8cm}P{10.5cm}}
+\toprule
+\textbf{Paso} & \textbf{Quién} & \textbf{Acción}\\
+\midrule
+\endhead
+1 & Actor & El supervisor accede al panel de monitoreo del evento.\\
+2 & Sistema & Muestra en tiempo real el aforo, los accesos, los parqueaderos y las incidencias.\\
+3 & Sistema & Calcula indicadores agregados (porcentaje de aforo, flujo de ingreso, incidentes abiertos).\\
+4 & Sistema & Genera alertas automáticas ante situaciones críticas (aforo alto, incidentes sin atender).\\
+5 & Actor & Revisa los indicadores y las alertas generadas.\\
+6 & Actor & Filtra el panel por zona o tipo de indicador para profundizar en una situación.\\
+7 & Actor & Toma una decisión operativa (redistribuir personal, cerrar accesos, escalar un incidente) según lo observado.\\
+8 & Sistema & Registra la decisión tomada y su resultado en el historial del evento.\\
+\bottomrule
+\end{longtable}
+
+\paragraph{Flujos alternativos}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item CU-019A: Si se alcanza el aforo máximo, el sistema bloquea nuevos ingresos.
+  \item CU-019B: Si hay congestión en una zona, el sistema sugiere redistribuir al personal.
+  \item CU-019C: Si falla un acceso, el sistema habilita una entrada alternativa.
+\end{itemize}
+
+\paragraph{Extensiones}
+No hay extensiones conocidas.
+
+\paragraph{Atributos de calidad asociados}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Disponibilidad: el panel de monitoreo debe mantenerse operativo durante todo el evento.
+  \item Rendimiento: los indicadores deben actualizarse casi en tiempo real.
+  \item Escalabilidad: debe soportar múltiples fuentes de datos (aforo, accesos, parqueaderos, incidencias) simultáneamente.
+\end{itemize}
+
+\paragraph{Infraestructura no trivial}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Mensajería/streaming en tiempo real (WebSockets o cola de eventos) para alimentar el panel con datos de aforo, accesos e incidencias.
+  \item Dashboard con agregación de métricas provenientes de varios servicios.
+\end{itemize}
+
+\subsection{CU-020 --- Gestionar incidentes}
+\label{cu:cu-020}
+\textit{Responsable: Diego Coronado.}
+
+\begin{description}[leftmargin=!, labelwidth=3.4cm, style=nextline, topsep=3pt]
+\item[Objetivo] Registrar y atender cualquier incidente ocurrido durante el evento.
+
+\item[Actores] Personal operativo, Supervisor
+
+\item[CU relacionados] CU-019: Monitorear el evento.
+
+\item[Entradas] Datos del incidente (tipo, ubicación, descripción).
+
+\item[Pre-condiciones] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. Que el evento esté en curso.
+  \item 2. Que el personal tenga acceso al registro de incidentes.
+\end{itemize}
+
+\item[Salidas] 1. Mensaje de confirmación de registro del incidente.
+
+\item[Post-condiciones] 1. El incidente queda registrado con su responsable y estado.
+
+\end{description}
+
+\paragraph{Flujo básico de éxito}
+\begin{longtable}{P{1.1cm}P{1.8cm}P{10.5cm}}
+\toprule
+\textbf{Paso} & \textbf{Quién} & \textbf{Acción}\\
+\midrule
+\endhead
+1 & Actor & El personal registra el incidente ocurrido (tipo, ubicación, descripción).\\
+2 & Sistema & Guarda el incidente y le asigna un identificador y nivel de prioridad inicial.\\
+3 & Sistema & Notifica al supervisor sobre el nuevo incidente.\\
+4 & Actor & El supervisor revisa el incidente y confirma o ajusta su nivel de prioridad.\\
+5 & Actor & Asigna un responsable y coordina las acciones necesarias.\\
+6 & Sistema & Notifica al responsable asignado.\\
+7 & Actor & El responsable reporta el avance o cierre del incidente.\\
+8 & Sistema & Actualiza el estado del incidente (en atención, resuelto, cerrado).\\
+9 & Sistema & Registra el historial completo del incidente para auditoría.\\
+\bottomrule
+\end{longtable}
+
+\paragraph{Flujos alternativos}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item CU-020A: Si el supervisor reclasifica la prioridad del incidente, el sistema reordena su atención frente a otros incidentes abiertos.
+  \item CU-020B: Si el incidente se resuelve sin necesidad de escalarlo, el responsable lo cierra directamente con una nota de resolución.
+\end{itemize}
+
+\paragraph{Extensiones}
+No hay extensiones conocidas.
+
+\paragraph{Atributos de calidad asociados}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Disponibilidad: el registro de incidentes debe estar accesible en todo momento durante el evento.
+  \item Trazabilidad: cada incidente debe quedar registrado con su historial hasta el cierre.
+  \item Rendimiento: la notificación al supervisor debe ser inmediata cuando el incidente es crítico.
+\end{itemize}
+
+\paragraph{Infraestructura no trivial}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Servicio de notificaciones push para alertar de inmediato al supervisor o coordinador.
+  \item Cola de mensajes para priorizar y escalar los incidentes críticos.
+\end{itemize}
+
+\subsection{CU-021 --- Reservar parqueadero}
+\label{cu:cu-021}
+\textit{Responsable: Daniel Cristancho.}
+
+\begin{description}[leftmargin=!, labelwidth=3.4cm, style=nextline, topsep=3pt]
+\item[Objetivo] Permitir que el cliente reserve un espacio de parqueadero para el evento antes de su llegada.
+
+\item[Actores] Cliente
+
+\item[CU relacionados] CU-023: Asignación de espacios.
+
+\item[Entradas] Datos del vehículo, evento, fecha y hora de llegada.
+
+\item[Pre-condiciones] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. Que existan espacios de parqueadero disponibles para el evento.
+  \item 2. Que el cliente tenga una cuenta registrada.
+\end{itemize}
+
+\item[Salidas] 1. Confirmación de la reserva con código de acceso (QR).
+
+\item[Post-condiciones] 1. El espacio queda reservado y bloqueado para ese vehículo.
+
+\end{description}
+
+\paragraph{Flujo básico de éxito}
+\begin{longtable}{P{1.1cm}P{1.8cm}P{10.5cm}}
+\toprule
+\textbf{Paso} & \textbf{Quién} & \textbf{Acción}\\
+\midrule
+\endhead
+1 & Actor & El cliente consulta la disponibilidad de parqueadero para el evento.\\
+2 & Sistema & Muestra las zonas y tarifas disponibles.\\
+3 & Actor & Selecciona la zona e ingresa los datos del vehículo.\\
+4 & Sistema & Bloquea temporalmente el espacio seleccionado mientras se completa el pago.\\
+5 & Actor & Realiza el pago de la reserva.\\
+6 & Sistema & Verifica la disponibilidad del espacio y procesa el pago.\\
+7 & Sistema & Genera el código de acceso (QR) asociado a la reserva.\\
+8 & Sistema & Confirma la reserva y libera el bloqueo temporal.\\
+9 & Sistema & Envía la confirmación y el código QR al cliente por correo.\\
+\bottomrule
+\end{longtable}
+
+\paragraph{Flujos alternativos}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item CU-021A: Si no hay disponibilidad, el sistema sugiere zonas alternativas o lista de espera.
+  \item CU-021B: Si el pago es rechazado, el sistema solicita otro método de pago.
+\end{itemize}
+
+\paragraph{Extensiones}
+No hay extensiones conocidas.
+
+\paragraph{Atributos de calidad asociados}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Consistencia: evitar la doble reserva de un mismo espacio de parqueadero.
+  \item Rendimiento: la confirmación de la reserva y el pago deben resolverse en segundos.
+  \item Disponibilidad: el módulo debe soportar picos de reserva antes de eventos masivos.
+\end{itemize}
+
+\paragraph{Infraestructura no trivial}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Caché en memoria (Redis) para bloquear temporalmente el espacio durante el pago y evitar sobreventa entre reservas concurrentes.
+  \item Integración con la pasarela de pagos.
+\end{itemize}
+
+\subsection{CU-022 --- Ingreso y salida de vehículos}
+\label{cu:cu-022}
+\textit{Responsable: Daniel Cristancho.}
+
+\begin{description}[leftmargin=!, labelwidth=3.4cm, style=nextline, topsep=3pt]
+\item[Objetivo] Controlar el ingreso y salida de los vehículos al parqueadero del evento.
+
+\item[Actores] Cliente, Operador de parqueadero
+
+\item[CU relacionados] CU-021: Reservar parqueadero.
+
+\item[Entradas] Código QR o placa del vehículo.
+
+\item[Pre-condiciones] 1. Que el vehículo tenga una reserva activa o exista cupo disponible.
+
+\item[Salidas] 1. Registro de hora de ingreso o salida.
+
+\item[Post-condiciones] 1. La ocupación del parqueadero queda actualizada.
+
+\end{description}
+
+\paragraph{Flujo básico de éxito}
+\begin{longtable}{P{1.1cm}P{1.8cm}P{10.5cm}}
+\toprule
+\textbf{Paso} & \textbf{Quién} & \textbf{Acción}\\
+\midrule
+\endhead
+1 & Actor & El cliente presenta el código QR o la placa en el punto de control de ingreso.\\
+2 & Sistema & Valida la reserva asociada o la disponibilidad de cupo.\\
+3 & Sistema & Registra la hora de ingreso y actualiza la ocupación de la zona.\\
+4 & Sistema & Asigna o confirma el espacio correspondiente al vehículo.\\
+5 & Actor & El cliente presenta el código QR o la placa en el punto de control de salida.\\
+6 & Sistema & Verifica el tiempo de permanencia registrado.\\
+7 & Sistema & Registra la hora de salida.\\
+8 & Sistema & Calcula el tiempo total de permanencia.\\
+9 & Sistema & Actualiza la ocupación de la zona y libera el espacio.\\
+\bottomrule
+\end{longtable}
+
+\paragraph{Flujos alternativos}
+CU-022A: Si el vehículo no tiene reserva, el sistema verifica disponibilidad de cupo y permite el ingreso si hay espacio.
+
+\paragraph{Extensiones}
+No hay extensiones conocidas.
+
+\paragraph{Atributos de calidad asociados}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Rendimiento: la validación de QR o placa debe resolverse en segundos para no generar filas en el acceso vehicular.
+  \item Disponibilidad: debe operar aunque existan fallas de red intermitentes en el punto de control.
+  \item Consistencia: la ocupación registrada debe reflejar el estado real del parqueadero.
+\end{itemize}
+
+\paragraph{Infraestructura no trivial}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Modo offline-first en el punto de control, con sincronización posterior de los registros.
+  \item Caché local del estado de reservas y ocupación.
+\end{itemize}
+
+\subsection{CU-023 --- Asignación de espacios}
+\label{cu:cu-023}
+\textit{Responsable: Daniel Cristancho.}
+
+\begin{description}[leftmargin=!, labelwidth=3.4cm, style=nextline, topsep=3pt]
+\item[Objetivo] Asignar automáticamente un espacio disponible dentro de la zona de parqueadero correspondiente.
+
+\item[Actores] Operador de parqueadero
+
+\item[CU relacionados] CU-021: Reservar parqueadero.
+
+\item[Entradas] Tipo de vehículo, zona solicitada.
+
+\item[Pre-condiciones] 1. Que existan espacios libres en la zona solicitada.
+
+\item[Salidas] 1. Número o ubicación del espacio asignado.
+
+\item[Post-condiciones] 1. El espacio queda marcado como ocupado o reservado.
+
+\end{description}
+
+\paragraph{Flujo básico de éxito}
+\begin{longtable}{P{1.1cm}P{1.8cm}P{10.5cm}}
+\toprule
+\textbf{Paso} & \textbf{Quién} & \textbf{Acción}\\
+\midrule
+\endhead
+1 & Actor & El operador o el sistema recibe la solicitud de asignación (por reserva o ingreso directo).\\
+2 & Sistema & Consulta los espacios disponibles según el tipo de vehículo y la zona solicitada.\\
+3 & Sistema & Aplica las reglas de prioridad (por ejemplo, cercanía a la entrada, tipo de vehículo).\\
+4 & Sistema & Selecciona el espacio disponible más adecuado.\\
+5 & Sistema & Bloquea el espacio seleccionado para evitar que otra solicitud lo tome simultáneamente.\\
+6 & Sistema & Actualiza el estado del espacio a ocupado o reservado.\\
+7 & Sistema & Confirma la asignación al operador o al punto de control.\\
+8 & Sistema & Registra la asignación en el historial de ocupación de la zona.\\
+\bottomrule
+\end{longtable}
+
+\paragraph{Flujos alternativos}
+CU-023A: Si no hay espacios en la zona solicitada, el sistema sugiere una zona alternativa.
+
+\paragraph{Extensiones}
+No hay extensiones conocidas.
+
+\paragraph{Atributos de calidad asociados}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Consistencia: evitar que dos vehículos sean asignados al mismo espacio.
+  \item Rendimiento: la asignación debe resolverse en segundos durante el ingreso.
+\end{itemize}
+
+\paragraph{Infraestructura no trivial}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Bloqueo transaccional sobre el espacio al momento de asignarlo, para evitar condiciones de carrera.
+  \item Caché del estado de ocupación por zona.
+\end{itemize}
+
+\subsection{CU-024 --- Cobro}
+\label{cu:cu-024}
+\textit{Responsable: Samuel Emperador.}
+
+\begin{description}[leftmargin=!, labelwidth=3.4cm, style=nextline, topsep=3pt]
+\item[Objetivo] Calcular y mostrar al personal de parqueadero el valor a cobrar por el servicio al registrar la salida de un vehículo, según el tiempo de permanencia y la tarifa por hora vigente — o indicar que ya está pagado si la reserva se pagó por adelantado.
+
+\item[Actores] Empleado (personal de parqueadero) — principal; Cliente (paga en el punto de salida); Administrador (define la tarifa por hora).
+
+\item[CU relacionados] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item CU-022: Ingreso y salida de vehículos (de donde viene el registro de la hora de salida).
+  \item CU-021: Reservar parqueadero (de donde viene si la reserva fue prepagada).
+\end{itemize}
+
+\item[Entradas] Hora de ingreso y de salida del vehículo, indicador de si la reserva fue prepagada, tarifa por hora vigente (definida por el Administrador).
+
+\item[Pre-condiciones] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. El vehículo debe tener registrada su hora de ingreso y un espacio asignado.
+  \item 2. Debe existir una tarifa por hora vigente si la reserva no fue prepagada.
+\end{itemize}
+
+\item[Salidas] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. Hora de salida registrada.
+  \item 2. Indicación de que el servicio ya está pagado (reserva prepagada), o el monto total a cobrar calculado por horas de permanencia.
+\end{itemize}
+
+\item[Post-condiciones] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. La hora de salida queda registrada.
+  \item 2. Si la reserva no era prepagada, el monto calculado queda visible para que el personal lo cobre en el punto de salida (efectivo o datáfono, fuera del sistema).
+\end{itemize}
+
+\end{description}
+
+\paragraph{Flujo básico de éxito}
+\begin{longtable}{P{1.1cm}P{1.8cm}P{10.5cm}}
+\toprule
+\textbf{Paso} & \textbf{Quién} & \textbf{Acción}\\
+\midrule
+\endhead
+1 & Actor & El personal de parqueadero registra la salida del vehículo.\\
+2 & Sistema & Registra la hora de salida.\\
+3 & Sistema & Verifica si la reserva fue prepagada.\\
+4 & Sistema & Si fue prepagada, muestra al personal que el servicio ya está pagado.\\
+5 & Sistema & Si no fue prepagada, calcula las horas de permanencia (redondeadas hacia arriba) según la tarifa por hora vigente.\\
+6 & Sistema & Muestra al personal el total a cobrar.\\
+7 & Actor & El personal informa el monto al cliente y lo recibe en el punto de salida (efectivo o datáfono, fuera del sistema).\\
+\bottomrule
+\end{longtable}
+
+\paragraph{Flujos alternativos}
+CU-024A: Si la reserva fue prepagada, el sistema omite el cálculo del cobro y solo indica que el servicio ya está pagado.
+
+\paragraph{Extensiones}
+No hay extensiones conocidas.
+
+\paragraph{Atributos de calidad asociados}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Consistencia: el monto mostrado debe corresponder exactamente al tiempo real de permanencia y a la tarifa vigente.
+  \item Disponibilidad: el cálculo del cobro no puede bloquear el registro de la salida del vehículo.
+  \item Usabilidad: el personal debe ver el monto de un vistazo, sin pasos adicionales.
+\end{itemize}
+
+\paragraph{Infraestructura no trivial}
+Tarifa por hora centralizada, configurable por el Administrador desde el Portal Web Administrativo y consultada por el personal de parqueadero al calcular el cobro.
+
+\subsection{CU-025 --- Control de ocupación}
+\label{cu:cu-025}
+\textit{Responsable: Samuel Emperador.}
+
+\begin{description}[leftmargin=!, labelwidth=3.4cm, style=nextline, topsep=3pt]
+\item[Objetivo] Supervisar en tiempo real la ocupación de las zonas de parqueadero del evento. Se implementa en el Portal Web Administrativo; la App Móvil de Personal no tiene este panel — su cargo Parqueadero solo participa en CU-022/CU-023 (lectura del QR de la reserva y asignación del espacio al ingreso).
+
+\item[Actores] Operador de parqueadero (desde el Portal Web Administrativo), Supervisor
+
+\item[CU relacionados] CU-022: Ingreso y salida de vehículos.
+
+\item[Entradas] Datos de ingresos y salidas registrados.
+
+\item[Pre-condiciones] 1. Que el evento esté en curso.
+
+\item[Salidas] 1. Estado actualizado de ocupación por zona.
+
+\item[Post-condiciones] 1. Las alertas de ocupación quedan atendidas.
+
+\end{description}
+
+\paragraph{Flujo básico de éxito}
+\begin{longtable}{P{1.1cm}P{1.8cm}P{10.5cm}}
+\toprule
+\textbf{Paso} & \textbf{Quién} & \textbf{Acción}\\
+\midrule
+\endhead
+1 & Actor & El operador o supervisor accede al panel de ocupación.\\
+2 & Sistema & Muestra el porcentaje de ocupación por zona en tiempo real.\\
+3 & Sistema & Calcula la tendencia de ocupación (velocidad de llenado) por zona.\\
+4 & Sistema & Genera alertas cuando una zona se aproxima al límite de aforo.\\
+5 & Actor & Revisa las alertas y el estado de cada zona.\\
+6 & Actor & Decide si redirige vehículos a otra zona con disponibilidad.\\
+7 & Sistema & Actualiza las recomendaciones de zona mostradas a los operadores de ingreso.\\
+8 & Sistema & Registra la decisión de redirección y su resultado en el historial del evento.\\
+\bottomrule
+\end{longtable}
+
+\paragraph{Flujos alternativos}
+CU-025A: Si una zona alcanza su capacidad máxima, el sistema bloquea nuevos ingresos a esa zona.
+
+\paragraph{Extensiones}
+No hay extensiones conocidas.
+
+\paragraph{Atributos de calidad asociados}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Rendimiento: el panel de ocupación debe reflejar el estado casi en tiempo real.
+  \item Disponibilidad: debe mantenerse operativo durante todo el evento.
+  \item Escalabilidad: debe soportar múltiples zonas y puntos de control simultáneamente.
+\end{itemize}
+
+\paragraph{Infraestructura no trivial}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Mensajería/streaming en tiempo real para agregar los datos de ingresos y salidas por zona.
+  \item Dashboard con alertas automáticas al aproximarse al aforo máximo.
+\end{itemize}
+
+\subsection{CU-026 --- Gestión de Eventos (CRUD)}
+\label{cu:cu-026}
+\textit{Responsable: Samuel Emperador.}
+
+\begin{description}[leftmargin=!, labelwidth=3.4cm, style=nextline, topsep=3pt]
+\item[Objetivo] El organizador crea, edita, publica y cancela eventos, definiendo su información general, tipos de entrada, precios por zona y aforo máximo.
+
+\item[Actores] Organizador
+
+\item[CU relacionados] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item CU-001: Compra de entradas.
+  \item CU-005: Consultar evento.
+  \item CU-029: Gestión de Recintos y Zonas.
+\end{itemize}
+
+\item[Entradas] Nombre del evento, fecha, hora, recinto, categoría, tipos de entrada y precios, aforo máximo, imágenes/descripción.
+
+\item[Pre-condiciones] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. El organizador debe estar autenticado con rol "Organizador".
+  \item 2. Debe existir al menos un recinto registrado en el sistema.
+\end{itemize}
+
+\item[Salidas] 1. Evento creado o editado, con estado (borrador, publicado, cancelado).
+
+\item[Post-condiciones] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. El evento queda disponible para consulta pública si su estado es "publicado".
+  \item 2. El historial de cambios del evento queda registrado.
+\end{itemize}
+
+\end{description}
+
+\paragraph{Flujo básico de éxito}
+\begin{longtable}{P{1.1cm}P{1.8cm}P{10.5cm}}
+\toprule
+\textbf{Paso} & \textbf{Quién} & \textbf{Acción}\\
+\midrule
+\endhead
+1 & Actor & El organizador accede al módulo de gestión de eventos y selecciona "Crear nuevo evento" (o edita uno existente).\\
+2 & Sistema & Muestra el formulario con los campos requeridos (nombre, fecha, recinto, categoría, tipos de entrada, precios, aforo).\\
+3 & Actor & El organizador completa la información del evento y define los tipos de entrada con su precio y cantidad disponible por zona.\\
+4 & Sistema & Valida que el aforo total definido no supere la capacidad del recinto seleccionado.\\
+5 & Sistema & Valida que la fecha del evento no genere conflicto con otro evento en el mismo recinto.\\
+6 & Actor & El organizador confirma la información y solicita publicar el evento.\\
+7 & Sistema & Verifica que todos los campos obligatorios estén completos y sean consistentes.\\
+8 & Sistema & Cambia el estado del evento a "publicado" y lo hace visible en el Portal Web del Cliente.\\
+9 & Sistema & Registra la operación (creación/edición) en el historial de cambios del evento.\\
+10 & Sistema & Notifica al organizador la confirmación de publicación.\\
+\bottomrule
+\end{longtable}
+
+\paragraph{Flujos alternativos}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item CU-026A: Si el organizador guarda sin publicar, el sistema almacena el evento en estado "borrador", visible solo para el organizador.
+  \item CU-026B: Si el aforo definido supera la capacidad del recinto, el sistema rechaza la publicación y señala la zona en conflicto.
+  \item CU-026C: Si existe conflicto de fecha/recinto, el sistema sugiere fechas u horarios alternativos.
+  \item CU-026D: Si el organizador cancela un evento ya publicado, el sistema solicita confirmación y dispara el proceso de devolución masiva (CU-003) a los compradores.
+\end{itemize}
+
+\paragraph{Extensiones}
+No hay extensiones conocidas.
+
+\paragraph{Atributos de calidad asociados}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Consistencia: el aforo vendible nunca puede superar la capacidad física del recinto ni generar traslape de eventos en el mismo espacio.
+  \item Disponibilidad: el módulo debe estar operativo mientras existan organizadores gestionando eventos activos.
+  \item Trazabilidad: todo cambio de estado del evento (borrador → publicado → cancelado) debe quedar auditado con usuario y fecha.
+\end{itemize}
+
+\paragraph{Infraestructura no trivial}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Base de datos relacional con restricciones de integridad sobre aforo y traslape de fechas por recinto.
+  \item Servicio de notificaciones para confirmar publicación/cancelación.
+  \item Historial de cambios versionado del evento.
+\end{itemize}
+
+\subsection{CU-027 --- Gestión de Cuentas de Usuario}
+\label{cu:cu-027}
+\textit{Responsable: Sebastián Sánchez.}
+
+\begin{description}[leftmargin=!, labelwidth=3.4cm, style=nextline, topsep=3pt]
+\item[Objetivo] Cualquier usuario del sistema se registra, inicia sesión, recupera su contraseña y edita su perfil; el administrador puede además activar, desactivar o eliminar cuentas.
+
+\item[Actores] Cliente, Empleado, Organizador, Administrador
+
+\item[CU relacionados] CU-028: Gestión de Roles y Permisos.
+
+\item[Entradas] Nombre, correo, contraseña, rol solicitado, datos de perfil.
+
+\item[Pre-condiciones] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. El correo electrónico no debe estar previamente registrado (para registro).
+  \item 2. El usuario debe conocer sus credenciales o tener acceso al correo de recuperación (para login/recuperación).
+\end{itemize}
+
+\item[Salidas] 1. Cuenta creada o actualizada y token de sesión (para inicio de sesión).
+
+\item[Post-condiciones] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. La cuenta queda registrada con un rol asignado y estado "activa".
+  \item 2. Las sesiones inician con un token válido que expira según la política de seguridad.
+\end{itemize}
+
+\end{description}
+
+\paragraph{Flujo básico de éxito}
+\begin{longtable}{P{1.1cm}P{1.8cm}P{10.5cm}}
+\toprule
+\textbf{Paso} & \textbf{Quién} & \textbf{Acción}\\
+\midrule
+\endhead
+1 & Actor & El usuario accede al formulario de registro e ingresa su nombre, correo y contraseña.\\
+2 & Sistema & Valida el formato del correo y la fortaleza de la contraseña.\\
+3 & Sistema & Verifica que el correo no esté registrado previamente.\\
+4 & Sistema & Cifra la contraseña y crea la cuenta con el rol correspondiente ("Cliente" por defecto).\\
+5 & Sistema & Envía un correo de verificación de cuenta.\\
+6 & Actor & El usuario confirma su cuenta desde el enlace recibido.\\
+7 & Sistema & Activa la cuenta y permite el inicio de sesión.\\
+8 & Actor & El usuario inicia sesión con sus credenciales.\\
+9 & Sistema & Valida las credenciales, genera un token de sesión y registra el inicio de sesión.\\
+\bottomrule
+\end{longtable}
+
+\paragraph{Flujos alternativos}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item CU-027A: Si el usuario olvida su contraseña, el sistema envía un enlace de recuperación de un solo uso con expiración.
+  \item CU-027B: Si el administrador desactiva una cuenta, el usuario no puede iniciar sesión hasta que sea reactivada.
+  \item CU-027C: Si el usuario edita su perfil, el sistema valida los nuevos datos antes de guardarlos.
+  \item CU-027D: Si se detectan múltiples intentos fallidos de inicio de sesión, el sistema bloquea temporalmente la cuenta.
+\end{itemize}
+
+\paragraph{Extensiones}
+Ninguna.
+
+\paragraph{Atributos de calidad asociados}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Seguridad: contraseñas cifradas (hash + salt), tokens de sesión con expiración, bloqueo ante fuerza bruta.
+  \item Disponibilidad: el login es crítico y debe responder incluso en horas pico (apertura de venta).
+  \item Usabilidad: recuperación de contraseña simple y mensajes de error claros, sin revelar si el correo existe (evita filtrar información).
+\end{itemize}
+
+\paragraph{Infraestructura no trivial}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Servicio de autenticación centralizado (Auth Service) detrás del API Gateway.
+  \item Cola de mensajes para el envío asíncrono de correos de verificación/recuperación.
+  \item Almacenamiento seguro de credenciales (hash).
+\end{itemize}
+
+\subsection{CU-028 --- Gestión de Roles y Permisos}
+\label{cu:cu-028}
+\textit{Responsable: Sebastián Sánchez.}
+
+\begin{description}[leftmargin=!, labelwidth=3.4cm, style=nextline, topsep=3pt]
+\item[Objetivo] El administrador crea, edita y elimina roles del sistema, y asigna o revoca permisos sobre cada módulo (eventos, personal, parqueaderos, alimentos, reportes).
+
+\item[Actores] Administrador
+
+\item[CU relacionados] CU-027: Gestión de Cuentas de Usuario.
+
+\item[Entradas] Nombre del rol, lista de permisos por módulo, usuarios a asignar.
+
+\item[Pre-condiciones] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. El administrador debe estar autenticado con rol "Administrador".
+  \item 2. Deben existir los módulos/recursos sobre los cuales definir permisos.
+\end{itemize}
+
+\item[Salidas] 1. Rol creado o editado con su matriz de permisos.
+
+\item[Post-condiciones] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. Los usuarios asignados a ese rol heredan inmediatamente los permisos definidos.
+  \item 2. El cambio queda registrado en el historial de auditoría.
+\end{itemize}
+
+\end{description}
+
+\paragraph{Flujo básico de éxito}
+\begin{longtable}{P{1.1cm}P{1.8cm}P{10.5cm}}
+\toprule
+\textbf{Paso} & \textbf{Quién} & \textbf{Acción}\\
+\midrule
+\endhead
+1 & Actor & El administrador accede al módulo de roles y permisos.\\
+2 & Sistema & Muestra los roles existentes y la matriz de permisos por módulo.\\
+3 & Actor & El administrador crea un nuevo rol o selecciona uno existente para editar.\\
+4 & Actor & Marca o desmarca los permisos (crear, leer, actualizar, eliminar) por módulo para ese rol.\\
+5 & Sistema & Valida que el rol tenga al menos un permiso asignado.\\
+6 & Actor & Confirma los cambios.\\
+7 & Sistema & Actualiza la matriz de permisos y la propaga a todos los usuarios con ese rol.\\
+8 & Sistema & Registra el cambio en el historial de auditoría con el administrador responsable.\\
+\bottomrule
+\end{longtable}
+
+\paragraph{Flujos alternativos}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item CU-028A: Si el administrador intenta eliminar un rol con usuarios activos asignados, el sistema exige reasignarlos primero.
+  \item CU-028B: Si se restringe un permiso, las sesiones activas de los usuarios afectados se actualizan sin necesidad de reiniciar sesión.
+\end{itemize}
+
+\paragraph{Extensiones}
+Ninguna.
+
+\paragraph{Atributos de calidad asociados}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Seguridad: principio de menor privilegio; ningún rol tiene permisos por defecto sobre módulos sensibles (pagos, datos personales).
+  \item Consistencia: los cambios de permisos deben reflejarse de forma inmediata y uniforme en todos los servicios que consultan el rol.
+  \item Trazabilidad: toda modificación de permisos debe quedar auditada (quién, cuándo, qué cambió).
+\end{itemize}
+
+\paragraph{Infraestructura no trivial}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Servicio de autorización centralizado, consultado por el API Gateway en cada solicitud (verificación de permisos).
+  \item Caché de permisos con invalidación automática al modificarse un rol.
+\end{itemize}
+
+\subsection{CU-029 --- Gestión de Recintos y Zonas}
+\label{cu:cu-029}
+\textit{Responsable: Sebastián Sánchez.}
+
+\begin{description}[leftmargin=!, labelwidth=3.4cm, style=nextline, topsep=3pt]
+\item[Objetivo] Registrar y mantener los recintos disponibles, sus zonas, capacidad por zona y mapa de distribución, como insumo para la creación de eventos y la venta de entradas por zona.
+
+\item[Actores] Organizador, Administrador
+
+\item[CU relacionados] CU-026: Gestión de Eventos.
+
+\item[Entradas] Nombre del recinto, dirección, zonas, capacidad por zona, mapa/plano.
+
+\item[Pre-condiciones] 1. El usuario debe tener rol "Organizador" o "Administrador".
+
+\item[Salidas] 1. Recinto y zonas registrados, disponibles para asociar a un evento.
+
+\item[Post-condiciones] 1. El recinto queda disponible para ser seleccionado al crear un evento (CU-026).
+
+\end{description}
+
+\paragraph{Flujo básico de éxito}
+\begin{longtable}{P{1.1cm}P{1.8cm}P{10.5cm}}
+\toprule
+\textbf{Paso} & \textbf{Quién} & \textbf{Acción}\\
+\midrule
+\endhead
+1 & Actor & El organizador accede al módulo de recintos y selecciona "Registrar nuevo recinto".\\
+2 & Sistema & Muestra el formulario de datos generales del recinto (nombre, dirección, capacidad total).\\
+3 & Actor & El organizador completa los datos generales y define las zonas del recinto (ej. VIP, general, palco) con su capacidad individual.\\
+4 & Sistema & Valida que la suma de capacidades por zona no supere la capacidad total declarada del recinto.\\
+5 & Actor & Adjunta o dibuja el mapa de distribución de zonas (opcional).\\
+6 & Actor & Confirma el registro del recinto.\\
+7 & Sistema & Guarda el recinto y sus zonas, dejándolo disponible para asociarlo a eventos.\\
+8 & Sistema & Notifica al organizador la confirmación del registro.\\
+\bottomrule
+\end{longtable}
+
+\paragraph{Flujos alternativos}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item CU-029A: Si la suma de capacidades por zona supera la capacidad total, el sistema rechaza el registro y señala la inconsistencia.
+  \item CU-029B: Si el organizador edita un recinto que ya tiene eventos activos asociados, el sistema advierte que el cambio puede afectar el aforo vendido.
+\end{itemize}
+
+\paragraph{Extensiones}
+Ninguna.
+
+\paragraph{Atributos de calidad asociados}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Consistencia: la capacidad por zona nunca debe permitir vender más entradas de las físicamente disponibles.
+  \item Reusabilidad: un recinto registrado debe poder reutilizarse en múltiples eventos sin duplicar información.
+  \item Usabilidad: la edición del mapa de zonas debe ser visual e intuitiva para el organizador.
+\end{itemize}
+
+\paragraph{Infraestructura no trivial}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Base de datos relacional con restricciones de integridad entre capacidad total y suma de zonas.
+  \item Almacenamiento de archivos (mapas/planos) en un servicio de objetos (ej. tipo S3).
+\end{itemize}
+
+\subsection{CU-030 --- Gestión de Proveedores}
+\label{cu:cu-030}
+\textit{Responsable: Diego Coronado.}
+
+\begin{description}[leftmargin=!, labelwidth=3.4cm, style=nextline, topsep=3pt]
+\item[Objetivo] Registrar, editar y dar de baja proveedores externos (catering, sonido, seguridad privada, etc.) que pueden ser asignados en la planificación logística de un evento (CU-016).
+
+\item[Actores] Coordinador Logístico, Administrador
+
+\item[CU relacionados] CU-016: Planificar logística del evento.
+
+\item[Entradas] Nombre del proveedor, tipo de servicio, datos de contacto, documentos/certificaciones.
+
+\item[Pre-condiciones] 1. El usuario debe tener rol "Coordinador Logístico" o "Administrador".
+
+\item[Salidas] 1. Proveedor registrado, disponible para asignar en la planificación logística.
+
+\item[Post-condiciones] 1. El proveedor queda disponible en el listado usado por la planificación logística (CU-016).
+
+\end{description}
+
+\paragraph{Flujo básico de éxito}
+\begin{longtable}{P{1.1cm}P{1.8cm}P{10.5cm}}
+\toprule
+\textbf{Paso} & \textbf{Quién} & \textbf{Acción}\\
+\midrule
+\endhead
+1 & Actor & El coordinador accede al módulo de proveedores y selecciona "Registrar proveedor".\\
+2 & Sistema & Muestra el formulario con los datos del proveedor y el tipo de servicio que ofrece.\\
+3 & Actor & El coordinador completa los datos y adjunta certificaciones o documentos requeridos.\\
+4 & Sistema & Valida que los campos obligatorios y los documentos estén completos.\\
+5 & Actor & Confirma el registro del proveedor.\\
+6 & Sistema & Guarda el proveedor con estado "activo".\\
+7 & Sistema & Deja el proveedor disponible en el listado usado por la planificación logística.\\
+8 & Sistema & Notifica al coordinador la confirmación del registro.\\
+\bottomrule
+\end{longtable}
+
+\paragraph{Flujos alternativos}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item CU-030A: Si el coordinador edita los datos de un proveedor ya asignado a un evento futuro, el sistema advierte del posible impacto en la planificación.
+  \item CU-030B: Si el coordinador da de baja un proveedor, el sistema advierte si tiene asignaciones activas antes de confirmar.
+\end{itemize}
+
+\paragraph{Extensiones}
+Ninguna.
+
+\paragraph{Atributos de calidad asociados}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Consistencia: no debe permitirse dar de baja un proveedor con asignaciones activas sin antes reasignarlas.
+  \item Trazabilidad: el historial de servicios prestados por cada proveedor debe quedar disponible para auditoría.
+  \item Disponibilidad: el listado de proveedores debe estar accesible durante la planificación logística (CU-016), incluso bajo carga.
+\end{itemize}
+
+\paragraph{Infraestructura no trivial}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Base de datos relacional con relación proveedor–evento.
+  \item Almacenamiento de documentos/certificaciones en un servicio de objetos.
+\end{itemize}
+
+\subsection{CU-031 --- Gestión de Pagos y Conciliación Financiera}
+\label{cu:cu-031}
+\textit{Responsable: Diego Coronado.}
+
+\begin{description}[leftmargin=!, labelwidth=3.4cm, style=nextline, topsep=3pt]
+\item[Objetivo] El administrador financiero supervisa, concilia y audita todos los pagos procesados por el sistema (entradas, mercado secundario, parqueaderos, alimentos), y gestiona reembolsos administrativos cuando el proceso automático de cancelación (CU-003) no aplica.
+
+\item[Actores] Administrador Financiero
+
+\item[CU relacionados] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item CU-003: Cancelaciones y devoluciones.
+  \item CU-024: Cobro (parqueadero).
+\end{itemize}
+
+\item[Entradas] Rango de fechas, filtro por módulo (entradas, parqueadero, alimentos), transacciones a conciliar.
+
+\item[Pre-condiciones] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. El usuario debe tener rol "Administrador Financiero".
+  \item 2. Deben existir transacciones procesadas por la pasarela de pagos en el periodo consultado.
+\end{itemize}
+
+\item[Salidas] 1. Reporte de conciliación con transacciones aprobadas, pendientes y rechazadas.
+
+\item[Post-condiciones] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. Las transacciones conciliadas quedan marcadas y no vuelven a procesarse.
+  \item 2. Los reembolsos manuales aprobados quedan registrados y notificados al cliente.
+\end{itemize}
+
+\end{description}
+
+\paragraph{Flujo básico de éxito}
+\begin{longtable}{P{1.1cm}P{1.8cm}P{10.5cm}}
+\toprule
+\textbf{Paso} & \textbf{Quién} & \textbf{Acción}\\
+\midrule
+\endhead
+1 & Actor & El administrador financiero accede al módulo de conciliación de pagos.\\
+2 & Actor & Selecciona el rango de fechas y el módulo a conciliar.\\
+3 & Sistema & Consulta las transacciones registradas en el sistema y las reportadas por la pasarela de pagos.\\
+4 & Sistema & Compara ambas fuentes y clasifica las transacciones como conciliadas, pendientes o con diferencias.\\
+5 & Sistema & Muestra el reporte de conciliación con las diferencias encontradas.\\
+6 & Actor & El administrador revisa las transacciones con diferencias y decide si requieren un reembolso manual.\\
+7 & Actor & Aprueba el reembolso manual para la transacción seleccionada.\\
+8 & Sistema & Envía la solicitud de reembolso a la pasarela de pagos.\\
+9 & Sistema & Registra la transacción como conciliada y notifica al cliente sobre el reembolso.\\
+\bottomrule
+\end{longtable}
+
+\paragraph{Flujos alternativos}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item CU-031A: Si todas las transacciones concilian sin diferencias, el sistema marca el periodo como conciliado automáticamente.
+  \item CU-031B: Si una transacción aparece en la pasarela pero no en el sistema, el sistema la marca como "huérfana" para revisión manual.
+\end{itemize}
+
+\paragraph{Extensiones}
+Ninguna.
+
+\paragraph{Atributos de calidad asociados}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Consistencia: el estado financiero del sistema debe coincidir exactamente con el de la pasarela de pagos tras cada conciliación.
+  \item Seguridad: acceso restringido solo a usuarios con rol "Administrador Financiero"; toda acción queda auditada.
+  \item Trazabilidad: cada conciliación y reembolso manual debe quedar registrado con usuario, fecha y justificación.
+\end{itemize}
+
+\paragraph{Infraestructura no trivial}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Integración asíncrona con la pasarela de pagos externa vía cola de mensajes.
+  \item Job programado (batch) de conciliación periódica.
+  \item Base de datos con bitácora de auditoría financiera.
+\end{itemize}
+
+\subsection{CU-032 --- Gestión de Reportes y Analítica del Evento}
+\label{cu:cu-032}
+\textit{Responsable: Diego Coronado.}
+
+\begin{description}[leftmargin=!, labelwidth=3.4cm, style=nextline, topsep=3pt]
+\item[Objetivo] El organizador y el administrador consultan reportes y dashboards con métricas del evento (ventas, ocupación, ingresos, personal, incidentes) para tomar decisiones antes, durante y después del evento.
+
+\item[Actores] Organizador, Administrador
+
+\item[CU relacionados] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item CU-019: Monitorear el evento.
+  \item CU-026: Gestión de Eventos.
+\end{itemize}
+
+\item[Entradas] Evento seleccionado, rango de fechas, tipo de métrica.
+
+\item[Pre-condiciones] \hfill
+\begin{itemize}[leftmargin=1.2em, topsep=1pt]
+  \item 1. El usuario debe tener rol "Organizador" o "Administrador".
+  \item 2. El evento debe tener datos generados (ventas, asistencia, incidentes) para poder graficar.
+\end{itemize}
+
+\item[Salidas] 1. Dashboard con métricas visuales y exportables.
+
+\item[Post-condiciones] 1. El reporte generado puede exportarse y queda disponible para consultas posteriores.
+
+\end{description}
+
+\paragraph{Flujo básico de éxito}
+\begin{longtable}{P{1.1cm}P{1.8cm}P{10.5cm}}
+\toprule
+\textbf{Paso} & \textbf{Quién} & \textbf{Acción}\\
+\midrule
+\endhead
+1 & Actor & El organizador selecciona el evento y accede al módulo de reportes.\\
+2 & Sistema & Muestra las categorías de métricas disponibles (ventas, ocupación, personal, incidentes).\\
+3 & Actor & Selecciona las métricas y el rango de fechas a consultar.\\
+4 & Sistema & Consulta los datos agregados de los microservicios correspondientes (entradas, personal, aforo, incidentes).\\
+5 & Sistema & Genera el dashboard con gráficas y totales consolidados.\\
+6 & Actor & El organizador filtra o profundiza en una métrica específica (ej. ventas por zona).\\
+7 & Actor & Solicita exportar el reporte (PDF/Excel).\\
+8 & Sistema & Genera el archivo exportable y lo pone a disposición para descarga.\\
+\bottomrule
+\end{longtable}
+
+\paragraph{Flujos alternativos}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item CU-032A: Si no hay datos suficientes para una métrica, el sistema muestra el estado vacío con una explicación.
+  \item CU-032B: Si el organizador solicita un reporte comparativo entre varios eventos, el sistema consolida las métricas de todos los eventos seleccionados.
+\end{itemize}
+
+\paragraph{Extensiones}
+Ninguna.
+
+\paragraph{Atributos de calidad asociados}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Rendimiento: las consultas agregadas no deben degradar el desempeño de los servicios operativos (entradas, aforo) durante el evento.
+  \item Disponibilidad: los dashboards deben ser consultables incluso durante el evento (monitoreo en tiempo real, ligado a CU-019).
+  \item Usabilidad: las métricas deben presentarse de forma clara y exportable en distintos niveles de detalle.
+\end{itemize}
+
+\paragraph{Infraestructura no trivial}
+\begin{itemize}[leftmargin=1.4em, topsep=1pt]
+  \item Almacén de datos de solo lectura (read replica / data warehouse) separado de las bases transaccionales, para no afectar el rendimiento operativo.
+  \item Procesamiento asíncrono para exportaciones pesadas.
+\end{itemize}

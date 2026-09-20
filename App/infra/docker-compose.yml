@@ -176,18 +176,22 @@ services:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }
+    # Los nombres de la capa de datos son variables para poder repartir el
+    # sistema en dos computadores (RNF de desplegabilidad): por defecto son los
+    # contenedores locales; `iniciar.sh --datos <IP>` los apunta a otra máquina.
     x-entorno: &entorno-comun
       NODE_ENV: development
-      POSTGRES_HOST: postgres
-      REDIS_HOST: redis
-      REDIS_PUERTO: "6379"
-      RABBITMQ_URL: amqp://hexacore:hexacore@rabbitmq:5672
+      POSTGRES_HOST: ${HOST_POSTGRES:-postgres}
+      POSTGRES_PUERTO: ${PUERTO_POSTGRES:-5432}
+      REDIS_HOST: ${HOST_REDIS:-redis}
+      REDIS_PUERTO: ${PUERTO_REDIS:-6379}
+      RABBITMQ_URL: amqp://hexacore:hexacore@${HOST_RABBIT:-rabbitmq}:${PUERTO_RABBIT:-5672}
       AUTH_JWT_CLAVE_PUBLICA_ARCHIVO: /claves/jwt-publica.pem
     # Solo en este servicio se monta también la privada: es el único que firma.
     environment:
       <<: *entorno-comun
       AUTH_JWT_CLAVE_PRIVADA_ARCHIVO: /claves/jwt-privada.pem
-      CORREO_PROVEEDOR_URL: http://correo:3098
+      CORREO_PROVEEDOR_URL: http://${HOST_CORREO:-correo}:${PUERTO_CORREO:-3098}
     volumes:
       - ./claves-desarrollo/jwt-privada.pem:/claves/jwt-privada.pem:ro
       - ./claves-desarrollo/jwt-publica.pem:/claves/jwt-publica.pem:ro
@@ -212,11 +216,36 @@ services:
       pasarela: { condition: service_healthy }
     environment:
       <<: *entorno-comun
-      PASARELA_URL: http://pasarela:3099
+      PASARELA_URL: http://${HOST_PASARELA:-pasarela}:${PUERTO_PASARELA:-3099}
     volumes:
       - ./claves-desarrollo/jwt-publica.pem:/claves/jwt-publica.pem:ro
     ports:
       - "3001:3001"
+
+  # Servicio de Eventos / Emergencias — CU-018 (turnos y asistencia del personal).
+  eventos-emergencias:
+    profiles: ["servicios"]
+    build: ../services/eventos-emergencias
+    container_name: hexacore-logistica
+    restart: unless-stopped
+    init: true
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+    environment:
+      <<: *entorno-comun
+      PUERTO: "3016"
+      DB_HOST: ${HOST_POSTGRES:-postgres}
+      DB_PORT: ${PUERTO_POSTGRES:-5432}
+      DB_USER: hexacore
+      DB_PASSWORD: hexacore
+      DB_NAME: eventos_emergencias
+      DB_SYNCHRONIZE: "true"
+    volumes:
+      - ./claves-desarrollo/jwt-publica.pem:/claves/jwt-publica.pem:ro
+    ports:
+      - "3016:3016"
 
 volumes:
   postgres-datos:

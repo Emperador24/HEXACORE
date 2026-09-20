@@ -1,0 +1,217 @@
+#!/usr/bin/env bash
+#
+# Arranca HEXACORE completo con una sola orden.
+#
+#   ./iniciar.sh                          todo en este computador
+#   ./iniciar.sh --replicas 2             con 2 instancias del servicio de Entradas
+#   ./iniciar.sh --rol datos              solo la capa de datos (computador A)
+#   ./iniciar.sh --rol servicios --datos 192.168.1.20
+#                                         servicios y gateway apuntando al A (computador B)
+#   ./iniciar.sh --parar                  baja todo, conservando los datos
+#
+# Por qué existe: el atributo de **desplegabilidad** exige que el sistema
+# completo se levante desde un único script en un computador, y que pueda estar
+# repartido en dos o más. Las dos cosas se hacen aquí.
+#
+# Lo que NO hace: instalar Docker, ni construir la app móvil. Tampoco borra
+# datos: para eso está `docker compose down -v`, a propósito fuera de este
+# script.
+
+set -euo pipefail
+
+cd "$(dirname "${BASH_SOURCE[0]}")"
+RAIZ="$(cd ../.. && pwd)"
+
+ROL="todo"
+DATOS=""
+REPLICAS=1
+DEMO="si"
+PARAR="no"
+
+rojo()  { printf '\033[31m%s\033[0m\n' "$*"; }
+verde() { printf '\033[32m%s\033[0m\n' "$*"; }
+gris()  { printf '\033[90m%s\033[0m\n' "$*"; }
+titulo(){ printf '\n\033[1m%s\033[0m\n' "$*"; }
+
+uso() {
+  sed -n '3,20p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+  exit "${1:-0}"
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --rol)       ROL="${2:-}"; shift 2 ;;
+    --datos)     DATOS="${2:-}"; shift 2 ;;
+    --replicas)  REPLICAS="${2:-1}"; shift 2 ;;
+    --sin-demo)  DEMO="no"; shift ;;
+    --parar)     PARAR="si"; shift ;;
+    -h|--help)   uso 0 ;;
+    *)           rojo "Opción desconocida: $1"; uso 1 ;;
+  esac
+done
+
+case "$ROL" in
+  todo|datos|servicios) ;;
+  *) rojo "El rol debe ser: todo, datos o servicios"; exit 1 ;;
+esac
+
+# --- Comprobaciones previas -------------------------------------------------
+
+if ! command -v docker >/dev/null 2>&1; then
+  rojo "Docker no está instalado o no está en el PATH."
+  exit 1
+fi
+
+if ! docker info >/dev/null 2>&1; then
+  rojo "Docker está instalado pero no responde. ¿Está abierto Docker Desktop?"
+  exit 1
+fi
+
+COMPOSE=(docker compose -f docker-compose.yml)
+
+if [[ -n "$DATOS" ]]; then
+  # La capa de datos vive en otra máquina: se exportan los nombres que el
+  # compose lee, y se quitan las dependencias locales.
+  export HOST_POSTGRES="$DATOS" HOST_REDIS="$DATOS" HOST_RABBIT="$DATOS"
+  export HOST_CORREO="$DATOS" HOST_PASARELA="$DATOS"
+  export PUERTO_REDIS=6380      # en el anfitrión Redis se publica en el 6380
+  COMPOSE+=(-f docker-compose.remoto.yml)
+fi
+
+if [[ "$REPLICAS" -gt 1 ]]; then
+  # Dos contenedores no pueden publicar el mismo puerto: el override lo quita.
+  COMPOSE+=(-f docker-compose.escalado.yml)
+fi
+
+if [[ "$PARAR" == "si" ]]; then
+  titulo "Parando HEXACORE (los datos se conservan)"
+  "${COMPOSE[@]}" --profile servicios down
+  verde "Listo. Para borrar también los datos: docker compose down -v"
+  exit 0
+fi
+
+# --- Arranque ---------------------------------------------------------------
+
+titulo "HEXACORE — arranque ($ROL)"
+[[ -n "$DATOS" ]] && gris "  Capa de datos remota: $DATOS"
+[[ "$REPLICAS" -gt 1 ]] && gris "  Réplicas del servicio de Entradas: $REPLICAS"
+
+case "$ROL" in
+  datos)
+    gris "  Levantando PostgreSQL, Redis, RabbitMQ y los sistemas externos simulados"
+    "${COMPOSE[@]}" up -d
+    ;;
+  servicios)
+    if [[ -z "$DATOS" ]]; then
+      rojo "El rol 'servicios' necesita --datos <IP del computador con la capa de datos>"
+      exit 1
+    fi
+    gris "  Construyendo y levantando los microservicios y el API Gateway"
+    "${COMPOSE[@]}" --profile servicios up -d --build \
+      --scale entradas-mercado-secundario="$REPLICAS" \
+      administracion entradas-mercado-secundario eventos-emergencias api-gateway
+    ;;
+  todo)
+    gris "  Levantando la capa de datos, los microservicios y el API Gateway"
+    "${COMPOSE[@]}" --profile servicios up -d --build \
+      --scale entradas-mercado-secundario="$REPLICAS"
+    ;;
+esac
+
+# --- Esperar a que todo esté sano -------------------------------------------
+
+esperar_sano() {
+  local nombre="$1" limite="${2:-120}" transcurrido=0
+  while (( transcurrido < limite )); do
+    local estado
+    estado="$(docker inspect --format '{{.State.Health.Status}}' "$nombre" 2>/dev/null || echo ausente)"
+    [[ "$estado" == "healthy" ]] && return 0
+    [[ "$estado" == "ausente" ]] && return 1
+    sleep 2
+    transcurrido=$(( transcurrido + 2 ))
+  done
+  return 1
+}
+
+if [[ "$ROL" != "datos" ]]; then
+  titulo "Esperando a que los servicios respondan"
+  for contenedor in hexacore-administracion hexacore-logistica hexacore-gateway; do
+    if esperar_sano "$contenedor"; then
+      verde "  $contenedor listo"
+    else
+      rojo "  $contenedor no llegó a estar sano. Mira: docker logs $contenedor"
+      exit 1
+    fi
+  done
+fi
+
+# --- Datos de ejemplo -------------------------------------------------------
+
+sembrar() {
+  local servicio="$1" tarea="${2:-semilla}" carpeta="$RAIZ/App/services/$1"
+  if [[ ! -d "$carpeta/node_modules" ]]; then
+    gris "  $servicio: sin node_modules, se omite la semilla (npm install para tenerla)"
+    return
+  fi
+  if (cd "$carpeta" && npm run "$tarea" >/dev/null 2>&1); then
+    verde "  $servicio: datos de ejemplo listos"
+  else
+    gris "  $servicio: la semilla falló, se continúa (correr a mano: npm run semilla)"
+  fi
+}
+
+if [[ "$DEMO" == "si" && "$ROL" != "datos" ]] && command -v npm >/dev/null 2>&1; then
+  titulo "Datos de ejemplo"
+  sembrar administracion
+  sembrar entradas-mercado-secundario
+  # La de logística va después de la de administración a propósito: da de alta
+  # a cada empleado sobre la cuenta que aquella acaba de crear.
+  sembrar eventos-emergencias seed
+fi
+
+# --- Resumen ----------------------------------------------------------------
+
+IP_LOCAL="$(ipconfig getifaddr en0 2>/dev/null || hostname -I 2>/dev/null | awk '{print $1}' || echo localhost)"
+
+titulo "HEXACORE en marcha"
+
+if [[ "$ROL" == "datos" ]]; then
+  cat <<FIN
+  Capa de datos lista en este computador ($IP_LOCAL):
+
+    PostgreSQL   $IP_LOCAL:5432       RabbitMQ   $IP_LOCAL:5672 (consola :15672)
+    Redis        $IP_LOCAL:6380       Correo     $IP_LOCAL:3098
+    Pasarela     $IP_LOCAL:3099
+
+  En el otro computador:
+
+    ./iniciar.sh --rol servicios --datos $IP_LOCAL
+FIN
+else
+  cat <<FIN
+  Único punto de entrada al backend (API Gateway):
+
+    http://$IP_LOCAL:8080/api/v1
+
+  Cuentas de ejemplo (contraseña: hexacore2026)
+
+    cliente@hexacore.com      Cliente
+    personal@hexacore.com     Personal
+    jefepersonal@hexacore.com Personal (jefe)
+    admin@hexacore.com        Administrador
+
+  Interfaces (se arrancan aparte, apuntando a este gateway):
+
+    Portal web    cd App/frontend/portal-web-cliente && npm start
+    App móvil     cd App/frontend/app-movil && flutter run --dart-define=HEXACORE_HOST=$IP_LOCAL
+
+  Comprobar que todo responde:
+
+    curl -s http://localhost:8080/api/v1/salud
+    python3 App/gateway/pruebas/gateway.py
+FIN
+fi
+
+echo
+gris "  Estado:   docker compose -f App/infra/docker-compose.yml --profile servicios ps"
+gris "  Parar:    ./iniciar.sh --parar"

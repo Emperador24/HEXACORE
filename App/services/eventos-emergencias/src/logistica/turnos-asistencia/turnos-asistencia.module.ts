@@ -23,6 +23,19 @@ import { TurnosService } from './turnos.service.js';
 
 @Module({
   imports: [
+    // Solo verificación: la clave privada la tiene el Servicio de
+    // Administración y nadie más (ADR-11). El algoritmo se fija aquí y no se
+    // lee del token, que es lo que cierra la puerta a `alg: none`.
+    JwtModule.registerAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => {
+        const { pem } = cargarClavePublica(config.get('NODE_ENV') === 'production');
+        return {
+          publicKey: pem,
+          verifyOptions: { algorithms: ['RS256'], issuer: 'hexacore-administracion' },
+        };
+      },
+    }),
     TypeOrmModule.forFeature([
       Empleado,
       Turno,
@@ -51,6 +64,8 @@ import { TurnosService } from './turnos.service.js';
     PersonalOperativoController,
   ],
   providers: [
+    proveedorRedis,
+    SesionValida,
     TurnosService,
     AsistenciaService,
     PersonalOperativoService,

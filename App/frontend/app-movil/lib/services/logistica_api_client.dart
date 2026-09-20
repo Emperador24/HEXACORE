@@ -1,57 +1,99 @@
-// Cliente HTTP real hacia el backend de CU-018 (Gestionar turno y
-// asistencia del personal), servicio `eventos-emergencias`
-// (App/services/eventos-emergencias). A diferencia de `ApiClient`, este
-// cliente sí habla con un servidor real — no hay Future.delayed simulado.
+// Cliente del CU-018 (turnos y asistencia del personal), contra el servicio
+// `eventos-emergencias`.
+//
+// Habla con el **API Gateway** como todo lo demás (ADR-02): no conoce el puerto
+// del servicio. Y cada petición va con **el token de la sesión de quien está
+// usando la app**, no con un token de sistema quemado en el código: desde que
+// las cuentas de personal existen de verdad en Administración (CU-027), el
+// login real es posible y ese atajo ya no hace falta.
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:http/http.dart' as http;
 
+import 'servidor.dart';
+import 'sesion.dart';
+
 class LogisticaApiException implements Exception {
-  LogisticaApiException(this.message);
+  LogisticaApiException(this.message, {this.codigo, this.estado = 0});
   final String message;
+  final String? codigo;
+  final int estado;
   @override
   String toString() => message;
 }
 
-class LogisticaApiClient {
-  LogisticaApiClient._();
-  static final LogisticaApiClient instance = LogisticaApiClient._();
+/// La ficha de quien inició sesión: su área de trabajo y su turno vigente.
+///
+/// El **área** es lo que decide qué ve en la app. No viene del token ni de una
+/// lista dentro de la app: la asigna un administrador al dar de alta al
+/// empleado, y se consulta al servidor al entrar.
+class FichaEmpleado {
+  const FichaEmpleado({
+    required this.id,
+    required this.nombre,
+    required this.area,
+    required this.credencial,
+    this.turnoVigente,
+  });
 
-  // Un dispositivo físico (celular real, no emulador/simulador) no puede
-  // resolver "localhost" como el propio computador que corre el backend:
-  // hay que pasarle la IP de red local del Mac. Ej.:
-  //   flutter run --dart-define=API_BASE_URL=http://192.168.0.7:3016
-  // El emulador de Android sí puede resolver su alias especial 10.0.2.2
-  // hacia el host sin necesitar esto.
-  static const _override = String.fromEnvironment('API_BASE_URL');
+  final String id;
+  final String nombre;
+  final String area;
+  final String credencial;
+  final Map<String, dynamic>? turnoVigente;
 
-  static String get _baseUrl {
-    if (_override.isNotEmpty) return _override;
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.0.2.2:3016';
-    }
-    return 'http://localhost:3016';
+  static FichaEmpleado desdeJson(Map<String, dynamic> json) {
+    final empleado = json['empleado'] as Map<String, dynamic>;
+    return FichaEmpleado(
+      id: empleado['id'] as String,
+      nombre: empleado['nombre'] as String,
+      area: empleado['rol'] as String,
+      credencial: empleado['credencial'] as String,
+      turnoVigente: json['turnoVigente'] as Map<String, dynamic>?,
+    );
   }
+}
 
-  // Token de "sistema" firmado con la clave de desarrollo (RNF-06) — las
-  // cuentas demo (`_accounts` en main.dart) no existen todavía como cuentas
-  // reales en Administración, así que no hay login real posible desde la
-  // app. Ver el mismo patrón en `scripts/seed.mjs`. Dev-only, expira: hay
-  // que regenerarlo si la sesión de pruebas dura más de lo firmado.
-  static const _tokenSistema = String.fromEnvironment(
-    'API_TOKEN',
-    defaultValue:
-        'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlcyI6WyJBZG1pbmlzdHJhZG9yIiwiUGVyc29uYWwiLCJPcmdhbml6YWRvciJdLCJpYXQiOjE3ODk3MDcxMjcsImV4cCI6MTc4OTc5MzUyNywiaXNzIjoiaGV4YWNvcmUtYWRtaW5pc3RyYWNpb24iLCJzdWIiOiJjYjdlOWM0OC04YTViLTRiYzMtYmMxMi04MWJhZjU3OGM5NzQiLCJqdGkiOiJmYzJkMjExMS04OTIxLTQ3OWYtOGM5My0zMjVhOTUyMGZjOWYifQ.I4tMK942emRjtieW3xlErCfAZpYeC2xiykIrvFrJEDKN75Oj2j6Mq-013JqRhh-IjjDBFEsDWivqNvqxgwWwR5_yPb2vVKcHCM4uCRSZ3V59UlY1RfTp8Q376t_xmFjpVhfIgt3SqyBX4uIqqQyS1wyVB6fcJEZZ2KYk2MnLO7txDsL3vqff72oKVIc-geFSwYd1xisVtVEbLmI_gBPb0DfsGNNo1VYStq5heJJ0amYJxjHi1e8dkjwvei0L0BU5dSbfEKf7MemXfLqLg13EgKqADg8dUWx7Kqz6SHi7b_8hB2sTqtbS-0qAAMrSQdAq6WyHr--8xDGh_S8GvqxDMA',
-  );
+class LogisticaApiClient {
+  // El cliente HTTP se puede sustituir, igual que en `CuentasApi`: es lo que
+  // permite probar estas pantallas sin un servidor detrás.
+  LogisticaApiClient({http.Client? cliente}) : _cliente = cliente ?? http.Client();
 
-  static Map<String, String> get _headers => {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $_tokenSistema',
-      };
+  final http.Client _cliente;
+
+  static const _espera = Duration(seconds: 15);
 
   Uri _uri(String path, [Map<String, String>? query]) =>
-      Uri.parse('$_baseUrl/api/v1/logistica$path').replace(queryParameters: query);
+      Uri.parse('${Servidor.api}/${Servidor.prefijo}/logistica$path')
+          .replace(queryParameters: query);
+
+  /// Envía con el token de la sesión, renovándolo si hace falta.
+  Future<http.Response> _conSesion(
+      Future<http.Response> Function(Map<String, String> cabeceras) enviar) async {
+    try {
+      return await sesion.conAcceso<http.Response>(
+        (token) => enviar({
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        }),
+        estado: (r) => r.statusCode,
+        sinSesion: () => throw LogisticaApiException('Inicia sesión para ver tus turnos.',
+            codigo: 'SIN_SESION', estado: 401),
+      );
+    } on RenovacionNoDisponible catch (error) {
+      throw LogisticaApiException(error.mensaje, codigo: 'SIN_CONEXION');
+    }
+  }
+
+  /// Quién es quien acaba de entrar: su área y su turno vigente. `null` si la
+  /// cuenta no está dada de alta como empleado — que no es un error, es el
+  /// caso de cualquier cliente.
+  Future<FichaEmpleado?> miFicha() async {
+    final res = await _conSesion(
+        (c) => _cliente.get(_uri('/empleados/yo'), headers: c).timeout(_espera));
+    if (res.statusCode == 404) return null;
+    return FichaEmpleado.desdeJson(_decodeObject(res));
+  }
 
   Map<String, dynamic> _decodeObject(http.Response res) {
     if (res.statusCode >= 400) {
@@ -82,7 +124,7 @@ class LogisticaApiClient {
   /// Todo el personal registrado — para que el Jefe de personal pueda
   /// elegir a quién asignarle un turno, y ver sus horas trabajadas.
   Future<List<dynamic>> listarEmpleados() async {
-    final res = await http.get(_uri('/empleados'), headers: _headers);
+    final res = await _conSesion((c) => _cliente.get(_uri('/empleados'), headers: c).timeout(_espera));
     return _decodeList(res);
   }
 
@@ -90,7 +132,7 @@ class LogisticaApiClient {
   /// turno aprobado que el consumidor procesó, con la latencia
   /// publicación→consumo — para demostrar la infraestructura de mensajería.
   Future<List<dynamic>> notificacionesRecientes() async {
-    final res = await http.get(_uri('/notificaciones'), headers: _headers);
+    final res = await _conSesion((c) => _cliente.get(_uri('/notificaciones'), headers: c).timeout(_espera));
     return _decodeList(res);
   }
 
@@ -101,17 +143,13 @@ class LogisticaApiClient {
     required DateTime horaInicio,
     required DateTime horaFin,
   }) async {
-    final res = await http.post(
-      _uri('/turnos'),
-      headers: _headers,
-      body: jsonEncode({
+    final res = await _conSesion((c) => _cliente.post(_uri('/turnos'), headers: c, body: jsonEncode({
         'empleadoId': empleadoId,
         'eventoId': eventoId,
         'zona': zona,
         'horaInicio': horaInicio.toUtc().toIso8601String(),
         'horaFin': horaFin.toUtc().toIso8601String(),
-      }),
-    );
+      })).timeout(_espera));
     return _decodeObject(res);
   }
 
@@ -120,7 +158,7 @@ class LogisticaApiClient {
   /// si no tiene ningún turno asignado todavía.
   Future<Map<String, dynamic>?> miTurno(String credencial) async {
     final turnos =
-        _decodeList(await http.get(_uri('/turnos'), headers: _headers));
+        _decodeList(await _conSesion((c) => _cliente.get(_uri('/turnos'), headers: c).timeout(_espera)));
     for (final turno in turnos) {
       final empleado = turno['empleado'];
       if (empleado is Map && empleado['credencial'] == credencial) {
@@ -134,19 +172,12 @@ class LogisticaApiClient {
     required String turnoId,
     required String motivo,
   }) async {
-    final res = await http.post(
-      _uri('/turnos/$turnoId/solicitudes-cambio'),
-      headers: _headers,
-      body: jsonEncode({'motivo': motivo}),
-    );
+    final res = await _conSesion((c) => _cliente.post(_uri('/turnos/$turnoId/solicitudes-cambio'), headers: c, body: jsonEncode({'motivo': motivo})).timeout(_espera));
     return _decodeObject(res);
   }
 
   Future<List<dynamic>> solicitudesPendientes() async {
-    final res = await http.get(
-      _uri('/solicitudes-cambio', {'estado': 'PENDIENTE'}),
-      headers: _headers,
-    );
+    final res = await _conSesion((c) => _cliente.get(_uri('/solicitudes-cambio', {'estado': 'PENDIENTE'}), headers: c).timeout(_espera));
     return _decodeList(res);
   }
 
@@ -155,14 +186,10 @@ class LogisticaApiClient {
     required String supervisorCredencial,
     required bool aprobar,
   }) async {
-    final res = await http.patch(
-      _uri('/solicitudes-cambio/$solicitudId/revisar'),
-      headers: _headers,
-      body: jsonEncode({
+    final res = await _conSesion((c) => _cliente.patch(_uri('/solicitudes-cambio/$solicitudId/revisar'), headers: c, body: jsonEncode({
         'supervisorId': supervisorCredencial,
         'aprobar': aprobar,
-      }),
-    );
+      })).timeout(_espera));
     return _decodeObject(res);
   }
 
@@ -171,11 +198,7 @@ class LogisticaApiClient {
   // buscarEntradaAbierta`, acotado por turno/evento cuando se envía).
   Future<Map<String, dynamic>> registrarEntrada(
       String credencial, String eventoId) async {
-    final res = await http.post(
-      _uri('/asistencia/entrada'),
-      headers: _headers,
-      body: jsonEncode({'credencial': credencial, 'eventoId': eventoId}),
-    );
+    final res = await _conSesion((c) => _cliente.post(_uri('/asistencia/entrada'), headers: c, body: jsonEncode({'credencial': credencial, 'eventoId': eventoId})).timeout(_espera));
     return _decodeObject(res);
   }
 
@@ -193,19 +216,15 @@ class LogisticaApiClient {
       _todosRegistrosAsistencia();
 
   Future<List<dynamic>> _todosRegistrosAsistencia() async {
-    final res = await http.get(_uri('/asistencia'), headers: _headers);
+    final res = await _conSesion((c) => _cliente.get(_uri('/asistencia'), headers: c).timeout(_espera));
     return _decodeList(res);
   }
 
   Future<Map<String, dynamic>> registrarSalida(
       String credencial, String eventoId) async {
-    final res = await http.post(
-      _uri('/asistencia/salida'),
-      headers: _headers,
-      body: jsonEncode({'credencial': credencial, 'eventoId': eventoId}),
-    );
+    final res = await _conSesion((c) => _cliente.post(_uri('/asistencia/salida'), headers: c, body: jsonEncode({'credencial': credencial, 'eventoId': eventoId})).timeout(_espera));
     return _decodeObject(res);
   }
 }
 
-final logisticaApiClient = LogisticaApiClient.instance;
+LogisticaApiClient logisticaApiClient = LogisticaApiClient();

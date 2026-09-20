@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hexacore_app/main.dart';
 import 'package:hexacore_app/pages/verificar_cuenta_page.dart';
 import 'package:hexacore_app/services/cuentas_api.dart';
+import 'package:hexacore_app/services/logistica_api_client.dart';
 import 'package:hexacore_app/services/sesion.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -49,7 +50,26 @@ void main() {
         return servidor(peticion);
       }),
     );
+    logisticaApiClient = LogisticaApiClient(
+      cliente: MockClient((peticion) async {
+        peticiones.add(peticion);
+        return servidor(peticion);
+      }),
+    );
   });
+
+  /// Respuesta de `/logistica/empleados/yo` para una cuenta de personal.
+  Map<String, dynamic> fichaDe(String area) => {
+        'empleado': {
+          'id': 'e0000001-0000-4000-8000-000000000001',
+          'usuarioId': 'a0000001-0000-4000-8000-000000000001',
+          'nombre': 'Ana Gómez',
+          'rol': area,
+          'credencial': 'personal@hexacore.com',
+          'activo': true,
+        },
+        'turnoVigente': null,
+      };
 
   Future<void> arrancar(WidgetTester tester) async {
     await tester.pumpWidget(const HexacoreApp());
@@ -98,12 +118,40 @@ void main() {
     expect(jsonDecode(peticiones.single.body)['email'], 'cliente@hexacore.com');
   });
 
-  testWidgets('una cuenta de Personal abre la pantalla de Personal',
+  testWidgets('una cuenta de Personal abre la pantalla de su área',
       (tester) async {
-    servidor = (_) => json(200, sesionDe(['Administrador', 'Personal']));
+    // El área ya no la adivina la app por el correo: la pregunta al servicio de
+    // Logística, que es donde el administrador la asignó (CU-018).
+    servidor = (peticion) => peticion.url.path.contains('empleados/yo')
+        ? json(200, fichaDe('Parqueadero'))
+        : json(200, sesionDe(['Administrador', 'Personal']));
     await arrancar(tester);
     await ingresar(tester, 'hexacore2026');
+    await tester.pump(const Duration(milliseconds: 100));
+
     expect(find.byType(StaffShell), findsOneWidget);
+    // Y ve lo suyo: parqueadero, no la validación de entradas.
+    expect(find.text('Parqueadero'), findsWidgets);
+    expect(find.text('Validar entradas'), findsNothing);
+  });
+
+  testWidgets('Personal sin ficha de empleado no entra, y se le explica',
+      (tester) async {
+    servidor = (peticion) {
+      if (peticion.url.path.contains('empleados/yo')) {
+        return json(404, {'codigo': 'SIN_FICHA_DE_EMPLEADO', 'mensaje': 'No estás dado de alta.'});
+      }
+      if (peticion.method == 'DELETE') return json(200, {'mensaje': 'Sesión cerrada.'});
+      return json(200, sesionDe(['Personal']));
+    };
+    await arrancar(tester);
+    await ingresar(tester, 'hexacore2026');
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump();
+
+    expect(find.byType(LoginPage), findsOneWidget);
+    expect(find.textContaining('dada de alta como empleado'), findsOneWidget);
+    expect(sesion.abierta, isFalse);
   });
 
   testWidgets(
