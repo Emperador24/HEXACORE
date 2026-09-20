@@ -4,8 +4,16 @@ import { ConfiguracionServicio, cargarConfiguracion } from '../config/configurac
 import { EventoReferencia } from './entidades/evento-referencia.entity';
 import { Establecimiento } from './entidades/establecimiento.entity';
 import { Producto } from './entidades/producto.entity';
+import { Pedido } from './entidades/pedido.entity';
+import { DetallePedido } from './entidades/detalle-pedido.entity';
 
-export const ENTIDADES: (Function | EntitySchema)[] = [EventoReferencia, Establecimiento, Producto];
+export const ENTIDADES: (Function | EntitySchema)[] = [
+  EventoReferencia,
+  Establecimiento,
+  Producto,
+  Pedido,
+  DetallePedido,
+];
 
 export const MIGRACIONES: NonNullable<DataSourceOptions['migrations']> = [];
 
