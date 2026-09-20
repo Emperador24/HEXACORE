@@ -395,6 +395,29 @@ desincroniza y acaba describiendo un servicio que ya no existe. Hay pruebas que 
 contrato deja de publicar una operación del CU-006, si expone datos de tarjeta (RNF-05) o si filtra
 el identificador del vendedor a los compradores.
 
+## Cobertura de las pruebas de integración
+
+```bash
+./pruebas/cobertura-integracion.sh
+```
+
+Levanta el servicio **de verdad** —con PostgreSQL, Redis y RabbitMQ—
+instrumentado con `c8`, le lanza encima las suites de `pruebas/*.py` y mide qué
+porcentaje del código quedó ejecutado. Es el número que pide la entrega, y el
+único defendible: cuenta **todo** el servicio.
+
+| Medición | Resultado |
+|---|---|
+| Sentencias | **85,87 %** |
+| Ramas | 69,7 % |
+| Funciones | 76,5 % |
+
+Informe navegable en `cobertura-integracion/index.html` (no se versiona).
+
+**No confundir con `npm run test:cov`**, que mide las unitarias y además engaña:
+Jest solo cuenta los archivos que esas pruebas tocan, así que reporta un
+porcentaje alto sobre una fracción del código.
+
 ## Pruebas
 
 ```bash

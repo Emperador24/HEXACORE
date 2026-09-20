@@ -48,3 +48,9 @@ Documentation/Work/*.fdb_latexmk
 
 # Archivos temporales de Excel/Word (aparecen mientras el archivo está abierto)
 ~$*
+
+# Informes de cobertura de integración (se regeneran con
+# `pruebas/cobertura-integracion.sh`)
+cobertura-integracion/
+cobertura-integracion.log
+.nyc_output/
