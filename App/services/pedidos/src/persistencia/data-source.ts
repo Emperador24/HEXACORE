@@ -1,8 +1,11 @@
 import { config as cargarEnv } from 'dotenv';
 import { DataSource, DataSourceOptions, EntitySchema } from 'typeorm';
 import { ConfiguracionServicio, cargarConfiguracion } from '../config/configuracion';
+import { EventoReferencia } from './entidades/evento-referencia.entity';
+import { Establecimiento } from './entidades/establecimiento.entity';
+import { Producto } from './entidades/producto.entity';
 
-export const ENTIDADES: (Function | EntitySchema)[] = [];
+export const ENTIDADES: (Function | EntitySchema)[] = [EventoReferencia, Establecimiento, Producto];
 
 export const MIGRACIONES: NonNullable<DataSourceOptions['migrations']> = [];
 
