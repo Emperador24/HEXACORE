@@ -2076,6 +2076,7 @@ class _RequestsReviewPageState extends State<RequestsReviewPage> {
         _loading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e is LogisticaApiException
             ? e.message
@@ -2314,11 +2315,14 @@ class _ShiftsPageState extends State<ShiftsPage> {
     });
     try {
       final turno = await logisticaApiClient.miTurno(widget.credencial);
+      // La petición puede terminar después de que esta pantalla se cerrara.
+      if (!mounted) return;
       setState(() {
         _turno = turno;
         _loading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e is LogisticaApiException
             ? e.message
@@ -2484,6 +2488,7 @@ class _AttendancePageState extends State<AttendancePage> {
         _loading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e is LogisticaApiException
             ? e.message
@@ -2507,6 +2512,7 @@ class _AttendancePageState extends State<AttendancePage> {
       final registro = entrada
           ? await logisticaApiClient.registrarEntrada(widget.credencial, eventoId)
           : await logisticaApiClient.registrarSalida(widget.credencial, eventoId);
+      if (!mounted) return;
       setState(() {
         _ultimoRegistro = registro;
         _sending = false;
@@ -2640,6 +2646,7 @@ class _StaffAttendanceOverviewPageState
         _loading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e is LogisticaApiException
             ? e.message
@@ -2857,6 +2864,7 @@ class _AssignShiftPageState extends State<AssignShiftPage> {
     });
     try {
       final empleados = await logisticaApiClient.listarEmpleados();
+      if (!mounted) return;
       setState(() {
         _empleados = empleados;
         _empleadoId ??=
@@ -2864,6 +2872,7 @@ class _AssignShiftPageState extends State<AssignShiftPage> {
         _loadingEmpleados = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e is LogisticaApiException
             ? e.message
