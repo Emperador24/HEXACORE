@@ -7,15 +7,15 @@ export default defineConfig({
   plugins: [tsconfigPaths()],
   test: {
     globals: true,
-    // Este servicio no tiene pruebas unitarias: las 20 que tiene son de
-    // integración y viven en `test/`, con base de datos y cola de verdad
-    // (`npm run test:e2e`). Sin esto, `npm test` devolvía error por no
-    // encontrar ninguna, y cualquier CI que lo corriera daba rojo.
-    passWithNoTests: true,
     root: './',
-    // Sin *.spec.ts todavía: las 22 pruebas del servicio son de integración
-    // (test/*.e2e-spec.ts). Sin este patrón, `npm test` no encontraba nada
-    // y salía con código de error — cualquier CI que lo corriera daba rojo.
-    include: ['**/*.spec.ts', 'test/**/*.e2e-spec.ts'],
+    // Solo unitarias. Las 34 pruebas del servicio son de **integración** y
+    // viven en `test/*.e2e-spec.ts`: necesitan PostgreSQL y RabbitMQ de
+    // verdad, y se corren con `npm run test:e2e`. Meterlas aquí hacía que
+    // `npm test` intentara conectarse a una base que en el CI no existe.
+    include: ['**/*.spec.ts'],
+    // Todavía no hay unitarias. Sin esto, `npm test` salía con código de
+    // error por no encontrar ninguna y el pipeline daba rojo por una
+    // ausencia conocida.
+    passWithNoTests: true,
   },
 });
