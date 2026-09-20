@@ -3,6 +3,8 @@
  * durante el arranque.
  */
 
+import { cargarClavePublica, ClavePublica } from '../comun/autenticacion/clave-publica';
+
 function requerido(nombre: string): string {
   const valor = process.env[nombre];
   if (valor === undefined || valor.trim() === '') {
@@ -40,6 +42,11 @@ export interface ConfiguracionServicio {
   entorno: Entorno;
   puerto: number;
   prefijoApi: string;
+
+  autenticacion: {
+    clavePublica: ClavePublica;
+    emisor: string;
+  };
 
   postgres: {
     host: string;
@@ -95,6 +102,11 @@ export function cargarConfiguracion(): ConfiguracionServicio {
     puerto: entero('PUERTO', 3003),
 
     prefijoApi: texto('PREFIJO_API', 'api/v1'),
+
+    autenticacion: {
+      clavePublica: cargarClavePublica(entorno === 'production'),
+      emisor: texto('AUTH_JWT_EMISOR', 'hexacore-administracion'),
+    },
 
     postgres: {
       host: texto('POSTGRES_HOST', 'localhost'),
