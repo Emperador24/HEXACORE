@@ -1,0 +1,28 @@
+# Añadido a `docker-compose.yml` cuando los servicios corren en un computador y
+# la capa de datos en otro (desplegabilidad: el sistema repartido en dos o más
+# máquinas).
+#
+#   docker compose -f docker-compose.yml -f docker-compose.remoto.yml \
+#     --profile servicios up -d
+#
+# Normalmente se invoca desde `./iniciar.sh --rol servicios --datos <IP>`, que
+# además exporta las variables HOST_* que el compose base ya sabe leer.
+#
+# Lo único que hace es **quitar las dependencias locales**: sin esto, Docker
+# levantaría un PostgreSQL, un Redis y un RabbitMQ en esta máquina para
+# satisfacer el `depends_on`, que es justo lo contrario de lo que se quiere.
+# Quien comprueba que la otra máquina está viva es el propio servicio, que
+# reintenta la conexión al arrancar.
+
+services:
+  administracion:
+    depends_on: !reset []
+
+  entradas-mercado-secundario:
+    depends_on: !reset []
+
+  api-gateway:
+    # El gateway sí depende de los dos servicios, y esos sí están aquí.
+    depends_on:
+      administracion: { condition: service_healthy }
+      entradas-mercado-secundario: { condition: service_healthy }

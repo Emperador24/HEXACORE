@@ -51,6 +51,31 @@ export class TurnosService {
     return this.empleados.find();
   }
 
+  /**
+   * La ficha del empleado de una cuenta, o `null` si esa cuenta no es empleada.
+   *
+   * Es lo que la app pregunta nada más iniciar sesión para saber **a qué área
+   * pertenece quien entró**, y por tanto qué pantallas mostrarle. Devuelve
+   * `null` en vez de lanzar: no ser empleado no es un error, es el caso de
+   * cualquier cliente.
+   */
+  async fichaDeUsuario(usuarioId: string) {
+    const empleado = await this.empleados.findOneBy({ usuarioId, activo: true });
+    if (!empleado) return null;
+
+    const ahora = new Date();
+    const turnoVigente = await this.turnos.findOne({
+      where: {
+        empleadoId: empleado.id,
+        horaInicio: LessThan(ahora),
+        horaFin: MoreThan(ahora),
+        estado: Not(EstadoTurno.CAMBIADO),
+      },
+    });
+
+    return { empleado, turnoVigente: turnoVigente ?? null };
+  }
+
   async crearTurno(dto: CrearTurnoDto) {
     const empleado = await this.empleados.findOneBy({ id: dto.empleadoId });
     if (!empleado) {
@@ -231,9 +256,11 @@ export class TurnosService {
     // Infraestructura no trivial de CU-018: propaga el cambio por cola de
     // mensajes en vez de notificar síncronamente dentro de esta petición.
     await this.eventosPublicador.publicarCambioTurno({
+      tipo: 'TURNO_CAMBIADO',
       turnoId: turno.id,
       empleadoAnteriorId,
       empleadoNuevoId: reemplazo!.id,
+      mensaje: `Se te asignó el turno ${turno.id} por cambio aprobado.`,
     });
 
     return guardada;
