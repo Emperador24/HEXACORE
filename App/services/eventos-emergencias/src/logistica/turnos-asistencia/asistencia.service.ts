@@ -38,9 +38,12 @@ export class AsistenciaService {
 
     // CU-018E: el empleado no está asignado al evento (sin turno vigente
     // *al momento real del registro*, no al momento de la sincronización).
+    // Si el punto de control indica `eventoId`, el turno vigente debe ser
+    // justo el de ESE evento — así dos eventos simultáneos no se cruzan.
     const turnoVigente = await this.turnos.findOne({
       where: {
         empleadoId: empleado.id,
+        ...(dto.eventoId ? { eventoId: dto.eventoId } : {}),
         horaInicio: LessThanOrEqual(momento),
         horaFin: MoreThanOrEqual(momento),
       },
@@ -105,18 +108,42 @@ export class AsistenciaService {
     const empleado = await this.buscarEmpleadoPorCredencial(dto.credencial);
     const momento = dto.clientTimestamp ? new Date(dto.clientTimestamp) : new Date();
 
-    const ultimaEntrada = await this.registros.findOne({
-      where: {
-        empleadoId: empleado.id,
-        tipo: TipoRegistroAsistencia.ENTRADA,
-      },
-      order: { timestamp: 'DESC' },
-    });
+    // Si el punto de control indica `eventoId`, la salida solo puede
+    // cerrar una entrada del turno vigente de ESE evento — igual que en
+    // registrarEntrada. Sin esto, un empleado con turnos simultáneos en
+    // dos eventos podía marcar salida en uno y cerrar por error la
+    // entrada del otro (siempre tomaba "la última entrada", sin más).
+    let turnoId: string | undefined;
+    if (dto.eventoId) {
+      const turnoVigente = await this.turnos.findOne({
+        where: {
+          empleadoId: empleado.id,
+          eventoId: dto.eventoId,
+          horaInicio: LessThanOrEqual(momento),
+          horaFin: MoreThanOrEqual(momento),
+        },
+      });
+      if (!turnoVigente) {
+        return this.guardarRegistro(dto, {
+          empleadoId: empleado.id,
+          turnoId: null,
+          tipo: TipoRegistroAsistencia.SALIDA,
+          timestamp: momento,
+          anomalia: true,
+          motivoAnomalia:
+            'El empleado no tiene un turno vigente asignado para este evento.',
+          horasCalculadas: null,
+        });
+      }
+      turnoId = turnoVigente.id;
+    }
 
-    if (!ultimaEntrada) {
+    const entradaAbierta = await this.buscarEntradaAbierta(empleado.id, turnoId);
+
+    if (!entradaAbierta) {
       return this.guardarRegistro(dto, {
         empleadoId: empleado.id,
-        turnoId: null,
+        turnoId: turnoId ?? null,
         tipo: TipoRegistroAsistencia.SALIDA,
         timestamp: momento,
         anomalia: true,
@@ -126,14 +153,14 @@ export class AsistenciaService {
     }
 
     const horasCalculadas =
-      (momento.getTime() - ultimaEntrada.timestamp.getTime()) / 3_600_000;
+      (momento.getTime() - entradaAbierta.timestamp.getTime()) / 3_600_000;
 
     empleado.horasTrabajadasTotales += horasCalculadas;
     await this.empleados.save(empleado);
 
     return this.guardarRegistro(dto, {
       empleadoId: empleado.id,
-      turnoId: ultimaEntrada.turnoId,
+      turnoId: entradaAbierta.turnoId,
       tipo: TipoRegistroAsistencia.SALIDA,
       timestamp: momento,
       horasCalculadas,
@@ -142,6 +169,41 @@ export class AsistenciaService {
 
   listarRegistros() {
     return this.registros.find({ order: { timestamp: 'DESC' } });
+  }
+
+  /**
+   * Última ENTRADA del empleado (opcionalmente acotada a un turno/evento
+   * específico) que todavía no tiene una SALIDA posterior. Sin esto, una
+   * salida siempre cerraba "la última entrada que sea", sin comprobar si
+   * ya estaba cerrada ni de qué turno era — lo que permitía que una
+   * salida de un evento cerrara por error la entrada abierta de otro, o
+   * que una segunda salida accidental volviera a contar las mismas horas.
+   */
+  private async buscarEntradaAbierta(empleadoId: string, turnoId?: string) {
+    const entradas = await this.registros.find({
+      where: {
+        empleadoId,
+        tipo: TipoRegistroAsistencia.ENTRADA,
+        ...(turnoId ? { turnoId } : {}),
+      },
+      order: { timestamp: 'DESC' },
+    });
+    for (const entrada of entradas) {
+      const salidaMasReciente = entrada.turnoId
+        ? await this.registros.findOne({
+            where: {
+              empleadoId,
+              turnoId: entrada.turnoId,
+              tipo: TipoRegistroAsistencia.SALIDA,
+            },
+            order: { timestamp: 'DESC' },
+          })
+        : null;
+      if (!salidaMasReciente || salidaMasReciente.timestamp < entrada.timestamp) {
+        return entrada;
+      }
+    }
+    return null;
   }
 
   private async buscarPorIdempotencyKey(idempotencyKey?: string) {

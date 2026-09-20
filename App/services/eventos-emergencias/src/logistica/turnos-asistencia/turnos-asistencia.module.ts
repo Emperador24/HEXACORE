@@ -12,9 +12,12 @@ import { Notificacion } from './entities/notificacion.entity.js';
 import { RegistroAsistencia } from './entities/registro-asistencia.entity.js';
 import { SolicitudCambioTurno } from './entities/solicitud-cambio-turno.entity.js';
 import { Turno } from './entities/turno.entity.js';
+import { ZonaEvento } from './entities/zona-evento.entity.js';
 import { EventosConsumidorService } from './eventos-consumidor.service.js';
 import { EventosPublicadorService } from './eventos-publicador.service.js';
 import { NotificacionesController } from './notificaciones.controller.js';
+import { PersonalOperativoController } from './personal-operativo.controller.js';
+import { PersonalOperativoService } from './personal-operativo.service.js';
 import { TurnosController } from './turnos.controller.js';
 import { TurnosService } from './turnos.service.js';
 
@@ -39,16 +42,37 @@ import { TurnosService } from './turnos.service.js';
       SolicitudCambioTurno,
       RegistroAsistencia,
       Notificacion,
+      ZonaEvento,
     ]),
+    // Solo verifica tokens (RNF-06): sin clave privada, este servicio no
+    // puede emitirlos. Ver App/shared/seguridad/token-sesion.md.
+    JwtModule.registerAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        publicKey: cargarClavePublica(config.get('NODE_ENV') === 'production').pem,
+        verifyOptions: {
+          algorithms: ['RS256'],
+          issuer: config.get('AUTH_JWT_EMISOR', 'hexacore-administracion'),
+        },
+      }),
+    }),
   ],
-  controllers: [TurnosController, AsistenciaController, NotificacionesController],
+  controllers: [
+    TurnosController,
+    AsistenciaController,
+    NotificacionesController,
+    PersonalOperativoController,
+  ],
   providers: [
     proveedorRedis,
     SesionValida,
     TurnosService,
     AsistenciaService,
+    PersonalOperativoService,
     EventosPublicadorService,
     EventosConsumidorService,
+    proveedorRedis,
+    SesionValida,
   ],
 })
 export class TurnosAsistenciaModule {}

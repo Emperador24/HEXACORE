@@ -49,11 +49,15 @@ const _kConnectionError =
     'No se pudo conectar con el servidor, intenta de nuevo.';
 
 class User {
-  const User(this.name, this.email, this.role, {this.position});
+  const User(this.name, this.email, this.role, {this.position, this.credencial});
   final String name;
   final String email;
   final String role;
   final String? position;
+  // Credencial real del carné (QR/NFC) en el backend de CU-018 — ver
+  // `scripts/seed.mjs` en eventos-emergencias. Solo la tienen las cuentas
+  // de Personal; Cliente no habla con ese backend.
+  final String? credencial;
 }
 
 class Event {
@@ -95,8 +99,14 @@ final _events = [
       day: DateTime(2026, 6, 15), past: true, category: 'Cultural'),
 ];
 
-// Área operativa de cada cuenta de Personal.
-//
+String _nombreEvento(String? eventoId) {
+  if (eventoId == null) return 'Evento';
+  for (final evento in _events) {
+    if (evento.id == eventoId) return evento.name;
+  }
+  return eventoId;
+}
+
 // La app es para Clientes y Personal (ADR-07). Una cuenta que solo sea
 // Organizador o Administrador usa el portal web.
 bool _rolConCabida(UsuarioSesion u) =>
@@ -104,19 +114,19 @@ bool _rolConCabida(UsuarioSesion u) =>
 
 /// Quién entra y a qué pantallas.
 ///
-/// El **área** de quien es Personal (Entrada, Parqueadero, Restaurante, Jefe de
-/// personal) no la decide la app: la asigna un administrador al dar de alta al
-/// empleado en el servicio de Logística (CU-018), y la app la consulta al
-/// entrar. Antes había aquí un mapa de correos a áreas, que era una copia de la
-/// realidad condenada a quedarse vieja: alta un empleado nuevo y la app no se
-/// enteraba.
+/// El **área** y la **credencial** de quien es Personal ya no se adivinan por
+/// el correo: las trae la ficha del empleado que el servicio de Logística
+/// devuelve al entrar (CU-018), y que un administrador rellenó al darlo de
+/// alta. Antes eran dos mapas escritos dentro de la app, que se quedaban viejos
+/// en cuanto se daba de alta a alguien nuevo.
 ///
-/// Con `area` en `null` quien es solo Personal no tiene todavía dónde entrar —
-/// o porque la ficha no ha llegado, o porque esa cuenta no está dada de alta.
-User? _usuarioDeApp(UsuarioSesion u, String? area) {
+/// Con `ficha` en `null`, quien es solo Personal no tiene todavía dónde entrar:
+/// o la ficha no ha llegado, o esa cuenta no está dada de alta.
+User? _usuarioDeApp(UsuarioSesion u, FichaEmpleado? ficha) {
   if (u.roles.contains('Cliente')) return User(u.nombre, u.email, 'Cliente');
-  if (u.roles.contains('Personal') && area != null) {
-    return User(u.nombre, u.email, 'Personal', position: area);
+  if (u.roles.contains('Personal') && ficha != null) {
+    return User(u.nombre, u.email, 'Personal',
+        position: ficha.area, credencial: ficha.credencial);
   }
   return null;
 }
@@ -148,57 +158,56 @@ class _HexacoreAppState extends State<HexacoreApp> {
   // Si la app estaba mostrando la pantalla de una cuenta (no el login).
   bool _dentro = false;
 
-  /// Área de trabajo de quien entró, traída del servicio de Logística. Solo
-  /// tiene valor para el personal; un cliente no tiene área.
-  String? _area;
+  /// Ficha del empleado, traída del servicio de Logística al entrar. Solo la
+  /// tiene el personal; un cliente no es empleado de nada.
+  FichaEmpleado? _ficha;
 
-  /// Mientras se pregunta el área no se puede decidir qué pantalla mostrar: si
-  /// se decidiera ya, el personal vería un parpadeo del login antes de entrar.
-  bool _cargandoArea = false;
+  /// Mientras se pregunta la ficha no se puede decidir qué pantalla mostrar:
+  /// hacerlo ya haría parpadear el login antes de entrar.
+  bool _cargandoFicha = false;
 
   // El usuario sale siempre de la sesión: no hay otra fuente de identidad.
   User? get _user {
     final u = sesion.usuario;
-    return u == null || !sesion.abierta ? null : _usuarioDeApp(u, _area);
+    return u == null || !sesion.abierta ? null : _usuarioDeApp(u, _ficha);
   }
 
   /// Pregunta al servidor qué empleado es quien tiene la sesión abierta.
   ///
   /// Solo hace falta para quien es Personal y no Cliente: si la cuenta también
   /// es de cliente, entra por ahí y el área no decide nada.
-  Future<void> _cargarArea() async {
+  Future<void> _cargarFicha() async {
     final usuario = sesion.usuario;
     if (usuario == null ||
         !sesion.abierta ||
         usuario.roles.contains('Cliente') ||
         !usuario.roles.contains('Personal')) {
-      if (_area != null && mounted) setState(() => _area = null);
+      if (_ficha != null && mounted) setState(() => _ficha = null);
       return;
     }
 
-    setState(() => _cargandoArea = true);
+    setState(() => _cargandoFicha = true);
     try {
       final ficha = await logisticaApiClient.miFicha();
       if (!mounted) return;
       if (ficha == null) {
         // Rol Personal pero sin ficha: no hay pantallas que mostrarle. Se
         // cierra la sesión y se explica, en vez de dejarla en un limbo.
-        setState(() => _cargandoArea = false);
+        setState(() => _cargandoFicha = false);
         await cuentasApi.cerrarSesion();
         _mensajero.currentState
             ?.showSnackBar(const SnackBar(content: Text(_sinFichaDeEmpleado)));
         return;
       }
       setState(() {
-        _area = ficha.area;
-        _cargandoArea = false;
+        _ficha = ficha;
+        _cargandoFicha = false;
         _dentro = _user != null;
       });
     } catch (_) {
-      // Sin red o con el servicio caído no se puede saber el área. Se deja
-      // como estaba: quien ya estaba dentro sigue, y quien acaba de entrar
-      // verá el login con el mensaje de la propia excepción.
-      if (mounted) setState(() => _cargandoArea = false);
+      // Sin red o con el servicio caído no se puede saber el área. Quien ya
+      // estaba dentro sigue; quien acaba de entrar verá el login.
+      if (mounted) setState(() => _cargandoFicha = false);
     }
   }
 
@@ -237,7 +246,7 @@ class _HexacoreAppState extends State<HexacoreApp> {
     // vuelve sola al login. Sin red se sigue con los datos guardados.
     if (sesion.abierta) {
       cuentasApi.comprobarSesion().catchError((_) => sesion.usuario!);
-      _cargarArea();
+      _cargarFicha();
     }
   }
 
@@ -252,17 +261,17 @@ class _HexacoreAppState extends State<HexacoreApp> {
     final dentro = _dentro;
     _dentro = _user != null;
 
-    // Sesión recién abierta por alguien de personal: hay que preguntar su área
+    // Sesión recién abierta por alguien de personal: hay que pedir su ficha
     // antes de poder mostrarle nada.
     if (sesion.abierta &&
         usuario != null &&
         !usuario.roles.contains('Cliente') &&
         usuario.roles.contains('Personal') &&
-        _area == null &&
-        !_cargandoArea) {
-      _cargarArea();
+        _ficha == null &&
+        !_cargandoFicha) {
+      _cargarFicha();
     }
-    if (!sesion.abierta) _area = null;
+    if (!sesion.abierta) _ficha = null;
 
     if (dentro &&
         sesion.abierta &&
@@ -304,7 +313,7 @@ class _HexacoreAppState extends State<HexacoreApp> {
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: _dark ? ThemeMode.dark : ThemeMode.light,
-      home: _checkingSession || _cargandoArea
+      home: _checkingSession || _cargandoFicha
           ? const GlassScaffold(
               body: Center(child: CircularProgressIndicator()),
             )
@@ -1890,11 +1899,15 @@ List<StaffDestination> _staffPages(User user) {
   if (position == 'Jefe de personal') {
     return [
       const StaffDestination(
+          'Asignar turno', Icons.event_available_outlined, AssignShiftPage()),
+      const StaffDestination(
+          'Asistencia', Icons.groups_outlined, StaffAttendanceOverviewPage()),
+      StaffDestination('Solicitudes', Icons.rule_folder_outlined,
+          RequestsReviewPage(supervisorCredencial: user.email)),
+      const StaffDestination(
           'Validar personal', Icons.badge_outlined, PersonnelValidationPage()),
       const StaffDestination(
           'Promociones', Icons.local_offer_outlined, PromotionsPage()),
-      StaffDestination('Solicitudes', Icons.rule_folder_outlined,
-          RequestsReviewPage(supervisorCredencial: user.email)),
     ];
   }
   final operational = switch (position) {
@@ -1909,9 +1922,11 @@ List<StaffDestination> _staffPages(User user) {
     StaffDestination(
         'Turnos',
         Icons.schedule_outlined,
-        ShiftsPage(employeeName: user.name, credencial: user.email)),
+        ShiftsPage(
+            employeeName: user.name,
+            credencial: user.credencial ?? user.email)),
     StaffDestination('Asistencia', Icons.how_to_reg_outlined,
-        AttendancePage(credencial: user.email)),
+        AttendancePage(credencial: user.credencial ?? user.email)),
     operational,
     const StaffDestination(
         'Incidentes', Icons.report_outlined, IncidentsPage()),
@@ -2037,6 +2052,7 @@ class _RequestsReviewPageState extends State<RequestsReviewPage> {
   bool _loading = true;
   String? _error;
   List<dynamic> _solicitudesPendientes = [];
+  List<dynamic> _notificaciones = [];
 
   @override
   void initState() {
@@ -2050,10 +2066,13 @@ class _RequestsReviewPageState extends State<RequestsReviewPage> {
       _error = null;
     });
     try {
-      final pendientes = await logisticaApiClient.solicitudesPendientes();
-      if (!mounted) return;
+      final resultados = await Future.wait([
+        logisticaApiClient.solicitudesPendientes(),
+        logisticaApiClient.notificacionesRecientes(),
+      ]);
       setState(() {
-        _solicitudesPendientes = pendientes;
+        _solicitudesPendientes = resultados[0];
+        _notificaciones = resultados[1];
         _loading = false;
       });
     } catch (e) {
@@ -2068,10 +2087,10 @@ class _RequestsReviewPageState extends State<RequestsReviewPage> {
 
   Future<void> _revisar(Map<String, dynamic> solicitud, bool aprobar) async {
     try {
-      // Quién revisa ya no lo dice la app: sale del token, y el servidor
-      // comprueba que esa persona sea jefe de personal.
       await logisticaApiClient.revisarSolicitud(
-          solicitudId: solicitud['id'] as String, aprobar: aprobar);
+          solicitudId: solicitud['id'] as String,
+          supervisorCredencial: widget.supervisorCredencial,
+          aprobar: aprobar);
       final turno = solicitud['turno'] as Map?;
       final empleado = turno?['empleado'] as Map?;
       activityLog.add(ActivityEntry(
@@ -2104,6 +2123,7 @@ class _RequestsReviewPageState extends State<RequestsReviewPage> {
         }
         if (pendingCancellations.isEmpty &&
             _solicitudesPendientes.isEmpty &&
+            _notificaciones.isEmpty &&
             _error == null) {
           return Center(
             child: Text('No hay solicitudes pendientes.',
@@ -2213,6 +2233,48 @@ class _RequestsReviewPageState extends State<RequestsReviewPage> {
                 );
               }),
           ],
+          if (_notificaciones.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text('Cola de mensajería (RabbitMQ) · cambios propagados',
+                style: textTheme.titleMedium),
+            const SizedBox(height: 4),
+            Text(
+                'Evidencia real del consumidor de "turnos.cambios": cada '
+                'cambio de turno aprobado, con la latencia publicación→consumo.',
+                style: textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurface.withValues(alpha: 0.6))),
+            const SizedBox(height: 8),
+            for (final notificacion in _notificaciones.take(10))
+              Builder(builder: (context) {
+                final n = notificacion as Map<String, dynamic>;
+                return Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.bolt_outlined, size: 18, color: _kIndigo),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(n['mensaje']?.toString() ?? '',
+                                  style: textTheme.bodySmall),
+                              Text(
+                                  'Latencia: ${((n['latenciaMs'] as num?) ?? 0).toStringAsFixed(0)} ms',
+                                  style: textTheme.bodySmall?.copyWith(
+                                      color:
+                                          scheme.onSurface.withValues(alpha: 0.55))),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+          ],
         ]),
         );
       },
@@ -2251,17 +2313,12 @@ class _ShiftsPageState extends State<ShiftsPage> {
       _error = null;
     });
     try {
-      final turno = await logisticaApiClient.miTurno();
-      // La petición puede terminar después de que la persona haya salido de
-      // esta pantalla (o cerrado sesión): entonces ya no hay estado que
-      // actualizar, y hacerlo revienta.
-      if (!mounted) return;
+      final turno = await logisticaApiClient.miTurno(widget.credencial);
       setState(() {
         _turno = turno;
         _loading = false;
       });
     } catch (e) {
-      if (!mounted) return;
       setState(() {
         _error = e is LogisticaApiException
             ? e.message
@@ -2343,7 +2400,7 @@ class _ShiftsPageState extends State<ShiftsPage> {
         padding: const EdgeInsets.all(16),
         children: [
           _SectionCard(
-              title: _turno!['eventoId']?.toString() ?? 'Evento',
+              title: _nombreEvento(_turno!['eventoId']?.toString()),
               lines: [
                 _turno!['zona']?.toString() ?? '',
                 '${_turno!['horaInicio']} → ${_turno!['horaFin']}',
@@ -2396,6 +2453,10 @@ class _AttendancePageState extends State<AttendancePage> {
   String? _error;
   // Último registro real devuelto por el backend (CU-018, pasos 5-8).
   Map<String, dynamic>? _ultimoRegistro;
+  // Evento del turno vigente — evita que la asistencia se cruce si el
+  // empleado llega a tener turnos en más de un evento (ver
+  // `AsistenciaService.buscarEntradaAbierta` en el backend).
+  String? _eventoId;
 
   @override
   void initState() {
@@ -2409,13 +2470,17 @@ class _AttendancePageState extends State<AttendancePage> {
       _error = null;
     });
     try {
-      final registros =
-          await logisticaApiClient.misRegistrosAsistencia(widget.credencial);
-      if (!mounted) return;
+      final resultados = await Future.wait([
+        logisticaApiClient.misRegistrosAsistencia(widget.credencial),
+        logisticaApiClient.miTurno(widget.credencial),
+      ]);
+      final registros = resultados[0] as List<dynamic>;
+      final turno = resultados[1] as Map<String, dynamic>?;
       setState(() {
         _ultimoRegistro = registros.isEmpty
             ? null
             : registros.first as Map<String, dynamic>;
+        _eventoId = turno?['eventoId']?.toString();
         _loading = false;
       });
     } catch (e) {
@@ -2431,12 +2496,17 @@ class _AttendancePageState extends State<AttendancePage> {
   bool get _enTurno => _ultimoRegistro != null && _ultimoRegistro!['tipo'] == 'ENTRADA';
 
   Future<void> _registrar(bool entrada) async {
+    final eventoId = _eventoId;
+    if (eventoId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('No tienes un turno asignado todavía.')));
+      return;
+    }
     setState(() => _sending = true);
     try {
       final registro = entrada
-          ? await logisticaApiClient.registrarEntrada(widget.credencial)
-          : await logisticaApiClient.registrarSalida(widget.credencial);
-      if (!mounted) return;
+          ? await logisticaApiClient.registrarEntrada(widget.credencial, eventoId)
+          : await logisticaApiClient.registrarSalida(widget.credencial, eventoId);
       setState(() {
         _ultimoRegistro = registro;
         _sending = false;
@@ -2508,6 +2578,9 @@ class _AttendancePageState extends State<AttendancePage> {
                 const SizedBox(height: 14),
                 if (_sending)
                   const Center(child: CircularProgressIndicator())
+                else if (_eventoId == null)
+                  Text('No tienes un turno asignado todavía.',
+                      style: textTheme.bodyMedium)
                 else if (!_enTurno)
                   FilledButton(
                       onPressed: () => _registrar(true),
@@ -2530,6 +2603,429 @@ class _AttendancePageState extends State<AttendancePage> {
     );
   }
 }
+
+class StaffAttendanceOverviewPage extends StatefulWidget {
+  const StaffAttendanceOverviewPage({super.key});
+  @override
+  State<StaffAttendanceOverviewPage> createState() =>
+      _StaffAttendanceOverviewPageState();
+}
+
+class _StaffAttendanceOverviewPageState
+    extends State<StaffAttendanceOverviewPage> {
+  bool _loading = true;
+  String? _error;
+  List<dynamic> _registros = [];
+  List<dynamic> _empleados = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _cargar();
+  }
+
+  Future<void> _cargar() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final resultados = await Future.wait([
+        logisticaApiClient.registrosAsistenciaDelPersonal(),
+        logisticaApiClient.listarEmpleados(),
+      ]);
+      setState(() {
+        _registros = resultados[0];
+        _empleados = resultados[1];
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e is LogisticaApiException
+            ? e.message
+            : 'No se pudo conectar con el backend de logística.';
+        _loading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final scheme = Theme.of(context).colorScheme;
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    return RefreshIndicator(
+      onRefresh: _cargar,
+      child: ListView(padding: const EdgeInsets.all(16), children: [
+        if (_error != null)
+          LiquidGlassCard(
+            child: Text(_error!, style: textTheme.bodyMedium?.copyWith(color: _kRed)),
+          )
+        else ...[
+          const _SectionCard(
+              title: 'Backend real · eventos-emergencias',
+              lines: ['CU-018 · Asistencia de todo el personal'],
+              icon: Icons.dns_outlined),
+          const SizedBox(height: 12),
+          if (_empleados.isNotEmpty) ...[
+            LiquidGlassCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Horas trabajadas (total)', style: textTheme.titleSmall),
+                  const SizedBox(height: 8),
+                  for (final empleado in _empleados)
+                    Builder(builder: (context) {
+                      final e = empleado as Map<String, dynamic>;
+                      final horas = (e['horasTrabajadasTotales'] as num?) ?? 0;
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 3),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                                child: Text(
+                                    '${e['nombre'] ?? ''} · ${e['rol'] ?? ''}',
+                                    style: textTheme.bodySmall,
+                                    overflow: TextOverflow.ellipsis)),
+                            Text('${horas.toStringAsFixed(1)} h',
+                                style: textTheme.bodySmall
+                                    ?.copyWith(fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                      );
+                    }),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+          if (_registros.isEmpty)
+            Text('Todavía no hay registros de asistencia.',
+                style: textTheme.bodyMedium
+                    ?.copyWith(color: scheme.onSurface.withValues(alpha: 0.6)))
+          else
+            for (final grupo in _agruparPorDia(_registros)) ...[
+              Padding(
+                padding: const EdgeInsets.only(top: 4, bottom: 8),
+                child: Text(grupo.$1,
+                    style: textTheme.titleSmall
+                        ?.copyWith(color: scheme.onSurface.withValues(alpha: 0.7))),
+              ),
+              for (final registro in grupo.$2)
+                Builder(builder: (context) {
+                  final r = registro as Map<String, dynamic>;
+                  final empleado = r['empleado'] as Map<String, dynamic>?;
+                  final turno = r['turno'] as Map<String, dynamic>?;
+                  final esEntrada = r['tipo'] == 'ENTRADA';
+                  final anomalia = r['anomalia'] == true;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: LiquidGlassCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                    empleado?['nombre']?.toString() ?? 'Empleado',
+                                    style: textTheme.titleSmall),
+                              ),
+                              Text(_horaLabel(r['timestamp']?.toString()),
+                                  style: textTheme.bodySmall),
+                              const SizedBox(width: 8),
+                              StatusChip(
+                                label: esEntrada ? 'Entrada' : 'Salida',
+                                color: anomalia
+                                    ? _kRed
+                                    : esEntrada
+                                        ? _kGreen
+                                        : _kIndigo,
+                                icon: esEntrada
+                                    ? Icons.login
+                                    : Icons.logout,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                              '${empleado?['rol'] ?? ''}'
+                              '${turno?['zona'] != null ? ' · ${turno!['zona']}' : ''}',
+                              style: textTheme.bodySmall?.copyWith(
+                                  color: scheme.onSurface.withValues(alpha: 0.65))),
+                          if (anomalia) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                                r['motivoAnomalia']?.toString() ??
+                                    'Registro marcado como anomalía.',
+                                style: textTheme.bodySmall?.copyWith(color: _kRed)),
+                          ],
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+            ],
+        ],
+      ]),
+    );
+  }
+}
+
+const _kMeses = [
+  'ene', 'feb', 'mar', 'abr', 'may', 'jun',
+  'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
+];
+
+String _horaLabel(String? isoUtc) {
+  final t = DateTime.tryParse(isoUtc ?? '')?.toLocal();
+  if (t == null) return '—';
+  return '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+}
+
+String _diaLabel(DateTime diaLocal) {
+  final hoy = DateTime.now();
+  final ayer = hoy.subtract(const Duration(days: 1));
+  bool mismoDia(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
+  if (mismoDia(diaLocal, hoy)) return 'Hoy';
+  if (mismoDia(diaLocal, ayer)) return 'Ayer';
+  return '${diaLocal.day} de ${_kMeses[diaLocal.month - 1]} de ${diaLocal.year}';
+}
+
+/// Agrupa los registros (ya vienen del backend ordenados por timestamp
+/// descendente) por día local del dispositivo, preservando ese orden.
+List<(String, List<dynamic>)> _agruparPorDia(List<dynamic> registros) {
+  final grupos = <(String, List<dynamic>)>[];
+  DateTime? diaActual;
+  List<dynamic>? bucketActual;
+  for (final registro in registros) {
+    final iso = (registro as Map<String, dynamic>)['timestamp']?.toString();
+    final t = DateTime.tryParse(iso ?? '')?.toLocal();
+    if (t == null) continue;
+    final dia = DateTime(t.year, t.month, t.day);
+    if (diaActual == null || dia != diaActual) {
+      diaActual = dia;
+      bucketActual = [];
+      grupos.add((_diaLabel(dia), bucketActual));
+    }
+    bucketActual!.add(registro);
+  }
+  return grupos;
+}
+
+// Vista del supervisor (Jefe de personal) para asignar un turno nuevo a un
+// empleado — CU-018 no tenía ninguna UI para esto: solo existía por script
+// de siembra o llamando el backend directo (`POST /turnos`).
+class AssignShiftPage extends StatefulWidget {
+  const AssignShiftPage({super.key});
+  @override
+  State<AssignShiftPage> createState() => _AssignShiftPageState();
+}
+
+class _AssignShiftPageState extends State<AssignShiftPage> {
+  bool _loadingEmpleados = true;
+  bool _guardando = false;
+  String? _error;
+  List<dynamic> _empleados = [];
+  String? _empleadoId;
+  String _eventoId = _events.first.id;
+  final _zonaController = TextEditingController();
+  DateTime _horaInicio = DateTime.now();
+  DateTime _horaFin = DateTime.now().add(const Duration(hours: 8));
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarEmpleados();
+  }
+
+  @override
+  void dispose() {
+    _zonaController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _cargarEmpleados() async {
+    setState(() {
+      _loadingEmpleados = true;
+      _error = null;
+    });
+    try {
+      final empleados = await logisticaApiClient.listarEmpleados();
+      setState(() {
+        _empleados = empleados;
+        _empleadoId ??=
+            empleados.isNotEmpty ? (empleados.first as Map)['id'] as String : null;
+        _loadingEmpleados = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e is LogisticaApiException
+            ? e.message
+            : 'No se pudo conectar con el backend de logística.';
+        _loadingEmpleados = false;
+      });
+    }
+  }
+
+  Future<void> _elegirFecha(bool esInicio) async {
+    final actual = esInicio ? _horaInicio : _horaFin;
+    final fecha = await showDatePicker(
+      context: context,
+      initialDate: actual,
+      firstDate: DateTime.now().subtract(const Duration(days: 1)),
+      lastDate: DateTime.now().add(const Duration(days: 180)),
+    );
+    if (fecha == null || !mounted) return;
+    final hora = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(actual),
+    );
+    if (hora == null || !mounted) return;
+    final combinado =
+        DateTime(fecha.year, fecha.month, fecha.day, hora.hour, hora.minute);
+    setState(() {
+      if (esInicio) {
+        _horaInicio = combinado;
+      } else {
+        _horaFin = combinado;
+      }
+    });
+  }
+
+  Future<void> _asignar() async {
+    if (_empleadoId == null) return;
+    if (_zonaController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Indica la zona del turno.')));
+      return;
+    }
+    if (!_horaFin.isAfter(_horaInicio)) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('La hora de fin debe ser después de la de inicio.')));
+      return;
+    }
+    setState(() => _guardando = true);
+    try {
+      await logisticaApiClient.crearTurno(
+        empleadoId: _empleadoId!,
+        eventoId: _eventoId,
+        zona: _zonaController.text.trim(),
+        horaInicio: _horaInicio,
+        horaFin: _horaFin,
+      );
+      final empleado =
+          _empleados.firstWhere((e) => (e as Map)['id'] == _empleadoId) as Map;
+      if (!mounted) return;
+      setState(() => _guardando = false);
+      activityLog.add(ActivityEntry(
+          type: ActivityType.shiftChange,
+          title: empleado['nombre']?.toString() ?? 'Empleado',
+          subtitle: 'Turno asignado · ${_zonaController.text.trim()}',
+          amount: 0));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Turno asignado.')));
+      _zonaController.clear();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _guardando = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(e is LogisticaApiException
+              ? e.message
+              : 'No se pudo conectar con el backend de logística.')));
+    }
+  }
+
+  String _fmt(DateTime t) =>
+      '${t.day.toString().padLeft(2, '0')}/${t.month.toString().padLeft(2, '0')} '
+      '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    if (_loadingEmpleados) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    return ListView(padding: const EdgeInsets.all(16), children: [
+      const _SectionCard(
+          title: 'Backend real · eventos-emergencias',
+          lines: ['CU-018 · Asignar turno a un empleado'],
+          icon: Icons.dns_outlined),
+      const SizedBox(height: 12),
+      if (_error != null)
+        LiquidGlassCard(
+            child: Text(_error!, style: textTheme.bodyMedium?.copyWith(color: _kRed)))
+      else
+        LiquidGlassCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              DropdownButtonFormField<String>(
+                initialValue: _empleadoId,
+                decoration: const InputDecoration(labelText: 'Empleado'),
+                items: [
+                  for (final e in _empleados)
+                    DropdownMenuItem(
+                        value: (e as Map)['id'] as String,
+                        child: Text('${e['nombre']} · ${e['rol']}',
+                            overflow: TextOverflow.ellipsis)),
+                ],
+                onChanged: (value) => setState(() => _empleadoId = value),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _zonaController,
+                decoration: const InputDecoration(
+                    labelText: 'Zona', hintText: 'Ej. Puerta Norte'),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                initialValue: _eventoId,
+                decoration: const InputDecoration(labelText: 'Evento'),
+                items: [
+                  for (final evento in _events)
+                    DropdownMenuItem(
+                        value: evento.id,
+                        child: Text(evento.name, overflow: TextOverflow.ellipsis)),
+                ],
+                onChanged: (value) => setState(() => _eventoId = value!),
+              ),
+              const SizedBox(height: 12),
+              Row(children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => _elegirFecha(true),
+                    child: Text('Inicio: ${_fmt(_horaInicio)}'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => _elegirFecha(false),
+                    child: Text('Fin: ${_fmt(_horaFin)}'),
+                  ),
+                ),
+              ]),
+              const SizedBox(height: 16),
+              if (_guardando)
+                const Center(child: CircularProgressIndicator())
+              else
+                FilledButton(
+                  onPressed: _empleados.isEmpty ? null : _asignar,
+                  child: const Text('Asignar turno'),
+                ),
+            ],
+          ),
+        ),
+    ]);
+  }
+}
+
 
 const _kEventCapacity = 5000;
 

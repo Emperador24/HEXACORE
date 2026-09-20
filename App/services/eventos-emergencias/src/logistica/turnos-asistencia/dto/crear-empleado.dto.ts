@@ -1,31 +1,24 @@
+import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsString, IsUUID } from 'class-validator';
 
-/**
- * Alta de un empleado, que solo hace un administrador.
- *
- * `usuarioId` es la cuenta del CU-027 a la que se le da de alta: sin ella, la
- * persona no podría iniciar sesión y la ficha no serviría de nada.
- */
 export class CrearEmpleadoDto {
-  @IsUUID('4', { message: 'usuarioId debe ser el identificador de una cuenta existente' })
+  /** `id` del usuario en el Servicio de Administración (CU-027). */
+  @ApiProperty({ description: 'id del usuario en Administración (CU-027)' })
+  @IsUUID()
   usuarioId: string;
 
+  @ApiProperty({ example: 'Luis Ramírez' })
   @IsString()
   @IsNotEmpty()
   nombre: string;
 
-  /**
-   * Área de trabajo. Texto libre **a propósito**: qué áreas existen depende del
-   * evento y del recinto, y fijarlas aquí obligaría a recompilar el servicio
-   * para añadir una. La app móvil reconoce `Entrada`, `Parqueadero`,
-   * `Restaurante` y `Jefe de personal`, y a cualquier otra le muestra las
-   * pantallas comunes del personal.
-   */
+  @ApiProperty({ example: 'Entrada' })
   @IsString()
   @IsNotEmpty()
   rol: string;
 
-  /** Lo que se escanea en el punto de control: el QR o NFC del carné. */
+  /** Lo que se escanea en el punto de control: QR o NFC del carné, no un correo. */
+  @ApiProperty({ example: 'HXC-CARNET-00231' })
   @IsString()
   @IsNotEmpty()
   credencial: string;

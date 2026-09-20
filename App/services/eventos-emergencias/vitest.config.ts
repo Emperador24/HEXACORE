@@ -13,6 +13,9 @@ export default defineConfig({
     // encontrar ninguna, y cualquier CI que lo corriera daba rojo.
     passWithNoTests: true,
     root: './',
-    include: ['**/*.spec.ts'],
+    // Sin *.spec.ts todavía: las 22 pruebas del servicio son de integración
+    // (test/*.e2e-spec.ts). Sin este patrón, `npm test` no encontraba nada
+    // y salía con código de error — cualquier CI que lo corriera daba rojo.
+    include: ['**/*.spec.ts', 'test/**/*.e2e-spec.ts'],
   },
 });

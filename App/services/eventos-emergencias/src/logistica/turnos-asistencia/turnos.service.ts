@@ -1,12 +1,11 @@
 import {
   BadRequestException,
   ConflictException,
-  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { LessThan, MoreThan, Not, Repository } from 'typeorm';
+import { LessThan, MoreThan, Not, QueryFailedError, Repository } from 'typeorm';
 import { CrearEmpleadoDto } from './dto/crear-empleado.dto.js';
 import { CrearTurnoDto } from './dto/crear-turno.dto.js';
 import { RevisarSolicitudDto } from './dto/revisar-solicitud.dto.js';
@@ -17,7 +16,6 @@ import { Turno } from './entities/turno.entity.js';
 import { EstadoSolicitudCambio, EstadoTurno } from './enums/estados.js';
 import { EventosPublicadorService } from './eventos-publicador.service.js';
 import {
-  JEFE_DE_PERSONAL,
   MAX_HORAS_DIARIAS_EMPLEADO,
   MAX_HORAS_POR_TURNO,
 } from './turnos-asistencia.constants.js';
@@ -34,27 +32,19 @@ export class TurnosService {
     private readonly eventosPublicador: EventosPublicadorService,
   ) {}
 
-  /**
-   * Alta de un empleado por parte de un administrador (CU-018, paso previo).
-   *
-   * Dos motivos para que falle, y los dos se explican en claro: que esa cuenta
-   * ya tenga ficha, o que la credencial ya esté en uso. Dejar salir el error
-   * crudo de Postgres diría `duplicate key value violates unique constraint`,
-   * que no le sirve a quien está dando de alta a alguien.
-   */
   async crearEmpleado(dto: CrearEmpleadoDto) {
-    const yaTiene = await this.empleados.findOneBy({ usuarioId: dto.usuarioId });
-    if (yaTiene) {
-      throw new ConflictException(
-        `Esa cuenta ya está dada de alta como empleado (${yaTiene.nombre}, ${yaTiene.rol}).`,
-      );
-    }
-    const credencialUsada = await this.empleados.findOneBy({ credencial: dto.credencial });
-    if (credencialUsada) {
-      throw new ConflictException('Esa credencial ya pertenece a otro empleado.');
-    }
     const empleado = this.empleados.create(dto);
-    return this.empleados.save(empleado);
+    try {
+      return await this.empleados.save(empleado);
+    } catch (error) {
+      // Violación de la restricción unique(credencial) en Postgres.
+      if (error instanceof QueryFailedError && (error.driverError as { code?: string })?.code === '23505') {
+        throw new ConflictException(
+          `Ya existe un empleado con la credencial "${dto.credencial}".`,
+        );
+      }
+      throw error;
+    }
   }
 
   listarEmpleados() {
@@ -90,6 +80,9 @@ export class TurnosService {
     const empleado = await this.empleados.findOneBy({ id: dto.empleadoId });
     if (!empleado) {
       throw new NotFoundException('Empleado no encontrado.');
+    }
+    if (new Date(dto.horaFin) <= new Date(dto.horaInicio)) {
+      throw new BadRequestException('horaFin debe ser posterior a horaInicio.');
     }
     const turno = this.turnos.create({
       ...dto,
@@ -186,39 +179,14 @@ export class TurnosService {
   }
 
   /**
-   * Comprueba que quien revisa una solicitud puede hacerlo, y devuelve su id de
-   * empleado.
-   *
-   * La regla no se puede expresar solo con el rol del token: todo el personal
-   * tiene el mismo rol `Personal`, y lo que distingue al jefe es su **área**,
-   * que vive en este servicio. Un administrador también puede revisar, porque
-   * puede todo.
-   */
-  private async exigirJefeDePersonal(revisor: {
-    usuarioId: string;
-    roles: string[];
-  }): Promise<string | null> {
-    const empleado = await this.empleados.findOneBy({ usuarioId: revisor.usuarioId, activo: true });
-    if (empleado?.rol === JEFE_DE_PERSONAL) return empleado.id;
-    if (revisor.roles.includes('Administrador')) return empleado?.id ?? null;
-
-    throw new ForbiddenException({
-      codigo: 'ROL_INSUFICIENTE',
-      mensaje: 'Solo el jefe de personal puede aprobar o rechazar un cambio de turno.',
-    });
-  }
-
-  /**
    * CU-LOG-003, pasos 3-4 + alterno B + excepción C: el supervisor aprueba
    * o rechaza el cambio; si aprueba, se valida el límite de horas antes de
    * reasignar el turno.
    */
   async revisarSolicitud(
     solicitudId: string,
-    dto: RevisarSolicitudDto,
-    revisor: { usuarioId: string; roles: string[] },
+    dto: RevisarSolicitudDto & { supervisorId: string },
   ) {
-    const empleadoRevisor = await this.exigirJefeDePersonal(revisor);
     const solicitud = await this.solicitudes.findOneBy({ id: solicitudId });
     if (!solicitud) {
       throw new NotFoundException('Solicitud no encontrada.');
@@ -237,7 +205,7 @@ export class TurnosService {
     if (!dto.aprobar) {
       // CU-LOG-003B: el supervisor rechaza, se mantiene el turno original.
       solicitud.estado = EstadoSolicitudCambio.RECHAZADA;
-      solicitud.revisadoPorId = empleadoRevisor;
+      solicitud.revisadoPorId = dto.supervisorId;
       solicitud.fechaRevision = new Date();
       turno.estado = EstadoTurno.ASIGNADO;
       await this.turnos.save(turno);
@@ -258,7 +226,7 @@ export class TurnosService {
         MAX_HORAS_DIARIAS_EMPLEADO
     ) {
       solicitud.estado = EstadoSolicitudCambio.BLOQUEADA_POR_HORAS;
-      solicitud.revisadoPorId = empleadoRevisor;
+      solicitud.revisadoPorId = dto.supervisorId;
       solicitud.fechaRevision = new Date();
       solicitud.motivoRechazoOBloqueo =
         'El cambio solicitado supera el límite de horas permitidas por turno.';
@@ -269,7 +237,7 @@ export class TurnosService {
     }
 
     solicitud.estado = EstadoSolicitudCambio.APROBADA;
-    solicitud.revisadoPorId = empleadoRevisor;
+    solicitud.revisadoPorId = dto.supervisorId;
     solicitud.fechaRevision = new Date();
 
     const empleadoAnteriorId = turno.empleadoId;
@@ -288,9 +256,11 @@ export class TurnosService {
     // Infraestructura no trivial de CU-018: propaga el cambio por cola de
     // mensajes en vez de notificar síncronamente dentro de esta petición.
     await this.eventosPublicador.publicarCambioTurno({
+      tipo: 'TURNO_CAMBIADO',
       turnoId: turno.id,
       empleadoAnteriorId,
       empleadoNuevoId: reemplazo!.id,
+      mensaje: `Se te asignó el turno ${turno.id} por cambio aprobado.`,
     });
 
     return guardada;

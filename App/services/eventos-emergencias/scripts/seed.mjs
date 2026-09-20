@@ -55,14 +55,37 @@ async function entrarComoAdministrador() {
   return datos.token;
 }
 
-/** Todas las cuentas, indexadas por correo. */
-async function cuentasPorCorreo(token) {
-  const { estado, datos } = await api('admin/cuentas?limite=100', { token });
-  if (estado !== 200) {
-    throw new Error(`No se pudieron listar las cuentas (${estado}).`);
+/**
+ * Busca cada cuenta por su correo, una por una.
+ *
+ * No se listan todas y se filtra después: con la carga de pruebas puede haber
+ * cientos de cuentas y las de ejemplo quedarían fuera de la primera página —
+ * pasó, y el seed decía «no existe esa cuenta» sobre cuentas que sí existían.
+ */
+async function buscarCuentas(token, correos) {
+  const encontradas = new Map();
+  const limite = 100;
+  for (const correo of correos) {
+    // La búsqueda es por texto: `personal@hexacore.com` también trae
+    // `jefepersonal@…` y las `carga-0007-personal@…` de la carga de pruebas.
+    // Por eso se pagina hasta dar con la coincidencia exacta.
+    for (let desplazamiento = 0; ; desplazamiento += limite) {
+      const { estado, datos } = await api(
+        `admin/cuentas?busqueda=${encodeURIComponent(correo)}` +
+          `&limite=${limite}&desplazamiento=${desplazamiento}`,
+        { token },
+      );
+      if (estado !== 200) throw new Error(`No se pudieron buscar las cuentas (${estado}).`);
+      const lista = Array.isArray(datos) ? datos : (datos.cuentas ?? datos.datos ?? []);
+      const cuenta = lista.find((c) => c.email === correo);
+      if (cuenta) {
+        encontradas.set(correo, cuenta);
+        break;
+      }
+      if (lista.length < limite) break;
+    }
   }
-  const lista = Array.isArray(datos) ? datos : (datos.cuentas ?? datos.datos ?? []);
-  return new Map(lista.map((c) => [c.email, c]));
+  return encontradas;
 }
 
 async function darDeAlta(token, cuentas, plantilla) {
@@ -134,7 +157,10 @@ async function asegurarTurno(token, empleado) {
 }
 
 const token = await entrarComoAdministrador();
-const cuentas = await cuentasPorCorreo(token);
+const cuentas = await buscarCuentas(
+  token,
+  [...EMPLEADOS_DEMO, REEMPLAZO].map((e) => e.correo),
+);
 
 console.log('Empleados (alta por el administrador, ligada a su cuenta):');
 const altas = [];

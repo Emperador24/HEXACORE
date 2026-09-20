@@ -16,22 +16,15 @@ import type { Redis } from 'ioredis';
 import { REDIS } from './redis.provider.js';
 
 /**
- * Autenticación de este servicio (RNF-06).
- *
- * Verifica el token con la clave **pública** (ADR-11) y comprueba en Redis que
- * la sesión no se haya cerrado. Las dos cosas, y hacen falta las dos: la firma
- * dice que el token es auténtico, Redis dice que todavía vale.
- *
- * **Por qué se valida aquí, si el API Gateway ya validó.** Porque el gateway no
- * es una frontera infranqueable: cualquiera dentro de la red puede llamar al
- * puerto de este servicio y poner la cabecera `X-Usuario-Id` que quiera. Esa
- * cabecera es una comodidad para trazas, nunca una credencial.
+ * Prefijo de las sesiones revocadas en Redis (contrato compartido, ver
+ * `App/shared/seguridad/token-sesion.md`). Lo escribe el Servicio de
+ * Administración al cerrar una sesión.
  */
-
 export const PREFIJO_REVOCADA = 'sesion-revocada:';
 
 const ES_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+/** Lo que este servicio usa del token. */
 export interface SesionVerificada {
   usuarioId: string;
   roles: string[];
@@ -44,7 +37,7 @@ export interface PeticionConSesion extends Request {
 
 const ROLES_PERMITIDOS = 'roles-permitidos';
 
-/** Restringe un endpoint a ciertos roles (CU-028). */
+/** Qué roles pueden usar un controlador o una ruta (CU-028). */
 export const RolesPermitidos = (...roles: string[]): MethodDecorator & ClassDecorator =>
   SetMetadata(ROLES_PERMITIDOS, roles);
 
@@ -52,6 +45,13 @@ function sinAutenticar(mensaje: string): UnauthorizedException {
   return new UnauthorizedException({ codigo: 'SIN_AUTENTICAR', mensaje });
 }
 
+/**
+ * Exige un token de sesión válido (RNF-06). Adaptado 1:1 del contrato y la
+ * implementación de referencia en
+ * `services/entradas-mercado-secundario/src/comun/autenticacion/sesion-valida.guard.ts`
+ * — ver ese archivo para la justificación completa de por qué se verifica
+ * aquí y no solo en el gateway.
+ */
 @Injectable()
 export class SesionValida implements CanActivate {
   private readonly log = new Logger(SesionValida.name);
@@ -78,13 +78,10 @@ export class SesionValida implements CanActivate {
     try {
       revocada = await this.redis.exists(`${PREFIJO_REVOCADA}${sesion.jti}`);
     } catch (error) {
-      // Sin Redis no se puede saber si la sesión sigue abierta. Dejar pasar
-      // sería aceptar tokens de sesiones cerradas; se prefiere decirlo.
       this.log.error(`No se pudo comprobar la revocación en Redis: ${(error as Error).message}`);
       throw new ServiceUnavailableException({
         codigo: 'SESIONES_NO_DISPONIBLES',
-        mensaje:
-          'No podemos comprobar tu sesión en este momento. Inténtalo de nuevo en unos segundos.',
+        mensaje: 'No podemos comprobar tu sesión en este momento. Inténtalo de nuevo en unos segundos.',
       });
     }
     if (revocada) {
@@ -109,22 +106,20 @@ export class SesionValida implements CanActivate {
   private async verificar(token: string): Promise<SesionVerificada | null> {
     let contenido: Record<string, unknown>;
     try {
-      // El algoritmo lo fija la configuración del JwtModule, no el token: si se
-      // aceptara el que declara el propio token, uno con `alg: none` —o uno
-      // "firmado" con la clave pública como secreto HMAC— pasaría.
       contenido = await this.jwt.verifyAsync<Record<string, unknown>>(token);
     } catch {
       return null;
     }
-
-    const usuarioId = contenido.sub;
-    const jti = contenido.jti;
-    const roles = contenido.roles;
-
-    if (typeof usuarioId !== 'string' || !ES_UUID.test(usuarioId)) return null;
-    if (typeof jti !== 'string' || !ES_UUID.test(jti)) return null;
-    if (!Array.isArray(roles) || !roles.every((r) => typeof r === 'string')) return null;
-
-    return { usuarioId, roles: roles as string[], jti };
+    const { sub, roles, jti } = contenido;
+    if (
+      typeof sub !== 'string' ||
+      !ES_UUID.test(sub) ||
+      typeof jti !== 'string' ||
+      !Array.isArray(roles) ||
+      !roles.every((r) => typeof r === 'string')
+    ) {
+      return null;
+    }
+    return { usuarioId: sub, roles: roles as string[], jti };
   }
 }

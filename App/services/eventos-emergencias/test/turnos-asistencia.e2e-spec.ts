@@ -1,49 +1,47 @@
-import { ExecutionContext, INestApplication, ValidationPipe } from '@nestjs/common';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { randomUUID } from 'node:crypto';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import jwt from 'jsonwebtoken';
 import request from 'supertest';
 import type { App } from 'supertest/types';
-import { randomUUID } from 'node:crypto';
 import { AppModule } from './../src/app.module.js';
-import { SesionValida } from './../src/comun/autenticacion/sesion-valida.guard.js';
 
-/**
- * Sesión con la que corren estas pruebas.
- *
- * Son pruebas del **dominio** —horas máximas, búsqueda de reemplazo, anomalías
- * de asistencia—, no de la autenticación: esa se comprueba de extremo a extremo
- * en `App/gateway/pruebas/gateway.py`, contra el sistema entero. Aquí se
- * sustituye el guard para no tener que firmar un token en cada petición.
- *
- * El rol es Administrador porque varias operaciones lo exigen (dar de alta a un
- * empleado, revisar una solicitud).
- */
-const SESION_DE_PRUEBA = {
-  usuarioId: '00000000-0000-4000-8000-000000000001',
-  roles: ['Administrador'],
-  jti: '00000000-0000-4000-8000-0000000000ff',
-};
+const RUTA = '/api/v1/logistica';
 
-describe('CU-LOG-003 · Gestionar turno y asistencia del personal (e2e)', () => {
+function tokenDePrueba(roles: string[] = ['Administrador', 'Personal', 'Organizador']) {
+  const rutaClave = fileURLToPath(
+    new URL('../../../infra/claves-desarrollo/jwt-privada.pem', import.meta.url),
+  );
+  const clavePrivada = readFileSync(rutaClave, 'utf8');
+  return jwt.sign({ roles }, clavePrivada, {
+    algorithm: 'RS256',
+    issuer: 'hexacore-administracion',
+    subject: randomUUID(),
+    jwtid: randomUUID(),
+    expiresIn: '1h',
+  });
+}
+
+describe('CU-018 · Gestionar turno y asistencia del personal (e2e)', () => {
   let app: INestApplication<App>;
   let server: App;
+  let auth: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    })
-      .overrideGuard(SesionValida)
-      .useValue({
-        canActivate: (contexto: ExecutionContext) => {
-          contexto.switchToHttp().getRequest().sesion = SESION_DE_PRUEBA;
-          return true;
-        },
-      })
-      .compile();
+    }).compile();
 
     app = moduleFixture.createNestApplication();
+    // Test.createTestingModule no pasa por src/main.ts: el prefijo hay que
+    // fijarlo también aquí o toda ruta responde 404.
+    app.setGlobalPrefix('api/v1');
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     await app.init();
     server = app.getHttpServer();
+    auth = `Bearer ${tokenDePrueba()}`;
   });
 
   afterAll(async () => {
@@ -53,7 +51,8 @@ describe('CU-LOG-003 · Gestionar turno y asistencia del personal (e2e)', () => 
   async function crearEmpleado(rol = 'seguridad') {
     const credencial = `cred-${randomUUID()}`;
     const res = await request(server)
-      .post('/empleados')
+      .post(`${RUTA}/empleados`)
+      .set('Authorization', auth)
       .send({ usuarioId: randomUUID(), nombre: `Empleado ${credencial}`, rol, credencial })
       .expect(201);
     return res.body as { id: string; credencial: string };
@@ -61,19 +60,20 @@ describe('CU-LOG-003 · Gestionar turno y asistencia del personal (e2e)', () => 
 
   async function crearTurno(
     empleadoId: string,
-    opts: { horaInicio: Date; horaFin: Date; zona?: string },
+    opts: { horaInicio: Date; horaFin: Date; zona?: string; eventoId?: string },
   ) {
     const res = await request(server)
-      .post('/turnos')
+      .post(`${RUTA}/turnos`)
+      .set('Authorization', auth)
       .send({
         empleadoId,
-        eventoId: `evento-${randomUUID()}`,
+        eventoId: opts.eventoId ?? `evento-${randomUUID()}`,
         zona: opts.zona ?? 'zona-norte',
         horaInicio: opts.horaInicio.toISOString(),
         horaFin: opts.horaFin.toISOString(),
       })
       .expect(201);
-    return res.body as { id: string; empleadoId: string };
+    return res.body as { id: string; empleadoId: string; eventoId: string };
   }
 
   function turnoVigente(horas = 4) {
@@ -84,6 +84,19 @@ describe('CU-LOG-003 · Gestionar turno y asistencia del personal (e2e)', () => 
     };
   }
 
+  // --- RNF-06: nadie sin sesión válida llega a un endpoint de negocio ---
+
+  it('RNF-06: 401 sin token de sesión', async () => {
+    await request(server).get(`${RUTA}/turnos`).expect(401);
+  });
+
+  it('RNF-06: 401 con un token mal firmado', async () => {
+    await request(server)
+      .get(`${RUTA}/turnos`)
+      .set('Authorization', 'Bearer esto-no-es-un-jwt-valido')
+      .expect(401);
+  });
+
   // --- Flujo básico de éxito: pasos 1-4 ---
 
   it('solicita un cambio de turno y encuentra reemplazo disponible (pasos 1-2)', async () => {
@@ -92,7 +105,8 @@ describe('CU-LOG-003 · Gestionar turno y asistencia del personal (e2e)', () => 
     const turno = await crearTurno(solicitante.id, turnoVigente());
 
     const res = await request(server)
-      .post(`/turnos/${turno.id}/solicitudes-cambio`)
+      .post(`${RUTA}/turnos/${turno.id}/solicitudes-cambio`)
+      .set('Authorization', auth)
       .send({ motivo: 'Cita médica' })
       .expect(201);
 
@@ -106,16 +120,21 @@ describe('CU-LOG-003 · Gestionar turno y asistencia del personal (e2e)', () => 
     const turno = await crearTurno(solicitante.id, turnoVigente());
 
     const solicitud = await request(server)
-      .post(`/turnos/${turno.id}/solicitudes-cambio`)
+      .post(`${RUTA}/turnos/${turno.id}/solicitudes-cambio`)
+      .set('Authorization', auth)
       .send({ motivo: 'Emergencia familiar' })
       .expect(201);
 
     const revisada = await request(server)
-      .patch(`/solicitudes-cambio/${solicitud.body.solicitud.id}/revisar`)
+      .patch(`${RUTA}/solicitudes-cambio/${solicitud.body.solicitud.id}/revisar`)
+      .set('Authorization', auth)
       .send({ aprobar: true })
       .expect(200);
 
     expect(revisada.body.estado).toBe('APROBADA');
+    // El supervisor lo pone el token, no el cuerpo de la petición (si no,
+    // cualquiera podría aprobar su propio cambio declarándose supervisor).
+    expect(revisada.body.revisadoPorId).toBeTruthy();
     // Regresión: la respuesta del PATCH debe traer el turno YA actualizado
     // (empleado reasignado, estado CAMBIADO), no el estado previo a la
     // reasignación — ver corrección de `solicitud.turno` en turnos.service.
@@ -123,7 +142,10 @@ describe('CU-LOG-003 · Gestionar turno y asistencia del personal (e2e)', () => 
     expect(revisada.body.turno.empleadoId).not.toBe(solicitante.id);
     expect(revisada.body.turno.empleado.id).toBe(revisada.body.turno.empleadoId);
 
-    const turnos = await request(server).get('/turnos').expect(200);
+    const turnos = await request(server)
+      .get(`${RUTA}/turnos`)
+      .set('Authorization', auth)
+      .expect(200);
     const turnoActualizado = turnos.body.find((t: any) => t.id === turno.id);
     expect(turnoActualizado.estado).toBe('CAMBIADO');
     expect(turnoActualizado.empleadoId).not.toBe(solicitante.id);
@@ -137,34 +159,42 @@ describe('CU-LOG-003 · Gestionar turno y asistencia del personal (e2e)', () => 
     const turno = await crearTurno(solicitante.id, turnoVigente());
 
     const solicitud = await request(server)
-      .post(`/turnos/${turno.id}/solicitudes-cambio`)
+      .post(`${RUTA}/turnos/${turno.id}/solicitudes-cambio`)
+      .set('Authorization', auth)
       .send({ motivo: 'Prueba de listado' })
       .expect(201);
     const solicitudId = solicitud.body.solicitud.id as string;
 
-    const todas = await request(server).get('/solicitudes-cambio').expect(200);
+    const todas = await request(server)
+      .get(`${RUTA}/solicitudes-cambio`)
+      .set('Authorization', auth)
+      .expect(200);
     expect(todas.body.some((s: any) => s.id === solicitudId)).toBe(true);
 
     const pendientes = await request(server)
-      .get('/solicitudes-cambio')
+      .get(`${RUTA}/solicitudes-cambio`)
+      .set('Authorization', auth)
       .query({ estado: 'PENDIENTE' })
       .expect(200);
     expect(pendientes.body.some((s: any) => s.id === solicitudId)).toBe(true);
     expect(pendientes.body.every((s: any) => s.estado === 'PENDIENTE')).toBe(true);
 
     await request(server)
-      .patch(`/solicitudes-cambio/${solicitudId}/revisar`)
+      .patch(`${RUTA}/solicitudes-cambio/${solicitudId}/revisar`)
+      .set('Authorization', auth)
       .send({ aprobar: true })
       .expect(200);
 
     const pendientesLuego = await request(server)
-      .get('/solicitudes-cambio')
+      .get(`${RUTA}/solicitudes-cambio`)
+      .set('Authorization', auth)
       .query({ estado: 'PENDIENTE' })
       .expect(200);
     expect(pendientesLuego.body.some((s: any) => s.id === solicitudId)).toBe(false);
 
     const aprobadas = await request(server)
-      .get('/solicitudes-cambio')
+      .get(`${RUTA}/solicitudes-cambio`)
+      .set('Authorization', auth)
       .query({ estado: 'APROBADA' })
       .expect(200);
     expect(aprobadas.body.some((s: any) => s.id === solicitudId)).toBe(true);
@@ -178,19 +208,24 @@ describe('CU-LOG-003 · Gestionar turno y asistencia del personal (e2e)', () => 
     const turno = await crearTurno(solicitante.id, turnoVigente());
 
     const solicitud = await request(server)
-      .post(`/turnos/${turno.id}/solicitudes-cambio`)
+      .post(`${RUTA}/turnos/${turno.id}/solicitudes-cambio`)
+      .set('Authorization', auth)
       .send({ motivo: 'Prueba de mensajería' })
       .expect(201);
 
     await request(server)
-      .patch(`/solicitudes-cambio/${solicitud.body.solicitud.id}/revisar`)
+      .patch(`${RUTA}/solicitudes-cambio/${solicitud.body.solicitud.id}/revisar`)
+      .set('Authorization', auth)
       .send({ aprobar: true })
       .expect(200);
 
     // El consumidor procesa de forma asíncrona; se sondea hasta 5s.
     let notificacion: any;
     for (let intento = 0; intento < 25 && !notificacion; intento++) {
-      const res = await request(server).get('/notificaciones').expect(200);
+      const res = await request(server)
+        .get(`${RUTA}/notificaciones`)
+        .set('Authorization', auth)
+        .expect(200);
       notificacion = res.body.find((n: any) => n.turnoId === turno.id);
       if (!notificacion) {
         await new Promise((resolve) => setTimeout(resolve, 200));
@@ -211,7 +246,8 @@ describe('CU-LOG-003 · Gestionar turno y asistencia del personal (e2e)', () => 
     const horaEventoOffline = new Date(Date.now() - 30 * 60 * 1000).toISOString();
 
     const primerIntento = await request(server)
-      .post('/asistencia/entrada')
+      .post(`${RUTA}/asistencia/entrada`)
+      .set('Authorization', auth)
       .send({
         credencial: empleado.credencial,
         clientTimestamp: horaEventoOffline,
@@ -221,7 +257,8 @@ describe('CU-LOG-003 · Gestionar turno y asistencia del personal (e2e)', () => 
 
     // El dispositivo reintenta el envío (misma clave) al recuperar señal.
     const reintento = await request(server)
-      .post('/asistencia/entrada')
+      .post(`${RUTA}/asistencia/entrada`)
+      .set('Authorization', auth)
       .send({
         credencial: empleado.credencial,
         clientTimestamp: horaEventoOffline,
@@ -232,7 +269,10 @@ describe('CU-LOG-003 · Gestionar turno y asistencia del personal (e2e)', () => 
     expect(reintento.body.id).toBe(primerIntento.body.id);
     expect(new Date(primerIntento.body.timestamp).toISOString()).toBe(horaEventoOffline);
 
-    const registros = await request(server).get('/asistencia').expect(200);
+    const registros = await request(server)
+      .get(`${RUTA}/asistencia`)
+      .set('Authorization', auth)
+      .expect(200);
     const coincidencias = registros.body.filter(
       (r: any) => r.idempotencyKey === idempotencyKey,
     );
@@ -242,7 +282,8 @@ describe('CU-LOG-003 · Gestionar turno y asistencia del personal (e2e)', () => 
   it('404 al crear un turno para un empleado inexistente', async () => {
     const { horaInicio, horaFin } = turnoVigente();
     await request(server)
-      .post('/turnos')
+      .post(`${RUTA}/turnos`)
+      .set('Authorization', auth)
       .send({
         empleadoId: randomUUID(),
         eventoId: 'evento-x',
@@ -255,14 +296,49 @@ describe('CU-LOG-003 · Gestionar turno y asistencia del personal (e2e)', () => 
 
   it('404 al solicitar un cambio sobre un turno inexistente', async () => {
     await request(server)
-      .post(`/turnos/${randomUUID()}/solicitudes-cambio`)
+      .post(`${RUTA}/turnos/${randomUUID()}/solicitudes-cambio`)
+      .set('Authorization', auth)
       .send({ motivo: 'Turno inexistente' })
       .expect(404);
   });
 
+  it('rechaza crear un turno con horaFin anterior o igual a horaInicio', async () => {
+    const empleado = await crearEmpleado('horario-invalido');
+    const ahora = Date.now();
+    await request(server)
+      .post(`${RUTA}/turnos`)
+      .set('Authorization', auth)
+      .send({
+        empleadoId: empleado.id,
+        eventoId: 'evento-x',
+        zona: 'zona-x',
+        horaInicio: new Date(ahora).toISOString(),
+        horaFin: new Date(ahora - 60 * 60 * 1000).toISOString(),
+      })
+      .expect(400);
+  });
+
+  it('409 al crear un empleado con una credencial ya usada', async () => {
+    const credencial = `duplicada-${randomUUID()}`;
+    await request(server)
+      .post(`${RUTA}/empleados`)
+      .set('Authorization', auth)
+      .send({ usuarioId: randomUUID(), nombre: 'Primero', rol: 'x', credencial })
+      .expect(201);
+
+    await request(server)
+      .post(`${RUTA}/empleados`)
+      .set('Authorization', auth)
+      .send({ usuarioId: randomUUID(), nombre: 'Segundo', rol: 'x', credencial })
+      .expect(409);
+  });
+
   it('lista los empleados registrados', async () => {
     await crearEmpleado('inventario');
-    const res = await request(server).get('/empleados').expect(200);
+    const res = await request(server)
+      .get(`${RUTA}/empleados`)
+      .set('Authorization', auth)
+      .expect(200);
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBeGreaterThan(0);
   });
@@ -273,19 +349,22 @@ describe('CU-LOG-003 · Gestionar turno y asistencia del personal (e2e)', () => 
     const turno = await crearTurno(solicitante.id, turnoVigente());
 
     await request(server)
-      .post(`/turnos/${turno.id}/solicitudes-cambio`)
+      .post(`${RUTA}/turnos/${turno.id}/solicitudes-cambio`)
+      .set('Authorization', auth)
       .send({ motivo: 'Primera solicitud' })
       .expect(201);
 
     await request(server)
-      .post(`/turnos/${turno.id}/solicitudes-cambio`)
+      .post(`${RUTA}/turnos/${turno.id}/solicitudes-cambio`)
+      .set('Authorization', auth)
       .send({ motivo: 'Segunda solicitud, turno ya en trámite' })
       .expect(400);
   });
 
   it('404 al revisar una solicitud de cambio inexistente', async () => {
     await request(server)
-      .patch(`/solicitudes-cambio/${randomUUID()}/revisar`)
+      .patch(`${RUTA}/solicitudes-cambio/${randomUUID()}/revisar`)
+      .set('Authorization', auth)
       .send({ aprobar: true })
       .expect(404);
   });
@@ -296,17 +375,20 @@ describe('CU-LOG-003 · Gestionar turno y asistencia del personal (e2e)', () => 
     const turno = await crearTurno(solicitante.id, turnoVigente());
 
     const solicitud = await request(server)
-      .post(`/turnos/${turno.id}/solicitudes-cambio`)
+      .post(`${RUTA}/turnos/${turno.id}/solicitudes-cambio`)
+      .set('Authorization', auth)
       .send({ motivo: 'Revisión única' })
       .expect(201);
 
     await request(server)
-      .patch(`/solicitudes-cambio/${solicitud.body.solicitud.id}/revisar`)
+      .patch(`${RUTA}/solicitudes-cambio/${solicitud.body.solicitud.id}/revisar`)
+      .set('Authorization', auth)
       .send({ aprobar: false })
       .expect(200);
 
     await request(server)
-      .patch(`/solicitudes-cambio/${solicitud.body.solicitud.id}/revisar`)
+      .patch(`${RUTA}/solicitudes-cambio/${solicitud.body.solicitud.id}/revisar`)
+      .set('Authorization', auth)
       .send({ aprobar: true })
       .expect(400);
   });
@@ -317,17 +399,20 @@ describe('CU-LOG-003 · Gestionar turno y asistencia del personal (e2e)', () => 
     const idempotencyKey = `offline-salida-${randomUUID()}`;
 
     await request(server)
-      .post('/asistencia/entrada')
+      .post(`${RUTA}/asistencia/entrada`)
+      .set('Authorization', auth)
       .send({ credencial: empleado.credencial })
       .expect(201);
 
     const primerIntento = await request(server)
-      .post('/asistencia/salida')
+      .post(`${RUTA}/asistencia/salida`)
+      .set('Authorization', auth)
       .send({ credencial: empleado.credencial, idempotencyKey })
       .expect(201);
 
     const reintento = await request(server)
-      .post('/asistencia/salida')
+      .post(`${RUTA}/asistencia/salida`)
+      .set('Authorization', auth)
       .send({ credencial: empleado.credencial, idempotencyKey })
       .expect(201);
 
@@ -336,12 +421,13 @@ describe('CU-LOG-003 · Gestionar turno y asistencia del personal (e2e)', () => 
 
   // --- Alterno A: sin reemplazo disponible ---
 
-  it('CU-LOG-003A: informa que no hay reemplazo disponible si nadie más tiene el rol', async () => {
+  it('CU-018A: informa que no hay reemplazo disponible si nadie más tiene el rol', async () => {
     const solicitante = await crearEmpleado(`rol-unico-${randomUUID()}`);
     const turno = await crearTurno(solicitante.id, turnoVigente());
 
     const res = await request(server)
-      .post(`/turnos/${turno.id}/solicitudes-cambio`)
+      .post(`${RUTA}/turnos/${turno.id}/solicitudes-cambio`)
+      .set('Authorization', auth)
       .send({ motivo: 'Sin reemplazo' })
       .expect(201);
 
@@ -351,24 +437,29 @@ describe('CU-LOG-003 · Gestionar turno y asistencia del personal (e2e)', () => 
 
   // --- Alterno B: supervisor rechaza ---
 
-  it('CU-LOG-003B: si el supervisor rechaza, el turno mantiene su asignación original', async () => {
+  it('CU-018B: si el supervisor rechaza, el turno mantiene su asignación original', async () => {
     const solicitante = await crearEmpleado('staff');
     await crearEmpleado('staff');
     const turno = await crearTurno(solicitante.id, turnoVigente());
 
     const solicitud = await request(server)
-      .post(`/turnos/${turno.id}/solicitudes-cambio`)
+      .post(`${RUTA}/turnos/${turno.id}/solicitudes-cambio`)
+      .set('Authorization', auth)
       .send({ motivo: 'Prueba de rechazo' })
       .expect(201);
 
     const revisada = await request(server)
-      .patch(`/solicitudes-cambio/${solicitud.body.solicitud.id}/revisar`)
+      .patch(`${RUTA}/solicitudes-cambio/${solicitud.body.solicitud.id}/revisar`)
+      .set('Authorization', auth)
       .send({ aprobar: false })
       .expect(200);
 
     expect(revisada.body.estado).toBe('RECHAZADA');
 
-    const turnos = await request(server).get('/turnos').expect(200);
+    const turnos = await request(server)
+      .get(`${RUTA}/turnos`)
+      .set('Authorization', auth)
+      .expect(200);
     const turnoActualizado = turnos.body.find((t: any) => t.id === turno.id);
     expect(turnoActualizado.estado).toBe('ASIGNADO');
     expect(turnoActualizado.empleadoId).toBe(solicitante.id);
@@ -376,7 +467,7 @@ describe('CU-LOG-003 · Gestionar turno y asistencia del personal (e2e)', () => 
 
   // --- Excepción C: supera límite de horas ---
 
-  it('CU-LOG-003C: bloquea el cambio si el turno supera el máximo de horas permitidas', async () => {
+  it('CU-018C: bloquea el cambio si el turno supera el máximo de horas permitidas', async () => {
     const solicitante = await crearEmpleado('extendido');
     await crearEmpleado('extendido');
     const ahora = Date.now();
@@ -386,12 +477,14 @@ describe('CU-LOG-003 · Gestionar turno y asistencia del personal (e2e)', () => 
     });
 
     const solicitud = await request(server)
-      .post(`/turnos/${turno.id}/solicitudes-cambio`)
+      .post(`${RUTA}/turnos/${turno.id}/solicitudes-cambio`)
+      .set('Authorization', auth)
       .send({ motivo: 'Turno extra largo' })
       .expect(201);
 
     const revisada = await request(server)
-      .patch(`/solicitudes-cambio/${solicitud.body.solicitud.id}/revisar`)
+      .patch(`${RUTA}/solicitudes-cambio/${solicitud.body.solicitud.id}/revisar`)
+      .set('Authorization', auth)
       .send({ aprobar: true })
       .expect(200);
 
@@ -405,14 +498,16 @@ describe('CU-LOG-003 · Gestionar turno y asistencia del personal (e2e)', () => 
     await crearTurno(empleado.id, turnoVigente());
 
     const entrada = await request(server)
-      .post('/asistencia/entrada')
+      .post(`${RUTA}/asistencia/entrada`)
+      .set('Authorization', auth)
       .send({ credencial: empleado.credencial })
       .expect(201);
     expect(entrada.body.tipo).toBe('ENTRADA');
     expect(entrada.body.anomalia).toBe(false);
 
     const salida = await request(server)
-      .post('/asistencia/salida')
+      .post(`${RUTA}/asistencia/salida`)
+      .set('Authorization', auth)
       .send({ credencial: empleado.credencial })
       .expect(201);
     expect(salida.body.tipo).toBe('SALIDA');
@@ -421,16 +516,17 @@ describe('CU-LOG-003 · Gestionar turno y asistencia del personal (e2e)', () => 
 
   // --- Excepción D: credencial inválida ---
 
-  it('CU-LOG-003D: rechaza el registro de asistencia con credencial inválida', async () => {
+  it('CU-018D: rechaza el registro de asistencia con credencial inválida', async () => {
     await request(server)
-      .post('/asistencia/entrada')
+      .post(`${RUTA}/asistencia/entrada`)
+      .set('Authorization', auth)
       .send({ credencial: `credencial-inexistente-${randomUUID()}` })
       .expect(401);
   });
 
   // --- Excepción E: empleado sin turno vigente ---
 
-  it('CU-LOG-003E: marca anomalía si el empleado no tiene turno vigente', async () => {
+  it('CU-018E: marca anomalía si el empleado no tiene turno vigente', async () => {
     const empleado = await crearEmpleado();
     // Turno ya finalizado, no vigente.
     const ahora = Date.now();
@@ -440,7 +536,8 @@ describe('CU-LOG-003 · Gestionar turno y asistencia del personal (e2e)', () => 
     });
 
     const entrada = await request(server)
-      .post('/asistencia/entrada')
+      .post(`${RUTA}/asistencia/entrada`)
+      .set('Authorization', auth)
       .send({ credencial: empleado.credencial })
       .expect(201);
 
@@ -450,17 +547,19 @@ describe('CU-LOG-003 · Gestionar turno y asistencia del personal (e2e)', () => 
 
   // --- Excepción F: registro duplicado ---
 
-  it('CU-LOG-003F: marca anomalía en una entrada duplicada sin salida previa', async () => {
+  it('CU-018F: marca anomalía en una entrada duplicada sin salida previa', async () => {
     const empleado = await crearEmpleado();
     await crearTurno(empleado.id, turnoVigente());
 
     await request(server)
-      .post('/asistencia/entrada')
+      .post(`${RUTA}/asistencia/entrada`)
+      .set('Authorization', auth)
       .send({ credencial: empleado.credencial })
       .expect(201);
 
     const segundaEntrada = await request(server)
-      .post('/asistencia/entrada')
+      .post(`${RUTA}/asistencia/entrada`)
+      .set('Authorization', auth)
       .send({ credencial: empleado.credencial })
       .expect(201);
 
@@ -473,11 +572,75 @@ describe('CU-LOG-003 · Gestionar turno y asistencia del personal (e2e)', () => 
     await crearTurno(empleado.id, turnoVigente());
 
     const salida = await request(server)
-      .post('/asistencia/salida')
+      .post(`${RUTA}/asistencia/salida`)
+      .set('Authorization', auth)
       .send({ credencial: empleado.credencial })
       .expect(201);
 
     expect(salida.body.anomalia).toBe(true);
     expect(salida.body.motivoAnomalia).toMatch(/sin una entrada previa/i);
+  });
+
+  // --- Asistencia no debe cruzarse entre eventos simultáneos ---
+
+  it('la salida de un evento no cierra la entrada abierta de otro evento simultáneo', async () => {
+    const empleado = await crearEmpleado();
+    const { horaInicio, horaFin } = turnoVigente();
+    const turnoEventoA = await crearTurno(empleado.id, {
+      horaInicio,
+      horaFin,
+      eventoId: 'evento-A',
+      zona: 'zona-A',
+    });
+    const turnoEventoB = await crearTurno(empleado.id, {
+      horaInicio,
+      horaFin,
+      eventoId: 'evento-B',
+      zona: 'zona-B',
+    });
+
+    // El mismo empleado entra a los dos eventos que corren en simultáneo.
+    const entradaA = await request(server)
+      .post(`${RUTA}/asistencia/entrada`)
+      .set('Authorization', auth)
+      .send({ credencial: empleado.credencial, eventoId: 'evento-A' })
+      .expect(201);
+    expect(entradaA.body.anomalia).toBe(false);
+    expect(entradaA.body.turnoId).toBe(turnoEventoA.id);
+
+    const entradaB = await request(server)
+      .post(`${RUTA}/asistencia/entrada`)
+      .set('Authorization', auth)
+      .send({ credencial: empleado.credencial, eventoId: 'evento-B' })
+      .expect(201);
+    expect(entradaB.body.anomalia).toBe(false);
+    expect(entradaB.body.turnoId).toBe(turnoEventoB.id);
+
+    // Marca salida del evento A: debe cerrar la entrada de A, no la de B.
+    const salidaA = await request(server)
+      .post(`${RUTA}/asistencia/salida`)
+      .set('Authorization', auth)
+      .send({ credencial: empleado.credencial, eventoId: 'evento-A' })
+      .expect(201);
+    expect(salidaA.body.anomalia).toBeFalsy();
+    expect(salidaA.body.turnoId).toBe(turnoEventoA.id);
+
+    // El evento B sigue con la entrada abierta: otra salida de A debería
+    // fallar por "sin entrada previa" (la de A ya se cerró), mientras que
+    // B todavía puede cerrarse con su propia salida.
+    const segundaSalidaA = await request(server)
+      .post(`${RUTA}/asistencia/salida`)
+      .set('Authorization', auth)
+      .send({ credencial: empleado.credencial, eventoId: 'evento-A' })
+      .expect(201);
+    expect(segundaSalidaA.body.anomalia).toBe(true);
+
+    const salidaB = await request(server)
+      .post(`${RUTA}/asistencia/salida`)
+      .set('Authorization', auth)
+      .send({ credencial: empleado.credencial, eventoId: 'evento-B' })
+      .expect(201);
+    expect(salidaB.body.anomalia).toBeFalsy();
+    expect(salidaB.body.turnoId).toBe(turnoEventoB.id);
   });
 });

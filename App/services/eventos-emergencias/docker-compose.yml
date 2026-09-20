@@ -1,22 +1,36 @@
+# Este servicio ya NO levanta su propio Postgres/RabbitMQ: se conecta a la
+# infraestructura COMPARTIDA de todo el equipo en `App/infra/docker-compose.yml`
+# (una sola instancia por pieza, "vista física" del SAD §11 — no una réplica
+# aislada por microservicio). Antes de levantar esto, arranca esa infra:
+#
+#   docker compose -f App/infra/docker-compose.yml up -d
+#   docker compose -f App/infra/docker-compose.yml exec postgres \
+#     psql -U hexacore -d eventos_emergencias   # (una vez) confirmar que existe
+#
+# `host.docker.internal` es cómo un contenedor llega a los puertos publicados
+# por OTRO docker-compose corriendo en el mismo Mac (funciona en Docker
+# Desktop sin configurar redes a mano).
 services:
-  db:
-    image: postgres:16-alpine
+  app:
+    build: .
     restart: unless-stopped
+    ports:
+      - '3016:3016'
     environment:
-      POSTGRES_USER: hexacore
-      POSTGRES_PASSWORD: hexacore
-      POSTGRES_DB: eventos_emergencias
-    ports:
-      - '5433:5432'
+      PORT: 3016
+      DB_HOST: host.docker.internal
+      DB_PORT: 5432
+      DB_USER: hexacore
+      DB_PASSWORD: hexacore
+      DB_NAME: eventos_emergencias
+      RABBITMQ_URL: amqp://hexacore:hexacore@host.docker.internal:5672
+      REDIS_HOST: host.docker.internal
+      REDIS_PUERTO: 6380
+      AUTH_JWT_EMISOR: hexacore-administracion
+      # La clave de desarrollo no viaja en la imagen (no es código del
+      # servicio): se monta de solo lectura desde la infra compartida.
+      AUTH_JWT_CLAVE_PUBLICA_ARCHIVO: /claves/jwt-publica.pem
     volumes:
-      - eventos_emergencias_db:/var/lib/postgresql/data
-
-  rabbitmq:
-    image: rabbitmq:3-management-alpine
-    restart: unless-stopped
-    ports:
-      - '5672:5672'
-      - '15672:15672' # panel de administración: http://localhost:15672 (guest/guest)
-
-volumes:
-  eventos_emergencias_db:
+      - ../../infra/claves-desarrollo/jwt-publica.pem:/claves/jwt-publica.pem:ro
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
