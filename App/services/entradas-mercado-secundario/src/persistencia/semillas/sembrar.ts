@@ -2,7 +2,9 @@ import fuenteDatos from '../data-source';
 import { Entrada } from '../entidades/entrada.entity';
 import { EventoReferencia } from '../entidades/evento-referencia.entity';
 import { HistorialPropietario, MotivoCambioPropietario } from '../entidades/historial-propietario.entity';
-import { ENTRADAS, EVENTOS, USUARIOS } from './datos-demo';
+import { CodigoPromocional } from '../entidades/codigo-promocional.entity';
+import { LocalidadEvento } from '../entidades/localidad-evento.entity';
+import { ENTRADAS, EVENTOS, LOCALIDADES_EVENTO, PROMOCIONES, USUARIOS } from './datos-demo';
 
 /**
  * Siembra los datos de desarrollo del CU-006.
@@ -34,15 +36,26 @@ async function sembrar(): Promise<void> {
       // rol de la aplicación no debe tener permiso de TRUNCATE sobre la tabla.
       await gestor.query(`
         TRUNCATE TABLE
+          "cancelaciones",
+          "ingresos",
+          "usos_promocion",
+          "codigos_promocionales",
           "historial_propietarios",
           "transacciones_reventa",
           "publicaciones_reventa",
           "entradas",
+          "compras",
+          "localidades_evento",
           "eventos_referencia"
         RESTART IDENTITY CASCADE
       `);
 
       await gestor.insert(EventoReferencia, EVENTOS);
+      await gestor.insert(LocalidadEvento, LOCALIDADES_EVENTO);
+      await gestor.insert(
+        CodigoPromocional,
+        PROMOCIONES.map(({ paraQue: _paraQue, ...promocion }) => promocion),
+      );
 
       for (const demo of ENTRADAS) {
         await gestor.insert(Entrada, {
@@ -73,7 +86,9 @@ async function sembrar(): Promise<void> {
       }
     });
 
-    console.log(`\n${EVENTOS.length} eventos y ${ENTRADAS.length} entradas sembradas.\n`);
+    console.log(
+      `\n${EVENTOS.length} eventos, ${LOCALIDADES_EVENTO.length} localidades y ${ENTRADAS.length} entradas sembradas.\n`,
+    );
     console.log('Usuarios de demostración:');
     for (const [clave, usuario] of Object.entries(USUARIOS)) {
       console.log(`  ${clave.padEnd(6)} ${usuario.id}  ${usuario.nombre}`);
@@ -81,6 +96,10 @@ async function sembrar(): Promise<void> {
     console.log('\nEntradas y para qué sirve cada una:');
     for (const entrada of ENTRADAS) {
       console.log(`  ${entrada.numeroTicket}  ${entrada.estado.padEnd(10)} ${entrada.paraQue}`);
+    }
+    console.log('\nCódigos promocionales (CU-004):');
+    for (const promocion of PROMOCIONES) {
+      console.log(`  ${promocion.codigo.padEnd(8)} ${String(promocion.porcentaje).padStart(2)} %  ${promocion.paraQue}`);
     }
     console.log('');
   } finally {

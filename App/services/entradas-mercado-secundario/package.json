@@ -78,6 +78,9 @@
       "!persistencia/semillas/**",
       "!persistencia/data-source.ts",
       "!reventa/reventa.controller.ts",
+      "!catalogo/cartelera.controller.ts",
+      "!venta/compras.controller.ts",
+      "!venta/ingresos.controller.ts",
       "!reventa/concurrencia/redis.provider.ts",
       "!herramientas/**"
     ],

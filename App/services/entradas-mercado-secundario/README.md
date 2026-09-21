@@ -1,6 +1,7 @@
 # Servicio de Entradas y Mercado Secundario
 
-SAD §9 (vista de componentes), CU-001–CU-006. **NestJS** (ADR-09) + **PostgreSQL** (ADR-01, ADR-06).
+SAD §9 (vista de componentes), CU-001–CU-006, todos implementados. **NestJS** (ADR-09) +
+**PostgreSQL** (ADR-01, ADR-06).
 
 **Responsabilidad:** consulta de eventos, compra de entradas, validación de QR en el ingreso,
 cancelaciones/devoluciones, promociones (CU-001–005) y reventa segura de entradas en el mercado
@@ -51,7 +52,88 @@ Aun así verifica el token por su cuenta (RNF-06, DECISIONES.md §11).
 | 8 | Expiración de publicaciones — alterno CU-006D | ✅ |
 | 9 | Pruebas (incl. RNF-01: 50 compras concurrentes) y contrato en `App/shared/` | ✅ |
 
-CU-001–005 son de Daniel y se añadirán como módulos hermanos sobre esta misma base de datos.
+CU-001–005 son de Daniel y llegan como módulos hermanos sobre esta misma base de datos:
+
+| CU | Alcance | Módulo | Estado |
+|---|---|---|---|
+| CU-001 | Compra de entradas: reserva con plazo, pago, emisión de QR, correo | `venta/` | ✅ |
+| CU-002 | Validar QR en el ingreso, aforo, operación sin conexión | `venta/` | ✅ |
+| CU-003 | Cancelaciones y devoluciones, reembolso total o parcial | `venta/` | ✅ |
+| CU-004 | Códigos promocionales con límite de usos | `venta/` | ✅ |
+| CU-005 | Consultar evento: cartelera con filtros, detalle con localidades y disponibilidad | `catalogo/` | ✅ |
+
+## Venta primaria (CU-001 a CU-004)
+
+Módulo `src/venta/`. Exige sesión: **Cliente** para comprar y cancelar, **Personal** (o
+Administrador) para validar QR. Decisiones en DECISIONES.md §13.
+
+| Método | Ruta | CU |
+|---|---|---|
+| `POST` | `/compras` | CU-001 pasos 3-4 — reservar localidad y cantidad; CU-001A sin cupo |
+| `GET` | `/compras` | Mis compras |
+| `GET` | `/compras/:id` | Detalle con entradas y QR (solo las que siguen siendo del usuario) |
+| `POST` | `/compras/:id/pagar` | CU-001 pasos 5-8 — cobrar y emitir; CU-001B vencida, CU-001C rechazado |
+| `PUT` | `/compras/:id/cupon` | CU-004 — aplicar código; CU-004A/C/D |
+| `DELETE` | `/compras/:id/cupon` | CU-004B — quitar el código |
+| `POST` | `/compras/:id/cancelacion/cotizacion` | CU-003 pasos 2-4 — cuánto se devolvería; CU-003A/B/D |
+| `POST` | `/compras/:id/cancelaciones` | CU-003 pasos 5-9 — reembolsar y anular; CU-003C |
+| `POST` | `/ingresos` | CU-002 — validar QR; CU-002A/B/D |
+| `GET` | `/ingresos/eventos/:eventoId/cache` | CU-002E — hashes de los QR válidos para operar sin red |
+| `POST` | `/ingresos/sincronizacion` | CU-002E — subir lo escaneado sin conexión |
+
+Tokens de prueba de la pasarela simulada: `tok_ok…` aprueba, `tok_rechazo…` rechaza (CU-001C),
+`tok_noreemb…` aprueba el cobro pero rechaza su reembolso (CU-003C), `tok_timeout…`/`tok_error…`
+simulan la pasarela sin respuesta.
+
+La semilla trae códigos para cada camino del CU-004 (`HEXA10`, `ROCK20`, `VIP15`, `ULTIMO` agotado,
+`VERANO5` vencido), la Gala con el aforo lleno (CU-002B), un evento a 4 días para el reembolso
+parcial (CU-003A) y otro a menos de un día (fuera de plazo).
+
+### Evidencia contra la infraestructura real
+
+Recorrido de extremo a extremo con Postgres, Redis, RabbitMQ y la pasarela simulada levantados; los
+resultados que importan:
+
+```
+CU-001   reserva → cupón → pago rechazado (CU-001C) → pago aprobado → 2 QR · doble clic: no emite otra vez
+CU-001A  pedir 4 con 3 cupos → 409 "Solo quedan 3"
+CU-001B  reserva vencida → 409, reservadas en la localidad 3 → 0
+CU-004   20 compras aplican a la vez un cupón de 5 usos → 5 aceptadas, 15 CU-004D, usos = 5
+CU-002   10 puertas escanean el mismo QR a la vez → 1 autorizado, 9 CU-002D, 1 registro de ingreso
+CU-002E  sincronizar [válido, repetido, ya usado] → 1 registrado, 2 conflictos
+CU-003   cancelar 2 de 3 a 4 días del evento → 50 %, compra PARCIALMENTE_CANCELADA, QR anulado no entra
+CU-003C  reembolso rechazado → entradas vuelven a VALIDA, compra sigue PAGADA
+```
+
+## Cartelera de eventos (CU-005)
+
+Módulo `src/catalogo/`. **Público**: no exige sesión, y solo admite lectura (DECISIONES.md §12).
+
+| Método | Ruta | CU-005 |
+|---|---|---|
+| `GET` | `/cartelera` | Pasos 1-5, CU-005A y CU-005C — listado con filtros |
+| `GET` | `/cartelera/filtros` | Categorías y ciudades disponibles, para los desplegables |
+| `GET` | `/cartelera/:id` | Pasos 6-8 — horarios, localidades, precios y disponibilidad |
+
+Filtros del listado: `categoria`, `ciudad` (ambos sin distinguir mayúsculas), `artista` (coincidencia
+parcial), `desde`/`hasta` (fecha en hora de Colombia, o instante ISO 8601), `orden` (`fecha` por
+defecto, o `relevancia` = lo más vendido primero), `incluirPasados`, `limite` y `desplazamiento`.
+
+- Solo lista eventos `PUBLICADO` y, salvo `incluirPasados=true`, futuros.
+- Sin resultados, la respuesta trae `mensaje: "Ningún evento encontrado"` (CU-005C): el texto lo
+  decide el servidor, no el cliente (RNF-14).
+- Un rango `desde` > `hasta` es un **400** `RANGO_FECHAS_INVALIDO`, no una lista vacía.
+- `precioDesde` es el de la localidad más barata **con cupo**; `agotado` indica que ninguna tiene.
+- Las respuestas llevan `Cache-Control: public` (30 s el listado, 10 s el detalle).
+
+```bash
+curl "http://localhost:8080/api/v1/cartelera?ciudad=medellín&orden=relevancia"
+curl "http://localhost:8080/api/v1/cartelera/e0000007-0000-4000-8000-000000000007"
+```
+
+La semilla trae 11 eventos: los 4 del CU-006 más 7 para la cartelera, entre ellos uno con su
+localidad más barata agotada (Clásico), uno agotado del todo (Salsa), un borrador y un cancelado —
+estos dos no deben verse nunca.
 
 ## Componentes internos (SAD §9)
 
@@ -80,7 +162,12 @@ la comparten los seis casos de uso: CU-001 escribe en ella y CU-002 lee de ella.
 | `publicaciones_reventa` | SAD §12 (+ 3 campos) | La oferta en el mercado |
 | `transacciones_reventa` | **nueva** | El movimiento de dinero de cada checkout |
 | `historial_propietarios` | **nueva** | Cadena auditable de dueños, de solo inserción |
-| `eventos_referencia` | **nueva** | Copia local de los datos del Evento que hacen falta |
+| `eventos_referencia` | **nueva** | Copia local de los datos del Evento que hacen falta (reventa y cartelera) |
+| `localidades_evento` | **nueva** (CU-005) | Zonas de cada evento con precio, aforo, vendidas y reservadas |
+| `compras` | **nueva** (CU-001) | La compra: reserva, importes, estado del pago |
+| `codigos_promocionales` / `usos_promocion` | **nuevas** (CU-004) | Cupones y quién los usó |
+| `ingresos` | **nueva** (CU-002) | Hora y puerta de cada ingreso |
+| `cancelaciones` | **nueva** (CU-003) | Solicitudes de cancelación y su reembolso |
 
 Las tres tablas nuevas y los campos añadidos están justificados en [`DECISIONES.md`](DECISIONES.md).
 

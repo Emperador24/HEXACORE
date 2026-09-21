@@ -36,7 +36,8 @@ async function bootstrap(): Promise<void> {
       new DocumentBuilder()
         .setTitle('Entradas y Mercado Secundario')
         .setDescription(
-          'CU-006 — Gestión del Mercado Secundario de Entradas. ' +
+          'CU-001–004 — Venta primaria, CU-005 — Consultar evento (cartelera pública) y ' +
+            'CU-006 — Gestión del Mercado Secundario de Entradas. ' +
             'En producción este servicio se consume a través del API Gateway (ADR-02), nunca directo.',
         )
         .setVersion('0.1.0')
