@@ -126,8 +126,12 @@ jobs:
         working-directory: App/infra
         env:
           HEXACORE_REGISTRO: ghcr.io/emperador24
-          HEXACORE_ETIQUETA: ${{ github.ref_name }}
         run: |
+          # Una rama con barra (`feature/samuel`) no es una etiqueta de imagen
+          # válida: Docker no admite `/` ahí, y la acción de metadatos la
+          # convierte en guion al publicar. Aquí se hace la misma conversión.
+          export HEXACORE_ETIQUETA="$(echo '${{ github.ref_name }}' | tr '/' '-')"
+          echo "Desplegando la etiqueta $HEXACORE_ETIQUETA"
           docker compose -f docker-compose.yml -f docker-compose.registro.yml \
             --profile servicios up -d
 
