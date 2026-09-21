@@ -1,107 +1,121 @@
-import { Injectable, computed, signal } from '@angular/core';
-import { Establecimiento, EstadoPedido, ItemCarrito, Pedido, ProductoMenu } from './models';
+import { catchError, of, throwError } from 'rxjs';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { AuthService, ErrorCuenta } from './auth.service';
+import { Servidor } from './servidor';
 
-const ESTABLECIMIENTOS: Establecimiento[] = [
-  { id: 'est-1', nombre: 'Food Truck La Sazón', descripcion: 'Comida rápida' },
-  { id: 'est-2', nombre: 'Cafetería Central', descripcion: 'Café y repostería' },
-  { id: 'est-3', nombre: 'Cervecería del Parche', descripcion: 'Cerveza artesanal y piqueos' }
-];
+export interface EstablecimientoPedido {
+  id: string;
+  eventoId: string;
+  nombre: string;
+  estado: string;
+  puntoEntrega: string;
+}
+export interface ProductoPedido {
+  id: string;
+  establecimientoId: string;
+  nombre: string;
+  descripcion: string | null;
+  precio: string;
+  activo: boolean;
+  cantidadInventario: number;
+}
+export interface CrearCheckout {
+  eventoId: string;
+  establecimientoId: string;
+  metodoEntrega: string;
+  productos: { productoId: string; cantidad: number }[];
+}
+export interface CheckoutPedido {
+  id: string;
+  establecimientoId: string;
+  estado: 'PENDIENTE_PAGO';
+  metodoEntrega: string;
+  moneda: string;
+  total: string;
+  creadoEn: string;
+  expiraEn: string;
+  codigoQr: null;
+  inventarioReservado: true;
+  detalles: { productoId: string; nombreProducto: string; precioUnitario: string; cantidad: number }[];
+}
 
-const MENU: ProductoMenu[] = [
-  { id: 'prod-1', establecimientoId: 'est-1', nombre: 'Hamburguesa', precio: 25000, disponible: true },
-  { id: 'prod-2', establecimientoId: 'est-1', nombre: 'Perro caliente', precio: 18000, disponible: true },
-  { id: 'prod-3', establecimientoId: 'est-1', nombre: 'Papas fritas', precio: 12000, disponible: true },
-  { id: 'prod-4', establecimientoId: 'est-1', nombre: 'Gaseosa', precio: 6000, disponible: true },
-  { id: 'prod-5', establecimientoId: 'est-2', nombre: 'Café', precio: 8000, disponible: true },
-  { id: 'prod-6', establecimientoId: 'est-2', nombre: 'Croissant', precio: 9000, disponible: true },
-  { id: 'prod-7', establecimientoId: 'est-2', nombre: 'Jugo natural', precio: 7000, disponible: false },
-  { id: 'prod-8', establecimientoId: 'est-3', nombre: 'Cerveza artesanal', precio: 16000, disponible: true },
-  { id: 'prod-9', establecimientoId: 'est-3', nombre: 'Nachos', precio: 20000, disponible: true }
-];
+export interface PagoPedido {
+  pedidoId: string;
+  transaccionId: string;
+  estadoPago: 'PENDIENTE' | 'APROBADA' | 'RECHAZADA' | 'FALLIDA';
+  estadoPedido: string;
+  monto: string;
+  moneda: string;
+  referenciaPasarela: string | null;
+  codigo: string;
+  compraConfirmada: boolean;
+  codigoQr: string | null;
+}
 
-/**
- * Pedidos de alimentos del cliente (CU-011..CU-015): restaurantes, menú,
- * carrito y pedidos ya hechos — mismo dominio que PedidosScreen/
- * MenuRestauranteScreen en app-movil-cliente. El carrito se hoistea aquí (no
- * en un componente) por la misma razón que allá: debe sobrevivir la
- * navegación Restaurantes → Menú → Pasarela de pago.
- */
+/** UUID v4 también en HTTP de la red local, donde randomUUID puede no estar disponible. */
+export function clavePago(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  bytes[6] = (bytes[6] & 15) | 64;
+  bytes[8] = (bytes[8] & 63) | 128;
+  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
+/** Catálogo y checkout reales de CU-011; sesión y transporte compartidos con el portal. */
 @Injectable({ providedIn: 'root' })
 export class PedidosService {
-  readonly establecimientos = ESTABLECIMIENTOS;
-  readonly menu = MENU;
+  private readonly http = inject(HttpClient);
+  private readonly auth = inject(AuthService);
 
-  private readonly _carrito = signal<ItemCarrito[]>([]);
-  readonly carrito = this._carrito.asReadonly();
-  readonly totalCarrito = computed(() => this._carrito().reduce((acc, i) => acc + i.producto.precio * i.cantidad, 0));
-
-  private readonly _pedidos = signal<Pedido[]>([
-    {
-      id: 'ped-1',
-      establecimiento: 'Food Truck La Sazón',
-      items: ['2x Hamburguesa', '1x Gaseosa'],
-      total: 58000,
-      estado: EstadoPedido.EN_PREPARACION,
-      codigoQr: 'HXC-PED-000045'
-    },
-    {
-      id: 'ped-2',
-      establecimiento: 'Cafetería Central',
-      items: ['1x Café', '1x Croissant'],
-      total: 21000,
-      estado: EstadoPedido.ENTREGADO,
-      codigoQr: 'HXC-PED-000039'
-    }
-  ]);
-
-  readonly pedidos = this._pedidos.asReadonly();
-
-  establecimiento(id: string): Establecimiento | undefined {
-    return this.establecimientos.find((e) => e.id === id);
+  establecimientos(eventoId: string): Promise<EstablecimientoPedido[]> {
+    return this.auth.conAcceso((headers) => this.http.get<EstablecimientoPedido[]>(
+      `${Servidor.api}/pedidos/eventos/${encodeURIComponent(eventoId)}/establecimientos`, { headers }));
   }
 
-  menuDe(establecimientoId: string): ProductoMenu[] {
-    return this.menu.filter((p) => p.establecimientoId === establecimientoId);
+  productos(establecimientoId: string): Promise<ProductoPedido[]> {
+    return this.auth.conAcceso((headers) => this.http.get<ProductoPedido[]>(
+      `${Servidor.api}/pedidos/establecimientos/${encodeURIComponent(establecimientoId)}/productos`, { headers }));
   }
 
-  agregarAlCarrito(producto: ProductoMenu): void {
-    this._carrito.update((carrito) => {
-      const i = carrito.findIndex((it) => it.producto.id === producto.id);
-      if (i >= 0) {
-        const copia = [...carrito];
-        copia[i] = { ...copia[i], cantidad: copia[i].cantidad + 1 };
-        return copia;
-      }
-      return [...carrito, { producto, cantidad: 1 }];
-    });
+  pagar(pedidoId: string, clave: string): Promise<PagoPedido> {
+    return this.auth.conAcceso((headers) => this.http.post<PagoPedido>(
+      `${Servidor.api}/pedidos/${encodeURIComponent(pedidoId)}/pagos`,
+      { tokenPago: 'tok_ok_pedidos_web' },
+      { headers: headers.set('Idempotency-Key', clave) }
+    ).pipe(catchError((error: unknown) => {
+      // Conservar el resultado incierto explícito sin alterar renovación de sesión ni otros errores.
+      if (error instanceof HttpErrorResponse && [502, 504].includes(error.status) &&
+          error.error?.pedidoId === pedidoId && error.error?.transaccionId === clave &&
+          error.error?.estadoPago === 'FALLIDA') return of(error.error as PagoPedido);
+      return throwError(() => error);
+    })));
   }
 
-  quitarDelCarrito(producto: ProductoMenu): void {
-    this._carrito.update((carrito) => {
-      const i = carrito.findIndex((it) => it.producto.id === producto.id);
-      if (i < 0) return carrito;
-      const actual = carrito[i];
-      if (actual.cantidad <= 1) return carrito.filter((_, idx) => idx !== i);
-      const copia = [...carrito];
-      copia[i] = { ...actual, cantidad: actual.cantidad - 1 };
-      return copia;
-    });
-  }
-
-  /** Confirma el pedido con lo que haya en el carrito y lo vacía. */
-  confirmarPedido(): void {
-    const carrito = this._carrito();
-    if (carrito.length === 0) return;
-    const establecimiento = this.establecimiento(carrito[0].producto.establecimientoId)?.nombre ?? '';
-    const nuevo: Pedido = {
-      id: `ped-${Date.now()}`,
-      establecimiento,
-      items: carrito.map((i) => `${i.cantidad}x ${i.producto.nombre}`),
-      total: this.totalCarrito(),
-      estado: EstadoPedido.EN_PREPARACION,
-      codigoQr: `HXC-PED-${Math.floor(100000 + Math.random() * 900000)}`
+  crearCheckout(datos: CrearCheckout): Promise<CheckoutPedido> {
+    // Proyección explícita: identidad, importes y vencimiento los decide el backend.
+    const body: CrearCheckout = {
+      eventoId: datos.eventoId,
+      establecimientoId: datos.establecimientoId,
+      metodoEntrega: datos.metodoEntrega.trim(),
+      productos: datos.productos.map(({ productoId, cantidad }) => ({ productoId, cantidad }))
     };
-    this._pedidos.update((lista) => [nuevo, ...lista]);
-    this._carrito.set([]);
+    return this.auth.conAcceso((headers) => this.http.post<CheckoutPedido>(
+      `${Servidor.api}/pedidos/checkout`, body, { headers }));
   }
+}
+
+export function mensajePedidos(error: unknown): string {
+  if (!(error instanceof ErrorCuenta)) return 'No se pudo completar la solicitud. Intenta nuevamente.';
+  const mensajes: Record<string, string> = {
+    INVENTARIO_NO_PREPARADO: 'El establecimiento todavía no está listo para recibir pedidos.',
+    INVENTARIO_INSUFICIENTE: 'No hay suficientes unidades disponibles. Revisa las cantidades.',
+    PRODUCTO_NO_ENCONTRADO: 'Uno de los productos ya no está disponible.',
+    PRODUCTO_INACTIVO: 'Uno de los productos ya no está activo.',
+    ESTABLECIMIENTO_NO_ENCONTRADO: 'No se encontró el establecimiento.',
+    EVENTO_NO_ENCONTRADO: 'No se encontró el evento.',
+    EVENTO_NO_DISPONIBLE: 'El evento no está disponible para pedidos.',
+    ESTABLECIMIENTO_NO_DISPONIBLE: 'El establecimiento no está disponible para pedidos.'
+  };
+  return mensajes[error.codigo] ?? error.message;
 }

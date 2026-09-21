@@ -1,59 +1,107 @@
-import { Component, computed, inject } from '@angular/core';
-import { DecimalPipe } from '@angular/common';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { QrPedidoComponent } from './qr-pedido.component';
+import { Component, computed, inject, signal } from '@angular/core';
+import { DatePipe, DecimalPipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { PedidosService } from '../core/pedidos.service';
-import { PagoService } from '../core/pago.service';
-import { ProductoMenu } from '../core/models';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { PagoPedido, clavePago, CheckoutPedido, EstablecimientoPedido, PedidosService, ProductoPedido, mensajePedidos } from '../core/pedidos.service';
+import { ErrorCuenta } from '../core/auth.service';
 
-/**
- * Menú de un establecimiento (CU-011): el cliente arma su pedido aquí y
- * pasa a la pasarela de pago cuando termina — mismo flujo que
- * MenuRestauranteScreen en app-movil-cliente.
- */
 @Component({
   selector: 'app-menu-establecimiento',
   standalone: true,
-  imports: [DecimalPipe, RouterLink, MatCardModule, MatButtonModule, MatIconModule],
+  imports: [QrPedidoComponent, DatePipe, DecimalPipe, FormsModule, RouterLink, MatCardModule, MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule],
   templateUrl: './menu-establecimiento.component.html',
   styleUrl: './menu-establecimiento.component.scss'
 })
 export class MenuEstablecimientoComponent {
   private readonly route = inject(ActivatedRoute);
-  private readonly router = inject(Router);
-  private readonly pedidosService = inject(PedidosService);
-  private readonly pagoService = inject(PagoService);
+  private readonly servicio = inject(PedidosService);
+  private readonly establecimientoId: string = this.route.snapshot.params['id'];
+  readonly eventoId = this.route.snapshot.queryParamMap.get('eventoId') ?? '';
+  readonly establecimiento = signal<EstablecimientoPedido | undefined>(undefined);
+  readonly productos = signal<ProductoPedido[]>([]);
+  readonly cantidades = signal<Record<string, number>>({});
+  readonly cargando = signal(false);
+  readonly enviando = signal(false);
+  readonly error = signal('');
+  readonly resultadoIncierto = signal(false);
+  readonly checkout = signal<CheckoutPedido | null>(null);
+  readonly unidades = computed(() => Object.values(this.cantidades()).reduce((a, b) => a + b, 0));
+  readonly pago = signal<PagoPedido | null>(null);
+  readonly pagando = signal(false);
+  readonly mensajePago = signal('');
+  private claveIntento: string | null = null;
+  metodoEntrega = '';
 
-  private readonly establecimientoId = this.route.snapshot.params['id'];
-  readonly establecimiento = computed(() => this.pedidosService.establecimiento(this.establecimientoId));
-  readonly productos = this.pedidosService.menuDe(this.establecimientoId);
-  readonly carrito = this.pedidosService.carrito;
-  readonly total = this.pedidosService.totalCarrito;
-
-  cantidadDe(producto: ProductoMenu): number {
-    return this.carrito().find((i) => i.producto.id === producto.id)?.cantidad ?? 0;
+  async pagar(): Promise<void> {
+    const pedido = this.checkout();
+    if (!pedido || this.pagando() || this.pago()?.compraConfirmada) return;
+    this.pagando.set(true);
+    this.mensajePago.set('');
+    try {
+      this.claveIntento ??= clavePago();
+      const resultado = await this.servicio.pagar(pedido.id, this.claveIntento);
+      this.pago.set(resultado);
+      if (resultado.estadoPago === 'RECHAZADA') {
+        this.mensajePago.set('Pago rechazado. Puedes intentar nuevamente.');
+        // Solo un rechazo definitivo permite iniciar otro intento lógico.
+        this.claveIntento = null;
+      } else if (!resultado.compraConfirmada) {
+        this.mensajePago.set('El pago está pendiente de resolución. Puedes consultar nuevamente el mismo intento.');
+      }
+    } catch (error) {
+      // Mantener la clave ante timeout o fallo de confirmación: nunca iniciar otro cobro a ciegas.
+      this.mensajePago.set(`${mensajePedidos(error)} No se confirmó la compra; reintentar usará el mismo intento de pago.`);
+    } finally { this.pagando.set(false); }
   }
 
-  agregar(producto: ProductoMenu): void {
-    this.pedidosService.agregarAlCarrito(producto);
+  constructor() { void this.cargar(); }
+
+  async cargar(): Promise<void> {
+    if (this.cargando()) return;
+    if (!this.eventoId) { this.error.set('Selecciona primero el evento y el establecimiento desde Pedidos.'); return; }
+    this.cargando.set(true);
+    this.error.set('');
+    try {
+      const establecimientos = await this.servicio.establecimientos(this.eventoId);
+      const establecimiento = establecimientos.find((e) => e.id === this.establecimientoId);
+      if (!establecimiento) { this.error.set('El establecimiento ya no está disponible para este evento.'); return; }
+      this.establecimiento.set(establecimiento);
+      this.productos.set(await this.servicio.productos(this.establecimientoId));
+    } catch (error) { this.error.set(mensajePedidos(error)); }
+    finally { this.cargando.set(false); }
   }
 
-  quitar(producto: ProductoMenu): void {
-    this.pedidosService.quitarDelCarrito(producto);
+  cantidadDe(producto: ProductoPedido): number { return this.cantidades()[producto.id] ?? 0; }
+
+  cambiar(producto: ProductoPedido, incremento: number): void {
+    if (this.enviando() || this.checkout() || this.resultadoIncierto()) return;
+    this.cantidades.update((actual) => ({ ...actual, [producto.id]: Math.max(0, (actual[producto.id] ?? 0) + incremento) }));
   }
 
-  continuarAlPago(): void {
-    const establecimiento = this.establecimiento();
-    if (!establecimiento || this.carrito().length === 0) return;
-
-    this.pagoService.registrar({
-      titulo: `Pedido · ${establecimiento.nombre}`,
-      lineas: this.carrito().map((i) => ({ etiqueta: i.producto.nombre, cantidad: i.cantidad, precioUnitario: i.producto.precio })),
-      rutaDestino: '/pedidos',
-      onConfirmar: () => this.pedidosService.confirmarPedido()
-    });
-    this.router.navigateByUrl('/pago');
+  async iniciarCheckout(): Promise<void> {
+    if (this.enviando() || this.checkout() || this.resultadoIncierto() || !this.unidades() || !this.metodoEntrega.trim()) return;
+    this.enviando.set(true);
+    this.error.set('');
+    try {
+      this.checkout.set(await this.servicio.crearCheckout({
+        eventoId: this.eventoId, establecimientoId: this.establecimientoId, metodoEntrega: this.metodoEntrega,
+        productos: Object.entries(this.cantidades()).filter(([, cantidad]) => cantidad > 0)
+          .map(([productoId, cantidad]) => ({ productoId, cantidad }))
+      }));
+      this.cantidades.set({});
+    } catch (error) {
+      // Checkout aún no ofrece idempotencia: un timeout no autoriza repetir la creación automáticamente.
+      const incierto = !(error instanceof ErrorCuenta) || error.estado === 0 || error.estado >= 500;
+      this.resultadoIncierto.set(incierto);
+      this.error.set(incierto
+        ? 'No pudimos confirmar el resultado. El pedido podría haberse creado; no vuelvas a enviarlo hasta revisar su estado.'
+        : mensajePedidos(error));
+    } finally { this.enviando.set(false); }
   }
 }

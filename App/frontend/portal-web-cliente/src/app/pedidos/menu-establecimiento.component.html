@@ -1,40 +1,81 @@
+<a routerLink="/pedidos" [queryParams]="{ eventoId: eventoId || null }" class="volver">← Volver a establecimientos</a>
+@if (cargando()) { <p role="status">Cargando menú…</p> }
+@if (error()) { <p role="alert">{{ error() }}</p> }
 @if (establecimiento(); as establecimiento) {
-  <a routerLink="/pedidos" class="volver">← Volver a restaurantes</a>
   <h1>{{ establecimiento.nombre }}</h1>
-
-  <div class="grilla">
-    @for (producto of productos; track producto.id) {
-      <mat-card class="tarjeta">
-        <mat-card-content class="fila">
-          <div>
-            <h3>{{ producto.nombre }}</h3>
-            <p>${{ producto.precio | number: '1.0-0' }}</p>
-          </div>
-
-          @if (!producto.disponible) {
-            <span class="no-disponible">No disponible</span>
-          } @else if (cantidadDe(producto) === 0) {
-            <button mat-stroked-button (click)="agregar(producto)">Agregar</button>
-          } @else {
-            <div class="contador">
-              <button mat-icon-button (click)="quitar(producto)" aria-label="Quitar uno">
-                <mat-icon>remove</mat-icon>
-              </button>
-              <span>{{ cantidadDe(producto) }}</span>
-              <button mat-icon-button (click)="agregar(producto)" aria-label="Agregar uno">
-                <mat-icon>add</mat-icon>
-              </button>
-            </div>
+  <p>{{ establecimiento.puntoEntrega }}</p>
+  @if (pago()?.compraConfirmada) {
+    <mat-card>
+      <mat-card-header><mat-card-title>Compra confirmada</mat-card-title></mat-card-header>
+      <mat-card-content aria-live="polite">
+        <p>Pedido: {{ pago()!.pedidoId }}</p>
+        <p>Estado: {{ pago()!.estadoPedido }}</p>
+        <p>Pago: {{ pago()!.estadoPago }}</p>
+        <p class="total">Total: {{ pago()!.monto | number: '1.2-2' }} {{ pago()!.moneda }}</p>
+        @if (pago()!.codigoQr; as codigo) { <app-qr-pedido [codigo]="codigo" /> }
+        <p>Conserva tu código. Esta pantalla no se recupera al recargar.</p>
+      </mat-card-content>
+    </mat-card>
+  } @else if (checkout()) {
+    @let pedido = checkout()!;
+    <mat-card>
+      <mat-card-header><mat-card-title>Checkout pendiente de pago</mat-card-title></mat-card-header>
+      <mat-card-content aria-live="polite">
+        <p>Pedido: {{ pedido.id }}</p>
+        <p>Estado: {{ pedido.estado }}</p>
+        <ul>
+          @for (detalle of pedido.detalles; track detalle.productoId) {
+            <li>{{ detalle.cantidad }} × {{ detalle.nombreProducto }} · {{ detalle.precioUnitario | number: '1.2-2' }} {{ pedido.moneda }} por unidad</li>
           }
-        </mat-card-content>
-      </mat-card>
-    }
-  </div>
-
-  <div class="resumen">
-    <p class="total">Total: ${{ total() | number: '1.0-0' }}</p>
-    <button mat-flat-button color="primary" [disabled]="carrito().length === 0" (click)="continuarAlPago()">
-      Continuar al pago
-    </button>
-  </div>
+        </ul>
+        <p class="total">Total: {{ pedido.total | number: '1.2-2' }} {{ pedido.moneda }}</p>
+        <p>Método de entrega: {{ pedido.metodoEntrega }}</p>
+        <p>Vencimiento de la reserva: {{ pedido.expiraEn | date: 'dd/MM/yyyy HH:mm:ss' }}</p>
+        <p>La compra todavía no está confirmada.</p>
+        <p>Pago de demostración mediante la pasarela simulada. No ingreses datos de tarjeta.</p>
+        @if (mensajePago()) { <p role="status">{{ mensajePago() }}</p> }
+        <button mat-flat-button (click)="pagar()" [disabled]="pagando()">
+          {{ pagando() ? 'Procesando pago…' : 'Pagar con simulador / reintentar' }}
+        </button>
+      </mat-card-content>
+    </mat-card>
+  } @else if (!cargando()) {
+    <div class="grilla">
+      @for (producto of productos(); track producto.id) {
+        <mat-card class="tarjeta">
+          <mat-card-content class="fila">
+            <div>
+              <h3>{{ producto.nombre }}</h3>
+              <p>{{ producto.descripcion }}</p>
+              <p>${{ producto.precio | number: '1.2-2' }} COP</p>
+              <p>Inventario informado: {{ producto.cantidadInventario }}</p>
+            </div>
+            @if (!producto.activo || producto.cantidadInventario === 0) {
+              <span class="no-disponible">Agotado</span>
+            } @else {
+              <div class="contador">
+                <button mat-icon-button (click)="cambiar(producto, -1)" [disabled]="!cantidadDe(producto) || enviando() || resultadoIncierto()" [attr.aria-label]="'Quitar ' + producto.nombre"><mat-icon>remove</mat-icon></button>
+                <span>{{ cantidadDe(producto) }}</span>
+                <button mat-icon-button (click)="cambiar(producto, 1)" [disabled]="enviando() || resultadoIncierto()" [attr.aria-label]="'Agregar ' + producto.nombre"><mat-icon>add</mat-icon></button>
+              </div>
+            }
+          </mat-card-content>
+        </mat-card>
+      } @empty { <p>No hay productos activos en este establecimiento.</p> }
+    </div>
+    <form (ngSubmit)="iniciarCheckout()">
+      <mat-form-field appearance="outline">
+        <mat-label>Método de entrega</mat-label>
+        <input matInput name="metodoEntrega" [(ngModel)]="metodoEntrega" maxlength="80" required [disabled]="enviando() || resultadoIncierto()" />
+        <mat-hint>Indica el método acordado con el establecimiento.</mat-hint>
+      </mat-form-field>
+      <p>La disponibilidad y el total se confirman al iniciar el checkout.</p>
+      <div class="resumen">
+        <p>{{ unidades() }} unidades seleccionadas</p>
+        <button mat-flat-button type="submit" [disabled]="!unidades() || !metodoEntrega.trim() || enviando() || resultadoIncierto()">
+          {{ enviando() ? 'Creando checkout…' : 'Iniciar checkout' }}
+        </button>
+      </div>
+    </form>
+  }
 }
