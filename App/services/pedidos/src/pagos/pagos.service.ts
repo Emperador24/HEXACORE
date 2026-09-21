@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource, In, MoreThanOrEqual } from 'typeorm';
@@ -141,6 +142,9 @@ export class PagosService {
       }
       pedido.estado = EstadoPedido.CONFIRMADO;
       pedido.confirmadoEn = new Date();
+      // 256 bits aleatorios, codificados en los 64 caracteres admitidos por codigo_qr.
+      // Se guarda con la confirmación; el replay de un CONFIRMADO retorna antes de este punto.
+      pedido.codigoQr = randomBytes(32).toString('hex');
       reserva.estado = EstadoReserva.CONSUMO_PENDIENTE;
       await gestor.save(Pedido, pedido);
       await gestor.save(ReservaInventario, reserva);

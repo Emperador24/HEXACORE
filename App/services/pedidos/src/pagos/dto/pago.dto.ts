@@ -12,6 +12,8 @@ export class PagoDto {
   @ApiProperty({ nullable: true, type: String }) referenciaPasarela: string | null;
   @ApiProperty() codigo: string;
   @ApiProperty() compraConfirmada: boolean;
+  @ApiProperty({ nullable: true, type: String, description: 'Valor opaco del QR del pedido confirmado, para renderizar en el cliente' })
+  codigoQr: string | null;
 }
 
 export function aPagoDto(pedido: Pedido, intento: TransaccionPedido): PagoDto {
@@ -23,5 +25,6 @@ export function aPagoDto(pedido: Pedido, intento: TransaccionPedido): PagoDto {
       ? intento.motivo === 'PASARELA_TIMEOUT' ? 'PASARELA_TIMEOUT' : 'PAGO_INCIERTO'
       : `PAGO_${intento.estado}`,
     compraConfirmada: pedido.estado === EstadoPedido.CONFIRMADO,
+    codigoQr: pedido.codigoQr,
   };
 }

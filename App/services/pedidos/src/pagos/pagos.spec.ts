@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { ExecutionContext, HttpException, Logger, ValidationPipe } from '@nestjs/common';
 import { DataSource, EntityManager, MoreThanOrEqual } from 'typeorm';
 import { Pedido, EstadoPedido } from '../persistencia/entidades/pedido.entity';
@@ -122,7 +123,7 @@ describe('PagosService (gestor transaccional simulado)', () => {
     const resultado = await servicio.pagar(cliente, id, clave, 'tok_secreto');
     expect(cobrar).toHaveBeenCalledWith(clave, '25000.00', 'COP', 'tok_secreto');
     expect(resultado).toMatchObject({ estadoPago: Estado.APROBADA, estadoPedido: EstadoPedido.CONFIRMADO, compraConfirmada: true });
-    expect(pedido).toMatchObject({ codigoQr: null, confirmadoEn: expect.any(Date) });
+    expect(pedido).toMatchObject({ codigoQr: expect.stringMatching(/^[0-9a-f]{64}$/), confirmadoEn: expect.any(Date) });
     expect(productos[0].cantidadInventario).toBe(3);
     expect(reserva?.estado).toBe(EstadoReserva.CONSUMIDA);
     expect(consumir).toHaveBeenCalledWith(establecimientoId, id);
@@ -132,6 +133,60 @@ describe('PagosService (gestor transaccional simulado)', () => {
     expect(gestor.findOne).toHaveBeenCalledWith(Pedido, { where: { id, clienteId: cliente }, lock: { mode: 'pessimistic_write' } });
     expect(gestor.save).toHaveBeenCalledWith(TransaccionPedido, expect.objectContaining({ estado: Estado.APROBADA }));
     expect(JSON.stringify(intentos)).not.toContain('tok_secreto');
+  });
+  it('genera QR con 32 bytes criptográficos y lo persiste dentro de la confirmación', async () => {
+    const aleatorio = jest.spyOn(crypto, 'randomBytes');
+    let qrGuardado: string | null = null;
+    gestor.save.mockImplementation(async (tipo, fila) => {
+      if (tipo === Pedido && fila.estado === EstadoPedido.CONFIRMADO) {
+        expect(dentro).toBe(true);
+        expect(fila.codigoQr).toMatch(/^[0-9a-f]{64}$/);
+        qrGuardado = fila.codigoQr;
+      }
+      return fila;
+    });
+    const respuesta = await servicio.pagar(cliente, id, clave, 'tok_ok');
+    expect(aleatorio).toHaveBeenCalledTimes(1);
+    expect(aleatorio).toHaveBeenCalledWith(32);
+    expect(respuesta.codigoQr).toBe(qrGuardado);
+    expect(respuesta.codigoQr).toBe(pedido.codigoQr);
+    expect(respuesta.codigoQr).not.toBeNull();
+  });
+  it('replays de aprobación conservan exactamente el QR sin generar ni guardar otro', async () => {
+    const aleatorio = jest.spyOn(crypto, 'randomBytes');
+    const primera = await servicio.pagar(cliente, id, clave, 'tok_ok');
+    const guardados = gestor.save.mock.calls.length;
+    const [segunda, tercera] = await Promise.all([
+      servicio.pagar(cliente, id, clave, 'tok_ok'), servicio.pagar(cliente, id, clave, 'tok_ok'),
+    ]);
+    expect(segunda.codigoQr).toBe(primera.codigoQr);
+    expect(tercera.codigoQr).toBe(primera.codigoQr);
+    expect(aleatorio).toHaveBeenCalledTimes(1);
+    expect(gestor.save).toHaveBeenCalledTimes(guardados);
+  });
+  it('rollback de la confirmación no persiste un QR ni confirma el pedido', async () => {
+    const aleatorio = jest.spyOn(crypto, 'randomBytes');
+    fallarCommitConfirmacion = true;
+    await expect(servicio.pagar(cliente, id, clave, 'tok_ok')).rejects.toThrow('falló commit de confirmación');
+    expect(aleatorio).toHaveBeenCalledTimes(1);
+    expect(pedido.codigoQr).toBeNull();
+    expect(pedido.estado).toBe(EstadoPedido.PENDIENTE_PAGO);
+  });
+  it('pago rechazado no genera QR y responde codigoQr null', async () => {
+    const aleatorio = jest.spyOn(crypto, 'randomBytes');
+    cobrar.mockResolvedValue({ estado: Estado.RECHAZADA, referenciaPasarela: aprobado.referenciaPasarela, motivo: 'PAGO_RECHAZADO' });
+    expect((await servicio.pagar(cliente, id, clave, 'tok_rechazo')).codigoQr).toBeNull();
+    expect(pedido.codigoQr).toBeNull();
+    expect(aleatorio).not.toHaveBeenCalled();
+  });
+  it('el QR persiste aunque falle cerrar Redis y el replay conserva el mismo valor', async () => {
+    const aleatorio = jest.spyOn(crypto, 'randomBytes');
+    consumir.mockRejectedValueOnce(new Error('Redis no disponible'));
+    const primera = await servicio.pagar(cliente, id, clave, 'tok_ok');
+    expect(primera.codigoQr).toMatch(/^[0-9a-f]{64}$/);
+    expect(primera.codigoQr).toBe(pedido.codigoQr);
+    expect((await servicio.pagar(cliente, id, clave, 'tok_ok')).codigoQr).toBe(primera.codigoQr);
+    expect(aleatorio).toHaveBeenCalledTimes(1);
   });
   it('repite aprobación aun vencido sin cobrar y bloquea otra clave', async () => {
     const primero = await servicio.pagar(cliente, id, clave, 'tok_ok');
