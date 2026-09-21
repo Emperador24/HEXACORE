@@ -7,6 +7,7 @@
 #   ./iniciar.sh --rol datos              solo la capa de datos (computador A)
 #   ./iniciar.sh --rol servicios --datos 192.168.1.20
 #                                         servicios y gateway apuntando al A (computador B)
+#   ./iniciar.sh --registro develop       desde las imágenes que publicó el CD
 #   ./iniciar.sh --parar                  baja todo, conservando los datos
 #
 # Por qué existe: el atributo de **desplegabilidad** exige que el sistema
@@ -27,6 +28,9 @@ DATOS=""
 REPLICAS=1
 DEMO="si"
 PARAR="no"
+# Etiqueta a desplegar desde el registro (develop, main, latest, sha-XXXXXXX).
+# Vacío = compilar aquí, que es lo normal mientras se desarrolla.
+REGISTRO=""
 
 rojo()  { printf '\033[31m%s\033[0m\n' "$*"; }
 verde() { printf '\033[32m%s\033[0m\n' "$*"; }
@@ -43,6 +47,7 @@ while [[ $# -gt 0 ]]; do
     --rol)       ROL="${2:-}"; shift 2 ;;
     --datos)     DATOS="${2:-}"; shift 2 ;;
     --replicas)  REPLICAS="${2:-1}"; shift 2 ;;
+    --registro)  REGISTRO="${2:-develop}"; shift 2 ;;
     --sin-demo)  DEMO="no"; shift ;;
     --parar)     PARAR="si"; shift ;;
     -h|--help)   uso 0 ;;
@@ -78,6 +83,13 @@ if [[ -n "$DATOS" ]]; then
   COMPOSE+=(-f docker-compose.remoto.yml)
 fi
 
+if [[ -n "$REGISTRO" ]]; then
+  # Nada se compila: se bajan las imágenes que publicó el pipeline de entrega
+  # continua. Es lo que hace que desplegar en otra máquina sean segundos.
+  export HEXACORE_ETIQUETA="$REGISTRO"
+  COMPOSE+=(-f docker-compose.registro.yml)
+fi
+
 if [[ "$REPLICAS" -gt 1 ]]; then
   # Dos contenedores no pueden publicar el mismo puerto: el override lo quita.
   COMPOSE+=(-f docker-compose.escalado.yml)
@@ -92,7 +104,12 @@ fi
 
 # --- Arranque ---------------------------------------------------------------
 
+# Solo se compila cuando NO se despliega desde el registro.
+CONSTRUIR="--build"
+[[ -n "$REGISTRO" ]] && CONSTRUIR="--pull always"
+
 titulo "HEXACORE — arranque ($ROL)"
+[[ -n "$REGISTRO" ]] && gris "  Imágenes publicadas, etiqueta: $REGISTRO"
 [[ -n "$DATOS" ]] && gris "  Capa de datos remota: $DATOS"
 [[ "$REPLICAS" -gt 1 ]] && gris "  Réplicas del servicio de Entradas: $REPLICAS"
 
@@ -106,14 +123,14 @@ case "$ROL" in
       rojo "El rol 'servicios' necesita --datos <IP del computador con la capa de datos>"
       exit 1
     fi
-    gris "  Construyendo y levantando los microservicios y el API Gateway"
-    "${COMPOSE[@]}" --profile servicios up -d --build \
+    gris "  Levantando los microservicios y el API Gateway"
+    "${COMPOSE[@]}" --profile servicios up -d $CONSTRUIR \
       --scale entradas-mercado-secundario="$REPLICAS" \
       administracion entradas-mercado-secundario eventos-emergencias api-gateway
     ;;
   todo)
     gris "  Levantando la capa de datos, los microservicios y el API Gateway"
-    "${COMPOSE[@]}" --profile servicios up -d --build \
+    "${COMPOSE[@]}" --profile servicios up -d $CONSTRUIR \
       --scale entradas-mercado-secundario="$REPLICAS"
     ;;
 esac

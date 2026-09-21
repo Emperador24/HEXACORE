@@ -1,0 +1,48 @@
+# Levanta el sistema desde las **imágenes publicadas** por el pipeline de
+# entrega continua, en vez de compilarlas aquí.
+#
+#   ./iniciar.sh --registro develop
+#
+# o a mano:
+#
+#   HEXACORE_ETIQUETA=develop docker compose \
+#     -f docker-compose.yml -f docker-compose.registro.yml --profile servicios up -d
+#
+# ## Para qué sirve
+#
+# Es lo que hace que desplegar en otro computador no exija tener el código, ni
+# Node, ni esperar una compilación: se bajan cuatro imágenes ya construidas y se
+# levantan. En el computador de la demostración, o en el de un compañero que
+# solo quiere ver el sistema andando, esa diferencia es de minutos a segundos.
+#
+# También es lo que permite **volver atrás**: cada commit deja su propia imagen
+# etiquetada (`sha-a1b2c3d`), así que si algo se rompe se levanta la anterior
+# sin tocar el repositorio.
+#
+# ## Variables
+#
+#   HEXACORE_REGISTRO   dónde están las imágenes (por defecto, el del proyecto)
+#   HEXACORE_ETIQUETA   qué versión levantar: develop, main, latest o sha-XXXXXXX
+#
+# El `build:` se anula con `!reset` para que Compose no intente compilar: sin
+# eso, tener el código al lado haría que reconstruyera en vez de usar lo
+# publicado, y estaríamos probando otra cosa distinta de la que se despliega.
+
+services:
+  administracion:
+    build: !reset null
+    image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-administracion:${HEXACORE_ETIQUETA:-develop}
+
+  entradas-mercado-secundario:
+    build: !reset null
+    image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-entradas-mercado-secundario:${HEXACORE_ETIQUETA:-develop}
+
+  eventos-emergencias:
+    build: !reset null
+    image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-eventos-emergencias:${HEXACORE_ETIQUETA:-develop}
+
+  api-gateway:
+    # La imagen publicada lleva el `nginx.conf` dentro, así que no se monta
+    # nada: lo que se despliega es una cosa sola.
+    image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-gateway:${HEXACORE_ETIQUETA:-develop}
+    volumes: !reset []

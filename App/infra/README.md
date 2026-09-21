@@ -45,6 +45,30 @@ Docker no levante una base de datos en la máquina equivocada.
 Las interfaces se arrancan aparte, apuntando al gateway del computador B
 (`npm start` en el portal, `flutter run --dart-define=HEXACORE_HOST=<IP de B>`).
 
+## Desplegar desde las imágenes publicadas (entrega continua)
+
+Cada vez que algo entra a `develop` o `main`, el pipeline de CD construye las
+imágenes de los tres microservicios y del gateway y las publica en
+`ghcr.io/emperador24`. Para levantar el sistema desde ahí, sin compilar nada:
+
+```bash
+./iniciar.sh --registro develop      # la última de develop
+./iniciar.sh --registro main         # la última de main
+./iniciar.sh --registro sha-a1b2c3d  # un commit exacto, para volver atrás
+```
+
+En un computador que solo va a *usar* el sistema —el de la demostración, el de
+un compañero— esto es la diferencia entre segundos y varios minutos de
+compilación. Y como cada commit deja su imagen etiquetada, volver a una versión
+anterior es cambiar la etiqueta.
+
+La imagen del gateway **lleva el `nginx.conf` dentro**: lo que se despliega es
+una cosa sola. En desarrollo se sigue montando el archivo desde el disco para
+poder editarlo sin reconstruir.
+
+Los dos simuladores (correo y pasarela) siguen compilándose en la máquina: son
+sistemas externos en el SAD, no producto, y son veinte líneas de Node.
+
 ## Órdenes de Docker Compose directas
 
 ```bash
