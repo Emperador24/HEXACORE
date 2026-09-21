@@ -16,7 +16,7 @@ export class CheckoutController {
 
   @Post('checkout')
   @UsePipes(new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }))
-  @ApiOperation({ summary: 'Crear un checkout pendiente de pago, sin reservar inventario' })
+  @ApiOperation({ summary: 'Crear un checkout pendiente de pago con reserva temporal de inventario' })
   @ApiResponse({ status: 201, type: CheckoutDto })
   crear(@UsuarioActual() clienteId: string, @Body() datos: CrearCheckoutDto): Promise<CheckoutDto> {
     return this.checkout.crear(clienteId, datos);

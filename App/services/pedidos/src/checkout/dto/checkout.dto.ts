@@ -7,7 +7,7 @@ export class DetalleCheckoutDto {
   cantidad: number;
 }
 
-/** Selección pendiente de pago; no constituye una reserva de inventario. */
+/** Checkout con inventario reservado temporalmente, pendiente de pago y confirmación. */
 export class CheckoutDto {
   id: string;
   establecimientoId: string;
@@ -18,6 +18,6 @@ export class CheckoutDto {
   creadoEn: string;
   expiraEn: string;
   codigoQr: null;
-  inventarioReservado: false;
+  inventarioReservado: true;
   detalles: DetalleCheckoutDto[];
 }
