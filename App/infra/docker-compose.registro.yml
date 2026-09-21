@@ -46,3 +46,7 @@ services:
     # nada: lo que se despliega es una cosa sola.
     image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-gateway:${HEXACORE_ETIQUETA:-develop}
     volumes: !reset []
+
+  portal-web-cliente:
+    build: !reset null
+    image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-portal-cliente:${HEXACORE_ETIQUETA:-develop}

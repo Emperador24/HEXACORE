@@ -45,6 +45,37 @@ Docker no levante una base de datos en la máquina equivocada.
 Las interfaces se arrancan aparte, apuntando al gateway del computador B
 (`npm start` en el portal, `flutter run --dart-define=HEXACORE_HOST=<IP de B>`).
 
+## Qué levanta `./iniciar.sh`
+
+Diez contenedores: PostgreSQL, Redis, RabbitMQ, los dos sistemas externos
+simulados (correo y pasarela), los tres microservicios, el API Gateway y el
+**Portal Web de Clientes** en el `4200`.
+
+Lo único que no levanta —ni puede— es la **app móvil**: se instala en un
+teléfono o un simulador, no se arranca desde un script.
+
+### Datos de ejemplo sin necesitar Node
+
+Las semillas corren con `ts-node` desde el código fuente. En una máquina que
+solo tiene Docker eso no está, y el sistema arrancaba **vacío**: sin cuentas, o
+sea sin poder entrar.
+
+Por eso los datos de ejemplo están también congelados en SQL, en `datos-demo/`:
+
+```bash
+./iniciar.sh                     # con Node: usa las semillas
+./iniciar.sh --datos-demo sql    # sin Node: carga los volcados
+```
+
+Por defecto el script lo decide solo: si encuentra Node y las dependencias
+instaladas usa las semillas, que son la fuente de verdad; si no, los volcados.
+
+Cuando cambien las semillas o el esquema hay que regenerarlos:
+
+```bash
+./exportar-datos-demo.sh
+```
+
 ## Desplegar desde las imágenes publicadas (entrega continua)
 
 Cada vez que algo entra a `develop` o `main`, el pipeline de CD construye las

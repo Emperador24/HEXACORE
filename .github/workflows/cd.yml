@@ -60,6 +60,8 @@ jobs:
             contexto: App/services/eventos-emergencias
           - nombre: gateway
             contexto: App/gateway
+          - nombre: portal-cliente
+            contexto: App/frontend/portal-web-cliente
 
     steps:
       - uses: actions/checkout@v4

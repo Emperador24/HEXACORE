@@ -8,6 +8,7 @@
 #   ./iniciar.sh --rol servicios --datos 192.168.1.20
 #                                         servicios y gateway apuntando al A (computador B)
 #   ./iniciar.sh --registro develop       desde las imágenes que publicó el CD
+#   ./iniciar.sh --datos-demo sql         datos de ejemplo sin necesitar Node
 #   ./iniciar.sh --parar                  baja todo, conservando los datos
 #
 # Por qué existe: el atributo de **desplegabilidad** exige que el sistema
@@ -28,6 +29,11 @@ DATOS=""
 REPLICAS=1
 DEMO="si"
 PARAR="no"
+# Cómo poblar los datos de ejemplo:
+#   auto  las semillas con npm si hay Node; si no, los volcados SQL
+#   sql   siempre los volcados (no necesita Node)
+#   npm   siempre las semillas
+DATOS_DEMO="auto"
 # Etiqueta a desplegar desde el registro (develop, main, latest, sha-XXXXXXX).
 # Vacío = compilar aquí, que es lo normal mientras se desarrolla.
 REGISTRO=""
@@ -48,6 +54,7 @@ while [[ $# -gt 0 ]]; do
     --datos)     DATOS="${2:-}"; shift 2 ;;
     --replicas)  REPLICAS="${2:-1}"; shift 2 ;;
     --registro)  REGISTRO="${2:-develop}"; shift 2 ;;
+    --datos-demo) DATOS_DEMO="${2:-auto}"; shift 2 ;;
     --sin-demo)  DEMO="no"; shift ;;
     --parar)     PARAR="si"; shift ;;
     -h|--help)   uso 0 ;;
@@ -126,7 +133,8 @@ case "$ROL" in
     gris "  Levantando los microservicios y el API Gateway"
     "${COMPOSE[@]}" --profile servicios up -d $CONSTRUIR \
       --scale entradas-mercado-secundario="$REPLICAS" \
-      administracion entradas-mercado-secundario eventos-emergencias api-gateway
+      administracion entradas-mercado-secundario eventos-emergencias api-gateway \
+      portal-web-cliente
     ;;
   todo)
     gris "  Levantando la capa de datos, los microservicios y el API Gateway"
@@ -141,8 +149,11 @@ esperar_sano() {
   local nombre="$1" limite="${2:-120}" transcurrido=0
   while (( transcurrido < limite )); do
     local estado
-    estado="$(docker inspect --format '{{.State.Health.Status}}' "$nombre" 2>/dev/null || echo ausente)"
-    [[ "$estado" == "healthy" ]] && return 0
+    # Un contenedor sin sonda declarada devuelve vacío: en ese caso basta con
+    # que esté corriendo. Antes esto se tomaba por "no existe" y el arranque
+    # se abortaba con todo el sistema ya en pie.
+    estado="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$nombre" 2>/dev/null || echo ausente)"
+    [[ "$estado" == "healthy" || "$estado" == "running" ]] && return 0
     [[ "$estado" == "ausente" ]] && return 1
     sleep 2
     transcurrido=$(( transcurrido + 2 ))
@@ -152,7 +163,7 @@ esperar_sano() {
 
 if [[ "$ROL" != "datos" ]]; then
   titulo "Esperando a que los servicios respondan"
-  for contenedor in hexacore-administracion hexacore-logistica hexacore-gateway; do
+  for contenedor in hexacore-administracion hexacore-logistica hexacore-gateway hexacore-portal; do
     if esperar_sano "$contenedor"; then
       verde "  $contenedor listo"
     else
@@ -177,13 +188,58 @@ sembrar() {
   fi
 }
 
-if [[ "$DEMO" == "si" && "$ROL" != "datos" ]] && command -v npm >/dev/null 2>&1; then
+# Carga los volcados SQL en PostgreSQL. No necesita Node ni el código fuente:
+# es lo que permite levantar el sistema con datos usables en una máquina que
+# solo tiene Docker.
+cargar_volcados() {
+  local contenedor="hexacore-postgres"
+  if [[ -n "$DATOS" ]]; then
+    gris "  La base está en otra máquina; carga los volcados allí"
+    return
+  fi
+  if ! docker ps --format '{{.Names}}' | grep -q "^${contenedor}$"; then
+    gris "  No encuentro el contenedor de PostgreSQL, se omiten los datos"
+    return
+  fi
+  for base in administracion entradas_mercado_secundario eventos_emergencias; do
+    local archivo="datos-demo/$base.sql"
+    if [[ ! -f "$archivo" ]]; then
+      gris "  falta $archivo (regenéralo con ./exportar-datos-demo.sh)"
+      continue
+    fi
+    if docker exec -i "$contenedor" psql --quiet --username=hexacore \
+         --dbname="$base" -v ON_ERROR_STOP=0 < "$archivo" >/dev/null 2>&1; then
+      verde "  $base: datos cargados desde el volcado"
+    else
+      gris "  $base: el volcado dio avisos, revisa con psql si algo falta"
+    fi
+  done
+}
+
+if [[ "$DEMO" == "si" && "$ROL" != "datos" ]]; then
   titulo "Datos de ejemplo"
-  sembrar administracion
-  sembrar entradas-mercado-secundario
-  # La de logística va después de la de administración a propósito: da de alta
-  # a cada empleado sobre la cuenta que aquella acaba de crear.
-  sembrar eventos-emergencias seed
+
+  metodo="$DATOS_DEMO"
+  if [[ "$metodo" == "auto" ]]; then
+    # Con Node se usan las semillas, que son la fuente de verdad. Sin Node
+    # —una máquina que solo tiene Docker— se cargan los volcados.
+    if command -v npm >/dev/null 2>&1 && [[ -d "$RAIZ/App/services/administracion/node_modules" ]]; then
+      metodo="npm"
+    else
+      metodo="sql"
+    fi
+  fi
+
+  if [[ "$metodo" == "npm" ]]; then
+    sembrar administracion
+    sembrar entradas-mercado-secundario
+    # La de logística va después de la de administración a propósito: da de alta
+    # a cada empleado sobre la cuenta que aquella acaba de crear.
+    sembrar eventos-emergencias seed
+  else
+    gris "  Sin Node disponible: cargando los volcados SQL"
+    cargar_volcados
+  fi
 fi
 
 # --- Resumen ----------------------------------------------------------------
@@ -217,10 +273,13 @@ else
     jefepersonal@hexacore.com Personal (jefe)
     admin@hexacore.com        Administrador
 
-  Interfaces (se arrancan aparte, apuntando a este gateway):
+  Portal web de clientes (ya levantado):
 
-    Portal web    cd App/frontend/portal-web-cliente && npm start
-    App móvil     cd App/frontend/app-movil && flutter run --dart-define=HEXACORE_HOST=$IP_LOCAL
+    http://$IP_LOCAL:4200
+
+  App móvil — se instala en un dispositivo, no la levanta este script:
+
+    cd App/frontend/app-movil && flutter run --dart-define=HEXACORE_HOST=$IP_LOCAL
 
   Comprobar que todo responde:
 
