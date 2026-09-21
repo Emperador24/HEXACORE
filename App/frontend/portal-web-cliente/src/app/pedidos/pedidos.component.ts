@@ -1,16 +1,13 @@
+import { MatIconModule } from '@angular/material/icon';
 import { Component, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
 import { EstablecimientoPedido, PedidosService, mensajePedidos } from '../core/pedidos.service';
 
 @Component({
   selector: 'app-pedidos',
   standalone: true,
-  imports: [FormsModule, RouterLink, MatCardModule, MatButtonModule, MatFormFieldModule, MatInputModule],
+  imports: [MatIconModule, RouterLink, MatButtonModule],
   templateUrl: './pedidos.component.html',
   styleUrl: './pedidos.component.scss'
 })

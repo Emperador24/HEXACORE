@@ -13,6 +13,6 @@ describe('QR de pedido confirmado', () => {
     const esperado = await toDataURL(codigo, { width: 256, margin: 4, errorCorrectionLevel: 'M' });
     expect(fixture.nativeElement.querySelector('img').getAttribute('src')).toBe(esperado);
     expect(esperado).toContain('data:image/png;base64,');
-    expect(fixture.nativeElement.textContent).toContain(codigo);
+    expect(fixture.nativeElement.textContent).not.toContain(codigo);
   });
 });

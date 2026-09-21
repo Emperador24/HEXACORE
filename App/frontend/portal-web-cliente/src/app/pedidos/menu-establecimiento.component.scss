@@ -1,53 +1,44 @@
-.volver {
-  display: inline-block;
-  margin-bottom: 16px;
-  color: inherit;
-}
-
-.grilla {
-  display: grid;
-  gap: 12px;
-  margin-bottom: 88px;
-}
-
-.fila {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  h3 {
-    margin: 0 0 2px;
-  }
-
-  p {
-    margin: 0;
-    color: rgb(var(--hxc-texto-rgb) / 0.6);
-  }
-}
-
-.no-disponible {
-  font-size: 0.8rem;
-  color: rgb(var(--hxc-texto-rgb) / 0.5);
-}
-
-.contador {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.resumen {
-  position: sticky;
-  bottom: 0;
-  background: var(--mat-sys-surface, #fff);
-  padding: 16px 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-top: 1px solid rgb(var(--hxc-texto-rgb) / 0.12);
-}
-
-.total {
-  font-weight: 600;
-  margin: 0;
-}
+:host { display: block; }
+.volver, .ubicacion { display: flex; align-items: center; gap: 8px; }
+.volver { width: fit-content; text-decoration: none; margin-bottom: 24px; font-weight: 600; }
+.cabecera h1 { margin-top: 8px; font-size: clamp(1.7rem, 4vw, 2.5rem); }
+.ubicacion { color: rgb(var(--hxc-texto-rgb) / .7); line-height: 1.5; }
+mat-icon { flex-shrink: 0; }
+.pasos { display: flex; padding: 0; list-style: none; gap: 12px; margin: 26px 0 32px; }
+.pasos li { flex: 1; padding: 12px 4px; border-bottom: 2px solid var(--hxc-linea); color: rgb(var(--hxc-texto-rgb) / .6); font-size: .88rem; }
+.pasos .actual { color: var(--hxc-primario-texto); border-color: var(--hxc-primario); font-weight: 700; }
+.distribucion { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr); gap: 24px; align-items: start; }
+.panel { padding: 26px; min-width: 0; }
+.panel h2 { margin: 12px 0 20px; }
+.titulo-menu { margin-bottom: 18px; }
+.grilla { display: grid; gap: 14px; }
+.producto { padding: 22px; display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.producto h3 { font-size: 1.1rem; overflow-wrap: anywhere; }
+.descripcion { color: rgb(var(--hxc-texto-rgb) / .65); font-size: .9rem; line-height: 1.5; }
+.precio { font-weight: 700; margin-bottom: 0; color: var(--hxc-primario-texto); }
+small { font-size: .75rem; font-weight: 500; }
+.contador { display: flex; align-items: center; border: 1px solid var(--hxc-linea); border-radius: 999px; background: var(--hxc-campo-fondo); flex-shrink: 0; }
+.contador span { min-width: 20px; text-align: center; font-weight: 700; }
+.agotado { opacity: .7; }
+.seleccion, .pago { position: sticky; top: 24px; }
+.seleccionados, .detalle { padding: 0; list-style: none; }
+.seleccionados li { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--hxc-linea); }
+fieldset { border: 0; padding: 0; margin: 24px 0 0; min-width: 0; }
+legend { font-weight: 700; margin-bottom: 12px; }
+.opcion-entrega { display: flex; gap: 10px; align-items: flex-start; padding: 16px; border: 1px solid var(--hxc-primario); border-radius: var(--hxc-r-campo); cursor: pointer; }
+.opcion-entrega input { accent-color: var(--hxc-primario); margin-top: 4px; }
+.opcion-entrega small { display: block; margin-top: 6px; line-height: 1.5; color: rgb(var(--hxc-texto-rgb) / .7); }
+.nota { font-size: .82rem; line-height: 1.6; color: rgb(var(--hxc-texto-rgb) / .65); margin: 20px 0; }
+.boton-principal { width: 100%; min-height: 48px; }
+.detalle li, .entrega { display: flex; gap: 16px; padding: 18px 0; border-bottom: 1px solid var(--hxc-linea); }
+.detalle p, .entrega p { margin: 6px 0 0; font-size: .9rem; color: rgb(var(--hxc-texto-rgb) / .7); }
+.cantidad { font-weight: 700; color: var(--hxc-primario-texto); }
+.total { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; align-items: center; margin: 24px 0; }
+.total strong { font-size: 1.4rem; }
+.aviso { padding: 16px; border-radius: var(--hxc-r-campo); background: color-mix(in srgb, var(--hxc-ambar) 12%, transparent); line-height: 1.6; }
+.confirmacion { max-width: 520px; margin: 0 auto; padding: clamp(20px, 4vw, 40px); text-align: center; }
+.confirmacion .ubicacion { justify-content: center; }
+.exito { display: inline-flex; padding: 16px; border-radius: 50%; background: color-mix(in srgb, var(--hxc-verde) 16%, transparent); color: var(--hxc-verde); margin-bottom: 20px; }
+.exito mat-icon { width: 36px; height: 36px; font-size: 36px; }
+@media (max-width: 850px) { .distribucion { grid-template-columns: 1fr; } .seleccion, .pago { position: static; } }
+@media (max-width: 480px) { .producto { flex-wrap: wrap; padding: 18px; } .panel { padding: 20px; } .pasos { gap: 6px; } .pasos li { font-size: .75rem; } }

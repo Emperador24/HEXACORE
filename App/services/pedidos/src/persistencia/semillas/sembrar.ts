@@ -8,7 +8,7 @@ import { EVENTOS, ESTABLECIMIENTOS, PRODUCTOS } from './datos-demo';
 /**
  * Prepara las dependencias de menú e inventario para probar CU-011.
  * Requiere la migración inicial aplicada. Se ejecuta con `npm run semilla`.
- * Cada ejecución borra los datos de las seis tablas de dominio, incluidas las
+ * Cada ejecución borra los datos de las siete tablas de dominio, incluidas las
  * compras de desarrollo; la tabla de migraciones se conserva.
  */
 async function sembrar(): Promise<void> {
@@ -25,6 +25,7 @@ async function sembrar(): Promise<void> {
       // RESTRICT evita extender la limpieza a otras tablas mediante cascada.
       await gestor.query(`
         TRUNCATE TABLE
+          "reservas_inventario",
           "transacciones_pedido",
           "detalles_pedido",
           "pedidos",
@@ -39,7 +40,7 @@ async function sembrar(): Promise<void> {
       await gestor.insert(Producto, PRODUCTOS);
     });
 
-    console.log(`\n${EVENTOS.length} evento, ${ESTABLECIMIENTOS.length} establecimiento y ${PRODUCTOS.length} productos sembrados.`);
+    console.log(`\n${EVENTOS.length} evento, ${ESTABLECIMIENTOS.length} establecimientos y ${PRODUCTOS.length} productos sembrados.`);
     for (const evento of EVENTOS) {
       console.log(`  Evento: ${evento.nombre} (${evento.eventoId})`);
     }
@@ -49,7 +50,7 @@ async function sembrar(): Promise<void> {
     for (const producto of PRODUCTOS) {
       console.log(`  ${producto.nombre}: precio=${producto.precio}, inventario=${producto.cantidadInventario}, activo=${producto.activo}`);
     }
-    console.log('Pedidos, detalles e intentos de pago quedaron vacíos.');
+    console.log('Pedidos, detalles, intentos de pago y reservas quedaron vacíos.');
   } finally {
     if (fuenteDatos.isInitialized) {
       await fuenteDatos.destroy();

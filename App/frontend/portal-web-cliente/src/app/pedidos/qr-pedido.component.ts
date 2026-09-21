@@ -7,8 +7,8 @@ import { toDataURL } from 'qrcode';
   standalone: true,
   template: `
     @if (imagen()) { <img [src]="imagen()" width="256" height="256" alt="Código QR del pedido confirmado" /> }
-    @if (error()) { <p role="alert">No se pudo dibujar el QR. Conserva el código del pedido.</p> }
-    <p class="codigo">{{ codigo() }}</p>
+    @if (error()) { <p role="alert">No pudimos mostrar tu QR. Tu compra sigue confirmada; mantén esta pantalla abierta.</p> }
+
   `,
   styles: [':host { display: block; text-align: center; } img { max-width: 100%; height: auto; } .codigo { overflow-wrap: anywhere; }']
 })

@@ -3,18 +3,15 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
 import { PagoPedido, clavePago, CheckoutPedido, EstablecimientoPedido, PedidosService, ProductoPedido, mensajePedidos } from '../core/pedidos.service';
 import { ErrorCuenta } from '../core/auth.service';
 
 @Component({
   selector: 'app-menu-establecimiento',
   standalone: true,
-  imports: [QrPedidoComponent, DatePipe, DecimalPipe, FormsModule, RouterLink, MatCardModule, MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule],
+  imports: [QrPedidoComponent, DatePipe, DecimalPipe, FormsModule, RouterLink, MatButtonModule, MatIconModule],
   templateUrl: './menu-establecimiento.component.html',
   styleUrl: './menu-establecimiento.component.scss'
 })
@@ -36,7 +33,7 @@ export class MenuEstablecimientoComponent {
   readonly pagando = signal(false);
   readonly mensajePago = signal('');
   private claveIntento: string | null = null;
-  metodoEntrega = '';
+  metodoEntrega = 'RECOGER';
 
   async pagar(): Promise<void> {
     const pedido = this.checkout();
@@ -56,7 +53,7 @@ export class MenuEstablecimientoComponent {
       }
     } catch (error) {
       // Mantener la clave ante timeout o fallo de confirmación: nunca iniciar otro cobro a ciegas.
-      this.mensajePago.set(`${mensajePedidos(error)} No se confirmó la compra; reintentar usará el mismo intento de pago.`);
+      this.mensajePago.set('No pudimos confirmar el pago. Puedes volver a consultar su resultado de forma segura.');
     } finally { this.pagando.set(false); }
   }
 

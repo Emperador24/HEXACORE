@@ -117,5 +117,5 @@ export function mensajePedidos(error: unknown): string {
     EVENTO_NO_DISPONIBLE: 'El evento no está disponible para pedidos.',
     ESTABLECIMIENTO_NO_DISPONIBLE: 'El establecimiento no está disponible para pedidos.'
   };
-  return mensajes[error.codigo] ?? error.message;
+  return mensajes[error.codigo] ?? (error.estado === 401 ? 'Tu sesión terminó. Inicia sesión nuevamente.' : error.estado === 403 ? 'No tienes permiso para realizar esta operación.' : 'No pudimos completar la solicitud. Revisa tu selección y vuelve a intentar.');
 }

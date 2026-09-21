@@ -1,30 +1,24 @@
-<h1>Pedidos</h1>
-<p>Elige dónde pedir durante tu evento.</p>
-<p>Evento de demostración: HEXACORE Fest 2026. También puedes consultar el identificador de otro evento.</p>
-<form (ngSubmit)="consultar()">
-  <mat-form-field appearance="outline">
-    <mat-label>Identificador del evento</mat-label>
-    <input matInput name="eventoId" [(ngModel)]="eventoId" required [disabled]="cargando()" />
-  </mat-form-field>
-  <button mat-flat-button type="submit" [disabled]="cargando() || !eventoId.trim()">Consultar establecimientos</button>
-</form>
+<header class="cabecera hxc-vidrio">
+  <span class="hxc-badge-icono" style="--tinte: var(--hxc-ambar)"><mat-icon>restaurant</mat-icon></span>
+  <div><p class="hxc-rotulo-seccion">TU EVENTO, A TU RITMO</p><h1>¿Qué se te antoja?</h1>
+  <p class="hxc-suave">Elige un establecimiento y prepara tu pedido sin perderte el evento.</p></div>
+</header>
+<div class="encabezado-lista"><h2>Establecimientos</h2><button mat-button (click)="consultar()" [disabled]="cargando()"><mat-icon>refresh</mat-icon>Actualizar</button></div>
 @if (cargando()) {
-  <p role="status">Cargando establecimientos…</p>
+  <div class="vacio hxc-vidrio" role="status"><mat-icon>hourglass_empty</mat-icon><p>Buscando dónde pedir…</p></div>
 } @else if (error()) {
-  <p role="alert">{{ error() }}</p>
+  <div class="vacio hxc-vidrio" role="alert"><mat-icon>info_outline</mat-icon><p>{{ error() }}</p><button mat-stroked-button (click)="consultar()">Volver a intentar</button></div>
 } @else {
   <div class="grilla">
     @for (establecimiento of establecimientos(); track establecimiento.id) {
-      <a class="tarjeta-link" [routerLink]="['/pedidos', establecimiento.id]" [queryParams]="{ eventoId: eventoConsultado() }">
-        <mat-card class="tarjeta">
-          <mat-card-header>
-            <mat-card-title>{{ establecimiento.nombre }}</mat-card-title>
-            <mat-card-subtitle>{{ establecimiento.puntoEntrega }}</mat-card-subtitle>
-          </mat-card-header>
-        </mat-card>
+      <a class="tarjeta-link hxc-vidrio" [routerLink]="['/pedidos', establecimiento.id]" [queryParams]="{ eventoId: eventoConsultado() }">
+        <div class="tarjeta-arriba"><span class="hxc-badge-icono" style="--tinte: var(--hxc-ambar)"><mat-icon>storefront</mat-icon></span><span class="hxc-badge" style="--tinte: var(--hxc-verde)">Disponible</span></div>
+        <h3>{{ establecimiento.nombre }}</h3>
+        <p class="ubicacion"><mat-icon>place</mat-icon>{{ establecimiento.puntoEntrega }}</p>
+        <span class="cta">Ver menú <mat-icon>arrow_forward</mat-icon></span>
       </a>
     } @empty {
-      <p class="vacio">No hay establecimientos disponibles para este evento.</p>
+      <div class="vacio hxc-vidrio"><mat-icon>storefront</mat-icon><h3>Aún no hay establecimientos disponibles</h3><p>Vuelve a consultar en unos momentos.</p></div>
     }
   </div>
 }

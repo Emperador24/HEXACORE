@@ -115,4 +115,13 @@ describe('Inicio del checkout de Pedidos', () => {
     expect(servicio.pagar.calls.argsFor(0)[1]).toBe(servicio.pagar.calls.argsFor(1)[1]);
   });
 
+  it('ofrece recogida con una etiqueta amigable y envía RECOGER al backend', async () => {
+    const nueva = TestBed.runInInjectionContext(() => new MenuEstablecimientoComponent());
+    expect(nueva.metodoEntrega).toBe('RECOGER');
+    nueva.cambiar(producto, 1);
+    servicio.crearCheckout.and.rejectWith(new ErrorCuenta('INVENTARIO_INSUFICIENTE', '', 409));
+    await nueva.iniciarCheckout();
+    expect(servicio.crearCheckout.calls.mostRecent().args[0].metodoEntrega).toBe('RECOGER');
+  });
+
 });
