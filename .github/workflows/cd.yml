@@ -1,0 +1,173 @@
+# Entrega continua de HEXACORE.
+#
+# Cada vez que algo entra a `develop` o a `main`, este pipeline **construye las
+# imágenes de los cuatro contenedores desplegables y las publica** en el
+# registro de paquetes de GitHub (ghcr.io), etiquetadas con la rama y con el
+# identificador exacto del commit.
+#
+# A partir de ahí, desplegar en cualquier computador es bajarse esas imágenes y
+# levantarlas — sin compilar nada, sin Node instalado, sin el repositorio:
+#
+#   cd App/infra && ./iniciar.sh --registro develop
+#
+# ## Qué es y qué no es
+#
+# Es **entrega** continua: el artefacto queda construido, versionado y listo
+# para desplegar, y el despliegue es una orden de un paso. No es **despliegue**
+# continuo a un servidor de producción, porque este proyecto todavía no tiene
+# uno; cuando lo tenga, se añade aquí un trabajo más que haga `docker compose
+# pull && up -d` contra esa máquina.
+#
+# Decir esto con precisión importa más que aparentar más de lo que hay.
+#
+# ## Por qué ghcr.io y no Docker Hub
+#
+# Viene con el repositorio: no hace falta crear cuentas ni guardar contraseñas.
+# El `GITHUB_TOKEN` que el propio pipeline recibe basta para publicar, y las
+# imágenes heredan los permisos del repositorio.
+
+name: CD
+
+on:
+  push:
+    branches: [main, develop]
+  # Permite publicar a mano desde la pestaña Actions, útil para preparar una
+  # demostración sin tener que empujar un commit.
+  workflow_dispatch:
+
+env:
+  REGISTRO: ghcr.io
+
+jobs:
+  imagenes:
+    name: Imagen de ${{ matrix.nombre }}
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      # Sin esto, el token no puede escribir en el registro de paquetes.
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - nombre: administracion
+            contexto: App/services/administracion
+          - nombre: entradas-mercado-secundario
+            contexto: App/services/entradas-mercado-secundario
+          - nombre: eventos-emergencias
+            contexto: App/services/eventos-emergencias
+          - nombre: gateway
+            contexto: App/gateway
+          - nombre: portal-cliente
+            contexto: App/frontend/portal-web-cliente
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Permite compilar para arm64 desde un runner amd64, por emulación.
+      - name: Preparar QEMU
+        uses: docker/setup-qemu-action@v3
+
+      # Hace falta para guardar la caché de compilación entre corridas: el
+      # driver que Docker trae por defecto en el runner no sabe exportarla.
+      - name: Preparar Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Entrar al registro
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRO }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Los nombres de imagen tienen que ir en minúsculas y el del repositorio
+      # no lo está (Emperador24/HEXACORE).
+      - name: Nombre de la imagen
+        id: imagen
+        run: echo "ruta=${REGISTRO}/$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')/hexacore-${{ matrix.nombre }}" >> "$GITHUB_OUTPUT"
+
+      - name: Etiquetas
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.imagen.outputs.ruta }}
+          # Tres etiquetas por imagen:
+          #   develop / main  — la última de cada rama, que es lo que se despliega
+          #   sha-a1b2c3d     — el commit exacto, para poder volver atrás
+          #   latest          — solo desde main
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Construir y publicar
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.contexto }}
+          push: true
+          # Dos arquitecturas, y no es un lujo: los runners de GitHub son
+          # amd64, pero los portátiles del equipo son Mac con chip Apple
+          # (arm64). Publicando solo amd64, `./iniciar.sh --registro` falla en
+          # la máquina de la demostración con «no matching manifest».
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # La caché de GitHub Actions evita recompilar `npm ci` en cada push.
+          cache-from: type=gha,scope=${{ matrix.nombre }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.nombre }}
+
+  # Comprueba que lo publicado **de verdad levanta**. Publicar una imagen que no
+  # arranca es peor que no publicarla: se descubre en la máquina de destino.
+  comprobacion:
+    name: El sistema publicado arranca
+    needs: imagenes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Entrar al registro
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRO }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Levantar el sistema desde las imágenes publicadas
+        working-directory: App/infra
+        env:
+          HEXACORE_REGISTRO: ghcr.io/emperador24
+        run: |
+          # Una rama con barra (`feature/samuel`) no es una etiqueta de imagen
+          # válida: Docker no admite `/` ahí, y la acción de metadatos la
+          # convierte en guion al publicar. Aquí se hace la misma conversión.
+          export HEXACORE_ETIQUETA="$(echo '${{ github.ref_name }}' | tr '/' '-')"
+          echo "Desplegando la etiqueta $HEXACORE_ETIQUETA"
+          docker compose -f docker-compose.yml -f docker-compose.registro.yml \
+            --profile servicios up -d
+
+      - name: Esperar a que el gateway responda
+        run: |
+          for _ in $(seq 1 60); do
+            if curl -sf http://localhost:8080/salud >/dev/null; then
+              echo "El gateway responde."
+              curl -s http://localhost:8080/api/v1/salud
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "::error::El sistema publicado no llegó a responder."
+          docker compose -f App/infra/docker-compose.yml \
+            -f App/infra/docker-compose.registro.yml --profile servicios logs --tail 40
+          exit 1
+
+      - name: Apagar
+        if: always()
+        working-directory: App/infra
+        run: docker compose -f docker-compose.yml -f docker-compose.registro.yml
+             --profile servicios down -v

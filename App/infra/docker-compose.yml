@@ -195,6 +195,16 @@ services:
     volumes:
       - ./claves-desarrollo/jwt-privada.pem:/claves/jwt-privada.pem:ro
       - ./claves-desarrollo/jwt-publica.pem:/claves/jwt-publica.pem:ro
+    # En una máquina limpia, el primer arranque incluye inicializar PostgreSQL
+    # y correr las migraciones. La sonda que trae la imagen agota sus
+    # reintentos antes de eso y Compose da el sistema por fallido con todo ya
+    # en pie; esta le da margen de sobra.
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3002/api/v1/salud',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      start_period: 90s
+      retries: 10
     ports:
       - "3002:3002"
 
@@ -219,6 +229,16 @@ services:
       PASARELA_URL: http://${HOST_PASARELA:-pasarela}:${PUERTO_PASARELA:-3099}
     volumes:
       - ./claves-desarrollo/jwt-publica.pem:/claves/jwt-publica.pem:ro
+    # En una máquina limpia, el primer arranque incluye inicializar PostgreSQL
+    # y correr las migraciones. La sonda que trae la imagen agota sus
+    # reintentos antes de eso y Compose da el sistema por fallido con todo ya
+    # en pie; esta le da margen de sobra.
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3001/api/v1/salud',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      start_period: 90s
+      retries: 10
     ports:
       - "3001:3001"
 
@@ -246,6 +266,28 @@ services:
       - ./claves-desarrollo/jwt-publica.pem:/claves/jwt-publica.pem:ro
     ports:
       - "3016:3016"
+    # La imagen no trae sonda propia, así que se declara aquí. `/turnos` exige
+    # sesión y responde 401 sin token: eso ya demuestra que el proceso atiende
+    # y que llegó a la base. Cualquier 5xx sí es un problema.
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qS -O /dev/null http://127.0.0.1:3016/api/v1/turnos 2>&1 | grep -qE 'HTTP/1.1 (2|4)' || exit 1"]
+      interval: 10s
+      timeout: 3s
+      start_period: 25s
+      retries: 5
+
+  # Portal Web de Clientes. Se sirve como sitio estático: el navegador de quien
+  # lo abre es el que llama al gateway, así que la misma imagen vale en
+  # cualquier máquina sin recompilar.
+  portal-web-cliente:
+    profiles: ["servicios"]
+    build: ../frontend/portal-web-cliente
+    container_name: hexacore-portal
+    restart: unless-stopped
+    depends_on:
+      api-gateway: { condition: service_healthy }
+    ports:
+      - "4200:4200"
 
 volumes:
   postgres-datos:
