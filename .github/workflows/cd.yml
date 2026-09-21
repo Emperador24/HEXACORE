@@ -30,7 +30,7 @@ name: CD
 
 on:
   push:
-    branches: [main, develop, feature/samuel]  # TEMPORAL
+    branches: [main, develop]
   # Permite publicar a mano desde la pestaña Actions, útil para preparar una
   # demostración sin tener que empujar un commit.
   workflow_dispatch:
