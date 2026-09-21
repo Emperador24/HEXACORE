@@ -1,7 +1,11 @@
-import { ExecutionContext, HttpException, ValidationPipe } from '@nestjs/common';
-import { DataSource, EntityManager } from 'typeorm';
+import { ExecutionContext, HttpException, Logger, ValidationPipe } from '@nestjs/common';
+import { DataSource, EntityManager, MoreThanOrEqual } from 'typeorm';
 import { Pedido, EstadoPedido } from '../persistencia/entidades/pedido.entity';
 import { TransaccionPedido, EstadoTransaccionPedido as Estado } from '../persistencia/entidades/transaccion-pedido.entity';
+import { DetallePedido } from '../persistencia/entidades/detalle-pedido.entity';
+import { Producto } from '../persistencia/entidades/producto.entity';
+import { ReservaInventario, EstadoReservaInventario as EstadoReserva } from '../persistencia/entidades/reserva-inventario.entity';
+import { ReservasService } from '../inventario/reservas.service';
 import { CrearPagoDto } from './dto/crear-pago.dto';
 import { PagosService } from './pagos.service';
 import { PasarelaHttp } from './pasarela-http.service';
@@ -14,6 +18,9 @@ const id = '50000000-0000-4000-8000-000000000001';
 const clave = '60000000-0000-4000-8000-000000000001';
 const otraClave = '60000000-0000-4000-8000-000000000002';
 const cliente = 'a0000001-0000-4000-8000-000000000001';
+const establecimientoId = '30000000-0000-4000-8000-000000000001';
+const productoId = '40000000-0000-4000-8000-000000000001';
+const productoDosId = '40000000-0000-4000-8000-000000000002';
 const aprobado = { estado: Estado.APROBADA, referenciaPasarela: 'pas_70000000-0000-4000-8000-000000000001', motivo: null };
 
 const pipe = new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true, validationError: { target: false, value: false } });
@@ -34,42 +41,96 @@ describe('PagosService (gestor transaccional simulado)', () => {
   let intentos: TransaccionPedido[];
   let cobrar: jest.Mock;
   let servicio: PagosService;
-  let gestor: { findOne: jest.Mock; findOneOrFail: jest.Mock; find: jest.Mock; create: jest.Mock; insert: jest.Mock; save: jest.Mock };
+  let reserva: ReservaInventario | null;
+  let detalles: DetallePedido[];
+  let productos: Producto[];
+  let consumir: jest.Mock;
+  let actualizarConsumo: jest.Mock;
+  let fallarCommitConfirmacion: boolean;
+  let gestor: { findOne: jest.Mock; findOneOrFail: jest.Mock; find: jest.Mock; create: jest.Mock; insert: jest.Mock; save: jest.Mock; decrement: jest.Mock };
   let dentro: boolean;
   beforeEach(() => {
-    pedido = Object.assign(new Pedido(), { id, clienteId: cliente, total: '25000.00', moneda: 'COP', estado: EstadoPedido.PENDIENTE_PAGO, expiraEn: new Date(Date.now() + 600000), codigoQr: null, confirmadoEn: null });
+    pedido = Object.assign(new Pedido(), { id, establecimientoId, clienteId: cliente, total: '25000.00', moneda: 'COP', estado: EstadoPedido.PENDIENTE_PAGO, expiraEn: new Date(Date.now() + 600000), codigoQr: null, confirmadoEn: null });
     intentos = [];
+    reserva = Object.assign(new ReservaInventario(), { pedidoId: id, estado: EstadoReserva.ACTIVA });
+    detalles = [{ pedidoId: id, productoId, cantidad: 2 }] as DetallePedido[];
+    productos = [{ id: productoId, establecimientoId, cantidadInventario: 5 }] as Producto[];
+    fallarCommitConfirmacion = false;
+    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
     dentro = false;
     gestor = {
       findOne: jest.fn(async (tipo, opciones) => tipo === Pedido
         ? opciones.where.clienteId && opciones.where.clienteId !== cliente ? null : pedido
-        : intentos.find((t) => t.id === opciones.where.id) ?? null),
-      findOneOrFail: jest.fn(async (tipo, opciones) => tipo === Pedido ? pedido : intentos.find((t) => t.id === opciones.where.id)),
-      find: jest.fn(async () => intentos),
+        : tipo === ReservaInventario ? reserva : intentos.find((t) => t.id === opciones.where.id) ?? null),
+      findOneOrFail: jest.fn(async (tipo, opciones) => {
+        const fila = await gestor.findOne(tipo, opciones);
+        if (!fila) throw new Error('Registro no encontrado');
+        return fila;
+      }),
+      find: jest.fn(async (tipo) => tipo === DetallePedido ? detalles : tipo === Producto ? productos : intentos),
       create: jest.fn((_tipo, datos) => ({ ...datos })),
       insert: jest.fn(async (_tipo, datos) => { intentos.push(datos); }),
       save: jest.fn(async (_tipo, datos) => datos),
+      decrement: jest.fn(async (_tipo, criterio, _campo, cantidad) => {
+        const producto = productos.find((p) => p.id === criterio.id && p.establecimientoId === criterio.establecimientoId);
+        expect(criterio.cantidadInventario).toEqual(MoreThanOrEqual(cantidad));
+        if (!producto || producto.cantidadInventario < cantidad) return { affected: 0 };
+        producto.cantidadInventario -= cantidad;
+        return { affected: 1 };
+      }),
     };
     // Serializa callbacks como el bloqueo de Pedido; no sustituye una prueba real de PostgreSQL.
     let cola = Promise.resolve();
     const transaction = <T>(trabajo: (tx: EntityManager) => Promise<T>): Promise<T> => {
-      const resultado = cola.then(async () => { dentro = true; try { return await trabajo(gestor as unknown as EntityManager); } finally { dentro = false; } });
+      const resultado = cola.then(async () => {
+        dentro = true;
+        const previo = structuredClone({ pedido, reserva, detalles, productos, intentos });
+        try {
+          const valor = await trabajo(gestor as unknown as EntityManager);
+          if (fallarCommitConfirmacion && previo.pedido.estado !== EstadoPedido.CONFIRMADO && pedido.estado === EstadoPedido.CONFIRMADO) {
+            throw new Error('falló commit de confirmación');
+          }
+          return valor;
+        } catch (error) {
+          ({ pedido, reserva, detalles, productos, intentos } = previo);
+          throw error;
+        } finally { dentro = false; }
+      });
       cola = resultado.then(() => undefined, () => undefined);
       return resultado;
     };
     cobrar = jest.fn(async () => { expect(dentro).toBe(false); return aprobado; });
-    servicio = new PagosService({ transaction } as DataSource, { cobrar } as unknown as PasarelaHttp);
+    consumir = jest.fn(async () => {
+      expect(dentro).toBe(false);
+      expect(pedido.estado).toBe(EstadoPedido.CONFIRMADO);
+      expect(reserva?.estado).toBe(EstadoReserva.CONSUMO_PENDIENTE);
+      return { estado: 'CONSUMIDA' };
+    });
+    actualizarConsumo = jest.fn(async (_tipo, criterio, cambios) => {
+      if (!reserva || reserva.estado !== criterio.estado) return { affected: 0 };
+      Object.assign(reserva, cambios);
+      return { affected: 1 };
+    });
+    servicio = new PagosService({ transaction, manager: { update: actualizarConsumo } } as unknown as DataSource,
+      { cobrar } as unknown as PasarelaHttp, { consumir } as unknown as ReservasService);
   });
+  afterEach(() => jest.restoreAllMocks());
   const errorCodigo = async (promesa: Promise<unknown>, codigo: string) => {
     await expect(promesa).rejects.toMatchObject({ response: { codigo } });
   };
-  it('cobra el total guardado, registra aprobación y no confirma el pedido', async () => {
+  it('cobra el total guardado, confirma el pedido y consume el inventario reservado', async () => {
     const resultado = await servicio.pagar(cliente, id, clave, 'tok_secreto');
     expect(cobrar).toHaveBeenCalledWith(clave, '25000.00', 'COP', 'tok_secreto');
-    expect(resultado).toMatchObject({ estadoPago: Estado.APROBADA, estadoPedido: EstadoPedido.PENDIENTE_PAGO, compraConfirmada: false });
-    expect(pedido).toMatchObject({ codigoQr: null, confirmadoEn: null });
+    expect(resultado).toMatchObject({ estadoPago: Estado.APROBADA, estadoPedido: EstadoPedido.CONFIRMADO, compraConfirmada: true });
+    expect(pedido).toMatchObject({ codigoQr: null, confirmadoEn: expect.any(Date) });
+    expect(productos[0].cantidadInventario).toBe(3);
+    expect(reserva?.estado).toBe(EstadoReserva.CONSUMIDA);
+    expect(consumir).toHaveBeenCalledWith(establecimientoId, id);
+    expect(actualizarConsumo).toHaveBeenCalledWith(ReservaInventario,
+      { pedidoId: id, estado: EstadoReserva.CONSUMO_PENDIENTE }, { estado: EstadoReserva.CONSUMIDA });
+    expect(gestor.find).toHaveBeenCalledWith(Producto, expect.objectContaining({ order: { id: 'ASC' }, lock: { mode: 'pessimistic_write' } }));
     expect(gestor.findOne).toHaveBeenCalledWith(Pedido, { where: { id, clienteId: cliente }, lock: { mode: 'pessimistic_write' } });
-    expect(gestor.save.mock.calls.every(([tipo]) => tipo === TransaccionPedido)).toBe(true);
+    expect(gestor.save).toHaveBeenCalledWith(TransaccionPedido, expect.objectContaining({ estado: Estado.APROBADA }));
     expect(JSON.stringify(intentos)).not.toContain('tok_secreto');
   });
   it('repite aprobación aun vencido sin cobrar y bloquea otra clave', async () => {
@@ -78,10 +139,17 @@ describe('PagosService (gestor transaccional simulado)', () => {
     expect(await servicio.pagar(cliente, id, clave, 'tok_otro')).toEqual(primero);
     await errorCodigo(servicio.pagar(cliente, id, otraClave, 'tok_otro'), 'PEDIDO_YA_PAGADO');
     expect(cobrar).toHaveBeenCalledTimes(1);
+    expect(gestor.decrement).toHaveBeenCalledTimes(1);
+    expect(productos[0].cantidadInventario).toBe(3);
+    expect(consumir).toHaveBeenCalledTimes(1);
   });
   it('conserva rechazo y permite un nuevo intento mientras esté vigente', async () => {
     cobrar.mockResolvedValueOnce({ estado: Estado.RECHAZADA, referenciaPasarela: aprobado.referenciaPasarela, motivo: 'PAGO_RECHAZADO' });
     await servicio.pagar(cliente, id, clave, 'tok_rechazo');
+    expect(gestor.decrement).not.toHaveBeenCalled();
+    expect(consumir).not.toHaveBeenCalled();
+    expect(reserva?.estado).toBe(EstadoReserva.ACTIVA);
+    expect(productos[0].cantidadInventario).toBe(5);
     expect((await servicio.pagar(cliente, id, clave, 'tok_ok')).estadoPago).toBe(Estado.RECHAZADA);
     await servicio.pagar(cliente, id, otraClave, 'tok_ok');
     expect(intentos.map((t) => t.estado)).toEqual([Estado.RECHAZADA, Estado.APROBADA]);
@@ -136,7 +204,7 @@ describe('PagosService (gestor transaccional simulado)', () => {
     pedido.expiraEn = new Date(0);
     terminar(aprobado);
     expect((await primera).estadoPago).toBe(Estado.APROBADA);
-    expect(pedido.estado).toBe(EstadoPedido.PENDIENTE_PAGO);
+    expect(pedido.estado).toBe(EstadoPedido.CONFIRMADO);
     expect(cobrar).toHaveBeenCalledTimes(1);
   });
   it('expira tras rechazo tardío', async () => {
@@ -149,6 +217,117 @@ describe('PagosService (gestor transaccional simulado)', () => {
     await errorCodigo(servicio.pagar(cliente, id, otraClave, 'tok_ok'), 'PAGO_PENDIENTE_RESOLUCION');
     expect(cobrar).toHaveBeenCalledTimes(1);
   });
+  it.each([null, EstadoReserva.PREPARANDO, EstadoReserva.LIBERACION_PENDIENTE, EstadoReserva.LIBERADA, EstadoReserva.CONSUMO_PENDIENTE, EstadoReserva.CONSUMIDA])('no cobra sin reserva ACTIVA (%s)', async (estado) => {
+    if (estado === null) reserva = null;
+    else reserva!.estado = estado;
+    await errorCodigo(servicio.pagar(cliente, id, clave, 'tok_ok'), 'RESERVA_NO_ACTIVA');
+    expect(cobrar).not.toHaveBeenCalled();
+    expect(intentos).toHaveLength(0);
+    expect(gestor.decrement).not.toHaveBeenCalled();
+    expect(consumir).not.toHaveBeenCalled();
+  });
+  it('descuenta varios productos dentro de la misma confirmación', async () => {
+    detalles.push({ pedidoId: id, productoId: productoDosId, cantidad: 3 } as DetallePedido);
+    productos.push({ id: productoDosId, establecimientoId, cantidadInventario: 3 } as Producto);
+    await servicio.pagar(cliente, id, clave, 'tok_ok');
+    expect(productos.map((p) => p.cantidadInventario)).toEqual([3, 0]);
+    expect(gestor.decrement).toHaveBeenCalledTimes(2);
+    expect(pedido.estado).toBe(EstadoPedido.CONFIRMADO);
+  });
+  it('stock insuficiente en el segundo producto revierte el primer descuento, sin inventario negativo', async () => {
+    detalles.push({ pedidoId: id, productoId: productoDosId, cantidad: 3 } as DetallePedido);
+    productos.push({ id: productoDosId, establecimientoId, cantidadInventario: 2 } as Producto);
+    await errorCodigo(servicio.pagar(cliente, id, clave, 'tok_ok'), 'INVENTARIO_INSUFICIENTE_CONFIRMACION');
+    expect(gestor.decrement).toHaveBeenCalledTimes(2);
+    expect(productos.map((p) => p.cantidadInventario)).toEqual([5, 2]);
+    expect(pedido).toMatchObject({ estado: EstadoPedido.PENDIENTE_PAGO, confirmadoEn: null });
+    expect(reserva?.estado).toBe(EstadoReserva.ACTIVA);
+    expect(intentos[0].estado).toBe(Estado.APROBADA);
+    expect(consumir).not.toHaveBeenCalled();
+  });
+  it('un fallo PostgreSQL al guardar la confirmación revierte stock y conserva aprobación y reserva', async () => {
+    gestor.save.mockImplementation(async (tipo, datos) => {
+      if (tipo === ReservaInventario) throw new Error('fallo SQL');
+      return datos;
+    });
+    await expect(servicio.pagar(cliente, id, clave, 'tok_ok')).rejects.toThrow('fallo SQL');
+    expect(productos[0].cantidadInventario).toBe(5);
+    expect(pedido.estado).toBe(EstadoPedido.PENDIENTE_PAGO);
+    expect(reserva?.estado).toBe(EstadoReserva.ACTIVA);
+    expect(intentos[0].estado).toBe(Estado.APROBADA);
+    expect(consumir).not.toHaveBeenCalled();
+  });
+  it('si falla el commit de confirmación no consume Redis; un replay puede completar sin recobrar', async () => {
+    fallarCommitConfirmacion = true;
+    await expect(servicio.pagar(cliente, id, clave, 'tok_ok')).rejects.toThrow('falló commit de confirmación');
+    expect(consumir).not.toHaveBeenCalled();
+    expect(intentos[0].estado).toBe(Estado.APROBADA);
+    expect(productos[0].cantidadInventario).toBe(5);
+    fallarCommitConfirmacion = false;
+    expect((await servicio.pagar(cliente, id, clave, 'tok_ok')).compraConfirmada).toBe(true);
+    expect(cobrar).toHaveBeenCalledTimes(1);
+    expect(productos[0].cantidadInventario).toBe(3);
+  });
+  it('fallo Redis deja CONSUMO_PENDIENTE y compra confirmada; replay solo reintenta el cierre', async () => {
+    consumir.mockRejectedValueOnce(new Error('Redis no disponible'));
+    expect((await servicio.pagar(cliente, id, clave, 'tok_ok')).compraConfirmada).toBe(true);
+    expect(reserva?.estado).toBe(EstadoReserva.CONSUMO_PENDIENTE);
+    expect(pedido.estado).toBe(EstadoPedido.CONFIRMADO);
+    expect(productos[0].cantidadInventario).toBe(3);
+    expect(actualizarConsumo).not.toHaveBeenCalled();
+    expect(Logger.prototype.error).toHaveBeenCalledWith(expect.stringContaining('CONSUMO_REDIS_PENDIENTE'));
+    await servicio.pagar(cliente, id, clave, 'tok_ok');
+    expect(reserva?.estado).toBe(EstadoReserva.CONSUMIDA);
+    expect(gestor.decrement).toHaveBeenCalledTimes(1);
+    expect(cobrar).toHaveBeenCalledTimes(1);
+    expect(consumir).toHaveBeenCalledTimes(2);
+  });
+  it('fallo al guardar CONSUMIDA no desconfirma ni vuelve a sumar inventario', async () => {
+    actualizarConsumo.mockRejectedValueOnce(new Error('DB no disponible'));
+    expect((await servicio.pagar(cliente, id, clave, 'tok_ok')).compraConfirmada).toBe(true);
+    expect(reserva?.estado).toBe(EstadoReserva.CONSUMO_PENDIENTE);
+    expect(productos[0].cantidadInventario).toBe(3);
+    await servicio.pagar(cliente, id, clave, 'tok_ok');
+    expect(reserva?.estado).toBe(EstadoReserva.CONSUMIDA);
+    expect(gestor.decrement).toHaveBeenCalledTimes(1);
+  });
+  it('vuelve a validar la reserva después del cobro, preservando la aprobación si dejó de estar activa', async () => {
+    cobrar.mockImplementation(async () => { reserva!.estado = EstadoReserva.LIBERADA; return aprobado; });
+    await errorCodigo(servicio.pagar(cliente, id, clave, 'tok_ok'), 'PEDIDO_NO_CONFIRMABLE');
+    expect(intentos[0].estado).toBe(Estado.APROBADA);
+    expect(gestor.decrement).not.toHaveBeenCalled();
+    expect(consumir).not.toHaveBeenCalled();
+  });
+  it.each(['sin detalles', 'producto ausente', 'otro establecimiento', 'pedido cancelado'])('rechaza confirmación inconsistente: %s', async (caso) => {
+    cobrar.mockImplementation(async () => {
+      if (caso === 'sin detalles') detalles = [];
+      if (caso === 'producto ausente') productos = [];
+      if (caso === 'otro establecimiento') productos[0].establecimientoId = 'otro';
+      if (caso === 'pedido cancelado') pedido.estado = EstadoPedido.CANCELADO;
+      return aprobado;
+    });
+    await expect(servicio.pagar(cliente, id, clave, 'tok_ok')).rejects.toMatchObject({ status: 409 });
+    expect(intentos[0].estado).toBe(Estado.APROBADA);
+    expect(gestor.decrement).not.toHaveBeenCalled();
+    expect(consumir).not.toHaveBeenCalled();
+  });
+  it('un cierre Redis inesperado no marca la reserva como CONSUMIDA', async () => {
+    consumir.mockResolvedValue({ estado: 'LIBERADA' });
+    expect((await servicio.pagar(cliente, id, clave, 'tok_ok')).compraConfirmada).toBe(true);
+    expect(reserva?.estado).toBe(EstadoReserva.CONSUMO_PENDIENTE);
+    expect(actualizarConsumo).not.toHaveBeenCalled();
+    expect(productos[0].cantidadInventario).toBe(3);
+  });
+  it('replays simultáneos de aprobación solo descuentan una vez', async () => {
+    intentos.push({ id: clave, pedidoId: id, estado: Estado.APROBADA, monto: pedido.total, moneda: pedido.moneda } as TransaccionPedido);
+    // El cierre Redis es idempotente; dos peticiones pueden observar CONSUMO_PENDIENTE.
+    consumir.mockResolvedValue({ estado: 'CONSUMIDA' });
+    await Promise.all([servicio.pagar(cliente, id, clave, 'tok_ok'), servicio.pagar(cliente, id, clave, 'tok_ok')]);
+    expect(gestor.decrement).toHaveBeenCalledTimes(1);
+    expect(productos[0].cantidadInventario).toBe(3);
+    expect(cobrar).not.toHaveBeenCalled();
+  });
+
 });
 
 describe('PagosController', () => {

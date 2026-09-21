@@ -20,7 +20,7 @@ export class PagosController {
   @UsePipes(new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true,
     validationError: { target: false, value: false } }))
   @ApiHeader({ name: 'Idempotency-Key', required: true, schema: { type: 'string', format: 'uuid' } })
-  @ApiOperation({ summary: 'Registrar un intento de pago sin confirmar la compra ni reservar inventario' })
+  @ApiOperation({ summary: 'Procesar un pago y confirmar el pedido descontando el inventario reservado' })
   @ApiResponse({ status: 200, type: PagoDto })
   @ApiResponse({ status: 202, type: PagoDto })
   @ApiResponse({ status: 502, type: PagoDto })
