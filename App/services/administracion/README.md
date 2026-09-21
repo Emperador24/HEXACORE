@@ -454,6 +454,29 @@ El CU-027 exige hash, tokens con expiración y bloqueo por fuerza bruta, pero **
 valor** ni nombra un algoritmo. Todos los puntos —incluido por qué se usa `scrypt` y no Argon2id, y
 por qué el login no dice nunca si un correo existe— están en [`DECISIONES.md`](DECISIONES.md).
 
+## Cobertura de las pruebas de integración
+
+```bash
+./pruebas/cobertura-integracion.sh
+```
+
+Levanta el servicio **de verdad** —con PostgreSQL, Redis y RabbitMQ—
+instrumentado con `c8`, le lanza encima las suites de `pruebas/*.py` y mide qué
+porcentaje del código quedó ejecutado. Es el número que pide la entrega, y el
+único defendible: cuenta **todo** el servicio.
+
+| Medición | Resultado |
+|---|---|
+| Sentencias | **94,95 %** |
+| Ramas | 79,0 % |
+| Funciones | 90,9 % |
+
+Informe navegable en `cobertura-integracion/index.html` (no se versiona).
+
+**No confundir con `npm run test:cov`**, que mide las unitarias y además engaña:
+Jest solo cuenta los archivos que esas pruebas tocan, así que reporta un
+porcentaje alto sobre una fracción del código.
+
 ## Pruebas
 
 ```bash

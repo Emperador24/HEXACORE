@@ -13,6 +13,7 @@ import { Turno } from './entities/turno.entity.js';
 import { ZonaEvento } from './entities/zona-evento.entity.js';
 import { EstadoTurno } from './enums/estados.js';
 import { EventosPublicadorService } from './eventos-publicador.service.js';
+import { horasAsignadasEseDia } from './horas-del-dia.js';
 import {
   MAX_HORAS_DIARIAS_EMPLEADO,
   MAX_HORAS_POR_TURNO,
@@ -158,13 +159,27 @@ export class PersonalOperativoService {
     }
 
     // CU-017C: límite de horas por turno y diarias del empleado.
+    //
+    // Lo diario se mide contra los turnos que ya tiene **ese día**, no contra
+    // `horasTrabajadasTotales`, que es el acumulado de toda su vida laboral:
+    // usándolo, cualquiera que hubiera trabajado un par de turnos quedaba
+    // inasignable para siempre. Ver `horas-del-dia.ts`.
     const duracionHoras = (horaFin.getTime() - horaInicio.getTime()) / 3_600_000;
+    const yaAsignadas = await horasAsignadasEseDia(
+      this.turnos,
+      empleado.id,
+      horaInicio,
+      excluirTurnoId,
+    );
     if (
       duracionHoras > MAX_HORAS_POR_TURNO ||
-      empleado.horasTrabajadasTotales + duracionHoras > MAX_HORAS_DIARIAS_EMPLEADO
+      yaAsignadas + duracionHoras > MAX_HORAS_DIARIAS_EMPLEADO
     ) {
       throw new BadRequestException(
-        `${empleado.nombre} superaría el límite de horas permitidas; selecciona otro empleado.`,
+        `${empleado.nombre} superaría el límite de horas: ya tiene ${yaAsignadas.toFixed(1)} h ` +
+          `asignadas ese día y este turno suma ${duracionHoras.toFixed(1)} h ` +
+          `(máximo ${MAX_HORAS_DIARIAS_EMPLEADO} h diarias, ${MAX_HORAS_POR_TURNO} h por turno). ` +
+          'Selecciona otro empleado.',
       );
     }
 

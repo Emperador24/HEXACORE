@@ -6,7 +6,10 @@ import { Test, TestingModule } from '@nestjs/testing';
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
 import type { App } from 'supertest/types';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import type { Repository } from 'typeorm';
 import { AppModule } from './../src/app.module.js';
+import { Empleado } from './../src/logistica/turnos-asistencia/entities/empleado.entity.js';
 
 const RUTA = '/api/v1/logistica';
 
@@ -28,6 +31,9 @@ describe('CU-017 · Asignar personal operativo (e2e)', () => {
   let app: INestApplication<App>;
   let server: App;
   let auth: string;
+  // Para montar escenarios que la API no permite crear —como un empleado con
+  // cientos de horas a la espalda— sin tener que simular meses de trabajo.
+  let empleados: Repository<Empleado>;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -40,6 +46,7 @@ describe('CU-017 · Asignar personal operativo (e2e)', () => {
     await app.init();
     server = app.getHttpServer();
     auth = `Bearer ${tokenDePrueba()}`;
+    empleados = moduleFixture.get<Repository<Empleado>>(getRepositoryToken(Empleado));
   });
 
   afterAll(async () => {
@@ -229,6 +236,65 @@ describe('CU-017 · Asignar personal operativo (e2e)', () => {
         horaFin: new Date(ahora + 17 * 60 * 60 * 1000).toISOString(),
       })
       .expect(400);
+  });
+
+  it('CU-017C: el tope diario cuenta los turnos de ESE día, no las horas de toda su vida laboral',
+    async () => {
+      const rol = `entrada-${randomUUID()}`;
+      const empleado = await crearEmpleado(rol);
+      const zona = await crearZona({ rolRequerido: rol, personalRequerido: 3 });
+
+      // Alguien con mucha trayectoria: 200 horas trabajadas en su historial.
+      // Antes esto lo dejaba inasignable para siempre, porque el tope diario se
+      // comparaba contra ese acumulado.
+      await empleados.update({ id: empleado.id }, { horasTrabajadasTotales: 200 });
+
+      const manana = new Date();
+      manana.setDate(manana.getDate() + 1);
+      manana.setHours(8, 0, 0, 0);
+
+      await request(server)
+        .post(`${RUTA}/zonas/${zona.id}/asignaciones`)
+        .set('Authorization', auth)
+        .send({
+          empleadoId: empleado.id,
+          horaInicio: manana.toISOString(),
+          horaFin: new Date(manana.getTime() + 8 * 60 * 60 * 1000).toISOString(),
+        })
+        .expect(201);
+    });
+
+  it('CU-017C: sí rechaza cuando los turnos del mismo día suman más del tope diario', async () => {
+    const rol = `entrada-${randomUUID()}`;
+    const empleado = await crearEmpleado(rol);
+    const zona = await crearZona({ rolRequerido: rol, personalRequerido: 3 });
+
+    const dia = new Date();
+    dia.setDate(dia.getDate() + 2);
+    dia.setHours(6, 0, 0, 0);
+    const enHoras = (h: number) => new Date(dia.getTime() + h * 60 * 60 * 1000).toISOString();
+
+    // 8 h por la mañana: cabe.
+    await request(server)
+      .post(`${RUTA}/zonas/${zona.id}/asignaciones`)
+      .set('Authorization', auth)
+      .send({ empleadoId: empleado.id, horaInicio: enHoras(0), horaFin: enHoras(8) })
+      .expect(201);
+
+    // Otras 8 h el mismo día suman 16 > 14 h diarias: no cabe.
+    const respuesta = await request(server)
+      .post(`${RUTA}/zonas/${zona.id}/asignaciones`)
+      .set('Authorization', auth)
+      .send({ empleadoId: empleado.id, horaInicio: enHoras(10), horaFin: enHoras(18) })
+      .expect(400);
+    expect(respuesta.body.message).toContain('límite de horas');
+
+    // Y al día siguiente vuelve a caber: el tope es diario, no acumulativo.
+    await request(server)
+      .post(`${RUTA}/zonas/${zona.id}/asignaciones`)
+      .set('Authorization', auth)
+      .send({ empleadoId: empleado.id, horaInicio: enHoras(24), horaFin: enHoras(32) })
+      .expect(201);
   });
 
   // --- Excepción CU-017E: reasignación de último momento ---
