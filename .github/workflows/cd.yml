@@ -30,7 +30,7 @@ name: CD
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, feature/samuel]  # TEMPORAL
   # Permite publicar a mano desde la pestaña Actions, útil para preparar una
   # demostración sin tener que empujar un commit.
   workflow_dispatch:
@@ -63,6 +63,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      # Permite compilar para arm64 desde un runner amd64, por emulación.
+      - name: Preparar QEMU
+        uses: docker/setup-qemu-action@v3
 
       # Hace falta para guardar la caché de compilación entre corridas: el
       # driver que Docker trae por defecto en el runner no sabe exportarla.
@@ -101,6 +105,11 @@ jobs:
         with:
           context: ${{ matrix.contexto }}
           push: true
+          # Dos arquitecturas, y no es un lujo: los runners de GitHub son
+          # amd64, pero los portátiles del equipo son Mac con chip Apple
+          # (arm64). Publicando solo amd64, `./iniciar.sh --registro` falla en
+          # la máquina de la demostración con «no matching manifest».
+          platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           # La caché de GitHub Actions evita recompilar `npm ci` en cada push.
