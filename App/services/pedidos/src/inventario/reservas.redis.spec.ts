@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import Redis from 'ioredis';
+import { PREPARAR_INVENTARIO_LUA } from './preparacion.scripts';
 import { clavesReserva, ReservasService, SolicitudReserva } from './reservas.service';
 
 // Opt-in: usar un Redis efímero dedicado. No hay FLUSHDB ni acceso a la configuración de desarrollo.
@@ -24,9 +25,11 @@ suiteRedis('Reservas Lua con Redis real', () => {
     establecimientoId = randomUUID(); p1 = randomUUID(); p2 = randomUUID();
     datos = { establecimientoId, pedidoId: randomUUID(), expiraEn: new Date(Date.now() + 60000), productos: [{ productoId: p1, cantidad: 2 }, { productoId: p2, cantidad: 3 }] };
     creadas.push(datos);
-    const [stock] = clavesReserva(establecimientoId, datos.pedidoId);
-    stocks.add(stock);
-    await redis.hset(stock, p1, 5, p2, 8);
+    const [stock, , vencimientos, preparado] = clavesReserva(establecimientoId, datos.pedidoId);
+    stocks.add(stock); stocks.add(preparado);
+    const resultado = await redis.eval(PREPARAR_INVENTARIO_LUA, 3, stock, preparado, vencimientos, establecimientoId,
+      JSON.stringify([{ productoId: p1, cantidadInventario: 5 }, { productoId: p2, cantidadInventario: 8 }]));
+    expect(JSON.parse(String(resultado))).toEqual({ codigo: 'OK' });
   });
   afterAll(async () => {
     if (!redis) return;
@@ -70,6 +73,19 @@ suiteRedis('Reservas Lua con Redis real', () => {
     await redis.hdel(clavesReserva(establecimientoId, datos.pedidoId)[0], p2);
     await expect(servicio.reservar(datos)).rejects.toMatchObject({ response: { codigo: 'INVENTARIO_NO_PREPARADO' } });
     expect(await stockActual()).toEqual(['5', null]);
+  });
+  it.each([0, 3])('sin stock o marca (%s) falla sin reparar Redis', async (indice) => {
+    const claves = clavesReserva(establecimientoId, datos.pedidoId);
+    await redis.del(claves[indice]);
+    await expect(servicio.reservar(datos)).rejects.toMatchObject({ response: { codigo: 'INVENTARIO_NO_PREPARADO' } });
+    expect(await redis.exists(claves[indice])).toBe(0);
+    expect(await redis.exists(claves[1])).toBe(0);
+  });
+  it('tampoco acepta un replay si se pierde la marca', async () => {
+    await servicio.reservar(datos);
+    await redis.del(clavesReserva(establecimientoId, datos.pedidoId)[3]);
+    await expect(servicio.reservar(datos)).rejects.toMatchObject({ response: { codigo: 'INVENTARIO_NO_PREPARADO' } });
+    expect(await stockActual()).toEqual(['3', '5']);
   });
   it('dos pedidos simultáneos no reservan la misma última unidad', async () => {
     await redis.hset(clavesReserva(establecimientoId, datos.pedidoId)[0], p1, 1);

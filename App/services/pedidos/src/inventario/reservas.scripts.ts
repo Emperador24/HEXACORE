@@ -1,5 +1,5 @@
 /** Lua embebido para que tsc/Nest lo distribuyan sin copiar assets ni cambiar el build.
- * KEYS: hash de disponibles del establecimiento, reserva GLOBAL por pedido, zset de vencimientos.
+ * KEYS: hash de disponibles del establecimiento, reserva GLOBAL por pedido, zset de vencimientos, marca de preparado.
  * Una misma etiqueta {inventario} permite atomicidad y unicidad global incluso entre establecimientos.
  * Ningún script expira claves. No hay rollback en Lua: validar antes de cualquier escritura.
  */
@@ -35,9 +35,22 @@ export const RESERVAR_LUA = COMUN + `
 local productos = productosValidos(ARGV[3])
 local expira = tonumber(ARGV[4])
 if not productos or not expira or expira ~= math.floor(expira) or expira <= 0 then return respuesta('ENTRADA_INVALIDA') end
-if redis.call('EXISTS', KEYS[2]) == 1 then
-  if redis.call('HGET', KEYS[2], 'establecimientoId') ~= ARGV[1] or
-     redis.call('HGET', KEYS[2], 'productos') ~= ARGV[3] then return respuesta('RESERVA_INCOMPATIBLE') end
+local existe = redis.call('EXISTS', KEYS[2]) == 1
+if existe and (redis.call('HGET', KEYS[2], 'establecimientoId') ~= ARGV[1] or
+   redis.call('HGET', KEYS[2], 'productos') ~= ARGV[3]) then return respuesta('RESERVA_INCOMPATIBLE') end
+if tipo(KEYS[4]) == 'none' or tipo(KEYS[1]) == 'none' then return respuesta('INVENTARIO_NO_PREPARADO') end
+if tipo(KEYS[4]) ~= 'string' or tipo(KEYS[1]) ~= 'hash' then return respuesta('DATOS_INCONSISTENTES') end
+if redis.call('GET', KEYS[4]) ~= '1' then return respuesta('INVENTARIO_NO_PREPARADO') end
+-- Exigir marca y todos los campos incluso al repetir una reserva. Nunca reparar aquí.
+local disponibles = {}
+for _, p in ipairs(productos) do
+  local valor = redis.call('HGET', KEYS[1], p.productoId)
+  if not valor then return respuesta('INVENTARIO_NO_PREPARADO') end
+  local cantidad = entero(valor)
+  if not cantidad then return respuesta('DATOS_INCONSISTENTES') end
+  disponibles[p.productoId] = cantidad
+end
+if existe then
   local estado = redis.call('HGET', KEYS[2], 'estado')
   local original = tonumber(redis.call('HGET', KEYS[2], 'expiraEn'))
   if not original or (estado ~= 'ACTIVA' and estado ~= 'LIBERADA' and estado ~= 'CONSUMIDA') then return respuesta('DATOS_INCONSISTENTES') end
@@ -47,14 +60,8 @@ end
 local reloj = redis.call('TIME')
 local ahora = tonumber(reloj[1]) * 1000 + math.floor(tonumber(reloj[2]) / 1000)
 if expira <= ahora then return respuesta('VENCIMIENTO_INVALIDO') end
-if tipo(KEYS[1]) == 'none' then return respuesta('INVENTARIO_NO_PREPARADO') end
-if tipo(KEYS[1]) ~= 'hash' then return respuesta('DATOS_INCONSISTENTES') end
 for _, p in ipairs(productos) do
-  local valor = redis.call('HGET', KEYS[1], p.productoId)
-  if not valor then return respuesta('INVENTARIO_NO_PREPARADO') end
-  local disponibles = entero(valor)
-  if not disponibles then return respuesta('DATOS_INCONSISTENTES') end
-  if disponibles < p.cantidad then return respuesta('INVENTARIO_INSUFICIENTE') end
+  if disponibles[p.productoId] < p.cantidad then return respuesta('INVENTARIO_INSUFICIENTE') end
 end
 for _, p in ipairs(productos) do redis.call('HINCRBY', KEYS[1], p.productoId, -p.cantidad) end
 redis.call('HSET', KEYS[2], 'establecimientoId', ARGV[1], 'productos', ARGV[3], 'estado', 'ACTIVA', 'expiraEn', ARGV[4])

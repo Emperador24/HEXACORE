@@ -18,9 +18,9 @@ export interface ResultadoReserva {
 }
 
 /** Clave global por pedido: cambiar de establecimiento no permite reservar dos veces con el mismo UUID. */
-export function clavesReserva(establecimientoId: string, pedidoId: string): [string, string, string] {
+export function clavesReserva(establecimientoId: string, pedidoId: string): [string, string, string, string] {
   const prefijo = 'pedidos:inv:{inventario}';
-  return [`${prefijo}:disponibles:${establecimientoId}`, `${prefijo}:reserva:${pedidoId}`, `${prefijo}:vencimientos`];
+  return [`${prefijo}:disponibles:${establecimientoId}`, `${prefijo}:reserva:${pedidoId}`, `${prefijo}:vencimientos`, `${prefijo}:preparado:${establecimientoId}`];
 }
 
 @Injectable()
@@ -64,7 +64,7 @@ export class ReservasService {
   private async ejecutar(script: string, establecimientoId: string, pedidoId: string, ...args: string[]): Promise<ResultadoReserva> {
     let resultado: { codigo: string; estado?: ResultadoReserva['estado']; expiraEn?: number; repetida?: boolean };
     try {
-      const respuesta = await this.redis.eval(script, 3, ...clavesReserva(establecimientoId, pedidoId), establecimientoId, pedidoId, ...args);
+      const respuesta = await this.redis.eval(script, 4, ...clavesReserva(establecimientoId, pedidoId), establecimientoId, pedidoId, ...args);
       resultado = JSON.parse(String(respuesta));
       if (!resultado || typeof resultado.codigo !== 'string') throw new Error('Respuesta inválida');
     } catch {

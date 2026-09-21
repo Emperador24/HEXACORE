@@ -20,7 +20,7 @@ describe('ReservasService', () => {
   it('normaliza UUID, ordena productos y proyecta únicamente cantidades e identificadores', async () => {
     const datos = { ...entrada(), pedidoId: pedidoId.toUpperCase(), productos: [{ productoId: otroProducto, cantidad: 3 }, { productoId: productoId.toUpperCase(), cantidad: 2, precio: '12.00', token: 'NO_PERSISTIR' }] };
     expect(await servicio.reservar(datos)).toEqual({ estado: 'ACTIVA', expiraEn, repetida: false });
-    expect(evaluar).toHaveBeenCalledWith(RESERVAR_LUA, 3, ...clavesReserva(establecimientoId, pedidoId), establecimientoId, pedidoId,
+    expect(evaluar).toHaveBeenCalledWith(RESERVAR_LUA, 4, ...clavesReserva(establecimientoId, pedidoId), establecimientoId, pedidoId,
       JSON.stringify([{ productoId, cantidad: 2 }, { productoId: otroProducto, cantidad: 3 }]), String(expiraEn.getTime()));
     expect(JSON.stringify(evaluar.mock.calls)).not.toContain('NO_PERSISTIR');
   });
@@ -55,8 +55,8 @@ describe('ReservasService', () => {
   it('liberar y consumir usan el script de cierre con destinos distintos', async () => {
     await servicio.liberar(establecimientoId, pedidoId);
     await servicio.consumir(establecimientoId, pedidoId);
-    expect(evaluar).toHaveBeenNthCalledWith(1, CERRAR_LUA, 3, ...clavesReserva(establecimientoId, pedidoId), establecimientoId, pedidoId, 'LIBERADA');
-    expect(evaluar).toHaveBeenNthCalledWith(2, CERRAR_LUA, 3, ...clavesReserva(establecimientoId, pedidoId), establecimientoId, pedidoId, 'CONSUMIDA');
+    expect(evaluar).toHaveBeenNthCalledWith(1, CERRAR_LUA, 4, ...clavesReserva(establecimientoId, pedidoId), establecimientoId, pedidoId, 'LIBERADA');
+    expect(evaluar).toHaveBeenNthCalledWith(2, CERRAR_LUA, 4, ...clavesReserva(establecimientoId, pedidoId), establecimientoId, pedidoId, 'CONSUMIDA');
   });
   it('el módulo cierra su conexión propia al destruirse', () => {
     const disconnect = jest.fn();
