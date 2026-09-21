@@ -1,24 +1,135 @@
 <h1>Mercado de reventa</h1>
-<p class="subtitulo">Entradas publicadas por otros clientes.</p>
+<p class="subtitulo">Entradas que otros clientes pusieron a la venta.</p>
 
-@if (publicadas().length === 0) {
+@if (error(); as mensaje) {
+  <p class="error" role="alert">{{ mensaje }}</p>
+}
+
+<!-- La reserva ocupa el lugar del catálogo: mientras corre el reloj, lo único
+     que importa es terminar o soltarla. -->
+@if (checkout(); as reserva) {
+  <mat-card class="reserva">
+    <mat-card-header>
+      <mat-card-title>{{ reserva.publicacion.eventoNombre }}</mat-card-title>
+      <mat-card-subtitle>
+        {{ reserva.publicacion.localidadNombre }} · {{ reserva.publicacion.lugar }}
+      </mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <div class="cuenta-atras" [class.vencida]="reservaVencida()">
+        <mat-icon>schedule</mat-icon>
+        @if (reservaVencida()) {
+          <span>La reserva caducó. Vuelve al mercado e inténtalo otra vez.</span>
+        } @else {
+          <span>Reservada para ti · <strong>{{ reloj_texto() }}</strong></span>
+        }
+      </div>
+
+      <dl class="desglose">
+        <div><dt>Precio</dt><dd>${{ reserva.precio | number: '1.0-0' }}</dd></div>
+        <div><dt>Comisión</dt><dd>${{ reserva.comision | number: '1.0-0' }}</dd></div>
+        <div><dt>Recibe quien vende</dt><dd>${{ reserva.netoVendedor | number: '1.0-0' }}</dd></div>
+        <div><dt>Transacción</dt><dd>{{ reserva.numeroTransaccion }}</dd></div>
+      </dl>
+
+      <div class="pago">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Método de pago</mat-label>
+          <mat-select [(ngModel)]="metodo" name="metodo">
+            <mat-option value="TARJETA">Tarjeta</mat-option>
+            <mat-option value="PSE">PSE</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Resultado a simular</mat-label>
+          <mat-select [(ngModel)]="token" name="token">
+            @for (opcion of tokensDemo; track opcion.valor) {
+              <mat-option [value]="opcion.valor">{{ opcion.etiqueta }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </mat-card-content>
+
+    <mat-card-actions class="acciones">
+      <button mat-button type="button" data-prueba="reventa-soltar" (click)="cancelar()">
+        Soltar la reserva
+      </button>
+      <button
+        mat-flat-button
+        color="primary"
+        type="button"
+        data-prueba="reventa-pagar"
+        [disabled]="pagando() || reservaVencida()"
+        (click)="pagar()"
+      >
+        @if (pagando()) { Procesando… } @else { Pagar ${{ reserva.precio | number: '1.0-0' }} }
+      </button>
+    </mat-card-actions>
+  </mat-card>
+}
+
+<!-- Comprobante: el QR nuevo es la prueba de que la propiedad cambió. -->
+@if (resultado(); as compra) {
+  <mat-card class="comprobante">
+    <mat-card-header>
+      <mat-card-title>La entrada ya es tuya</mat-card-title>
+      <mat-card-subtitle>{{ compra.eventoNombre }} · {{ compra.localidadNombre }}</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <p class="qr">{{ compra.codigoQr }}</p>
+      <p class="pie">
+        Código nuevo. El anterior dejó de servir en el mismo instante.<br />
+        {{ compra.numeroTicket }} · {{ compra.numeroTransaccion }}
+      </p>
+    </mat-card-content>
+    <mat-card-actions>
+      <button mat-button type="button" (click)="cerrarResultado()">Entendido</button>
+    </mat-card-actions>
+  </mat-card>
+}
+
+@if (cargando()) {
+  <div class="cargando"><mat-spinner diameter="36" /></div>
+} @else if (publicaciones().length === 0) {
   <p class="vacio">No hay entradas en reventa por ahora.</p>
 } @else {
   <div class="grilla">
-    @for (entrada of publicadas(); track entrada.id) {
+    @for (publicacion of publicaciones(); track publicacion.id) {
       <mat-card class="tarjeta">
         <mat-card-header>
-          <mat-card-title>{{ entrada.eventoNombre }}</mat-card-title>
-          <mat-card-subtitle>{{ entrada.fecha }} · {{ entrada.lugar }}</mat-card-subtitle>
+          <mat-card-title>{{ publicacion.eventoNombre }}</mat-card-title>
+          <mat-card-subtitle>
+            {{ fechaEvento(publicacion.fechaEvento) }} · {{ publicacion.lugar }}
+          </mat-card-subtitle>
         </mat-card-header>
         <mat-card-content>
           <mat-chip-set>
-            <mat-chip>{{ entrada.zona }}</mat-chip>
+            <mat-chip>{{ publicacion.localidadNombre }}</mat-chip>
+            @if (publicacion.ciudad) { <mat-chip>{{ publicacion.ciudad }}</mat-chip> }
           </mat-chip-set>
-          <p class="precio">${{ entrada.precioReventa | number: '1.0-0' }}</p>
+          <p class="precio">${{ publicacion.precio | number: '1.0-0' }}</p>
+          @if (publicacion.precio < publicacion.precioOriginal) {
+            <p class="original">Precio original ${{ publicacion.precioOriginal | number: '1.0-0' }}</p>
+          }
         </mat-card-content>
         <mat-card-actions>
-          <button mat-flat-button color="primary" (click)="comprar(entrada.id)">Comprar</button>
+          @if (publicacion.esPropia) {
+            <span class="propia">La publicaste tú</span>
+          } @else {
+            <button
+              mat-flat-button
+              color="primary"
+              type="button"
+              data-prueba="reventa-comprar"
+              [disabled]="checkout() !== null"
+              (click)="reservar(publicacion)"
+            >
+              Comprar
+            </button>
+          }
         </mat-card-actions>
       </mat-card>
     }
