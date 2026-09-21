@@ -7,6 +7,8 @@ import { DetallePedido } from '../persistencia/entidades/detalle-pedido.entity';
 import { Producto } from '../persistencia/entidades/producto.entity';
 import { ReservaInventario, EstadoReservaInventario as EstadoReserva } from '../persistencia/entidades/reserva-inventario.entity';
 import { ReservasService } from '../inventario/reservas.service';
+import { Establecimiento } from '../persistencia/entidades/establecimiento.entity';
+import { PublicadorPedidos } from './eventos/publicador-pedidos.service';
 import { CrearPagoDto } from './dto/crear-pago.dto';
 import { PagosService } from './pagos.service';
 import { PasarelaHttp } from './pasarela-http.service';
@@ -41,6 +43,7 @@ describe('PagosService (gestor transaccional simulado)', () => {
   let pedido: Pedido;
   let intentos: TransaccionPedido[];
   let cobrar: jest.Mock;
+  let publicar: jest.Mock;
   let servicio: PagosService;
   let reserva: ReservaInventario | null;
   let detalles: DetallePedido[];
@@ -51,10 +54,10 @@ describe('PagosService (gestor transaccional simulado)', () => {
   let gestor: { findOne: jest.Mock; findOneOrFail: jest.Mock; find: jest.Mock; create: jest.Mock; insert: jest.Mock; save: jest.Mock; decrement: jest.Mock };
   let dentro: boolean;
   beforeEach(() => {
-    pedido = Object.assign(new Pedido(), { id, establecimientoId, clienteId: cliente, total: '25000.00', moneda: 'COP', estado: EstadoPedido.PENDIENTE_PAGO, expiraEn: new Date(Date.now() + 600000), codigoQr: null, confirmadoEn: null });
+    pedido = Object.assign(new Pedido(), { id, establecimientoId, clienteId: cliente, metodoEntrega: 'Mostrador', total: '25000.00', moneda: 'COP', estado: EstadoPedido.PENDIENTE_PAGO, expiraEn: new Date(Date.now() + 600000), codigoQr: null, confirmadoEn: null });
     intentos = [];
     reserva = Object.assign(new ReservaInventario(), { pedidoId: id, estado: EstadoReserva.ACTIVA });
-    detalles = [{ pedidoId: id, productoId, cantidad: 2 }] as DetallePedido[];
+    detalles = [{ pedidoId: id, productoId, cantidad: 2, nombreProducto: 'Hamburguesa original', precioUnitario: '12500.00' }] as DetallePedido[];
     productos = [{ id: productoId, establecimientoId, cantidadInventario: 5 }] as Producto[];
     fallarCommitConfirmacion = false;
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
@@ -62,6 +65,7 @@ describe('PagosService (gestor transaccional simulado)', () => {
     gestor = {
       findOne: jest.fn(async (tipo, opciones) => tipo === Pedido
         ? opciones.where.clienteId && opciones.where.clienteId !== cliente ? null : pedido
+        : tipo === Establecimiento ? { id: establecimientoId, puntoEntrega: 'Zona gastronómica - Módulo 4' }
         : tipo === ReservaInventario ? reserva : intentos.find((t) => t.id === opciones.where.id) ?? null),
       findOneOrFail: jest.fn(async (tipo, opciones) => {
         const fila = await gestor.findOne(tipo, opciones);
@@ -112,8 +116,14 @@ describe('PagosService (gestor transaccional simulado)', () => {
       Object.assign(reserva, cambios);
       return { affected: 1 };
     });
+    publicar = jest.fn(async () => {
+      expect(dentro).toBe(false);
+      expect(pedido.estado).toBe(EstadoPedido.CONFIRMADO);
+      expect(intentos.some((intento) => intento.estado === Estado.APROBADA)).toBe(true);
+      return true;
+    });
     servicio = new PagosService({ transaction, manager: { update: actualizarConsumo } } as unknown as DataSource,
-      { cobrar } as unknown as PasarelaHttp, { consumir } as unknown as ReservasService);
+      { cobrar } as unknown as PasarelaHttp, { consumir } as unknown as ReservasService, { publicarPedidoConfirmado: publicar } as unknown as PublicadorPedidos);
   });
   afterEach(() => jest.restoreAllMocks());
   const errorCodigo = async (promesa: Promise<unknown>, codigo: string) => {
@@ -187,6 +197,42 @@ describe('PagosService (gestor transaccional simulado)', () => {
     expect(primera.codigoQr).toBe(pedido.codigoQr);
     expect((await servicio.pagar(cliente, id, clave, 'tok_ok')).codigoQr).toBe(primera.codigoQr);
     expect(aleatorio).toHaveBeenCalledTimes(1);
+  });
+  it('publica después del commit solo los datos necesarios y snapshots del pedido confirmado', async () => {
+    await servicio.pagar(cliente, id, clave, 'tok_secreto');
+    expect(publicar).toHaveBeenCalledTimes(1);
+    expect(publicar).toHaveBeenCalledWith({
+      pedidoId: id, establecimientoId, clienteId: cliente, total: '25000.00', moneda: 'COP',
+      metodoEntrega: 'Mostrador', puntoEntrega: 'Zona gastronómica - Módulo 4',
+      productos: [{ productoId, nombreProducto: 'Hamburguesa original', cantidad: 2, precioUnitario: '12500.00' }],
+      confirmadoEn: pedido.confirmadoEn!.toISOString(),
+    });
+    expect(JSON.stringify(publicar.mock.calls)).not.toContain('tok_secreto');
+    expect(JSON.stringify(publicar.mock.calls)).not.toContain(pedido.codigoQr!);
+  });
+  it('no publica por un pago rechazado', async () => {
+    cobrar.mockResolvedValue({ estado: Estado.RECHAZADA, referenciaPasarela: aprobado.referenciaPasarela, motivo: 'PAGO_RECHAZADO' });
+    await servicio.pagar(cliente, id, clave, 'tok_rechazo');
+    expect(publicar).not.toHaveBeenCalled();
+  });
+  it('no publica si falla el commit PostgreSQL', async () => {
+    fallarCommitConfirmacion = true;
+    await expect(servicio.pagar(cliente, id, clave, 'tok_ok')).rejects.toThrow('falló commit de confirmación');
+    expect(publicar).not.toHaveBeenCalled();
+  });
+  it('replays simultáneos no vuelven a publicar el pedido confirmado', async () => {
+    await servicio.pagar(cliente, id, clave, 'tok_ok');
+    await Promise.all([servicio.pagar(cliente, id, clave, 'tok_ok'), servicio.pagar(cliente, id, clave, 'tok_ok')]);
+    expect(publicar).toHaveBeenCalledTimes(1);
+  });
+  it.each(['sin confirmación del broker', 'excepción'])('un fallo RabbitMQ (%s) no revierte la compra ni se reenvía en replay', async (caso) => {
+    if (caso === 'excepción') publicar.mockRejectedValue(new Error('broker no disponible'));
+    else publicar.mockResolvedValue(false);
+    expect((await servicio.pagar(cliente, id, clave, 'tok_ok')).compraConfirmada).toBe(true);
+    expect(pedido.estado).toBe(EstadoPedido.CONFIRMADO);
+    expect(productos[0].cantidadInventario).toBe(3);
+    await servicio.pagar(cliente, id, clave, 'tok_ok');
+    expect(publicar).toHaveBeenCalledTimes(1);
   });
   it('repite aprobación aun vencido sin cobrar y bloquea otra clave', async () => {
     const primero = await servicio.pagar(cliente, id, clave, 'tok_ok');

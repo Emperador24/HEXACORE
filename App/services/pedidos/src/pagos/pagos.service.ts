@@ -9,6 +9,9 @@ import { DetallePedido } from '../persistencia/entidades/detalle-pedido.entity';
 import { Producto } from '../persistencia/entidades/producto.entity';
 import { ReservasService } from '../inventario/reservas.service';
 import { aPagoDto, PagoDto } from './dto/pago.dto';
+import { Establecimiento } from '../persistencia/entidades/establecimiento.entity';
+import { PedidoConfirmado } from './eventos/pedido-confirmado.evento';
+import { PublicadorPedidos } from './eventos/publicador-pedidos.service';
 import { PasarelaHttp } from './pasarela-http.service';
 
 type Preparacion = { pedido: Pedido; intento: TransaccionPedido; cobrar: boolean } | { expirado: true };
@@ -21,6 +24,7 @@ export class PagosService {
     @InjectDataSource() private readonly datos: DataSource,
     private readonly pasarela: PasarelaHttp,
     private readonly reservas: ReservasService,
+    private readonly publicador: PublicadorPedidos,
   ) {}
 
   async pagar(clienteId: string, pedidoId: string, clave: string, tokenPago: string): Promise<PagoDto> {
@@ -113,7 +117,7 @@ export class PagosService {
         if (reserva.estado !== EstadoReserva.CONSUMO_PENDIENTE && reserva.estado !== EstadoReserva.CONSUMIDA) {
           throw new ConflictException({ codigo: 'RESERVA_CONFIRMACION_INCONSISTENTE' });
         }
-        return { pedido, intento, consumir: reserva.estado === EstadoReserva.CONSUMO_PENDIENTE };
+        return { pedido, intento, consumir: reserva.estado === EstadoReserva.CONSUMO_PENDIENTE, evento: null };
       }
       if (pedido.estado !== EstadoPedido.PENDIENTE_PAGO || reserva.estado !== EstadoReserva.ACTIVA) {
         throw new ConflictException({ codigo: 'PEDIDO_NO_CONFIRMABLE' });
@@ -148,8 +152,22 @@ export class PagosService {
       reserva.estado = EstadoReserva.CONSUMO_PENDIENTE;
       await gestor.save(Pedido, pedido);
       await gestor.save(ReservaInventario, reserva);
-      return { pedido, intento, consumir: true };
+      const establecimiento = await gestor.findOneOrFail(Establecimiento, { where: { id: pedido.establecimientoId } });
+      const evento: PedidoConfirmado = {
+        pedidoId: pedido.id, establecimientoId: pedido.establecimientoId, clienteId: pedido.clienteId,
+        total: pedido.total, moneda: pedido.moneda, metodoEntrega: pedido.metodoEntrega,
+        puntoEntrega: establecimiento.puntoEntrega,
+        productos: detalles.map(({ productoId, nombreProducto, cantidad, precioUnitario }) =>
+          ({ productoId, nombreProducto, cantidad, precioUnitario })),
+        confirmadoEn: pedido.confirmadoEn.toISOString(),
+      };
+      return { pedido, intento, consumir: true, evento };
     });
+    // Solo la petición que hizo la transición a CONFIRMADO publica. El replay no vuelve a publicar.
+    if (confirmacion.evento) {
+      try { await this.publicador.publicarPedidoConfirmado(confirmacion.evento); }
+      catch { this.log.error(`PEDIDO_CONFIRMADO_NO_PUBLICADO pedido=${pedidoId}; el pedido sigue confirmado`); }
+    }
     // Solo tras COMMIT: si la transacción falla o su resultado es incierto, no tocar Redis.
     if (confirmacion.consumir) {
       try {
