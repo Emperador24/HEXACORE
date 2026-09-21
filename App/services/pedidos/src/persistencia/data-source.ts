@@ -1,12 +1,15 @@
 import { config as cargarEnv } from 'dotenv';
 import { DataSource, DataSourceOptions, EntitySchema } from 'typeorm';
 import { ConfiguracionServicio, cargarConfiguracion } from '../config/configuracion';
+import { ReservaInventario } from './entidades/reserva-inventario.entity';
+import { ReservasInventarioCu0111790000000000 } from './migraciones/1790000000000-ReservasInventarioCu011';
 import { EventoReferencia } from './entidades/evento-referencia.entity';
 import { Establecimiento } from './entidades/establecimiento.entity';
 import { Producto } from './entidades/producto.entity';
 import { Pedido } from './entidades/pedido.entity';
 import { DetallePedido } from './entidades/detalle-pedido.entity';
 import { TransaccionPedido } from './entidades/transaccion-pedido.entity';
+import { EsquemaInicialCu0111789902006180 } from './migraciones/1789902006180-EsquemaInicialCu011';
 
 export const ENTIDADES: (Function | EntitySchema)[] = [
   EventoReferencia,
@@ -15,9 +18,13 @@ export const ENTIDADES: (Function | EntitySchema)[] = [
   Pedido,
   DetallePedido,
   TransaccionPedido,
+  ReservaInventario,
 ];
 
-export const MIGRACIONES: NonNullable<DataSourceOptions['migrations']> = [];
+export const MIGRACIONES: NonNullable<DataSourceOptions['migrations']> = [
+  EsquemaInicialCu0111789902006180,
+  ReservasInventarioCu0111790000000000,
+];
 
 export function opcionesDataSource(config: ConfiguracionServicio): DataSourceOptions {
   return {

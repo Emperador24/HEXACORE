@@ -1,38 +1,37 @@
+import { MatIconModule } from '@angular/material/icon';
 import { Component, inject, signal } from '@angular/core';
-import { DecimalPipe } from '@angular/common';
-import { RouterLink } from '@angular/router';
-import { MatTabsModule } from '@angular/material/tabs';
-import { MatCardModule } from '@angular/material/card';
-import { MatChipsModule } from '@angular/material/chips';
-import { PedidosService } from '../core/pedidos.service';
-import { EstadoPedido } from '../core/models';
-import { QrPlaceholderComponent } from '../shared/qr-placeholder.component';
+import { ActivatedRoute, RouterLink } from '@angular/router';
+import { MatButtonModule } from '@angular/material/button';
+import { EstablecimientoPedido, PedidosService, mensajePedidos } from '../core/pedidos.service';
 
-/**
- * Pedidos de alimentos del cliente (CU-011..CU-015): "Restaurantes" para
- * armar uno nuevo y "Mis pedidos" para ver estado/QR — mismas dos pestañas
- * que PedidosScreen en app-movil-cliente.
- */
 @Component({
   selector: 'app-pedidos',
   standalone: true,
-  imports: [DecimalPipe, RouterLink, MatTabsModule, MatCardModule, MatChipsModule, QrPlaceholderComponent],
+  imports: [MatIconModule, RouterLink, MatButtonModule],
   templateUrl: './pedidos.component.html',
   styleUrl: './pedidos.component.scss'
 })
 export class PedidosComponent {
-  private readonly pedidosService = inject(PedidosService);
+  private readonly servicio = inject(PedidosService);
+  // La cartelera sigue siendo simulada. Este UUID corresponde al seed real de Pedidos.
+  eventoId = inject(ActivatedRoute).snapshot.queryParamMap.get('eventoId') ?? 'e0000001-0000-4000-8000-000000000001';
+  readonly eventoConsultado = signal('');
+  readonly establecimientos = signal<EstablecimientoPedido[]>([]);
+  readonly cargando = signal(false);
+  readonly error = signal('');
 
-  readonly pestana = signal(0);
-  readonly establecimientos = this.pedidosService.establecimientos;
-  readonly pedidos = this.pedidosService.pedidos;
+  constructor() { void this.consultar(); }
 
-  etiquetaEstado(estado: EstadoPedido): string {
-    const etiquetas: Record<EstadoPedido, string> = {
-      [EstadoPedido.EN_PREPARACION]: 'En preparación',
-      [EstadoPedido.LISTO]: 'Listo para retirar',
-      [EstadoPedido.ENTREGADO]: 'Entregado'
-    };
-    return etiquetas[estado];
+  async consultar(): Promise<void> {
+    if (this.cargando() || !this.eventoId.trim()) return;
+    this.cargando.set(true);
+    this.error.set('');
+    this.establecimientos.set([]);
+    const eventoId = this.eventoId.trim();
+    try {
+      this.establecimientos.set(await this.servicio.establecimientos(eventoId));
+      this.eventoConsultado.set(eventoId);
+    } catch (error) { this.error.set(mensajePedidos(error)); }
+    finally { this.cargando.set(false); }
   }
 }

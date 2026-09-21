@@ -152,6 +152,7 @@ services:
     depends_on:
       administracion: { condition: service_healthy }
       entradas-mercado-secundario: { condition: service_healthy }
+      pedidos: { condition: service_healthy }
     volumes:
       - ../gateway/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     ports:
@@ -241,6 +242,40 @@ services:
       retries: 10
     ports:
       - "3001:3001"
+
+  # Servicio de Pedidos — CU-011.
+  pedidos:
+    profiles: ["servicios"]
+    build: ../services/pedidos
+    restart: unless-stopped
+    init: true
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+      pasarela: { condition: service_healthy }
+    environment:
+      <<: *entorno-comun
+      PUERTO: "3003"
+      PREFIJO_API: api/v1
+      AUTH_JWT_EMISOR: hexacore-administracion
+      POSTGRES_USUARIO: hexacore
+      POSTGRES_CONTRASENA: hexacore
+      POSTGRES_BASE: pedidos
+      POSTGRES_MAX_CONEXIONES: "10"
+      POSTGRES_ESPERA_MAXIMA_MS: "3000"
+      PAGOS_PROVEEDOR_URL: http://${HOST_PASARELA:-pasarela}:${PUERTO_PASARELA:-3099}
+      PASARELA_TIMEOUT_MS: "10000"
+    volumes:
+      - ./claves-desarrollo/jwt-publica.pem:/claves/jwt-publica.pem:ro
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3003/api/v1/salud',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      start_period: 90s
+      retries: 10
+    ports:
+      - "3003:3003"
 
   # Servicio de Eventos / Emergencias — CU-018 (turnos y asistencia del personal).
   eventos-emergencias:
