@@ -49,6 +49,33 @@ Convive con el servicio de Entradas, que usa el 3001.
 este servicio y para desarrollar con recarga en caliente; en producción no se publica. Ver
 `App/gateway/README.md`.
 
+## Datos para probar
+
+Dos cosas distintas, y conviene no confundirlas:
+
+```bash
+npm run semilla                    # 13 cuentas con nombre y propósito (Ana, Bruno, el admin…)
+npm run carga                      # 200 cuentas anónimas, con roles y estados repartidos
+npm run carga -- --usuarios 1000   # más volumen (se suma a lo que ya haya)
+npm run carga -- --limpiar         # borra solo las de la carga
+```
+
+La **semilla** existe para los escenarios: cada cuenta tiene un papel y las
+pruebas la nombran. La **carga** existe para el volumen: listados, paginación,
+filtros por rol y estado, y medir con datos que se parezcan a los de verdad.
+
+El reparto imita a un sistema real —70 % clientes, 20 % personal, 7 %
+organizadores, 3 % administradores— e incluye a propósito cuentas que **no
+pueden entrar**: sin verificar, desactivadas y bloqueadas por intentos fallidos
+(CU-027D). Contraseña de todas: `carga2026`.
+
+**El orden importa:** `npm run semilla` hace `TRUNCATE` de `usuarios` y
+`iniciar.sh` la corre en cada arranque. Se levanta el sistema primero y se carga
+después.
+
+Para darle ficha de empleado y turno a las cuentas de Personal que crea la
+carga: `cd ../eventos-emergencias && npm run carga`.
+
 ## Estado de implementación
 
 | Paso | Alcance | Estado |
@@ -426,6 +453,29 @@ En desarrollo se usan las claves de [`App/infra/claves-desarrollo/`](../../infra
 El CU-027 exige hash, tokens con expiración y bloqueo por fuerza bruta, pero **no fija ni un solo
 valor** ni nombra un algoritmo. Todos los puntos —incluido por qué se usa `scrypt` y no Argon2id, y
 por qué el login no dice nunca si un correo existe— están en [`DECISIONES.md`](DECISIONES.md).
+
+## Cobertura de las pruebas de integración
+
+```bash
+./pruebas/cobertura-integracion.sh
+```
+
+Levanta el servicio **de verdad** —con PostgreSQL, Redis y RabbitMQ—
+instrumentado con `c8`, le lanza encima las suites de `pruebas/*.py` y mide qué
+porcentaje del código quedó ejecutado. Es el número que pide la entrega, y el
+único defendible: cuenta **todo** el servicio.
+
+| Medición | Resultado |
+|---|---|
+| Sentencias | **94,95 %** |
+| Ramas | 79,0 % |
+| Funciones | 90,9 % |
+
+Informe navegable en `cobertura-integracion/index.html` (no se versiona).
+
+**No confundir con `npm run test:cov`**, que mide las unitarias y además engaña:
+Jest solo cuenta los archivos que esas pruebas tocan, así que reporta un
+porcentaje alto sobre una fracción del código.
 
 ## Pruebas
 

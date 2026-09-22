@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "moduleResolution": "node",
+    "declaration": true,
+    "removeComments": false,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "sourceMap": true,
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "incremental": true,
+    "skipLibCheck": true,
+
+    // El PoC-04 corrió con `strict: false` porque solo medía un endpoint. Aquí
+    // sí está activo: la razón por la que se eligió NestJS sobre Spring Boot
+    // (ADR-09) fue modificabilidad y comprobabilidad, no rendimiento, y esa
+    // ventaja se evapora si el tipado es opcional.
+    "strict": true,
+    "strictPropertyInitialization": false, // las entidades TypeORM las puebla el ORM
+    "noImplicitAny": true,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["src/**/*", "test/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

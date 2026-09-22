@@ -15,6 +15,7 @@ import { SolicitudCambioTurno } from './entities/solicitud-cambio-turno.entity.j
 import { Turno } from './entities/turno.entity.js';
 import { EstadoSolicitudCambio, EstadoTurno } from './enums/estados.js';
 import { EventosPublicadorService } from './eventos-publicador.service.js';
+import { horasAsignadasEseDia } from './horas-del-dia.js';
 import {
   MAX_HORAS_DIARIAS_EMPLEADO,
   MAX_HORAS_POR_TURNO,
@@ -49,6 +50,31 @@ export class TurnosService {
 
   listarEmpleados() {
     return this.empleados.find();
+  }
+
+  /**
+   * La ficha del empleado de una cuenta, o `null` si esa cuenta no es empleada.
+   *
+   * Es lo que la app pregunta nada más iniciar sesión para saber **a qué área
+   * pertenece quien entró**, y por tanto qué pantallas mostrarle. Devuelve
+   * `null` en vez de lanzar: no ser empleado no es un error, es el caso de
+   * cualquier cliente.
+   */
+  async fichaDeUsuario(usuarioId: string) {
+    const empleado = await this.empleados.findOneBy({ usuarioId, activo: true });
+    if (!empleado) return null;
+
+    const ahora = new Date();
+    const turnoVigente = await this.turnos.findOne({
+      where: {
+        empleadoId: empleado.id,
+        horaInicio: LessThan(ahora),
+        horaFin: MoreThan(ahora),
+        estado: Not(EstadoTurno.CAMBIADO),
+      },
+    });
+
+    return { empleado, turnoVigente: turnoVigente ?? null };
   }
 
   async crearTurno(dto: CrearTurnoDto) {
@@ -135,6 +161,8 @@ export class TurnosService {
       where: { rol, activo: true, id: Not(turno.empleadoId) },
     });
 
+    const duracion = (turno.horaFin.getTime() - turno.horaInicio.getTime()) / 3_600_000;
+
     for (const candidato of candidatos) {
       const choque = await this.turnos.findOne({
         where: [
@@ -146,9 +174,27 @@ export class TurnosService {
           },
         ],
       });
-      if (!choque) {
-        return candidato;
+      if (choque) continue;
+
+      // No basta con que el horario no choque: si ese día ya tiene turnos que
+      // sumados al de la solicitud pasan del tope diario, proponerlo sería
+      // proponer a alguien a quien después se le va a negar la aprobación
+      // (excepción CU-LOG-003C). Se descarta aquí y se sigue buscando.
+      //
+      // Salvo que el turno **por sí solo** pase del máximo por turno: eso es un
+      // problema del turno, no del candidato, y descartarlos a todos por esa
+      // causa devolvería «no hay reemplazo» cuando la razón real es otra. En
+      // ese caso se propone igual y la aprobación lo bloquea, diciendo por qué.
+      if (duracion <= MAX_HORAS_POR_TURNO) {
+        const horasEseDia = await horasAsignadasEseDia(
+          this.turnos,
+          candidato.id,
+          turno.horaInicio,
+        );
+        if (horasEseDia + duracion > MAX_HORAS_DIARIAS_EMPLEADO) continue;
       }
+
+      return candidato;
     }
     return null;
   }
@@ -195,10 +241,19 @@ export class TurnosService {
       (turno.horaFin.getTime() - turno.horaInicio.getTime()) / 3_600_000;
 
     // Excepción CU-LOG-003C: el cambio supera el límite de horas permitidas.
+    //
+    // Se compara contra lo que el reemplazo ya tiene asignado **ese día**, no
+    // contra su acumulado de por vida: con lo segundo, quien llevara un par de
+    // turnos trabajados no podía volver a cubrir a nadie. Ver `horas-del-dia.ts`.
+    const horasEseDia = await horasAsignadasEseDia(
+      this.turnos,
+      reemplazo!.id,
+      turno.horaInicio,
+      turno.id,
+    );
     if (
       duracionTurnoHoras > MAX_HORAS_POR_TURNO ||
-      reemplazo!.horasTrabajadasTotales + duracionTurnoHoras >
-        MAX_HORAS_DIARIAS_EMPLEADO
+      horasEseDia + duracionTurnoHoras > MAX_HORAS_DIARIAS_EMPLEADO
     ) {
       solicitud.estado = EstadoSolicitudCambio.BLOQUEADA_POR_HORAS;
       solicitud.revisadoPorId = dto.supervisorId;
@@ -231,9 +286,11 @@ export class TurnosService {
     // Infraestructura no trivial de CU-018: propaga el cambio por cola de
     // mensajes en vez de notificar síncronamente dentro de esta petición.
     await this.eventosPublicador.publicarCambioTurno({
+      tipo: 'TURNO_CAMBIADO',
       turnoId: turno.id,
       empleadoAnteriorId,
       empleadoNuevoId: reemplazo!.id,
+      mensaje: `Se te asignó el turno ${turno.id} por cambio aprobado.`,
     });
 
     return guardada;

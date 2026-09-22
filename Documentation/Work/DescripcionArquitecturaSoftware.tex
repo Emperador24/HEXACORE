@@ -1074,6 +1074,64 @@ no se probó el comportamiento con colas de millones de mensajes, que es donde K
 verdad. Tampoco se midió la recuperación ante caída del broker, que es justamente el escenario que
 motiva el modo duradero.
 
+
+\subsection*{ADR-11 --- Autenticación entre servicios: RS256 y dos tokens}
+
+\textbf{Contexto:} RNF-06 exige que \textit{toda} petición a un microservicio llegue autenticada y
+autorizada por rol. Con seis dominios independientes (ADR-01), la pregunta es quién valida la sesión
+y con qué. El CU-027 añade dos exigencias propias: que cerrar sesión surta efecto de verdad --- un
+JWT es válido hasta que expira, lo firme quien lo firme --- y que la sesión no se caiga sola mientras
+la persona está usando la aplicación.
+
+\textbf{Alternativas consideradas:}
+\begin{itemize}
+  \item \textbf{HS256 con un secreto compartido.} Fue la primera implementación. Funciona mientras
+        un solo servicio verifica, pero con HS256 firmar y verificar usan la misma clave: cada
+        servicio que valida tokens podría \textbf{fabricar uno de administrador}. Con seis
+        microservicios, seis lugares por donde se filtra la llave maestra.
+  \item \textbf{Consultar al servicio de Administración en cada petición.} Autorización siempre
+        exacta, pero convierte a ese servicio en un punto único de fallo para todo el sistema y le
+        suma una llamada de red a cada operación.
+  \item \textbf{RS256 con clave asimétrica} --- la elegida.
+\end{itemize}
+
+\textbf{Decisión:} tokens JWT firmados con \textbf{RS256}. La clave \textbf{privada} la tiene solo
+el servicio de Administración, que es el único que emite; los demás reciben la \textbf{pública}, que
+sirve para verificar y no para firmar. Al arrancar se comprueba que las dos claves se correspondan,
+que sean RSA de 2048 bits o más y que en producción no sean las de desarrollo del repositorio.
+
+Dos decisiones acompañan a la principal:
+
+\begin{itemize}
+  \item \textbf{Revocación por Redis (ADR-03).} Cada sesión cerrada se publica como
+        \texttt{sesion-revocada:<jti>} con una vida igual a lo que le quedaba al token. Así los
+        demás servicios rechazan un token revocado sin preguntar a Administración, y la lista no
+        crece: cuando la clave expira, el token ya no valía por sí solo.
+  \item \textbf{Dos tokens.} Uno de \textbf{acceso} de 15 minutos, que viaja en cada petición, y uno
+        de \textbf{renovación} de 30 días sin uso, que solo viaja al renovar. Cada renovación emite
+        uno nuevo e invalida el anterior; reutilizar uno gastado cierra la sesión entera, porque
+        significa que dos partes tienen copia. En el navegador el token de renovación va en una
+        cookie \texttt{HttpOnly; SameSite=Strict}, fuera del alcance de cualquier script inyectado.
+\end{itemize}
+
+\textbf{Atributo de calidad:} Seguridad (ASR-03) como motivación principal; Disponibilidad (ASR-02),
+porque validar sin consultar evita el punto único de fallo; y Usabilidad (ASR-08), porque los dos
+tokens evitan que la sesión se cierre sola con la aplicación abierta.
+
+\textbf{Evidencia:} implementado y probado sobre el sistema real. Las pruebas de
+\texttt{App/services/*/pruebas/} comprueban que un token con \texttt{alg: none} o firmado con la
+clave pública como secreto HMAC se rechaza; que una sesión cerrada deja de valer \textit{en el otro
+microservicio}; y que reutilizar un token de renovación ya gastado cierra la sesión. El API Gateway
+(ADR-02) valida por subpetición contra \texttt{/sesiones/verificar}, y una prueba de defensa en
+profundidad confirma que llamar directo a un servicio con la cabecera de identidad falsificada
+devuelve 401.
+
+\textbf{Consecuencias:} firmar con RSA cuesta más CPU que con HMAC, y cada petición protegida añade
+una subpetición interna del gateway. A cambio, ningún servicio distinto del emisor puede fabricar un
+token. \textbf{Cuándo revisar:} si el coste de la subpetición se notara bajo carga, los servicios
+pueden verificar la firma por su cuenta con la clave pública y consultar Redis directamente ---
+sigue sin necesitar la privada.
+
 % ==================== Riesgos técnicos ====================
 \section{Riesgos técnicos}
 \label{sec:riesgos}

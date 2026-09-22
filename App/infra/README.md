@@ -10,6 +10,98 @@ usa un clúster de Kubernetes (ver la Figura "Diagrama de despliegue" en
 Para desarrollar, los microservicios corren **fuera** de Docker (`npm run start:dev`) y se conectan
 a estos puertos, para no perder la recarga en caliente.
 
+## Arrancar todo con una sola orden
+
+```bash
+cd App/infra
+./iniciar.sh                       # sistema completo en este computador
+./iniciar.sh --replicas 2          # con 2 instancias del Servicio de Entradas
+./iniciar.sh --parar               # bajarlo, conservando los datos
+```
+
+Levanta la capa de datos, los microservicios y el API Gateway, espera a que
+respondan, siembra los datos de ejemplo e imprime las direcciones y las cuentas.
+Desde cero tarda alrededor de **1 min 20 s**.
+
+### Repartido en dos computadores
+
+Es el requisito de desplegabilidad. En el computador **A** (capa de datos):
+
+```bash
+./iniciar.sh --rol datos           # imprime su IP al terminar
+```
+
+En el computador **B** (microservicios y gateway):
+
+```bash
+./iniciar.sh --rol servicios --datos 192.168.1.20
+```
+
+Las variables `HOST_POSTGRES`, `HOST_REDIS`, `HOST_RABBIT`, `HOST_CORREO` y
+`HOST_PASARELA` del compose son las que permiten esto; el script las exporta y
+añade `docker-compose.remoto.yml`, que quita las dependencias locales para que
+Docker no levante una base de datos en la máquina equivocada.
+
+Las interfaces se arrancan aparte, apuntando al gateway del computador B
+(`npm start` en el portal, `flutter run --dart-define=HEXACORE_HOST=<IP de B>`).
+
+## Qué levanta `./iniciar.sh`
+
+Diez contenedores: PostgreSQL, Redis, RabbitMQ, los dos sistemas externos
+simulados (correo y pasarela), los tres microservicios, el API Gateway y el
+**Portal Web de Clientes** en el `4200`.
+
+Lo único que no levanta —ni puede— es la **app móvil**: se instala en un
+teléfono o un simulador, no se arranca desde un script.
+
+### Datos de ejemplo sin necesitar Node
+
+Las semillas corren con `ts-node` desde el código fuente. En una máquina que
+solo tiene Docker eso no está, y el sistema arrancaba **vacío**: sin cuentas, o
+sea sin poder entrar.
+
+Por eso los datos de ejemplo están también congelados en SQL, en `datos-demo/`:
+
+```bash
+./iniciar.sh                     # con Node: usa las semillas
+./iniciar.sh --datos-demo sql    # sin Node: carga los volcados
+```
+
+Por defecto el script lo decide solo: si encuentra Node y las dependencias
+instaladas usa las semillas, que son la fuente de verdad; si no, los volcados.
+
+Cuando cambien las semillas o el esquema hay que regenerarlos:
+
+```bash
+./exportar-datos-demo.sh
+```
+
+## Desplegar desde las imágenes publicadas (entrega continua)
+
+Cada vez que algo entra a `develop` o `main`, el pipeline de CD construye las
+imágenes de los tres microservicios y del gateway y las publica en
+`ghcr.io/emperador24`. Para levantar el sistema desde ahí, sin compilar nada:
+
+```bash
+./iniciar.sh --registro develop      # la última de develop
+./iniciar.sh --registro main         # la última de main
+./iniciar.sh --registro sha-a1b2c3d  # un commit exacto, para volver atrás
+```
+
+En un computador que solo va a *usar* el sistema —el de la demostración, el de
+un compañero— esto es la diferencia entre segundos y varios minutos de
+compilación. Y como cada commit deja su imagen etiquetada, volver a una versión
+anterior es cambiar la etiqueta.
+
+La imagen del gateway **lleva el `nginx.conf` dentro**: lo que se despliega es
+una cosa sola. En desarrollo se sigue montando el archivo desde el disco para
+poder editarlo sin reconstruir.
+
+Los dos simuladores (correo y pasarela) siguen compilándose en la máquina: son
+sistemas externos en el SAD, no producto, y son veinte líneas de Node.
+
+## Órdenes de Docker Compose directas
+
 ```bash
 docker compose -f App/infra/docker-compose.yml up -d      # levantar
 docker compose -f App/infra/docker-compose.yml ps         # estado

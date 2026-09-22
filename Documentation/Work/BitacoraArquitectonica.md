@@ -23,6 +23,92 @@ Cada entrada nueva va arriba (orden cronológico inverso), con este formato:
 
 ---
 
+## 2026-09-18 — Punto único de entrada implementado: API Gateway, y medición de los tres atributos
+
+**Tipo:** Cambio arquitectónico + Análisis
+
+**Contexto:** hasta ahora cada cliente —app móvil y portal web— llamaba
+directamente al puerto de cada microservicio (3001, 3002), con la lista de
+orígenes CORS repetida en cada servicio. El ADR-02 preveía un API Gateway desde
+el principio, pero no existía. Además, de los tres atributos que se sustentan
+—desempeño, desplegabilidad y disponibilidad— solo disponibilidad tenía medición
+propia.
+
+**Decisión / resultado:**
+
+1. **API Gateway en Nginx** (`App/gateway/`), único punto de entrada en el 8080.
+   Autentica **antes** de enrutar mediante una subpetición (`auth_request`) a
+   `/api/v1/sesiones/verificar` del servicio de Administración, y añade
+   `X-Usuario-Id` y `X-Usuario-Roles` para el servicio de destino. El CORS pasa a
+   estar centralizado aquí. Los clientes ya no conocen puertos de servicios.
+2. **ADR-11 — Autenticación entre servicios**, que faltaba: RS256 con clave
+   privada solo en Administración, revocación por Redis y el esquema de dos
+   tokens. Estaba decidido e implementado desde hacía días, pero solo
+   documentado en el `DECISIONES.md` del servicio, que no es entregable.
+3. **Script único de arranque** (`App/infra/iniciar.sh`): levanta el sistema
+   completo con una orden, admite réplicas (`--replicas 2`) y admite repartir el
+   sistema en dos computadores (`--rol datos` / `--rol servicios --datos <IP>`).
+4. **Prueba de desempeño** (`rnf07-desempeno.py`), que no existía: mide latencia
+   p50/p95/p99 y throughput del mercado secundario a través del gateway.
+5. **Pipeline de integración continua** en GitHub Actions: siete trabajos que
+   compilan y prueban los tres servicios, los dos portales, la app móvil y la
+   configuración del gateway en cada pull request.
+6. **SRS** como documento propio (`EspecificacionRequisitos.pdf`, 66 páginas),
+   generando sus 32 fichas de caso de uso desde el `.xlsx`, que sigue siendo la
+   fuente de verdad.
+
+**Alternativas consideradas:**
+
+- *Que el gateway verifique el JWT él mismo* (con la clave pública) en vez de
+  preguntar al servicio. Se descartó: verificar la firma es lo fácil; lo difícil
+  es saber si la sesión sigue abierta, que vive en Redis y en la base de
+  Administración. Un gateway que solo mirara la firma dejaría pasar tokens de
+  sesiones ya cerradas durante sus 15 minutos de vida, y evitarlo obligaba a
+  repartir la lógica de sesiones entre el servicio y un archivo de configuración
+  de Nginx.
+- *Confiar en la cabecera `X-Usuario-Id` que añade el gateway* para que los
+  servicios no revaliden. Se descartó por defensa en profundidad: hay una prueba
+  que llama directo al servicio con esa cabecera falsificada y comprueba que
+  responde 401.
+
+**Ventajas / desventajas:** el coste es una subpetición interna por cada
+petición protegida, y que el gateway se vuelve un componente crítico —por eso se
+mide su failover. A cambio, la decisión de "esta sesión vale" se toma en un solo
+lugar del sistema, y añadir un servicio nuevo no obliga a tocar los clientes.
+
+**Medición de los tres atributos** (portátil M-series, generador de carga
+compitiendo por la misma CPU que los servicios y la base):
+
+| Atributo | Medida | Resultado |
+|---|---|---|
+| Desempeño (RNF-07, umbral p95 ≤ 500 ms) | Catálogo de reventa con 200 peticiones simultáneas | **p95 = 150 ms**, 1.417 pet/s, 0 fallos |
+| Desempeño | Login con carga (CU-027) | **114 logins/s** |
+| Disponibilidad (RNF-03) | Una de dos réplicas caída | **20 de 20** peticiones siguen en 200 |
+| Disponibilidad (RNF-04) | Proceso muerto dentro del contenedor | Vuelve a responder en **1,0–1,3 s** |
+| Escalabilidad (RNF-10) | 20 peticiones, 2 réplicas | Reparto **12 / 8** entre instancias |
+| Desplegabilidad | Arranque del sistema completo desde cero con `iniciar.sh` | **1 min 20 s**, incluidos datos de ejemplo |
+
+**Hallazgo que conviene no maquillar:** al pasar de 1 a 2 réplicas **en el mismo
+computador**, la latencia empeora (p95 de 150 ms a 198 ms) y el throughput baja
+de 1.417 a 1.166 pet/s. Es coherente: las dos réplicas compiten por los mismos
+núcleos y por la misma base de datos, así que replicar no añade capacidad, solo
+la reparte y añade coordinación. Escalar horizontalmente solo paga cuando las
+réplicas están en máquinas distintas — que es exactamente lo que justifica el
+reparto en dos computadores del atributo de desplegabilidad. Lo mismo vale para
+la disponibilidad: aunque la latencia no mejore, con dos réplicas el sistema
+sobrevive a la caída de una, y eso sí se midió.
+
+**Riesgos técnicos:** el gateway pasa a ser componente crítico (mitigado con
+reinicio automático y medición de failover, pero en local sigue siendo una sola
+instancia). El reparto en dos computadores está implementado y probado apuntando
+los servicios a la capa de datos por IP de red, pero **todavía no se ha ensayado
+con dos máquinas físicas**. Y sigue sin haber CD: el pipeline compila y prueba,
+no despliega.
+
+**Participantes:** Samuel Emperador (vía asistente).
+
+---
+
 ## 2026-09-13 — Cola de mensajes decidida con evidencia medida: RabbitMQ (PoC-05, ADR-10)
 
 **Tipo:** PoC + Decisión de diseño
