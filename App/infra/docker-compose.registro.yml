@@ -11,7 +11,7 @@
 # ## Para qué sirve
 #
 # Es lo que hace que desplegar en otro computador no exija tener el código, ni
-# Node, ni esperar una compilación: se bajan cuatro imágenes ya construidas y se
+# Node, ni esperar una compilación: se bajan siete imágenes ya construidas y se
 # levantan. En el computador de la demostración, o en el de un compañero que
 # solo quiere ver el sistema andando, esa diferencia es de minutos a segundos.
 #
@@ -41,6 +41,10 @@ services:
     build: !reset null
     image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-eventos-emergencias:${HEXACORE_ETIQUETA:-develop}
 
+  pedidos:
+    build: !reset null
+    image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-pedidos:${HEXACORE_ETIQUETA:-develop}
+
   api-gateway:
     # La imagen publicada lleva el `nginx.conf` dentro, así que no se monta
     # nada: lo que se despliega es una cosa sola.
@@ -50,3 +54,7 @@ services:
   portal-web-cliente:
     build: !reset null
     image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-portal-cliente:${HEXACORE_ETIQUETA:-develop}
+
+  portal-web-admin:
+    build: !reset null
+    image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-portal-admin:${HEXACORE_ETIQUETA:-develop}

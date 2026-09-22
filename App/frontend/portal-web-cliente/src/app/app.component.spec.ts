@@ -1,10 +1,13 @@
 import { TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
 import { AppComponent } from './app.component';
 
 describe('AppComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [AppComponent]
+      imports: [AppComponent],
+      // AuthService usa HttpClient desde CU-027
+      providers: [provideHttpClient()]
     }).compileComponents();
   });
 

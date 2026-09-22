@@ -5,7 +5,7 @@ import { CONFIGURACION, ConfiguracionServicio } from '../config/configuracion';
 import { PersistenciaModule } from '../persistencia/persistencia.module';
 import { CheckoutService } from './checkout.service';
 import { GestorConcurrencia } from './concurrencia/gestor-concurrencia.service';
-import { proveedorRedis } from './concurrencia/redis.provider';
+import { REDIS, proveedorRedis } from './concurrencia/redis.provider';
 import { ConexionRabbitMq } from './eventos/conexion-rabbitmq.service';
 import { ConsumidorLiquidaciones } from './eventos/consumidor-liquidaciones.service';
 import { ConsumidorNotificaciones } from './eventos/consumidor-notificaciones.service';
@@ -29,6 +29,7 @@ import { ReventaController } from './reventa.controller';
   imports: [
     PersistenciaModule,
     // Solo verifica: sin clave privada, este servicio no puede emitir tokens.
+    // Se exporta porque SesionValida, que también se exporta, lo necesita.
     JwtModule.registerAsync({
       inject: [CONFIGURACION],
       useFactory: (config: ConfiguracionServicio) => ({
@@ -63,6 +64,11 @@ import { ReventaController } from './reventa.controller';
   ],
   // GestorConcurrencia y ConexionRabbitMq se exportan para que la sonda de
   // vida (en AppModule) pueda preguntarles por sus dependencias.
+  //
+  // REDIS, SesionValida, GeneradorQr y PROCESADOR_PAGOS se exportan para la
+  // venta primaria (VentaModule, CU-001–004): así comparte la misma conexión a
+  // Redis y el mismo adaptador de pagos en vez de abrir otros. Cambiar de
+  // proveedor de pagos sigue siendo cambiar una sola línea (RNF-16).
   exports: [
     PublicacionService,
     CheckoutService,
@@ -70,6 +76,11 @@ import { ReventaController } from './reventa.controller';
     GestorConcurrencia,
     ConexionRabbitMq,
     PublicadorEventos,
+    REDIS,
+    SesionValida,
+    JwtModule,
+    GeneradorQr,
+    PROCESADOR_PAGOS,
   ],
 })
 export class ReventaModule {}

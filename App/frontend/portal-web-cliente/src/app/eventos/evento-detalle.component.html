@@ -1,3 +1,6 @@
+@if (cargando()) {
+  <p>Cargando evento…</p>
+} @else {
 @if (evento(); as evento) {
   <a routerLink="/eventos" class="volver">← Volver a eventos</a>
 
@@ -39,10 +42,17 @@
           type="button"
           class="fila-zona"
           [class.seleccionada]="zonaSeleccionada() === zona.nombre"
+          [disabled]="zona.agotada"
           (click)="elegirZona(zona.nombre)"
         >
           <span class="nombre-zona">{{ zona.nombre }}</span>
-          <span class="precio-zona">${{ zona.precio | number: '1.0-0' }}</span>
+          <span class="precio-zona">
+            @if (zona.agotada) {
+              Agotada
+            } @else {
+              ${{ zona.precio | number: '1.0-0' }}
+            }
+          </span>
         </button>
       }
     </div>
@@ -56,7 +66,7 @@
               <mat-icon>remove</mat-icon>
             </button>
             <span class="cantidad-valor">{{ cantidad() }}</span>
-            <button mat-icon-button (click)="cambiarCantidad(1)" [disabled]="cantidad() >= 10" aria-label="Agregar una entrada">
+            <button mat-icon-button (click)="cambiarCantidad(1)" [disabled]="cantidad() >= maximo()" aria-label="Agregar una entrada">
               <mat-icon>add</mat-icon>
             </button>
           </div>
@@ -64,7 +74,13 @@
 
         <p class="total">Total: ${{ total() | number: '1.0-0' }}</p>
 
-        <button mat-flat-button color="primary" (click)="comprar()" class="boton-continuar">Continuar al pago</button>
+        @if (error()) {
+          <p class="error" role="alert">{{ error() }}</p>
+        }
+
+        <button mat-flat-button color="primary" (click)="comprar()" [disabled]="reservando()" class="boton-continuar">
+          {{ reservando() ? 'Reservando…' : 'Continuar al pago' }}
+        </button>
       </mat-card-content>
     </mat-card>
   } @else {
@@ -72,4 +88,5 @@
   }
 } @else {
   <p>Este evento no existe.</p>
+}
 }

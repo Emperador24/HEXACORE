@@ -110,6 +110,15 @@ export class Entrada {
   @Column({ name: 'numero_ticket', type: 'varchar', length: 32, unique: true })
   numeroTicket: string;
 
+  /**
+   * Compra de la venta primaria (CU-001) que la emitió. Es lo que permite
+   * cancelarla y reembolsarla (CU-003). Null en las entradas de la semilla del
+   * CU-006, que no salen de ninguna compra. Una reventa no lo cambia: la
+   * entrada sigue siendo de esa compra, aunque cambie de dueño.
+   */
+  @Column({ name: 'compra_id', type: 'uuid', nullable: true })
+  compraId: string | null;
+
   @CreateDateColumn({ name: 'creada_en', type: 'timestamptz' })
   creadaEn: Date;
 

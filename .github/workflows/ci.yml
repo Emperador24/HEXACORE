@@ -7,11 +7,14 @@
 # Los trabajos son independientes y corren en paralelo: si falla la app móvil,
 # igual se sabe si los servicios están bien.
 #
-# Lo que NO está aquí, y por qué: las pruebas de extremo a extremo (las de
-# `pruebas/*.py`, el e2e del portal y las de integración de la app) necesitan
-# Postgres, Redis, RabbitMQ y un simulador levantados. Se pueden añadir con
-# `services:` de GitHub Actions cuando haga falta; de momento el pipeline cubre
-# lo que se puede verificar sin infraestructura.
+# El trabajo `integracion` levanta el sistema entero con el mismo `iniciar.sh`
+# de la demostración y le lanza encima las suites de `pruebas/*.py` y las e2e
+# de logística. Es lento comparado con los demás —construye seis imágenes—, así
+# que va aparte: los trabajos rápidos siguen dando su veredicto en un par de
+# minutos aunque este tarde diez.
+#
+# Lo que sigue sin estar: el e2e del portal y las de integración de la app
+# móvil, que necesitan un navegador y un emulador.
 
 name: CI
 
@@ -57,20 +60,39 @@ jobs:
           echo "Limpio: ningún artefacto de compilación versionado."
 
   # --------------------------------------------------------------------------
-  # Los dos microservicios con pruebas: compilan, pasan el chequeo de tipos y
-  # corren sus pruebas unitarias (43 + 183 hoy).
+  # Los microservicios con pruebas: compilan, pasan el chequeo de tipos y
+  # corren sus pruebas.
+  #
+  # Redis va como servicio del trabajo porque las pruebas de inventario de
+  # Pedidos (los scripts Lua de reserva) solo corren si se les da uno: sin
+  # `REDIS_INVENTARIO_PRUEBAS_URL` se saltan solas —`describe.skip`— y 24
+  # pruebas quedarían en verde sin haberse ejecutado. Los otros dos servicios
+  # ignoran la variable.
   # --------------------------------------------------------------------------
   servicios:
     name: Servicio ${{ matrix.servicio }}
     runs-on: ubuntu-latest
     strategy:
-      # Si uno falla, el otro termina igual: interesa ver los dos resultados.
+      # Si uno falla, los demás terminan igual: interesa ver todos los
+      # resultados.
       fail-fast: false
       matrix:
-        servicio: [administracion, entradas-mercado-secundario]
+        servicio: [administracion, entradas-mercado-secundario, pedidos]
     defaults:
       run:
         working-directory: App/services/${{ matrix.servicio }}
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      REDIS_INVENTARIO_PRUEBAS_URL: redis://localhost:6379
     steps:
       - uses: actions/checkout@v4
 
@@ -121,6 +143,67 @@ jobs:
         run: npm test
       - name: Compilar
         run: npm run build
+
+  # --------------------------------------------------------------------------
+  # Pruebas de INTEGRACIÓN sobre el backend.
+  #
+  # La entrega pide cobertura de integración sobre el backend, y una prueba de
+  # integración que solo corre en el portátil de quien la escribió no protege a
+  # nadie: aquí es donde un cambio en Pedidos que rompe la reventa se ve en el
+  # pull request.
+  #
+  # Se levanta con `./iniciar.sh`, **el mismo guion de la demostración**, y no
+  # con `services:` de GitHub Actions. Dos razones: las suites hablan con la
+  # pasarela y el correo simulados, que son contenedores del propio compose; y
+  # así el guion de arranque queda probado en cada PR, que es el otro requisito
+  # de desplegabilidad.
+  # --------------------------------------------------------------------------
+  integracion:
+    name: Pruebas de integración del backend
+    runs-on: ubuntu-latest
+    # Diez minutos bastan de sobra; el tope evita que un servicio que no
+    # arranca deje el trabajo colgado media hora.
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      # Las suites son guiones de Python que hablan por HTTP; no necesitan
+      # dependencias, solo el intérprete, que el runner ya trae.
+      - name: Levantar el sistema completo
+        working-directory: App/infra
+        run: ./iniciar.sh
+
+      - name: Servicio de Administración (CU-027)
+        working-directory: App/services/administracion
+        run: npm ci && npm run test:integracion
+
+      - name: Servicio de Entradas y Mercado Secundario (CU-001 a CU-006)
+        working-directory: App/services/entradas-mercado-secundario
+        run: npm ci && npm run test:integracion
+
+      - name: Servicio de Pedidos (CU-011)
+        working-directory: App/services/pedidos
+        run: npm ci && npm run test:integracion
+
+      # Estas son e2e de Vitest contra su propia base, no guiones de Python.
+      - name: Servicio de Eventos y Emergencias (CU-017, CU-018)
+        working-directory: App/services/eventos-emergencias
+        run: npm ci && npm run test:e2e
+
+      # Sin esto, un fallo deja solo "exit 1" y hay que reproducirlo a ciegas.
+      - name: Registros de los contenedores si algo falló
+        if: failure()
+        working-directory: App/infra
+        run: docker compose -f docker-compose.yml --profile servicios logs --tail 100
+
+      - name: Apagar
+        if: always()
+        working-directory: App/infra
+        run: docker compose -f docker-compose.yml --profile servicios down -v
 
   # --------------------------------------------------------------------------
   # Los dos portales Angular: que compilen en modo producción.

@@ -158,7 +158,14 @@ export class PublicacionService {
         consulta.orderBy('p.precio', 'DESC');
         break;
       case OrdenMercado.EVENTO_PROXIMO:
-        consulta.orderBy('ev.fecha_inicio', 'ASC');
+        // El `addSelect` no es decorativo. `skip`/`take` hacen que TypeORM
+        // pagine con una subconsulta `SELECT DISTINCT` que solo arrastra las
+        // columnas de `p`; ordenar por una columna del join que no viaja en
+        // esa lista rompe con «column distinctAlias.ev_fecha_inicio does not
+        // exist». Seleccionarla la mete en la subconsulta y el ORDER BY la
+        // encuentra. El alias tiene que ser el que TypeORM compone
+        // (`<alias>_<columna>`), o el nombre tampoco coincidiría.
+        consulta.addSelect('ev.fecha_inicio', 'ev_fecha_inicio').orderBy('ev.fecha_inicio', 'ASC');
         break;
       default:
         consulta.orderBy('p.fechaPublicacion', 'DESC');

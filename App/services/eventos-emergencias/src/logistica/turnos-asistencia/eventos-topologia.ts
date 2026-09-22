@@ -4,11 +4,22 @@
  * criterio que `entradas-mercado-secundario/src/reventa/eventos/topologia.ts`.
  */
 
+/**
+ * Prefijo opcional de los nombres de cola.
+ *
+ * En producción va vacío y los nombres son los de siempre. Las pruebas de
+ * integración lo usan para tener sus propias colas: RabbitMQ es compartido, y
+ * sin esto el consumidor que corre dentro del contenedor se queda los mensajes
+ * que publica la prueba y escribe la notificación en la base de desarrollo —
+ * la prueba entonces espera una notificación que nunca le llega.
+ */
+const PREFIJO = process.env.PREFIJO_COLAS ?? '';
+
 /** Cola de trabajo: cambios de turno ya aprobados. */
-export const COLA_CAMBIOS_TURNO = 'turnos.cambios';
+export const COLA_CAMBIOS_TURNO = `${PREFIJO}turnos.cambios`;
 
 /** Cola de mensajes muertos de la cola de arriba (ADR-10: DLQ nativa de RabbitMQ). */
-export const COLA_CAMBIOS_TURNO_DLQ = 'turnos.cambios.dlq';
+export const COLA_CAMBIOS_TURNO_DLQ = `${PREFIJO}turnos.cambios.dlq`;
 
 /**
  * Cuántas veces se reintenta un mensaje antes de mandarlo a la DLQ. Fijo y

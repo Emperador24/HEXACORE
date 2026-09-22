@@ -2,13 +2,12 @@ import { Routes } from '@angular/router';
 import { authGuard, soloInvitadosGuard } from './core/auth.guard';
 
 /**
- * La cartelera y el mercado de reventa son **públicos**: un visitante puede
- * mirar qué eventos hay y a qué precio se revenden sin registrarse, igual que
- * en cualquier taquilla. La sesión solo se exige para lo que es propio del
- * cliente —sus entradas, sus reservas, sus pedidos— y para completar una
- * compra; ese último caso no lo cubre el guard de ruta sino la propia acción
- * de comprar, para que el visitante pueda ver el detalle y el precio antes de
- * que se le pida iniciar sesión.
+ * La cartelera es **pública**: un visitante puede mirar qué eventos hay sin
+ * registrarse, igual que en cualquier taquilla. La sesión se exige para todo lo
+ * que es propio del cliente —sus entradas, sus reservas, sus pedidos— y para el
+ * mercado de reventa, que aunque parezca un catálogo público no lo es: el
+ * servidor marca en cada publicación si es tuya, y eso exige saber quién
+ * pregunta.
  *
  * Todas las rutas cuelgan del mismo shell (navbar + pie), con o sin sesión,
  * para que el visitante no perciba dos sitios distintos.
@@ -56,15 +55,17 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./eventos/evento-detalle.component').then((m) => m.EventoDetalleComponent)
       },
-      // CU-007, CU-008: se puede mirar el mercado sin sesión; comprar exige iniciarla.
+      // ---- Requiere sesión ----
+      // CU-006: el mercado secundario. Pide sesión aunque solo se mire, porque
+      // el catálogo del servidor marca cuáles publicaciones son tuyas — y eso
+      // no se puede responder sin saber quién pregunta.
       {
         path: 'reventa',
+        canActivate: [authGuard],
         loadComponent: () =>
           import('./entradas/mercado-reventa.component').then((m) => m.MercadoReventaComponent)
       },
-
-      // ---- Requiere sesión ----
-      // CU-009, CU-010: boletas propias, envío a otro cliente.
+      // CU-006, lado del vendedor: las entradas propias y su publicación.
       {
         path: 'entradas',
         canActivate: [authGuard],

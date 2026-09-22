@@ -52,6 +52,11 @@ export interface Evento {
 export interface ZonaEvento {
   nombre: string;
   precio: number;
+  /** Id de la localidad en el backend: es lo que se manda al reservar (CU-001). */
+  id?: string;
+  /** Cupos que quedan, ya descontadas las reservas sin pagar. */
+  disponibles?: number;
+  agotada?: boolean;
 }
 
 export enum EstadoEntrada {
@@ -136,7 +141,8 @@ export interface ItemCarrito {
 
 export enum MetodoPago {
   TARJETA = 'TARJETA',
-  EFECTIVO = 'EFECTIVO'
+  EFECTIVO = 'EFECTIVO',
+  PSE = 'PSE'
 }
 
 /** Una línea del resumen que se muestra en la pasarela de pago. */
@@ -155,8 +161,20 @@ export interface LineaResumenPago {
 export interface PagoPendiente {
   titulo: string;
   lineas: LineaResumenPago[];
-  /** Se ejecuta al confirmar el pago; falla en silencio si ya no hay pago pendiente. */
-  onConfirmar: (metodo: MetodoPago) => void;
+  /**
+   * Se ejecuta al confirmar el pago. Si devuelve una promesa, la pasarela la
+   * espera: si falla, muestra el error y deja el pago pendiente para reintentar
+   * (así funciona el CU-001C, donde la reserva sigue viva tras un rechazo).
+   * El segundo argumento es el token del medio de pago elegido, si lo hay.
+   */
+  onConfirmar: (metodo: MetodoPago, token?: string) => void | Promise<void>;
+  /** Medios que admite esta compra. Si falta, se ofrecen todos. */
+  metodos?: MetodoPago[];
+  /**
+   * Tokens de la pasarela simulada para demostrar cada camino (aprobado,
+   * rechazado…), como en la reventa. Si falta, no se muestra el selector.
+   */
+  tokensDemo?: { valor: string; etiqueta: string }[];
   /** A dónde volver después de confirmar. */
   rutaDestino: string;
 }

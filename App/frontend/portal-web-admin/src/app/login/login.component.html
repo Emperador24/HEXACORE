@@ -18,17 +18,27 @@
         </mat-form-field>
 
         @if (error()) {
-          <p class="mensaje-error">Correo o contraseña incorrectos.</p>
+          <p class="mensaje-error">{{ error() }}</p>
         }
 
-        <button mat-flat-button color="primary" type="submit" class="campo" [disabled]="formulario.invalid">
+        @if (entrando()) {
+          <mat-progress-bar mode="indeterminate" />
+        }
+
+        <button
+          mat-flat-button
+          color="primary"
+          type="submit"
+          class="campo"
+          [disabled]="formulario.invalid || entrando()"
+        >
           Ingresar
         </button>
       </form>
 
       <p class="ayuda-demo">
-        Demo (clave: 1234) — organizador&#64;hexacore.com · administrador&#64;hexacore.com ·
-        supervisor&#64;hexacore.com
+        Cuenta de demostración: admin&#64;hexacore.com — la contraseña es la de la semilla del
+        Servicio de Administración. Este portal es para los roles Administrador y Organizador.
       </p>
     </mat-card-content>
   </mat-card>

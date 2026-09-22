@@ -133,10 +133,12 @@ src/app/
 ## Estado
 
 **Las cuentas y la sesión son reales** (ver arriba). El resto —cartelera, entradas, reventa,
-parqueadero, pedidos, pago— sigue sobre **datos mock**. En particular, **el mercado de reventa de
-la web aún no está conectado** al Servicio de Entradas, aunque la app móvil sí lo está (RNF-14
-pendiente). Las entradas de ejemplo pertenecen a los ids reales de Ana, Bruno y Carla, para que "Mis
-entradas" muestre algo al entrar con esas cuentas.
+parqueadero, pedidos, pago— sigue sobre **datos mock**.
+
+El **mercado de reventa (CU-006) ya está conectado** al Servicio de Entradas: publicar, retirar,
+reservar con su cuenta atrás y pagar ocurren contra el backend real, igual que en la app móvil
+(RNF-14). Lo que sigue simulado de esa pantalla es la **compra original** de la entrada (CU-001),
+que todavía no tiene servicio propio.
 
 Limitaciones conocidas:
 - **El portal y el API siguen en orígenes distintos** (4200 y 8080), así que el CORS hace falta; lo

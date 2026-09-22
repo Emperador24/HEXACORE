@@ -28,6 +28,17 @@ describe('contrato OpenAPI publicado', () => {
   });
 
   it.each([
+    ['/cartelera', 'get', 'CU-005 pasos 1-5: consultar la cartelera'],
+    ['/cartelera/{id}', 'get', 'CU-005 pasos 6-8: detalle del evento'],
+    ['/cartelera/filtros', 'get', 'CU-005: valores de los filtros'],
+    ['/compras', 'post', 'CU-001 pasos 3-4: reservar'],
+    ['/compras/{id}/pagar', 'post', 'CU-001 pasos 5-8: pagar y recibir los QR'],
+    ['/compras/{id}/cupon', 'put', 'CU-004: aplicar un código'],
+    ['/compras/{id}/cupon', 'delete', 'CU-004B: quitar el código'],
+    ['/compras/{id}/cancelacion/cotizacion', 'post', 'CU-003 pasos 2-4: cotizar'],
+    ['/compras/{id}/cancelaciones', 'post', 'CU-003 pasos 5-9: cancelar'],
+    ['/ingresos', 'post', 'CU-002: validar un QR'],
+    ['/ingresos/sincronizacion', 'post', 'CU-002E: sincronizar ingresos sin conexión'],
     ['/reventa/mis-entradas', 'get', 'paso 1: las entradas del vendedor'],
     ['/reventa/publicaciones', 'post', 'pasos 2-4: publicar'],
     ['/reventa/publicaciones', 'get', 'paso 5: consultar el mercado'],
@@ -72,13 +83,28 @@ describe('contrato OpenAPI publicado', () => {
     expect(Object.keys(pagar.properties).sort()).toEqual(['metodoPago', 'token']);
   });
 
+  /** La cartelera (CU-005) es la única ruta de negocio pública; DECISIONES.md §12. */
+  const esCartelera = (ruta: string): boolean => ruta === '/cartelera' || ruta.startsWith('/cartelera/');
+
+  it('la cartelera pública es de solo lectura', () => {
+    // La excepción a RNF-06 se sostiene porque no escribe nada ni expone datos
+    // de nadie. Si alguien añade un POST aquí, deja de sostenerse.
+    const publicas = Object.entries(contrato.paths).filter(([ruta]) => esCartelera(ruta));
+    expect(publicas.length).toBeGreaterThan(0);
+    for (const [ruta, metodos] of publicas) {
+      expect([ruta, Object.keys(metodos)]).toEqual([ruta, ['get']]);
+      expect(metodos.get.security).toBeUndefined();
+    }
+  });
+
   // RNF-06: el contrato debe decirle a los clientes que hace falta un token, y
   // no seguir anunciando la cabecera que permitía hacerse pasar por otro.
   it('exige token Bearer en todas las rutas de negocio y ya no menciona X-Usuario-Id', () => {
     expect(contrato.components.securitySchemes?.bearer?.scheme).toBe('bearer');
     // `/salud` queda fuera a propósito: la consulta el balanceador (ADR-02),
-    // que no tiene sesión, y no expone nada de negocio.
-    const deNegocio = Object.entries(contrato.paths).filter(([ruta]) => ruta !== '/salud');
+    // que no tiene sesión, y no expone nada de negocio. La cartelera, porque
+    // es pública por diseño (prueba de arriba).
+    const deNegocio = Object.entries(contrato.paths).filter(([ruta]) => ruta !== '/salud' && !esCartelera(ruta));
     expect(deNegocio.length).toBeGreaterThan(0);
     for (const [ruta, metodos] of deNegocio) {
       for (const [metodo, operacion] of Object.entries(metodos)) {

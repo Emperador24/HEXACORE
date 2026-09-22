@@ -246,6 +246,7 @@ services:
   # Servicio de Pedidos — CU-011.
   pedidos:
     profiles: ["servicios"]
+    container_name: hexacore-pedidos
     build: ../services/pedidos
     restart: unless-stopped
     init: true
@@ -323,6 +324,19 @@ services:
       api-gateway: { condition: service_healthy }
     ports:
       - "4200:4200"
+
+  # Portal Web Administrativo/Operativo. Se sirve como sitio estático igual que
+  # el de clientes; el 4201 lo distingue del 4200 y el gateway ya acepta los dos
+  # como origen de CORS.
+  portal-web-admin:
+    profiles: ["servicios"]
+    build: ../frontend/portal-web-admin
+    container_name: hexacore-portal-admin
+    restart: unless-stopped
+    depends_on:
+      api-gateway: { condition: service_healthy }
+    ports:
+      - "4201:4201"
 
 volumes:
   postgres-datos:

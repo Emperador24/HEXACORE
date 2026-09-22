@@ -1,7 +1,7 @@
 # Entrega continua de HEXACORE.
 #
 # Cada vez que algo entra a `develop` o a `main`, este pipeline **construye las
-# imágenes de los cuatro contenedores desplegables y las publica** en el
+# imágenes de los siete contenedores desplegables y las publica** en el
 # registro de paquetes de GitHub (ghcr.io), etiquetadas con la rama y con el
 # identificador exacto del commit.
 #
@@ -58,10 +58,14 @@ jobs:
             contexto: App/services/entradas-mercado-secundario
           - nombre: eventos-emergencias
             contexto: App/services/eventos-emergencias
+          - nombre: pedidos
+            contexto: App/services/pedidos
           - nombre: gateway
             contexto: App/gateway
           - nombre: portal-cliente
             contexto: App/frontend/portal-web-cliente
+          - nombre: portal-admin
+            contexto: App/frontend/portal-web-admin
 
     steps:
       - uses: actions/checkout@v4

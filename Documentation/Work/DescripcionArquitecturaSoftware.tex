@@ -101,6 +101,13 @@ contenedor \textbf{App Móvil}, que identifica el rol del usuario en el login y 
 de pantallas correspondiente (ver ADR-07). Se actualiza la vista de contenedores (de cuatro a tres
 interfaces desplegables) y ADR-02/ADR-05 en consecuencia. & Equipo Hexacore (vía asistente) \\
 \hline
+22/09/2026 & Versión 1.3: se añade la sección \textbf{Tácticas arquitectónicas por atributo de
+calidad} (§\ref{sec:tacticas}), que dice cómo se realiza en el código cada atributo priorizado y
+con qué medición se respalda. Cubre los cinco que la entrega exige demostrar en vivo: desempeño,
+disponibilidad, \textbf{seguridad}, \textbf{consistencia} y desplegabilidad. Las cifras de la
+columna «Evidencia medida» provienen de ejecutar los guiones de \texttt{pruebas/} contra el
+sistema desplegado, no de estimaciones de diseño. & Equipo Hexacore (vía asistente) \\
+\hline
 \end{longtable}
 \end{center}
 
@@ -1131,6 +1138,399 @@ una subpetición interna del gateway. A cambio, ningún servicio distinto del em
 token. \textbf{Cuándo revisar:} si el coste de la subpetición se notara bajo carga, los servicios
 pueden verificar la firma por su cuenta con la clave pública y consultar Redis directamente ---
 sigue sin necesitar la privada.
+
+% ==================== Tácticas arquitectónicas ====================
+\section{Tácticas arquitectónicas por atributo de calidad}
+\label{sec:tacticas}
+
+Las decisiones de la sección \ref{sec:adr} dicen \textit{qué} se eligió; esta sección dice
+\textbf{cómo se realiza} cada atributo priorizado en el código, con el nombre de la táctica, el
+mecanismo concreto que la implementa y la medición que la respalda. Cubre los cinco atributos
+que la entrega exige demostrar en vivo: \textbf{desempeño}, \textbf{disponibilidad},
+\textbf{seguridad}, \textbf{consistencia} y \textbf{desplegabilidad}.
+
+La columna \textbf{Evidencia} no es una promesa de diseño: son cifras obtenidas ejecutando los
+guiones de \texttt{pruebas/} contra el sistema desplegado, a través del API Gateway, que es por
+donde entra el tráfico real. Cada guion se puede volver a correr delante del evaluador.
+
+Las cinco mediciones se lanzan de una vez con \texttt{App/infra/atributos-calidad.py}, que corre
+cada suite y consolida sus cifras en \texttt{App/infra/informe-atributos/INFORME.md}. Las que
+aparecen en este documento son las de una corrida concreta; el guion da siempre las de la máquina
+donde se ejecute, y si una suite falla lo dice en vez de dar por buena una cifra que no se midió.
+
+\subsection{Desempeño}
+
+Escenario de referencia: la consulta de catálogo durante la apertura de venta (RNF-07, RNF-08),
+y el crecimiento de capacidad sin degradar otros dominios (RNF-10).
+
+\begin{center}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{2.9cm}|>{\raggedright\arraybackslash}p{5.1cm}|>{\raggedright\arraybackslash}p{1.7cm}|>{\raggedright\arraybackslash}p{3.7cm}|}
+\caption{Tácticas de desempeño, su mecanismo y la medición que las respalda.}\label{tab:tacticas-desempeno}\\
+\hline
+\textbf{Táctica} & \textbf{Mecanismo en el sistema} & \textbf{RNF / ADR} & \textbf{Evidencia medida}\\
+\hline
+\endfirsthead
+\hline
+\textbf{Táctica} & \textbf{Mecanismo en el sistema} & \textbf{RNF / ADR} & \textbf{Evidencia medida}\\
+\hline
+\endhead
+
+Mantener copias de los datos (caché) &
+Cabecera \texttt{Cache-Control: public} en la cartelera (30 s) y en el detalle de evento (300 s),
+de modo que navegador y CDN puedan responder sin llegar al servicio. Redis como almacén de acceso
+rápido para estado efímero. &
+RNF-07, ADR-03 &
+La cifra de disponibilidad puede ir unos segundos por detrás; la compra vuelve a comprobar el cupo
+contra la base, así que la caché no puede sobrevender.\\
+\hline
+
+Introducir concurrencia &
+Varias instancias del servicio de Entradas tras el gateway, activables con
+\texttt{./iniciar.sh -{}-replicas N}. &
+RNF-10, ADR-02 &
+La cabecera \texttt{X-Servidor} devuelve la instancia que atendió cada petición, lo que hace
+visible el reparto.\\
+\hline
+
+Planificar recursos (balanceo) &
+Nginx resuelve el destino \textbf{en cada petición} (\texttt{resolver 127.0.0.11 valid=5s} más
+variable en \texttt{proxy\_pass}) en vez de fijarlo al arrancar. &
+ADR-02 &
+Una réplica nueva entra al reparto sin recargar el gateway.\\
+\hline
+
+Acotar la demanda de recursos &
+Pool de conexiones limitado por servicio (\texttt{POSTGRES\_MAX\_CONEXIONES}) y espera máxima
+acotada (\texttt{POSTGRES\_ESPERA\_MAXIMA\_MS}). &
+RNF-07 &
+Un pico de peticiones no agota las conexiones de la base ni deja sin atender al resto del
+servicio.\\
+\hline
+
+\multicolumn{4}{|p{13.5cm}|}{\textbf{Resultado global} (\texttt{rnf07-desempeno.py}, a través del
+gateway): p95 de \textbf{224{,}3 ms} con 200 peticiones simultáneas frente a un umbral de 500 ms;
+capacidad máxima observada \textbf{963 peticiones por segundo}; \textbf{0} peticiones fallidas.}\\
+\hline
+\end{longtable}
+\end{center}
+
+\subsection{Disponibilidad}
+
+Escenario de referencia: el sistema sigue atendiendo ante la caída de una instancia o de una
+dependencia (RNF-03) y se recupera sin intervención manual (RNF-04).
+
+\begin{center}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{2.9cm}|>{\raggedright\arraybackslash}p{5.1cm}|>{\raggedright\arraybackslash}p{1.7cm}|>{\raggedright\arraybackslash}p{3.7cm}|}
+\caption{Tácticas de disponibilidad, su mecanismo y la medición que las respalda.}\label{tab:tacticas-disponibilidad}\\
+\hline
+\textbf{Táctica} & \textbf{Mecanismo en el sistema} & \textbf{RNF / ADR} & \textbf{Evidencia medida}\\
+\hline
+\endfirsthead
+\hline
+\textbf{Táctica} & \textbf{Mecanismo en el sistema} & \textbf{RNF / ADR} & \textbf{Evidencia medida}\\
+\hline
+\endhead
+
+Detección por eco (\textit{ping/echo}) &
+Endpoint \texttt{/salud} que informa el estado \textbf{de cada dependencia} por separado, y
+\texttt{healthcheck} declarado en cada contenedor. &
+RNF-03 &
+Respuesta observada con Redis caído:
+\texttt{\{postgres: arriba, redis: caido\}}.\\
+\hline
+
+Detección por temporizador &
+Tiempos máximos explícitos en cada salida: 2 s contra Redis
+(\texttt{commandTimeout}) y 10 s contra la pasarela de pagos. &
+RNF-03 &
+Ninguna dependencia lenta puede bloquear indefinidamente una petición.\\
+\hline
+
+Fallar rápido &
+El cliente de Redis no encola peticiones cuando está caído
+(\texttt{enableOfflineQueue: false}, \texttt{maxRetriesPerRequest: 1}): devuelve error de
+inmediato. &
+RNF-03 &
+El servicio responde 503 en lugar de acumular peticiones colgadas.\\
+\hline
+
+Degradación elegante &
+El inicio de sesión distingue las dependencias esenciales de las que no lo son: sigue operando sin
+Redis ni RabbitMQ, y solo rechaza si falta PostgreSQL. &
+RNF-03 &
+Con Redis caído: \textbf{200 en 67 ms}. Con RabbitMQ caído: \textbf{200 en 67 ms}. Sin PostgreSQL:
+503 explícito.\\
+\hline
+
+Reintento con cola de descartes &
+Los mensajes de cambio de turno se reintentan hasta \texttt{MAXIMO\_INTENTOS = 3} y después pasan
+a una cola de mensajes muertos (\textit{DLQ} nativa). &
+ADR-10 &
+Un mensaje defectuoso no bloquea el procesamiento del resto de la cola.\\
+\hline
+
+Reintroducción automática &
+Política \texttt{restart: unless-stopped} en todos los contenedores del sistema. &
+RNF-04 &
+Tras \texttt{kill -9}, el servicio vuelve a atender inicios de sesión en \textbf{1{,}3 s}
+(el requisito concede 30 s).\\
+\hline
+
+\multicolumn{4}{|p{13.5cm}|}{\textbf{Resultado global} (\texttt{cu027-disponibilidad.py}):
+\textbf{123 inicios de sesión por segundo} con 300 usuarios simultáneos; el sistema sobrevive a la
+caída de dos de sus tres dependencias y se recupera solo de la muerte del proceso.}\\
+\hline
+\end{longtable}
+\end{center}
+
+\subsection{Seguridad}
+
+Escenario de referencia: toda petición a un microservicio llega autenticada y autorizada por rol
+desde el API Gateway (RNF-06), y el sistema nunca guarda datos completos de tarjeta (RNF-05).
+
+\begin{center}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{2.9cm}|>{\raggedright\arraybackslash}p{5.1cm}|>{\raggedright\arraybackslash}p{1.7cm}|>{\raggedright\arraybackslash}p{3.7cm}|}
+\caption{Tácticas de seguridad, su mecanismo y la medición que las respalda.}\label{tab:tacticas-seguridad}\\
+\hline
+\textbf{Táctica} & \textbf{Mecanismo en el sistema} & \textbf{RNF / ADR} & \textbf{Evidencia medida}\\
+\hline
+\endfirsthead
+\hline
+\textbf{Táctica} & \textbf{Mecanismo en el sistema} & \textbf{RNF / ADR} & \textbf{Evidencia medida}\\
+\hline
+\endhead
+
+Autenticar a los actores &
+Token JWT firmado con \texttt{RS256} por el Servicio de Administración con su clave privada. Los
+demás servicios solo llevan la \textbf{clave pública}: pueden verificar, no emitir. Dos tokens
+separados, de acceso y de renovación. &
+RNF-06, ADR-11 &
+Se rechazan token firmado con otra clave, \texttt{alg: none}, \texttt{HS256} usando la clave
+pública como secreto, caducado, de otro emisor y manipulado: \textbf{6 de 6} responden 401.\\
+\hline
+
+Autorizar a los actores &
+Guarda \texttt{SesionValida} con \texttt{@RolesPermitidos} en cada controlador. El gateway valida
+antes de enrutar (\texttt{auth\_request} a \texttt{/sesiones/verificar}) y propaga la identidad ya
+comprobada en \texttt{X-Usuario-Id} y \texttt{X-Usuario-Roles}. &
+RNF-06, ADR-02 &
+\textbf{11 de 11} rutas de negocio responden 401 sin token (\textbf{0\,\% abiertas}). Un rol
+\texttt{Personal} recibe 403 en la reventa; el barrido de mantenimiento da 403 a \texttt{Cliente}
+y 200 a \texttt{Administrador}.\\
+\hline
+
+Limitar el punto de entrada &
+El gateway es la única puerta (ADR-02) y enumera las rutas una a una con coincidencia exacta
+(\texttt{location =}), de modo que una ruta nueva no queda expuesta por descuido. &
+RNF-06, ADR-02 &
+La cartelera pública es la \textbf{única} excepción declarada, justificada en
+\texttt{DECISIONES.md} §12.\\
+\hline
+
+Revocar el acceso &
+Lista de sesiones revocadas en Redis, compartida por todos los servicios. Cerrar sesión o cambiar
+la contraseña la alimenta al instante. &
+RNF-06, ADR-03 &
+El mismo token, aún sin caducar, pasa a recibir 401 \textbf{al instante} tras cerrar sesión.
+Cambiar la contraseña cierra las demás sesiones y deja viva la que hizo el cambio. La revocación
+vive lo que le quede al token más un margen (\textbf{960 s} medidos).\\
+\hline
+
+Cerrarse ante la duda &
+Si Redis no responde, la comprobación de revocación no se puede hacer: se responde 503 en vez de
+aceptar un token que podría estar revocado. &
+RNF-06 &
+Con Redis en pausa el acceso da \textbf{503}, no 200; al volver Redis, el mismo token vuelve a
+entrar sin intervención.\\
+\hline
+
+Proteger los datos almacenados &
+Las contraseñas se guardan con \texttt{scrypt} (sal por usuario y comparación en tiempo
+constante). De los pagos solo se guarda una referencia opaca de la pasarela: ningún dato de
+tarjeta entra al sistema. &
+RNF-05 &
+Ni el esquema ni los eventos publicados tienen campo alguno para número de tarjeta; el cobro
+viaja como \texttt{token} del medio de pago.\\
+\hline
+
+Limitar lo que se expone &
+El DTO del mercado omite a propósito el \texttt{vendedorId}: quien compra necesita saber qué se
+vende y a qué precio, no la identidad de quien lo vende. &
+RNF-06 &
+Comprobado en \texttt{cu006b-publicaciones.py}: el campo no aparece en ninguna respuesta del
+listado.\\
+\hline
+
+\multicolumn{4}{|p{13.5cm}|}{\textbf{Resultado global} (\texttt{rnf06-autenticacion.py}, con un
+inicio de sesión real contra Administración): \textbf{0\,\%} de rutas de negocio accesibles sin
+token; \textbf{9} formas distintas de token inválido, todas rechazadas; revocación efectiva en el
+acto; y ninguna aceptación de tokens cuando la comprobación no se puede realizar.}\\
+\hline
+\end{longtable}
+\end{center}
+
+\subsection{Consistencia}
+
+Escenario de referencia: ninguna entrada publicada puede venderse a dos compradores (RNF-01) y,
+al transferirse, el código QR anterior queda invalidado antes de emitir el nuevo (RNF-02). Es el
+atributo que sostiene el caso de uso más complejo del sistema, el CU-006.
+
+\begin{center}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{2.9cm}|>{\raggedright\arraybackslash}p{5.1cm}|>{\raggedright\arraybackslash}p{1.7cm}|>{\raggedright\arraybackslash}p{3.7cm}|}
+\caption{Tácticas de consistencia, su mecanismo y la medición que las respalda.}\label{tab:tacticas-consistencia}\\
+\hline
+\textbf{Táctica} & \textbf{Mecanismo en el sistema} & \textbf{RNF / ADR} & \textbf{Evidencia medida}\\
+\hline
+\endfirsthead
+\hline
+\textbf{Táctica} & \textbf{Mecanismo en el sistema} & \textbf{RNF / ADR} & \textbf{Evidencia medida}\\
+\hline
+\endhead
+
+Mantener la coherencia con bloqueos &
+Bloqueo pesimista de PostgreSQL (\texttt{pessimistic\_write}) sobre la fila de la compra o la
+publicación mientras se decide. Quien llega segundo espera, no lee un estado a medias. &
+RNF-01 &
+Base del resultado global de abajo.\\
+\hline
+
+Escrituras condicionales &
+Los cambios de estado van como \texttt{UPDATE \dots{} WHERE estado = <el esperado>} y \textbf{se
+mira cuántas filas cambiaron}: si son cero, otro llegó antes y se aborta. Es lo que decide el
+ingreso por QR (\texttt{VALIDA} $\rightarrow$ \texttt{USADA}) y la emisión de entradas. &
+RNF-01, RNF-02 &
+Dos puertas escaneando el mismo QR a la vez: \textbf{un} 200 y \textbf{un} 409, \textbf{1} ingreso
+registrado y el aforo sube exactamente \textbf{1}.\\
+\hline
+
+Bloqueo distribuido con dueño &
+Reserva del checkout en Redis con \texttt{SET NX PX}; se libera con un guion Lua que solo borra la
+clave \textbf{si el testigo sigue siendo el suyo}. Antes de cobrar se renueva, y si la renovación
+falla se detiene el cobro. &
+RNF-01, ADR-03 &
+50 compradores simultáneos sobre la misma entrada: \textbf{1} checkout abierto y \textbf{49}
+rechazados. Pagar con la reserva ya caducada da \texttt{CHECKOUT\_NO\_VIGENTE} sin llegar a
+cobrar.\\
+\hline
+
+Claves de idempotencia &
+Cada cobro y cada reembolso llevan una clave estable hacia la pasarela, y los eventos publicados
+usan el identificador de la transacción como clave. Reintentar consulta el resultado, nunca vuelve
+a cobrar. &
+RNF-01, ADR-04 &
+Reintentar el pago con la misma clave devuelve el \textbf{mismo} cobro y deja \textbf{una} sola
+transacción; con la clave de otro pedido se rechaza
+(\texttt{CLAVE\_IDEMPOTENCIA\_INCOMPATIBLE}).\\
+\hline
+
+Invariantes en la base de datos &
+Índice único parcial \texttt{uq\_publicacion\_activa\_por\_entrada} (una sola publicación activa
+por entrada), \texttt{UNIQUE} sobre \texttt{ingresos.entrada\_id} y sobre el código QR, y
+restricciones \texttt{CHECK} que obligan a que el reparto cuadre
+(\texttt{precio = comision + neto\_vendedor}) y a que una transacción aprobada tenga referencia. &
+RNF-01, RNF-11 &
+El reparto cuadra al céntimo en todas las transacciones comprobadas. Aunque fallara la lógica, la
+base no admitiría el estado incoherente.\\
+\hline
+
+Una sola transacción para el cambio &
+La transferencia entera --- propietario, código QR nuevo, cierre de la publicación e historial ---
+va en una única transacción de base de datos. O cambia todo, o no cambia nada. &
+RNF-01, RNF-02 &
+El QR anterior \textbf{no existe en ninguna fila} después de la transferencia; no hay estados
+intermedios que reparar.\\
+\hline
+
+Registro inmutable &
+Un disparador (\texttt{trg\_historial\_propietarios\_inmutable}) rechaza \texttt{UPDATE} y
+\texttt{DELETE} sobre el historial de propietarios: solo admite inserciones. &
+RNF-11 &
+La cadena de propiedad queda \texttt{EMISION $\rightarrow$ REVENTA} y no se puede reescribir desde
+la aplicación.\\
+\hline
+
+Ordenar para fallar sin daño &
+En la cancelación se anula primero y se reembolsa después: así la entrada no se puede usar en la
+puerta mientras el dinero está en vuelo. Si la pasarela rechaza, las entradas vuelven a ser
+válidas. &
+RNF-01 &
+Reembolso rechazado (CU-003C): la entrada vuelve a \texttt{VALIDA}, la compra sigue
+\texttt{PAGADA} y el intento queda registrado como \texttt{RECHAZADA}.\\
+\hline
+
+\multicolumn{4}{|p{13.5cm}|}{\textbf{Resultado global} (\texttt{rnf01-concurrencia.py}, tres
+escenarios sobre la misma entrada): \textbf{0} ventas duplicadas. Con 50 compradores a la vez, 1
+checkout y 49 rechazos; con la reserva caducada, 1 cobro aprobado y 1 transferencia; con los dos
+pagando simultáneamente, \textbf{1} pago aceptado, \textbf{1} cobro y \textbf{1} QR emitido.}\\
+\hline
+\end{longtable}
+\end{center}
+
+\subsection{Desplegabilidad}
+
+Escenario de referencia: desplegar una versión nueva de un microservicio sin interrumpir el
+servicio (RNF-15), y levantar el sistema completo --- distribuido en dos o más computadores ---
+desde un único guion.
+
+\begin{center}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{2.9cm}|>{\raggedright\arraybackslash}p{5.1cm}|>{\raggedright\arraybackslash}p{1.7cm}|>{\raggedright\arraybackslash}p{3.7cm}|}
+\caption{Tácticas de desplegabilidad, su mecanismo y la evidencia que las respalda.}\label{tab:tacticas-desplegabilidad}\\
+\hline
+\textbf{Táctica} & \textbf{Mecanismo en el sistema} & \textbf{RNF / ADR} & \textbf{Evidencia medida}\\
+\hline
+\endfirsthead
+\hline
+\textbf{Táctica} & \textbf{Mecanismo en el sistema} & \textbf{RNF / ADR} & \textbf{Evidencia medida}\\
+\hline
+\endhead
+
+Desacoplar las unidades de despliegue &
+Una base de datos por microservicio, sin llaves foráneas entre dominios: las referencias cruzadas
+se resuelven en la aplicación. Cada servicio se despliega por separado. &
+RNF-13, RNF-15, ADR-01 &
+Un cambio de esquema en un dominio no obliga a desplegar los demás.\\
+\hline
+
+Gestionar la tubería de despliegue &
+Integración continua de 8 trabajos (tipos, pruebas y compilación por servicio y por portal) y
+entrega continua que construye y publica las 6 imágenes desplegables. &
+RNF-15 &
+La entrega continua incluye un trabajo que \textbf{baja lo publicado y comprueba que arranca},
+antes de darlo por bueno.\\
+\hline
+
+Artefactos inmutables con vuelta atrás &
+Cada imagen se etiqueta con la rama y con el identificador exacto del commit
+(\texttt{sha-XXXXXXX}). &
+RNF-15 &
+Volver a una versión anterior es desplegar su etiqueta, sin reconstruir ni tocar el
+repositorio.\\
+\hline
+
+Empaquetado uniforme &
+Todos los componentes se distribuyen como contenedores, construidos para
+\texttt{linux/amd64} y \texttt{linux/arm64}. &
+ADR-01 &
+La misma imagen corre en los servidores de integración y en los portátiles del equipo.\\
+\hline
+
+Automatizar el arranque &
+Un único guion (\texttt{App/infra/iniciar.sh}) levanta la infraestructura, aplica las migraciones
+pendientes, siembra los datos y prepara el inventario en memoria. Admite repartir el sistema en
+dos computadores (\texttt{-{}-rol datos} y \texttt{-{}-rol servicios -{}-datos <IP>}). &
+RNF-15 &
+De cero a sistema completo y utilizable en \textbf{2 min 10 s}, verificado borrando previamente
+contenedores y volúmenes.\\
+\hline
+
+Despliegue sin código fuente &
+La opción \texttt{-{}-registro <etiqueta>} despliega desde las imágenes ya publicadas, y
+\texttt{-{}-datos-demo sql} carga los datos sin necesitar Node ni el código. &
+RNF-15 &
+Una máquina con solo Docker levanta el sistema con datos usables.\\
+\hline
+\end{longtable}
+\end{center}
 
 % ==================== Riesgos técnicos ====================
 \section{Riesgos técnicos}

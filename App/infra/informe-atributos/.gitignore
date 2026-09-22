@@ -1,0 +1,4 @@
+# Las salidas crudas de cada suite se regeneran en cada medición y pesan lo que
+# pese la corrida: no se versionan. El informe sí, porque es el entregable y
+# conviene poder ver en el historial cómo se movieron las cifras.
+*.log
