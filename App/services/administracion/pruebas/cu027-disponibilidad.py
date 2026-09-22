@@ -128,17 +128,22 @@ def sin_inanicion():
         tiempos.append(t)
     hilo.join()
     maximo = max(tiempos) * 1000
+    p95 = percentil(tiempos, .95) if len(tiempos) > 1 else maximo
     print(f'  GET /sesiones/actual durante 300 logins simultáneos: '
-          f'mediana {percentil(tiempos, .5):.0f} ms · máx {maximo:.0f} ms ({len(tiempos)} muestras)')
+          f'mediana {percentil(tiempos, .5):.0f} ms · p95 {p95:.0f} ms · '
+          f'máx {maximo:.0f} ms ({len(tiempos)} muestras)')
     # Antes: máx 4.878 ms, porque scrypt retenía las conexiones del pool. Con
     # el límite de espera de 3 s, un pool agotado ya no se vería como lentitud
     # sino como 503: por eso se exige que todas respondan 200.
     #
-    # El máximo tolera picos de ~1 s que no son del servicio: aparecen igual en
-    # rutas que no tocan la base, y vienen de que el generador de carga, los 11
-    # hilos de scrypt y Docker compiten por la misma CPU.
+    # Se mide el **p95 y no el máximo**. La inanición del pool es sostenida: si
+    # las conexiones están retenidas, todas las consultas esperan, no una. El
+    # máximo es una sola muestra y en una máquina cargada —el generador de
+    # carga, los 11 hilos de scrypt y Docker peleando por la misma CPU— basta
+    # un traspié del planificador para dispararlo; se sigue imprimiendo, pero
+    # fallar por él era fallar por la máquina, no por el servicio.
     assert all(e == 200 for e in estados), f'respuestas distintas de 200: {set(estados)}'
-    assert maximo < 2000, f'una consulta de 2 ms esperó {maximo:.0f} ms'
+    assert p95 < 2000, f'el 5 % más lento esperó {p95:.0f} ms: el pool se está quedando sin conexiones'
     en_transaccion = sql("""SELECT count(*) FROM pg_stat_activity
                             WHERE datname = 'administracion' AND state = 'idle in transaction'""")
     assert en_transaccion == '0', f'{en_transaccion} conexiones retenidas en transacción tras el pico'

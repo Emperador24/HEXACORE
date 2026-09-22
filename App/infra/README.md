@@ -76,6 +76,33 @@ Cuando cambien las semillas o el esquema hay que regenerarlos:
 ./exportar-datos-demo.sh
 ```
 
+## Medir los atributos de calidad
+
+```bash
+cd App/infra
+./atributos-calidad.py
+```
+
+Corre las cuatro suites que miden desempeño, disponibilidad, seguridad y
+consistencia contra el sistema levantado —a través del gateway, que es por
+donde entra el tráfico real—, imprime la tabla consolidada y la deja escrita en
+`informe-atributos/INFORME.md`. La salida entera de cada suite queda al lado,
+en su `.log`, para poder enseñar de dónde sale cada cifra.
+
+Es lo que hay que correr delante del evaluador: una orden en vez de cambiar de
+carpeta cuatro veces y leer el número a ojo.
+
+Si una suite falla, su fila queda marcada como fallida y el guion termina con
+error. No rellena el hueco con la cifra de la corrida anterior: un informe que
+da por bueno lo que no se midió es peor que no tener informe.
+
+La desplegabilidad va aparte, porque medirla exige borrar los volúmenes y
+levantar de cero:
+
+```bash
+./atributos-calidad.py --desplegabilidad   # avisa antes de borrar nada
+```
+
 ## Desplegar desde las imágenes publicadas (entrega continua)
 
 Cada vez que algo entra a `develop` o `main`, el pipeline de CD construye las

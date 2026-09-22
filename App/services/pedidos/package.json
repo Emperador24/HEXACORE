@@ -15,7 +15,8 @@
     "migracion:revertir": "typeorm-ts-node-commonjs migration:revert -d src/persistencia/data-source.ts",
     "migracion:estado": "typeorm-ts-node-commonjs migration:show -d src/persistencia/data-source.ts",
     "semilla": "ts-node src/persistencia/semillas/sembrar.ts",
-    "test:e2e": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config test/jest-e2e.json --runInBand"
+    "test:e2e": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config test/jest-e2e.json --runInBand",
+    "test:integracion": "bash pruebas/correr-todas.sh"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.6",

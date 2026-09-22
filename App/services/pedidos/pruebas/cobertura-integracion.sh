@@ -68,11 +68,18 @@ fi
 gris "Compilando"
 npm run build >/dev/null
 
+# Directorio donde V8 deja los volcados de cobertura en crudo. Se nombra
+# explícitamente —en vez de dejar que c8 se invente uno— porque las suites
+# ejecutan `preparar-inventario.ts` en un proceso aparte, y apuntando ese
+# proceso al mismo directorio su cobertura entra en el mismo informe.
+TEMPORAL="$PWD/.cobertura-v8"
+
 gris "Levantando el servicio instrumentado con c8"
-rm -rf "$COBERTURA" .nyc_output
+rm -rf "$COBERTURA" .nyc_output "$TEMPORAL"
 npx c8 \
   --reporter=text-summary --reporter=html --reporter=json-summary \
   --report-dir="$COBERTURA" \
+  --temp-directory="$TEMPORAL" \
   --src=src \
   --all \
   --exclude='dist/**/*.spec.js' \
@@ -99,8 +106,13 @@ verde "  Servicio arriba en el puerto $PUERTO"
 
 echo
 gris "Corriendo las suites de integración"
+# Cualquier proceso de Node que arranquen las suites —el preparador de
+# inventario, sin ir más lejos— escribe su cobertura aquí y cuenta en el
+# informe final. Sin esto, el código que solo corre por línea de órdenes salía
+# como descubierto aunque las pruebas lo estuvieran ejecutando.
+export NODE_V8_COVERAGE="$TEMPORAL"
 fallidas=0
-for suite in pruebas/cu011-*.py; do
+for suite in pruebas/cu011-*.py pruebas/cu011b-*.py; do
   [[ -e "$suite" ]] || continue
   nombre="$(basename "$suite")"
   if python3 "$suite" >/dev/null 2>&1; then

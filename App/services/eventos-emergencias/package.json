@@ -16,6 +16,8 @@
     "migracion:estado": "typeorm-ts-node-esm migration:show -d src/persistencia/data-source.ts",
     "migracion:generar": "typeorm-ts-node-esm migration:generate -d src/persistencia/data-source.ts",
     "migracion:revertir": "typeorm-ts-node-esm migration:revert -d src/persistencia/data-source.ts",
+    "pretest:e2e": "./pruebas/preparar-base-de-pruebas.sh",
+    "pretest:e2e:cov": "./pruebas/preparar-base-de-pruebas.sh",
     "seed": "node scripts/seed.mjs",
     "start": "nest start",
     "start:debug": "nest start --debug --watch",
@@ -24,8 +26,8 @@
     "test": "vitest run",
     "test:cov": "vitest run --coverage",
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
-    "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
-    "test:e2e:cov": "vitest run --config ./vitest.config.e2e.ts --coverage",
+    "test:e2e": "DB_NAME=eventos_emergencias_pruebas PREFIJO_COLAS=pruebas. vitest run --config ./vitest.config.e2e.ts",
+    "test:e2e:cov": "DB_NAME=eventos_emergencias_pruebas PREFIJO_COLAS=pruebas. vitest run --config ./vitest.config.e2e.ts --coverage",
     "test:watch": "vitest"
   },
   "dependencies": {

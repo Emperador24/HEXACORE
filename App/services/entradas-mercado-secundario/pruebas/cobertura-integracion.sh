@@ -20,6 +20,45 @@
 # integración sobre el backend"), y el único que se puede defender: cuenta todo
 # el servicio, no solo lo que las pruebas eligieron mirar.
 #
+# ## Qué se deja fuera de la medición, y por qué
+#
+# Dos rutas se excluyen, y ninguna de las dos es código del servicio que las
+# pruebas no alcancen:
+#
+#   src/herramientas/          `exportar-openapi.ts` es una utilidad de línea
+#                              de órdenes (`npm run contrato:api`). No la carga
+#                              `main.js`: nunca corre dentro del servicio, así
+#                              que contarla sería medir otra cosa. Sus reglas
+#                              sí se prueban, en `contrato-api.spec.ts`.
+#
+#   entrada-transferida.evento.ts  Es una interfaz de TypeScript y nada más. El
+#                              JavaScript que genera está vacío —131 bytes de
+#                              preámbulo—, así que sus 49 líneas no se pueden
+#                              ejecutar ni con la mejor prueba del mundo. c8
+#                              las contaba como descubiertas por `--all`.
+#
+# Todo lo demás entra, incluidos los módulos, los DTO y las entidades.
+#
+# ## Por qué el número no llega a 100 y no hay que forzarlo
+#
+# Los archivos `dto/*.ts` salen entre el 50 % y el 85 % aunque sus funciones de
+# mapeo (`aCompraDto`, `aCheckoutDto`…) se ejecuten en cada petición. No es
+# código sin probar: el plugin de Swagger de Nest genera en cada clase un
+# `_OPENAPI_METADATA_FACTORY()` cuyo cuerpo es una sola línea larguísima, y su
+# mapa de fuentes apunta a **todo el bloque de propiedades** de la clase. Como
+# esa función generada no se llama, c8 pinta de rojo el bloque entero. Se ve a
+# simple vista en el informe: hay líneas en blanco y comentarios marcados como
+# no cubiertos, y un comentario no se puede ejecutar.
+#
+# Lo demás que queda sin cubrir son rutas de fallo de infraestructura —Redis
+# caído, canal de RabbitMQ cerrado, la pasarela devolviendo algo que no encaja—
+# y las validaciones de `configuracion.ts`, que solo se disparan al arrancar
+# con una variable de entorno inválida. Llegar a ellas pide inyección de
+# fallos, no otra petición HTTP.
+#
+# No se excluyen los DTO para maquillar el porcentaje: esconderlos escondería
+# también sus funciones de mapeo, que sí son código de verdad y sí se prueban.
+#
 # ## Requisitos
 #
 # La infraestructura tiene que estar arriba (`App/infra/iniciar.sh`). Si el
@@ -81,6 +120,8 @@ npx c8 \
   --exclude='src/**/*.spec.ts' \
   --exclude='**/migraciones/**' \
   --exclude='**/semillas/**' \
+  --exclude='src/herramientas/**' \
+  --exclude='src/reventa/eventos/entrada-transferida.evento.ts' \
   node dist/main.js > "$COBERTURA.log" 2>&1 &
 pid_servicio=$!
 
@@ -102,7 +143,9 @@ verde "  Servicio arriba en el puerto $PUERTO"
 echo
 gris "Corriendo las suites de integración"
 fallidas=0
-for suite in pruebas/cu006-*.py pruebas/cu006d-*.py pruebas/rnf01-*.py pruebas/rnf06-*.py; do
+for suite in pruebas/cu001-*.py pruebas/cu002-*.py pruebas/cu003-*.py pruebas/cu005-*.py \
+             pruebas/cu006-*.py pruebas/cu006b-*.py pruebas/cu006d-*.py \
+             pruebas/rnf01-*.py pruebas/rnf06-*.py; do
   [[ -e "$suite" ]] || continue
   nombre="$(basename "$suite")"
   # `rnf07-desempeno.py` se omite: mide latencia, y con el servicio

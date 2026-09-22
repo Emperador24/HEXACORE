@@ -55,10 +55,10 @@ export const routes: Routes = [
         loadComponent: () => import('./placeholder/placeholder.component').then((m) => m.PlaceholderComponent),
         data: { titulo: 'Gestión de evacuación ante emergencias', casoDeUso: 'CU-010' }
       },
+      // CU-027B: la primera sección conectada al backend de verdad.
       {
         path: 'cuentas',
-        loadComponent: () => import('./placeholder/placeholder.component').then((m) => m.PlaceholderComponent),
-        data: { titulo: 'Cuentas de usuario', casoDeUso: 'CU-027' }
+        loadComponent: () => import('./cuentas/cuentas.component').then((m) => m.CuentasComponent)
       },
       {
         path: 'roles',

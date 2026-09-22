@@ -9,10 +9,20 @@
 # además exporta las variables HOST_* que el compose base ya sabe leer.
 #
 # Lo único que hace es **quitar las dependencias locales**: sin esto, Docker
-# levantaría un PostgreSQL, un Redis y un RabbitMQ en esta máquina para
-# satisfacer el `depends_on`, que es justo lo contrario de lo que se quiere.
-# Quien comprueba que la otra máquina está viva es el propio servicio, que
-# reintenta la conexión al arrancar.
+# levantaría un PostgreSQL, un Redis, un RabbitMQ y la pasarela simulada en
+# esta máquina para satisfacer el `depends_on`, que es justo lo contrario de lo
+# que se quiere. Quien comprueba que la otra máquina está viva es el propio
+# servicio, que reintenta la conexión al arrancar.
+#
+# **Tienen que estar los cuatro servicios.** Basta con que uno conserve su
+# `depends_on` para que Compose levante aquí la capa de datos entera y el
+# reparto en dos máquinas deje de ser tal: los servicios hablarían con un
+# PostgreSQL local vacío mientras el de verdad está en la otra máquina.
+#
+# El `api-gateway` y el `portal-web-cliente` no aparecen a propósito: sus
+# dependencias (los microservicios y el gateway) viven en **esta** máquina, así
+# que las del compose base son las correctas y redeclararlas aquí solo serviría
+# para que se quedaran desactualizadas cuando se añada un servicio nuevo.
 
 services:
   administracion:
@@ -21,8 +31,8 @@ services:
   entradas-mercado-secundario:
     depends_on: !reset []
 
-  api-gateway:
-    # El gateway sí depende de los dos servicios, y esos sí están aquí.
-    depends_on:
-      administracion: { condition: service_healthy }
-      entradas-mercado-secundario: { condition: service_healthy }
+  pedidos:
+    depends_on: !reset []
+
+  eventos-emergencias:
+    depends_on: !reset []

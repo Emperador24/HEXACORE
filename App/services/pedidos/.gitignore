@@ -7,3 +7,4 @@ cobertura-integracion/
 cobertura-integracion.log
 .env
 *.tsbuildinfo
+.cobertura-v8/
