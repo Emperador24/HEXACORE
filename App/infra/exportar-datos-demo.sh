@@ -12,9 +12,13 @@
 # eso no está, y el sistema arrancaba **vacío**: sin cuentas, o sea sin poder
 # entrar.
 #
-# Esto congela el resultado de las semillas en tres archivos SQL que `iniciar.sh`
+# Esto congela el resultado de las semillas en archivos SQL que `iniciar.sh`
 # carga directamente en PostgreSQL. Con eso, levantar el sistema con datos
 # usables no necesita más que Docker.
+#
+# El inventario de Redis de Pedidos **no** se exporta aquí: `iniciar.sh` lo
+# deriva de PostgreSQL al arrancar, así que no hay un segundo archivo que se
+# pueda quedar desfasado respecto a la semilla.
 #
 # ## Cuándo volver a correrlo
 #
@@ -42,7 +46,7 @@ fi
 
 mkdir -p "$DESTINO"
 
-for base in administracion entradas_mercado_secundario eventos_emergencias; do
+for base in administracion entradas_mercado_secundario eventos_emergencias pedidos; do
   archivo="$DESTINO/$base.sql"
   gris "Exportando $base"
 
