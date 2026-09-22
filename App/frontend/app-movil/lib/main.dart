@@ -11,6 +11,7 @@ import 'pages/onboarding_page.dart';
 import 'pages/register_page.dart';
 import 'pages/activity_page.dart';
 import 'pages/resale_page.dart';
+import 'pages/pedidos_page.dart';
 import 'pages/change_password_page.dart';
 import 'theme/app_theme.dart';
 import 'widgets/liquid_glass.dart';
@@ -518,16 +519,12 @@ class ClientShell extends StatefulWidget {
 class _ClientShellState extends State<ClientShell> {
   int _tab = 0;
   int _unread = 3;
-  final List<Order> _orders = [
-    Order('Food Truck La Sazón', ['2x Hamburguesa', '1x Gaseosa'], 58000,
-        'En preparación')
-  ];
   @override
   Widget build(BuildContext context) {
     final pages = [
       EventsPage(onOpen: _openTickets),
       const ParkingPage(),
-      OrdersPage(orders: _orders, onNewOrder: _openRestaurants),
+      const PedidosPage(),
       const ResaleMarketplacePage(),
     ];
     final titles = ['Eventos', 'Parqueadero', 'Pedidos', 'Reventa'];
@@ -575,9 +572,6 @@ class _ClientShellState extends State<ClientShell> {
 
   void _openTickets(Event event) => Navigator.of(context)
       .push(MaterialPageRoute(builder: (_) => TicketsPage(event: event)));
-  void _openRestaurants() => Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => RestaurantsPage(
-          onPaid: (order) => setState(() => _orders.insert(0, order)))));
   void _openNotifications() => Navigator.of(context)
       .push(MaterialPageRoute(builder: (_) => const NotificationsPage()))
       .then((_) => setState(() => _unread = 0));
