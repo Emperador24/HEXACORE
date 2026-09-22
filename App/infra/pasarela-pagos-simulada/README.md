@@ -14,12 +14,18 @@ Sin dependencias: solo la librería estándar de Node.
 ## API
 
 ```
-GET  /salud    -> { servicio, estado }
-POST /pagos    -> { referencia, estado, motivo, monto, moneda, procesadoEn }
+GET  /salud       -> { servicio, estado }
+POST /pagos       -> { referencia, estado, motivo, monto, moneda, procesadoEn }
+POST /reembolsos  -> { referencia, estado, motivo, referenciaCobro, monto, procesadoEn }
 ```
 
-Cuerpo de `POST /pagos`: `{ monto, moneda, token, descripcion }`. Cabecera opcional
+Cuerpo de `POST /pagos`: `{ monto, moneda, token, descripcion }`. Cuerpo de `POST /reembolsos`
+(CU-003): `{ referenciaCobro, monto, moneda, motivo }`. Las dos admiten la cabecera
 `Idempotency-Key`.
+
+Un reembolso se rechaza si la referencia no es de un cobro aprobado (la pasarela guarda sus cobros
+en memoria: reiniciarla los olvida), si el cobro se hizo con `tok_noreemb…`, o si se pide devolver
+más de lo que queda por devolver.
 
 ## Cómo se decide el resultado
 
@@ -28,12 +34,13 @@ Mercado Pago): **lo decide el token que manda el cliente**, no una configuració
 una prueba puede disparar un rechazo sin pedirle nada a la pasarela, y el servicio de Entradas no
 tiene forma de "pedir" un resultado — solo cobra.
 
-| Token | Qué hace | Camino del CU-006 |
+| Token | Qué hace | Camino |
 |---|---|---|
 | `tok_ok…` | Aprueba el cobro | flujo básico |
-| `tok_rechazo…` | Rechaza con "Fondos insuficientes" | **CU-006G** |
+| `tok_rechazo…` | Rechaza con "Fondos insuficientes" | **CU-006G**, **CU-001C** |
 | `tok_timeout…` | No responde nunca | **CU-006I** |
 | `tok_error…` | Responde 502 | **CU-006I** |
+| `tok_noreemb…` | Aprueba el cobro, pero rechaza sus reembolsos | **CU-003C** |
 
 ## Idempotencia
 

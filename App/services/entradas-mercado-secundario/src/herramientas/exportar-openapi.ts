@@ -31,9 +31,12 @@ async function exportar(): Promise<void> {
     new DocumentBuilder()
       .setTitle('Entradas y Mercado Secundario')
       .setDescription(
-        'CU-006 — Gestión del Mercado Secundario de Entradas.\n\n' +
+        'Venta primaria (CU-001 compra, CU-002 validar QR, CU-003 cancelaciones, CU-004 promociones), ' +
+          'CU-005 — Consultar evento (cartelera pública) y ' +
+          'CU-006 — Gestión del Mercado Secundario de Entradas.\n\n' +
           'En producción este servicio se consume a través del API Gateway (ADR-02), que autentica ' +
-          'y autoriza por rol antes de enrutar (RNF-06); nunca se expone directo.\n\n' +
+          'y autoriza por rol antes de enrutar (RNF-06); nunca se expone directo. La cartelera es ' +
+          'la única ruta que no exige sesión, y solo admite lectura.\n\n' +
           'Generado con `npm run contrato:api` desde el código del servicio: no editar a mano.',
       )
       .setVersion('0.1.0')

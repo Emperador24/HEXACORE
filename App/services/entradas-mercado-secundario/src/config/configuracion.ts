@@ -67,6 +67,7 @@ export interface ConfiguracionServicio {
     timeoutMs: number;
   };
   reventa: ReglasReventa;
+  venta: ReglasVenta;
   /**
    * Verificación de los tokens de sesión (RNF-06). Solo la clave pública: este
    * servicio verifica tokens, no los emite.
@@ -103,6 +104,25 @@ export interface ReglasReventa {
    * Es lo que hace expirar una publicación no vendida (CU-006D).
    */
   margenCierreMinutos: number;
+}
+
+/**
+ * Reglas de la venta primaria (CU-001) y de las cancelaciones (CU-003).
+ *
+ * Igual que las de la reventa, ninguna está fijada en la documentación: el
+ * CU-001B habla de que *"el tiempo de compra expira"* sin decir cuánto, y el
+ * CU-003 de *"plazos y políticas aplicables"* y de un reembolso *"parcial según
+ * la política de tiempo del evento"* sin dar cifras. DECISIONES.md §13.
+ */
+export interface ReglasVenta {
+  /** Cuánto se mantiene apartado el cupo de una compra sin pagar (CU-001B). */
+  reservaMinutos: number;
+  /** Con al menos estos días de antelación, el reembolso es del 100 %. */
+  cancelacionTotalDias: number;
+  /** Con al menos estas horas (y menos de los días de arriba), el reembolso es parcial (CU-003A). */
+  cancelacionParcialHoras: number;
+  /** Porcentaje del reembolso parcial. */
+  cancelacionParcialPorcentaje: number;
 }
 
 export function cargarConfiguracion(): ConfiguracionServicio {
@@ -147,6 +167,33 @@ export function cargarConfiguracion(): ConfiguracionServicio {
     );
   }
 
+  const venta: ReglasVenta = {
+    reservaMinutos: entero('COMPRA_RESERVA_MINUTOS', 10),
+    cancelacionTotalDias: entero('CANCELACION_TOTAL_DIAS', 7),
+    cancelacionParcialHoras: entero('CANCELACION_PARCIAL_HORAS', 48),
+    cancelacionParcialPorcentaje: entero('CANCELACION_PARCIAL_PORCENTAJE', 50),
+  };
+
+  // Una reserva que caduque antes de que la pasarela pueda responder dejaría el
+  // cupo libre con el cobro en vuelo. Mismo razonamiento que el del bloqueo de
+  // la reventa, aunque aquí `PAGANDO` ya lo protege del barrido.
+  if (venta.reservaMinutos * 60_000 <= timeoutPasarelaMs) {
+    throw new Error(
+      `COMPRA_RESERVA_MINUTOS (${venta.reservaMinutos}) debe superar PASARELA_TIMEOUT_MS (${timeoutPasarelaMs}ms)`,
+    );
+  }
+  if (venta.cancelacionParcialHoras < 0 || venta.cancelacionParcialHoras > venta.cancelacionTotalDias * 24) {
+    throw new Error(
+      `CANCELACION_PARCIAL_HORAS (${venta.cancelacionParcialHoras}) debe estar entre 0 y ` +
+        `CANCELACION_TOTAL_DIAS en horas (${venta.cancelacionTotalDias * 24}): el tramo parcial va antes del total`,
+    );
+  }
+  if (venta.cancelacionParcialPorcentaje < 1 || venta.cancelacionParcialPorcentaje > 100) {
+    throw new Error(
+      `CANCELACION_PARCIAL_PORCENTAJE debe estar en [1, 100] (llegó ${venta.cancelacionParcialPorcentaje})`,
+    );
+  }
+
   return {
     entorno,
     puerto: entero('PUERTO', 3001),
@@ -172,6 +219,7 @@ export function cargarConfiguracion(): ConfiguracionServicio {
       timeoutMs: timeoutPasarelaMs,
     },
     reventa,
+    venta,
     autenticacion: {
       clavePublica: cargarClavePublica(entorno === 'production'),
       emisor: texto('AUTH_JWT_EMISOR', 'hexacore-administracion'),
