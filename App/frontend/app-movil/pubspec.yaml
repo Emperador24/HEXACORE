@@ -21,6 +21,7 @@ dependencies:
   mobile_scanner: ^7.4.2
   # Llavero del dispositivo (Keychain / Keystore) para los tokens de sesión (CU-027).
   flutter_secure_storage: ^11.2.0
+  qr_flutter: ^4.1.0
 
 dev_dependencies:
   # Pruebas de extremo a extremo en un simulador contra el backend real.

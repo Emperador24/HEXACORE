@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { CONFIGURACION, ConfiguracionServicio } from '../../config/configuracion';
-import { ProcesadorPagos, RespuestaCobro, ResultadoCobro, SolicitudCobro } from './procesador-pagos';
+import { ProcesadorPagos, RespuestaCobro, ResultadoCobro, SolicitudCobro, SolicitudReembolso } from './procesador-pagos';
 
 /** Forma de la respuesta de la pasarela. */
 interface CuerpoPasarela {
@@ -42,6 +42,28 @@ export class PasarelaHttp implements ProcesadorPagos {
   }
 
   async cobrar(solicitud: SolicitudCobro): Promise<RespuestaCobro> {
+    return this.enviar('/pagos', solicitud.claveIdempotencia, {
+      monto: solicitud.monto,
+      moneda: solicitud.moneda,
+      token: solicitud.token,
+      descripcion: solicitud.descripcion,
+    });
+  }
+
+  /**
+   * Reembolso (CU-003). Mismo protocolo y misma traducción de fallos que el
+   * cobro: un reembolso sin respuesta tampoco dice si el dinero volvió.
+   */
+  async reembolsar(solicitud: SolicitudReembolso): Promise<RespuestaCobro> {
+    return this.enviar('/reembolsos', solicitud.claveIdempotencia, {
+      referenciaCobro: solicitud.referenciaCobro,
+      monto: solicitud.monto,
+      moneda: solicitud.moneda,
+      motivo: solicitud.motivo,
+    });
+  }
+
+  private async enviar(ruta: string, claveIdempotencia: string, cuerpoPeticion: object): Promise<RespuestaCobro> {
     // El timeout no es opcional: sin él, una pasarela que no responde deja la
     // petición colgada indefinidamente y con ella el bloqueo de Redis, el
     // comprador esperando y una conexión del pool ocupada. Es la mitigación
@@ -49,20 +71,15 @@ export class PasarelaHttp implements ProcesadorPagos {
     const aborto = AbortSignal.timeout(this.timeoutMs);
 
     try {
-      const respuesta = await fetch(`${this.url}/pagos`, {
+      const respuesta = await fetch(`${this.url}${ruta}`, {
         method: 'POST',
         signal: aborto,
         headers: {
           'Content-Type': 'application/json',
-          // Reintentar con la misma clave no cobra dos veces.
-          'Idempotency-Key': solicitud.claveIdempotencia,
+          // Reintentar con la misma clave no cobra (ni reembolsa) dos veces.
+          'Idempotency-Key': claveIdempotencia,
         },
-        body: JSON.stringify({
-          monto: solicitud.monto,
-          moneda: solicitud.moneda,
-          token: solicitud.token,
-          descripcion: solicitud.descripcion,
-        }),
+        body: JSON.stringify(cuerpoPeticion),
       });
 
       if (!respuesta.ok) {

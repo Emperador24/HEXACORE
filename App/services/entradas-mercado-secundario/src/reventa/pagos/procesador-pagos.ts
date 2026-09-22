@@ -55,8 +55,29 @@ export interface RespuestaCobro {
   motivo: string | null;
 }
 
+/**
+ * Devolución total o parcial de un cobro aprobado (CU-003, paso 6).
+ *
+ * No lleva token del medio de pago: el dinero vuelve por donde entró, y la
+ * pasarela lo sabe por la referencia del cobro original.
+ */
+export interface SolicitudReembolso {
+  /** La `referencia` que devolvió la pasarela al aprobar el cobro. */
+  referenciaCobro: string;
+  monto: number;
+  moneda: string;
+  motivo: string;
+  /** Mismo papel que en el cobro: reintentar no devuelve el dinero dos veces. */
+  claveIdempotencia: string;
+}
+
 export interface ProcesadorPagos {
   cobrar(solicitud: SolicitudCobro): Promise<RespuestaCobro>;
+  /**
+   * Los tres resultados significan lo mismo que al cobrar: APROBADO se
+   * devolvió, RECHAZADO con certeza no, INDETERMINADO no se sabe.
+   */
+  reembolsar(solicitud: SolicitudReembolso): Promise<RespuestaCobro>;
 }
 
 /** Clave de inyección del Procesador de Pagos. */
