@@ -80,6 +80,13 @@ class PedidosApi {
     }
   }
 
+  Future<
+      List<
+          DatosPedido>> recibidos(String establecimiento) async => (await _enviar(
+              'establecimientos/${Uri.encodeComponent(establecimiento)}/pedidos')
+          as List)
+      .cast<DatosPedido>();
+
   Future<List<DatosPedido>> establecimientos(String evento) async =>
       (await _enviar('eventos/${Uri.encodeComponent(evento)}/establecimientos')
               as List)
