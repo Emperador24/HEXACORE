@@ -69,10 +69,22 @@
   }
 </div>
 
-@if (sinResultados()) {
+@if (cargando()) {
+  <div class="vacio hxc-vidrio">
+    <mat-icon>hourglass_empty</mat-icon>
+    <p>Cargando la cartelera…</p>
+  </div>
+} @else if (errorCarga()) {
+  <div class="vacio hxc-vidrio">
+    <mat-icon>cloud_off</mat-icon>
+    <p>{{ errorCarga() }}</p>
+    <button mat-stroked-button (click)="reintentar()">Reintentar</button>
+  </div>
+} @else if (sinResultados()) {
   <div class="vacio hxc-vidrio">
     <mat-icon>event_busy</mat-icon>
-    <p>No encontramos eventos con esos filtros.</p>
+    <!-- CU-005C: el texto literal de la ficha. -->
+    <p>Ningún evento encontrado.</p>
     @if (hayFiltros()) {
       <button mat-stroked-button (click)="limpiarFiltros()">Quitar filtros</button>
     }

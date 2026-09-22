@@ -1,167 +1,119 @@
-import { Injectable, computed, signal } from '@angular/core';
-import { Evento } from './models';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
+import { CategoriaEvento, Evento } from './models';
+import { Servidor } from './servidor';
+
+/** Un evento del listado, tal como lo devuelve `GET /cartelera`. */
+interface EventoResumenApi {
+  id: string;
+  nombre: string;
+  categoria: string;
+  fechaInicio: string;
+  lugar: string;
+  ciudad: string;
+  imagenUrl: string | null;
+  precioDesde: number | null;
+  agotado: boolean;
+  pasado: boolean;
+}
+
+interface CarteleraApi {
+  eventos: EventoResumenApi[];
+  total: number;
+}
+
+/** El detalle, con sus localidades: `GET /cartelera/{id}`. */
+interface EventoDetalleApi extends EventoResumenApi {
+  localidades: { id: string; nombre: string; precio: number; disponibles: number; agotada: boolean }[];
+}
 
 /**
- * CU-001..CU-005 (consulta de eventos) — datos en memoria mientras no existe
- * el API Gateway, igual que MockData.eventos en app-movil. Cada evento trae
- * sus zonas de venta, que es lo que la app móvil no necesita mostrar (ella
- * solo ve entradas ya compradas) pero este portal sí, porque aquí es donde
- * se compran (CU-006).
+ * Cartelera de eventos (CU-005) contra el backend real, a través del gateway.
  *
- * La cartelera es deliberadamente variada en ciudad y categoría: son los dos
- * filtros de la página de eventos, y con un solo tipo de evento en una sola
- * ciudad no se podría comprobar que funcionan.
+ * Es pública: no lleva token. El gateway solo deja pasar GET por esta ruta
+ * (ver App/gateway/nginx.conf), así que ver eventos y precios no exige sesión;
+ * la sesión se pide al comprar.
+ *
+ * Carga la cartelera una vez al crearse, porque dos pantallas la leen como
+ * señal síncrona: la lista de eventos y el parqueadero (que elige evento de
+ * ella). Los filtros de la lista se siguen resolviendo en memoria: la
+ * cartelera cabe entera en una página de 100.
  */
 @Injectable({ providedIn: 'root' })
 export class EventosService {
-  private readonly _eventos = signal<Evento[]>([
-    {
-      id: 'evt-1',
-      nombre: 'HEXACORE Fest 2026',
-      fecha: '2026-12-12',
-      lugar: 'Movistar Arena',
-      ciudad: 'Bogotá',
-      categoria: 'Festivales',
-      precioDesde: 180000,
-      pasado: false,
-      imagenUrl: 'https://picsum.photos/seed/evt-1/600/800',
-      zonas: [
-        { nombre: 'General', precio: 180000 },
-        { nombre: 'Platea Baja', precio: 260000 },
-        { nombre: 'Palco VIP', precio: 420000 }
-      ]
-    },
-    {
-      id: 'evt-2',
-      nombre: 'Noche de Rock Nacional',
-      fecha: '2026-09-20',
-      lugar: 'Coliseo El Campín',
-      ciudad: 'Bogotá',
-      categoria: 'Conciertos',
-      precioDesde: 95000,
-      pasado: false,
-      imagenUrl: 'https://picsum.photos/seed/evt-2/600/800',
-      zonas: [
-        { nombre: 'General', precio: 95000 },
-        { nombre: 'Tribuna', precio: 140000 }
-      ]
-    },
-    {
-      id: 'evt-3',
-      nombre: 'Feria Gastronómica',
-      fecha: '2026-10-05',
-      lugar: 'Corferias',
-      ciudad: 'Bogotá',
-      categoria: 'Gastronomía',
-      precioDesde: 40000,
-      pasado: false,
-      imagenUrl: 'https://picsum.photos/seed/evt-3/600/800',
-      zonas: [{ nombre: 'General', precio: 40000 }]
-    },
-    {
-      id: 'evt-4',
-      nombre: 'Festival de Verano 2026',
-      fecha: '2026-06-15',
-      lugar: 'Parque Simón Bolívar',
-      ciudad: 'Bogotá',
-      categoria: 'Festivales',
-      precioDesde: 65000,
-      pasado: true,
-      imagenUrl: 'https://picsum.photos/seed/evt-4/600/800',
-      zonas: [{ nombre: 'General', precio: 65000 }]
-    },
-    {
-      id: 'evt-5',
-      nombre: 'Sinfónica de Medellín',
-      fecha: '2026-11-08',
-      lugar: 'Teatro Metropolitano',
-      ciudad: 'Medellín',
-      categoria: 'Teatro',
-      precioDesde: 70000,
-      pasado: false,
-      imagenUrl: 'https://picsum.photos/seed/evt-5/600/800',
-      zonas: [
-        { nombre: 'Luneta', precio: 70000 },
-        { nombre: 'Balcón', precio: 110000 }
-      ]
-    },
-    {
-      id: 'evt-6',
-      nombre: 'Clásico del Fútbol Colombiano',
-      fecha: '2026-10-25',
-      lugar: 'Estadio Atanasio Girardot',
-      ciudad: 'Medellín',
-      categoria: 'Deportes',
-      precioDesde: 55000,
-      pasado: false,
-      imagenUrl: 'https://picsum.photos/seed/evt-6/600/800',
-      zonas: [
-        { nombre: 'Norte', precio: 55000 },
-        { nombre: 'Occidental', precio: 130000 }
-      ]
-    },
-    {
-      id: 'evt-7',
-      nombre: 'Salsa al Parque',
-      fecha: '2026-11-21',
-      lugar: 'Plaza de Toros',
-      ciudad: 'Cali',
-      categoria: 'Conciertos',
-      precioDesde: 60000,
-      pasado: false,
-      imagenUrl: 'https://picsum.photos/seed/evt-7/600/800',
-      zonas: [
-        { nombre: 'General', precio: 60000 },
-        { nombre: 'Preferencial', precio: 95000 }
-      ]
-    },
-    {
-      id: 'evt-8',
-      nombre: 'Bogotá Coffee Week',
-      fecha: '2026-09-28',
-      lugar: 'Ágora',
-      ciudad: 'Bogotá',
-      categoria: 'Gastronomía',
-      precioDesde: 35000,
-      pasado: false,
-      imagenUrl: 'https://picsum.photos/seed/evt-8/600/800',
-      zonas: [{ nombre: 'Entrada general', precio: 35000 }]
-    },
-    {
-      id: 'evt-9',
-      nombre: 'El Mago de Oz — Musical',
-      fecha: '2026-12-05',
-      lugar: 'Teatro Colsubsidio',
-      ciudad: 'Bogotá',
-      categoria: 'Teatro',
-      precioDesde: 85000,
-      pasado: false,
-      imagenUrl: 'https://picsum.photos/seed/evt-9/600/800',
-      zonas: [
-        { nombre: 'Platea', precio: 85000 },
-        { nombre: 'Palco', precio: 150000 }
-      ]
-    },
-    {
-      id: 'evt-10',
-      nombre: 'Torneo Nacional de Voleibol',
-      fecha: '2026-08-30',
-      lugar: 'Coliseo El Pueblo',
-      ciudad: 'Cali',
-      categoria: 'Deportes',
-      precioDesde: 30000,
-      pasado: true,
-      imagenUrl: 'https://picsum.photos/seed/evt-10/600/800',
-      zonas: [{ nombre: 'General', precio: 30000 }]
-    }
-  ]);
+  private readonly http = inject(HttpClient);
 
+  private readonly _eventos = signal<Evento[]>([]);
   readonly eventos = this._eventos.asReadonly();
+  readonly cargando = signal(true);
+  readonly error = signal<string | null>(null);
 
   /** Ciudades presentes en la cartelera, para el filtro de la página de eventos. */
   readonly ciudades = computed(() => [...new Set(this._eventos().map((e) => e.ciudad))].sort());
 
+  constructor() {
+    void this.cargar();
+  }
+
+  /** Trae la cartelera completa, pasados incluidos (la lista los separa en "Anteriores"). */
+  async cargar(): Promise<void> {
+    this.cargando.set(true);
+    this.error.set(null);
+    try {
+      const parametros = new HttpParams().set('incluirPasados', 'true').set('limite', '100');
+      const respuesta = await firstValueFrom(
+        this.http.get<CarteleraApi>(`${Servidor.api}/cartelera`, { params: parametros })
+      );
+      this._eventos.set(respuesta.eventos.map((e) => aEvento(e)));
+    } catch {
+      this.error.set('No se pudo cargar la cartelera. Revisa tu conexión e inténtalo de nuevo.');
+    } finally {
+      this.cargando.set(false);
+    }
+  }
+
+  /** Lo que ya está cargado. Lo usa el parqueadero, que no necesita las localidades. */
   obtenerPorId(id: string): Evento | undefined {
     return this._eventos().find((e) => e.id === id);
   }
+
+  /** El detalle con sus localidades, precios y cupos al momento (CU-005, pasos 6-8). */
+  async detalle(id: string): Promise<Evento> {
+    const e = await firstValueFrom(this.http.get<EventoDetalleApi>(`${Servidor.api}/cartelera/${id}`));
+    return {
+      ...aEvento(e),
+      zonas: e.localidades.map((l) => ({
+        id: l.id,
+        nombre: l.nombre,
+        precio: l.precio,
+        disponibles: l.disponibles,
+        agotada: l.agotada
+      }))
+    };
+  }
+}
+
+function aEvento(e: EventoResumenApi): Evento {
+  return {
+    id: e.id,
+    nombre: e.nombre,
+    fecha: fechaEnColombia(e.fechaInicio),
+    lugar: e.lugar,
+    ciudad: e.ciudad,
+    categoria: e.categoria as CategoriaEvento,
+    precioDesde: e.precioDesde ?? 0,
+    pasado: e.pasado,
+    imagenUrl: e.imagenUrl,
+    zonas: []
+  };
+}
+
+/**
+ * El backend manda un instante (UTC); las pantallas quieren el día en
+ * Colombia, en formato yyyy-MM-dd. Un evento a las 8 p. m. del 12 es, en UTC,
+ * la 1 a. m. del 13: cortar el ISO lo pondría un día después.
+ */
+function fechaEnColombia(iso: string): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new Date(iso));
 }

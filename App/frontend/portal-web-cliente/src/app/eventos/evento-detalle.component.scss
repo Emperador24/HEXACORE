@@ -175,3 +175,17 @@
 .evento-pasado {
   margin-top: 16px;
 }
+
+// Mismo aviso que el mercado de reventa: CU-001A sin cupo, sesión vencida…
+.error {
+  margin: 12px 0;
+  padding: 12px 14px;
+  border-left: 3px solid var(--hxc-rojo);
+  background: color-mix(in srgb, var(--hxc-rojo) 10%, transparent);
+  color: var(--hxc-rojo);
+}
+
+.fila-zona:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

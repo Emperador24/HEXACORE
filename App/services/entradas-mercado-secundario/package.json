@@ -11,7 +11,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
-    "test:e2e": "jest --config test/jest-e2e.json --runInBand",
+    "test:e2e": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config test/jest-e2e.json --runInBand",
     "lint": "tsc --noEmit",
     "migracion:correr": "typeorm-ts-node-commonjs migration:run -d src/persistencia/data-source.ts",
     "migracion:revertir": "typeorm-ts-node-commonjs migration:revert -d src/persistencia/data-source.ts",
