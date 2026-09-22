@@ -108,7 +108,7 @@ export class VentaPrimariaCu001a0041789862400000 implements MigrationInterface {
         "limite_usos" integer NULL,
         "usos" integer NOT NULL DEFAULT 0,
         "activo" boolean NOT NULL DEFAULT true,
-        "creado_en" "timestamptz  NOT NULL DEFAULT now(),
+        "creado_en" timestamptz NOT NULL DEFAULT now(),
         CONSTRAINT "ck_promociones_codigo_mayusculas" CHECK ("codigo" = upper("codigo")),
         CONSTRAINT "ck_promociones_porcentaje" CHECK ("porcentaje" BETWEEN 1 AND 90),
         CONSTRAINT "ck_promociones_vigencia" CHECK ("vigente_hasta" > "vigente_desde"),

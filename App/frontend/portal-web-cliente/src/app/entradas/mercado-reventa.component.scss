@@ -22,3 +22,112 @@
   margin: 12px 0 0;
   color: var(--hxc-primario-texto);
 }
+
+.error {
+  margin: 12px 0 0;
+  padding: 12px 14px;
+  border-left: 3px solid var(--hxc-rojo);
+  background: color-mix(in srgb, var(--hxc-rojo) 10%, transparent);
+  color: var(--hxc-rojo);
+}
+
+.cargando {
+  display: flex;
+  justify-content: center;
+  padding: 40px 0;
+}
+
+/* --- La reserva en curso ---------------------------------------------------
+   Se distingue del catálogo a propósito: mientras corre el reloj es lo único
+   que hay que atender. */
+.reserva,
+.comprobante {
+  margin-top: 16px;
+  border: 1px solid rgb(var(--hxc-texto-rgb) / 0.12);
+}
+
+.cuenta-atras {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--hxc-primario) 12%, transparent);
+  color: var(--hxc-primario-texto);
+  font-variant-numeric: tabular-nums;
+}
+
+.cuenta-atras.vencida {
+  background: color-mix(in srgb, var(--hxc-rojo) 12%, transparent);
+  color: var(--hxc-rojo);
+}
+
+.desglose {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px 20px;
+  margin: 16px 0 0;
+}
+
+.desglose div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.desglose dt {
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgb(var(--hxc-texto-rgb) / 0.6);
+}
+
+.desglose dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.pago {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.pago mat-form-field {
+  flex: 1 1 200px;
+}
+
+.acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.qr {
+  margin: 8px 0 0;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 1.05rem;
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.pie {
+  margin: 10px 0 0;
+  color: rgb(var(--hxc-texto-rgb) / 0.6);
+  font-size: 0.88rem;
+}
+
+.original {
+  margin: 2px 0 0;
+  color: rgb(var(--hxc-texto-rgb) / 0.55);
+  font-size: 0.85rem;
+  text-decoration: line-through;
+}
+
+.propia {
+  padding: 0 8px;
+  color: rgb(var(--hxc-texto-rgb) / 0.6);
+  font-size: 0.88rem;
+}

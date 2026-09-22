@@ -23,19 +23,29 @@ class AtmosphereBackground extends StatelessWidget {
             _BlobSpec(Color(0xFF5C7FFF), 0.55),
             _BlobSpec(Color(0xFFFFAA33), 0.40),
           ];
+    // El fondo es estático: no depende del scroll ni de ningún estado. Sin el
+    // RepaintBoundary comparte capa con el contenido, así que cada frame del
+    // desplazamiento vuelve a pintar los cuatro desenfoques. Con él se pinta
+    // una vez y se reutiliza la capa.
     return Positioned.fill(
-      child: ColoredBox(
-        color: base,
-        child: Stack(children: [
-          Positioned(
-              left: -120, top: -80, child: _Blob(spec: blobs[0], size: 340)),
-          Positioned(
-              right: -100, top: 60, child: _Blob(spec: blobs[1], size: 300)),
-          Positioned(
-              left: -60, bottom: -140, child: _Blob(spec: blobs[2], size: 360)),
-          Positioned(
-              right: -80, bottom: 140, child: _Blob(spec: blobs[3], size: 260)),
-        ]),
+      child: RepaintBoundary(
+        child: ColoredBox(
+          color: base,
+          child: Stack(children: [
+            Positioned(
+                left: -120, top: -80, child: _Blob(spec: blobs[0], size: 340)),
+            Positioned(
+                right: -100, top: 60, child: _Blob(spec: blobs[1], size: 300)),
+            Positioned(
+                left: -60,
+                bottom: -140,
+                child: _Blob(spec: blobs[2], size: 360)),
+            Positioned(
+                right: -80,
+                bottom: 140,
+                child: _Blob(spec: blobs[3], size: 260)),
+          ]),
+        ),
       ),
     );
   }
@@ -52,9 +62,15 @@ class _Blob extends StatelessWidget {
   final _BlobSpec spec;
   final double size;
 
+  // El coste de un desenfoque crece con el radio, así que conviene usar el
+  // menor que no cambie el aspecto. Comparando los renders: a 40 se le empieza
+  // a adivinar el borde del círculo y el color queda más saturado; a 50 la
+  // mancha es indistinguible de la de 70, con un 30 % menos de radio.
+  static const _sigma = 50.0;
+
   @override
   Widget build(BuildContext context) => ImageFiltered(
-        imageFilter: ImageFilter.blur(sigmaX: 70, sigmaY: 70),
+        imageFilter: ImageFilter.blur(sigmaX: _sigma, sigmaY: _sigma),
         child: Container(
           width: size,
           height: size,

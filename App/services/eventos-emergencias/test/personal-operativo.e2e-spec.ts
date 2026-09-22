@@ -379,4 +379,49 @@ describe('CU-017 · Asignar personal operativo (e2e)', () => {
       .send({ empleadoId: randomUUID(), horaInicio, horaFin })
       .expect(404);
   });
+  it('rechaza reasignar con una ventana horaria invertida', async () => {
+    const empleado = await crearEmpleado('rol-invertido');
+    const zona = await crearZona({ rolRequerido: 'rol-invertido', personalRequerido: 1 });
+    const { horaInicio, horaFin } = ventanaHoraria();
+    const asignacion = await request(server)
+      .post(`${RUTA}/zonas/${zona.id}/asignaciones`)
+      .set('Authorization', auth)
+      .send({ empleadoId: empleado.id, horaInicio, horaFin })
+      .expect(201);
+
+    const sustituto = await crearEmpleado('rol-invertido');
+    const res = await request(server)
+      .patch(`${RUTA}/turnos/${asignacion.body.turno.id}/reasignar`)
+      .set('Authorization', auth)
+      // Fin antes que inicio: el error tiene que venir del servicio, no de
+      // una fecha rara guardada en la base.
+      .send({ empleadoId: sustituto.id, horaInicio: horaFin, horaFin: horaInicio })
+      .expect(400);
+
+    expect(res.body.message).toMatch(/horaFin debe ser posterior/i);
+  });
+
+  it('CU-017A: si nadie del rol está libre, no inventa un reemplazo', async () => {
+    const rol = `rol-sin-reemplazo-${randomUUID().slice(0, 8)}`;
+    const zona = await crearZona({ rolRequerido: rol, personalRequerido: 2 });
+    const { horaInicio, horaFin } = ventanaHoraria();
+
+    // Un solo empleado de ese rol, y se le ocupa la franja entera: cuando la
+    // segunda asignación choque, la búsqueda de reemplazo recorre a los
+    // candidatos y se queda sin ninguno disponible.
+    const unico = await crearEmpleado(rol);
+    await request(server)
+      .post(`${RUTA}/zonas/${zona.id}/asignaciones`)
+      .set('Authorization', auth)
+      .send({ empleadoId: unico.id, horaInicio, horaFin })
+      .expect(201);
+
+    const choque = await request(server)
+      .post(`${RUTA}/zonas/${zona.id}/asignaciones`)
+      .set('Authorization', auth)
+      .send({ empleadoId: unico.id, horaInicio, horaFin })
+      .expect(409);
+
+    expect(choque.body.sugerencia ?? null).toBeNull();
+  });
 });
