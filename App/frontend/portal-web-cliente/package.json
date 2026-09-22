@@ -7,7 +7,8 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "test:login": "node pruebas/login-portal.mjs"
+    "test:login": "node pruebas/login-portal.mjs",
+    "test:reventa": "node pruebas/reventa-portal.mjs"
   },
   "private": true,
   "dependencies": {

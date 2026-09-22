@@ -19,6 +19,724 @@
         ]
       }
     },
+    "/cartelera": {
+      "get": {
+        "description": "Pasos 1-5 del CU-005. Filtra por categoría, ciudad, artista y rango de fechas; sin filtros, devuelve los próximos eventos por fecha (CU-005A). Sin resultados, `mensaje` trae \"Ningún evento encontrado\" (CU-005C). Pública: no requiere sesión.",
+        "operationId": "CarteleraController_listar",
+        "parameters": [
+          {
+            "name": "categoria",
+            "required": false,
+            "in": "query",
+            "description": "Sin distinguir mayúsculas",
+            "schema": {
+              "example": "Conciertos",
+              "type": "string"
+            }
+          },
+          {
+            "name": "ciudad",
+            "required": false,
+            "in": "query",
+            "description": "Sin distinguir mayúsculas",
+            "schema": {
+              "example": "Bogotá",
+              "type": "string"
+            }
+          },
+          {
+            "name": "artista",
+            "required": false,
+            "in": "query",
+            "description": "Coincidencia parcial y sin distinguir mayúsculas",
+            "schema": {
+              "example": "shakira",
+              "type": "string"
+            }
+          },
+          {
+            "name": "desde",
+            "required": false,
+            "in": "query",
+            "description": "Eventos que empiezan desde este día (hora de Colombia) o este instante ISO 8601",
+            "schema": {
+              "example": "2026-10-01",
+              "type": "string"
+            }
+          },
+          {
+            "name": "hasta",
+            "required": false,
+            "in": "query",
+            "description": "Eventos que empiezan hasta este día inclusive (hora de Colombia) o este instante ISO 8601",
+            "schema": {
+              "example": "2026-10-31",
+              "type": "string"
+            }
+          },
+          {
+            "name": "orden",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "fecha",
+              "type": "string",
+              "enum": [
+                "fecha",
+                "relevancia"
+              ]
+            }
+          },
+          {
+            "name": "incluirPasados",
+            "required": false,
+            "in": "query",
+            "description": "Incluir también los eventos que ya se celebraron",
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "limite",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "desplazamiento",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 0,
+              "default": 0,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CarteleraDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Un filtro no es válido, o \"desde\" es posterior a \"hasta\""
+          }
+        },
+        "summary": "Consultar la cartelera de eventos",
+        "tags": [
+          "cartelera"
+        ]
+      }
+    },
+    "/cartelera/filtros": {
+      "get": {
+        "description": "Categorías y ciudades con eventos próximos, para llenar los desplegables. Pública.",
+        "operationId": "CarteleraController_filtros",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FiltrosCarteleraDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Valores disponibles para los filtros",
+        "tags": [
+          "cartelera"
+        ]
+      }
+    },
+    "/cartelera/{id}": {
+      "get": {
+        "description": "Pasos 6-8 del CU-005: horarios, localidades, precios y disponibilidad. Pública.",
+        "operationId": "CarteleraController_detalle",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventoDetalleDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "El evento no existe o no está publicado"
+          }
+        },
+        "summary": "Detalle de un evento",
+        "tags": [
+          "cartelera"
+        ]
+      }
+    },
+    "/compras": {
+      "post": {
+        "description": "Pasos 3-4 del CU-001: aparta el cupo de la localidad y calcula el total. La reserva dura `COMPRA_RESERVA_MINUTOS` (CU-001B). Sin cupo, responde CU-001A.",
+        "operationId": "ComprasController_reservar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CrearCompraDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompraDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin token, o token caducado, falsificado o de una sesión cerrada"
+          },
+          "403": {
+            "description": "El rol de la sesión no permite esta operación"
+          },
+          "409": {
+            "description": "CU-001A sin disponibilidad · el evento no está a la venta"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reservar entradas (iniciar una compra)",
+        "tags": [
+          "compras"
+        ]
+      },
+      "get": {
+        "description": "Las 50 más recientes, sin sus entradas.",
+        "operationId": "ComprasController_listar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CompraDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin token, o token caducado, falsificado o de una sesión cerrada"
+          },
+          "403": {
+            "description": "El rol de la sesión no permite esta operación"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mis compras",
+        "tags": [
+          "compras"
+        ]
+      }
+    },
+    "/compras/{id}": {
+      "get": {
+        "description": "Con sus entradas y códigos QR, solo las que siguen siendo del usuario (una revendida ya no lo es).",
+        "operationId": "ComprasController_detalle",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompraDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin token, o token caducado, falsificado o de una sesión cerrada"
+          },
+          "403": {
+            "description": "El rol de la sesión no permite esta operación"
+          },
+          "404": {
+            "description": "No existe esa compra en tu cuenta"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Detalle de una compra",
+        "tags": [
+          "compras"
+        ]
+      }
+    },
+    "/compras/{id}/pagar": {
+      "post": {
+        "description": "Pasos 5-8 del CU-001: cobra en la pasarela y emite una entrada con su QR por cada cupo. Recibe un token del medio de pago, nunca datos de tarjeta (RNF-05). Reintentar es seguro.",
+        "operationId": "ComprasController_pagar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PagarDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompraDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin token, o token caducado, falsificado o de una sesión cerrada"
+          },
+          "403": {
+            "description": "El rol de la sesión no permite esta operación"
+          },
+          "409": {
+            "description": "CU-001B reserva vencida · CU-001C pago rechazado (se puede reintentar)"
+          },
+          "503": {
+            "description": "La pasarela no respondió; reintentar es seguro"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Pagar la compra y recibir las entradas",
+        "tags": [
+          "compras"
+        ]
+      }
+    },
+    "/compras/{id}/cupon": {
+      "put": {
+        "description": "CU-004: valida el código, reserva un uso y recalcula el total. Uno por compra.",
+        "operationId": "ComprasController_aplicarCupon",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AplicarCuponDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompraDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin token, o token caducado, falsificado o de una sesión cerrada"
+          },
+          "403": {
+            "description": "El rol de la sesión no permite esta operación"
+          },
+          "409": {
+            "description": "CU-004D sin usos disponibles · la compra ya tiene un código"
+          },
+          "422": {
+            "description": "CU-004C código inválido · CU-004A no aplica a esta localidad"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Aplicar un código promocional",
+        "tags": [
+          "compras"
+        ]
+      },
+      "delete": {
+        "description": "CU-004B: recalcula el total sin descuento.",
+        "operationId": "ComprasController_quitarCupon",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompraDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin token, o token caducado, falsificado o de una sesión cerrada"
+          },
+          "403": {
+            "description": "El rol de la sesión no permite esta operación"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Quitar el código promocional",
+        "tags": [
+          "compras"
+        ]
+      }
+    },
+    "/compras/{id}/cancelacion/cotizacion": {
+      "post": {
+        "description": "Pasos 2-4 del CU-003: qué entradas se pueden cancelar y cuánto se devolvería, sin cambiar nada. Informa si el reembolso es parcial (CU-003A) y qué entradas no se pueden cancelar (CU-003D).",
+        "operationId": "ComprasController_cotizarCancelacion",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CotizarCancelacionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CotizacionCancelacionDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin token, o token caducado, falsificado o de una sesión cerrada"
+          },
+          "403": {
+            "description": "El rol de la sesión no permite esta operación"
+          },
+          "409": {
+            "description": "Fuera de plazo · la compra no está pagada · CU-003D ninguna cancelable"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cotizar la cancelación",
+        "tags": [
+          "compras"
+        ]
+      }
+    },
+    "/compras/{id}/cancelaciones": {
+      "post": {
+        "description": "Pasos 5-9 del CU-003: con el monto que el usuario aceptó en la cotización, reembolsa, anula las entradas e invalida sus QR. Puede ser solo algunas entradas (CU-003B).",
+        "operationId": "ComprasController_cancelar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelarCompraDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancelacionDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin token, o token caducado, falsificado o de una sesión cerrada"
+          },
+          "403": {
+            "description": "El rol de la sesión no permite esta operación"
+          },
+          "409": {
+            "description": "CU-003C reembolso rechazado (las entradas siguen activas) · el monto cambió"
+          },
+          "503": {
+            "description": "La pasarela no respondió; requiere conciliación"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cancelar entradas y pedir el reembolso",
+        "tags": [
+          "compras"
+        ]
+      }
+    },
+    "/ingresos": {
+      "post": {
+        "description": "Pasos 2-10 del CU-002: verifica que la entrada sea de este evento y no se haya usado, comprueba el aforo, registra la hora y marca el QR como usado.",
+        "operationId": "IngresosController_validar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidarQrDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IngresoAutorizadoDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin token, o token caducado, falsificado o de una sesión cerrada"
+          },
+          "403": {
+            "description": "Solo el personal de ingreso valida entradas"
+          },
+          "404": {
+            "description": "CU-002A QR inválido, de otro evento o anulado"
+          },
+          "409": {
+            "description": "CU-002D ya utilizado · CU-002B aforo completo"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Validar un QR y registrar el ingreso",
+        "tags": [
+          "ingresos"
+        ]
+      }
+    },
+    "/ingresos/eventos/{eventoId}/cache": {
+      "get": {
+        "description": "CU-002E: los hashes SHA-256 de los QR que hoy pueden ingresar. Los códigos no viajan.",
+        "operationId": "IngresosController_cache",
+        "parameters": [
+          {
+            "name": "eventoId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CacheQrDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin token, o token caducado, falsificado o de una sesión cerrada"
+          },
+          "403": {
+            "description": "Solo el personal de ingreso valida entradas"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Caché de QR válidos para operar sin conexión",
+        "tags": [
+          "ingresos"
+        ]
+      }
+    },
+    "/ingresos/sincronizacion": {
+      "post": {
+        "description": "CU-002E: registra los ingresos validados contra la caché local. Lo que no pase las reglas vuelve como conflicto para revisar, no se descarta.",
+        "operationId": "IngresosController_sincronizar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SincronizarIngresosDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SincronizacionDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin token, o token caducado, falsificado o de una sesión cerrada"
+          },
+          "403": {
+            "description": "Solo el personal de ingreso valida entradas"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Sincronizar ingresos hechos sin conexión",
+        "tags": [
+          "ingresos"
+        ]
+      }
+    },
     "/reventa/mantenimiento/expirar-publicaciones": {
       "post": {
         "description": "Operación de mantenimiento: hace ahora lo que el trabajo programado hace cada diez minutos. Existe para poder ponerse al día sin esperar al siguiente ciclo —por ejemplo si el trabajo falló durante la noche— y para poder probarlo. Solo para administradores (RNF-06): no expone datos ni cobra nada, pero tampoco es una operación de cliente.",
@@ -554,7 +1272,7 @@
   },
   "info": {
     "title": "Entradas y Mercado Secundario",
-    "description": "CU-006 — Gestión del Mercado Secundario de Entradas.\n\nEn producción este servicio se consume a través del API Gateway (ADR-02), que autentica y autoriza por rol antes de enrutar (RNF-06); nunca se expone directo.\n\nGenerado con `npm run contrato:api` desde el código del servicio: no editar a mano.",
+    "description": "Venta primaria (CU-001 compra, CU-002 validar QR, CU-003 cancelaciones, CU-004 promociones), CU-005 — Consultar evento (cartelera pública) y CU-006 — Gestión del Mercado Secundario de Entradas.\n\nEn producción este servicio se consume a través del API Gateway (ADR-02), que autentica y autoriza por rol antes de enrutar (RNF-06); nunca se expone directo. La cartelera es la única ruta que no exige sesión, y solo admite lectura.\n\nGenerado con `npm run contrato:api` desde el código del servicio: no editar a mano.",
     "version": "0.1.0",
     "contact": {}
   },
@@ -569,6 +1287,834 @@
       }
     },
     "schemas": {
+      "EventoResumenDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nombre": {
+            "type": "string",
+            "example": "HEXACORE Fest 2026"
+          },
+          "artista": {
+            "type": "string",
+            "example": "Aterciopelados",
+            "nullable": true
+          },
+          "categoria": {
+            "type": "string",
+            "example": "Festivales"
+          },
+          "fechaInicio": {
+            "type": "string",
+            "description": "Inicio del evento, ISO 8601"
+          },
+          "fechaFin": {
+            "type": "string",
+            "description": "Fin del evento, ISO 8601",
+            "nullable": true
+          },
+          "lugar": {
+            "type": "string",
+            "example": "Movistar Arena"
+          },
+          "ciudad": {
+            "type": "string",
+            "example": "Bogotá"
+          },
+          "imagenUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "precioDesde": {
+            "type": "number",
+            "description": "Precio más bajo con cupo; si todo está agotado, el más bajo sin más. Null si aún no tiene localidades.",
+            "nullable": true,
+            "example": 180000
+          },
+          "agotado": {
+            "type": "boolean",
+            "description": "Ninguna localidad tiene cupo"
+          },
+          "pasado": {
+            "type": "boolean",
+            "description": "El evento ya empezó o terminó"
+          }
+        },
+        "required": [
+          "id",
+          "nombre",
+          "artista",
+          "categoria",
+          "fechaInicio",
+          "fechaFin",
+          "lugar",
+          "ciudad",
+          "imagenUrl",
+          "precioDesde",
+          "agotado",
+          "pasado"
+        ]
+      },
+      "CarteleraDto": {
+        "type": "object",
+        "properties": {
+          "eventos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventoResumenDto"
+            }
+          },
+          "total": {
+            "type": "number",
+            "description": "Eventos que cumplen los filtros, sin paginar"
+          },
+          "limite": {
+            "type": "number"
+          },
+          "desplazamiento": {
+            "type": "number"
+          },
+          "mensaje": {
+            "type": "string",
+            "description": "CU-005C: \"Ningún evento encontrado\" cuando no hay resultados; null en otro caso",
+            "nullable": true
+          }
+        },
+        "required": [
+          "eventos",
+          "total",
+          "limite",
+          "desplazamiento",
+          "mensaje"
+        ]
+      },
+      "FiltrosCarteleraDto": {
+        "type": "object",
+        "properties": {
+          "categorias": {
+            "example": [
+              "Conciertos",
+              "Teatro"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "ciudades": {
+            "example": [
+              "Bogotá",
+              "Medellín"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "categorias",
+          "ciudades"
+        ]
+      },
+      "LocalidadDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nombre": {
+            "type": "string",
+            "example": "Palco VIP"
+          },
+          "precio": {
+            "type": "number",
+            "example": 420000
+          },
+          "disponibles": {
+            "type": "number",
+            "description": "Cupos que quedan",
+            "example": 37
+          },
+          "agotada": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "nombre",
+          "precio",
+          "disponibles",
+          "agotada"
+        ]
+      },
+      "EventoDetalleDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nombre": {
+            "type": "string",
+            "example": "HEXACORE Fest 2026"
+          },
+          "artista": {
+            "type": "string",
+            "example": "Aterciopelados",
+            "nullable": true
+          },
+          "categoria": {
+            "type": "string",
+            "example": "Festivales"
+          },
+          "fechaInicio": {
+            "type": "string",
+            "description": "Inicio del evento, ISO 8601"
+          },
+          "fechaFin": {
+            "type": "string",
+            "description": "Fin del evento, ISO 8601",
+            "nullable": true
+          },
+          "lugar": {
+            "type": "string",
+            "example": "Movistar Arena"
+          },
+          "ciudad": {
+            "type": "string",
+            "example": "Bogotá"
+          },
+          "imagenUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "precioDesde": {
+            "type": "number",
+            "description": "Precio más bajo con cupo; si todo está agotado, el más bajo sin más. Null si aún no tiene localidades.",
+            "nullable": true,
+            "example": 180000
+          },
+          "agotado": {
+            "type": "boolean",
+            "description": "Ninguna localidad tiene cupo"
+          },
+          "pasado": {
+            "type": "boolean",
+            "description": "El evento ya empezó o terminó"
+          },
+          "descripcion": {
+            "type": "string",
+            "nullable": true
+          },
+          "localidades": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LocalidadDto"
+            }
+          },
+          "disponiblesTotal": {
+            "type": "number",
+            "description": "Suma de los cupos de todas las localidades"
+          }
+        },
+        "required": [
+          "id",
+          "nombre",
+          "artista",
+          "categoria",
+          "fechaInicio",
+          "fechaFin",
+          "lugar",
+          "ciudad",
+          "imagenUrl",
+          "precioDesde",
+          "agotado",
+          "pasado",
+          "descripcion",
+          "localidades",
+          "disponiblesTotal"
+        ]
+      },
+      "CrearCompraDto": {
+        "type": "object",
+        "properties": {
+          "localidadId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "10000001-0000-4000-8000-000000000001"
+          },
+          "cantidad": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 10,
+            "example": 2
+          }
+        },
+        "required": [
+          "localidadId",
+          "cantidad"
+        ]
+      },
+      "EntradaEmitidaDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "numeroTicket": {
+            "type": "string",
+            "example": "TCK-2026-001000"
+          },
+          "codigoQr": {
+            "type": "string",
+            "description": "Salida 1 del CU-001: el código QR de ingreso"
+          },
+          "localidadNombre": {
+            "type": "string",
+            "example": "Palco VIP"
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "VALIDA",
+              "EN_REVENTA",
+              "USADA",
+              "ANULADA"
+            ]
+          },
+          "precioPagado": {
+            "type": "number",
+            "description": "Lo que se pagó por esta entrada, con el descuento repartido"
+          }
+        },
+        "required": [
+          "id",
+          "numeroTicket",
+          "codigoQr",
+          "localidadNombre",
+          "estado",
+          "precioPagado"
+        ]
+      },
+      "CompraDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "numeroCompra": {
+            "type": "string",
+            "example": "CMP-2026-000001"
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "PENDIENTE",
+              "PAGANDO",
+              "PAGADA",
+              "EXPIRADA",
+              "CANCELADA",
+              "PARCIALMENTE_CANCELADA"
+            ]
+          },
+          "eventoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "localidadId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "cantidad": {
+            "type": "number"
+          },
+          "precioUnitario": {
+            "type": "number"
+          },
+          "subtotal": {
+            "type": "number"
+          },
+          "descuento": {
+            "type": "number",
+            "description": "Descuento del código promocional (CU-004)"
+          },
+          "total": {
+            "type": "number",
+            "description": "Lo que se cobra (paso 4 del CU-001)"
+          },
+          "codigoPromocional": {
+            "type": "string",
+            "nullable": true
+          },
+          "expiraEn": {
+            "type": "string",
+            "description": "Hasta cuándo se mantiene la reserva sin pagar (CU-001B)"
+          },
+          "pagadaEn": {
+            "type": "string",
+            "nullable": true
+          },
+          "motivo": {
+            "type": "string",
+            "nullable": true,
+            "description": "Último motivo de rechazo del pago"
+          },
+          "entradas": {
+            "description": "Vacío hasta que se paga",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EntradaEmitidaDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "numeroCompra",
+          "estado",
+          "eventoId",
+          "localidadId",
+          "cantidad",
+          "precioUnitario",
+          "subtotal",
+          "descuento",
+          "total",
+          "codigoPromocional",
+          "expiraEn",
+          "pagadaEn",
+          "motivo",
+          "entradas"
+        ]
+      },
+      "PagarDto": {
+        "type": "object",
+        "properties": {
+          "metodoPago": {
+            "type": "string",
+            "enum": [
+              "TARJETA",
+              "PSE"
+            ],
+            "example": "TARJETA"
+          },
+          "token": {
+            "type": "string",
+            "description": "Token opaco del medio de pago; nunca datos de tarjeta",
+            "example": "tok_ok_demo"
+          }
+        },
+        "required": [
+          "metodoPago",
+          "token"
+        ]
+      },
+      "AplicarCuponDto": {
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string",
+            "example": "HEXA10",
+            "description": "Sin distinguir mayúsculas"
+          }
+        },
+        "required": [
+          "codigo"
+        ]
+      },
+      "CotizarCancelacionDto": {
+        "type": "object",
+        "properties": {
+          "entradaIds": {
+            "description": "Vacío o ausente = todas las de la compra",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      },
+      "EntradaRechazadaDto": {
+        "type": "object",
+        "properties": {
+          "entradaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "motivo": {
+            "type": "string",
+            "example": "La entrada ya se usó para ingresar al evento (CU-003D)"
+          }
+        },
+        "required": [
+          "entradaId",
+          "motivo"
+        ]
+      },
+      "CotizacionCancelacionDto": {
+        "type": "object",
+        "properties": {
+          "entradasCancelables": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "entradasRechazadas": {
+            "description": "CU-003D: las que no se pueden cancelar y por qué",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EntradaRechazadaDto"
+            }
+          },
+          "montoPagado": {
+            "type": "number",
+            "description": "Lo que se pagó por las entradas cancelables"
+          },
+          "porcentajeReembolso": {
+            "type": "number",
+            "description": "100 = total; menos = parcial (CU-003A)"
+          },
+          "montoReembolso": {
+            "type": "number"
+          },
+          "parcial": {
+            "type": "boolean",
+            "description": "CU-003A: si el reembolso es parcial"
+          },
+          "tramo": {
+            "type": "string",
+            "enum": [
+              "TOTAL",
+              "PARCIAL",
+              "EVENTO_CANCELADO"
+            ]
+          },
+          "mensaje": {
+            "type": "string",
+            "description": "Mensaje listo para mostrar"
+          }
+        },
+        "required": [
+          "entradasCancelables",
+          "entradasRechazadas",
+          "montoPagado",
+          "porcentajeReembolso",
+          "montoReembolso",
+          "parcial",
+          "tramo",
+          "mensaje"
+        ]
+      },
+      "CancelarCompraDto": {
+        "type": "object",
+        "properties": {
+          "entradaIds": {
+            "description": "Vacío o ausente = todas las de la compra",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "motivo": {
+            "type": "string",
+            "example": "No puedo asistir",
+            "description": "Paso 1: el motivo de la cancelación"
+          },
+          "montoAceptado": {
+            "type": "number",
+            "example": 360000,
+            "description": "Paso 5: el monto que el usuario vio en la cotización y acepta. Si cambió, se rechaza."
+          }
+        },
+        "required": [
+          "motivo",
+          "montoAceptado"
+        ]
+      },
+      "CancelacionDto": {
+        "type": "object",
+        "properties": {
+          "entradasCancelables": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "entradasRechazadas": {
+            "description": "CU-003D: las que no se pueden cancelar y por qué",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EntradaRechazadaDto"
+            }
+          },
+          "montoPagado": {
+            "type": "number",
+            "description": "Lo que se pagó por las entradas cancelables"
+          },
+          "porcentajeReembolso": {
+            "type": "number",
+            "description": "100 = total; menos = parcial (CU-003A)"
+          },
+          "montoReembolso": {
+            "type": "number"
+          },
+          "parcial": {
+            "type": "boolean",
+            "description": "CU-003A: si el reembolso es parcial"
+          },
+          "tramo": {
+            "type": "string",
+            "enum": [
+              "TOTAL",
+              "PARCIAL",
+              "EVENTO_CANCELADO"
+            ]
+          },
+          "mensaje": {
+            "type": "string",
+            "description": "Mensaje listo para mostrar"
+          },
+          "cancelacionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "PENDIENTE",
+              "APROBADA",
+              "RECHAZADA",
+              "FALLIDA"
+            ]
+          },
+          "referenciaReembolso": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "entradasCancelables",
+          "entradasRechazadas",
+          "montoPagado",
+          "porcentajeReembolso",
+          "montoReembolso",
+          "parcial",
+          "tramo",
+          "mensaje",
+          "cancelacionId",
+          "estado",
+          "referenciaReembolso"
+        ]
+      },
+      "ValidarQrDto": {
+        "type": "object",
+        "properties": {
+          "eventoId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Evento en cuya puerta se escanea: un QR de otro evento no vale"
+          },
+          "codigoQr": {
+            "type": "string",
+            "example": "HXC-QR-000001"
+          },
+          "puntoAcceso": {
+            "type": "string",
+            "example": "Puerta 3"
+          }
+        },
+        "required": [
+          "eventoId",
+          "codigoQr"
+        ]
+      },
+      "IngresoAutorizadoDto": {
+        "type": "object",
+        "properties": {
+          "autorizado": {
+            "type": "boolean",
+            "example": true
+          },
+          "mensaje": {
+            "type": "string",
+            "example": "Ingreso autorizado"
+          },
+          "numeroTicket": {
+            "type": "string",
+            "example": "TCK-2026-001000"
+          },
+          "localidadNombre": {
+            "type": "string",
+            "example": "Palco VIP"
+          },
+          "eventoNombre": {
+            "type": "string"
+          },
+          "registradoEn": {
+            "type": "string",
+            "description": "Post-condición 1: hora de acceso registrada"
+          },
+          "asistentes": {
+            "type": "number",
+            "description": "Post-condición 2: aforo actualizado"
+          },
+          "aforoMaximo": {
+            "type": "number",
+            "nullable": true
+          }
+        },
+        "required": [
+          "autorizado",
+          "mensaje",
+          "numeroTicket",
+          "localidadNombre",
+          "eventoNombre",
+          "registradoEn",
+          "asistentes",
+          "aforoMaximo"
+        ]
+      },
+      "QrCacheDto": {
+        "type": "object",
+        "properties": {
+          "hash": {
+            "type": "string",
+            "description": "SHA-256 del código, en hexadecimal. El código en sí no viaja."
+          },
+          "numeroTicket": {
+            "type": "string"
+          },
+          "localidadNombre": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "hash",
+          "numeroTicket",
+          "localidadNombre"
+        ]
+      },
+      "CacheQrDto": {
+        "type": "object",
+        "properties": {
+          "eventoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "generadaEn": {
+            "type": "string"
+          },
+          "validos": {
+            "description": "Solo las entradas que hoy podrían ingresar",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QrCacheDto"
+            }
+          }
+        },
+        "required": [
+          "eventoId",
+          "generadaEn",
+          "validos"
+        ]
+      },
+      "IngresoOfflineDto": {
+        "type": "object",
+        "properties": {
+          "codigoQr": {
+            "type": "string",
+            "example": "HXC-QR-000001"
+          },
+          "escaneadoEn": {
+            "type": "string",
+            "description": "Cuándo se escaneó de verdad, sin conexión"
+          },
+          "puntoAcceso": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "codigoQr",
+          "escaneadoEn"
+        ]
+      },
+      "SincronizarIngresosDto": {
+        "type": "object",
+        "properties": {
+          "eventoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "ingresos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IngresoOfflineDto"
+            }
+          }
+        },
+        "required": [
+          "eventoId",
+          "ingresos"
+        ]
+      },
+      "ResultadoSincronizacionDto": {
+        "type": "object",
+        "properties": {
+          "codigoQr": {
+            "type": "string"
+          },
+          "resultado": {
+            "type": "string",
+            "enum": [
+              "REGISTRADO",
+              "CU-002A",
+              "CU-002B",
+              "CU-002D"
+            ],
+            "description": "Lo que no sea REGISTRADO es un conflicto que el personal debe revisar"
+          },
+          "mensaje": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "codigoQr",
+          "resultado",
+          "mensaje"
+        ]
+      },
+      "SincronizacionDto": {
+        "type": "object",
+        "properties": {
+          "registrados": {
+            "type": "number"
+          },
+          "conflictos": {
+            "type": "number"
+          },
+          "resultados": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResultadoSincronizacionDto"
+            }
+          }
+        },
+        "required": [
+          "registrados",
+          "conflictos",
+          "resultados"
+        ]
+      },
       "PublicacionDto": {
         "type": "object",
         "properties": {
@@ -921,28 +2467,6 @@
           "reservaHasta",
           "segundosRestantes",
           "publicacion"
-        ]
-      },
-      "PagarDto": {
-        "type": "object",
-        "properties": {
-          "metodoPago": {
-            "type": "string",
-            "enum": [
-              "TARJETA",
-              "PSE"
-            ],
-            "example": "TARJETA"
-          },
-          "token": {
-            "type": "string",
-            "description": "Token opaco del medio de pago; nunca datos de tarjeta",
-            "example": "tok_ok_demo"
-          }
-        },
-        "required": [
-          "metodoPago",
-          "token"
         ]
       },
       "ResultadoCompraDto": {

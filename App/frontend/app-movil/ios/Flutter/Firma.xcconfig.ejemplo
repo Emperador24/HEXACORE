@@ -1,0 +1,32 @@
+// Firma de código para iOS — copia este archivo a `Firma.xcconfig` y pon lo tuyo.
+//
+//   cp Flutter/Firma.xcconfig.ejemplo Flutter/Firma.xcconfig
+//
+// ## Por qué existe
+//
+// El equipo de desarrollo y el identificador de la app son **de cada persona**:
+// una cuenta gratuita de Apple no puede registrar un identificador que ya
+// registró otra cuenta, y el equipo de uno no existe en el Mac del otro. Cuando
+// esos dos valores viven dentro del proyecto de Xcode, el repositorio solo
+// compila en la máquina de quien los puso.
+//
+// `Firma.xcconfig` está en el .gitignore: no se comparte, y así cada quien
+// trabaja con su cuenta sin pisar la de los demás.
+//
+// ## Qué poner
+//
+// **DEVELOPMENT_TEAM** — el identificador de tu equipo, diez caracteres.
+// Se ve en Xcode: Settings ▸ Accounts ▸ tu Apple ID ▸ el equipo, o al abrir
+// `ios/Runner.xcworkspace` en Signing & Capabilities.
+//
+// **FLUTTER_BUNDLE_ID** — el identificador de la app. Cámbialo por uno tuyo
+// (por ejemplo, añadiendo tu nombre) si vas a instalarla en un iPhone: dos
+// cuentas gratuitas no pueden registrar el mismo.
+//
+// ## Cuándo NO hace falta nada de esto
+//
+// Para el **simulador de iOS** y para **Android** no se necesita firma. Este
+// archivo solo importa si vas a instalar la app en un iPhone físico.
+
+DEVELOPMENT_TEAM =
+FLUTTER_BUNDLE_ID = com.hexacore.javeriana.appmovil

@@ -6,6 +6,10 @@ import { cargarClavePublica } from '../../comun/autenticacion/clave-publica.js';
 import { proveedorRedis } from '../../comun/autenticacion/redis.provider.js';
 import { SesionValida } from '../../comun/autenticacion/sesion-valida.guard.js';
 import { AsistenciaController } from './asistencia.controller.js';
+import {
+  ContextoDeLogistica,
+  SoloQuienSupervisa,
+} from './autorizacion.guard.js';
 import { AsistenciaService } from './asistencia.service.js';
 import { Empleado } from './entities/empleado.entity.js';
 import { Notificacion } from './entities/notificacion.entity.js';
@@ -66,6 +70,11 @@ import { TurnosService } from './turnos.service.js';
   providers: [
     proveedorRedis,
     SesionValida,
+    // Guardias de logística: `ContextoDeLogistica` necesita el repositorio de
+    // empleados, así que tiene que estar declarado aquí para que Nest se lo
+    // inyecte.
+    ContextoDeLogistica,
+    SoloQuienSupervisa,
     TurnosService,
     AsistenciaService,
     PersonalOperativoService,

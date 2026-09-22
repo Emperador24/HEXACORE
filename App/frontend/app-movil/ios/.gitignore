@@ -19,6 +19,9 @@ Flutter/App.framework
 Flutter/Flutter.framework
 Flutter/Flutter.podspec
 Flutter/Generated.xcconfig
+# La firma de código es de cada desarrollador: el equipo de uno no existe
+# en el Mac del otro. Se copia de Flutter/Firma.xcconfig.ejemplo.
+Flutter/Firma.xcconfig
 Flutter/ephemeral/
 Flutter/app.flx
 Flutter/app.zip

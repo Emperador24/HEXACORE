@@ -1,4 +1,6 @@
-# Decisiones abiertas del CU-006
+# Decisiones abiertas del servicio de Entradas
+
+Las del CU-005 (cartelera) están en el §12, y las de CU-001 a CU-004 (venta primaria) en el §13.
 
 Al implementar el **CU-006 (Gestión del Mercado Secundario de Entradas)** aparecieron ocho huecos
 que la documentación del proyecto no cierra. Ninguno es una decisión *arquitectónica* —los ADR-01,
@@ -375,6 +377,200 @@ hacer `FLUSHALL` sobre Redis: borraría las revocaciones de Administración.
 **Hallazgo al probarlo:** con Redis colgado (conexión abierta, sin respuesta), las peticiones
 esperaban para siempre, porque `maxRetriesPerRequest` y `enableOfflineQueue` solo actúan cuando la
 conexión se cae. Se añadió `commandTimeout: 2000`. Afectaba también al checkout.
+
+---
+
+## 12. Cartelera de eventos (CU-005) — **decisiones al implementarla**
+
+El CU-005 (Consultar evento, Daniel Cristancho) es el primer caso de uso de CU-001–005 que llega a
+este servicio. Vive en su propio módulo, `src/catalogo/`, hermano de `reventa/` y sin depender de él.
+
+### a) Los datos salen de la proyección local, ampliada
+
+El Evento es del servicio de Eventos (CU-026), que aún no tiene ese CRUD. Por el mismo razonamiento
+del §7, la cartelera lee `eventos_referencia`, que se amplía con lo que el CU-005 filtra y muestra:
+`estado`, `categoria`, `artista`, `descripcion`, `fecha_fin` e `imagen_url`. Solo se listan los
+`PUBLICADO`: un borrador o un cancelado responden 404 en el detalle, igual que uno inexistente, para
+no revelar lo que el organizador todavía no anuncia.
+
+### b) Localidades con contador de vendidas — **tabla nueva, no está en el SAD §12**
+
+El paso 8 pide *"localidades, precios y disponibilidad"*. El §12 tiene `localidad_id` en `Entrada`,
+pero no define la localidad. Se añade `localidades_evento(localidad_id, evento_id, nombre, precio,
+aforo, vendidas, orden)`.
+
+La disponibilidad es `aforo - vendidas`, con `vendidas` como **contador** y no como `COUNT(*)` sobre
+`entradas`:
+
+1. La ficha pide que la búsqueda *"responda rápido incluso con un catálogo grande"*. Contar las
+   entradas de cada evento en cada consulta crece con las ventas; restar dos columnas, no.
+2. Prepara la compra (CU-001): reservar cupo será `UPDATE ... SET vendidas = vendidas + n`, y el
+   `CHECK (vendidas <= aforo)` hace de la sobreventa una imposibilidad del motor, como el índice
+   único parcial hace con la doble publicación (RNF-01).
+
+`nombre`, `precio`, `aforo` y `orden` son del organizador y se copian; `vendidas` es de este
+servicio, y la sincronización con Eventos no debe pisarlo.
+
+### c) Ruta `/cartelera`, no `/eventos`
+
+`/eventos` es el nombre natural del CRUD que el servicio de Eventos expondrá para CU-026. Si Entradas
+lo usara, las dos rutas chocarían en el gateway. "Cartelera" es además el nombre que ya usa el
+portal para esta pantalla.
+
+### d) La cartelera es pública — **excepción a RNF-06, a ratificar por el equipo**
+
+RNF-06 mide *"endpoints de negocio alcanzables sin token válido: 0 %"*. La cartelera no cumple eso a
+propósito:
+
+- El README del portal cliente ya lo decidió: *"La cartelera y el mercado de reventa se ven sin
+  iniciar sesión, como en cualquier taquilla"*, para que el visitante vea precios antes de
+  registrarse.
+- La ficha del CU-005 la llama *"la puerta de entrada al sistema"* y pide alta disponibilidad.
+
+La excepción se acota para que no se extienda sola:
+
+| Límite | Dónde se hace cumplir |
+|---|---|
+| Solo lectura | `limit_except GET` en el gateway; prueba del contrato que falla si aparece otro método |
+| Sin datos de usuarios | Los DTOs no tienen ningún campo de usuario; no se reenvía `X-Usuario-Id` |
+| Solo `/cartelera` | La prueba del contrato sigue exigiendo token en todas las demás rutas |
+
+### e) "Relevancia" = ocupación
+
+El paso 4 dice *"ordena según relevancia o fecha"* sin definir relevancia. Se toma como el
+porcentaje vendido: lo que más se está vendiendo primero. Por defecto, y sin filtros (CU-005A), por
+fecha.
+
+**Consecuencia a revisar:** con esta definición un evento agotado sale el primero, porque su
+ocupación es del 100 %. Para quien busca qué comprar quizá convenga mandar los agotados al final.
+
+### f) Infraestructura de la ficha: sin Elasticsearch por ahora
+
+La ficha sugiere un motor de búsqueda (*"por ejemplo Elasticsearch"*), CDN y balanceador.
+
+- **Búsqueda:** PostgreSQL con índices (parcial por fecha de los publicados, y sobre
+  `lower(categoria)` y `lower(ciudad)`) basta para la escala de un prototipo. El filtro por artista
+  es `ILIKE '%…%'`, que no usa índice; si el catálogo creciera, el siguiente paso sería `pg_trgm`
+  antes que un Elasticsearch que hay que operar y sincronizar.
+- **CDN y caché:** las respuestas llevan `Cache-Control: public` (30 s el listado, 10 s el detalle,
+  que trae la disponibilidad). Un navegador o una CDN pueden servirlas sin tocar el servicio. Que la
+  cifra vaya unos segundos por detrás es aceptable porque la compra vuelve a comprobar el cupo.
+- **Balanceador:** ya existe (ADR-02, gateway Nginx).
+- **Disponibilidad:** el módulo no depende de Redis, RabbitMQ ni la pasarela; si caen, la cartelera
+  sigue respondiendo.
+
+### g) Fechas en hora de Colombia
+
+Un filtro `desde=2026-10-01` significa ese día en Colombia (`-05:00`, sin horario de verano), no la
+medianoche UTC, que aquí son las 7 p. m. del día anterior. `hasta` con una fecha incluye el día
+entero.
+
+---
+
+## 13. Venta primaria (CU-001 a CU-004) — **decisiones al implementarla**
+
+Módulo `src/venta/`. Reutiliza de `reventa/` solo infraestructura —conexión a Redis y a RabbitMQ,
+adaptador de la pasarela, generador de QR y verificación de sesión—, que ese módulo ahora exporta.
+
+### a) La compra nace como reserva con plazo (CU-001, CU-001B)
+
+Comprar son dos peticiones: **reservar** (se aparta el cupo y se calcula el total) y **pagar**. Sin
+reserva, dos personas podrían pagar a la vez por el último cupo y a una habría que devolverle el
+dinero. La reserva dura `COMPRA_RESERVA_MINUTOS` (10 por defecto; la ficha dice *"si el tiempo de
+compra expira"* sin cifra). Un barrido cada minuto libera las vencidas; el pago también lo comprueba.
+
+Estados: `PENDIENTE → PAGANDO → PAGADA`, con `EXPIRADA`, `CANCELADA` y `PARCIALMENTE_CANCELADA`.
+**`PAGANDO` existe para que el barrido no libere el cupo con un cobro en vuelo**: si lo hiciera y el
+cobro se aprobara, alguien pagaría por entradas ya vendidas a otro.
+
+### b) Inventario con UPDATE condicional en PostgreSQL, no con Redis — **se aparta de la ficha**
+
+La ficha del CU-001 sugiere Redis *"para bloquear temporalmente el inventario durante el checkout"*,
+y la del CU-004 un *"contador atómico (Redis)"* para los usos del cupón. Se usa en cambio un
+`UPDATE ... SET reservadas = reservadas + n WHERE vendidas + reservadas + n <= aforo` (y el análogo
+para los usos del cupón), respaldado por un `CHECK` en la tabla.
+
+1. **Una sola fuente de verdad.** Con un contador en Redis y otro en Postgres hay que mantenerlos
+   sincronizados, y cualquier fallo entre las dos escrituras los descuadra: se vende de más o se
+   pierde cupo. Aquí el cupo, la compra y las entradas cambian en la misma transacción.
+2. **No es el bloqueo pesimista que descartó ADR-03.** ADR-03 descartó retener filas bloqueadas
+   durante el checkout. El UPDATE condicional bloquea la fila lo que dura la sentencia —microsegundos—
+   y la reserva "larga" es un número, no un bloqueo.
+3. **Se midió.** 20 peticiones simultáneas sobre un cupón de 5 usos: 5 aceptadas, 15 rechazadas con
+   CU-004D, 5 usos en la base.
+
+Redis sigue siendo el siguiente paso si la apertura de venta de un evento masivo saturara la fila de
+la localidad (contención sobre una sola fila caliente); habría que añadir la reconciliación entre
+los dos contadores.
+
+### c) Localidades: `reservadas` aparte de `vendidas`
+
+`localidades_evento` gana la columna `reservadas`, y el `CHECK` pasa a ser
+`vendidas + reservadas <= aforo`. La cartelera (CU-005) resta las dos: una reserva sin pagar tampoco
+está disponible.
+
+### d) Pago idempotente y reintentable (CU-001C)
+
+La clave de idempotencia del cobro es `compra:intentosRechazados`. Un cobro **sin respuesta** no
+incrementa el contador, así que reintentarlo manda la misma clave y la pasarela no cobra dos veces.
+Un cobro **rechazado** sí lo incrementa, para que el siguiente intento, con otra tarjeta, sea un
+cobro nuevo y no el rechazo anterior repetido. Un doble clic en "pagar" emite las entradas una sola
+vez: el `UPDATE ... WHERE estado = 'PAGANDO'` solo lo gana una petición.
+
+### e) El cupón se aplica a la compra, no al carrito del cliente (CU-004)
+
+El descuento lo calcula y lo guarda el servidor sobre la compra reservada; el cliente nunca manda un
+precio ni un descuento (el `ValidationPipe` rechaza campos no declarados). El uso se **reserva** al
+aplicarlo (cuenta para el límite), se **confirma** al pagar y se **libera** si se quita (CU-004B) o
+la reserva vence. Una compra es de una sola localidad, así que el *"carrito"* del CU-004A tiene una
+línea: o todas sus entradas reciben el descuento o ninguna, y el error dice a qué aplica el código.
+El porcentaje se limita a 1-90: una compra gratis no pasa por la pasarela.
+
+### f) Cancelación: anular primero, reembolsar después (CU-003)
+
+Dos órdenes posibles, los dos con riesgo. Reembolsar y luego anular puede dejar al cliente con el
+dinero y una entrada válida. Anular y luego reembolsar, en el peor caso, deja una entrada anulada
+unos segundos. Se elige el segundo: además impide usar la entrada en la puerta o publicarla en
+reventa mientras el reembolso está en vuelo. Si la pasarela rechaza (CU-003C), las entradas vuelven
+a `VALIDA`. Si no responde, se quedan anuladas y la cancelación queda `FALLIDA`, para conciliar.
+
+**Política de plazos** (la ficha dice *"plazos y políticas aplicables"* sin cifras): 100 % con 7 días
+o más; 50 % entre 48 horas y 7 días (CU-003A); después, no se admite. Si el organizador canceló el
+evento, 100 % siempre. Todo configurable (`CANCELACION_*`).
+
+**Paso 5** (*"el usuario confirma con el monto informado"*): la confirmación lleva el monto que el
+usuario vio. Si cambió —cruzó un umbral, o una entrada se usó—, se le vuelve a preguntar.
+
+Solo cancela el **titular de la compra** y solo sus entradas actuales: una revendida (CU-006) ya no
+es suya, y una publicada en reventa hay que retirarla primero.
+
+La pasarela simulada gana `POST /reembolsos` y el token `tok_noreemb…` para ejercitar CU-003C. La
+interfaz `ProcesadorPagos` gana `reembolsar()`; sigue habiendo un solo adaptador (RNF-16).
+
+### g) Validación de QR (CU-002)
+
+- **Dos barreras contra el doble ingreso**: `UPDATE entradas SET estado='USADA' WHERE estado='VALIDA'`
+  y `UNIQUE (entrada_id)` en `ingresos`. Medido: 10 puertas escanean el mismo QR a la vez → 1
+  autorizado, 9 CU-002D, 1 registro.
+- **Aforo del recinto** (`eventos_referencia.aforo_maximo`, `asistentes`) con el mismo patrón de
+  UPDATE condicional + `CHECK`. Si está lleno, la transacción se deshace y la entrada sigue válida
+  para cuando haya cupo (CU-002B).
+- **Sin conexión (CU-002E)**: el dispositivo descarga los QR válidos como **hashes SHA-256**, no los
+  códigos: un teléfono robado no da acceso. Al volver la red, sube lo escaneado; lo que no pase las
+  reglas vuelve como conflicto para revisar, en vez de perderse.
+- **Sin Redis para el estado de los QR**, a diferencia de lo que sugiere la ficha: la búsqueda por
+  el índice único de `codigo_qr` ya es de milisegundos, y la operación sin red la cubre la caché del
+  dispositivo, que es donde la ficha la necesita.
+- **CU-002C** (pedir identificación) lo hace una persona. El sistema le da ticket y localidad para
+  comparar.
+
+### h) Correos por la cola (CU-001 paso 8, CU-003 paso 9)
+
+Exchange `ventas.eventos`, cola `ventas.notificaciones` con su DLQ en `ventas.muertos`, eventos
+`COMPRA_CONFIRMADA` y `COMPRA_CANCELADA`. Se publican después de confirmar en la base y nunca hacen
+fallar la operación. Como en el CU-006, el consumidor deja el registro del correo que enviaría el
+Proveedor de Notificaciones. Mismo límite conocido que el §9: sin *outbox*, un evento que no se
+publica se pierde.
 
 ---
 

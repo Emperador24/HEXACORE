@@ -1,20 +1,18 @@
 import { Injectable, signal } from '@angular/core';
 import { Entrada, EstadoEntrada } from './models';
 
-// Datos de ejemplo (la compra de entradas, CU-001, aún no tiene servicio). Los
-// dueños son los ids reales de las cuentas de demostración del Servicio de
-// Administración, para que "Mis entradas" muestre algo al entrar con ellas.
+// Datos de ejemplo de la **compra** de entradas (CU-001), que todavía no tiene
+// servicio propio. La reventa ya no está aquí: la sirve el backend real a
+// través de `reventa.service.ts`, y "Mis entradas" muestra lo que él devuelve.
+//
+// Los dueños son los ids reales de las cuentas de demostración del Servicio de
+// Administración, para que la cartelera cuadre con lo que ve cada cuenta.
 const ANA = 'a0000001-0000-4000-8000-000000000001'; // cliente@hexacore.com
 const BRUNO = 'a0000002-0000-4000-8000-000000000002'; // bruno@hexacore.com
 const CARLA = 'a0000003-0000-4000-8000-000000000003'; // carla@hexacore.com
 
 let contadorTicket = 100;
 let contadorTransaccion = 500;
-
-function nuevoNumeroTicket(): string {
-  contadorTicket += 1;
-  return `TCK-2026-${String(contadorTicket).padStart(6, '0')}`;
-}
 
 function nuevoNumeroTransaccion(): string {
   contadorTransaccion += 1;
@@ -23,6 +21,11 @@ function nuevoNumeroTransaccion(): string {
 
 function nuevoQr(): string {
   return `HXC-QR-${Math.floor(100000 + Math.random() * 900000)}`;
+}
+
+function nuevoNumeroTicket(): string {
+  contadorTicket += 1;
+  return `TCK-2026-${String(contadorTicket).padStart(6, '0')}`;
 }
 
 /**
@@ -120,40 +123,4 @@ export class EntradasService {
     this._entradas.update((lista) => [...nuevas, ...lista]);
   }
 
-  /** Envía la entrada a otro cliente por correo — no hay backend real de mensajería aún, se simula quitándola de la lista, igual que en el móvil. */
-  enviar(entradaId: string): void {
-    this._entradas.update((lista) => lista.filter((e) => e.id !== entradaId));
-  }
-
-  /** CU-007/CU-008: publica una entrada propia en el mercado de reventa. */
-  ponerEnReventa(entradaId: string, precio: number): void {
-    this._entradas.update((lista) =>
-      lista.map((e) => (e.id === entradaId ? { ...e, estado: EstadoEntrada.EN_REVENTA, precioReventa: precio } : e))
-    );
-  }
-
-  /** Retira una entrada propia del mercado de reventa, sin necesidad de venderla. */
-  retirarDeReventa(entradaId: string): void {
-    this._entradas.update((lista) =>
-      lista.map((e) => (e.id === entradaId ? { ...e, estado: EstadoEntrada.VALIDA, precioReventa: undefined } : e))
-    );
-  }
-
-  /** CU-007: compra una entrada publicada por otro cliente — cambia de dueño y vuelve a ser válida. */
-  comprarEnReventa(entradaId: string, compradorId: string): void {
-    this._entradas.update((lista) =>
-      lista.map((e) =>
-        e.id === entradaId
-          ? {
-              ...e,
-              estado: EstadoEntrada.VALIDA,
-              propietarioId: compradorId,
-              precioReventa: undefined,
-              numeroTransaccion: nuevoNumeroTransaccion(),
-              codigoQr: nuevoQr()
-            }
-          : e
-      )
-    );
-  }
 }
