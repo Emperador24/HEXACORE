@@ -1,12 +1,22 @@
 import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { SesionValida } from '../../comun/autenticacion/sesion-valida.guard.js';
+import {
+  ContextoDeLogistica,
+  SoloQuienSupervisa,
+} from './autorizacion.guard.js';
 import { AsignarPersonalDto } from './dto/asignar-personal.dto.js';
 import { CrearZonaEventoDto } from './dto/crear-zona-evento.dto.js';
 import { PersonalOperativoService } from './personal-operativo.service.js';
 
-/** CU-017: Asignar personal operativo (Coordinador Logístico). */
+/**
+ * CU-017: Asignar personal operativo (Coordinador Logístico).
+ *
+ * El controlador entero queda cerrado a quien supervisa: definir zonas,
+ * asignar personal y reasignar turnos son decisiones de quien coordina, no
+ * cosas que un empleado haga sobre sus compañeros.
+ */
 @Controller('logistica')
-@UseGuards(SesionValida)
+@UseGuards(SesionValida, ContextoDeLogistica, SoloQuienSupervisa)
 export class PersonalOperativoController {
   constructor(private readonly personalOperativo: PersonalOperativoService) {}
 

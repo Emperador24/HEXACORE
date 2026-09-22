@@ -1,11 +1,12 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { LessThan, MoreThan, Not, QueryFailedError, Repository } from 'typeorm';
+import { In, LessThan, MoreThan, Not, QueryFailedError, Repository } from 'typeorm';
 import { CrearEmpleadoDto } from './dto/crear-empleado.dto.js';
 import { CrearTurnoDto } from './dto/crear-turno.dto.js';
 import { RevisarSolicitudDto } from './dto/revisar-solicitud.dto.js';
@@ -97,6 +98,12 @@ export class TurnosService {
     return this.turnos.find();
   }
 
+  /** Los turnos de un empleado. Sin empleado, ninguno — nunca todos. */
+  turnosDeEmpleado(empleadoId: string | null) {
+    if (!empleadoId) return Promise.resolve([]);
+    return this.turnos.find({ where: { empleadoId } });
+  }
+
   listarSolicitudes(estado?: string) {
     if (estado) {
       return this.solicitudes.find({
@@ -108,14 +115,47 @@ export class TurnosService {
   }
 
   /**
+   * Las solicitudes de cambio de un empleado: las que pidió él.
+   *
+   * Mismo criterio que `turnosDeEmpleado`: sin ficha, lista vacía.
+   */
+  async solicitudesDeEmpleado(empleadoId: string | null, estado?: string) {
+    if (!empleadoId) return [];
+    const turnosSuyos = await this.turnos.find({
+      where: { empleadoId },
+      select: { id: true },
+    });
+    if (turnosSuyos.length === 0) return [];
+    return this.solicitudes.find({
+      where: {
+        turnoId: In(turnosSuyos.map((turno) => turno.id)),
+        ...(estado ? { estado: estado as EstadoSolicitudCambio } : {}),
+      },
+      order: { fechaSolicitud: 'DESC' },
+    });
+  }
+
+  /**
    * CU-LOG-003, pasos 1-2 + alterno A: el empleado solicita cambio de turno
    * y el sistema busca disponibilidad de reemplazo (mismo rol, misma zona,
    * sin choque de horario, activo, distinto del solicitante).
    */
-  async solicitarCambio(turnoId: string, dto: SolicitarCambioTurnoDto) {
+  async solicitarCambio(
+    turnoId: string,
+    dto: SolicitarCambioTurnoDto,
+    quienPide: { empleadoId: string | null; supervisa: boolean },
+  ) {
     const turno = await this.turnos.findOneBy({ id: turnoId });
     if (!turno) {
       throw new NotFoundException('Turno no encontrado.');
+    }
+    // El cambio de turno lo pide quien lo trabaja (CU-018, paso 1). El jefe
+    // puede hacerlo en nombre de cualquiera; el resto, solo del suyo.
+    if (!quienPide.supervisa && turno.empleadoId !== quienPide.empleadoId) {
+      throw new ForbiddenException({
+        codigo: 'TURNO_AJENO',
+        mensaje: 'Solo puedes pedir el cambio de tus propios turnos.',
+      });
     }
     if (turno.estado !== EstadoTurno.ASIGNADO) {
       throw new BadRequestException(

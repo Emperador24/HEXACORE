@@ -171,6 +171,15 @@ export class AsistenciaService {
     return this.registros.find({ order: { timestamp: 'DESC' } });
   }
 
+  /** Los fichajes de un empleado. Sin empleado, ninguno — nunca todos. */
+  registrosDeEmpleado(empleadoId: string | null) {
+    if (!empleadoId) return Promise.resolve([]);
+    return this.registros.find({
+      where: { empleadoId },
+      order: { timestamp: 'DESC' },
+    });
+  }
+
   /**
    * Última ENTRADA del empleado (opcionalmente acotada a un turno/evento
    * específico) que todavía no tiene una SALIDA posterior. Sin esto, una

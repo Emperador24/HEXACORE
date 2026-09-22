@@ -4,22 +4,39 @@ import { randomUUID } from 'node:crypto';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import jwt from 'jsonwebtoken';
+import { Redis } from 'ioredis';
 import request from 'supertest';
 import type { App } from 'supertest/types';
 import { AppModule } from './../src/app.module.js';
+import { JEFE_DE_PERSONAL } from './../src/logistica/turnos-asistencia/turnos-asistencia.constants.js';
 
 const RUTA = '/api/v1/logistica';
 
-function tokenDePrueba(roles: string[] = ['Administrador', 'Personal', 'Organizador']) {
-  const rutaClave = fileURLToPath(
-    new URL('../../../infra/claves-desarrollo/jwt-privada.pem', import.meta.url),
+// Mismos valores por defecto que el proveedor de Redis del servicio
+// (`comun/autenticacion/redis.provider.ts`): la prueba tiene que escribir la
+// revocación en la MISMA instancia que el guardia consulta.
+const REDIS_HOST = process.env.REDIS_HOST ?? 'localhost';
+const REDIS_PUERTO = Number(process.env.REDIS_PUERTO ?? 6380);
+
+function clavePrivadaDePrueba() {
+  return readFileSync(
+    fileURLToPath(
+      new URL('../../../infra/claves-desarrollo/jwt-privada.pem', import.meta.url),
+    ),
+    'utf8',
   );
-  const clavePrivada = readFileSync(rutaClave, 'utf8');
-  return jwt.sign({ roles }, clavePrivada, {
+}
+
+function tokenDePrueba(
+  roles: string[] = ['Administrador', 'Personal', 'Organizador'],
+  usuarioId = randomUUID(),
+  jti = randomUUID(),
+) {
+  return jwt.sign({ roles }, clavePrivadaDePrueba(), {
     algorithm: 'RS256',
     issuer: 'hexacore-administracion',
-    subject: randomUUID(),
-    jwtid: randomUUID(),
+    subject: usuarioId,
+    jwtid: jti,
     expiresIn: '1h',
   });
 }
@@ -55,7 +72,20 @@ describe('CU-018 · Gestionar turno y asistencia del personal (e2e)', () => {
       .set('Authorization', auth)
       .send({ usuarioId: randomUUID(), nombre: `Empleado ${credencial}`, rol, credencial })
       .expect(201);
-    return res.body as { id: string; credencial: string };
+    return res.body as { id: string; credencial: string; usuarioId: string };
+  }
+
+  /**
+   * La sesión de una persona concreta, con el rol de cuenta que de verdad
+   * lleva quien trabaja aquí: `Personal` y nada más.
+   *
+   * Es la diferencia con `auth`, que es un token de Administrador. Casi todas
+   * las pruebas usan aquel por comodidad, pero la autorización hay que
+   * probarla con esto: si no, se prueba el camino del jefe y nunca el del
+   * empleado raso.
+   */
+  function sesionDe(empleado: { usuarioId: string }) {
+    return `Bearer ${tokenDePrueba(['Personal'], empleado.usuarioId)}`;
   }
 
   async function crearTurno(
@@ -642,5 +672,393 @@ describe('CU-018 · Gestionar turno y asistencia del personal (e2e)', () => {
       .expect(201);
     expect(salidaB.body.anomalia).toBeFalsy();
     expect(salidaB.body.turnoId).toBe(turnoEventoB.id);
+  });
+  // --- Autorización: cada quien a lo suyo -------------------------------
+  //
+  // El rol de cuenta del token no distingue al Jefe de personal de un
+  // empleado de entrada: los dos llevan `Personal` (CU-027 solo define cuatro
+  // roles). Quien manda se decide por el campo `rol` de la ficha local, y eso
+  // es lo que comprueban estas pruebas.
+
+  describe('quien no supervisa solo alcanza lo suyo', () => {
+    it('no puede dar de alta a otro empleado', async () => {
+      const empleado = await crearEmpleado('entrada');
+      await request(server)
+        .post(`${RUTA}/empleados`)
+        .set('Authorization', sesionDe(empleado))
+        .send({
+          usuarioId: randomUUID(),
+          nombre: 'Colado',
+          rol: 'entrada',
+          credencial: `cred-${randomUUID()}`,
+        })
+        .expect(403);
+    });
+
+    it('no puede crear turnos', async () => {
+      const empleado = await crearEmpleado('entrada');
+      const { horaInicio, horaFin } = turnoVigente();
+      await request(server)
+        .post(`${RUTA}/turnos`)
+        .set('Authorization', sesionDe(empleado))
+        .send({
+          empleadoId: empleado.id,
+          eventoId: 'evento-x',
+          zona: 'zona-norte',
+          horaInicio: horaInicio.toISOString(),
+          horaFin: horaFin.toISOString(),
+        })
+        .expect(403);
+    });
+
+    it('no puede listar a todo el personal (expone la credencial de cada uno)', async () => {
+      const empleado = await crearEmpleado('entrada');
+      await request(server)
+        .get(`${RUTA}/empleados`)
+        .set('Authorization', sesionDe(empleado))
+        .expect(403);
+    });
+
+    it('solo ve sus propios turnos, no los de sus compañeros', async () => {
+      const mio = await crearEmpleado('entrada');
+      const ajeno = await crearEmpleado('entrada');
+      const turnoMio = await crearTurno(mio.id, turnoVigente());
+      const turnoAjeno = await crearTurno(ajeno.id, turnoVigente());
+
+      const res = await request(server)
+        .get(`${RUTA}/turnos`)
+        .set('Authorization', sesionDe(mio))
+        .expect(200);
+
+      const ids = (res.body as { id: string }[]).map((turno) => turno.id);
+      expect(ids).toContain(turnoMio.id);
+      expect(ids).not.toContain(turnoAjeno.id);
+    });
+
+    it('no puede pedir el cambio del turno de otro', async () => {
+      const mio = await crearEmpleado('entrada');
+      const ajeno = await crearEmpleado('entrada');
+      const turnoAjeno = await crearTurno(ajeno.id, turnoVigente());
+
+      await request(server)
+        .post(`${RUTA}/turnos/${turnoAjeno.id}/solicitudes-cambio`)
+        .set('Authorization', sesionDe(mio))
+        .send({ motivo: 'Me apetece' })
+        .expect(403);
+    });
+
+    it('no puede aprobar una solicitud de cambio — ni la suya', async () => {
+      const solicitante = await crearEmpleado('vigilancia');
+      await crearEmpleado('vigilancia');
+      const turno = await crearTurno(solicitante.id, turnoVigente());
+
+      const solicitud = await request(server)
+        .post(`${RUTA}/turnos/${turno.id}/solicitudes-cambio`)
+        .set('Authorization', sesionDe(solicitante))
+        .send({ motivo: 'Cita médica' })
+        .expect(201);
+
+      await request(server)
+        .patch(`${RUTA}/solicitudes-cambio/${solicitud.body.solicitud.id}/revisar`)
+        .set('Authorization', sesionDe(solicitante))
+        .send({ aprobar: true })
+        .expect(403);
+    });
+
+    it('no puede asignar personal a una zona (CU-017)', async () => {
+      const empleado = await crearEmpleado('entrada');
+      await request(server)
+        .post(`${RUTA}/zonas`)
+        .set('Authorization', sesionDe(empleado))
+        .send({
+          eventoId: 'evento-x',
+          nombre: 'Puerta Sur',
+          rolRequerido: 'entrada',
+          personalRequerido: 2,
+        })
+        .expect(403);
+    });
+
+    it('solo ve sus propios fichajes de asistencia', async () => {
+      const mio = await crearEmpleado('entrada');
+      const ajeno = await crearEmpleado('entrada');
+      await crearTurno(mio.id, turnoVigente());
+      await crearTurno(ajeno.id, turnoVigente());
+
+      for (const quien of [mio, ajeno]) {
+        await request(server)
+          .post(`${RUTA}/asistencia/entrada`)
+          .set('Authorization', auth)
+          .send({ credencial: quien.credencial, eventoId: 'evento-x' })
+          .expect(201);
+      }
+
+      const res = await request(server)
+        .get(`${RUTA}/asistencia`)
+        .set('Authorization', sesionDe(mio))
+        .expect(200);
+
+      const empleados = (res.body as { empleadoId: string }[]).map((r) => r.empleadoId);
+      expect(empleados).toContain(mio.id);
+      expect(empleados).not.toContain(ajeno.id);
+    });
+  });
+
+  describe('el Jefe de personal sí, y sin rol de cuenta especial', () => {
+    it('da de alta, crea turnos y aprueba cambios llevando solo el rol "Personal"', async () => {
+      // La clave de toda la autorización de logística: este token es
+      // indistinguible del de un empleado raso. Lo que le da el mando es su
+      // ficha, cuyo `rol` es "Jefe de personal".
+      const jefe = await crearEmpleado(JEFE_DE_PERSONAL);
+      const comoJefe = sesionDe(jefe);
+
+      const alta = await request(server)
+        .post(`${RUTA}/empleados`)
+        .set('Authorization', comoJefe)
+        .send({
+          usuarioId: randomUUID(),
+          nombre: 'Contratado por el jefe',
+          rol: 'catering',
+          credencial: `cred-${randomUUID()}`,
+        })
+        .expect(201);
+
+      await crearEmpleado('catering');
+      const { horaInicio, horaFin } = turnoVigente();
+      const turno = await request(server)
+        .post(`${RUTA}/turnos`)
+        .set('Authorization', comoJefe)
+        .send({
+          empleadoId: alta.body.id,
+          eventoId: `evento-${randomUUID()}`,
+          zona: 'cocina',
+          horaInicio: horaInicio.toISOString(),
+          horaFin: horaFin.toISOString(),
+        })
+        .expect(201);
+
+      const solicitud = await request(server)
+        .post(`${RUTA}/turnos/${turno.body.id}/solicitudes-cambio`)
+        .set('Authorization', comoJefe)
+        .send({ motivo: 'Reorganización' })
+        .expect(201);
+
+      await request(server)
+        .patch(`${RUTA}/solicitudes-cambio/${solicitud.body.solicitud.id}/revisar`)
+        .set('Authorization', comoJefe)
+        .send({ aprobar: false })
+        .expect(200);
+    });
+
+    it('ve los turnos de todo el personal', async () => {
+      const jefe = await crearEmpleado(JEFE_DE_PERSONAL);
+      const otro = await crearEmpleado('entrada');
+      const turnoAjeno = await crearTurno(otro.id, turnoVigente());
+
+      const res = await request(server)
+        .get(`${RUTA}/turnos`)
+        .set('Authorization', sesionDe(jefe))
+        .expect(200);
+
+      expect((res.body as { id: string }[]).map((t) => t.id)).toContain(turnoAjeno.id);
+    });
+  });
+
+  it('una cuenta sin ficha de empleado no ve turno alguno', async () => {
+    const forastero = `Bearer ${tokenDePrueba(['Cliente'], randomUUID())}`;
+    const empleado = await crearEmpleado('entrada');
+    await crearTurno(empleado.id, turnoVigente());
+
+    const res = await request(server)
+      .get(`${RUTA}/turnos`)
+      .set('Authorization', forastero)
+      .expect(200);
+
+    // Vacío, no "todos": es el caso que rompe un parámetro opcional mal puesto.
+    expect(res.body).toEqual([]);
+  });
+  // --- `GET /empleados/yo`: la ficha del que entra -----------------------
+  //
+  // Es lo PRIMERO que consulta la app móvil al iniciar sesión, y lo que decide
+  // a qué pantallas entra cada quien. No tenía ninguna prueba de integración.
+
+  describe('la ficha del empleado que hace la petición', () => {
+    it('devuelve su ficha y el turno que está cubriendo ahora mismo', async () => {
+      const empleado = await crearEmpleado('taquilla');
+      const turno = await crearTurno(empleado.id, turnoVigente());
+
+      const res = await request(server)
+        .get(`${RUTA}/empleados/yo`)
+        .set('Authorization', sesionDe(empleado))
+        .expect(200);
+
+      expect(res.body.empleado.id).toBe(empleado.id);
+      expect(res.body.empleado.rol).toBe('taquilla');
+      expect(res.body.turnoVigente?.id).toBe(turno.id);
+    });
+
+    it('sin turno en curso, la ficha viene con turnoVigente en null', async () => {
+      const empleado = await crearEmpleado('taquilla');
+
+      const res = await request(server)
+        .get(`${RUTA}/empleados/yo`)
+        .set('Authorization', sesionDe(empleado))
+        .expect(200);
+
+      expect(res.body.empleado.id).toBe(empleado.id);
+      expect(res.body.turnoVigente).toBeNull();
+    });
+
+    it('una cuenta que no trabaja aquí recibe 404 explicándolo', async () => {
+      const forastero = `Bearer ${tokenDePrueba(['Cliente'], randomUUID())}`;
+
+      const res = await request(server)
+        .get(`${RUTA}/empleados/yo`)
+        .set('Authorization', forastero)
+        .expect(404);
+
+      expect(res.body.codigo).toBe('SIN_FICHA_DE_EMPLEADO');
+    });
+  });
+
+  // --- Listado acotado de solicitudes de cambio ---------------------------
+
+  describe('cada quien ve las solicitudes de cambio que le corresponden', () => {
+    it('quien no supervisa ve las suyas y no las de un compañero', async () => {
+      const mio = await crearEmpleado('barra');
+      const ajeno = await crearEmpleado('barra');
+      await crearEmpleado('barra'); // reemplazo disponible
+      const turnoMio = await crearTurno(mio.id, turnoVigente());
+      const turnoAjeno = await crearTurno(ajeno.id, turnoVigente());
+
+      for (const [quien, turno] of [
+        [mio, turnoMio],
+        [ajeno, turnoAjeno],
+      ] as const) {
+        await request(server)
+          .post(`${RUTA}/turnos/${turno.id}/solicitudes-cambio`)
+          .set('Authorization', sesionDe(quien))
+          .send({ motivo: 'Motivo de prueba' })
+          .expect(201);
+      }
+
+      const res = await request(server)
+        .get(`${RUTA}/solicitudes-cambio`)
+        .set('Authorization', sesionDe(mio))
+        .expect(200);
+
+      const turnos = (res.body as { turnoId: string }[]).map((s) => s.turnoId);
+      expect(turnos).toContain(turnoMio.id);
+      expect(turnos).not.toContain(turnoAjeno.id);
+    });
+
+    it('filtra las suyas por estado', async () => {
+      const empleado = await crearEmpleado('guardarropa');
+      await crearEmpleado('guardarropa');
+      const turno = await crearTurno(empleado.id, turnoVigente());
+      await request(server)
+        .post(`${RUTA}/turnos/${turno.id}/solicitudes-cambio`)
+        .set('Authorization', sesionDe(empleado))
+        .send({ motivo: 'Cita médica' })
+        .expect(201);
+
+      const pendientes = await request(server)
+        .get(`${RUTA}/solicitudes-cambio?estado=PENDIENTE`)
+        .set('Authorization', sesionDe(empleado))
+        .expect(200);
+      expect(
+        (pendientes.body as { turnoId: string }[]).map((s) => s.turnoId),
+      ).toContain(turno.id);
+
+      const aprobadas = await request(server)
+        .get(`${RUTA}/solicitudes-cambio?estado=APROBADA`)
+        .set('Authorization', sesionDe(empleado))
+        .expect(200);
+      expect(
+        (aprobadas.body as { turnoId: string }[]).map((s) => s.turnoId),
+      ).not.toContain(turno.id);
+    });
+
+    it('quien no es empleado no ve ninguna', async () => {
+      const forastero = `Bearer ${tokenDePrueba(['Cliente'], randomUUID())}`;
+      const res = await request(server)
+        .get(`${RUTA}/solicitudes-cambio`)
+        .set('Authorization', forastero)
+        .expect(200);
+      expect(res.body).toEqual([]);
+    });
+
+    it('un empleado sin turnos tampoco', async () => {
+      const empleado = await crearEmpleado('limpieza');
+      const res = await request(server)
+        .get(`${RUTA}/solicitudes-cambio`)
+        .set('Authorization', sesionDe(empleado))
+        .expect(200);
+      expect(res.body).toEqual([]);
+    });
+  });
+  // --- RNF-06: las dos rutas de rechazo que faltaban ---------------------
+
+  describe('el guardia de sesión rechaza lo que debe', () => {
+    it('una sesión revocada ya no sirve, aunque el token siga firmado y vigente', async () => {
+      const empleado = await crearEmpleado('acomodacion');
+      // Se firma un token normal y se anota su `jti` como revocado en Redis,
+      // que es exactamente lo que hace Administración al cerrar sesión (ver
+      // App/shared/seguridad/token-sesion.md). El token no caduca ni cambia:
+      // lo que cambia es la anotación compartida.
+      const jti = randomUUID();
+      const token = tokenDePrueba(['Personal'], empleado.usuarioId, jti);
+
+      await request(server)
+        .get(`${RUTA}/empleados/yo`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      const redis = new Redis({ host: REDIS_HOST, port: REDIS_PUERTO });
+      try {
+        await redis.set(`sesion-revocada:${jti}`, '1', 'EX', 120);
+      } finally {
+        await redis.quit();
+      }
+
+      const res = await request(server)
+        .get(`${RUTA}/empleados/yo`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(401);
+      expect(res.body.mensaje).toMatch(/sesión se cerró/i);
+    });
+
+    it('un token bien firmado pero con un `sub` que no es UUID no pasa', async () => {
+      // El emisor y la firma son correctos: lo que falla es la forma del
+      // contenido. Sin esta comprobación, un `sub` arbitrario se usaría tal
+      // cual para buscar la ficha del empleado.
+      const token = jwt.sign({ roles: ['Personal'] }, clavePrivadaDePrueba(), {
+        algorithm: 'RS256',
+        issuer: 'hexacore-administracion',
+        subject: 'no-soy-un-uuid',
+        jwtid: randomUUID(),
+        expiresIn: '1h',
+      });
+
+      await request(server)
+        .get(`${RUTA}/empleados/yo`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(401);
+    });
+
+    it('un token caducado tampoco', async () => {
+      const token = jwt.sign({ roles: ['Personal'] }, clavePrivadaDePrueba(), {
+        algorithm: 'RS256',
+        issuer: 'hexacore-administracion',
+        subject: randomUUID(),
+        jwtid: randomUUID(),
+        expiresIn: '-1s',
+      });
+
+      await request(server)
+        .get(`${RUTA}/empleados/yo`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(401);
+    });
   });
 });
