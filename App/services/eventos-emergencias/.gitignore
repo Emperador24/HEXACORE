@@ -3,4 +3,8 @@ dist/
 .env
 *.log
 coverage/
+# Informe de cobertura de integración: se regenera con
+# ./pruebas/cobertura-integracion.sh
+cobertura-integracion/
+cobertura-integracion.log
 *.tsbuildinfo
