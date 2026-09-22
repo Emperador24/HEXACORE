@@ -1,0 +1,46 @@
+.titulo { margin-bottom: 0.25rem; }
+.subtitulo { margin-top: 0; color: rgba(0, 0, 0, 0.6); }
+
+.filtros {
+  padding: 1rem;
+  margin-bottom: 1rem;
+
+  form {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  mat-form-field { min-width: 16rem; }
+}
+
+.tabla {
+  padding: 0;
+  overflow-x: auto;
+
+  table { width: 100%; }
+}
+
+.correo { color: rgba(0, 0, 0, 0.6); font-size: 0.85rem; }
+
+.etiqueta {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 0.75rem;
+  background: rgba(0, 0, 0, 0.08);
+  font-size: 0.75rem;
+}
+
+.mensaje-error { color: #b3261e; margin: 0.75rem 0; }
+.mensaje-aviso { color: #1b5e20; margin: 0.75rem 0; }
+.vacio { padding: 1.5rem; color: rgba(0, 0, 0, 0.6); }
+
+.paginacion {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  padding: 0.75rem 1rem;
+}

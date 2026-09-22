@@ -140,7 +140,7 @@ case "$ROL" in
     "${COMPOSE[@]}" --profile servicios up -d $CONSTRUIR \
       --scale entradas-mercado-secundario="$REPLICAS" \
       administracion entradas-mercado-secundario eventos-emergencias pedidos \
-      api-gateway portal-web-cliente
+      api-gateway portal-web-cliente portal-web-admin
     ;;
   todo)
     gris "  Levantando la capa de datos, los microservicios y el API Gateway"
@@ -170,7 +170,7 @@ esperar_sano() {
 if [[ "$ROL" != "datos" ]]; then
   titulo "Esperando a que los servicios respondan"
   for contenedor in hexacore-administracion hexacore-logistica hexacore-pedidos \
-                    hexacore-gateway hexacore-portal; do
+                    hexacore-gateway hexacore-portal hexacore-portal-admin; do
     if esperar_sano "$contenedor"; then
       verde "  $contenedor listo"
     else
@@ -407,9 +407,10 @@ else
     jefepersonal@hexacore.com Personal (jefe)
     admin@hexacore.com        Administrador
 
-  Portal web de clientes (ya levantado):
+  Portales web (ya levantados):
 
-    http://$IP_LOCAL:4200
+    http://$IP_LOCAL:4200      clientes
+    http://$IP_LOCAL:4201      administración (roles Administrador y Organizador)
 
   App móvil — se instala en un dispositivo, no la levanta este script:
 

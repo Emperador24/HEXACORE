@@ -9,9 +9,14 @@ import { AuthService } from '../core/auth.service';
 import { NAV_ITEMS } from '../core/nav-items';
 
 /**
- * Shell común a los tres roles (Organizador, Administrador, Supervisor de
- * Emergencia): toolbar + menú lateral filtrado por rol — mismo espíritu que
- * HexacoreDrawerContent + destinosPara(cargo) en app-movil-cliente.
+ * Shell común a los roles de administración: toolbar + menú lateral filtrado
+ * por rol — mismo espíritu que HexacoreDrawerContent + destinosPara(cargo) en
+ * la app móvil.
+ *
+ * El filtro va contra **todos** los roles de la cuenta, no contra uno: en el
+ * Servicio de Administración una persona puede tener varios (la cuenta de
+ * demostración `admin@hexacore.com` tiene Administrador y Personal), y quedarse
+ * con el primero escondería secciones que sí le corresponden.
  */
 @Component({
   selector: 'app-shell',
@@ -35,12 +40,14 @@ export class ShellComponent {
 
   readonly usuario = this.auth.usuarioActual;
   readonly itemsMenu = computed(() => {
-    const rol = this.usuario()?.rol;
-    return rol ? NAV_ITEMS.filter((item) => item.roles.includes(rol)) : [];
+    const roles = this.auth.roles();
+    return NAV_ITEMS.filter((item) => item.roles.some((rol) => roles.includes(rol)));
   });
 
-  cerrarSesion(): void {
-    this.auth.cerrarSesion();
-    this.router.navigateByUrl('/login');
+  async cerrarSesion(): Promise<void> {
+    // Se cierra también en el servidor, así que hay que esperar antes de
+    // navegar: si no, la guarda podría dejar pasar con la sesión a medio cerrar.
+    await this.auth.cerrarSesion();
+    await this.router.navigateByUrl('/login');
   }
 }
