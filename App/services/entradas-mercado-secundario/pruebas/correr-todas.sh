@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
-# Corre las cinco suites de integración del CU-006 contra la infraestructura
-# real. A diferencia de `npm test`, estas necesitan Docker y el servicio en
-# marcha: comprueban lo que un doble de prueba no puede: que el bloqueo
-# distribuido, la cola y las restricciones de la base se comporten de verdad.
+# Corre las suites de integración del servicio contra la infraestructura real:
+# la venta primaria (CU-001 a CU-005) y el mercado secundario (CU-006). A
+# diferencia de `npm test`, estas necesitan Docker y el servicio en marcha:
+# comprueban lo que un doble de prueba no puede: que el bloqueo distribuido, la
+# cola y las restricciones de la base se comporten de verdad.
+#
+# Cada suite resiembra al empezar, así que el orden no importa y una que falle
+# no arrastra a la siguiente.
 #
 #   docker compose -f ../../infra/docker-compose.yml up -d
 #   npm run migracion:correr && npm run semilla && npm run start:dev
@@ -22,7 +26,9 @@ if ! curl -sf http://localhost:3002/api/v1/salud > /dev/null; then
 fi
 
 fallos=0
-for suite in cu006-flujo-completo rnf01-concurrencia cu006-eventos-cola cu006d-expiracion rnf06-autenticacion; do
+for suite in cu001-compra cu002-ingreso cu003-cancelacion cu005-cartelera \
+             cu006-flujo-completo cu006b-publicaciones cu006-eventos-cola \
+             cu006d-expiracion rnf01-concurrencia rnf06-autenticacion; do
   printf '  %-26s ' "$suite"
   if salida=$(python3 "pruebas/$suite.py" 2>&1); then
     echo "OK"
@@ -39,4 +45,4 @@ $fallos suite(s) con fallos." >&2
   exit 1
 fi
 echo "
-Las cinco suites de integración pasaron."
+Todas las suites de integración pasaron."
