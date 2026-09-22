@@ -26,7 +26,7 @@ class PedidosApi {
   static final instance = PedidosApi();
 
   Future<dynamic> _enviar(String ruta,
-      {DatosPedido? cuerpo, String? clave}) async {
+      {DatosPedido? cuerpo, String? clave, bool patch = false}) async {
     try {
       final uri =
           Uri.parse('${Servidor.api}/${Servidor.prefijo}/pedidos/$ruta');
@@ -36,7 +36,9 @@ class PedidosApi {
           'Authorization': 'Bearer $token',
           if (clave != null) 'Idempotency-Key': clave
         };
-        return (cuerpo == null
+        return (patch
+                ? _cliente.patch(uri, headers: headers, body: jsonEncode(cuerpo))
+                : cuerpo == null
                 ? _cliente.get(uri, headers: headers)
                 : _cliente.post(uri,
                     headers: headers, body: jsonEncode(cuerpo)))
@@ -97,6 +99,13 @@ class PedidosApi {
               'establecimientos/${Uri.encodeComponent(establecimiento)}/productos')
           as List)
       .cast<DatosPedido>();
+  Future<List<DatosPedido>> menu(String establecimiento) async =>
+      (await _enviar('establecimientos/${Uri.encodeComponent(establecimiento)}/menu') as List).cast<DatosPedido>();
+
+  Future<DatosPedido> actualizarDisponibilidad(String establecimiento, String producto, bool activo) async =>
+      await _enviar('establecimientos/${Uri.encodeComponent(establecimiento)}/productos/${Uri.encodeComponent(producto)}',
+          patch: true, cuerpo: {'activo': activo}) as DatosPedido;
+
   Future<DatosPedido> checkout(String evento, String establecimiento,
           Map<String, int> cantidades) async =>
       await _enviar('checkout', cuerpo: {

@@ -13,6 +13,7 @@ import 'pages/activity_page.dart';
 import 'pages/resale_page.dart';
 import 'pages/pedidos_page.dart';
 import 'pages/restaurant_orders_page.dart';
+import 'pages/restaurant_menu_page.dart';
 import 'pages/change_password_page.dart';
 import 'theme/app_theme.dart';
 import 'widgets/liquid_glass.dart';
@@ -1923,6 +1924,8 @@ List<StaffDestination> _staffPages(User user) {
     StaffDestination('Asistencia', Icons.how_to_reg_outlined,
         AttendancePage(credencial: user.credencial ?? user.email)),
     operational,
+    if (position == 'Restaurante')
+      const StaffDestination('Menú', Icons.menu_book_outlined, RestaurantMenuPage()),
     const StaffDestination(
         'Incidentes', Icons.report_outlined, IncidentsPage()),
     StaffDestination('Emergencia', Icons.warning_amber_outlined,

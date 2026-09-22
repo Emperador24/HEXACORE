@@ -1,4 +1,5 @@
 import { RecepcionModule } from './recepcion/recepcion.module';
+import { MenuModule } from './menu/menu.module';
 import { PagosModule } from './pagos/pagos.module';
 import { InventarioModule } from './inventario/inventario.module';
 import { ExpiracionReservasService } from './inventario/expiracion-reservas.service';
@@ -11,7 +12,7 @@ import { PersistenciaModule } from './persistencia/persistencia.module';
 import { SaludController } from './salud/salud.controller';
 
 @Module({
-  imports: [RecepcionModule, ConfigModule, PersistenciaModule, CatalogoModule, AutenticacionModule, CheckoutModule, PagosModule, InventarioModule],
+  imports: [MenuModule, RecepcionModule, ConfigModule, PersistenciaModule, CatalogoModule, AutenticacionModule, CheckoutModule, PagosModule, InventarioModule],
   providers: [ExpiracionReservasService],
   controllers: [SaludController],
 })

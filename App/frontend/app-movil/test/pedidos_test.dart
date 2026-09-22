@@ -79,6 +79,13 @@ void main() {
     expect(peticiones.last.url.path,
         '/api/v1/pedidos/establecimientos/local/pedidos');
     expect(peticiones.last.body, isEmpty);
+    await api.menu('local');
+    expect(peticiones.last.method, 'GET');
+    expect(peticiones.last.url.path, '/api/v1/pedidos/establecimientos/local/menu');
+    await api.actualizarDisponibilidad('local', 'producto', false);
+    expect(peticiones.last.method, 'PATCH');
+    expect(peticiones.last.url.path, '/api/v1/pedidos/establecimientos/local/productos/producto');
+    expect(jsonDecode(peticiones.last.body), {'activo': false});
   });
   test('confirmación y QR provienen del backend; no cobra otra vez', () async {
     final api = ApiPrueba();
