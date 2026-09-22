@@ -2,19 +2,20 @@
   "name": "hexacore-pedidos",
   "version": "0.1.0",
   "private": true,
-  "description": "Servicio de Pedidos (SAD §12) — CU-011 a CU-015",
+  "description": "Servicio de Pedidos (SAD \u00a712) \u2014 CU-011 a CU-015",
   "scripts": {
     "build": "nest build",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main.js",
-    "test": "jest",
-    "test:cov": "jest --coverage",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:cov": "npm test -- --coverage",
     "lint": "tsc --noEmit",
     "migracion:correr": "typeorm-ts-node-commonjs migration:run -d src/persistencia/data-source.ts",
     "migracion:revertir": "typeorm-ts-node-commonjs migration:revert -d src/persistencia/data-source.ts",
     "migracion:estado": "typeorm-ts-node-commonjs migration:show -d src/persistencia/data-source.ts",
-    "semilla": "ts-node src/persistencia/semillas/sembrar.ts"
+    "semilla": "ts-node src/persistencia/semillas/sembrar.ts",
+    "test:e2e": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config test/jest-e2e.json --runInBand"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.6",

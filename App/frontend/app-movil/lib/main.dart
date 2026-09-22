@@ -12,6 +12,8 @@ import 'pages/register_page.dart';
 import 'pages/activity_page.dart';
 import 'pages/resale_page.dart';
 import 'pages/pedidos_page.dart';
+import 'pages/restaurant_orders_page.dart';
+import 'pages/restaurant_menu_page.dart';
 import 'pages/change_password_page.dart';
 import 'theme/app_theme.dart';
 import 'widgets/liquid_glass.dart';
@@ -1922,6 +1924,8 @@ List<StaffDestination> _staffPages(User user) {
     StaffDestination('Asistencia', Icons.how_to_reg_outlined,
         AttendancePage(credencial: user.credencial ?? user.email)),
     operational,
+    if (position == 'Restaurante')
+      const StaffDestination('Menú', Icons.menu_book_outlined, RestaurantMenuPage()),
     const StaffDestination(
         'Incidentes', Icons.report_outlined, IncidentsPage()),
     StaffDestination('Emergencia', Icons.warning_amber_outlined,
@@ -3276,102 +3280,6 @@ class _Vehicle {
   final String plate, code;
   final bool prepaid;
   final String? space;
-}
-
-class RestaurantOrdersPage extends StatefulWidget {
-  const RestaurantOrdersPage({super.key});
-  @override
-  State<RestaurantOrdersPage> createState() => _RestaurantOrdersPageState();
-}
-
-class _RestaurantOrdersPageState extends State<RestaurantOrdersPage> {
-  int? _selected;
-  final _delivered = <int>{};
-  final _orders = [
-    'HXC-PED-000050 · 1x Perro caliente · Pendiente de pago',
-    'HXC-PED-000045 · 2x Hamburguesa, 1x Gaseosa · Prepago'
-  ];
-
-  Future<void> _scan() async {
-    final value = await showQrScannerSheet(context, title: 'Escanear pedido');
-    if (value == null || !mounted) return;
-    final upper = value.toUpperCase();
-    final idx = _orders
-        .indexWhere((o) => upper.contains(o.split(' · ').first.toUpperCase()));
-    if (idx == -1) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content:
-              Text('Código no reconocido en la demo, mostrando un ejemplo.')));
-    }
-    setState(() => _selected = idx == -1 ? 0 : idx);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final scheme = Theme.of(context).colorScheme;
-    return ListView(padding: const EdgeInsets.all(16), children: [
-      FilledButton.icon(
-          onPressed: _scan,
-          icon: const Icon(Icons.qr_code_scanner),
-          label: const Text('Escanear pedido')),
-      const SizedBox(height: 16),
-      if (_selected == null)
-        Text('Escanea el QR del cliente antes de cobrar o entregar.',
-            style: textTheme.bodyMedium
-                ?.copyWith(color: scheme.onSurface.withValues(alpha: 0.6)))
-      else
-        LiquidGlassCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text('Food Truck La Sazón', style: textTheme.titleMedium),
-              const SizedBox(height: 4),
-              Text(_orders[_selected!],
-                  style: const TextStyle(
-                      fontFamily: 'monospace',
-                      letterSpacing: 0.3,
-                      fontSize: 13)),
-              const SizedBox(height: 14),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: StatusChip(
-                    label: _delivered.contains(_selected)
-                        ? 'Pedido entregado'
-                        : _selected == 0
-                            ? 'Pago pendiente'
-                            : 'Prepago',
-                    color: _delivered.contains(_selected)
-                        ? _kGreen
-                        : _selected == 0
-                            ? _kAmber
-                            : _kCyan),
-              ),
-              const SizedBox(height: 14),
-              if (!_delivered.contains(_selected))
-                LoadingFilledButton(
-                    label: _selected == 0
-                        ? 'Cobrar y entregar'
-                        : 'Validar entrega',
-                    onPressed: () async {
-                      await Future.delayed(const Duration(milliseconds: 400));
-                      if (_networkGlitch()) {
-                        if (!context.mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text(_kConnectionError)));
-                        return;
-                      }
-                      setState(() => _delivered.add(_selected!));
-                    }),
-              const SizedBox(height: 8),
-              OutlinedButton(
-                  onPressed: () => setState(() => _selected = null),
-                  child: const Text('Escanear otro')),
-            ],
-          ),
-        ),
-    ]);
-  }
 }
 
 class PersonnelValidationPage extends StatefulWidget {
