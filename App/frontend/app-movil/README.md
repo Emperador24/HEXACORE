@@ -132,6 +132,33 @@ sesión, abre la reventa, comprueba que un acceso caducado se renueva solo sin s
 que reutilizar el token de renovación viejo cierra la sesión con un aviso de seguridad, y que una
 sesión cerrada desde fuera devuelve la app al login.
 
+### Firma de código en iOS
+
+El proyecto **no lleva dentro el equipo de desarrollo de nadie**. Tenerlo dentro era lo que hacía
+que la app solo compilara en el computador de quien lo puso: una cuenta gratuita de Apple no puede
+usar el equipo de otra persona, ni registrar un identificador que ya registró otra cuenta.
+
+- **Simulador de iOS y Android:** no hay que hacer nada. Ninguno de los dos necesita firma.
+- **iPhone físico:** cada quien pone lo suyo en un archivo local que no se versiona.
+
+```bash
+cd ios
+cp Flutter/Firma.xcconfig.ejemplo Flutter/Firma.xcconfig
+```
+
+Dentro se escriben dos valores:
+
+- `DEVELOPMENT_TEAM`, el identificador del equipo (diez caracteres). Se ve en Xcode, en
+  *Settings ▸ Accounts ▸ tu Apple ID*, o abriendo `ios/Runner.xcworkspace` en *Signing &
+  Capabilities*.
+- `FLUTTER_BUNDLE_ID`, el identificador de la app. Hay que cambiarlo por uno propio (por ejemplo
+  `com.hexacore.javeriana.appmovil.samuel`) si dos personas van a instalarla en sus iPhone con
+  cuentas gratuitas distintas: el mismo identificador no se puede registrar dos veces.
+
+`Flutter/Firma.xcconfig` está en el `.gitignore`, así que nadie pisa la configuración de otro.
+Los `Debug.xcconfig` y `Release.xcconfig` lo incluyen con `#include?` —con interrogante—, que no
+falla cuando el archivo no existe: por eso quien solo use el simulador no tiene que crear nada.
+
 ### Compilar para iOS dentro de OneDrive
 
 Esta carpeta está en OneDrive, que añade atributos extendidos a todo archivo nuevo; `codesign` los
