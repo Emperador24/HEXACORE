@@ -22,10 +22,16 @@ export class PagoService {
     this._pendiente.set(pago);
   }
 
-  confirmar(metodo: MetodoPago): void {
+  /**
+   * Ejecuta el cobro. Si falla, el pago **sigue pendiente** y el error sube a
+   * la pantalla: en la compra de entradas, un rechazo deja la reserva viva
+   * para reintentar con otro medio (CU-001C). Los flujos que aún son locales
+   * (parqueadero) devuelven `void` y se comportan igual que antes.
+   */
+  async confirmar(metodo: MetodoPago, token?: string): Promise<void> {
     const pago = this._pendiente();
     if (!pago) return;
-    pago.onConfirmar(metodo);
+    await pago.onConfirmar(metodo, token);
     this._pendiente.set(null);
   }
 

@@ -17,13 +17,29 @@
 
       <h3>Método de pago</h3>
       <mat-radio-group [value]="metodo()" (change)="metodo.set($event.value)" class="metodos">
-        <mat-radio-button [value]="MetodoPago.TARJETA">Tarjeta terminada en 4321</mat-radio-button>
-        <mat-radio-button [value]="MetodoPago.EFECTIVO">Efectivo en el punto de entrega</mat-radio-button>
+        @for (m of metodos(); track m) {
+          <mat-radio-button [value]="m">{{ etiqueta(m) }}</mat-radio-button>
+        }
       </mat-radio-group>
+
+      @if (pago.tokensDemo?.length) {
+        <h3>Resultado de la pasarela (demostración)</h3>
+        <mat-radio-group [value]="token()" (change)="token.set($event.value)" class="metodos">
+          @for (t of pago.tokensDemo; track t.valor) {
+            <mat-radio-button [value]="t.valor">{{ t.etiqueta }}</mat-radio-button>
+          }
+        </mat-radio-group>
+      }
+
+      @if (error()) {
+        <p class="error" role="alert">{{ error() }}</p>
+      }
     </mat-card-content>
     <mat-card-actions align="end">
-      <button mat-button (click)="cancelar()">Cancelar</button>
-      <button mat-flat-button color="primary" (click)="confirmar()">Confirmar pago</button>
+      <button mat-button (click)="cancelar()" [disabled]="procesando()">Cancelar</button>
+      <button mat-flat-button color="primary" (click)="confirmar()" [disabled]="procesando()">
+        {{ procesando() ? 'Procesando…' : 'Confirmar pago' }}
+      </button>
     </mat-card-actions>
   </mat-card>
 } @else {

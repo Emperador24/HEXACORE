@@ -19,9 +19,10 @@ const FILTROS_FECHA: FiltroFecha[] = ['Todos', 'Este mes', 'Próximos 3 meses'];
  * destacado en tarjeta de vidrio y el resto en tarjetas con badge de fecha
  * tintado — ver app-movil/lib/main.dart (EventsPage).
  *
- * Los filtros se resuelven en memoria porque hoy la cartelera completa viene de
- * EventosService (datos mock). Con el API Gateway real deben pasar a ser
- * parámetros de consulta del servidor, para no traerse la cartelera entera.
+ * La cartelera viene del backend real (CU-005, `GET /cartelera`) a través de
+ * EventosService. Los filtros se resuelven en memoria porque la cartelera
+ * entera cabe en una página; si creciera, tocaría pasarlos como parámetros de
+ * consulta, que el servidor ya admite (categoría, ciudad, fechas).
  */
 @Component({
   selector: 'app-eventos-lista',
@@ -39,6 +40,12 @@ export class EventosListaComponent {
   readonly categorias = ['Todas', ...CATEGORIAS];
   readonly filtrosFecha = FILTROS_FECHA;
   readonly ciudades = this.eventosService.ciudades;
+  readonly cargando = this.eventosService.cargando;
+  readonly errorCarga = this.eventosService.error;
+
+  reintentar(): void {
+    void this.eventosService.cargar();
+  }
 
   readonly categoria = signal<string>('Todas');
   readonly filtroFecha = signal<FiltroFecha>('Todos');
