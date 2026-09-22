@@ -1,126 +1,89 @@
-import { Injectable, signal } from '@angular/core';
-import { Entrada, EstadoEntrada } from './models';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { AuthService } from './auth.service';
+import { Servidor } from './servidor';
 
-// Datos de ejemplo de la **compra** de entradas (CU-001), que todavía no tiene
-// servicio propio. La reventa ya no está aquí: la sirve el backend real a
-// través de `reventa.service.ts`, y "Mis entradas" muestra lo que él devuelve.
-//
-// Los dueños son los ids reales de las cuentas de demostración del Servicio de
-// Administración, para que la cartelera cuadre con lo que ve cada cuenta.
-const ANA = 'a0000001-0000-4000-8000-000000000001'; // cliente@hexacore.com
-const BRUNO = 'a0000002-0000-4000-8000-000000000002'; // bruno@hexacore.com
-const CARLA = 'a0000003-0000-4000-8000-000000000003'; // carla@hexacore.com
-
-let contadorTicket = 100;
-let contadorTransaccion = 500;
-
-function nuevoNumeroTransaccion(): string {
-  contadorTransaccion += 1;
-  return `TXN-2026-${String(contadorTransaccion).padStart(6, '0')}`;
+/** Una entrada emitida al pagar: un QR por entrada (salida 1 del CU-001). */
+export interface EntradaEmitida {
+  id: string;
+  numeroTicket: string;
+  codigoQr: string;
+  localidadNombre: string;
+  estado: string;
+  /** Lo que se pagó por esta entrada, con el descuento repartido. */
+  precioPagado: number;
 }
 
-function nuevoQr(): string {
-  return `HXC-QR-${Math.floor(100000 + Math.random() * 900000)}`;
-}
-
-function nuevoNumeroTicket(): string {
-  contadorTicket += 1;
-  return `TCK-2026-${String(contadorTicket).padStart(6, '0')}`;
+/** Una compra de la venta primaria, tal como la devuelve `/compras`. */
+export interface Compra {
+  id: string;
+  numeroCompra: string;
+  /** PENDIENTE → PAGANDO → PAGADA, o EXPIRADA si venció la reserva. */
+  estado: string;
+  eventoId: string;
+  localidadId: string;
+  cantidad: number;
+  precioUnitario: number;
+  subtotal: number;
+  descuento: number;
+  /** Lo calcula el servidor: el cliente nunca manda un precio. */
+  total: number;
+  codigoPromocional: string | null;
+  /** Hasta cuándo se mantiene apartado el cupo sin pagar (CU-001B). */
+  expiraEn: string;
+  pagadaEn: string | null;
+  motivo: string | null;
+  entradas: EntradaEmitida[];
 }
 
 /**
- * Entradas del cliente (CU-001..CU-010): compra, boletas propias y mercado
- * de reventa. A diferencia de app-movil-cliente — donde la reventa solo se
- * consulta y la única transferencia posible es "enviar a otro usuario" —
- * aquí es donde vive la reventa real (comprar/publicar), como aclara el
- * comentario de EntradasScreen allá y el README de este portal.
+ * Compra de entradas (CU-001) contra el backend real, a través del gateway.
  *
- * Se seedean boletas de otros clientes demo en reventa para que el mercado
- * no esté vacío al entrar por primera vez.
+ * Igual que la reventa, todas las peticiones pasan por `AuthService.conAcceso`,
+ * que pone el token, lo renueva y reintenta una vez ante un 401.
+ *
+ * La compra tiene dos pasos, igual que en el servidor: **reservar** aparta el
+ * cupo y devuelve el total ya calculado, y **pagar** cobra y emite los QR. Así
+ * nadie paga por un cupo que ya se llevó otra persona.
  */
 @Injectable({ providedIn: 'root' })
 export class EntradasService {
-  private readonly _entradas = signal<Entrada[]>([
-    {
-      id: 'ent-1',
-      eventoId: 'evt-1',
-      eventoNombre: 'HEXACORE Fest 2026',
-      fecha: '12 dic 2026 · 7:00 p. m.',
-      lugar: 'Movistar Arena, Bogotá',
-      zona: 'General',
-      codigoQr: 'HXC-QR-000123',
-      estado: EstadoEntrada.VALIDA,
-      numeroTicket: 'TCK-2026-000123',
-      numeroTransaccion: 'TXN-2026-000501',
-      propietarioId: ANA
-    },
-    {
-      id: 'ent-3',
-      eventoId: 'evt-4',
-      eventoNombre: 'Festival de Verano 2026',
-      fecha: '15 jun 2026 · 2:00 p. m.',
-      lugar: 'Parque Simón Bolívar, Bogotá',
-      zona: 'General',
-      codigoQr: 'HXC-QR-000099',
-      estado: EstadoEntrada.USADA,
-      numeroTicket: 'TCK-2026-000099',
-      numeroTransaccion: 'TXN-2026-000399',
-      propietarioId: ANA
-    },
-    // --- Reventa publicada por otros clientes, para poblar el mercado ---
-    {
-      id: 'ent-2',
-      eventoId: 'evt-2',
-      eventoNombre: 'Noche de Rock Nacional',
-      fecha: '20 sep 2026 · 8:00 p. m.',
-      lugar: 'Coliseo El Campín, Bogotá',
-      zona: 'General',
-      codigoQr: 'HXC-QR-000124',
-      estado: EstadoEntrada.EN_REVENTA,
-      numeroTicket: 'TCK-2026-000124',
-      numeroTransaccion: 'TXN-2026-000502',
-      propietarioId: BRUNO,
-      precioReventa: 90000
-    },
-    {
-      id: 'ent-4',
-      eventoId: 'evt-1',
-      eventoNombre: 'HEXACORE Fest 2026',
-      fecha: '12 dic 2026 · 7:00 p. m.',
-      lugar: 'Movistar Arena, Bogotá',
-      zona: 'Palco VIP',
-      codigoQr: 'HXC-QR-000201',
-      estado: EstadoEntrada.EN_REVENTA,
-      numeroTicket: 'TCK-2026-000201',
-      numeroTransaccion: 'TXN-2026-000503',
-      propietarioId: CARLA,
-      precioReventa: 390000
-    }
-  ]);
+  private readonly http = inject(HttpClient);
+  private readonly auth = inject(AuthService);
 
-  readonly entradas = this._entradas.asReadonly();
-
-  obtenerPorId(id: string): Entrada | undefined {
-    return this._entradas().find((e) => e.id === id);
+  private url(ruta = ''): string {
+    return `${Servidor.api}/compras${ruta}`;
   }
 
-  /** CU-006: compra directa desde el evento, a la zona y cantidad elegidas. */
-  comprar(datos: { eventoId: string; eventoNombre: string; fecha: string; lugar: string; zona: string; cantidad: number; propietarioId: string }): void {
-    const transaccion = nuevoNumeroTransaccion();
-    const nuevas: Entrada[] = Array.from({ length: datos.cantidad }, () => ({
-      id: `ent-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      eventoId: datos.eventoId,
-      eventoNombre: datos.eventoNombre,
-      fecha: datos.fecha,
-      lugar: datos.lugar,
-      zona: datos.zona,
-      codigoQr: nuevoQr(),
-      estado: EstadoEntrada.VALIDA,
-      numeroTicket: nuevoNumeroTicket(),
-      numeroTransaccion: transaccion,
-      propietarioId: datos.propietarioId
-    }));
-    this._entradas.update((lista) => [...nuevas, ...lista]);
+  /** Pasos 3-4: aparta el cupo. Sin cupo, el servidor responde 409 con CU-001A. */
+  reservar(localidadId: string, cantidad: number): Promise<Compra> {
+    return this.auth.conAcceso((cabeceras: HttpHeaders) =>
+      this.http.post<Compra>(this.url(), { localidadId, cantidad }, { headers: cabeceras })
+    );
   }
 
+  /**
+   * Pasos 5-8: cobra y emite las entradas. Si la pasarela rechaza (CU-001C), la
+   * reserva sigue viva y se puede reintentar con otro medio; reintentar es
+   * seguro, el servidor no cobra dos veces.
+   */
+  pagar(compraId: string, metodoPago: string, token: string): Promise<Compra> {
+    return this.auth.conAcceso((cabeceras: HttpHeaders) =>
+      this.http.post<Compra>(this.url(`/${compraId}/pagar`), { metodoPago, token }, { headers: cabeceras })
+    );
+  }
+
+  /** Las compras de la cuenta, las más recientes primero. */
+  misCompras(): Promise<Compra[]> {
+    return this.auth.conAcceso((cabeceras: HttpHeaders) =>
+      this.http.get<Compra[]>(this.url(), { headers: cabeceras })
+    );
+  }
+
+  /** Una compra con sus entradas y QR (solo las que siguen siendo de quien pregunta). */
+  detalle(compraId: string): Promise<Compra> {
+    return this.auth.conAcceso((cabeceras: HttpHeaders) =>
+      this.http.get<Compra>(this.url(`/${compraId}`), { headers: cabeceras })
+    );
+  }
 }
