@@ -57,20 +57,39 @@ jobs:
           echo "Limpio: ningún artefacto de compilación versionado."
 
   # --------------------------------------------------------------------------
-  # Los dos microservicios con pruebas: compilan, pasan el chequeo de tipos y
-  # corren sus pruebas unitarias (43 + 183 hoy).
+  # Los microservicios con pruebas: compilan, pasan el chequeo de tipos y
+  # corren sus pruebas.
+  #
+  # Redis va como servicio del trabajo porque las pruebas de inventario de
+  # Pedidos (los scripts Lua de reserva) solo corren si se les da uno: sin
+  # `REDIS_INVENTARIO_PRUEBAS_URL` se saltan solas —`describe.skip`— y 24
+  # pruebas quedarían en verde sin haberse ejecutado. Los otros dos servicios
+  # ignoran la variable.
   # --------------------------------------------------------------------------
   servicios:
     name: Servicio ${{ matrix.servicio }}
     runs-on: ubuntu-latest
     strategy:
-      # Si uno falla, el otro termina igual: interesa ver los dos resultados.
+      # Si uno falla, los demás terminan igual: interesa ver todos los
+      # resultados.
       fail-fast: false
       matrix:
-        servicio: [administracion, entradas-mercado-secundario]
+        servicio: [administracion, entradas-mercado-secundario, pedidos]
     defaults:
       run:
         working-directory: App/services/${{ matrix.servicio }}
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      REDIS_INVENTARIO_PRUEBAS_URL: redis://localhost:6379
     steps:
       - uses: actions/checkout@v4
 

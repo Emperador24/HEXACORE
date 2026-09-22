@@ -246,6 +246,7 @@ services:
   # Servicio de Pedidos — CU-011.
   pedidos:
     profiles: ["servicios"]
+    container_name: hexacore-pedidos
     build: ../services/pedidos
     restart: unless-stopped
     init: true
