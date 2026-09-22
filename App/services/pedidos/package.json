@@ -14,7 +14,8 @@
     "migracion:correr": "typeorm-ts-node-commonjs migration:run -d src/persistencia/data-source.ts",
     "migracion:revertir": "typeorm-ts-node-commonjs migration:revert -d src/persistencia/data-source.ts",
     "migracion:estado": "typeorm-ts-node-commonjs migration:show -d src/persistencia/data-source.ts",
-    "semilla": "ts-node src/persistencia/semillas/sembrar.ts"
+    "semilla": "ts-node src/persistencia/semillas/sembrar.ts",
+    "test:integracion": "bash pruebas/correr-todas.sh"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.6",
