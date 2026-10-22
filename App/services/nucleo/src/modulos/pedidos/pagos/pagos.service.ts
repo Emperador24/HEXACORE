@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
+import { CONEXION_PEDIDOS } from '../../../comun/persistencia/conexiones';
 import { DataSource, In, MoreThanOrEqual } from 'typeorm';
 import { Pedido, EstadoPedido } from '../persistencia/entidades/pedido.entity';
 import { TransaccionPedido, EstadoTransaccionPedido as Estado } from '../persistencia/entidades/transaccion-pedido.entity';
@@ -21,7 +22,7 @@ export class PagosService {
   private readonly log = new Logger(PagosService.name);
 
   constructor(
-    @InjectDataSource() private readonly datos: DataSource,
+    @InjectDataSource(CONEXION_PEDIDOS) private readonly datos: DataSource,
     private readonly pasarela: PasarelaHttp,
     private readonly reservas: ReservasService,
     private readonly publicador: PublicadorPedidos,

@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
+import { CONEXION_ADMINISTRACION } from '../../../comun/persistencia/conexiones';
 import { DataSource } from 'typeorm';
 import { cifrarContrasena, problemaDeContrasena } from '../comun/contrasenas';
 import { CONFIGURACION, ConfiguracionServicio, ReglasSeguridad } from '../../../comun/config/configuracion';
@@ -32,7 +33,7 @@ export class PerfilService {
   private readonly reglas: ReglasSeguridad;
 
   constructor(
-    @InjectDataSource() private readonly fuenteDatos: DataSource,
+    @InjectDataSource(CONEXION_ADMINISTRACION) private readonly fuenteDatos: DataSource,
     private readonly autenticacion: AutenticacionService,
     private readonly sesiones: SesionesService,
     private readonly correos: PublicadorCorreos,

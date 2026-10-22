@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
+import { CONEXION_PEDIDOS } from '../../../comun/persistencia/conexiones';
 import { DataSource } from 'typeorm';
 import { ProductoDto, aProductoDto } from '../catalogo/dto/producto.dto';
 import { Establecimiento } from '../persistencia/entidades/establecimiento.entity';
@@ -8,7 +9,7 @@ import { Producto } from '../persistencia/entidades/producto.entity';
 /** Administración mínima de la disponibilidad del menú (CU-012). */
 @Injectable()
 export class MenuService {
-  constructor(@InjectDataSource() private readonly datos: DataSource) {}
+  constructor(@InjectDataSource(CONEXION_PEDIDOS) private readonly datos: DataSource) {}
 
   private async exigirEstablecimiento(establecimientoId: string): Promise<void> {
     if (!await this.datos.manager.exists(Establecimiento, { where: { id: establecimientoId } })) {

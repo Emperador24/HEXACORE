@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
+import { CONEXION_PEDIDOS } from '../../../comun/persistencia/conexiones';
 import { DataSource } from 'typeorm';
 import { EventoReferencia } from '../persistencia/entidades/evento-referencia.entity';
 import { Establecimiento, EstadoEstablecimiento } from '../persistencia/entidades/establecimiento.entity';
@@ -10,7 +11,7 @@ import { aProductoDto, ProductoDto } from './dto/producto.dto';
 /** Consultas del catálogo necesarias para iniciar CU-011. */
 @Injectable()
 export class CatalogoService {
-  constructor(@InjectDataSource() private readonly fuenteDatos: DataSource) {}
+  constructor(@InjectDataSource(CONEXION_PEDIDOS) private readonly fuenteDatos: DataSource) {}
 
   async listarProductos(establecimientoId: string): Promise<ProductoDto[]> {
     const establecimiento = await this.fuenteDatos.getRepository(Establecimiento).findOne({

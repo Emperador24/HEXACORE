@@ -1,5 +1,6 @@
 import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
+import { CONEXION_PEDIDOS } from '../../../comun/persistencia/conexiones';
 import { isUUID } from 'class-validator';
 import Redis from 'ioredis';
 import { DataSource, In, Not } from 'typeorm';
@@ -14,7 +15,7 @@ import { PREPARAR_INVENTARIO_LUA } from './preparacion.scripts';
 
 @Injectable()
 export class PreparacionInventarioService {
-  constructor(@InjectDataSource() private readonly datos: DataSource, @Inject(REDIS_INVENTARIO) private readonly redis: Redis) {}
+  constructor(@InjectDataSource(CONEXION_PEDIDOS) private readonly datos: DataSource, @Inject(REDIS_INVENTARIO) private readonly redis: Redis) {}
 
   /** Operación de mantenimiento: detener compras y cambios de stock en TODAS las instancias.
    * No es una sincronización, ni reconstruye reservas. No llamar desde checkout/arranque.

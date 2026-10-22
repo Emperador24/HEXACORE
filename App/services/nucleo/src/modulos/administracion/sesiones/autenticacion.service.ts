@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
+import { CONEXION_ADMINISTRACION } from '../../../comun/persistencia/conexiones';
 import { randomBytes } from 'node:crypto';
 import { DataSource, EntityManager } from 'typeorm';
 import { cifrarContrasena, verificarContrasena } from '../comun/contrasenas';
@@ -64,7 +65,7 @@ export class AutenticacionService implements OnModuleInit {
   private hashSenuelo = '';
 
   constructor(
-    @InjectDataSource() private readonly fuenteDatos: DataSource,
+    @InjectDataSource(CONEXION_ADMINISTRACION) private readonly fuenteDatos: DataSource,
     private readonly sesiones: SesionesService,
     private readonly correos: PublicadorCorreos,
     @Inject(CONFIGURACION) config: ConfiguracionServicio,

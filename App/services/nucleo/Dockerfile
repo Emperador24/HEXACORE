@@ -1,4 +1,4 @@
-# Servicio de Administración (CU-027: cuentas y sesiones)
+# Núcleo — servicio de dominio que agrupa Administración y Pedidos (ADR-12).
 #
 # Imagen para correr el servicio en contenedor con reinicio automático
 # (RNF-04). Para desarrollar sigue siendo más cómodo `npm run start:dev`; ver
@@ -33,9 +33,10 @@ EXPOSE 3002
 HEALTHCHECK --interval=5s --timeout=3s --start-period=20s --retries=3 \
   CMD node -e "require('http').get('http://127.0.0.1:'+process.env.PUERTO+'/api/v1/salud',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"
 
-# Las migraciones se aplican antes de arrancar. Si PostgreSQL aún no está, el
-# comando falla, el contenedor sale y la política de reinicio lo vuelve a
-# intentar: no hace falta ningún "esperar a que la base esté lista".
+# Las migraciones se aplican antes de arrancar, **una secuencia por módulo**:
+# cada uno tiene su propia base y su propio data-source (ADR-12). Si PostgreSQL
+# aún no está, el comando falla, el contenedor sale y la política de reinicio lo
+# vuelve a intentar: no hace falta ningún "esperar a que la base esté lista".
 # Con varias réplicas, las migraciones deberían ir en un paso aparte del
 # despliegue para que no las corran todas a la vez.
-CMD ["sh", "-c", "node node_modules/typeorm/cli.js migration:run -d dist/persistencia/data-source.js && exec node dist/main.js"]
+CMD ["sh", "-c", "node node_modules/typeorm/cli.js migration:run -d dist/modulos/administracion/persistencia/data-source.js && node node_modules/typeorm/cli.js migration:run -d dist/modulos/pedidos/persistencia/data-source.js && exec node dist/main.js"]

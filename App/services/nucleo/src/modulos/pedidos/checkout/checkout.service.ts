@@ -1,5 +1,6 @@
 import { BadRequestException, ConflictException, HttpException, Injectable, Logger, NotFoundException, ServiceUnavailableException, UnprocessableEntityException } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
+import { CONEXION_PEDIDOS } from '../../../comun/persistencia/conexiones';
 import { DataSource, In } from 'typeorm';
 import { EventoReferencia } from '../persistencia/entidades/evento-referencia.entity';
 import { Establecimiento, EstadoEstablecimiento } from '../persistencia/entidades/establecimiento.entity';
@@ -27,7 +28,7 @@ export class CheckoutService {
   private readonly log = new Logger(CheckoutService.name);
 
   constructor(
-    @InjectDataSource() private readonly fuenteDatos: DataSource,
+    @InjectDataSource(CONEXION_PEDIDOS) private readonly fuenteDatos: DataSource,
     private readonly reservas: ReservasService,
   ) {}
 

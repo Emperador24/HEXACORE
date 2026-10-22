@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { CONFIGURACION, ConfiguracionServicio } from '../../../../comun/config/configuracion';
-import { REDIS } from '../../../../comun/redis/redis.module';
 import { SesionValida } from './sesion-valida.guard';
 
 /** Los módulos con rutas protegidas importan este módulo y aplican SesionValida. */
@@ -16,6 +15,7 @@ import { SesionValida } from './sesion-valida.guard';
     }),
   ],
   providers: [SesionValida],
-  exports: [SesionValida, JwtModule, REDIS],
+  // REDIS ya no se exporta: lo provee RedisModule, que es @Global (ADR-12).
+  exports: [SesionValida, JwtModule],
 })
 export class AutenticacionModule {}

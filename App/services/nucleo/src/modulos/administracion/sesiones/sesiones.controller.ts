@@ -1,5 +1,6 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Inject, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
+import { CONEXION_ADMINISTRACION } from '../../../comun/persistencia/conexiones';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { DataSource } from 'typeorm';
@@ -41,7 +42,7 @@ export class SesionesController {
     private readonly autenticacion: AutenticacionService,
     private readonly sesiones: SesionesService,
     private readonly renovacion: RenovacionService,
-    @InjectDataSource() private readonly fuenteDatos: DataSource,
+    @InjectDataSource(CONEXION_ADMINISTRACION) private readonly fuenteDatos: DataSource,
     @Inject(CONFIGURACION) config: ConfiguracionServicio,
   ) {
     this.cookie = { ruta: `/${config.prefijoApi}/sesiones`, segura: config.entorno === 'production' };

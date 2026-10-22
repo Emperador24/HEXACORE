@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
+import { CONEXION_ADMINISTRACION } from '../../../comun/persistencia/conexiones';
 import { DataSource } from 'typeorm';
 import { leerTokenRenovacion } from '../comun/tokens-renovacion';
 import { CONFIGURACION, ConfiguracionServicio } from '../../../comun/config/configuracion';
@@ -46,7 +47,7 @@ export class RenovacionService {
   private readonly claveRenovacion: Buffer;
 
   constructor(
-    @InjectDataSource() private readonly fuenteDatos: DataSource,
+    @InjectDataSource(CONEXION_ADMINISTRACION) private readonly fuenteDatos: DataSource,
     private readonly sesiones: SesionesService,
     @Inject(CONFIGURACION) config: ConfiguracionServicio,
   ) {

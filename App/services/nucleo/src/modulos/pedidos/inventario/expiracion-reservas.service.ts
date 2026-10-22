@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
+import { CONEXION_PEDIDOS } from '../../../comun/persistencia/conexiones';
 import { DataSource, In, LessThanOrEqual } from 'typeorm';
 import { Pedido, EstadoPedido } from '../persistencia/entidades/pedido.entity';
 import { ReservaInventario, EstadoReservaInventario as Reserva } from '../persistencia/entidades/reserva-inventario.entity';
@@ -14,7 +15,7 @@ export class ExpiracionReservasService implements OnModuleInit, OnModuleDestroy 
   private ciclo?: Promise<void>;
 
   constructor(
-    @InjectDataSource() private readonly datos: DataSource,
+    @InjectDataSource(CONEXION_PEDIDOS) private readonly datos: DataSource,
     private readonly reservas: ReservasService,
   ) {}
 

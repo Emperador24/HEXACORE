@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
+import { CONEXION_PEDIDOS } from '../../../comun/persistencia/conexiones';
 import { DataSource, In } from 'typeorm';
 import { Establecimiento } from '../persistencia/entidades/establecimiento.entity';
 import { Pedido, EstadoPedido } from '../persistencia/entidades/pedido.entity';
@@ -17,7 +18,7 @@ export class PedidoRecibidoDto {
 
 @Injectable()
 export class RecepcionService {
-  constructor(@InjectDataSource() private readonly datos: DataSource) {}
+  constructor(@InjectDataSource(CONEXION_PEDIDOS) private readonly datos: DataSource) {}
 
   async listar(establecimientoId: string): Promise<PedidoRecibidoDto[]> {
     if (!await this.datos.manager.exists(Establecimiento, { where: { id: establecimientoId } })) {

@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectDataSource } from '@nestjs/typeorm';
+import { CONEXION_ADMINISTRACION } from '../../../comun/persistencia/conexiones';
 import { randomUUID } from 'node:crypto';
 import { DataSource, EntityManager, IsNull } from 'typeorm';
 import { emitirTokenRenovacion } from '../comun/tokens-renovacion';
@@ -89,7 +90,7 @@ export class SesionesService {
   private readonly claveRenovacion: Buffer;
 
   constructor(
-    @InjectDataSource() private readonly fuenteDatos: DataSource,
+    @InjectDataSource(CONEXION_ADMINISTRACION) private readonly fuenteDatos: DataSource,
     private readonly jwt: JwtService,
     private readonly revocaciones: RevocacionesCompartidas,
     @Inject(CONFIGURACION) config: ConfiguracionServicio,

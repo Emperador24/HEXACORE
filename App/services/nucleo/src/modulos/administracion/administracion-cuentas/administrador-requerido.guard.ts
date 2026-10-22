@@ -1,5 +1,6 @@
 import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
+import { CONEXION_ADMINISTRACION } from '../../../comun/persistencia/conexiones';
 import { DataSource } from 'typeorm';
 import { NombreRol } from '../persistencia/entidades/rol.entity';
 import { PeticionAutenticada } from '../sesiones/sesion-requerida.guard';
@@ -15,7 +16,7 @@ import { PeticionAutenticada } from '../sesiones/sesion-requerida.guard';
  */
 @Injectable()
 export class AdministradorRequerido implements CanActivate {
-  constructor(@InjectDataSource() private readonly fuenteDatos: DataSource) {}
+  constructor(@InjectDataSource(CONEXION_ADMINISTRACION) private readonly fuenteDatos: DataSource) {}
 
   async canActivate(contexto: ExecutionContext): Promise<boolean> {
     const { sesion } = contexto.switchToHttp().getRequest<PeticionAutenticada>();

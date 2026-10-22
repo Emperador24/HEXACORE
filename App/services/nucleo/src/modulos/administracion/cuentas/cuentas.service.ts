@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
+import { CONEXION_ADMINISTRACION } from '../../../comun/persistencia/conexiones';
 import { DataSource, EntityManager, QueryFailedError } from 'typeorm';
 import { cifrarContrasena, problemaDeContrasena } from '../comun/contrasenas';
 import { generarEnlace, hashDeToken } from '../comun/tokens-enlace';
@@ -49,7 +50,7 @@ export class CuentasService {
   private readonly reglas: ReglasSeguridad;
 
   constructor(
-    @InjectDataSource() private readonly fuenteDatos: DataSource,
+    @InjectDataSource(CONEXION_ADMINISTRACION) private readonly fuenteDatos: DataSource,
     private readonly correos: PublicadorCorreos,
     @Inject(CONFIGURACION) config: ConfiguracionServicio,
   ) {

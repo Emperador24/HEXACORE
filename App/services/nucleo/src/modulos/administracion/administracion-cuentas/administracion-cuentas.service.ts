@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
+import { CONEXION_ADMINISTRACION } from '../../../comun/persistencia/conexiones';
 import { randomBytes } from 'node:crypto';
 import { DataSource, EntityManager } from 'typeorm';
 import { CuentaNoEncontrada } from '../cuentas/cuentas.errors';
@@ -64,7 +65,7 @@ export class AdministracionCuentasService {
   private readonly log = new Logger(AdministracionCuentasService.name);
 
   constructor(
-    @InjectDataSource() private readonly fuenteDatos: DataSource,
+    @InjectDataSource(CONEXION_ADMINISTRACION) private readonly fuenteDatos: DataSource,
     private readonly sesiones: SesionesService,
   ) {}
 

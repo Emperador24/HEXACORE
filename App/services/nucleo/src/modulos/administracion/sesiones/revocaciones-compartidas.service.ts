@@ -8,6 +8,7 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
+import { CONEXION_ADMINISTRACION } from '../../../comun/persistencia/conexiones';
 import Redis from 'ioredis';
 import { DataSource } from 'typeorm';
 import { CONFIGURACION, ConfiguracionServicio } from '../../../comun/config/configuracion';
@@ -72,7 +73,7 @@ export class RevocacionesCompartidas implements OnApplicationBootstrap, OnModule
 
   constructor(
     @Inject(REDIS) private readonly redis: Redis,
-    @InjectDataSource() private readonly fuenteDatos: DataSource,
+    @InjectDataSource(CONEXION_ADMINISTRACION) private readonly fuenteDatos: DataSource,
   ) {}
 
   async anunciar(sesiones: SesionRevocada[]): Promise<void> {

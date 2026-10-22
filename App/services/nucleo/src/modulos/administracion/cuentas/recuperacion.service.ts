@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
+import { CONEXION_ADMINISTRACION } from '../../../comun/persistencia/conexiones';
 import { DataSource, IsNull, MoreThan } from 'typeorm';
 import { cifrarContrasena, problemaDeContrasena } from '../comun/contrasenas';
 import { generarEnlace, hashDeToken } from '../comun/tokens-enlace';
@@ -36,7 +37,7 @@ export class RecuperacionService {
   private readonly reglas: ReglasSeguridad;
 
   constructor(
-    @InjectDataSource() private readonly fuenteDatos: DataSource,
+    @InjectDataSource(CONEXION_ADMINISTRACION) private readonly fuenteDatos: DataSource,
     private readonly correos: PublicadorCorreos,
     private readonly sesiones: SesionesService,
     @Inject(CONFIGURACION) config: ConfiguracionServicio,
