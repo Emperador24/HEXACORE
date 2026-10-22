@@ -74,7 +74,7 @@ MEDICIONES = [
         'atributo': 'Disponibilidad',
         'rnf': 'RNF-03, RNF-04',
         'escenario': 'El login sigue atendiendo con una dependencia caída, y se recupera solo',
-        'carpeta': SERVICIOS / 'administracion',
+        'carpeta': SERVICIOS / 'nucleo',
         'suite': 'pruebas/cu027-disponibilidad.py',
         'cifras': lambda t: [
             ('Recuperación tras kill -9', extraer(t, r'atendiendo logins de nuevo en\s*(.+)'), 'exigido ≤ 30 s'),

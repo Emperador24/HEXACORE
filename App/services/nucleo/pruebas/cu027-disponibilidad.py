@@ -9,7 +9,7 @@ Mide, no solo comprueba:
   2. Que un pico de logins no deje sin conexiones al resto del servicio.
   3. Qué pasa con el login si cae cada dependencia (Redis, RabbitMQ, PostgreSQL).
   4. RNF-04: si el proceso muere, cuánto tarda en volver (solo si el servicio
-     corre en el contenedor `hexacore-administracion`; con npm se omite).
+     corre en el contenedor del Núcleo; con npm se omite).
 
 Crea 300 cuentas `carga-N@hexacore.com` y las borra al terminar.
 
@@ -21,6 +21,7 @@ por la misma CPU; en producción, con réplicas, la capacidad se multiplica.
 """
 
 import json
+import pathlib
 import subprocess
 import threading
 import time
@@ -179,10 +180,26 @@ def dependencias():
         print(f'  {"":<18} de vuelta en {time.perf_counter() - t0:.1f} s, sin intervención')
 
 
+def contenedor_nucleo() -> str:
+    """
+    El contenedor del Núcleo, preguntándoselo a Compose.
+
+    Desde ADR-12 el Núcleo no tiene `container_name`: es lo que permitirá
+    replicarlo, y significa que su nombre lo pone Docker (`<proyecto>-nucleo-1`).
+    Antes esta prueba lo tenía escrito a mano como `hexacore-administracion`.
+    """
+    infra = pathlib.Path(__file__).resolve().parents[3] / 'infra'
+    salida = subprocess.run(
+        ['docker', 'compose', '-f', str(infra / 'docker-compose.yml'), 'ps', '-q', 'nucleo'],
+        capture_output=True, text=True,
+    )
+    return salida.stdout.strip().splitlines()[0] if salida.stdout.strip() else ''
+
+
 def recuperacion():
     print('\n### 4. RNF-04: el proceso muere y vuelve solo (≤ 30 s)')
-    contenedor = 'hexacore-administracion'
-    if docker('inspect', '-f', '{{.State.Running}}', contenedor).stdout.strip() != 'true':
+    contenedor = contenedor_nucleo()
+    if not contenedor or docker('inspect', '-f', '{{.State.Running}}', contenedor).stdout.strip() != 'true':
         print('  (el servicio no corre en contenedor: se omite; ver App/infra/README.md)')
         return
     # Una caída de verdad: el proceso muere desde dentro. `docker kill` no

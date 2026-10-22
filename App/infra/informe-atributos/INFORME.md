@@ -1,6 +1,6 @@
 # HEXACORE — Resultados cuantitativos de los atributos de calidad
 
-Medido el 2026-09-22 07:16 contra el sistema desplegado, a través del API Gateway
+Medido el 2026-10-22 00:48 contra el sistema desplegado, a través del API Gateway
 (ADR-02), que es por donde entra el tráfico real.
 
 Generado por `App/infra/atributos-calidad.py`. Cada fila se puede volver a
@@ -9,13 +9,13 @@ de cada suite está en los `.log` de esta misma carpeta.
 
 | Atributo | RNF | Medición | Resultado | Referencia |
 |---|---|---|---|---|
-| **Desempeño** | RNF-07, RNF-08 | Peor p95 bajo carga | **189.9 ms con 200 peticiones simultáneas** | umbral 500 ms |
-|  |  | Capacidad máxima | **1059.9 peticiones por segundo** | — |
+| **Desempeño** | RNF-07, RNF-08 | Peor p95 bajo carga | **159.3 ms con 200 peticiones simultáneas** | umbral 500 ms |
+|  |  | Capacidad máxima | **1303.1 peticiones por segundo** | — |
 |  |  | Peticiones fallidas | **0** | exigido 0 |
-| **Disponibilidad** | RNF-03, RNF-04 | Recuperación tras kill -9 | **1.3 s** | exigido ≤ 30 s |
-|  |  | Login con Redis caído | **200 en    90 ms** | debe seguir sirviendo |
-|  |  | Login con RabbitMQ caído | **200 en    95 ms** | debe seguir sirviendo |
-|  |  | Login con PostgreSQL caído | **503 en  3023 ms** | 503 honesto, no 200 falso |
+| **Disponibilidad** | RNF-03, RNF-04 | Recuperación tras kill -9 | **1.7 s** | exigido ≤ 30 s |
+|  |  | Login con Redis caído | **200 en    93 ms** | debe seguir sirviendo |
+|  |  | Login con RabbitMQ caído | **200 en   117 ms** | debe seguir sirviendo |
+|  |  | Login con PostgreSQL caído | **503 en  3034 ms** | 503 honesto, no 200 falso |
 | **Seguridad** | RNF-05, RNF-06 | Rutas de negocio abiertas | **11 de 11 rutas de negocio responden 401 sin token (0 % abiertas)** | exigido 0 % |
 |  |  | Intentos de entrar rechazados | **8 con 401** | sin token, firma ajena, alg none, HS256, caducado, otro emisor, manipulado |
 |  |  | Revocación al cerrar sesión | **inmediata** | el token deja de valer en todo el sistema |
@@ -36,7 +36,7 @@ Suite: `entradas-mercado-secundario/pruebas/rnf07-desempeno.py` · salida comple
 
 El login sigue atendiendo con una dependencia caída, y se recupera solo.
 
-Suite: `administracion/pruebas/cu027-disponibilidad.py` · salida completa en `cu027-disponibilidad.log` · duración 35 s
+Suite: `nucleo/pruebas/cu027-disponibilidad.py` · salida completa en `cu027-disponibilidad.log` · duración 36 s
 
 ### Seguridad (RNF-05, RNF-06)
 
