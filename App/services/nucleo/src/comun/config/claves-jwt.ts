@@ -18,7 +18,10 @@ import { resolve } from 'node:path';
  * para que funcione igual con `node dist/main.js`, con `start:dev` y con Jest
  * (`dist/config/` y `src/config/` están a la misma profundidad).
  */
-const CLAVES_DESARROLLO = resolve(__dirname, '../../../../infra/claves-desarrollo');
+// Cinco niveles: src/comun/config -> src -> nucleo -> services -> App.
+// Al mover este archivo a comun/config (ADR-12) bajó un nivel, y la ruta
+// corta apuntaba a App/services/infra, que no existe.
+const CLAVES_DESARROLLO = resolve(__dirname, '../../../../../infra/claves-desarrollo');
 
 /**
  * Huella SHA-256 de la clave pública de desarrollo.

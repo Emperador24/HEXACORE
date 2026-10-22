@@ -1,44 +1,52 @@
-import { Inject, Injectable, Logger, OnApplicationShutdown, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, Logger, OnApplicationBootstrap, OnApplicationShutdown } from '@nestjs/common';
 import { connect, ChannelModel, ConfirmChannel } from 'amqplib';
-import { CONFIGURACION, ConfiguracionServicio } from '../../../comun/config/configuracion';
-import {
-  CLAVE_CORREO_PENDIENTE,
-  COLA_CORREOS,
-  COLA_CORREOS_DLQ,
-  EXCHANGE_CUENTAS,
-  EXCHANGE_MUERTOS,
-} from './topologia';
+import { CONFIGURACION, ConfiguracionServicio } from '../config/configuracion';
+
+/** Declaración de exchanges y colas de un módulo. Debe ser idempotente. */
+export type DeclararTopologia = (canal: ConfirmChannel) => Promise<void>;
 
 /**
- * Conexión a RabbitMQ y declaración de la topología (ADR-10).
+ * Conexión a RabbitMQ del Núcleo (ADR-10).
  *
- * Es el mismo diseño que el del servicio de Entradas, **incluidos los dos
- * arreglos que allí costaron un fallo cada uno**: los manejadores de cierre del
- * canal (sin ellos el servicio quedaba "conectado" pero mudo) y la
+ * Antes de ADR-12 esta clase estaba **duplicada** en Administración y en
+ * Pedidos: dos conexiones al mismo broker desde dos procesos. En un solo
+ * proceso hay una, y cada módulo le registra su propia topología —la de
+ * cuentas y la de pedidos siguen siendo independientes, comparten broker y
+ * nada más: si la cola de correos se atasca, los eventos de pedido siguen
+ * saliendo—.
+ *
+ * Se conserva el diseño de Administración, que era el completo, **incluidos
+ * los dos arreglos que allí costaron un fallo cada uno**: los manejadores de
+ * cierre del canal (sin ellos el servicio quedaba "conectado" pero mudo) y la
  * resuscripción de los consumidores al reconectar (un canal nuevo no conserva
  * las suscripciones del anterior).
  *
  * ## Por qué la topología se declara desde el código
  *
- * `assertExchange` y `assertQueue` son idempotentes: si ya existen con la misma
- * configuración, no hacen nada. Declararlas al arrancar significa que levantar
- * el sistema en una máquina nueva no requiere entrar a la consola de RabbitMQ a
- * crear cosas a mano, y que la topología está versionada en git junto al código
- * que la usa.
+ * `assertExchange` y `assertQueue` son idempotentes: si ya existen con la
+ * misma configuración, no hacen nada. Declararlas al arrancar significa que
+ * levantar el sistema en una máquina nueva no requiere entrar a la consola de
+ * RabbitMQ a crear cosas a mano, y que la topología está versionada en git
+ * junto al código que la usa.
  *
- * ## Por qué el servicio arranca aunque RabbitMQ no esté
+ * ## Por qué el Núcleo arranca aunque RabbitMQ no esté
  *
  * Si la conexión falla, se registra y se reintenta en segundo plano, pero el
- * servicio sigue en pie. El motivo aquí es aún más fuerte que en el CU-006: el
- * CU-027 marca la Disponibilidad del login como atributo de calidad, y negarse
- * a arrancar por un broker caído dejaría a **todo el sistema sin poder iniciar
- * sesión** por un fallo en algo que solo manda correos.
+ * proceso sigue en pie. El CU-027 marca la Disponibilidad del login como
+ * atributo de calidad, y negarse a arrancar por un broker caído dejaría a
+ * **todo el sistema sin poder iniciar sesión** por un fallo en algo que solo
+ * manda correos. El coste asumido es que, con el broker caído, los correos de
+ * verificación no salen; queda registrado como error (DECISIONES.md §10).
  *
- * El coste asumido es que, con el broker caído, los correos de verificación no
- * salen. Queda registrado como error; ver DECISIONES.md §10.
+ * ## Por qué conecta en `onApplicationBootstrap` y no en `onModuleInit`
+ *
+ * Los módulos registran su topología durante su `onModuleInit`, que Nest
+ * ejecuta antes. Conectar más tarde garantiza que, cuando se abre el canal, ya
+ * están registradas **todas** las topologías; si conectara en `onModuleInit`,
+ * declararía solo las de los módulos que hubieran corrido antes que este.
  */
 @Injectable()
-export class ConexionRabbitMq implements OnModuleInit, OnApplicationShutdown {
+export class ConexionRabbitMq implements OnApplicationBootstrap, OnApplicationShutdown {
   private readonly log = new Logger(ConexionRabbitMq.name);
   private readonly url: string;
 
@@ -46,6 +54,9 @@ export class ConexionRabbitMq implements OnModuleInit, OnApplicationShutdown {
   private canal: ConfirmChannel | null = null;
   private reintento: NodeJS.Timeout | null = null;
   private cerrando = false;
+
+  /** Topologías de los módulos. Se declaran en cada canal nuevo. */
+  private readonly topologias: DeclararTopologia[] = [];
 
   /**
    * A quién avisar cuando haya un canal nuevo.
@@ -64,14 +75,17 @@ export class ConexionRabbitMq implements OnModuleInit, OnApplicationShutdown {
     this.url = config.rabbitmq.url;
   }
 
-  async onModuleInit(): Promise<void> {
-    await this.conectar();
+  /**
+   * Registra la topología de un módulo. Se invoca desde su `onModuleInit`,
+   * antes de que esta clase abra la conexión.
+   */
+  registrarTopologia(declarar: DeclararTopologia): void {
+    this.topologias.push(declarar);
   }
 
   /**
    * Registra un trabajo que debe rehacerse cada vez que haya canal nuevo
-   * —típicamente, volver a suscribirse a una cola—. Se invoca también si en el
-   * momento de registrarse ya hay canal.
+   * —típicamente, volver a suscribirse a una cola—.
    */
   registrarAlReconectar(accion: () => Promise<void>): void {
     this.alReconectar.push(accion);
@@ -86,6 +100,10 @@ export class ConexionRabbitMq implements OnModuleInit, OnApplicationShutdown {
     return this.canal !== null;
   }
 
+  async onApplicationBootstrap(): Promise<void> {
+    await this.conectar();
+  }
+
   private async conectar(): Promise<void> {
     if (this.cerrando) return;
     try {
@@ -98,7 +116,7 @@ export class ConexionRabbitMq implements OnModuleInit, OnApplicationShutdown {
       // duradero que midió el PoC-05.
       this.canal = await this.conexion.createConfirmChannel();
 
-      await this.declararTopologia(this.canal);
+      await this.declararTopologias(this.canal);
 
       this.conexion.on('error', (error: Error) => this.log.error(`Error de conexión: ${error.message}`));
       this.conexion.on('close', () => {
@@ -119,7 +137,7 @@ export class ConexionRabbitMq implements OnModuleInit, OnApplicationShutdown {
       // conexión viva. Sin esto, `this.canal` seguiría apuntando a un canal
       // muerto: `conectado` diría `true`, la sonda de salud mentiría, el
       // reintento no se dispararía nunca porque la conexión no se cerró, y el
-      // publicador y los dos consumidores quedarían mudos para siempre.
+      // publicador y los consumidores quedarían mudos para siempre.
       this.canal.on('error', (error: Error) => this.log.error(`Error de canal: ${error.message}`));
       this.canal.on('close', () => {
         if (this.cerrando) return;
@@ -131,7 +149,7 @@ export class ConexionRabbitMq implements OnModuleInit, OnApplicationShutdown {
         void this.conexion?.close().catch(() => undefined);
       });
 
-      this.log.log('Conectado a RabbitMQ; topología declarada');
+      this.log.log(`Conectado a RabbitMQ; ${this.topologias.length} topologías declaradas`);
 
       // Los consumidores se resuscriben sobre el canal nuevo. En el primer
       // arranque la lista está vacía y esto no hace nada; en una reconexión es
@@ -163,24 +181,21 @@ export class ConexionRabbitMq implements OnModuleInit, OnApplicationShutdown {
     this.reintento.unref();
   }
 
-  /** Crea exchanges y colas. Idempotente: se puede llamar en cada arranque. */
-  private async declararTopologia(canal: ConfirmChannel): Promise<void> {
-    // `durable: true`: un correo de verificación pendiente no puede perderse
-    // porque el broker se reiniciara. Quien se registró estaría esperándolo.
-    await canal.assertExchange(EXCHANGE_CUENTAS, 'topic', { durable: true });
-    await canal.assertExchange(EXCHANGE_MUERTOS, 'topic', { durable: true });
-
-    // La DLQ primero: si la cola de trabajo apuntara a un exchange sin destino,
-    // los mensajes rechazados se perderían en vez de quedar guardados.
-    await canal.assertQueue(COLA_CORREOS_DLQ, { durable: true });
-    await canal.bindQueue(COLA_CORREOS_DLQ, EXCHANGE_MUERTOS, COLA_CORREOS);
-
-    await canal.assertQueue(COLA_CORREOS, {
-      durable: true,
-      deadLetterExchange: EXCHANGE_MUERTOS,
-      deadLetterRoutingKey: COLA_CORREOS,
-    });
-    await canal.bindQueue(COLA_CORREOS, EXCHANGE_CUENTAS, CLAVE_CORREO_PENDIENTE);
+  /**
+   * Declara la topología de cada módulo sobre el canal nuevo.
+   *
+   * Si la de un módulo falla, se registra y se sigue con las demás: que la cola
+   * de correos no se pueda declarar no es razón para dejar a Pedidos sin su
+   * exchange.
+   */
+  private async declararTopologias(canal: ConfirmChannel): Promise<void> {
+    for (const declarar of this.topologias) {
+      try {
+        await declarar(canal);
+      } catch (error) {
+        this.log.error(`Fallo al declarar una topología: ${error instanceof Error ? error.message : error}`);
+      }
+    }
   }
 
   async onApplicationShutdown(): Promise<void> {
@@ -194,5 +209,7 @@ export class ConexionRabbitMq implements OnModuleInit, OnApplicationShutdown {
     } catch (error) {
       this.log.warn(`Cierre de RabbitMQ con incidencias: ${error instanceof Error ? error.message : error}`);
     }
+    this.canal = null;
+    this.conexion = null;
   }
 }

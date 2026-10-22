@@ -3,7 +3,6 @@ import { AdministracionCuentasModule } from './administracion-cuentas/administra
 import { CuentasModule } from './cuentas/cuentas.module';
 import { NotificacionesModule } from './notificaciones/notificaciones.module';
 import { PersistenciaModule } from './persistencia/persistencia.module';
-import { SaludController } from './salud/salud.controller';
 import { SesionesModule } from './sesiones/sesiones.module';
 
 /**
@@ -35,6 +34,5 @@ import { SesionesModule } from './sesiones/sesiones.module';
     SesionesModule,
     AdministracionCuentasModule,
   ],
-  controllers: [SaludController],
 })
 export class AdministracionModule {}

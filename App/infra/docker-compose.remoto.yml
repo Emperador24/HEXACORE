@@ -20,18 +20,15 @@
 # PostgreSQL local vacío mientras el de verdad está en la otra máquina.
 #
 # El `api-gateway` y el `portal-web-cliente` no aparecen a propósito: sus
-# dependencias (los microservicios y el gateway) viven en **esta** máquina, así
+# dependencias (los servicios de dominio y el gateway) viven en **esta** máquina, así
 # que las del compose base son las correctas y redeclararlas aquí solo serviría
 # para que se quedaran desactualizadas cuando se añada un servicio nuevo.
 
 services:
-  administracion:
+  nucleo:
     depends_on: !reset []
 
   entradas-mercado-secundario:
-    depends_on: !reset []
-
-  pedidos:
     depends_on: !reset []
 
   eventos-emergencias:

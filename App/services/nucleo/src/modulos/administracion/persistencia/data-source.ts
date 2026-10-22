@@ -26,7 +26,7 @@ export function opcionesDataSource(config: ConfiguracionServicio): DataSourceOpt
     port: config.postgres.puerto,
     username: config.postgres.usuario,
     password: config.postgres.contrasena,
-    database: config.postgres.base,
+    database: config.postgres.bases.administracion,
     entities: ENTIDADES,
     migrations: MIGRACIONES,
     migrationsTableName: 'migraciones',

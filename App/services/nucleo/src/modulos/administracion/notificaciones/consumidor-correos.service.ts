@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger, OnApplicationBootstrap, OnApplicationShutdown } from '@nestjs/common';
 import { ConsumeMessage } from 'amqplib';
 import { CONFIGURACION, ConfiguracionServicio } from '../../../comun/config/configuracion';
-import { ConexionRabbitMq } from './conexion-rabbitmq.service';
+import { ConexionRabbitMq } from '../../../comun/rabbitmq/conexion-rabbitmq.service';
 import { CorreoPendiente, TipoCorreo } from './correo-pendiente.evento';
 import { COLA_CORREOS, MAXIMO_INTENTOS, VERSION_CORREO_PENDIENTE } from './topologia';
 

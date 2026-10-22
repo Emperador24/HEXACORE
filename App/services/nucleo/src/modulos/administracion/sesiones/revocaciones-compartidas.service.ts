@@ -12,7 +12,10 @@ import Redis from 'ioredis';
 import { DataSource } from 'typeorm';
 import { CONFIGURACION, ConfiguracionServicio } from '../../../comun/config/configuracion';
 
-export const REDIS = 'CLIENTE_REDIS';
+import { REDIS } from '../../../comun/redis/redis.module';
+
+/** Se reexporta para que quien ya lo importaba de aquí siga funcionando. */
+export { REDIS };
 
 /**
  * Prefijo de las claves de sesión revocada.
@@ -39,34 +42,6 @@ export interface SesionRevocada {
   expiraEn: Date;
 }
 
-/** Cliente de Redis. Mismas opciones que en el servicio de Entradas: fallar rápido. */
-export const proveedorRedis: Provider = {
-  provide: REDIS,
-  inject: [CONFIGURACION],
-  useFactory: (config: ConfiguracionServicio): Redis => {
-    const log = new Logger('Redis');
-    const destino = `${config.redis.host}:${config.redis.puerto}`;
-    const cliente = new Redis({
-      host: config.redis.host,
-      port: config.redis.puerto,
-      maxRetriesPerRequest: 1,
-      enableOfflineQueue: false,
-      // Sin esto, un Redis colgado (conexión abierta, sin respuesta) dejaría el
-      // cierre de sesión esperando para siempre en vez de fallar en claro.
-      commandTimeout: 2000,
-    });
-    let ultimoAviso = '';
-    cliente.on('connect', () => log.log(`Conectado a ${destino}`));
-    cliente.on('ready', () => (ultimoAviso = ''));
-    // Sin manejador, un error de conexión de ioredis tumba el proceso.
-    cliente.on('error', (error: Error & { code?: string }) => {
-      const aviso = `No se pudo hablar con Redis (${destino}): ${error.code ?? error.message}`;
-      if (aviso !== ultimoAviso) log.error(aviso);
-      ultimoAviso = aviso;
-    });
-    return cliente;
-  },
-};
 
 /**
  * Anuncia al resto del sistema qué sesiones se han cerrado (ADR-03).

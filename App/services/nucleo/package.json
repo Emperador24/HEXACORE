@@ -8,15 +8,20 @@
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main.js",
-    "test": "jest",
-    "test:cov": "jest --coverage",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:cov": "npm test -- --coverage",
     "lint": "tsc --noEmit",
-    "migracion:correr": "typeorm-ts-node-commonjs migration:run -d src/persistencia/data-source.ts",
-    "migracion:revertir": "typeorm-ts-node-commonjs migration:revert -d src/persistencia/data-source.ts",
-    "migracion:estado": "typeorm-ts-node-commonjs migration:show -d src/persistencia/data-source.ts",
-    "semilla": "ts-node src/persistencia/semillas/sembrar.ts",
-    "carga": "ts-node src/persistencia/semillas/carga.ts",
-    "test:integracion": "bash pruebas/correr-todas.sh"
+    "migracion:correr": "typeorm-ts-node-commonjs migration:run -d src/modulos/administracion/persistencia/data-source.ts",
+    "migracion:revertir": "typeorm-ts-node-commonjs migration:revert -d src/modulos/administracion/persistencia/data-source.ts",
+    "migracion:estado": "typeorm-ts-node-commonjs migration:show -d src/modulos/administracion/persistencia/data-source.ts",
+    "semilla": "ts-node src/modulos/administracion/persistencia/semillas/sembrar.ts",
+    "carga": "ts-node src/modulos/administracion/persistencia/semillas/carga.ts",
+    "test:integracion": "bash pruebas/correr-todas.sh",
+    "migracion:pedidos:correr": "typeorm-ts-node-commonjs migration:run -d src/modulos/pedidos/persistencia/data-source.ts",
+    "migracion:pedidos:revertir": "typeorm-ts-node-commonjs migration:revert -d src/modulos/pedidos/persistencia/data-source.ts",
+    "migracion:pedidos:estado": "typeorm-ts-node-commonjs migration:show -d src/modulos/pedidos/persistencia/data-source.ts",
+    "semilla:pedidos": "ts-node src/modulos/pedidos/persistencia/semillas/sembrar.ts",
+    "test:e2e": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config test/jest-e2e.json --runInBand"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.6",
@@ -62,6 +67,9 @@
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "moduleNameMapper": {
+      "^@nestjs/typeorm$": "<rootDir>/../test/dobles/nestjs-typeorm.ts"
+    }
   }
 }

@@ -116,7 +116,7 @@ sembrar pedidos
 
 # --- Inventario de Redis -----------------------------------------------------
 
-carpeta_pedidos="$RAIZ/App/services/pedidos"
+carpeta_pedidos="$RAIZ/App/services/nucleo"
 if [[ -d "$carpeta_pedidos/node_modules" ]]; then
   # Las reservas y el stock viejos ya no corresponden a la base recién
   # sembrada: se rehacen desde cero.

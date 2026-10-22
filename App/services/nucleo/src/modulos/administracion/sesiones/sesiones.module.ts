@@ -6,7 +6,7 @@ import { PersistenciaModule } from '../persistencia/persistencia.module';
 import { AutenticacionService } from './autenticacion.service';
 import { SesionRequerida } from './sesion-requerida.guard';
 import { SesionesController } from './sesiones.controller';
-import { proveedorRedis, REDIS, RevocacionesCompartidas } from './revocaciones-compartidas.service';
+import { REDIS, RevocacionesCompartidas } from './revocaciones-compartidas.service';
 import { RenovacionService } from './renovacion.service';
 import { SesionesService } from './sesiones.service';
 
@@ -37,7 +37,6 @@ export const EMISOR_TOKENS = 'hexacore-administracion';
     AutenticacionService,
     RenovacionService,
     SesionRequerida,
-    proveedorRedis,
     RevocacionesCompartidas,
   ],
   // El guard se exporta para que los demás módulos (roles, CU-028) lo usen.

@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import { ConexionRabbitMq } from './conexion-rabbitmq.service';
+import { ConexionRabbitMq } from '../../../comun/rabbitmq/conexion-rabbitmq.service';
 import { CorreoPendiente, TipoCorreo } from './correo-pendiente.evento';
 import {
   CLAVE_CORREO_PENDIENTE,

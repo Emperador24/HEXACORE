@@ -7,7 +7,7 @@
 # salgan por la cola y que la base responda a lo que se le pide.
 #
 #   cd App/infra && ./iniciar.sh
-#   cd App/services/administracion && npm run test:integracion
+#   cd App/services/nucleo && npm run test:integracion
 #
 # `cu027-disponibilidad` pausa dependencias a propósito para medir RNF-03/04,
 # así que va la última: si algo se quedara a medias, no arrastra a las demás.

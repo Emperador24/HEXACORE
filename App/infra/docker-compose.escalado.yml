@@ -1,8 +1,9 @@
 # Ajuste para demostrar el balanceo y la tolerancia a fallos (RNF-03, RNF-10).
 #
-# En el día a día, el Servicio de Entradas publica el puerto 3001 en la máquina:
-# así las pruebas de integración pueden llamarlo directo y comprobar que también
-# valida el token por su cuenta, sin pasar por el gateway.
+# En el día a día, el Servicio de Entradas y el Núcleo publican sus puertos en
+# la máquina: así las pruebas de integración pueden llamarlos directo y
+# comprobar que también validan el token por su cuenta, sin pasar por el
+# gateway.
 #
 # Ese puerto fijo impide tener varias instancias (dos contenedores no pueden
 # ocupar el mismo puerto). Este archivo lo quita, dejando el acceso únicamente
@@ -11,7 +12,18 @@
 #   docker compose -f docker-compose.yml -f docker-compose.escalado.yml \
 #     --profile servicios up -d --scale entradas-mercado-secundario=2
 #
+# Eventos / Emergencias ya no publica puerto en el compose base, así que se
+# replica sin necesidad de este archivo (ADR-12: es el segundo satélite).
+#
+# ⚠️ El Núcleo admite `--scale nucleo=2` **solo cuando** la caducidad de
+# reservas de inventario esté protegida con un candado en Redis: hoy es un
+# temporizador, y dos instancias caducarían las mismas reservas. Está anotado
+# en ADR-12 como consecuencia conocida y es la tarjeta 21 del tablero.
+#
 # Para volver a lo de siempre, basta con levantar sin este archivo.
 services:
   entradas-mercado-secundario:
+    ports: !reset []
+
+  nucleo:
     ports: !reset []

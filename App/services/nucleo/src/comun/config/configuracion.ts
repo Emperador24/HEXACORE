@@ -1,14 +1,29 @@
 import { cargarClavesJwt, ClavesJwt } from './claves-jwt';
 
 /**
- * Configuración del Servicio de Administración, leída del entorno y validada
- * al arrancar.
+ * Configuración del **Núcleo**, leída del entorno y validada al arrancar.
  *
- * Aquí la validación temprana importa aún más que en el servicio de Entradas:
- * una clave de firma conocida o una política de contraseñas laxa no se
- * manifiestan como un fallo, sino como un sistema que *parece* funcionar
- * mientras acepta credenciales que no debería. Un servicio mal configurado se
- * niega a arrancar.
+ * Antes de ADR-12 esto eran dos archivos —uno en Administración y otro en
+ * Pedidos— que exportaban el mismo token `CONFIGURACION_SERVICIO`. En un solo
+ * proceso eso es la misma llave del contenedor de Nest, así que la colisión no
+ * se resuelve renombrando: se resuelve habiendo **una sola** configuración.
+ *
+ * El criterio de reparto es el del proceso frente al dominio:
+ *
+ *   - **Del proceso:** el puerto, el prefijo de la API, los datos de conexión a
+ *     PostgreSQL, Redis y RabbitMQ, y las claves JWT. Hay un solo proceso, un
+ *     solo pool de hilos y un solo servidor HTTP.
+ *   - **Del módulo:** el nombre de su base (`postgres.bases`), y lo que solo él
+ *     entiende — la política de cuentas, el correo, la pasarela de pagos.
+ *
+ * Cada módulo abre su **propia conexión** a su propia base con estos mismos
+ * parámetros de servidor (ver `postgres.bases`). Es la fase 0 de datos de
+ * ADR-12: no se migró ni un registro, las bases siguen separadas.
+ *
+ * La validación temprana importa: una clave de firma conocida o una política de
+ * contraseñas laxa no se manifiestan como un fallo, sino como un sistema que
+ * *parece* funcionar mientras acepta credenciales que no debería. Un Núcleo mal
+ * configurado se niega a arrancar.
  */
 
 function requerido(nombre: string): string {
@@ -37,7 +52,7 @@ function entero(nombre: string, porDefecto: number): number {
 export type Entorno = 'development' | 'test' | 'production';
 
 /**
- * Reglas de seguridad de las cuentas.
+ * Reglas de seguridad de las cuentas — módulo de Administración.
  *
  * El CU-027 exige "contraseñas cifradas (hash + salt), tokens de sesión con
  * expiración, bloqueo ante fuerza bruta", y su post-condición 2 habla de un
@@ -77,8 +92,7 @@ export interface ConfiguracionServicio {
     puerto: number;
     usuario: string;
     contrasena: string;
-    base: string;
-    /** Conexiones del pool. */
+    /** Conexiones del pool, por módulo. */
     maxConexiones: number;
     /**
      * Cuánto se espera a la base antes de rendirse, en ms: tanto para obtener
@@ -87,8 +101,32 @@ export interface ConfiguracionServicio {
      * 40 s). Ver DECISIONES.md §17.
      */
     esperaMaximaMs: number;
+    /**
+     * Una base por dominio (ADR-01, cuya granularidad revisó ADR-12 sin alterar
+     * esta separación). Cada módulo abre su conexión contra la suya, de modo
+     * que un cambio de esquema en uno sigue sin tocar a los demás.
+     */
+    bases: {
+      administracion: string;
+      pedidos: string;
+    };
   };
   rabbitmq: { url: string };
+  /**
+   * Redis (ADR-03): aquí se publican las sesiones revocadas, para que el resto
+   * de servicios de dominio dejen de aceptarlas sin preguntar al Núcleo.
+   */
+  redis: { host: string; puerto: number };
+  /**
+   * Claves con las que se firman (privada) y verifican (pública) los tokens.
+   *
+   * Quien tenga la privada puede fabricar un token de cualquier usuario,
+   * incluido un administrador: solo la tiene el Núcleo, porque el módulo de
+   * Administración es el único emisor. Ver `claves-jwt.ts` y DECISIONES.md §7.
+   */
+  jwt: ClavesJwt;
+  /** Emisor que se espera en el `iss` de los tokens (ADR-11). */
+  emisorTokens: string;
   correo: {
     /** Proveedor de Notificaciones. Es un sistema externo del SAD; en desarrollo, el simulador. */
     urlProveedor: string;
@@ -101,20 +139,12 @@ export interface ConfiguracionServicio {
      */
     urlBaseEnlaces: string;
   };
-  /**
-   * Claves con las que se firman (privada) y verifican (pública) los tokens.
-   *
-   * Quien tenga la privada puede fabricar un token de cualquier usuario,
-   * incluido un administrador: solo la tiene este servicio. Ver
-   * `claves-jwt.ts` y DECISIONES.md §7.
-   */
-  jwt: ClavesJwt;
-  /**
-   * Redis (ADR-03): aquí se publican las sesiones revocadas, para que el resto
-   * de microservicios dejen de aceptarlas sin tener que preguntar a este.
-   */
-  redis: { host: string; puerto: number };
   seguridad: ReglasSeguridad;
+  /** Pasarela de pagos — módulo de Pedidos (CU-011). */
+  pasarelaPagos: {
+    url: string;
+    timeoutMs: number;
+  };
 }
 
 export function cargarConfiguracion(): ConfiguracionServicio {
@@ -185,8 +215,14 @@ export function cargarConfiguracion(): ConfiguracionServicio {
   if (esperaMaximaMs < 500 || esperaMaximaMs > 30_000) {
     throw new Error(`POSTGRES_ESPERA_MAXIMA_MS debe estar entre 500 y 30000 (llegó ${esperaMaximaMs})`);
   }
-  if (entero('POSTGRES_MAX_CONEXIONES', 10) < 2) {
+  const maxConexiones = entero('POSTGRES_MAX_CONEXIONES', 10);
+  if (maxConexiones < 2) {
     throw new Error('POSTGRES_MAX_CONEXIONES debe ser >= 2');
+  }
+
+  const pasarelaTimeoutMs = entero('PASARELA_TIMEOUT_MS', 10000);
+  if (pasarelaTimeoutMs <= 0) {
+    throw new Error('PASARELA_TIMEOUT_MS debe ser mayor que 0');
   }
 
   return {
@@ -199,22 +235,30 @@ export function cargarConfiguracion(): ConfiguracionServicio {
       usuario: texto('POSTGRES_USUARIO', 'hexacore'),
       contrasena:
         entorno === 'production' ? requerido('POSTGRES_CONTRASENA') : texto('POSTGRES_CONTRASENA', 'hexacore'),
-      base: texto('POSTGRES_BASE', 'administracion'),
-      maxConexiones: entero('POSTGRES_MAX_CONEXIONES', 10),
-      esperaMaximaMs: entero('POSTGRES_ESPERA_MAXIMA_MS', 3000),
+      maxConexiones,
+      esperaMaximaMs,
+      bases: {
+        administracion: texto('POSTGRES_BD_ADMINISTRACION', 'administracion'),
+        pedidos: texto('POSTGRES_BD_PEDIDOS', 'pedidos'),
+      },
     },
     rabbitmq: { url: texto('RABBITMQ_URL', 'amqp://hexacore:hexacore@localhost:5672') },
-    correo: {
-      urlProveedor: texto('CORREO_PROVEEDOR_URL', 'http://localhost:3098'),
-      urlBaseEnlaces: texto('CORREO_URL_BASE_ENLACES', 'http://localhost:4200/cuenta'),
-    },
-    jwt,
     redis: {
       host: texto('REDIS_HOST', 'localhost'),
       // 6380: el puerto en que lo expone App/infra/docker-compose.yml.
       puerto: entero('REDIS_PUERTO', 6380),
     },
+    jwt,
+    emisorTokens: texto('AUTH_JWT_EMISOR', 'hexacore-administracion'),
+    correo: {
+      urlProveedor: texto('CORREO_PROVEEDOR_URL', 'http://localhost:3098'),
+      urlBaseEnlaces: texto('CORREO_URL_BASE_ENLACES', 'http://localhost:4200/cuenta'),
+    },
     seguridad,
+    pasarelaPagos: {
+      url: texto('PAGOS_PROVEEDOR_URL', 'http://localhost:3099'),
+      timeoutMs: pasarelaTimeoutMs,
+    },
   };
 }
 
