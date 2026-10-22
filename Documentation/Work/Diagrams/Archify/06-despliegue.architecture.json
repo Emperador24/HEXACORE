@@ -50,24 +50,52 @@
       ]
     },
     {
-      "id": "cluster_app",
+      "id": "nodo_nucleo",
       "type": "backend",
-      "label": "Clúster de Aplicación",
-      "sublabel": "réplicas de los 6 microservicios",
+      "label": "Núcleo",
+      "sublabel": "1 unidad desplegable · 1 réplica",
       "pos": [
-        630,
-        320
+        620,
+        200
       ],
       "size": [
-        220,
-        70
+        230,
+        60
+      ]
+    },
+    {
+      "id": "nodo_entradas",
+      "type": "backend",
+      "label": "Entradas / Mdo. Secundario",
+      "sublabel": "N réplicas tras el balanceador",
+      "pos": [
+        620,
+        300
+      ],
+      "size": [
+        230,
+        60
+      ]
+    },
+    {
+      "id": "nodo_eventos",
+      "type": "backend",
+      "label": "Eventos / Emergencias",
+      "sublabel": "N réplicas tras el balanceador",
+      "pos": [
+        620,
+        400
+      ],
+      "size": [
+        230,
+        60
       ]
     },
     {
       "id": "cluster_bd",
       "type": "database",
       "label": "Clúster de Bases de Datos",
-      "sublabel": "PostgreSQL (x6) + MongoDB",
+      "sublabel": "PostgreSQL por dominio + MongoDB",
       "pos": [
         960,
         140
@@ -141,7 +169,9 @@
       "wraps": [
         "cdn",
         "balanceador",
-        "cluster_app",
+        "nodo_nucleo",
+        "nodo_entradas",
+        "nodo_eventos",
         "cluster_bd",
         "cluster_redis",
         "cluster_mensajeria"
@@ -165,36 +195,63 @@
       "variant": "emphasis"
     },
     {
-      "id": "balanceador-cluster",
+      "id": "balanceador-nucleo",
       "from": "balanceador",
-      "to": "cluster_app",
+      "to": "nodo_nucleo",
+      "label": "enruta"
+    },
+    {
+      "id": "balanceador-entradas",
+      "from": "balanceador",
+      "to": "nodo_entradas",
       "label": "enruta y balancea",
       "variant": "emphasis"
     },
     {
-      "id": "cluster-bd",
-      "from": "cluster_app",
+      "id": "balanceador-eventos",
+      "from": "balanceador",
+      "to": "nodo_eventos",
+      "label": "enruta y balancea"
+    },
+    {
+      "id": "nucleo-bd",
+      "from": "nodo_nucleo",
+      "to": "cluster_bd",
+      "label": "SQL"
+    },
+    {
+      "id": "entradas-bd",
+      "from": "nodo_entradas",
       "to": "cluster_bd",
       "label": "SQL",
+      "variant": "emphasis",
       "route": "orthogonal-h"
     },
     {
-      "id": "cluster-redis",
-      "from": "cluster_app",
+      "id": "entradas-redis",
+      "from": "nodo_entradas",
       "to": "cluster_redis",
-      "label": "caché + bloqueos"
+      "label": "caché + bloqueos",
+      "variant": "emphasis"
     },
     {
-      "id": "cluster-mensajeria",
-      "from": "cluster_app",
+      "id": "entradas-mensajeria",
+      "from": "nodo_entradas",
       "to": "cluster_mensajeria",
       "label": "publica eventos",
       "variant": "dashed",
       "route": "orthogonal-h"
     },
     {
-      "id": "cluster-pagos",
-      "from": "cluster_app",
+      "id": "eventos-mensajeria",
+      "from": "nodo_eventos",
+      "to": "cluster_mensajeria",
+      "label": "alerta de evacuación",
+      "variant": "dashed"
+    },
+    {
+      "id": "entradas-pagos",
+      "from": "nodo_entradas",
       "to": "pagos",
       "label": "cobros y reembolsos",
       "variant": "emphasis"
@@ -209,10 +266,19 @@
   ],
   "cards": [
     {
+      "dot": "emerald",
+      "title": "Qué se replica y qué no (ADR-12)",
+      "items": [
+        "Entradas / Mercado Secundario y Eventos / Emergencias escalan por réplicas detrás del balanceador: son los dos dominios que cumplen un criterio de extracción",
+        "El Núcleo corre en instancia única, igual que hoy corren Administración y Pedidos por separado; es stateless y está preparado para replicarse",
+        "Antes de activar una segunda réplica del Núcleo hay que proteger la caducidad de reservas con un candado en Redis: es un temporizador y se ejecutaría dos veces"
+      ]
+    },
+    {
       "dot": "cyan",
       "title": "Sin balanceo horizontal en dev/pruebas",
       "items": [
-        "Este despliegue es el de producción — una réplica por microservicio y Redis/cola/BD en un único nodo compartido en desarrollo y pruebas (ver App/infra)"
+        "Este despliegue es el de producción — en desarrollo y pruebas corre una réplica por servicio y Redis/cola/BD en un único nodo compartido (ver App/infra)"
       ]
     },
     {

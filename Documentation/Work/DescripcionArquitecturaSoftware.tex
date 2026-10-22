@@ -108,6 +108,13 @@ disponibilidad, \textbf{seguridad}, \textbf{consistencia} y desplegabilidad. Las
 columna «Evidencia medida» provienen de ejecutar los guiones de \texttt{pruebas/} contra el
 sistema desplegado, no de estimaciones de diseño. & Equipo Hexacore (vía asistente) \\
 \hline
+18/10/2026 & Versión 1.4: se registra \textbf{ADR-12}, que revisa la granularidad fijada en ADR-01 y
+adopta una \textbf{arquitectura basada en servicios} --- tres servicios de dominio en lugar de seis:
+un núcleo que agrupa Administración y Pedidos como módulos, y los servicios replicables de Entradas /
+Mercado Secundario y de Eventos / Emergencias. Incluye el criterio de extracción con el que se decide
+qué dominio queda como servicio propio, y la reformulación de la métrica de RNF-13 que la decisión
+obliga. ADR-01 queda marcado como superado. & Equipo Hexacore (vía asistente) \\
+\hline
 \end{longtable}
 \end{center}
 
@@ -565,9 +572,11 @@ Administrativo/Operativo y App Móvil), todas consumiendo el mismo backend a tra
 Gateway. La \textbf{App Móvil} está construida en \textbf{Flutter} (ADR-08), lo que permite generar
 desde una sola base de código los binarios de Android e iOS, y sirve tanto al rol Cliente como al rol
 Personal: el login identifica el rol del usuario autenticado y la navegación interna abre el conjunto
-de pantallas correspondiente — no son dos apps distribuidas por separado (ver ADR-07). El backend está compuesto por microservicios independientes por dominio
-(Entradas/Mercado Secundario, Personal, Eventos/Emergencias, Parqueaderos) y por infraestructura de
-soporte (Redis, cola de mensajes y bases de datos por servicio). La Figura \ref{fig:contenedores}
+de pantallas correspondiente — no son dos apps distribuidas por separado (ver ADR-07). El backend
+está compuesto por \textbf{tres servicios de dominio} (ADR-12) --- el \textbf{Núcleo}, que agrupa
+Administración, Pedidos, Personal y Parqueaderos como módulos de una sola unidad desplegable, y los
+servicios replicables de \textbf{Entradas/Mercado Secundario} y \textbf{Eventos/Emergencias} ---
+más la infraestructura de soporte (Redis, cola de mensajes y una base de datos por dominio). La Figura \ref{fig:contenedores}
 presenta el diagrama de contenedores.
 
 \begin{figure}[H]
@@ -582,8 +591,11 @@ presenta el diagrama de contenedores.
 \item \textbf{API Gateway + balanceador de carga:} punto único de entrada al backend; centraliza
 autenticación, autorización, validación de tokens y enrutamiento hacia el microservicio
 correspondiente.
-\item \textbf{Microservicios:} Entradas/Mercado Secundario, Personal, Eventos/Emergencias y
-Parqueaderos, cada uno con su propia base de datos para reducir el acoplamiento entre dominios.
+\item \textbf{Servicios de dominio (ADR-12):} el \textbf{Núcleo} --- Administración, Pedidos,
+Personal y Parqueaderos como módulos de un mismo desplegable, cada uno con su esquema y sus
+migraciones propias --- y los servicios independientes de \textbf{Entradas/Mercado Secundario} y
+\textbf{Eventos/Emergencias}, que se replican porque cumplen un criterio de extracción. Cada dominio
+conserva su propia base de datos para reducir el acoplamiento.
 \item \textbf{Redis:} bloqueo temporal de recursos en disputa (p. ej. una entrada en reventa
 durante el checkout) y datos de acceso rápido (aforo, ocupación, sesiones).
 \item \textbf{Cola de mensajes (RabbitMQ, ADR-10):} desacopla operaciones asíncronas: generación de
@@ -725,8 +737,9 @@ prototipo funcional en la Entrega 2.
 \section{Modelo de datos}
 \label{sec:datos}
 
-Siguiendo la decisión de una base de datos independiente por microservicio (ADR-01), cada dominio
-tiene su propio esquema relacional. Las referencias entre dominios (p. ej. el propietario de una
+Siguiendo la decisión de una base de datos independiente por dominio (ADR-01, cuya granularidad
+revisó ADR-12 sin alterar esta separación de datos), cada dominio tiene su propio esquema
+relacional. Las referencias entre dominios (p. ej. el propietario de una
 \textit{Entrada} hacia \textit{Usuario}, que vive en el módulo de administración de cuentas) se
 resuelven a nivel de aplicación mediante el identificador correspondiente, y no con llaves foráneas
 físicas entre bases de datos distintas, lo cual es consistente con la separación de datos
@@ -780,6 +793,9 @@ transaccionales y \textbf{MongoDB} para Reportes (ADR-06).
 \label{sec:adr}
 
 \subsection*{ADR-01 --- Arquitectura de microservicios por dominio}
+\textbf{Estado:} \textit{superado por ADR-12} --- el criterio de separar por dominio sigue vigente;
+la granularidad de un microservicio por dominio se revisó en ADR-12 a la vista de lo medido sobre el
+prototipo desplegado, y el backend queda en tres servicios de dominio en lugar de seis.\\
 \textbf{ASR relacionados:} ASR-06, ASR-09.\\
 \textbf{Problema:} el sistema debe permitir que sus dominios (Entradas, Mercado Secundario,
 Personal, Eventos, Parqueaderos, Emergencias) evolucionen y escalen de forma relativamente
@@ -1138,6 +1154,161 @@ una subpetición interna del gateway. A cambio, ningún servicio distinto del em
 token. \textbf{Cuándo revisar:} si el coste de la subpetición se notara bajo carga, los servicios
 pueden verificar la firma por su cuenta con la clave pública y consultar Redis directamente ---
 sigue sin necesitar la privada.
+
+\subsection*{ADR-12 --- Arquitectura basada en servicios: un servicio de dominio agregado y dos replicables}
+
+\textbf{Contexto:} ADR-01 fijó seis microservicios, uno por dominio, cada uno con base de datos
+propia. Al construir el prototipo funcional aparecieron tres hechos medibles sobre el sistema
+desplegado que esa decisión no previó:
+
+\begin{itemize}
+  \item \textbf{Solo uno de los seis se replica.} El fichero
+        \texttt{App/infra/docker-compose.escalado.yml} existe únicamente para quitarle el puerto
+        fijo al servicio de Entradas y poder correr \texttt{-{}-scale=2}. Los otros cinco declaran
+        \texttt{container\_name} y puerto publicados, que por construcción impiden una segunda
+        instancia: la independencia de despliegue de seis servicios compró escalado independiente
+        de uno.
+  \item \textbf{Dos de los seis no existen.} \textit{Personal} y \textit{Parqueaderos} no pasaron
+        de su \texttt{README}. La granularidad elegida excedió la capacidad real del equipo, y con
+        ella la cobertura de pruebas de esos dos dominios es del \textbf{0\%}.
+  \item \textbf{La separación de datos ya es lógica, no física.} Las seis bases se crean sobre una
+        sola instancia de PostgreSQL (\texttt{App/infra/initdb/01-bases.sql}). El sistema paga el
+        coste de coordinar entre dominios --- \textit{Pago} en una base y \textit{Pedido} en otra,
+        reconciliados a nivel de aplicación --- sin obtener el aislamiento de fallos que
+        justificaría pagarlo.
+\end{itemize}
+
+El diagnóstico no es que ADR-01 eligiera mal el criterio, sino que lo aplicó a una granularidad que
+los requisitos no piden: en el vocabulario del \textit{Scale Cube}, se descompuso por función (eje
+Y) los seis dominios cuando solo uno tiene una curva de carga distinta del resto.
+
+\textbf{Alternativas consideradas:}
+\begin{itemize}
+  \item \textbf{Mantener ADR-01 y corregir solo la replicabilidad.} Quitar
+        \texttt{container\_name} y los puertos fijos a los servicios que no los necesitan. Cuesta
+        una tarde y cierra el defecto operativo, pero deja cinco unidades desplegables cuya curva
+        de carga no justifica el coste de mantenerlas, y no responde a la objeción de fondo.
+  \item \textbf{Monolito modular} --- una sola unidad desplegable con fronteras internas. Rompe
+        RNF-10: no permite duplicar el servicio de Entradas durante una apertura de venta sin
+        duplicar también Pedidos, Personal y Parqueaderos.
+  \item \textbf{Monolito replicado en bloque} (eje X puro). Absorbe la carga, pero sobre-aprovisiona:
+        cada réplica arrastra los módulos que nadie está usando.
+  \item \textbf{Arquitectura basada en servicios} --- la elegida.
+\end{itemize}
+
+\textbf{Decisión:} se adopta una \textbf{arquitectura basada en servicios}
+(\textit{Service-Based Architecture}), con partición por dominio, granularidad gruesa y la variante
+de \textbf{base de datos particionada por dominio}. El backend queda en \textbf{tres servicios de
+dominio} en lugar de seis:
+
+\begin{itemize}
+  \item \textbf{Núcleo} --- una unidad desplegable que contiene \textit{Administración} y
+        \textit{Pedidos} como módulos, y donde se incorporarán \textit{Personal} y
+        \textit{Parqueaderos} cuando se implementen. Cada módulo conserva su esquema de datos, su
+        \texttt{data-source} y su propia secuencia de migraciones, de modo que un cambio de esquema
+        en un dominio sigue sin tocar a los demás.
+  \item \textbf{Entradas / Mercado Secundario} --- servicio independiente y replicable.
+  \item \textbf{Eventos / Emergencias} --- servicio independiente y replicable.
+\end{itemize}
+
+El \textbf{API Gateway} (ADR-02), \textbf{Redis} (ADR-03), la \textbf{cola de mensajes} (ADR-10) y
+el esquema de \textbf{dos tokens RS256} (ADR-11) no cambian, y tampoco cambia ninguna ruta pública:
+el gateway pasa de enrutar hacia dos destinos a enrutar hacia uno, con lo que los portales web y la
+app móvil no se modifican. Esta decisión \textbf{supera a ADR-01}.
+
+\textbf{Criterio de extracción.} Un dominio permanece como servicio independiente ---y no como
+módulo del núcleo--- solo si cumple al menos una de estas dos condiciones:
+
+\begin{enumerate}
+  \item \textbf{Su curva de carga difiere en orden de magnitud de la del resto}, por lo que necesita
+        réplicas propias. Es el caso de Entradas: RNF-07 exige p95 $\leq$ 500 ms con 2.000 usuarios
+        concurrentes en la apertura de venta, y RNF-10 exige que al duplicar sus instancias el
+        \textit{throughput} crezca $\geq$ 1,7$\times$.
+  \item \textbf{Su disponibilidad no puede depender de la del resto del sistema.} Es el caso de
+        Eventos / Emergencias: RNF-17 exige que una evacuación llegue al $\geq$ 99\% de los
+        dispositivos en $\leq$ 10 s, y RNF-09 que el tablero de aforo refleje un ingreso en
+        $\leq$ 2 s. Si el núcleo deja de responder, la evacuación debe seguir funcionando.
+\end{enumerate}
+
+Ninguno de los cuatro dominios restantes cumple ninguna de las dos condiciones: su carga es plana y
+comparable entre sí, y su caída no compromete la seguridad física de nadie. De ahí que los satélites
+sean exactamente dos, y no tres ni cuatro. El criterio es además la regla con la que se decidirá
+dónde ubicar cualquier dominio que entre al sistema más adelante.
+
+\medskip
+Dos decisiones acompañan a la principal:
+
+\begin{itemize}
+  \item \textbf{Fronteras de módulo verificadas por herramienta.} Dentro del núcleo, lo que antes
+        garantizaba el límite de proceso lo garantiza ahora una regla de \textit{linting} y una
+        prueba automática que fallan si un módulo importa de otro algo que no sea su API pública.
+        Esto es \textit{más} verificable que la situación anterior, en la que nada impedía que un
+        servicio consultara la base de datos de otro.
+  \item \textbf{El núcleo arranca con una sola instancia.} Administración y Pedidos ya corren hoy en
+        instancia única, de modo que un núcleo de una réplica no degrada la disponibilidad respecto
+        al estado actual. La segunda réplica queda como iteración posterior porque exige resolver
+        antes la ejecución de trabajos en segundo plano (ver \textit{Consecuencias}).
+\end{itemize}
+
+\textbf{Atributo de calidad:} \textbf{Mantenibilidad} (ASR-09) y simplicidad operativa como
+motivación principal --- se pasa de seis unidades desplegables a tres sin perder ninguna capacidad
+medida; \textbf{Escalabilidad} (ASR-06), que se preserva intacta porque el único dominio que exigía
+escalar de forma independiente sigue haciéndolo; \textbf{Consistencia} (RNF-01), que mejora porque
+los módulos del núcleo pueden compartir una transacción en lugar de reconciliarse a nivel de
+aplicación; y \textbf{Comprobabilidad} (RNF-18), porque un módulo se prueba con dobles en proceso
+sin levantar contenedores.
+
+\textbf{Evidencia:} la justificación de la decisión es verificable hoy sobre el repositorio y sobre
+el sistema desplegado. Que solo un servicio admite réplicas se comprueba en
+\texttt{docker-compose.escalado.yml} y en los \texttt{container\_name} del \texttt{docker-compose.yml};
+que dos dominios no están implementados, en \texttt{App/services/personal/} y
+\texttt{App/services/parqueaderos/}; que las seis bases comparten instancia, en
+\texttt{initdb/01-bases.sql}; y que \textbf{no hay una sola llamada HTTP síncrona entre servicios}
+---lo que distingue esta arquitectura de un monolito distribuido--- en que los servicios solo se
+comunican por el gateway, por la cola de mensajes y verificando el token con la clave pública.
+
+La línea base contra la que se validará la migración es la de
+\texttt{App/infra/informe-atributos/INFORME.md}: p95 de \textbf{189,9 ms} con 200 peticiones
+simultáneas (umbral 500 ms), recuperación tras \texttt{kill -9} en \textbf{1,3 s} (umbral 30 s),
+\textbf{0\%} de rutas de negocio alcanzables sin token, y \textbf{1 de 50} compras concurrentes
+aceptada sobre la misma publicación. La condición de aceptación de la migración es que
+\texttt{App/infra/atributos-calidad.py} devuelva cifras iguales o mejores que estas. \textit{Esa
+medición posterior está pendiente: a la fecha de este registro la decisión está tomada y la
+migración no se ha ejecutado.}
+
+\textbf{Consecuencias:} agrupar cuatro dominios en una unidad desplegable tiene tres costes
+identificados, y los tres tienen una respuesta explícita.
+
+\begin{itemize}
+  \item \textbf{RNF-13 deja de cumplirse en su formulación literal.} Su métrica exige
+        «microservicios que deben modificarse y redesplegarse ante un cambio típico de negocio:
+        1», y un cambio en las reglas de Pedidos redespliega ahora todo el núcleo. La métrica se
+        reformula a «\textbf{módulos de dominio que deben modificarse: 1}; unidades desplegables
+        afectadas: 1», porque el atributo que el requisito perseguía es el \textbf{bajo
+        acoplamiento}, no el número de procesos --- y eso lo garantizan las fronteras verificadas
+        por herramienta.
+  \item \textbf{El radio de impacto crece.} Una excepción no atrapada en un módulo puede detener el
+        proceso que también atiende el inicio de sesión, algo imposible mientras eran procesos
+        separados. El núcleo es \textit{stateless} y está preparado para correr con varias
+        réplicas detrás del balanceador; mientras corra con una sola, su disponibilidad es la misma
+        que la de hoy.
+  \item \textbf{Aparecen dos acoplamientos nuevos dentro del proceso.} El primero es el
+        \textbf{pool de hilos}: Administración fija \texttt{UV\_THREADPOOL\_SIZE} porque el derivado
+        de contraseñas es bloqueante, y ese pool queda compartido con las consultas de Pedidos; es
+        precisamente lo que debe vigilarse al volver a medir el desempeño. El segundo son los
+        \textbf{trabajos en segundo plano}: la caducidad de reservas de inventario de Pedidos es un
+        temporizador, y con dos réplicas se ejecutaría dos veces sobre las mismas reservas. Antes de
+        activar la segunda réplica debe protegerse con un candado en Redis (\texttt{SET NX} con
+        vencimiento, ADR-03), de modo que solo la instancia que lo obtiene ejecute el ciclo. Los
+        consumidores de la cola de mensajes no tienen este problema: RabbitMQ reparte cada mensaje a
+        una sola instancia.
+\end{itemize}
+
+\textbf{Cuándo revisar:} si alguno de los módulos del núcleo desarrolla su propia curva de carga o
+su propio ciclo de despliegue, se le aplica el criterio de extracción y sale como servicio
+independiente. La estructura elegida ---un módulo por dominio, con esquema, \texttt{data-source} y
+migraciones propios--- está pensada precisamente para que esa extracción sea una operación de
+empaquetado y no una reescritura del dominio.
 
 % ==================== Tácticas arquitectónicas ====================
 \section{Tácticas arquitectónicas por atributo de calidad}

@@ -160,7 +160,7 @@ Sistema & Proveedor de Notificaciones & Envía notificaciones push, correo y SMS
 \section{Nivel 2 — Diagrama de contenedores}
 
 \textbf{Tipo:} diagrama de contenedores. \textbf{Alcance:} zoom dentro del sistema, mostrando las
-aplicaciones desplegables, los microservicios de dominio y la infraestructura de soporte.
+aplicaciones desplegables, los servicios de dominio y la infraestructura de soporte.
 \textbf{Audiencia:} arquitectos y desarrolladores.
 
 \begin{figure}[H]
@@ -171,7 +171,7 @@ interactiva está en \texttt{Diagrams/Archify/}.}
 \label{fig:contenedores}
 \end{figure}
 
-\textbf{Leyenda:} cian = interfaz de usuario; verde = microservicio; rojo = API Gateway; violeta =
+\textbf{Leyenda:} cian = interfaz de usuario; verde = servicio de dominio; rojo = API Gateway; violeta =
 almacenamiento (Redis y bases de datos); naranja = cola de mensajes; gris = sistema externo. Las
 flechas punteadas indican interacciones asíncronas.
 
@@ -197,7 +197,9 @@ Empleado & App Móvil & Consulta turnos y registra ingreso/salida. & HTTPS\\
 Administrador & Portal Web Admin & Administra usuarios, personal y configuración. & HTTPS\\
 Supervisor de emergencia & Portal Web Admin & Activa y coordina el protocolo de evacuación. & HTTPS\\
 Las tres interfaces & API Gateway & Envía las solicitudes del usuario al backend. & HTTPS/JSON\\
-API Gateway & Microservicios & Enruta cada solicitud al servicio correspondiente y balancea la carga. & HTTPS/JSON\\
+API Gateway & Servicios de dominio & Enruta cada solicitud al servicio correspondiente y balancea la carga entre sus réplicas. & HTTPS/JSON\\
+Núcleo & Bases de Datos & Persiste cuentas, sesiones y pedidos; una conexión por módulo. & SQL\\
+Núcleo & Redis & Publica y consulta las sesiones revocadas (ADR-11). & Redis\\
 Servicio de Entradas & Bases de Datos & Persiste entradas, publicaciones y transferencias. & SQL\\
 Servicio de Entradas & Redis & Bloquea temporalmente una publicación durante el checkout. & Redis\\
 Eventos / Emergencias & Redis & Actualiza el estado de ocupación de zonas en tiempo real. & Redis\\
@@ -350,8 +352,8 @@ Entradas.}
 
 \textbf{Tipo:} diagrama de despliegue (\textit{Deployment Diagram}). \textbf{Alcance:} muestra en
 qué nodos de infraestructura real se despliegan los contenedores del Nivel 2: dispositivos del
-usuario, red de distribución de contenido, clúster de aplicación y clústeres de datos/mensajería,
-en un ambiente de producción en la nube. \textbf{Audiencia:} arquitectos, DevOps e infraestructura.
+usuario, red de distribución de contenido, los tres servicios de dominio y los clústeres de
+datos/mensajería, en un ambiente de producción en la nube. \textbf{Audiencia:} arquitectos, DevOps e infraestructura.
 
 \begin{figure}[H]
 \centering
@@ -361,7 +363,7 @@ en un ambiente de producción en la nube. \textbf{Audiencia:} arquitectos, DevOp
 \label{fig:despliegue}
 \end{figure}
 
-\textbf{Leyenda:} ámbar = nodo de infraestructura (CDN/Edge); verde = clúster de aplicación; violeta
+\textbf{Leyenda:} ámbar = nodo de infraestructura (CDN/Edge); verde = servicio de dominio desplegado; violeta
 = clústeres de datos; naranja = clúster de mensajería; rojo = balanceador + API Gateway; gris =
 dispositivo del usuario y sistemas externos. El recuadro punteado delimita el ambiente de
 producción en la nube.
@@ -384,11 +386,15 @@ producción en la nube.
 \endlastfoot
 Dispositivo del usuario & CDN / Edge & Descarga los archivos estáticos de la aplicación web. & HTTPS\\
 Dispositivo del usuario & Balanceador + API Gateway & Envía las solicitudes de la API. & HTTPS/JSON\\
-Balanceador + API Gateway & Clúster de Aplicación & Enruta y balancea la carga entre las réplicas de cada microservicio. & HTTPS/JSON\\
-Clúster de Aplicación & Clúster de BD & Persiste y consulta los datos de cada dominio. & SQL\\
-Clúster de Aplicación & Clúster Redis & Caché de lectura y bloqueos temporales de concurrencia. & Redis\\
-Clúster de Aplicación & Clúster de Mensajería & Publica eventos de dominio para procesamiento asíncrono. & AMQP\\
-Clúster de Aplicación & Pasarela de Pagos & Procesa cobros y reembolsos. & HTTPS/REST\\
+Balanceador + API Gateway & Núcleo & Enruta las rutas de cuentas, sesiones y pedidos; instancia única (ADR-12). & HTTPS/JSON\\
+Balanceador + API Gateway & Entradas / Mdo. Secundario & Enruta y balancea la carga entre sus réplicas. & HTTPS/JSON\\
+Balanceador + API Gateway & Eventos / Emergencias & Enruta y balancea la carga entre sus réplicas. & HTTPS/JSON\\
+Núcleo & Clúster de BD & Persiste cuentas, sesiones y pedidos; una conexión por módulo. & SQL\\
+Entradas / Mdo. Secundario & Clúster de BD & Persiste entradas, publicaciones y transferencias. & SQL\\
+Entradas / Mdo. Secundario & Clúster Redis & Caché de lectura y bloqueo temporal durante el checkout. & Redis\\
+Entradas / Mdo. Secundario & Clúster de Mensajería & Publica eventos de dominio para procesamiento asíncrono. & AMQP\\
+Eventos / Emergencias & Clúster de Mensajería & Publica las alertas de evacuación. & AMQP\\
+Entradas / Mdo. Secundario & Pasarela de Pagos & Procesa cobros y reembolsos. & HTTPS/REST\\
 Clúster de Mensajería & Proveedor de Notificaciones & Dispara notificaciones push, correo y SMS. & HTTPS/REST\\
 \end{longtable}
 

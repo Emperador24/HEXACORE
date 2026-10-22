@@ -21,30 +21,28 @@
         "note": "El camino que resuelve CU-006, el hilo conductor del sistema."
       },
       {
-        "id": "operacion-personal",
-        "label": "Operación y personal",
+        "id": "nucleo-y-operacion",
+        "label": "Núcleo y operación",
         "focus": [
           "portal_admin",
           "app_movil",
           "gateway",
-          "svc_personal",
+          "svc_nucleo",
           "svc_eventos",
           "queue"
         ],
-        "note": "Cómo se coordinan organizador, empleados y el protocolo de emergencia."
+        "note": "Cuentas, pedidos y el protocolo de emergencia: lo que atiende el núcleo y lo que se le saca aparte."
       },
       {
-        "id": "infraestructura-async",
-        "label": "Infraestructura asíncrona",
+        "id": "replicacion",
+        "label": "Qué se replica",
         "focus": [
+          "gateway",
+          "svc_nucleo",
           "svc_entradas",
-          "svc_eventos",
-          "svc_parqueaderos",
-          "redis",
-          "queue",
-          "notif"
+          "svc_eventos"
         ],
-        "note": "Qué microservicios dependen de Redis y de la cola de mensajes."
+        "note": "Los dos satélites escalan por réplicas; el núcleo corre en instancia única (ADR-12)."
       }
     ]
   },
@@ -106,87 +104,45 @@
       ]
     },
     {
-      "id": "svc_entradas",
+      "id": "svc_nucleo",
       "type": "backend",
-      "label": "Servicio de Entradas",
-      "sublabel": "CU-001..006 · PostgreSQL",
+      "label": "Núcleo",
+      "sublabel": "4 módulos · instancia única",
       "pos": [
         483.6,
-        0.0
+        54.0
       ],
       "size": [
         187.2,
-        46.8
+        62.0
       ]
     },
     {
-      "id": "svc_personal",
+      "id": "svc_entradas",
       "type": "backend",
-      "label": "Servicio de Personal",
-      "sublabel": "CU-007..009 · PostgreSQL",
+      "label": "Entradas / Mercado Secundario",
+      "sublabel": "CU-001..006 · satélite replicable",
       "pos": [
         483.6,
-        78.0
+        176.0
       ],
       "size": [
         187.2,
-        46.8
+        62.0
       ]
     },
     {
       "id": "svc_eventos",
       "type": "backend",
       "label": "Eventos / Emergencias",
-      "sublabel": "CU-010, 016..020, 026 · PostgreSQL",
+      "sublabel": "CU-010, 016..020, 026 · satélite replicable",
       "pos": [
         483.6,
-        156.0
+        298.0
       ],
       "size": [
         187.2,
-        46.8
-      ]
-    },
-    {
-      "id": "svc_parqueaderos",
-      "type": "backend",
-      "label": "Servicio de Parqueaderos",
-      "sublabel": "CU-021..025 · PostgreSQL",
-      "pos": [
-        483.6,
-        234.0
-      ],
-      "size": [
-        187.2,
-        46.8
-      ]
-    },
-    {
-      "id": "svc_pedidos",
-      "type": "backend",
-      "label": "Servicio de Pedidos",
-      "sublabel": "CU-011..015 · PostgreSQL",
-      "pos": [
-        483.6,
-        312.0
-      ],
-      "size": [
-        187.2,
-        46.8
-      ]
-    },
-    {
-      "id": "svc_admin",
-      "type": "backend",
-      "label": "Servicio de Administración",
-      "sublabel": "CU-027..032 · PostgreSQL + MongoDB",
-      "pos": [
-        483.6,
-        390.0
-      ],
-      "size": [
-        187.2,
-        46.8
+        62.0
       ]
     },
     {
@@ -221,7 +177,7 @@
       "id": "db",
       "type": "database",
       "label": "Bases de Datos",
-      "sublabel": "una por servicio",
+      "sublabel": "una por dominio",
       "pos": [
         826.8,
         374.4
@@ -260,6 +216,18 @@
       ]
     }
   ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Backend — 3 servicios de dominio (ADR-12)",
+      "wraps": [
+        "svc_nucleo",
+        "svc_entradas",
+        "svc_eventos"
+      ],
+      "pad": 26
+    }
+  ],
   "connections": [
     {
       "id": "app-movil-gateway",
@@ -282,36 +250,24 @@
       "label": "HTTPS/JSON"
     },
     {
+      "id": "gateway-nucleo",
+      "from": "gateway",
+      "to": "svc_nucleo",
+      "label": "/cuentas · /pedidos"
+    },
+    {
       "id": "gateway-entradas",
       "from": "gateway",
       "to": "svc_entradas",
-      "label": "enruta",
-      "variant": "emphasis"
-    },
-    {
-      "id": "gateway-personal",
-      "from": "gateway",
-      "to": "svc_personal"
+      "label": "/entradas · /reventa",
+      "variant": "emphasis",
+      "labelDy": -29
     },
     {
       "id": "gateway-eventos",
       "from": "gateway",
-      "to": "svc_eventos"
-    },
-    {
-      "id": "gateway-parqueaderos",
-      "from": "gateway",
-      "to": "svc_parqueaderos"
-    },
-    {
-      "id": "gateway-pedidos",
-      "from": "gateway",
-      "to": "svc_pedidos"
-    },
-    {
-      "id": "gateway-admin",
-      "from": "gateway",
-      "to": "svc_admin"
+      "to": "svc_eventos",
+      "label": "/eventos · /aforo"
     },
     {
       "id": "entradas-db",
@@ -322,14 +278,11 @@
       "route": "orthogonal-h"
     },
     {
-      "id": "admin-db",
-      "from": "svc_admin",
+      "id": "nucleo-db",
+      "from": "svc_nucleo",
       "to": "db",
-      "label": "SQL + Mongo",
-      "labelAt": [
-        695,
-        386
-      ]
+      "label": "SQL — una conexión por módulo",
+      "route": "orthogonal-h"
     },
     {
       "id": "entradas-redis",
@@ -338,6 +291,12 @@
       "label": "bloqueo checkout",
       "variant": "emphasis",
       "labelDy": -10
+    },
+    {
+      "id": "nucleo-redis",
+      "from": "svc_nucleo",
+      "to": "redis",
+      "label": "sesiones revocadas"
     },
     {
       "id": "entradas-queue",
@@ -349,12 +308,20 @@
       "labelDy": 10
     },
     {
+      "id": "eventos-queue",
+      "from": "svc_eventos",
+      "to": "queue",
+      "label": "alerta de evacuación",
+      "variant": "dashed",
+      "route": "orthogonal-h"
+    },
+    {
       "id": "entradas-pagos",
       "from": "svc_entradas",
       "to": "pagos",
       "label": "cobra compra/reventa",
       "variant": "emphasis",
-      "labelDy": 12
+      "labelDy": -20
     },
     {
       "id": "queue-notif",
@@ -376,20 +343,21 @@
     },
     {
       "dot": "emerald",
-      "title": "Backend por dominio",
+      "title": "Arquitectura basada en servicios (ADR-12)",
       "items": [
-        "6 microservicios independientes, uno por dominio de negocio",
-        "Cada uno con su propio esquema (ADR-01, polyglot en Administración)",
-        "El API Gateway es el único punto de entrada — ninguna app llama a un microservicio directamente"
+        "El Núcleo agrupa cuatro módulos de dominio en una sola unidad desplegable: Administración (CU-027..032), Pedidos (CU-011..015), Personal (CU-007..009) y Parqueaderos (CU-021..025)",
+        "Cada módulo conserva su esquema de datos y su propia secuencia de migraciones, con fronteras verificadas por herramienta — un cambio en uno no toca a los demás",
+        "El API Gateway sigue siendo el único punto de entrada: ninguna app llama a un servicio directamente (ADR-02, RNF-06)"
       ]
     },
     {
       "dot": "amber",
-      "title": "Infraestructura de soporte (patrón representativo)",
+      "title": "Por qué solo dos servicios quedan aparte",
       "items": [
-        "Para no saturar el diagrama, solo se dibuja el detalle completo de Entradas — los otros 5 servicios siguen el mismo patrón hacia Bases de Datos y, cuando aplica, Redis/Cola/Pasarela (ver Nivel 3 para el detalle interno de Entradas)",
-        "Redis: bloqueo temporal en checkout de reventa y datos de ocupación en tiempo real (también lo usan Eventos/Emergencias y Parqueaderos)",
-        "Cola de mensajes: desacopla QR, notificaciones, auditoría y liquidación; las notificaciones nunca bloquean la respuesta"
+        "Entradas / Mercado Secundario: su curva de carga difiere en orden de magnitud — RNF-07 exige p95 ≤ 500 ms con 2.000 concurrentes y RNF-10 un throughput ≥ 1,7× al duplicar instancias",
+        "Eventos / Emergencias: su disponibilidad no puede depender del resto — RNF-17 exige que la evacuación llegue al ≥ 99 % de los dispositivos en ≤ 10 s",
+        "Ningún otro dominio cumple ninguna de las dos condiciones, de ahí que los satélites sean exactamente dos",
+        "Para no saturar el diagrama solo se dibuja el detalle completo de Entradas; los otros dos servicios siguen el mismo patrón hacia Bases de Datos, Redis y la cola"
       ]
     }
   ]

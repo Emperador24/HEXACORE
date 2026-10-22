@@ -5035,12 +5035,16 @@
         <!-- Connection paths (before components for correct z-order) -->
         <path data-edge-from="usuario" data-edge-to="cdn" data-edge-label="descarga estáticos" data-edge-key="0" data-edge-id="usuario-cdn" data-composition-points="210,308;255,308;255,132;300,132" d="M 210 308 L 247 308 Q 255 308 255 300 L 255 140 Q 255 132 263 132 L 300 132" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
         <path data-edge-from="usuario" data-edge-to="balanceador" data-edge-label="HTTPS/JSON" data-edge-key="1" data-edge-id="usuario-balanceador" data-composition-points="210,322;255,322;255,352;300,352" d="M 210 322 L 247 322 Q 255 322 255 330 L 255 344 Q 255 352 263 352 L 300 352" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="balanceador" data-edge-to="cluster_app" data-edge-label="enruta y balancea" data-edge-key="2" data-edge-id="balanceador-cluster" data-composition-points="500,352;630,352" d="M 500 352 L 630 352" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="cluster_app" data-edge-to="cluster_bd" data-edge-label="SQL" data-edge-key="3" data-edge-id="cluster-bd" data-composition-points="850,355;905,355;905,172;960,172" d="M 850 355 L 897 355 Q 905 355 905 347 L 905 180 Q 905 172 913 172 L 960 172" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="cluster_app" data-edge-to="cluster_redis" data-edge-label="caché + bloqueos" data-edge-key="4" data-edge-id="cluster-redis" data-composition-points="850,362;960,362" d="M 850 362 L 960 362" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="cluster_app" data-edge-to="cluster_mensajeria" data-edge-label="publica eventos" data-edge-key="5" data-edge-id="cluster-mensajeria" data-composition-points="850,355;905,355;905,532;960,532" d="M 850 355 L 897 355 Q 905 355 905 363 L 905 524 Q 905 532 913 532 L 960 532" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        <path data-edge-from="cluster_app" data-edge-to="pagos" data-edge-label="cobros y reembolsos" data-edge-key="6" data-edge-id="cluster-pagos" data-composition-points="850,348;874,348;874,252;1280,252" d="M 850 348 L 866 348 Q 874 348 874 340 L 874 260 Q 874 252 882 252 L 1280 252" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="cluster_mensajeria" data-edge-to="notif" data-edge-label="push, correo, SMS" data-edge-key="7" data-edge-id="mensajeria-notif" data-composition-points="1180,532;1280,532" d="M 1180 532 L 1280 532" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="balanceador" data-edge-to="nodo_nucleo" data-edge-label="enruta" data-edge-key="2" data-edge-id="balanceador-nucleo" data-composition-points="500,338;560,338;560,230;620,230" d="M 500 338 L 552 338 Q 560 338 560 330 L 560 238 Q 560 230 568 230 L 620 230" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="balanceador" data-edge-to="nodo_entradas" data-edge-label="enruta y balancea" data-edge-key="3" data-edge-id="balanceador-entradas" data-composition-points="500,352;560,352;560,330;620,330" d="M 500 352 L 552 352 Q 560 352 560 344 L 560 338 Q 560 330 568 330 L 620 330" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="balanceador" data-edge-to="nodo_eventos" data-edge-label="enruta y balancea" data-edge-key="4" data-edge-id="balanceador-eventos" data-composition-points="500,366;560,366;560,430;620,430" d="M 500 366 L 552 366 Q 560 366 560 374 L 560 422 Q 560 430 568 430 L 620 430" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="nodo_nucleo" data-edge-to="cluster_bd" data-edge-label="SQL" data-edge-key="5" data-edge-id="nucleo-bd" data-composition-points="850,230;905,230;905,172;960,172" d="M 850 230 L 897 230 Q 905 230 905 222 L 905 180 Q 905 172 913 172 L 960 172" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="nodo_entradas" data-edge-to="cluster_bd" data-edge-label="SQL" data-edge-key="6" data-edge-id="entradas-bd" data-composition-points="850,330;905,330;905,172;960,172" d="M 850 330 L 897 330 Q 905 330 905 322 L 905 180 Q 905 172 913 172 L 960 172" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="nodo_entradas" data-edge-to="cluster_redis" data-edge-label="caché + bloqueos" data-edge-key="7" data-edge-id="entradas-redis" data-composition-points="850,337;960,337" d="M 850 337 L 960 337" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="nodo_entradas" data-edge-to="cluster_mensajeria" data-edge-label="publica eventos" data-edge-key="8" data-edge-id="entradas-mensajeria" data-composition-points="850,330;905,330;905,532;960,532" d="M 850 330 L 897 330 Q 905 330 905 338 L 905 524 Q 905 532 913 532 L 960 532" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="nodo_eventos" data-edge-to="cluster_mensajeria" data-edge-label="alerta de evacuación" data-edge-key="9" data-edge-id="eventos-mensajeria" data-composition-points="850,430;905,430;905,532;960,532" d="M 850 430 L 897 430 Q 905 430 905 438 L 905 524 Q 905 532 913 532 L 960 532" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="nodo_entradas" data-edge-to="pagos" data-edge-label="cobros y reembolsos" data-edge-key="10" data-edge-id="entradas-pagos" data-composition-points="850,323;874,323;874,252;1280,252" d="M 850 323 L 866 323 Q 874 323 874 315 L 874 260 Q 874 252 882 252 L 1280 252" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="cluster_mensajeria" data-edge-to="notif" data-edge-label="push, correo, SMS" data-edge-key="11" data-edge-id="mensajeria-notif" data-composition-points="1180,532;1280,532" d="M 1180 532 L 1280 532" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
 
         <!-- Components -->
         <g id="node-usuario" data-node-id="usuario" data-node-label="Dispositivo del usuario" tabindex="0" role="button" aria-label="Focus Dispositivo del usuario, navegador o app instalada, Architecture component" aria-pressed="false" data-node-kind="external" data-node-sublabel="navegador o app instalada" data-node-context="Architecture component">
@@ -5078,19 +5082,41 @@
         <text data-detail="context" x="400" y="366" class="t-muted" font-size="9" text-anchor="middle">público :443</text>
         </g>
 
-        <g id="node-cluster_app" data-node-id="cluster_app" data-node-label="Clúster de Aplicación" tabindex="0" role="button" aria-label="Focus Clúster de Aplicación, réplicas de los 6 microservicios, Ambiente de producción en la nube" aria-pressed="false" data-node-kind="backend" data-node-sublabel="réplicas de los 6 microservicios" data-node-context="Ambiente de producción en la nube">
-          <title>Clúster de Aplicación · réplicas de los 6 microservicios · Ambiente de producción en la nube</title>
-          <rect x="630" y="320" width="220" height="70" rx="6" class="c-mask"/>
-          <rect x="630" y="320" width="220" height="70" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(636 326) scale(0.6875)">
+        <g id="node-nodo_nucleo" data-node-id="nodo_nucleo" data-node-label="Núcleo" tabindex="0" role="button" aria-label="Focus Núcleo, 1 unidad desplegable · 1 réplica, Ambiente de producción en la nube" aria-pressed="false" data-node-kind="backend" data-node-sublabel="1 unidad desplegable · 1 réplica" data-node-context="Ambiente de producción en la nube">
+          <title>Núcleo · 1 unidad desplegable · 1 réplica · Ambiente de producción en la nube</title>
+          <rect x="620" y="200" width="230" height="60" rx="6" class="c-mask"/>
+          <rect x="620" y="200" width="230" height="60" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(626 206) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="740" y="353" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Clúster de Aplicación</text>
-        <text data-detail="context" x="740" y="369" class="t-muted" font-size="9" text-anchor="middle">réplicas de los 6 microservicios</text>
+          <text data-node-label="" data-detail-anchor="" x="735" y="228" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Núcleo</text>
+        <text data-detail="context" x="735" y="244" class="t-muted" font-size="9" text-anchor="middle">1 unidad desplegable · 1 réplica</text>
         </g>
 
-        <g id="node-cluster_bd" data-node-id="cluster_bd" data-node-label="Clúster de Bases de Datos" tabindex="0" role="button" aria-label="Focus Clúster de Bases de Datos, PostgreSQL (x6) + MongoDB, Ambiente de producción en la nube" aria-pressed="false" data-node-kind="database" data-node-sublabel="PostgreSQL (x6) + MongoDB" data-node-context="Ambiente de producción en la nube">
-          <title>Clúster de Bases de Datos · PostgreSQL (x6) + MongoDB · Ambiente de producción en la nube</title>
+        <g id="node-nodo_entradas" data-node-id="nodo_entradas" data-node-label="Entradas / Mdo. Secundario" tabindex="0" role="button" aria-label="Focus Entradas / Mdo. Secundario, N réplicas tras el balanceador, Ambiente de producción en la nube" aria-pressed="false" data-node-kind="backend" data-node-sublabel="N réplicas tras el balanceador" data-node-context="Ambiente de producción en la nube">
+          <title>Entradas / Mdo. Secundario · N réplicas tras el balanceador · Ambiente de producción en la nube</title>
+          <rect x="620" y="300" width="230" height="60" rx="6" class="c-mask"/>
+          <rect x="620" y="300" width="230" height="60" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(626 306) scale(0.6875)">
+            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="735" y="328" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Entradas / Mdo. Secundario</text>
+        <text data-detail="context" x="735" y="344" class="t-muted" font-size="9" text-anchor="middle">N réplicas tras el balanceador</text>
+        </g>
+
+        <g id="node-nodo_eventos" data-node-id="nodo_eventos" data-node-label="Eventos / Emergencias" tabindex="0" role="button" aria-label="Focus Eventos / Emergencias, N réplicas tras el balanceador, Ambiente de producción en la nube" aria-pressed="false" data-node-kind="backend" data-node-sublabel="N réplicas tras el balanceador" data-node-context="Ambiente de producción en la nube">
+          <title>Eventos / Emergencias · N réplicas tras el balanceador · Ambiente de producción en la nube</title>
+          <rect x="620" y="400" width="230" height="60" rx="6" class="c-mask"/>
+          <rect x="620" y="400" width="230" height="60" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(626 406) scale(0.6875)">
+            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="735" y="428" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Eventos / Emergencias</text>
+        <text data-detail="context" x="735" y="444" class="t-muted" font-size="9" text-anchor="middle">N réplicas tras el balanceador</text>
+        </g>
+
+        <g id="node-cluster_bd" data-node-id="cluster_bd" data-node-label="Clúster de Bases de Datos" tabindex="0" role="button" aria-label="Focus Clúster de Bases de Datos, PostgreSQL por dominio + MongoDB, Ambiente de producción en la nube" aria-pressed="false" data-node-kind="database" data-node-sublabel="PostgreSQL por dominio + MongoDB" data-node-context="Ambiente de producción en la nube">
+          <title>Clúster de Bases de Datos · PostgreSQL por dominio + MongoDB · Ambiente de producción en la nube</title>
           <rect x="960" y="140" width="220" height="64" rx="6" class="c-mask"/>
           <rect x="960" y="140" width="220" height="64" rx="6" class="c-database" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(966 146) scale(0.6875)">
@@ -5098,7 +5124,7 @@
             <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
           </g>
           <text data-node-label="" data-detail-anchor="" x="1070" y="170" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Clúster de Bases de Datos</text>
-        <text data-detail="context" x="1070" y="186" class="t-muted" font-size="9" text-anchor="middle">PostgreSQL (x6) + MongoDB</text>
+        <text data-detail="context" x="1070" y="186" class="t-muted" font-size="9" text-anchor="middle">PostgreSQL por dominio + MongoDB</text>
         </g>
 
         <g id="node-cluster_redis" data-node-id="cluster_redis" data-node-label="Clúster Redis" tabindex="0" role="button" aria-label="Focus Clúster Redis, multi-nodo, Ambiente de producción en la nube" aria-pressed="false" data-node-kind="database" data-node-sublabel="multi-nodo" data-node-context="Ambiente de producción en la nube">
@@ -5160,27 +5186,43 @@
           <rect x="226" y="317" width="58" height="14" rx="3" class="c-mask"/>
           <text x="255" y="327" class="t-backend" font-size="8" text-anchor="middle">HTTPS/JSON</text>
         </g>
-        <g data-detail="context" data-edge-from="balanceador" data-edge-to="cluster_app" data-edge-label="enruta y balancea" data-edge-key="2" data-edge-id="balanceador-cluster">
-          <rect x="519.2" y="332" width="91.6" height="14" rx="3" class="c-mask"/>
-          <text x="565" y="342" class="t-backend" font-size="8" text-anchor="middle">enruta y balancea</text>
+        <g data-detail="context" data-edge-from="balanceador" data-edge-to="nodo_nucleo" data-edge-label="enruta" data-edge-key="2" data-edge-id="balanceador-nucleo">
+          <rect x="540.6" y="264" width="38.8" height="14" rx="3" class="c-mask"/>
+          <text x="560" y="274" class="t-muted" font-size="8" text-anchor="middle">enruta</text>
         </g>
-        <g data-detail="context" data-edge-from="cluster_app" data-edge-to="cluster_bd" data-edge-label="SQL" data-edge-key="3" data-edge-id="cluster-bd">
-          <rect x="890" y="243.5" width="30" height="14" rx="3" class="c-mask"/>
-          <text x="905" y="253.5" class="t-muted" font-size="8" text-anchor="middle">SQL</text>
+        <g data-detail="context" data-edge-from="balanceador" data-edge-to="nodo_entradas" data-edge-label="enruta y balancea" data-edge-key="3" data-edge-id="balanceador-entradas">
+          <rect x="514.2" y="321" width="91.6" height="14" rx="3" class="c-mask"/>
+          <text x="560" y="331" class="t-backend" font-size="8" text-anchor="middle">enruta y balancea</text>
         </g>
-        <g data-detail="context" data-edge-from="cluster_app" data-edge-to="cluster_redis" data-edge-label="caché + bloqueos" data-edge-key="4" data-edge-id="cluster-redis">
-          <rect x="861.6" y="342" width="86.8" height="14" rx="3" class="c-mask"/>
-          <text x="905" y="352" class="t-muted" font-size="8" text-anchor="middle">caché + bloqueos</text>
+        <g data-detail="context" data-edge-from="balanceador" data-edge-to="nodo_eventos" data-edge-label="enruta y balancea" data-edge-key="4" data-edge-id="balanceador-eventos">
+          <rect x="514.2" y="378" width="91.6" height="14" rx="3" class="c-mask"/>
+          <text x="560" y="388" class="t-muted" font-size="8" text-anchor="middle">enruta y balancea</text>
         </g>
-        <g data-detail="context" data-edge-from="cluster_app" data-edge-to="cluster_mensajeria" data-edge-label="publica eventos" data-edge-key="5" data-edge-id="cluster-mensajeria">
-          <rect x="864" y="423.5" width="82" height="14" rx="3" class="c-mask"/>
-          <text x="905" y="433.5" class="t-messagebus" font-size="8" text-anchor="middle">publica eventos</text>
+        <g data-detail="context" data-edge-from="nodo_nucleo" data-edge-to="cluster_bd" data-edge-label="SQL" data-edge-key="5" data-edge-id="nucleo-bd">
+          <rect x="890" y="181" width="30" height="14" rx="3" class="c-mask"/>
+          <text x="905" y="191" class="t-muted" font-size="8" text-anchor="middle">SQL</text>
         </g>
-        <g data-detail="context" data-edge-from="cluster_app" data-edge-to="pagos" data-edge-label="cobros y reembolsos" data-edge-key="6" data-edge-id="cluster-pagos">
-          <rect x="823.4" y="280" width="101.2" height="14" rx="3" class="c-mask"/>
-          <text x="874" y="290" class="t-backend" font-size="8" text-anchor="middle">cobros y reembolsos</text>
+        <g data-detail="context" data-edge-from="nodo_entradas" data-edge-to="cluster_bd" data-edge-label="SQL" data-edge-key="6" data-edge-id="entradas-bd">
+          <rect x="890" y="231" width="30" height="14" rx="3" class="c-mask"/>
+          <text x="905" y="241" class="t-backend" font-size="8" text-anchor="middle">SQL</text>
         </g>
-        <g data-detail="context" data-edge-from="cluster_mensajeria" data-edge-to="notif" data-edge-label="push, correo, SMS" data-edge-key="7" data-edge-id="mensajeria-notif">
+        <g data-detail="context" data-edge-from="nodo_entradas" data-edge-to="cluster_redis" data-edge-label="caché + bloqueos" data-edge-key="7" data-edge-id="entradas-redis">
+          <rect x="861.6" y="317" width="86.8" height="14" rx="3" class="c-mask"/>
+          <text x="905" y="327" class="t-backend" font-size="8" text-anchor="middle">caché + bloqueos</text>
+        </g>
+        <g data-detail="context" data-edge-from="nodo_entradas" data-edge-to="cluster_mensajeria" data-edge-label="publica eventos" data-edge-key="8" data-edge-id="entradas-mensajeria">
+          <rect x="864" y="411" width="82" height="14" rx="3" class="c-mask"/>
+          <text x="905" y="421" class="t-messagebus" font-size="8" text-anchor="middle">publica eventos</text>
+        </g>
+        <g data-detail="context" data-edge-from="nodo_eventos" data-edge-to="cluster_mensajeria" data-edge-label="alerta de evacuación" data-edge-key="9" data-edge-id="eventos-mensajeria">
+          <rect x="852" y="461" width="106" height="14" rx="3" class="c-mask"/>
+          <text x="905" y="471" class="t-messagebus" font-size="8" text-anchor="middle">alerta de evacuación</text>
+        </g>
+        <g data-detail="context" data-edge-from="nodo_entradas" data-edge-to="pagos" data-edge-label="cobros y reembolsos" data-edge-key="10" data-edge-id="entradas-pagos">
+          <rect x="823.4" y="267.5" width="101.2" height="14" rx="3" class="c-mask"/>
+          <text x="874" y="277.5" class="t-backend" font-size="8" text-anchor="middle">cobros y reembolsos</text>
+        </g>
+        <g data-detail="context" data-edge-from="cluster_mensajeria" data-edge-to="notif" data-edge-label="push, correo, SMS" data-edge-key="11" data-edge-id="mensajeria-notif">
           <rect x="1184.2" y="512" width="91.6" height="14" rx="3" class="c-mask"/>
           <text x="1230" y="522" class="t-messagebus" font-size="8" text-anchor="middle">push, correo, SMS</text>
         </g>
@@ -5407,11 +5449,23 @@
     <div class="cards">
       <div class="card">
         <div class="card-header">
+          <div class="card-dot emerald"></div>
+          <h3>Qué se replica y qué no (ADR-12)</h3>
+        </div>
+        <ul>
+          <li>&bull; Entradas / Mercado Secundario y Eventos / Emergencias escalan por réplicas detrás del balanceador: son los dos dominios que cumplen un criterio de extracción</li>
+          <li>&bull; El Núcleo corre en instancia única, igual que hoy corren Administración y Pedidos por separado; es stateless y está preparado para replicarse</li>
+          <li>&bull; Antes de activar una segunda réplica del Núcleo hay que proteger la caducidad de reservas con un candado en Redis: es un temporizador y se ejecutaría dos veces</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
           <div class="card-dot cyan"></div>
           <h3>Sin balanceo horizontal en dev/pruebas</h3>
         </div>
         <ul>
-          <li>&bull; Este despliegue es el de producción — una réplica por microservicio y Redis/cola/BD en un único nodo compartido en desarrollo y pruebas (ver App/infra)</li>
+          <li>&bull; Este despliegue es el de producción — en desarrollo y pruebas corre una réplica por servicio y Redis/cola/BD en un único nodo compartido (ver App/infra)</li>
         </ul>
       </div>
 
