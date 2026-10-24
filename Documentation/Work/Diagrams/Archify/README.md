@@ -25,16 +25,20 @@ diferencia queda visible en el diff del commit.
 | Panorama de Sistemas | `04-panorama.architecture.json` | `04-panorama.html` | `../ArchifyPDF/04-panorama.pdf` |
 | Secuencia — Reventa (CU-006) | `05-secuencia.sequence.json` | `05-secuencia.html` | `../ArchifyPDF/05-secuencia.pdf` |
 | Despliegue | `06-despliegue.architecture.json` | `06-despliegue.html` | `../ArchifyPDF/06-despliegue.pdf` |
-| Nivel 2 — Contenedores **objetivo** (ADR-14) | `07-contenedores-adr14.architecture.json` | `07-contenedores-adr14.html` | `../ArchifyPDF/07-contenedores-adr14.pdf` |
+| Nivel 2 — Contenedores (ADR-14) | `07-contenedores-adr14.architecture.json` | `07-contenedores-adr14.html` | `../ArchifyPDF/07-contenedores-adr14.pdf` |
+| Despliegue (ADR-14) | `08-despliegue-adr14.architecture.json` | `08-despliegue-adr14.html` | `../ArchifyPDF/08-despliegue-adr14.pdf` |
 
 Los `.html` son autocontenidos: se abren directamente en el navegador, sin servidor.
 
-## Dos vistas de contenedores, a propósito
+## Cuáles usan los documentos
 
-`02-contenedores` describe **lo desplegado** (ADR-12: tres servicios de dominio) y
-`07-contenedores-adr14` describe **lo decidido y no ejecutado** (ADR-14: siete microservicios y
-siete servicios de dominio). Al cambiar la arquitectura hay que decidir cuál de las dos se toca: si
-el cambio es de código ya desplegado, va en `02`; si es de diseño, en `07`.
+Desde la versión 1.6 del SAD, las vistas que se insertan en `DescripcionArquitecturaSoftware.tex` y
+en `C4Diagrams.tex` son **`07` y `08`**, que describen la arquitectura de ADR-14.
+
+`02-contenedores` y `06-despliegue` describen la de ADR-12 —tres servicios de dominio sobre Docker
+Compose— y **ya no los usa ningún documento**. Se conservan porque son la topología que está
+desplegada: hasta que la migración avance, son el único dibujo fiel de lo que corre. No los borres
+sin confirmar que nadie los necesita para operar.
 
 ## Cómo regenerar después de editar un JSON
 
