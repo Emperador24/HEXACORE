@@ -60,7 +60,7 @@ donde diga "pendiente" hay que leer primero esta sección.
 - [ ] **ADR de autenticación.** Hay 10 ADR y ninguno cubre la decisión de
       firmar los tokens con RS256 en vez de un secreto compartido, ni la de
       los dos tokens (acceso + renovación). Hoy viven solo en
-      `App/services/administracion/DECISIONES.md` §§7 y 21, que no es un
+      `App/services/nucleo/DECISIONES.md` §§7 y 21, que no es un
       entregable. Es el hueco más claro del ítem "ADR" de la rúbrica.
 - [ ] **Punto 6 — tabla de alcance comprometido para Entrega 2.** La
       propuesta está redactada más abajo, pero **nunca se pegó en el SAD**.
@@ -522,7 +522,7 @@ tiene su ADR con evidencia (fila #8).
      cada uno (no son una asignación definitiva, son puntos de partida
      para el paso 2 de arriba): Daniel — algo del bloque Parqueaderos
      (CU-021–023, ya usa Redis para ocupación según
-     `services/parqueaderos/README.md`); Sebastián — algo del bloque
+     `services/nucleo/src/modulos/parqueaderos/README.md`); Sebastián — algo del bloque
      Pedidos (CU-011–015, validación de pedidos por QR) o Cuentas/Roles
      (CU-027–029, RBAC); Diego — algo del bloque Logística (CU-016–020)
      o Proveedores/Pagos/Reportes (CU-030–032, ya tiene el patrón
@@ -631,7 +631,7 @@ aprobación del profesor** (regla de Clase 1).
 - [x] `App/README.md` (tabla "Stack técnico") actualizada con las tres
       decisiones cerradas: NestJS, RabbitMQ y Flutter.
 - [ ] **Redactar el ADR de autenticación** (RS256 y los dos tokens): hoy vive
-      en `services/administracion/DECISIONES.md`, que no es un entregable.
+      en `services/nucleo/DECISIONES.md`, que no es un entregable.
 - [ ] **Reconstruir o retirar la cita a PoC-01**: `App/README.md` la usa como
       evidencia del ADR-03 y ese PoC no está en el repositorio.
 - [ ] Mantener esta guía al día conforme se cierre cada punto. (`TASKS.md` y

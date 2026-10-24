@@ -25,7 +25,7 @@ Si el proyecto todavía no tiene sus carpetas de plataforma, ejecute una vez `fl
 docker compose -f ../../infra/docker-compose.yml --profile servicios up -d --build
 
 # La primera vez, los datos de ejemplo
-(cd ../../services/administracion && npm install && npm run semilla)
+(cd ../../services/nucleo && npm install && npm run semilla)
 (cd ../../services/entradas-mercado-secundario && npm install && npm run semilla)
 ```
 

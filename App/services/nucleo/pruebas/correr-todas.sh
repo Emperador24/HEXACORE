@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 #
-# Corre las suites de integración del Servicio de Administración (CU-027)
-# contra la infraestructura real. A diferencia de `npm test`, estas necesitan
-# Docker y el servicio en marcha: comprueban lo que un doble de prueba no
-# puede: que las sesiones se revoquen de verdad en Redis, que los correos
-# salgan por la cola y que la base responda a lo que se le pide.
+# Corre las suites de integración del Núcleo contra la infraestructura real.
+# Cubre sus dos módulos: Administración (CU-027) y Pedidos (CU-011). A
+# diferencia de `npm test`, estas necesitan Docker y el servicio en marcha:
+# comprueban lo que un doble de prueba no puede —que las sesiones se revoquen
+# de verdad en Redis, que los correos salgan por la cola, que los guiones Lua
+# reserven inventario de verdad y que la idempotencia del pago la sostenga la
+# clave primaria de PostgreSQL.
 #
 #   cd App/infra && ./iniciar.sh
 #   cd App/services/nucleo && npm run test:integracion
@@ -20,8 +22,13 @@ if ! curl -sf http://localhost:3002/api/v1/salud > /dev/null; then
 fi
 
 fallos=0
+# Pedidos va antes que `cu027-disponibilidad`, que pausa dependencias a
+# propósito: si fuera al revés, el barrido de reservas se mediría con Redis a
+# medio levantar.
 for suite in cu027-registro cu027-verificacion cu027-login cu027-renovacion \
-             cu027-recuperacion-perfil cu027b-administracion cu027-disponibilidad; do
+             cu027-recuperacion-perfil cu027b-administracion \
+             cu011-flujo-completo cu011-autenticacion cu011b-pagos \
+             cu027-disponibilidad; do
   printf '  %-26s ' "$suite"
   if salida=$(python3 "pruebas/$suite.py" 2>&1); then
     echo "OK"

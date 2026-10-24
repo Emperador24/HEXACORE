@@ -21,7 +21,7 @@ import uuid
 
 from identidad import cabeceras, contenido_para, firmar
 
-API = 'http://localhost:3003/api/v1'
+API = 'http://localhost:3002/api/v1'
 EVENTO = 'e0000001-0000-4000-8000-000000000001'
 SAZON = '30000000-0000-4000-8000-000000000001'
 GASEOSA = '40000000-0000-4000-8000-000000000002'

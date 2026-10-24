@@ -171,7 +171,7 @@ docker compose -f App/infra/docker-compose.yml --profile servicios stop administ
 - Usan las claves JWT de `claves-desarrollo/` montadas como archivos; la privada solo se monta en
   Administración.
 - Docker Compose reinicia un proceso que muere, pero **no** uno colgado que sigue vivo. Eso queda
-  para Kubernetes en producción. Ver `services/administracion/DECISIONES.md` §18.
+  para Kubernetes en producción. Ver `services/nucleo/DECISIONES.md` §18.
 
 ### El API Gateway (ADR-02)
 

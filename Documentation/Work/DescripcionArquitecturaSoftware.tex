@@ -1426,8 +1426,8 @@ sin levantar contenedores.
 \textbf{Evidencia:} la justificación de la decisión es verificable hoy sobre el repositorio y sobre
 el sistema desplegado. Que solo un servicio admite réplicas se comprueba en
 \texttt{docker-compose.escalado.yml} y en los \texttt{container\_name} del \texttt{docker-compose.yml};
-que dos dominios no están implementados, en \texttt{App/services/personal/} y
-\texttt{App/services/parqueaderos/}; que las seis bases comparten instancia, en
+que dos dominios no están implementados, en
+\texttt{App/services/nucleo/src/modulos/personal/} y \texttt{.../parqueaderos/}; que las seis bases comparten instancia, en
 \texttt{initdb/01-bases.sql}; y que \textbf{no hay una sola llamada HTTP síncrona entre servicios}
 ---lo que distingue esta arquitectura de un monolito distribuido--- en que los servicios solo se
 comunican por el gateway, por la cola de mensajes y verificando el token con la clave pública.

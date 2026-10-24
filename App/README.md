@@ -57,14 +57,16 @@ Igual que en `Submission/DistribucionCasosUso.pdf`, cada bloque de CU mantiene s
 | Carpeta | CU | Responsable(s) |
 |---|---|---|
 | `services/entradas-mercado-secundario` | CU-001–006 | Daniel Cristancho (001–005), Samuel Emperador (006) |
-| `services/personal` | CU-007–009 | Samuel Emperador |
 | `services/eventos-emergencias` | CU-010, CU-016–020, CU-026 | Samuel Emperador (010, 026), Diego Coronado (016–020) |
-| `services/parqueaderos` | CU-021–025 | Daniel Cristancho (021–023), Samuel Emperador (024–025) |
-| `services/pedidos` | CU-011–015 | Sebastián Sánchez |
-| `services/administracion` | CU-027–032 | Sebastián Sánchez (027–029), Diego Coronado (030–032) |
+| `services/nucleo` → `src/modulos/administracion` | CU-027–032 | Sebastián Sánchez (027–029), Diego Coronado (030–032) |
+| `services/nucleo` → `src/modulos/pedidos` | CU-011–015 | Sebastián Sánchez |
+| `services/nucleo` → `src/modulos/personal` | CU-007–009 | Samuel Emperador |
+| `services/nucleo` → `src/modulos/parqueaderos` | CU-021–025 | Daniel Cristancho (021–023), Samuel Emperador (024–025) |
 
-La agrupación de `eventos-emergencias`, `pedidos` y `administracion` no está aún detallada como
-contenedor propio en la vista de componentes del SAD (solo se documentan en profundidad Entradas,
-Personal, Eventos/Emergencias y Parqueaderos); se propone aquí siguiendo el modelo de dominio y el
-modelo de datos (sección 12) para que cada CU tenga un lugar claro donde empezar. Ajustar si al
-prototipar aparece una mejor separación.
+Administración, Pedidos, Personal y Parqueaderos **ya no son servicios propios**: ADR-12 los
+absorbió como módulos del Núcleo, cada uno en `src/modulos/`, y por eso la tabla los lista así.
+Los dos últimos siguen sin implementar: son solo un README.
+
+Ojo con el horizonte: **ADR-14 vuelve a separarlos**, pero no como estaban. Autenticación sale
+como microservicio con base propia y Alimentos (los antiguos Pedidos) queda como servicio de
+dominio. El orden para llegar ahí está en `Documentation/Work/MIGRACION-ADR-14.md`, fase B.

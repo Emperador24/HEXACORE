@@ -14,7 +14,7 @@
 
 Con un secreto compartido (HS256), cada servicio que verifica tokens **también puede fabricarlos**:
 bastaría con comprometer el servicio de parqueaderos para emitir un token de administrador. Con
-RS256, la clave pública solo sirve para verificar. Ver `services/administracion/DECISIONES.md` §7.
+RS256, la clave pública solo sirve para verificar. Ver `services/nucleo/DECISIONES.md` §7.
 
 ## En producción
 

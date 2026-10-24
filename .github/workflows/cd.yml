@@ -52,14 +52,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - nombre: administracion
-            contexto: App/services/administracion
+          - nombre: nucleo
+            contexto: App/services/nucleo
           - nombre: entradas-mercado-secundario
             contexto: App/services/entradas-mercado-secundario
           - nombre: eventos-emergencias
             contexto: App/services/eventos-emergencias
-          - nombre: pedidos
-            contexto: App/services/pedidos
           - nombre: gateway
             contexto: App/gateway
           - nombre: portal-cliente
