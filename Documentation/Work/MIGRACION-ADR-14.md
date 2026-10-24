@@ -4,7 +4,7 @@ Mide lo que separa el sistema desplegado hoy del diseño de ADR-14, y ordena el
 camino. **Nada de esto está hecho.** Lo que corre sigue siendo ADR-12: tres
 servicios de dominio, RabbitMQ, Docker Compose y seis bases separadas.
 
-Las rutas de este documento se verificaron contra el repositorio el 23 oct 2026.
+Las rutas de este documento se verificaron contra el repositorio el 24 oct 2026.
 
 ## Dónde vive hoy cada servicio del diseño
 
@@ -15,7 +15,7 @@ Las rutas de este documento se verificaron contra el repositorio el 23 oct 2026.
 | **Cola virtual** | apoya CU-001 | — | Todo. No existe |
 | **Catálogo** | CU-005 | `entradas-mercado-secundario/src/catalogo/` | Sacarlo a su propio despliegue y cambiar PostgreSQL por índice de búsqueda |
 | **Ventas** | CU-001, CU-004 | `entradas-mercado-secundario/src/venta/` | Sacarlo; ya tiene reserva atómica en Redis |
-| **Pagos** | pagos de CU-001/003/006/011/021 | **duplicado**: `nucleo/src/modulos/pedidos/pagos/` y `entradas-mercado-secundario/src/reventa/pagos/` | Unificar las dos copias en un servicio y añadir llaves de idempotencia |
+| **Pagos** | pagos de CU-001/003/006/011/021 | **duplicado**: `nucleo/src/modulos/pedidos/pagos/` y `entradas-mercado-secundario/src/reventa/pagos/` | Unificar las dos copias en un servicio. Las llaves de idempotencia ya existen en ambas |
 | **Autenticación** | CU-027, CU-028 | `nucleo/src/modulos/administracion/` | **Sacarlo del Núcleo** — revierte ADR-12 |
 | **Acceso QR** | CU-002 | `entradas-mercado-secundario/src/venta/ingreso.service.ts` y `ingresos.controller.ts` | Sacarlo; añadir caché de estado y modo sin red |
 | **Notificaciones** | transversal | `nucleo/src/modulos/administracion/notificaciones/` | Sacarlo; hoy solo manda correo, falta push y prioridad alta |
@@ -48,6 +48,10 @@ Dos cosas que el diseño predice y que el repositorio confirma:
 hoy *dos veces*, en `pedidos/pagos/pasarela-http.service.ts` y en
 `reventa/pagos/pasarela-http.service.ts`. Dos dominios distintos, el mismo
 problema resuelto dos veces. Es el argumento más concreto para extraerlo.
+
+**Las llaves de idempotencia ya están puestas.** Es la parte de la Saga que
+suele olvidarse y aquí existe en los dos caminos de pago. Al unificar Pagos no
+hay que diseñarla, solo elegir cuál de las dos versiones queda.
 
 **Las costuras para partir Entradas ya existen.** Sus módulos internos se llaman
 `catalogo/`, `venta/` y `reventa/`, que es casi exactamente la división que pide
@@ -86,7 +90,14 @@ antes de la fusión.
 ### Fase C — Extraer Pagos y Notificaciones
 
 De 7 a 9. Son los dos transversales que hoy están duplicados o enterrados dentro
-de un dominio. Pagos necesita además llaves de idempotencia, que hoy no existen.
+de un dominio.
+
+Pagos ya resuelve la idempotencia en las dos copias —`pagos.service.ts` rechaza
+una clave reusada con otro pedido (`CLAVE_IDEMPOTENCIA_INCOMPATIBLE`) y
+`procesador-pagos.ts` usa el id de la transacción como clave—, así que unificar
+es escoger una de las dos implementaciones, no escribirla. Lo que falta es que
+la clave sobreviva al reinicio: hoy el simulador no consulta estado, y por eso
+un pago FALLIDO no se reenvía.
 
 ### Fase D — Cola virtual y Catálogo con índice de búsqueda
 
