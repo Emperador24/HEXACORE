@@ -218,22 +218,26 @@ Finanzas y reportes & Réplica de lectura & Consulta los reportes sin tocar el p
 
 \section{Nivel 3 — Diagrama de componentes}
 
-\textbf{Tipo:} diagrama de componentes. \textbf{Alcance:} zoom dentro del contenedor
-\textit{Servicio de Entradas y Mercado Secundario} (caso de uso complejo CU-006), mostrando sus
-componentes internos y su relación con los contenedores de los niveles anteriores.
-\textbf{Audiencia:} arquitectos y desarrolladores.
+\textbf{Tipo:} diagrama de componentes. \textbf{Alcance:} zoom dentro del microservicio
+\textit{Ventas}, mostrando sus componentes internos y su relación con los contenedores de los
+niveles anteriores. \textbf{Audiencia:} arquitectos y desarrolladores.
+
+\textbf{Por qué Ventas:} de los catorce contenedores del Nivel 2 es el único que cumple los cuatro
+criterios de extracción de ADR-14 y no solo dos, y es el que orquesta la Saga de CU-001. Hacerle
+zoom a cualquier otro mostraría un controlador, un servicio y un repositorio; aquí se ve el
+mecanismo que la arquitectura introduce.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth,height=0.8\textheight,keepaspectratio]{Diagrams/ArchifyPDF/03-componentes.pdf}
-\caption{Diagrama de componentes — Servicio de Entradas y Mercado Secundario (Nivel 3, modelo C4).
+\includegraphics[width=\textwidth,height=0.8\textheight,keepaspectratio]{Diagrams/ArchifyPDF/09-componentes-adr14.pdf}
+\caption{Diagrama de componentes — microservicio Ventas (Nivel 3, modelo C4).
 Generado con Archify a partir de una especificación JSON; la versión
 interactiva está en \texttt{Diagrams/Archify/}.}
 \label{fig:componentes}
 \end{figure}
 
-\textbf{Leyenda:} verde = componente interno del Servicio de Entradas; gris = contenedor o sistema
-de otro nivel, que aquí solo se referencia y no se detalla.
+\textbf{Leyenda:} verde = componente interno de Ventas, dentro del recuadro punteado; fuera del
+recuadro, contenedor o almacén de otro nivel, que aquí solo se referencia y no se detalla.
 
 \begin{longtable}{L{3.2cm}L{3.2cm}L{5.7cm}L{2.3cm}}
 \caption{Relaciones del diagrama de componentes.}\label{tab:rel-componentes}\\
@@ -251,18 +255,24 @@ de otro nivel, que aquí solo se referencia y no se detalla.
 \endfoot
 \bottomrule
 \endlastfoot
-API Gateway & Controlador API & Enruta la solicitud del cliente hacia el servicio. & HTTPS/JSON\\
-Controlador API & Servicio de Publicación & Delega la validación y orquestación de la reventa. & Llamada interna\\
-Servicio de Publicación & Gestor de Concurrencia & Solicita el bloqueo temporal de la entrada. & Llamada interna\\
-Gestor de Concurrencia & Redis & Escribe y consulta el estado del bloqueo. & Redis\\
-Servicio de Publicación & Procesador de Pagos & Solicita la validación y cobro del pago. & Llamada interna\\
-Procesador de Pagos & Pasarela de Pagos & Procesa el cobro de la transacción. & HTTPS/REST\\
-Servicio de Publicación & Generador de QR & Invalida el QR anterior y genera uno nuevo. & Llamada interna\\
-Servicio de Publicación & Repositorio de Entradas & Lee y actualiza los datos de la entrada. & Llamada interna\\
-Repositorio de Entradas & Base de Datos & Consulta y persiste los registros. & SQL\\
-Servicio de Publicación & Publicador de Eventos & Publica el evento de transferencia completada. & Llamada interna\\
-Publicador de Eventos & Cola de Mensajes & Publica el mensaje para notificación y liquidación. & AMQP\\
+API Gateway & Controlador de compra & Enruta la solicitud del cliente hacia el servicio. & HTTPS/JSON\\
+Cola virtual & Controlador de compra & Entrega el turno que el controlador debe verificar antes de admitir el checkout. & HTTPS/JSON\\
+Controlador de compra & Orquestador de la Saga & Delega la compra una vez verificado el turno. & Llamada interna\\
+Orquestador de la Saga & Gestor de reserva & Pide apartar las entradas antes de cobrar. & Llamada interna\\
+Gestor de reserva & Caché & Reserva de forma atómica y con vencimiento, para que dos compradores no tomen la misma entrada. & Redis \texttt{SET NX}\\
+Orquestador de la Saga & Compensador & Ordena deshacer los pasos ya ejecutados cuando uno falla. & Llamada interna\\
+Compensador & Caché & Borra la reserva, por orden del orquestador o por vencimiento. & Redis\\
+Orquestador de la Saga & Cliente de Pagos & Solicita el cobro del total. & Llamada interna\\
+Cliente de Pagos & Pagos & Cobra añadiendo la llave de idempotencia, para que un reintento no cobre dos veces. & HTTPS/REST\\
+Orquestador de la Saga & Repositorio de entradas & Confirma la venta y asigna el dueño de cada entrada. & Llamada interna\\
+Repositorio de entradas & Base de Ventas & Consulta y persiste los registros. & SQL\\
+Orquestador de la Saga & Publicador de eventos & Anuncia la compra confirmada. & Llamada interna\\
+Publicador de eventos & Broker & Publica el hecho con confirmación, para no perderlo si el broker rechaza. & Asíncrono\\
 \end{longtable}
+
+\textbf{Estado de implementación:} estos componentes viven hoy dentro de
+\texttt{entradas-mercado-secundario}, junto a los de Catálogo, Postventa y Acceso QR. El Gestor de
+reserva y la llave de idempotencia ya existen; el Orquestador y el Compensador no.
 
 \section{Diagrama de panorama de sistemas (System Landscape)}
 
@@ -306,26 +316,31 @@ CRM y Marketing & Plataforma de Analítica (BI) & Comparte segmentos y campañas
 Sistema Integral de Gestión de Eventos & Pasarela de Pagos & Procesa compras, reventas y reembolsos. & HTTPS/REST\\
 \end{longtable}
 
-\section{Diagrama de secuencia (Sequence Diagram) --- Reventa de una entrada}
+\section{Diagrama de secuencia (Sequence Diagram) --- Compra de una entrada}
 
-\textbf{Tipo:} diagrama de secuencia UML. \textbf{Alcance:} muestra, con líneas de vida y mensajes
-numerados, cómo colaboran los contenedores del Nivel 2 para resolver el caso de uso complejo
-\textbf{CU-006 --- Gestión del Mercado Secundario de Entradas} cuando un comprador adquiere una
-entrada publicada en reventa. \textbf{Audiencia:} arquitectos y desarrolladores.
+\textbf{Tipo:} diagrama de secuencia UML. \textbf{Alcance:} muestra, con líneas de vida y barras
+de activación, cómo colaboran los contenedores del Nivel 2 para resolver
+\textbf{CU-001 --- Compra de entradas} mediante una \textbf{Saga orquestada}.
+\textbf{Audiencia:} arquitectos y desarrolladores.
+
+\textbf{Por qué este caso de uso:} la compra atraviesa cuatro despliegues con almacén propio
+---Cola virtual, Ventas, Pagos y el broker---, así que no existe una transacción de base de datos
+que los abarque. Es el proceso donde la separación que decide ADR-14 tiene consecuencias
+visibles, y donde hay que mostrar cómo se deshace lo hecho.
 
 \textbf{Nota sobre este cambio:} el modelo C4 propone para este propósito un \textit{Diagrama
 Dinámico} (variante simplificada, sin líneas de vida ni barras de activación). Siguiendo la
 recomendación del profesor, se reemplazó por un \textbf{diagrama de secuencia UML} completo ---con
-línea de vida punteada por participante y una barra de activación que marca el periodo en que el
-Servicio de Entradas está coordinando la operación--- porque documenta el mismo flujo con una
-notación más precisa y estándar en la industria.
+línea de vida punteada por participante y barras de activación que marcan el periodo en que cada
+servicio está trabajando--- porque documenta el mismo flujo con una notación más precisa y
+estándar en la industria.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth,height=0.8\textheight,keepaspectratio]{Diagrams/ArchifyPDF/05-secuencia.pdf}
-\caption{Diagrama de secuencia --- reventa de una entrada (CU-006). Los números en cada mensaje
-indican el orden de la interacción; la barra verde es el periodo de activación del Servicio de
-Entradas.}
+\includegraphics[width=\textwidth,height=0.8\textheight,keepaspectratio]{Diagrams/ArchifyPDF/10-secuencia-adr14.pdf}
+\caption{Diagrama de secuencia --- compra de una entrada con Saga orquestada (CU-001). Las bandas
+horizontales agrupan las fases; la última es la compensación, que solo ocurre si el pago falla o
+la reserva vence.}
 \label{fig:secuencia}
 \end{figure}
 
@@ -345,15 +360,23 @@ Entradas.}
 \endfoot
 \bottomrule
 \endlastfoot
-1 & Comprador $\rightarrow$ API Gateway & El comprador confirma la compra de una entrada publicada en el mercado secundario.\\
-2 & API Gateway $\rightarrow$ Servicio de Entradas & Enruta la solicitud autenticada hacia el microservicio responsable.\\
-3 & Servicio de Entradas $\rightarrow$ Redis & Bloquea temporalmente la publicación para impedir que otro comprador la adquiera simultáneamente.\\
-4 & Servicio de Entradas $\rightarrow$ Pasarela de Pagos & Valida el medio de pago y cobra el valor de la entrada.\\
-5 & Servicio de Entradas $\rightarrow$ Base de Datos & Transfiere la propiedad de la entrada e invalida el código QR anterior.\\
-6 & Servicio de Entradas $\rightarrow$ Cola de Mensajes & Publica el evento \texttt{ENTRADA\_TRANSFERIDA} para su procesamiento asíncrono.\\
-7 & Cola de Mensajes $\rightarrow$ Proveedor de Notificaciones & Dispara el envío de notificaciones desacoplado del flujo principal.\\
-8 & Proveedor de Notificaciones $\rightarrow$ Comprador / Vendedor & Notifica la confirmación de la transferencia y el nuevo código QR.\\
+1 & Comprador $\rightarrow$ Portal Cliente & El comprador elige entradas para un evento.\\
+2 & Portal $\rightarrow$ API Gateway $\rightarrow$ Cola virtual & Pide turno. Sin turno no se entra al checkout: es lo que impide que el pico de una apertura de venta llegue entero a Ventas.\\
+3 & Cola virtual $\rightarrow$ Portal & Entrega un token de turno con vencimiento corto.\\
+4 & Portal $\rightarrow$ API Gateway $\rightarrow$ Ventas & Reenvía el checkout con el token; Ventas inicia la Saga y a partir de aquí ningún otro servicio decide el orden de los pasos.\\
+5 & Ventas $\rightarrow$ Caché & Reserva las entradas de forma atómica y con vencimiento. El vencimiento es la red de seguridad: si la Saga muere a medias, la entrada se libera sola.\\
+6 & Ventas $\rightarrow$ Pagos & Encarga el cobro con una llave de idempotencia.\\
+7 & Pagos $\rightarrow$ Pasarela & Autoriza el cargo. La llave evita el cobro doble cuando el comprador reintenta o la pasarela reenvía un \textit{webhook}.\\
+8 & Ventas $\rightarrow$ Caché & Convierte la reserva en venta una vez confirmado el pago.\\
+9 & Ventas $\rightarrow$ Broker & Publica \texttt{COMPRA\_CONFIRMADA}.\\
+10 & Ventas $\rightarrow$ Portal & Responde con la entrada y su QR. Notificar queda fuera del camino de respuesta: lo hace Notificaciones al consumir el evento.\\
+11 & Ventas $\rightarrow$ Caché & \textbf{Compensación.} Si el pago falla o la reserva vence, libera lo reservado.\\
+12 & Ventas $\rightarrow$ Portal & \textbf{Compensación.} Responde que la compra no se completó.\\
 \end{longtable}
+
+\textbf{Estado de implementación:} hoy la compra la resuelve un solo servicio y no hay
+orquestación con compensación. La reserva atómica con vencimiento y las llaves de idempotencia ya
+existen; faltan el orquestador, el deshacer explícito y la cola virtual.
 
 \section{Diagrama de despliegue (Deployment Diagram)}
 

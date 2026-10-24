@@ -669,26 +669,46 @@ distancia está en \texttt{Documentation/Work/MIGRACION-ADR-14.md}.
 \section{Vista de componentes}
 \label{sec:componentes}
 
-Se detalla primero el contenedor \textbf{Servicio de Entradas y Mercado Secundario}, por ser el
-que resuelve el caso de uso complejo CU-006 (Gestión del Mercado Secundario de Entradas), y luego,
-al mismo nivel de detalle, los demás servicios. La Figura
-\ref{fig:componentes} muestra los componentes internos del Servicio de Entradas.
+Se detalla el microservicio \textbf{Ventas}, por dos razones. Es el único de los catorce que
+cumple los cuatro criterios de extracción de ADR-14 y no solo dos, y es el que orquesta la Saga de
+CU-001, que es el mecanismo nuevo que esta arquitectura introduce. La Figura
+\ref{fig:componentes} muestra sus componentes internos.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{Diagrams/ArchifyPDF/03-componentes.pdf}
-\caption{Diagrama de componentes — Servicio de Entradas y Mercado Secundario (Nivel 3, modelo
-C4).}
+\includegraphics[width=\textwidth]{Diagrams/ArchifyPDF/09-componentes-adr14.pdf}
+\caption{Diagrama de componentes — microservicio Ventas (Nivel 3, modelo C4).}
 \label{fig:componentes}
 \end{figure}
 
-El flujo interno es: el \textbf{Controlador API} recibe la solicitud enrutada por el API Gateway y
-la delega al \textbf{Servicio de Publicación}, que orquesta la operación de reventa. Este componente
-solicita al \textbf{Gestor de Concurrencia} el bloqueo temporal de la entrada en Redis, invoca al
-\textbf{Procesador de Pagos} para cobrar la transacción contra la Pasarela de Pagos, usa el
-\textbf{Generador de QR} para invalidar el código anterior y emitir uno nuevo, persiste el cambio
-de propiedad mediante el \textbf{Repositorio de Entradas}, y finalmente notifica el resultado a
-través del \textbf{Publicador de Eventos} hacia la cola de mensajes.
+El flujo interno es: el \textbf{Controlador de compra} recibe la solicitud enrutada por el API
+Gateway y verifica contra la \textbf{Cola virtual} que el token de turno sea válido y no haya
+vencido; sin ese token la petición no entra. Delega entonces en el \textbf{Orquestador de la
+Saga}, que es quien fija el orden de los pasos y decide si hay que deshacerlos. El Orquestador
+pide al \textbf{Gestor de reserva} que aparte las entradas en la caché con una operación atómica
+y un vencimiento, encarga el cobro al \textbf{Cliente de Pagos} —que añade la llave de
+idempotencia antes de llamar al microservicio Pagos—, confirma la venta mediante el
+\textbf{Repositorio de entradas} contra la base propia de Ventas, y anuncia el hecho por el
+\textbf{Publicador de eventos} hacia el broker.
+
+El \textbf{Compensador} merece una línea aparte. Es un componente propio y no una rama del
+Orquestador porque tiene que poder actuar \emph{sin que nadie se lo pida}: además de deshacer una
+Saga que falló, libera por su cuenta las reservas que vencieron porque el comprador abandonó el
+proceso. Si fuera una rama del Orquestador, una instancia que muriera a mitad de la compra dejaría
+entradas bloqueadas hasta que alguien lo notara.
+
+\medskip
+\noindent Dos consecuencias de dónde vive cada dato, que el diagrama hace visibles. El conteo de
+entradas disponibles está en la caché y no en la base: es lo que permite reservar de forma atómica
+bajo un pico sin que las réplicas compitan por la misma fila. Y la base de Ventas guarda el hecho
+consumado —la compra y la entrada con su dueño—, no la reserva en vuelo. Si la caché se cae se
+dejan de vender entradas, pero no se venden dos veces: el fallo es cerrado.
+
+\medskip
+\noindent\textbf{Estado de implementación.} Estos componentes viven hoy dentro de
+\texttt{entradas-mercado-secundario}, junto a los de Catálogo, Postventa y Acceso QR. El Gestor de
+reserva existe (\texttt{gestor-concurrencia.service.ts}) y la llave de idempotencia del Cliente de
+Pagos también; el Orquestador y el Compensador no, y por eso hoy no hay un deshacer explícito.
 
 \subsection{Servicio de Personal}
 
@@ -722,33 +742,53 @@ Pagos para tarifas y reservas. El \textbf{Repositorio de Espacios} persiste las 
 \label{sec:procesos}
 
 Se documentan los dos procesos más críticos del sistema desde el punto de vista de los atributos
-de calidad: la reventa de una entrada (concurrencia y consistencia) y la evacuación ante una
+de calidad: la compra de una entrada (concurrencia y consistencia) y la evacuación ante una
 emergencia (disponibilidad y tiempo real).
 
-\subsection{Reventa de una entrada (CU-006)}
+\subsection{Compra de una entrada con Saga orquestada (CU-001)}
 
-La Figura \ref{fig:secuencia} muestra, con líneas de vida y mensajes numerados, cómo colaboran los
-contenedores para resolver una compra en el mercado secundario.
+La Figura \ref{fig:secuencia} muestra cómo colaboran los contenedores para resolver una compra.
+Es el proceso que mejor explica por qué ADR-14 separa estos servicios: la compra atraviesa cuatro
+despliegues distintos —Cola virtual, Ventas, Pagos y el broker— y cada uno tiene su propio
+almacén, así que \textbf{no existe una transacción que los abarque a todos}. Por eso el deshacer
+tiene que ser explícito, y eso es exactamente lo que es una Saga.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{Diagrams/ArchifyPDF/05-secuencia.pdf}
-\caption{Diagrama de secuencia — reventa de una entrada (CU-006).}
+\includegraphics[width=\textwidth]{Diagrams/ArchifyPDF/10-secuencia-adr14.pdf}
+\caption{Diagrama de secuencia — compra de una entrada con Saga orquestada (CU-001).}
 \label{fig:secuencia}
 \end{figure}
 
 \begin{enumerate}
-\item El comprador confirma la compra de una entrada publicada en el mercado secundario.
-\item El API Gateway enruta la solicitud autenticada hacia el Servicio de Entradas.
-\item El Servicio de Entradas bloquea temporalmente la publicación en Redis, para impedir que otro
-comprador la adquiera de forma simultánea.
-\item Se valida el medio de pago y se cobra el valor de la entrada mediante la Pasarela de Pagos.
-\item Se transfiere la propiedad de la entrada y se invalida el código QR anterior en la base de
-datos.
-\item Se publica el evento \texttt{ENTRADA\_TRANSFERIDA} en la cola de mensajes.
-\item El Proveedor de Notificaciones envía la confirmación y el nuevo código QR al comprador y al
-vendedor, de forma desacoplada del flujo principal.
+\item El comprador elige entradas para un evento; el Portal pide turno a la \textbf{Cola virtual}
+a través del Gateway y recibe un token con vencimiento corto. Sin turno no se entra al checkout:
+es lo que impide que el pico de una apertura de venta llegue entero a Ventas.
+\item El Portal reenvía el checkout con ese token y \textbf{Ventas} inicia la Saga. A partir de
+aquí Ventas orquesta: ningún otro servicio decide el orden de los pasos.
+\item Ventas aparta las entradas en la caché con una \textbf{reserva atómica con vencimiento}. El
+vencimiento es la red de seguridad: si la Saga muere a medias, la entrada vuelve a estar
+disponible sola.
+\item Ventas encarga el cobro a \textbf{Pagos} con una \textbf{llave de idempotencia}, y Pagos
+autoriza el cargo contra la Pasarela. La llave es lo que evita el cobro doble cuando el comprador
+reintenta o la pasarela reenvía un \textit{webhook}; una llave reusada con otro pedido se rechaza
+en lugar de cobrarse.
+\item Con el pago confirmado, Ventas convierte la reserva en venta y publica
+\texttt{COMPRA\_CONFIRMADA} en el broker.
+\item Ventas responde al Portal con la entrada y su QR. Notificar queda \textbf{fuera del camino
+de respuesta}: lo hace Notificaciones al consumir el evento, y si tarda o falla la compra ya está
+hecha.
+\item \textbf{Compensación.} Si el pago falla o la reserva vence, Ventas libera lo reservado y
+responde que la compra no se completó. Es el camino por el que una compra a medias deja de retener
+entradas de inmediato, en lugar de esperar al vencimiento.
 \end{enumerate}
+
+\medskip
+\noindent\textbf{Estado de implementación.} Hoy la compra la resuelve un solo servicio y no hay
+orquestación con compensación. Las dos piezas difíciles ya existen —la reserva atómica con
+vencimiento, medida en 1 comprador de 50 concurrentes, y las llaves de idempotencia en los dos
+caminos de pago—; faltan el orquestador, el deshacer explícito y la cola virtual, que no tiene
+código todavía.
 
 \subsection{Evacuación ante emergencias (CU-010)}
 

@@ -27,18 +27,30 @@ diferencia queda visible en el diff del commit.
 | Despliegue | `06-despliegue.architecture.json` | `06-despliegue.html` | `../ArchifyPDF/06-despliegue.pdf` |
 | Nivel 2 — Contenedores (ADR-14) | `07-contenedores-adr14.architecture.json` | `07-contenedores-adr14.html` | `../ArchifyPDF/07-contenedores-adr14.pdf` |
 | Despliegue (ADR-14) | `08-despliegue-adr14.architecture.json` | `08-despliegue-adr14.html` | `../ArchifyPDF/08-despliegue-adr14.pdf` |
+| Nivel 3 — Componentes (Ventas, ADR-14) | `09-componentes-adr14.architecture.json` | `09-componentes-adr14.html` | `../ArchifyPDF/09-componentes-adr14.pdf` |
+| Secuencia — Compra con Saga (CU-001, ADR-14) | `10-secuencia-adr14.sequence.json` | `10-secuencia-adr14.html` | `../ArchifyPDF/10-secuencia-adr14.pdf` |
 
 Los `.html` son autocontenidos: se abren directamente en el navegador, sin servidor.
 
 ## Cuáles usan los documentos
 
-Desde la versión 1.6 del SAD, las vistas que se insertan en `DescripcionArquitecturaSoftware.tex` y
-en `C4Diagrams.tex` son **`07` y `08`**, que describen la arquitectura de ADR-14.
+Las seis vistas que insertan `DescripcionArquitecturaSoftware.tex` y `C4Diagrams.tex` son
+**`01`, `04`, `07`, `08`, `09` y `10`**. Las cuatro de ADR-14 son `07`-`10`.
 
-`02-contenedores` y `06-despliegue` describen la de ADR-12 —tres servicios de dominio sobre Docker
-Compose— y **ya no los usa ningún documento**. Se conservan porque son la topología que está
-desplegada: hasta que la migración avance, son el único dibujo fiel de lo que corre. No los borres
-sin confirmar que nadie los necesita para operar.
+`01-contexto` y `04-panorama` no llevan sufijo porque **no cambian con la topología interna**:
+dibujan actores y sistemas externos, que son los mismos con 3 servicios o con 14.
+
+**Retirados.** `02-contenedores`, `03-componentes`, `05-secuencia` y `06-despliegue` describen
+ADR-12 y ya no los usa ningún documento. Se conservan porque son la topología que está desplegada:
+hasta que la migración avance, son el único dibujo fiel de lo que corre. No los borres sin
+confirmar que nadie los necesita para operar.
+
+| Retirado | Lo reemplaza | Por qué |
+|---|---|---|
+| `02-contenedores` | `07-contenedores-adr14` | 3 servicios de dominio → 7 microservicios + 7 de dominio |
+| `03-componentes` | `09-componentes-adr14` | hacía zoom en Entradas, que ADR-14 parte en cuatro |
+| `05-secuencia` | `10-secuencia-adr14` | dibujaba la reventa sin Saga; ahora es la compra con compensación |
+| `06-despliegue` | `08-despliegue-adr14` | Docker Compose → clúster con autoescalado |
 
 ## Cómo regenerar después de editar un JSON
 
