@@ -237,8 +237,11 @@ fijar precio, comprar), mientras el comentario de `portal-web-cliente/src/app/co
 sigue afirmando que en el móvil *"la reventa solo se consulta"*.
 
 **Propuesta:** la reventa está disponible **en ambos clientes sobre la misma API**, que es lo que
-RNF-14 exige y lo que el código ya hace. La tarjeta rosa del diagrama de secuencia queda obsoleta y
-debería corregirse en `05-secuencia.sequence.json` y regenerarse el HTML.
+RNF-14 exige y lo que el código ya hace.
+
+*Resuelto (24 oct 2026):* la tarjeta rosa que afirmaba lo contrario vivía en el diagrama de
+secuencia de la reventa, que ADR-14 reemplazó por el de la compra con Saga. Ya no existe, así que
+no queda nada que corregir ahí.
 
 **Lo que esto no cambia:** la API es una sola y el dominio vive entero en el backend. Ningún cliente
 decide si una entrada puede revenderse ni cuál es su precio máximo — eso llega calculado en cada

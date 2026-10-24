@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="generator" content="archify 2.16.0">
-  <title>HEXACORE — Contenedores Diagram</title>
+  <title>HEXACORE — Contenedores (ADR-14) Diagram</title>
   <script>
     // Resolve the theme before first paint so light-preference users don't
     // see a dark flash. The toolbar script below re-applies with UI state.
@@ -4955,11 +4955,11 @@
            data-preset-badge-blueprint="BLUEPRINT / REV 01"
            data-preset-badge-editorial="EDITORIAL / FIELD NOTE">
         <div class="pulse-dot"></div>
-        <h1>HEXACORE — Contenedores</h1>
+        <h1>HEXACORE — Contenedores (ADR-14)</h1>
       </div>
     </div>
 
-    <script id="archify-guided-views-data" type="application/json">[{"id":"compra-entradas","label":"Compra de entradas","focus":["portal_cliente","app_movil","gateway","svc_entradas","db","redis","pagos"],"note":"El camino que resuelve CU-006, el hilo conductor del sistema."},{"id":"nucleo-y-operacion","label":"Núcleo y operación","focus":["portal_admin","app_movil","gateway","svc_nucleo","svc_eventos","queue"],"note":"Cuentas, pedidos y el protocolo de emergencia: lo que atiende el núcleo y lo que se le saca aparte."},{"id":"replicacion","label":"Qué se replica","focus":["gateway","svc_nucleo","svc_entradas","svc_eventos"],"note":"Los dos satélites escalan por réplicas; el núcleo corre en instancia única (ADR-12)."}]</script>
+    <script id="archify-guided-views-data" type="application/json">[{"id":"camino-de-compra","label":"Camino de compra (CU-001)","focus":["portal_cliente","gateway","cola","catalogo","ventas","pagos","redis","broker"],"note":"Los cuatro servicios que escalan juntos en la apertura de venta."},{"id":"transversales","label":"Servicios transversales","focus":["gateway","auth","pagos","notificaciones","broker"],"note":"Los que usa más de un dominio: si uno cae, degrada muchos casos de uso a la vez."},{"id":"dominio","label":"Servicios de dominio","focus":["alimentos","parqueaderos","personal","operacion","finanzas","bd_central","replica_lectura"],"note":"Carga estable: comparten base central con un esquema por servicio y no escalan con la demanda."}]</script>
 
     <script id="archify-i18n-data" type="application/json">{"locale":"en","messages":{"viewer.kind.frontend":"Frontend","viewer.kind.backend":"Backend","viewer.kind.database":"Database","viewer.kind.cloud":"Cloud","viewer.kind.security":"Security","viewer.kind.messagebus":"Message bus","viewer.kind.external":"External","viewer.kind.neutral":"Neutral","viewer.kind.node":"Node","viewer.kind.start":"Start","viewer.kind.active":"Active","viewer.kind.waiting":"Waiting","viewer.kind.decision":"Decision","viewer.kind.success":"Success","viewer.kind.failure":"Failure","viewer.toolbar.actions":"Diagram actions","viewer.theme.toggle.title":"Toggle theme (T)","viewer.theme.toggle":"Toggle color theme","viewer.theme.dark":"Dark","viewer.theme.light":"Light","viewer.preset.choose.title":"Choose visual style (S cycles)","viewer.preset.choose":"Choose visual style","viewer.preset.style":"Style","viewer.preset.menu":"Visual style","viewer.preset.identity":"Visual identity","viewer.preset.cycles":"S cycles","viewer.preset.classic":"Classic","viewer.preset.classic.short":"Classic","viewer.preset.classic.hint":"Stable technical default","viewer.preset.flow":"Signal Flow","viewer.preset.flow.short":"Flow","viewer.preset.flow.hint":"Motion-forward presentation","viewer.preset.blueprint":"Blueprint","viewer.preset.blueprint.hint":"Engineering review","viewer.preset.editorial":"Editorial","viewer.preset.editorial.hint":"Publication and launch notes","viewer.preset.badge.signalFlow":"SIGNAL FLOW","viewer.preset.badge.blueprint":"BLUEPRINT / REV 01","viewer.preset.badge.editorial":"EDITORIAL / FIELD NOTE","viewer.preset.badge.editorialPlate":"ARCHIFY / PLATE 04","viewer.preset.current":"Visual style: {style}. Choose visual style","viewer.motion.live":"Live","viewer.motion.still":"Still","viewer.motion.pause":"Pause motion","viewer.motion.resume":"Resume motion","viewer.motion.reduced":"Motion paused by reduced-motion preference","viewer.motion.hidden":"Motion paused while this page is hidden","viewer.motion.yielding":"Pause motion; currently yielding to {owner}","viewer.motion.yielding.title":"Live preview enabled · yielding to {owner}","viewer.owner.story":"the guided story","viewer.owner.chapter":"the active chapter","viewer.owner.chapterPreview":"the chapter delta preview","viewer.owner.handoff":"the chapter handoff","viewer.owner.route":"Route Probe","viewer.owner.lens":"Semantic Lens","viewer.owner.relationship":"Relationship Preview","viewer.owner.intent":"Intent Trace","viewer.owner.focus":"semantic focus","viewer.owner.legend":"legend preview","viewer.owner.reader":"reader interaction","viewer.present.enter":"Enter presentation stage","viewer.present.enter.title":"Presentation stage (F)","viewer.present.exit":"Exit presentation stage","viewer.present.exit.title":"Exit presentation stage (F or Escape)","viewer.present.present":"Present","viewer.present.exit.label":"Exit","viewer.export.button":"Export","viewer.export.button.title":"Export diagram (E)","viewer.export.diagram":"Export diagram","viewer.export.menu":"Export","viewer.export.subtitle":"Portable, clean outputs","viewer.export.share":"Share","viewer.export.shareCard":"Share Card","viewer.export.routeShareCard":"Route Share Card","viewer.export.reachShareCard":"Reach Share Card","viewer.export.copyShareCard":"Copy Share Card","viewer.export.copyDiagram":"Copy diagram","viewer.export.clipboardPng":"PNG to clipboard","viewer.export.raster":"Raster images","viewer.export.image":"Image","viewer.export.lossless":"Lossless image","viewer.export.compact":"Compact image","viewer.export.modern":"Modern image","viewer.export.vectorMotion":"Vector and motion","viewer.export.vectorMotion.heading":"Vector \u0026 motion","viewer.export.editable":"Editable vector","viewer.export.motion6s":"6s motion","viewer.export.unsupported":"Not supported by this browser","viewer.export.clipboardUnsupported":"Clipboard image write not supported by this browser","viewer.export.clipboardUnsupported.period":"Clipboard image write not supported by this browser.","viewer.export.clipboardUnsupported.short":"Clipboard image write not supported in this browser.","viewer.export.motionUnavailable":"Motion capture unavailable in this browser","viewer.export.webmUnavailable":"WebM unavailable in this browser","viewer.export.failed":"Export failed: {message}","viewer.export.unknownVariant":"Unknown Share Card variant: {variant}","viewer.export.routeRequired":"Trace a route before exporting a Route Share Card","viewer.export.reachRequired":"Trace authored reach before exporting a Reach Share Card","viewer.export.unknown":"unknown","viewer.export.routeFailed":"Route Share Card export failed: {message}","viewer.export.reachFailed":"Reach Share Card export failed: {message}","viewer.export.copyFailed":"Copy failed: {message}","viewer.export.copiedPng":"Copied PNG to clipboard","viewer.export.copiedShare":"Copied Share Card","viewer.export.downloadedShare":"Downloaded Share Card","viewer.export.downloadedRoute":"Downloaded Route Share Card","viewer.export.downloadedReach":"Downloaded Reach Share Card","viewer.export.downloadedWebm":"Downloaded WebM","viewer.export.recording":"Recording 6 seconds of motion…","viewer.export.card.routeSummary.one":"Route: {source} → {target} · {count} directed hop","viewer.export.card.routeSummary.other":"Route: {source} → {target} · {count} directed hops","viewer.export.card.reachSummary":"Authored {direction} from {origin} · {nodes} · {links} · max {hops}","viewer.export.card.node.one":"{count} node","viewer.export.card.node.other":"{count} nodes","viewer.export.card.link.one":"{count} link","viewer.export.card.link.other":"{count} links","viewer.export.card.hop.one":"{count} hop","viewer.export.card.hop.other":"{count} hops","viewer.export.card.routeBadge":"ARCHIFY · ROUTE · {hops}","viewer.export.card.reachBadge":"ARCHIFY · {direction} REACH","viewer.export.card.defaultBadge":"ARCHIFY · {preset} · {theme}","viewer.export.direction.upstream":"Upstream","viewer.export.direction.downstream":"Downstream","viewer.export.error.canvasUnavailable":"Canvas unavailable for {label}","viewer.export.error.contextUnavailable":"2D canvas context unavailable for {label}","viewer.export.error.toBlobUnavailable":"canvas.toBlob unavailable for {label}","viewer.export.error.toBlobNull":"canvas.toBlob returned no data for {label}","viewer.export.error.variantsCombined":"Share Card variants cannot be combined","viewer.export.error.viewerState":"Share Card export could not remove temporary viewer state","viewer.export.error.routeState":"Route Card export could not preserve the resolved route safely","viewer.export.error.reachState":"Reach Card export could not preserve authored reach safely","viewer.export.error.webmRequirements":"WebM motion export requires a trace animation and browser MediaRecorder support","viewer.export.error.mediaRecorder":"MediaRecorder failed","viewer.export.error.emptyWebm":"MediaRecorder produced an empty WebM","viewer.export.error.webmBackground":"SVG background could not be loaded for WebM export","viewer.guided.region":"Guided diagram views","viewer.guided.previous":"Previous guided view","viewer.guided.previous.title":"Previous guided view ([)","viewer.guided.next":"Next guided view","viewer.guided.next.title":"Next guided view (])","viewer.guided.views":"Guided views","viewer.guided.explore":"Explore this system","viewer.guided.intro":"Step through curated paths without changing the source diagram.","viewer.guided.trail":"Story trail","viewer.guided.beat":"Beat","viewer.guided.nextBeat":"Next","viewer.guided.play":"Play guided story","viewer.guided.play.title":"Play guided story (P)","viewer.guided.pause":"Pause guided story","viewer.guided.pause.title":"Pause guided story (P)","viewer.guided.replay":"Replay guided story","viewer.guided.replay.title":"Replay guided story (P)","viewer.guided.playStory":"Play story","viewer.guided.pauseStory":"Pause","viewer.guided.replayStory":"Replay story","viewer.guided.motionUnavailable":"Story playback unavailable while motion is Still","viewer.guided.enableMotion":"Switch motion to Live to play the guided story","viewer.guided.selectBeatLink":"Select a Story Beat to copy its exact link","viewer.guided.copyMoment":"Copy moment","viewer.guided.momentCopied":"Moment link copied","viewer.guided.momentCopyFailed":"Could not copy story moment link","viewer.guided.copied":"Copied","viewer.guided.copyFailed":"Copy failed","viewer.guided.showAll":"Show all","viewer.guided.showAll.aria":"Show entire diagram","viewer.guided.chapters":"Story chapters","viewer.guided.storyTrail":"Story trail for {label}: {count} beats","viewer.guided.chapter.open":"Open chapter {index} of {total}: {label}, {count} stops","viewer.guided.chapter.current":"Current chapter {index} of {total}: {label}, {count} stops","viewer.guided.chapter.selectedNodes":"{count} selected nodes","viewer.guided.chapter.stops":"{count} stops","viewer.guided.chapter.stop.one":"{count} stop","viewer.guided.chapter.stop.other":"{count} stops","viewer.guided.chapter.current.title":"{label} — current chapter, {count} stops","viewer.guided.chapter.delta.expanded":"{stay} stay, {enter} enter, {leave} leave","viewer.guided.chapter.delta.aria":"Open chapter {index} of {total}: {label}. Chapter focus delta: {delta}","viewer.guided.chapter.delta.title":"{label} — {delta} chapter focus","viewer.guided.handoff":"{from} → {to} · via {label}","viewer.guided.share.chapter":"Chapter {index} / {total}","viewer.guided.share.initial":"Chapter 01 / 01","viewer.guided.share.default":"Guided chapter","viewer.guided.state.ready":"Ready","viewer.guided.state.playing":"Playing","viewer.guided.state.settled":"Settled","viewer.guided.state.paused":"Paused","viewer.guided.state.pinned":"Pinned","viewer.guided.state.still":"Still","viewer.guided.share.step":"Step {index} / {total} · {label}","viewer.guided.share.staticMoment":"{step} · Static moment","viewer.guided.share.complete":"{count} steps complete · {note}","viewer.guided.share.settled":"Path settled for reading.","viewer.guided.share.staticPath":"{count} steps · Static path","viewer.guided.share.ready":"{count} steps · Ready","viewer.guided.share.aria":"{state} chapter {index} of {total}: {label}. {beat}. {route}","viewer.guided.beat.start":"Beat {index} / {total} · {label} · starting point","viewer.guided.beat.forward":"Beat {index} / {total} · {from} → {to}","viewer.guided.beat.reverse":"Beat {index} / {total} · {from} → {to} · reverse authored link","viewer.guided.beat.multiple":"Beat {index} / {total} · {from} ⇄ {to} · {count} authored links","viewer.guided.beat.group":"Beat {index} / {total} · {from} · {to} · grouped · no direct link","viewer.guided.beat.aria.prefix":"Story beat {index} of {total}: {label}. ","viewer.guided.beat.aria.start":"Starting point.","viewer.guided.beat.aria.forward":"From {from} through one authored forward relationship.","viewer.guided.beat.aria.reverse":"From {from}; the authored relationship points from {to} to {from}.","viewer.guided.beat.aria.multiple":"From {from} through {count} authored relationships; shown without arbitrary motion.","viewer.guided.beat.aria.group":"Grouped from {from} with no direct authored relationship.","viewer.guided.caption.start":"Starting point","viewer.guided.caption.grouped":"Grouped transition · no direct authored link","viewer.guided.caption.more":" +{count} more","viewer.guided.caption.reverse":"Reverse authored relationship","viewer.guided.caption.relationships":"{count} authored relationships","viewer.guided.caption.relationship":"Authored relationship","viewer.guided.caption.direction":"authored direction: {from} → {to}","viewer.guided.caption.starting":"Authored starting point","viewer.guided.beatLink":"Copy link to current story moment: Beat {index} of {total}: {label}","viewer.guided.noStory":"This diagram has no authored guided story.","viewer.guide.eyebrow":"Diagram guide","viewer.guide.close":"Close diagram guide","viewer.guide.inspecting":"Inspecting compiled semantics","viewer.guide.actions":"Diagram exploration actions","viewer.guide.find":"Find any node","viewer.guide.find.hint":"Search labels, responsibilities, kinds, and stable IDs.","viewer.guide.route":"Trace a route","viewer.guide.route.aria":"Trace a directed route","viewer.guide.route.hint":"Ask how two semantic nodes connect in authored direction.","viewer.guide.map":"See the whole system","viewer.guide.map.hint":"Open Semantic Radar with a live viewport and stable nodes.","viewer.guide.lens":"Compare semantic kinds","viewer.guide.lens.hint":"Count roles, reveal their traffic, and compare direct authored links.","viewer.guide.story":"Play the guided story","viewer.guide.story.hint":"Walk the authored chapters and real relationships.","viewer.guide.present":"Enter Presentation Stage","viewer.guide.present.hint":"Give the live diagram the viewport without changing export.","viewer.guide.shortcuts":"Additional keyboard shortcuts","viewer.guide.shortcut.export":"Export","viewer.guide.shortcut.theme":"Theme","viewer.guide.shortcut.style":"Style","viewer.guide.shortcut.reset":"Reset","viewer.guide.shortcut.zoomIn":"Zoom in","viewer.guide.shortcut.zoomOut":"Zoom out","viewer.guide.shortcut.close":"Close","viewer.guide.facts":"{nodes} · {relationships} · {views}","viewer.guide.fact.node.one":"{count} semantic node","viewer.guide.fact.node.other":"{count} semantic nodes","viewer.guide.fact.relationship.one":"{count} relationship","viewer.guide.fact.relationship.other":"{count} relationships","viewer.guide.fact.view.one":"{count} guided view","viewer.guide.fact.view.other":"{count} guided views","viewer.guide.story.available.one":"Walk {count} authored chapter and its real relationships.","viewer.guide.story.available.other":"Walk {count} authored chapters and their real relationships.","viewer.guide.story.unavailable":"No authored guided story in this diagram.","viewer.guide.open":"Open diagram guide","viewer.guide.noStory":"This diagram has no authored guided story.","viewer.finder.title":"Find a node","viewer.finder.close":"Close node finder","viewer.finder.placeholder":"Search labels or IDs","viewer.finder.search":"Search diagram nodes","viewer.finder.results":"Diagram nodes","viewer.finder.empty":"No matching nodes","viewer.finder.result.focus":"Focus {label}","viewer.finder.result.routeStart":"Choose {label} as route start","viewer.finder.result.routeTarget":"Choose {label} as route destination, {links}","viewer.finder.status.empty":"No matching nodes","viewer.finder.status.count.one":"{count} matching node","viewer.finder.status.count.other":"{count} matching nodes","viewer.finder.noun.nodes":"nodes","viewer.finder.link.one":"{count} link","viewer.finder.link.other":"{count} links","viewer.finder.result.focus.one":"Focus {label}, {count} related connection","viewer.finder.result.focus.other":"Focus {label}, {count} related connections","viewer.finder.status.filtered":"{visible} of {available} {noun}","viewer.finder.status.all":"{available} {noun}","viewer.passport.eyebrow":"Semantic passport","viewer.passport.metadata":"Node metadata","viewer.passport.evidence":"Verified source evidence","viewer.passport.verified":"Verified source","viewer.passport.reach":"Authored reach","viewer.passport.reach.trace":"Trace authored reachability","viewer.passport.upstream":"Upstream","viewer.passport.downstream":"Downstream","viewer.passport.upstream.trace":"Trace upstream authored reachability","viewer.passport.downstream.trace":"Trace downstream authored reachability","viewer.passport.close":"Close semantic passport","viewer.passport.copy":"Copy link","viewer.passport.copy.focus":"Copy link to focused node","viewer.passport.relations":"Relations","viewer.passport.relations.show":"Show connected relationships","viewer.passport.relations.hide":"Hide connected relationships","viewer.passport.relations.list":"Connected relationships","viewer.passport.copyRelation":"Copy relation","viewer.passport.copyNode":"Copy node","viewer.passport.copyPinned":"Copy link to pinned relationship","viewer.passport.copySource":"Copy link to source node","viewer.passport.copy.focused.success":"Focused node link copied","viewer.passport.copy.pinned.success":"Pinned relationship link copied","viewer.passport.copy.focused.failed":"Could not copy focused node link","viewer.passport.copy.pinned.failed":"Could not copy pinned relationship link","viewer.passport.relationship.none":"No connected relationships","viewer.passport.relationship.count.one":"{count} relation","viewer.passport.relationship.count.other":"{count} relations","viewer.passport.relationship.show.one":"Show {count} connected relationship","viewer.passport.relationship.show.other":"Show {count} connected relationships","viewer.passport.relationship.summary":"{out} outgoing · {in} incoming{loops}","viewer.passport.relationship.loops":" · {count} loop","viewer.passport.relationship.explorer":"Direct relationship explorer","viewer.passport.relationship.help":"Use arrow keys to explore relationships. Press Enter or Space to pin details; Escape clears.","viewer.passport.relationship.loopsBack":"loops back","viewer.passport.relationship.connectsTo":"connects to","viewer.passport.relationship.connectsFrom":"connects from","viewer.passport.relationship.pinned":"Pinned relationship · {from} → {to} · {label}","viewer.passport.relationship.inspect":"Inspect relationship {index} of {total}: {from} to {to}, {label}. Press Enter for details.","viewer.passport.relationship.group.out":"Outgoing","viewer.passport.relationship.group.in":"Incoming","viewer.passport.relationship.group.loop":"Self loops","viewer.passport.relationship.row":"{group}: {relationship}, {neighbor}","viewer.passport.relationship.direction.out":"OUT →","viewer.passport.relationship.direction.in":"← IN","viewer.passport.relationship.direction.loop":"LOOP","viewer.passport.sourceCount.one":"{count} verified source reference","viewer.passport.sourceCount.other":"{count} verified source references","viewer.passport.sourceMarker":"SRC","viewer.passport.beacon.one":"{count} verified source; focus this node to inspect","viewer.passport.beacon.other":"{count} verified sources; focus this node to inspect","viewer.passport.repository.open":"Open verified repository revision {revision}","viewer.passport.source.open":"Open verified source {path} at revision {revision}","viewer.passport.source.openLink":"Open ↗","viewer.passport.reach.upstream.one":"Trace {count} upstream authored node","viewer.passport.reach.upstream.other":"Trace {count} upstream authored nodes","viewer.passport.reach.downstream.one":"Trace {count} downstream authored node","viewer.passport.reach.downstream.other":"Trace {count} downstream authored nodes","viewer.passport.reach.noUpstream":"No upstream authored nodes","viewer.passport.reach.noDownstream":"No downstream authored nodes","viewer.passport.reach.status":"{direction} · {nodes} nodes · {links} links · max {hops} hops","viewer.route.eyebrow":"Route probe","viewer.route.start":"Choose a start node","viewer.route.start.find":"Find start","viewer.route.start.find.aria":"Find a route start","viewer.route.copy":"Copy link","viewer.route.copy.aria":"Copy link to traced route","viewer.route.clear":"Clear","viewer.route.clear.aria":"Clear route probe","viewer.route.traced":"Traced route","viewer.route.pickTwo":"Pick two semantic nodes on the diagram","viewer.route.pickOne":"Pick a semantic node on the diagram","viewer.route.controls":"Route journey controls","viewer.route.previous":"Previous route position","viewer.route.play":"Play route journey","viewer.route.pause":"Pause route journey","viewer.route.replay":"Replay route journey","viewer.route.next":"Next route position","viewer.route.journey":"Journey","viewer.route.pause.label":"Pause","viewer.route.replay.label":"Replay","viewer.route.overview":"Overview","viewer.route.overview.aria":"Show complete route overview","viewer.route.instructions":"Choose the source, then the destination. Direction matters.","viewer.route.destination":"Choose a destination from {label}","viewer.route.destination.find":"Find target","viewer.route.destination.find.aria":"Find a reachable route destination","viewer.route.differentDestination":"Choose a different destination","viewer.route.distinct":"A route needs two distinct semantic nodes.","viewer.route.unreachable":"No directed route to {label}","viewer.route.unreachable.detail":"{target} is not reachable from {source}. Pick a highlighted destination.","viewer.route.start.instructions":"Select the source. The next step will reveal only directed destinations.","viewer.route.copy.success":"Traced route link copied","viewer.route.copy.failed":"Could not copy traced route link","viewer.route.position":"Route position {index} of {total}: {label}","viewer.route.step":"Step {index} of {total} · {phase} · {label}","viewer.route.motionRequired":"Automatic journey requires Live motion","viewer.route.trigger.clear":"Clear traced route","viewer.route.overview.status":"{nodes} · {hops} · shortest authored route","viewer.route.overview.node.one":"{count} node","viewer.route.overview.node.other":"{count} nodes","viewer.route.overview.hop.one":"{count} directed hop","viewer.route.overview.hop.other":"{count} directed hops","viewer.route.phase.playing":"Playing","viewer.route.phase.complete":"Complete","viewer.route.phase.inspecting":"Inspecting","viewer.route.destination.count.one":"{count} directed destination available. Pick a highlighted node.","viewer.route.destination.count.other":"{count} directed destinations available. Pick a highlighted node.","viewer.route.noOutgoing":"No outgoing route starts here. Clear and choose another source.","viewer.route.result.title":"{source} to {target}","viewer.route.finder.source.title":"Choose route start","viewer.route.finder.source.placeholder":"Search route sources","viewer.route.finder.source.empty":"No matching route sources","viewer.route.finder.source.results":"Nodes that can start a route","viewer.route.finder.source.noun":"route sources","viewer.route.finder.source.badge":"start","viewer.route.finder.target.title":"Destination from {label}","viewer.route.finder.target.placeholder":"Search reachable destinations","viewer.route.finder.target.empty":"No matching reachable destinations","viewer.route.finder.target.results":"Reachable route destinations","viewer.route.finder.target.noun":"reachable destinations","viewer.route.hop.one":"{count} hop","viewer.route.hop.other":"{count} hops","viewer.lens.eyebrow":"Semantic lens","viewer.lens.title":"Compare system roles","viewer.lens.close":"Close semantic lens","viewer.lens.instruction":"Choose up to two semantic kinds. One reveals its real traffic; two compare only direct authored relationships.","viewer.lens.kinds":"Semantic kinds","viewer.lens.choose":"Choose a kind to inspect its nodes and touching relationships.","viewer.lens.copy":"Copy link to semantic lens","viewer.lens.clear":"Clear semantic lens","viewer.lens.open":"Open semantic lens","viewer.lens.openActive":"Open active semantic lens","viewer.lens.legend":"Semantic legend","viewer.lens.legend.inspect.one":"Inspect {label}, {count} node","viewer.lens.legend.inspect.other":"Inspect {label}, {count} nodes","viewer.lens.kind.count.one":"{label}, {count} node","viewer.lens.kind.count.other":"{label}, {count} nodes","viewer.lens.compare.one":"{first} → {second}: {forward} · {second} → {first}: {reverse} · {count} direct relationship","viewer.lens.compare.other":"{first} → {second}: {forward} · {second} → {first}: {reverse} · {count} direct relationships","viewer.lens.single":"{nodes} · {relationships} · connected peers remain visible","viewer.lens.node.one":"{count} {label} node","viewer.lens.node.other":"{count} {label} nodes","viewer.lens.relationship.one":"{count} touching relationship","viewer.lens.relationship.other":"{count} touching relationships","viewer.radar.title":"Semantic radar","viewer.radar.building":"Building overview","viewer.radar.openFull":"Open full semantic radar","viewer.radar.open":"Open radar","viewer.radar.close":"Close semantic radar","viewer.radar.surface":"Diagram overview. Click a node to focus it, or use arrow keys to pan.","viewer.radar.click":"Click node","viewer.radar.drag":"Drag to pan","viewer.radar.space":"Semantic radar needs more MAP space.","viewer.radar.nodes":"Semantic diagram radar nodes","viewer.radar.focus":"Focus {label} from Semantic Radar","viewer.radar.status":"{count} nodes · {viewport}","viewer.radar.fullMap":"{count} nodes · full map","viewer.radar.compacted":"Radar compacted to avoid covering the Semantic Passport or MAP controls.","viewer.radar.cancelWaiting":"Cancel semantic radar waiting for more MAP space","viewer.radar.needsSpace":"Semantic radar needs more visible MAP space","viewer.radar.viewport.full":"full map","viewer.radar.viewport.width":"{percent}% width","viewer.radar.viewport.scale":"{percent}% viewport","viewer.nav.controls":"Diagram view controls","viewer.nav.route":"Trace a directed route","viewer.nav.route.title":"Trace route (R)","viewer.nav.route.short":"PATH","viewer.nav.radar":"Open semantic radar","viewer.nav.radar.title":"Semantic radar (M)","viewer.nav.radar.short":"MAP","viewer.nav.lens":"Open semantic lens","viewer.nav.lens.title":"Semantic lens (L)","viewer.nav.lens.short":"LENS","viewer.nav.find":"Find a node","viewer.nav.find.title":"Find a node (/)","viewer.nav.guide":"Open diagram guide","viewer.nav.guide.title":"Diagram guide (?)","viewer.nav.zoomOut":"Zoom out","viewer.nav.zoomOut.title":"Zoom out (-)","viewer.nav.reset":"Reset diagram view","viewer.nav.reset.title":"Reset view (0)","viewer.nav.read":"READ","viewer.nav.zoomIn":"Zoom in","viewer.nav.zoomIn.title":"Zoom in (+)","viewer.nav.camera":"{hint}. Reset diagram view","viewer.nav.camera.title":"{semantic}{hint} · reset view (0)","viewer.nav.camera.semantic":"Semantic camera active · ","viewer.nav.level.map":"MAP","viewer.nav.level.read":"READ","viewer.nav.level.full":"FULL","viewer.nav.level.auto":"AUTO","viewer.nav.detail.map":"Zoom in to reveal relationship labels and node context","viewer.nav.detail.read":"Zoom in again to reveal tags and annotations","viewer.nav.detail.full":"Full diagram detail","viewer.intent.summary":"{label}. {out} outgoing, {in} incoming{loops}. {total} connections. Press Enter for details.","viewer.intent.loops":", {count} self loop","viewer.common.copied":"Copied","viewer.common.copyFailed":"Copy failed","viewer.common.copyLink":"Copy link","viewer.common.clear":"Clear","viewer.common.close":"Close"}}</script>
     <div class="guided-views no-print" id="guided-views" hidden aria-label="Guided diagram views">
@@ -5004,8 +5004,8 @@
     <!-- Main Diagram -->
     <div class="diagram-container" data-detail-level="read"
          data-preset-badge-editorial-plate="ARCHIFY / PLATE 04">
-      <svg viewBox="0 0 1367 490" role="img" lang="en" aria-labelledby="archify-diagram-title archify-diagram-description" data-preset="classic" data-quality-profile="standard">
-        <title id="archify-diagram-title">HEXACORE — Contenedores</title>
+      <svg viewBox="0 0 1560 800" role="img" lang="en" aria-labelledby="archify-diagram-title archify-diagram-description" data-preset="classic" data-quality-profile="standard">
+        <title id="archify-diagram-title">HEXACORE — Contenedores (ADR-14)</title>
         <desc id="archify-diagram-description">An architecture diagram generated by Archify.</desc>
         <!-- Definitions -->
         <defs>
@@ -5030,264 +5030,471 @@
         <rect width="100%" height="100%" fill="url(#grid)" />
 
         <!-- Boundaries (behind everything) -->
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="0" data-composition-frame-label="Backend — 3 servicios de dominio (ADR-12)" x="457.6" y="28" width="239.19999999999993" height="352" rx="12" class="c-region" stroke-width="1"/>
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="0" data-composition-frame-label="Microservicios — base propia y réplicas que escalan solas" x="491.89675709354844" y="34" width="362.20648581290317" height="590" rx="12" class="c-region" stroke-width="1"/>
+
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="1" data-composition-frame-label="Servicios de dominio — base central, redundancia sin escalado" x="1119.8193365387096" y="34" width="386.3613269225806" height="590" rx="12" class="c-region" stroke-width="1"/>
 
         <!-- Connection paths (before components for correct z-order) -->
-        <path data-edge-from="app_movil" data-edge-to="gateway" data-edge-label="HTTPS/JSON" data-edge-key="0" data-edge-id="app-movil-gateway" data-composition-points="187.2,114.75;222.29999999999998,114.75;222.29999999999998,200.1;257.4,200.1" d="M 187.2 114.75 L 214.29999999999998 114.75 Q 222.29999999999998 114.75 222.29999999999998 122.75 L 222.29999999999998 192.1 Q 222.29999999999998 200.1 230.29999999999998 200.1 L 257.4 200.1" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="portal_cliente" data-edge-to="gateway" data-edge-label="HTTPS/JSON" data-edge-key="1" data-edge-id="portal-cliente-gateway" data-composition-points="187.2,211.4;257.4,211.4" d="M 187.2 211.4 L 257.4 211.4" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="portal_admin" data-edge-to="gateway" data-edge-label="HTTPS/JSON" data-edge-key="2" data-edge-id="portal-admin-gateway" data-composition-points="187.2,308.15;222.29999999999998,308.15;222.29999999999998,222.70000000000002;257.4,222.70000000000002" d="M 187.2 308.15 L 214.29999999999998 308.15 Q 222.29999999999998 308.15 222.29999999999998 300.15 L 222.29999999999998 230.70000000000002 Q 222.29999999999998 222.70000000000002 230.29999999999998 222.70000000000002 L 257.4 222.70000000000002" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="gateway" data-edge-to="svc_nucleo" data-edge-label="/cuentas · /pedidos" data-edge-key="3" data-edge-id="gateway-nucleo" data-composition-points="413.4,200.1;448.5,200.1;448.5,85;483.6,85" d="M 413.4 200.1 L 440.5 200.1 Q 448.5 200.1 448.5 192.1 L 448.5 93 Q 448.5 85 456.5 85 L 483.6 85" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="gateway" data-edge-to="svc_entradas" data-edge-label="/entradas · /reventa" data-edge-key="4" data-edge-id="gateway-entradas" data-composition-points="413.4,211.4;483.6,211.4" d="M 413.4 211.4 L 483.6 211.4" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="gateway" data-edge-to="svc_eventos" data-edge-label="/eventos · /aforo" data-edge-key="5" data-edge-id="gateway-eventos" data-composition-points="413.4,222.70000000000002;448.5,222.70000000000002;448.5,329;483.6,329" d="M 413.4 222.70000000000002 L 440.5 222.70000000000002 Q 448.5 222.70000000000002 448.5 230.70000000000002 L 448.5 321 Q 448.5 329 456.5 329 L 483.6 329" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="svc_entradas" data-edge-to="db" data-edge-label="SQL" data-edge-key="6" data-edge-id="entradas-db" data-composition-points="670.8,207;748.8,207;748.8,397.79999999999995;826.8,397.79999999999995" d="M 670.8 207 L 740.8 207 Q 748.8 207 748.8 215 L 748.8 389.79999999999995 Q 748.8 397.79999999999995 756.8 397.79999999999995 L 826.8 397.79999999999995" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="svc_nucleo" data-edge-to="db" data-edge-label="SQL — una conexión por módulo" data-edge-key="7" data-edge-id="nucleo-db" data-composition-points="670.8,85;748.8,85;748.8,397.79999999999995;826.8,397.79999999999995" d="M 670.8 85 L 740.8 85 Q 748.8 85 748.8 93 L 748.8 389.79999999999995 Q 748.8 397.79999999999995 756.8 397.79999999999995 L 826.8 397.79999999999995" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="svc_entradas" data-edge-to="redis" data-edge-label="bloqueo checkout" data-edge-key="8" data-edge-id="entradas-redis" data-composition-points="670.8,200;748.8,200;748.8,77.19999999999999;826.8,77.19999999999999" d="M 670.8 200 L 740.8 200 Q 748.8 200 748.8 192 L 748.8 85.19999999999999 Q 748.8 77.19999999999999 756.8 77.19999999999999 L 826.8 77.19999999999999" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="svc_nucleo" data-edge-to="redis" data-edge-label="sesiones revocadas" data-edge-key="9" data-edge-id="nucleo-redis" data-composition-points="670.8,85;748.8,85;748.8,63.19999999999999;826.8,63.19999999999999" d="M 670.8 85 L 740.8 85 Q 748.8 85 748.8 77 L 748.8 71.19999999999999 Q 748.8 63.19999999999999 756.8 63.19999999999999 L 826.8 63.19999999999999" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="svc_entradas" data-edge-to="queue" data-edge-label="publica evento" data-edge-key="10" data-edge-id="entradas-queue" data-composition-points="670.8,207;748.8,207;748.8,234;826.8,234" d="M 670.8 207 L 740.8 207 Q 748.8 207 748.8 215 L 748.8 226 Q 748.8 234 756.8 234 L 826.8 234" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        <path data-edge-from="svc_eventos" data-edge-to="queue" data-edge-label="alerta de evacuación" data-edge-key="11" data-edge-id="eventos-queue" data-composition-points="670.8,329;748.8,329;748.8,234;826.8,234" d="M 670.8 329 L 740.8 329 Q 748.8 329 748.8 321 L 748.8 242 Q 748.8 234 756.8 234 L 826.8 234" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        <path data-edge-from="svc_entradas" data-edge-to="pagos" data-edge-label="cobra compra/reventa" data-edge-key="12" data-edge-id="entradas-pagos" data-composition-points="670.8,214;694.8,214;694.8,148.2;1146.6,148.2" d="M 670.8 214 L 686.8 214 Q 694.8 214 694.8 206 L 694.8 156.2 Q 694.8 148.2 702.8 148.2 L 1146.6 148.2" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="queue" data-edge-to="notif" data-edge-label="dispara notificación" data-edge-key="13" data-edge-id="queue-notif" data-composition-points="990.5999999999999,234;1058.6,234;1058.6,319.79999999999995;1126.6,319.79999999999995" d="M 990.5999999999999 234 L 1050.6 234 Q 1058.6 234 1058.6 242 L 1058.6 311.79999999999995 Q 1058.6 319.79999999999995 1066.6 319.79999999999995 L 1126.6 319.79999999999995" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="portal_cliente" data-edge-to="gateway" data-edge-label="HTTPS/JSON" data-edge-key="0" data-edge-id="portal-cliente-gw" data-composition-points="232,165;271,165;271,266;310,266" d="M 232 165 L 263 165 Q 271 165 271 173 L 271 258 Q 271 266 279 266 L 310 266" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="app_cliente" data-edge-to="gateway" data-edge-label="HTTPS/JSON" data-edge-key="1" data-edge-id="app-cliente-gw" data-composition-points="232,247;271,247;271,274;310,274" d="M 232 247 L 263 247 Q 271 247 271 255 L 271 266 Q 271 274 279 274 L 310 274" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="portal_admin" data-edge-to="gateway" data-edge-key="2" data-edge-id="portal-admin-gw" data-composition-points="232,329;271,329;271,282;310,282" d="M 232 329 L 263 329 Q 271 329 271 321 L 271 290 Q 271 282 279 282 L 310 282" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="app_personal" data-edge-to="gateway" data-edge-key="3" data-edge-id="app-personal-gw" data-composition-points="232,411;271,411;271,290;310,290" d="M 232 411 L 263 411 Q 271 411 271 403 L 271 298 Q 271 290 279 290 L 310 290" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="gateway" data-edge-to="cola" data-edge-label="pide turno" data-edge-key="4" data-edge-id="gw-cola" data-composition-points="478,266;529,266;529,86;580,86" d="M 478 266 L 521 266 Q 529 266 529 258 L 529 94 Q 529 86 537 86 L 580 86" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="gateway" data-edge-to="catalogo" data-edge-label="consulta" data-edge-key="5" data-edge-id="gw-catalogo" data-composition-points="478,274;529,274;529,168;580,168" d="M 478 274 L 521 274 Q 529 274 529 266 L 529 176 Q 529 168 537 168 L 580 168" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="gateway" data-edge-to="ventas" data-edge-label="compra (con turno)" data-edge-key="6" data-edge-id="gw-ventas" data-composition-points="478,282;529,282;529,250;580,250" d="M 478 282 L 521 282 Q 529 282 529 274 L 529 258 Q 529 250 537 250 L 580 250" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="gateway" data-edge-to="auth" data-edge-label="valida token" data-edge-key="7" data-edge-id="gw-auth" data-composition-points="478,290;529,290;529,414;580,414" d="M 478 290 L 521 290 Q 529 290 529 298 L 529 406 Q 529 414 537 414 L 580 414" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="ventas" data-edge-to="pagos" data-edge-label="cobra idempotente" data-edge-key="8" data-edge-id="ventas-pagos" data-composition-points="673,276;673,306" d="M 673 276 L 673 306" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="ventas" data-edge-to="redis" data-edge-label="reserva atómica" data-edge-key="9" data-edge-id="ventas-redis" data-composition-points="766,240;833,240;833,86;900,86" d="M 766 240 L 825 240 Q 833 240 833 232 L 833 94 Q 833 86 841 86 L 900 86" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="ventas" data-edge-to="bd_micro" data-edge-label="SQL" data-edge-key="10" data-edge-id="ventas-bd" data-composition-points="766,250;900,250" d="M 766 250 L 900 250" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="catalogo" data-edge-to="indice" data-edge-label="busca" data-edge-key="11" data-edge-id="catalogo-indice" data-composition-points="766,168;900,168" d="M 766 168 L 900 168" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="ventas" data-edge-to="broker" data-edge-label="CompraConfirmada" data-edge-key="12" data-edge-id="ventas-broker" data-composition-points="766,260;833,260;833,322;900,322" d="M 766 260 L 825 260 Q 833 260 833 268 L 833 314 Q 833 322 841 322 L 900 322" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="broker" data-edge-to="notificaciones" data-edge-label="envía QR" data-edge-key="13" data-edge-id="broker-notif" data-composition-points="900,342;833,342;833,571;766,571" d="M 900 342 L 841 342 Q 833 342 833 350 L 833 563 Q 833 571 825 571 L 766 571" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="broker" data-edge-to="qr" data-edge-label="activa el QR" data-edge-key="14" data-edge-id="broker-qr" data-composition-points="900,332;833,332;833,496;766,496" d="M 900 332 L 841 332 Q 833 332 833 340 L 833 488 Q 833 496 825 496 L 766 496" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="broker" data-edge-to="finanzas" data-edge-label="registra" data-edge-key="15" data-edge-id="broker-finanzas" data-composition-points="1086,339;1153,339;1153,571;1220,571" d="M 1086 339 L 1145 339 Q 1153 339 1153 347 L 1153 563 Q 1153 571 1161 571 L 1220 571" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="eventos" data-edge-to="broker" data-edge-label="EventoPublicado" data-edge-key="16" data-edge-id="eventos-broker" data-composition-points="1220,86;1153,86;1153,325;1086,325" d="M 1220 86 L 1161 86 Q 1153 86 1153 94 L 1153 317 Q 1153 325 1145 325 L 1086 325" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="alimentos" data-edge-to="bd_central" data-edge-label="SQL (esquema propio)" data-edge-key="17" data-edge-id="dominio-bd" data-composition-points="1220,250;1153,250;1153,414;1086,414" d="M 1220 250 L 1161 250 Q 1153 250 1153 258 L 1153 406 Q 1153 414 1145 414 L 1086 414" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="finanzas" data-edge-to="replica_lectura" data-edge-label="solo lectura" data-edge-key="18" data-edge-id="finanzas-replica" data-composition-points="1220,585;1153,585;1153,496;1086,496" d="M 1220 585 L 1161 585 Q 1153 585 1153 577 L 1153 504 Q 1153 496 1145 496 L 1086 496" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="pagos" data-edge-to="pasarela" data-edge-label="cobros y reembolsos" data-edge-key="19" data-edge-id="pagos-pasarela" data-composition-points="766,332;833,332;833,578;900,578" d="M 766 332 L 825 332 Q 833 332 833 340 L 833 570 Q 833 578 841 578 L 900 578" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="notificaciones" data-edge-to="proveedor_notif" data-edge-label="correo y push" data-edge-key="20" data-edge-id="notif-proveedor" data-composition-points="766,585;833,585;833,660;900,660" d="M 766 585 L 825 585 Q 833 585 833 593 L 833 652 Q 833 660 841 660 L 900 660" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
 
         <!-- Components -->
-        <g id="node-app_movil" data-node-id="app_movil" data-node-label="App Móvil" tabindex="0" role="button" aria-label="Focus App Móvil, Flutter — Cliente + Personal, Architecture component" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="Flutter — Cliente + Personal" data-node-context="Architecture component">
-          <title>App Móvil · Flutter — Cliente + Personal · Architecture component</title>
-          <rect x="15.6" y="89.8" width="171.6" height="49.9" rx="6" class="c-mask"/>
-          <rect x="15.6" y="89.8" width="171.6" height="49.9" rx="6" class="c-frontend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(21.6 95.8) scale(0.6875)">
+        <g id="node-portal_cliente" data-node-id="portal_cliente" data-node-label="Portal Web Cliente" tabindex="0" role="button" aria-label="Focus Portal Web Cliente, Angular, Architecture component" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="Angular" data-node-context="Architecture component">
+          <title>Portal Web Cliente · Angular · Architecture component</title>
+          <rect x="60" y="140" width="172" height="50" rx="6" class="c-mask"/>
+          <rect x="60" y="140" width="172" height="50" rx="6" class="c-frontend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(66 146) scale(0.6875)">
             <rect x="2" y="3" width="12" height="10" rx="2"/>
             <path d="M2 6.5h12"/>
             <circle cx="4.1" cy="4.8" r=".7" class="sigil-fill"/>
             <circle cx="6.3" cy="4.8" r=".7" class="sigil-fill"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="101.39999999999999" y="112.75" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">App Móvil</text>
-        <text data-detail="context" x="101.39999999999999" y="128.75" class="t-muted" font-size="9" text-anchor="middle">Flutter — Cliente + Personal</text>
+          <text data-node-label="" data-detail-anchor="" x="146" y="163" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Portal Web Cliente</text>
+        <text data-detail="context" x="146" y="179" class="t-muted" font-size="9" text-anchor="middle">Angular</text>
         </g>
 
-        <g id="node-portal_cliente" data-node-id="portal_cliente" data-node-label="Portal Web Cliente" tabindex="0" role="button" aria-label="Focus Portal Web Cliente, Angular — rol Cliente, Architecture component" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="Angular — rol Cliente" data-node-context="Architecture component">
-          <title>Portal Web Cliente · Angular — rol Cliente · Architecture component</title>
-          <rect x="15.6" y="186.5" width="171.6" height="49.9" rx="6" class="c-mask"/>
-          <rect x="15.6" y="186.5" width="171.6" height="49.9" rx="6" class="c-frontend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(21.6 192.5) scale(0.6875)">
+        <g id="node-app_cliente" data-node-id="app_cliente" data-node-label="App Móvil Cliente" tabindex="0" role="button" aria-label="Focus App Móvil Cliente, Flutter, Architecture component" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="Flutter" data-node-context="Architecture component">
+          <title>App Móvil Cliente · Flutter · Architecture component</title>
+          <rect x="60" y="222" width="172" height="50" rx="6" class="c-mask"/>
+          <rect x="60" y="222" width="172" height="50" rx="6" class="c-frontend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(66 228) scale(0.6875)">
             <rect x="2" y="3" width="12" height="10" rx="2"/>
             <path d="M2 6.5h12"/>
             <circle cx="4.1" cy="4.8" r=".7" class="sigil-fill"/>
             <circle cx="6.3" cy="4.8" r=".7" class="sigil-fill"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="101.39999999999999" y="209.45" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Portal Web Cliente</text>
-        <text data-detail="context" x="101.39999999999999" y="225.45" class="t-muted" font-size="9" text-anchor="middle">Angular — rol Cliente</text>
+          <text data-node-label="" data-detail-anchor="" x="146" y="245" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">App Móvil Cliente</text>
+        <text data-detail="context" x="146" y="261" class="t-muted" font-size="9" text-anchor="middle">Flutter</text>
         </g>
 
-        <g id="node-portal_admin" data-node-id="portal_admin" data-node-label="Portal Web Admin" tabindex="0" role="button" aria-label="Focus Portal Web Admin, Angular — Organizador/Admin/Supervisor, Architecture component" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="Angular — Organizador/Admin/Supervisor" data-node-context="Architecture component">
-          <title>Portal Web Admin · Angular — Organizador/Admin/Supervisor · Architecture component</title>
-          <rect x="15.6" y="283.2" width="171.6" height="49.9" rx="6" class="c-mask"/>
-          <rect x="15.6" y="283.2" width="171.6" height="49.9" rx="6" class="c-frontend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(21.6 289.2) scale(0.6875)">
+        <g id="node-portal_admin" data-node-id="portal_admin" data-node-label="Portal Web Admin" tabindex="0" role="button" aria-label="Focus Portal Web Admin, Angular, Architecture component" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="Angular" data-node-context="Architecture component">
+          <title>Portal Web Admin · Angular · Architecture component</title>
+          <rect x="60" y="304" width="172" height="50" rx="6" class="c-mask"/>
+          <rect x="60" y="304" width="172" height="50" rx="6" class="c-frontend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(66 310) scale(0.6875)">
             <rect x="2" y="3" width="12" height="10" rx="2"/>
             <path d="M2 6.5h12"/>
             <circle cx="4.1" cy="4.8" r=".7" class="sigil-fill"/>
             <circle cx="6.3" cy="4.8" r=".7" class="sigil-fill"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="101.39999999999999" y="306.15" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Portal Web Admin</text>
-        <text data-detail="context" x="101.39999999999999" y="322.15" class="t-muted" font-size="7.1" text-anchor="middle">Angular — Organizador/Admin/Supervisor</text>
+          <text data-node-label="" data-detail-anchor="" x="146" y="327" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Portal Web Admin</text>
+        <text data-detail="context" x="146" y="343" class="t-muted" font-size="9" text-anchor="middle">Angular</text>
         </g>
 
-        <g id="node-gateway" data-node-id="gateway" data-node-label="API Gateway" tabindex="0" role="button" aria-label="Focus API Gateway, Balanceador de carga, Architecture component" aria-pressed="false" data-node-kind="security" data-node-sublabel="Balanceador de carga" data-node-context="Architecture component">
-          <title>API Gateway · Balanceador de carga · Architecture component</title>
-          <rect x="257.4" y="184.1" width="156" height="54.6" rx="6" class="c-mask"/>
-          <rect x="257.4" y="184.1" width="156" height="54.6" rx="6" class="c-security" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(263.4 190.1) scale(0.6875)">
+        <g id="node-app_personal" data-node-id="app_personal" data-node-label="App Móvil Personal" tabindex="0" role="button" aria-label="Focus App Móvil Personal, Flutter · valida QR sin red, Architecture component" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="Flutter · valida QR sin red" data-node-context="Architecture component">
+          <title>App Móvil Personal · Flutter · valida QR sin red · Architecture component</title>
+          <rect x="60" y="386" width="172" height="50" rx="6" class="c-mask"/>
+          <rect x="60" y="386" width="172" height="50" rx="6" class="c-frontend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(66 392) scale(0.6875)">
+            <rect x="2" y="3" width="12" height="10" rx="2"/>
+            <path d="M2 6.5h12"/>
+            <circle cx="4.1" cy="4.8" r=".7" class="sigil-fill"/>
+            <circle cx="6.3" cy="4.8" r=".7" class="sigil-fill"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="146" y="409" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">App Móvil Personal</text>
+        <text data-detail="context" x="146" y="425" class="t-muted" font-size="9" text-anchor="middle">Flutter · valida QR sin red</text>
+        </g>
+
+        <g id="node-gateway" data-node-id="gateway" data-node-label="API Gateway" tabindex="0" role="button" aria-label="Focus API Gateway, autoriza por rol · 2+ réplicas, Architecture component" aria-pressed="false" data-node-kind="security" data-node-sublabel="autoriza por rol · 2+ réplicas" data-node-context="Architecture component">
+          <title>API Gateway · autoriza por rol · 2+ réplicas · Architecture component</title>
+          <rect x="310" y="250" width="168" height="56" rx="6" class="c-mask"/>
+          <rect x="310" y="250" width="168" height="56" rx="6" class="c-security" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(316 256) scale(0.6875)">
             <path d="M8 2.2 13 4v3.5c0 3.1-1.8 5.4-5 6.5-3.2-1.1-5-3.4-5-6.5V4Z"/>
             <path d="m5.8 8 1.5 1.5 3-3"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="335.4" y="209.4" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">API Gateway</text>
-        <text data-detail="context" x="335.4" y="225.4" class="t-muted" font-size="9" text-anchor="middle">Balanceador de carga</text>
+          <text data-node-label="" data-detail-anchor="" x="394" y="276" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">API Gateway</text>
+        <text data-detail="context" x="394" y="292" class="t-muted" font-size="8.8" text-anchor="middle">autoriza por rol · 2+ réplicas</text>
         </g>
 
-        <g id="node-svc_nucleo" data-node-id="svc_nucleo" data-node-label="Núcleo" tabindex="0" role="button" aria-label="Focus Núcleo, 4 módulos · instancia única, Backend — 3 servicios de dominio (ADR-12)" aria-pressed="false" data-node-kind="backend" data-node-sublabel="4 módulos · instancia única" data-node-context="Backend — 3 servicios de dominio (ADR-12)">
-          <title>Núcleo · 4 módulos · instancia única · Backend — 3 servicios de dominio (ADR-12)</title>
-          <rect x="483.6" y="54" width="187.2" height="62" rx="6" class="c-mask"/>
-          <rect x="483.6" y="54" width="187.2" height="62" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(489.6 60) scale(0.6875)">
+        <g id="node-cola" data-node-id="cola" data-node-label="Cola virtual" tabindex="0" role="button" aria-label="Focus Cola virtual, turno de compra · 3+ réplicas, Microservicios — base propia y réplicas que escalan solas" aria-pressed="false" data-node-kind="backend" data-node-sublabel="turno de compra · 3+ réplicas" data-node-context="Microservicios — base propia y réplicas que escalan solas">
+          <title>Cola virtual · turno de compra · 3+ réplicas · Microservicios — base propia y réplicas que escalan solas</title>
+          <rect x="580" y="60" width="186" height="52" rx="6" class="c-mask"/>
+          <rect x="580" y="60" width="186" height="52" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(586 66) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="577.2" y="83" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Núcleo</text>
-        <text data-detail="context" x="577.2" y="99" class="t-muted" font-size="9" text-anchor="middle">4 módulos · instancia única</text>
+          <text data-node-label="" data-detail-anchor="" x="673" y="84" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Cola virtual</text>
+        <text data-detail="context" x="673" y="100" class="t-muted" font-size="9" text-anchor="middle">turno de compra · 3+ réplicas</text>
         </g>
 
-        <g id="node-svc_entradas" data-node-id="svc_entradas" data-node-label="Entradas / Mercado Secundario" tabindex="0" role="button" aria-label="Focus Entradas / Mercado Secundario, CU-001..006 · satélite replicable, Backend — 3 servicios de dominio (ADR-12)" aria-pressed="false" data-node-kind="backend" data-node-sublabel="CU-001..006 · satélite replicable" data-node-context="Backend — 3 servicios de dominio (ADR-12)">
-          <title>Entradas / Mercado Secundario · CU-001..006 · satélite replicable · Backend — 3 servicios de dominio (ADR-12)</title>
-          <rect x="483.6" y="176" width="187.2" height="62" rx="6" class="c-mask"/>
-          <rect x="483.6" y="176" width="187.2" height="62" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(489.6 182) scale(0.6875)">
+        <g id="node-catalogo" data-node-id="catalogo" data-node-label="Catálogo" tabindex="0" role="button" aria-label="Focus Catálogo, CU-005 · 3+ réplicas, Microservicios — base propia y réplicas que escalan solas" aria-pressed="false" data-node-kind="backend" data-node-sublabel="CU-005 · 3+ réplicas" data-node-context="Microservicios — base propia y réplicas que escalan solas">
+          <title>Catálogo · CU-005 · 3+ réplicas · Microservicios — base propia y réplicas que escalan solas</title>
+          <rect x="580" y="142" width="186" height="52" rx="6" class="c-mask"/>
+          <rect x="580" y="142" width="186" height="52" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(586 148) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="577.2" y="205" class="t-primary" font-size="10.2" font-weight="600" text-anchor="middle">Entradas / Mercado Secundario</text>
-        <text data-detail="context" x="577.2" y="221" class="t-muted" font-size="9" text-anchor="middle">CU-001..006 · satélite replicable</text>
+          <text data-node-label="" data-detail-anchor="" x="673" y="166" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Catálogo</text>
+        <text data-detail="context" x="673" y="182" class="t-muted" font-size="9" text-anchor="middle">CU-005 · 3+ réplicas</text>
         </g>
 
-        <g id="node-svc_eventos" data-node-id="svc_eventos" data-node-label="Eventos / Emergencias" tabindex="0" role="button" aria-label="Focus Eventos / Emergencias, CU-010, 016..020, 026 · satélite replicable, Backend — 3 servicios de dominio (ADR-12)" aria-pressed="false" data-node-kind="backend" data-node-sublabel="CU-010, 016..020, 026 · satélite replicable" data-node-context="Backend — 3 servicios de dominio (ADR-12)">
-          <title>Eventos / Emergencias · CU-010, 016..020, 026 · satélite replicable · Backend — 3 servicios de dominio (ADR-12)</title>
-          <rect x="483.6" y="298" width="187.2" height="62" rx="6" class="c-mask"/>
-          <rect x="483.6" y="298" width="187.2" height="62" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(489.6 304) scale(0.6875)">
+        <g id="node-ventas" data-node-id="ventas" data-node-label="Ventas" tabindex="0" role="button" aria-label="Focus Ventas, CU-001, 004 · orquesta la Saga, Microservicios — base propia y réplicas que escalan solas" aria-pressed="false" data-node-kind="backend" data-node-sublabel="CU-001, 004 · orquesta la Saga" data-node-context="Microservicios — base propia y réplicas que escalan solas">
+          <title>Ventas · CU-001, 004 · orquesta la Saga · Microservicios — base propia y réplicas que escalan solas</title>
+          <rect x="580" y="224" width="186" height="52" rx="6" class="c-mask"/>
+          <rect x="580" y="224" width="186" height="52" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(586 230) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="577.2" y="327" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Eventos / Emergencias</text>
-        <text data-detail="context" x="577.2" y="343" class="t-muted" font-size="6.9" text-anchor="middle">CU-010, 016..020, 026 · satélite replicable</text>
+          <text data-node-label="" data-detail-anchor="" x="673" y="248" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Ventas</text>
+        <text data-detail="context" x="673" y="264" class="t-muted" font-size="9" text-anchor="middle">CU-001, 004 · orquesta la Saga</text>
         </g>
 
-        <g id="node-redis" data-node-id="redis" data-node-label="Redis" tabindex="0" role="button" aria-label="Focus Redis, bloqueos + datos rápidos, Architecture component" aria-pressed="false" data-node-kind="database" data-node-sublabel="bloqueos + datos rápidos" data-node-context="Architecture component">
-          <title>Redis · bloqueos + datos rápidos · Architecture component</title>
-          <rect x="826.8" y="46.8" width="163.8" height="46.8" rx="6" class="c-mask"/>
-          <rect x="826.8" y="46.8" width="163.8" height="46.8" rx="6" class="c-database" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(832.8 52.8) scale(0.6875)">
-            <ellipse cx="8" cy="4" rx="5" ry="2"/>
-            <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
+        <g id="node-pagos" data-node-id="pagos" data-node-label="Pagos" tabindex="0" role="button" aria-label="Focus Pagos, único contacto con la pasarela, Microservicios — base propia y réplicas que escalan solas" aria-pressed="false" data-node-kind="backend" data-node-sublabel="único contacto con la pasarela" data-node-context="Microservicios — base propia y réplicas que escalan solas">
+          <title>Pagos · único contacto con la pasarela · Microservicios — base propia y réplicas que escalan solas</title>
+          <rect x="580" y="306" width="186" height="52" rx="6" class="c-mask"/>
+          <rect x="580" y="306" width="186" height="52" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(586 312) scale(0.6875)">
+            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="908.6999999999999" y="68.19999999999999" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Redis</text>
-        <text data-detail="context" x="908.6999999999999" y="84.19999999999999" class="t-muted" font-size="9" text-anchor="middle">bloqueos + datos rápidos</text>
+          <text data-node-label="" data-detail-anchor="" x="673" y="330" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Pagos</text>
+        <text data-detail="context" x="673" y="346" class="t-muted" font-size="9" text-anchor="middle">único contacto con la pasarela</text>
         </g>
 
-        <g id="node-queue" data-node-id="queue" data-node-label="Cola de Mensajes" tabindex="0" role="button" aria-label="Focus Cola de Mensajes, RabbitMQ, Architecture component" aria-pressed="false" data-node-kind="messagebus" data-node-sublabel="RabbitMQ" data-node-context="Architecture component">
-          <title>Cola de Mensajes · RabbitMQ · Architecture component</title>
-          <rect x="826.8" y="210.6" width="163.8" height="46.8" rx="6" class="c-mask"/>
-          <rect x="826.8" y="210.6" width="163.8" height="46.8" rx="6" class="c-messagebus" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="messagebus" class="semantic-sigil s-messagebus" transform="translate(832.8 216.6) scale(0.6875)">
+        <g id="node-auth" data-node-id="auth" data-node-label="Autenticación" tabindex="0" role="button" aria-label="Focus Autenticación, CU-027, 028 · lo usa todo, Microservicios — base propia y réplicas que escalan solas" aria-pressed="false" data-node-kind="backend" data-node-sublabel="CU-027, 028 · lo usa todo" data-node-context="Microservicios — base propia y réplicas que escalan solas">
+          <title>Autenticación · CU-027, 028 · lo usa todo · Microservicios — base propia y réplicas que escalan solas</title>
+          <rect x="580" y="388" width="186" height="52" rx="6" class="c-mask"/>
+          <rect x="580" y="388" width="186" height="52" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(586 394) scale(0.6875)">
+            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="673" y="412" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Autenticación</text>
+        <text data-detail="context" x="673" y="428" class="t-muted" font-size="9" text-anchor="middle">CU-027, 028 · lo usa todo</text>
+        </g>
+
+        <g id="node-qr" data-node-id="qr" data-node-label="Acceso QR" tabindex="0" role="button" aria-label="Focus Acceso QR, CU-002 · pico en la puerta, Microservicios — base propia y réplicas que escalan solas" aria-pressed="false" data-node-kind="backend" data-node-sublabel="CU-002 · pico en la puerta" data-node-context="Microservicios — base propia y réplicas que escalan solas">
+          <title>Acceso QR · CU-002 · pico en la puerta · Microservicios — base propia y réplicas que escalan solas</title>
+          <rect x="580" y="470" width="186" height="52" rx="6" class="c-mask"/>
+          <rect x="580" y="470" width="186" height="52" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(586 476) scale(0.6875)">
+            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="673" y="494" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Acceso QR</text>
+        <text data-detail="context" x="673" y="510" class="t-muted" font-size="9" text-anchor="middle">CU-002 · pico en la puerta</text>
+        </g>
+
+        <g id="node-notificaciones" data-node-id="notificaciones" data-node-label="Notificaciones" tabindex="0" role="button" aria-label="Focus Notificaciones, escala por longitud de cola, Microservicios — base propia y réplicas que escalan solas" aria-pressed="false" data-node-kind="backend" data-node-sublabel="escala por longitud de cola" data-node-context="Microservicios — base propia y réplicas que escalan solas">
+          <title>Notificaciones · escala por longitud de cola · Microservicios — base propia y réplicas que escalan solas</title>
+          <rect x="580" y="552" width="186" height="52" rx="6" class="c-mask"/>
+          <rect x="580" y="552" width="186" height="52" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(586 558) scale(0.6875)">
+            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="673" y="576" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Notificaciones</text>
+        <text data-detail="context" x="673" y="592" class="t-muted" font-size="9" text-anchor="middle">escala por longitud de cola</text>
+        </g>
+
+        <g id="node-eventos" data-node-id="eventos" data-node-label="Eventos y recintos" tabindex="0" role="button" aria-label="Focus Eventos y recintos, CU-026, 029, Servicios de dominio — base central, redundancia sin escalado" aria-pressed="false" data-node-kind="backend" data-node-sublabel="CU-026, 029" data-node-context="Servicios de dominio — base central, redundancia sin escalado">
+          <title>Eventos y recintos · CU-026, 029 · Servicios de dominio — base central, redundancia sin escalado</title>
+          <rect x="1220" y="60" width="186" height="52" rx="6" class="c-mask"/>
+          <rect x="1220" y="60" width="186" height="52" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(1226 66) scale(0.6875)">
+            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="1313" y="84" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Eventos y recintos</text>
+        <text data-detail="context" x="1313" y="100" class="t-muted" font-size="9" text-anchor="middle">CU-026, 029</text>
+        </g>
+
+        <g id="node-postventa" data-node-id="postventa" data-node-label="Postventa" tabindex="0" role="button" aria-label="Focus Postventa, CU-003, 006, Servicios de dominio — base central, redundancia sin escalado" aria-pressed="false" data-node-kind="backend" data-node-sublabel="CU-003, 006" data-node-context="Servicios de dominio — base central, redundancia sin escalado">
+          <title>Postventa · CU-003, 006 · Servicios de dominio — base central, redundancia sin escalado</title>
+          <rect x="1220" y="142" width="186" height="52" rx="6" class="c-mask"/>
+          <rect x="1220" y="142" width="186" height="52" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(1226 148) scale(0.6875)">
+            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="1313" y="166" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Postventa</text>
+        <text data-detail="context" x="1313" y="182" class="t-muted" font-size="9" text-anchor="middle">CU-003, 006</text>
+        </g>
+
+        <g id="node-alimentos" data-node-id="alimentos" data-node-label="Alimentos" tabindex="0" role="button" aria-label="Focus Alimentos, CU-011..015, Servicios de dominio — base central, redundancia sin escalado" aria-pressed="false" data-node-kind="backend" data-node-sublabel="CU-011..015" data-node-context="Servicios de dominio — base central, redundancia sin escalado">
+          <title>Alimentos · CU-011..015 · Servicios de dominio — base central, redundancia sin escalado</title>
+          <rect x="1220" y="224" width="186" height="52" rx="6" class="c-mask"/>
+          <rect x="1220" y="224" width="186" height="52" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(1226 230) scale(0.6875)">
+            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="1313" y="248" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Alimentos</text>
+        <text data-detail="context" x="1313" y="264" class="t-muted" font-size="9" text-anchor="middle">CU-011..015</text>
+        </g>
+
+        <g id="node-parqueaderos" data-node-id="parqueaderos" data-node-label="Parqueaderos" tabindex="0" role="button" aria-label="Focus Parqueaderos, CU-021..025, Servicios de dominio — base central, redundancia sin escalado" aria-pressed="false" data-node-kind="backend" data-node-sublabel="CU-021..025" data-node-context="Servicios de dominio — base central, redundancia sin escalado">
+          <title>Parqueaderos · CU-021..025 · Servicios de dominio — base central, redundancia sin escalado</title>
+          <rect x="1220" y="306" width="186" height="52" rx="6" class="c-mask"/>
+          <rect x="1220" y="306" width="186" height="52" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(1226 312) scale(0.6875)">
+            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="1313" y="330" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Parqueaderos</text>
+        <text data-detail="context" x="1313" y="346" class="t-muted" font-size="9" text-anchor="middle">CU-021..025</text>
+        </g>
+
+        <g id="node-personal" data-node-id="personal" data-node-label="Personal y logística" tabindex="0" role="button" aria-label="Focus Personal y logística, CU-007..009, 016..018, 030, Servicios de dominio — base central, redundancia sin escalado" aria-pressed="false" data-node-kind="backend" data-node-sublabel="CU-007..009, 016..018, 030" data-node-context="Servicios de dominio — base central, redundancia sin escalado">
+          <title>Personal y logística · CU-007..009, 016..018, 030 · Servicios de dominio — base central, redundancia sin escalado</title>
+          <rect x="1220" y="388" width="186" height="52" rx="6" class="c-mask"/>
+          <rect x="1220" y="388" width="186" height="52" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(1226 394) scale(0.6875)">
+            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="1313" y="412" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Personal y logística</text>
+        <text data-detail="context" x="1313" y="428" class="t-muted" font-size="9" text-anchor="middle">CU-007..009, 016..018, 030</text>
+        </g>
+
+        <g id="node-operacion" data-node-id="operacion" data-node-label="Operación del evento" tabindex="0" role="button" aria-label="Focus Operación del evento, CU-010, 019, 020 · redundante, Servicios de dominio — base central, redundancia sin escalado" aria-pressed="false" data-node-kind="backend" data-node-sublabel="CU-010, 019, 020 · redundante" data-node-context="Servicios de dominio — base central, redundancia sin escalado">
+          <title>Operación del evento · CU-010, 019, 020 · redundante · Servicios de dominio — base central, redundancia sin escalado</title>
+          <rect x="1220" y="470" width="186" height="52" rx="6" class="c-mask"/>
+          <rect x="1220" y="470" width="186" height="52" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(1226 476) scale(0.6875)">
+            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="1313" y="494" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Operación del evento</text>
+        <text data-detail="context" x="1313" y="510" class="t-muted" font-size="9" text-anchor="middle">CU-010, 019, 020 · redundante</text>
+        </g>
+
+        <g id="node-finanzas" data-node-id="finanzas" data-node-label="Finanzas y reportes" tabindex="0" role="button" aria-label="Focus Finanzas y reportes, CU-031, 032, Servicios de dominio — base central, redundancia sin escalado" aria-pressed="false" data-node-kind="backend" data-node-sublabel="CU-031, 032" data-node-context="Servicios de dominio — base central, redundancia sin escalado">
+          <title>Finanzas y reportes · CU-031, 032 · Servicios de dominio — base central, redundancia sin escalado</title>
+          <rect x="1220" y="552" width="186" height="52" rx="6" class="c-mask"/>
+          <rect x="1220" y="552" width="186" height="52" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(1226 558) scale(0.6875)">
+            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="1313" y="576" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Finanzas y reportes</text>
+        <text data-detail="context" x="1313" y="592" class="t-muted" font-size="9" text-anchor="middle">CU-031, 032</text>
+        </g>
+
+        <g id="node-broker" data-node-id="broker" data-node-label="Broker de eventos" tabindex="0" role="button" aria-label="Focus Broker de eventos, tópicos replicados, Architecture component" aria-pressed="false" data-node-kind="messagebus" data-node-sublabel="tópicos replicados" data-node-context="Architecture component">
+          <title>Broker de eventos · tópicos replicados · Architecture component</title>
+          <rect x="900" y="306" width="186" height="52" rx="6" class="c-mask"/>
+          <rect x="900" y="306" width="186" height="52" rx="6" class="c-messagebus" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="messagebus" class="semantic-sigil s-messagebus" transform="translate(906 312) scale(0.6875)">
             <path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11"/>
             <circle cx="5" cy="4.5" r="1" class="sigil-fill"/>
             <circle cx="10.5" cy="8" r="1" class="sigil-fill"/>
             <circle cx="7" cy="11.5" r="1" class="sigil-fill"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="908.6999999999999" y="232" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Cola de Mensajes</text>
-        <text data-detail="context" x="908.6999999999999" y="248" class="t-muted" font-size="9" text-anchor="middle">RabbitMQ</text>
+          <text data-node-label="" data-detail-anchor="" x="993" y="330" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Broker de eventos</text>
+        <text data-detail="context" x="993" y="346" class="t-muted" font-size="9" text-anchor="middle">tópicos replicados</text>
         </g>
 
-        <g id="node-db" data-node-id="db" data-node-label="Bases de Datos" tabindex="0" role="button" aria-label="Focus Bases de Datos, una por dominio, Architecture component" aria-pressed="false" data-node-kind="database" data-node-sublabel="una por dominio" data-node-context="Architecture component">
-          <title>Bases de Datos · una por dominio · Architecture component</title>
-          <rect x="826.8" y="374.4" width="163.8" height="46.8" rx="6" class="c-mask"/>
-          <rect x="826.8" y="374.4" width="163.8" height="46.8" rx="6" class="c-database" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(832.8 380.4) scale(0.6875)">
+        <g id="node-redis" data-node-id="redis" data-node-label="Clúster Redis" tabindex="0" role="button" aria-label="Focus Clúster Redis, inventario · fila · sesiones · QR, Architecture component" aria-pressed="false" data-node-kind="database" data-node-sublabel="inventario · fila · sesiones · QR" data-node-context="Architecture component">
+          <title>Clúster Redis · inventario · fila · sesiones · QR · Architecture component</title>
+          <rect x="900" y="60" width="186" height="52" rx="6" class="c-mask"/>
+          <rect x="900" y="60" width="186" height="52" rx="6" class="c-database" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(906 66) scale(0.6875)">
             <ellipse cx="8" cy="4" rx="5" ry="2"/>
             <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="908.6999999999999" y="395.79999999999995" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Bases de Datos</text>
-        <text data-detail="context" x="908.6999999999999" y="411.79999999999995" class="t-muted" font-size="9" text-anchor="middle">una por dominio</text>
+          <text data-node-label="" data-detail-anchor="" x="993" y="84" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Clúster Redis</text>
+        <text data-detail="context" x="993" y="100" class="t-muted" font-size="8.9" text-anchor="middle">inventario · fila · sesiones · QR</text>
         </g>
 
-        <g id="node-pagos" data-node-id="pagos" data-node-label="Pasarela de Pagos" tabindex="0" role="button" aria-label="Focus Pasarela de Pagos, cobros y reembolsos, Architecture component" aria-pressed="false" data-node-kind="external" data-node-sublabel="cobros y reembolsos" data-node-context="Architecture component">
-          <title>Pasarela de Pagos · cobros y reembolsos · Architecture component</title>
-          <rect x="1146.6" y="124.8" width="163.8" height="46.8" rx="6" class="c-mask"/>
-          <rect x="1146.6" y="124.8" width="163.8" height="46.8" rx="6" class="c-external" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(1152.6 130.8) scale(0.6875)">
+        <g id="node-indice" data-node-id="indice" data-node-label="Índice de búsqueda" tabindex="0" role="button" aria-label="Focus Índice de búsqueda, lo alimentan eventos, Architecture component" aria-pressed="false" data-node-kind="database" data-node-sublabel="lo alimentan eventos" data-node-context="Architecture component">
+          <title>Índice de búsqueda · lo alimentan eventos · Architecture component</title>
+          <rect x="900" y="142" width="186" height="52" rx="6" class="c-mask"/>
+          <rect x="900" y="142" width="186" height="52" rx="6" class="c-database" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(906 148) scale(0.6875)">
+            <ellipse cx="8" cy="4" rx="5" ry="2"/>
+            <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="993" y="166" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Índice de búsqueda</text>
+        <text data-detail="context" x="993" y="182" class="t-muted" font-size="9" text-anchor="middle">lo alimentan eventos</text>
+        </g>
+
+        <g id="node-bd_micro" data-node-id="bd_micro" data-node-label="Bases por microservicio" tabindex="0" role="button" aria-label="Focus Bases por microservicio, Ventas · Pagos · Auth · QR, Architecture component" aria-pressed="false" data-node-kind="database" data-node-sublabel="Ventas · Pagos · Auth · QR" data-node-context="Architecture component">
+          <title>Bases por microservicio · Ventas · Pagos · Auth · QR · Architecture component</title>
+          <rect x="900" y="224" width="186" height="52" rx="6" class="c-mask"/>
+          <rect x="900" y="224" width="186" height="52" rx="6" class="c-database" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(906 230) scale(0.6875)">
+            <ellipse cx="8" cy="4" rx="5" ry="2"/>
+            <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="993" y="248" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Bases por microservicio</text>
+        <text data-detail="context" x="993" y="264" class="t-muted" font-size="9" text-anchor="middle">Ventas · Pagos · Auth · QR</text>
+        </g>
+
+        <g id="node-bd_central" data-node-id="bd_central" data-node-label="Base central" tabindex="0" role="button" aria-label="Focus Base central, un esquema por servicio de dominio, Architecture component" aria-pressed="false" data-node-kind="database" data-node-sublabel="un esquema por servicio de dominio" data-node-context="Architecture component">
+          <title>Base central · un esquema por servicio de dominio · Architecture component</title>
+          <rect x="900" y="388" width="186" height="52" rx="6" class="c-mask"/>
+          <rect x="900" y="388" width="186" height="52" rx="6" class="c-database" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(906 394) scale(0.6875)">
+            <ellipse cx="8" cy="4" rx="5" ry="2"/>
+            <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="993" y="412" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Base central</text>
+        <text data-detail="context" x="993" y="428" class="t-muted" font-size="8.7" text-anchor="middle">un esquema por servicio de dominio</text>
+        </g>
+
+        <g id="node-replica_lectura" data-node-id="replica_lectura" data-node-label="Réplica de lectura" tabindex="0" role="button" aria-label="Focus Réplica de lectura, solo la leen los reportes, Architecture component" aria-pressed="false" data-node-kind="database" data-node-sublabel="solo la leen los reportes" data-node-context="Architecture component">
+          <title>Réplica de lectura · solo la leen los reportes · Architecture component</title>
+          <rect x="900" y="470" width="186" height="52" rx="6" class="c-mask"/>
+          <rect x="900" y="470" width="186" height="52" rx="6" class="c-database" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(906 476) scale(0.6875)">
+            <ellipse cx="8" cy="4" rx="5" ry="2"/>
+            <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="993" y="494" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Réplica de lectura</text>
+        <text data-detail="context" x="993" y="510" class="t-muted" font-size="9" text-anchor="middle">solo la leen los reportes</text>
+        </g>
+
+        <g id="node-pasarela" data-node-id="pasarela" data-node-label="Pasarela de Pagos" tabindex="0" role="button" aria-label="Focus Pasarela de Pagos, los datos de tarjeta no salen de aquí, Architecture component" aria-pressed="false" data-node-kind="external" data-node-sublabel="los datos de tarjeta no salen de aquí" data-node-context="Architecture component">
+          <title>Pasarela de Pagos · los datos de tarjeta no salen de aquí · Architecture component</title>
+          <rect x="900" y="552" width="186" height="52" rx="6" class="c-mask"/>
+          <rect x="900" y="552" width="186" height="52" rx="6" class="c-external" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(906 558) scale(0.6875)">
             <rect x="2.5" y="5" width="8.5" height="8" rx="1.5"/>
             <path d="M8 2.5h5.5V8M13.5 2.5 7.5 8.5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="1228.5" y="146.2" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Pasarela de Pagos</text>
-        <text data-detail="context" x="1228.5" y="162.2" class="t-muted" font-size="9" text-anchor="middle">cobros y reembolsos</text>
+          <text data-node-label="" data-detail-anchor="" x="993" y="576" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Pasarela de Pagos</text>
+        <text data-detail="context" x="993" y="592" class="t-muted" font-size="8" text-anchor="middle">los datos de tarjeta no salen de aquí</text>
         </g>
 
-        <g id="node-notif" data-node-id="notif" data-node-label="Proveedor de Notificaciones" tabindex="0" role="button" aria-label="Focus Proveedor de Notificaciones, push · correo · SMS, Architecture component" aria-pressed="false" data-node-kind="external" data-node-sublabel="push · correo · SMS" data-node-context="Architecture component">
-          <title>Proveedor de Notificaciones · push · correo · SMS · Architecture component</title>
-          <rect x="1126.6" y="296.4" width="200" height="46.8" rx="6" class="c-mask"/>
-          <rect x="1126.6" y="296.4" width="200" height="46.8" rx="6" class="c-external" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(1132.6 302.4) scale(0.6875)">
+        <g id="node-proveedor_notif" data-node-id="proveedor_notif" data-node-label="Proveedor de Notificaciones" tabindex="0" role="button" aria-label="Focus Proveedor de Notificaciones, correo y push, Architecture component" aria-pressed="false" data-node-kind="external" data-node-sublabel="correo y push" data-node-context="Architecture component">
+          <title>Proveedor de Notificaciones · correo y push · Architecture component</title>
+          <rect x="900" y="634" width="186" height="52" rx="6" class="c-mask"/>
+          <rect x="900" y="634" width="186" height="52" rx="6" class="c-external" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(906 640) scale(0.6875)">
             <rect x="2.5" y="5" width="8.5" height="8" rx="1.5"/>
             <path d="M8 2.5h5.5V8M13.5 2.5 7.5 8.5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="1226.6" y="317.79999999999995" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Proveedor de Notificaciones</text>
-        <text data-detail="context" x="1226.6" y="333.79999999999995" class="t-muted" font-size="9" text-anchor="middle">push · correo · SMS</text>
+          <text data-node-label="" data-detail-anchor="" x="993" y="658" class="t-primary" font-size="10.9" font-weight="600" text-anchor="middle">Proveedor de Notificaciones</text>
+        <text data-detail="context" x="993" y="674" class="t-muted" font-size="9" text-anchor="middle">correo y push</text>
         </g>
 
         <!-- Connection labels -->
-        <g data-detail="context" data-edge-from="app_movil" data-edge-to="gateway" data-edge-label="HTTPS/JSON" data-edge-key="0" data-edge-id="app-movil-gateway">
-          <rect x="193.29999999999998" y="137.425" width="58" height="14" rx="3" class="c-mask"/>
-          <text x="222.29999999999998" y="147.425" class="t-backend" font-size="8" text-anchor="middle">HTTPS/JSON</text>
+        <g data-detail="context" data-edge-from="portal_cliente" data-edge-to="gateway" data-edge-label="HTTPS/JSON" data-edge-key="0" data-edge-id="portal-cliente-gw">
+          <rect x="242" y="195.5" width="58" height="14" rx="3" class="c-mask"/>
+          <text x="271" y="205.5" class="t-backend" font-size="8" text-anchor="middle">HTTPS/JSON</text>
         </g>
-        <g data-detail="context" data-edge-from="portal_cliente" data-edge-to="gateway" data-edge-label="HTTPS/JSON" data-edge-key="1" data-edge-id="portal-cliente-gateway">
-          <rect x="193.29999999999998" y="191.4" width="58" height="14" rx="3" class="c-mask"/>
-          <text x="222.29999999999998" y="201.4" class="t-backend" font-size="8" text-anchor="middle">HTTPS/JSON</text>
+        <g data-detail="context" data-edge-from="app_cliente" data-edge-to="gateway" data-edge-label="HTTPS/JSON" data-edge-key="1" data-edge-id="app-cliente-gw">
+          <rect x="242" y="240.5" width="58" height="14" rx="3" class="c-mask"/>
+          <text x="271" y="250.5" class="t-backend" font-size="8" text-anchor="middle">HTTPS/JSON</text>
         </g>
-        <g data-detail="context" data-edge-from="portal_admin" data-edge-to="gateway" data-edge-label="HTTPS/JSON" data-edge-key="2" data-edge-id="portal-admin-gateway">
-          <rect x="193.29999999999998" y="245.425" width="58" height="14" rx="3" class="c-mask"/>
-          <text x="222.29999999999998" y="255.425" class="t-muted" font-size="8" text-anchor="middle">HTTPS/JSON</text>
+
+
+        <g data-detail="context" data-edge-from="gateway" data-edge-to="cola" data-edge-label="pide turno" data-edge-key="4" data-edge-id="gw-cola">
+          <rect x="500" y="142" width="58" height="14" rx="3" class="c-mask"/>
+          <text x="529" y="152" class="t-muted" font-size="8" text-anchor="middle">pide turno</text>
         </g>
-        <g data-detail="context" data-edge-from="gateway" data-edge-to="svc_nucleo" data-edge-label="/cuentas · /pedidos" data-edge-key="3" data-edge-id="gateway-nucleo">
-          <rect x="397.9" y="122.55000000000001" width="101.2" height="14" rx="3" class="c-mask"/>
-          <text x="448.5" y="132.55" class="t-muted" font-size="8" text-anchor="middle">/cuentas · /pedidos</text>
+        <g data-detail="context" data-edge-from="gateway" data-edge-to="catalogo" data-edge-label="consulta" data-edge-key="5" data-edge-id="gw-catalogo">
+          <rect x="504.8" y="187" width="48.4" height="14" rx="3" class="c-mask"/>
+          <text x="529" y="197" class="t-muted" font-size="8" text-anchor="middle">consulta</text>
         </g>
-        <g data-detail="context" data-edge-from="gateway" data-edge-to="svc_entradas" data-edge-label="/entradas · /reventa" data-edge-key="4" data-edge-id="gateway-entradas">
-          <rect x="395.5" y="162.4" width="106" height="14" rx="3" class="c-mask"/>
-          <text x="448.5" y="172.4" class="t-backend" font-size="8" text-anchor="middle">/entradas · /reventa</text>
+        <g data-detail="context" data-edge-from="gateway" data-edge-to="ventas" data-edge-label="compra (con turno)" data-edge-key="6" data-edge-id="gw-ventas">
+          <rect x="480.8" y="230" width="96.39999999999999" height="14" rx="3" class="c-mask"/>
+          <text x="529" y="240" class="t-backend" font-size="8" text-anchor="middle">compra (con turno)</text>
         </g>
-        <g data-detail="context" data-edge-from="gateway" data-edge-to="svc_eventos" data-edge-label="/eventos · /aforo" data-edge-key="5" data-edge-id="gateway-eventos">
-          <rect x="402.7" y="255.85000000000002" width="91.6" height="14" rx="3" class="c-mask"/>
-          <text x="448.5" y="265.85" class="t-muted" font-size="8" text-anchor="middle">/eventos · /aforo</text>
+        <g data-detail="context" data-edge-from="gateway" data-edge-to="auth" data-edge-label="valida token" data-edge-key="7" data-edge-id="gw-auth">
+          <rect x="495.2" y="346" width="67.6" height="14" rx="3" class="c-mask"/>
+          <text x="529" y="356" class="t-muted" font-size="8" text-anchor="middle">valida token</text>
         </g>
-        <g data-detail="context" data-edge-from="svc_entradas" data-edge-to="db" data-edge-label="SQL" data-edge-key="6" data-edge-id="entradas-db">
-          <rect x="733.8" y="282.4" width="30" height="14" rx="3" class="c-mask"/>
-          <text x="748.8" y="292.4" class="t-backend" font-size="8" text-anchor="middle">SQL</text>
+        <g data-detail="context" data-edge-from="ventas" data-edge-to="pagos" data-edge-label="cobra idempotente" data-edge-key="8" data-edge-id="ventas-pagos">
+          <rect x="627.2" y="281" width="91.6" height="14" rx="3" class="c-mask"/>
+          <text x="673" y="291" class="t-backend" font-size="8" text-anchor="middle">cobra idempotente</text>
         </g>
-        <g data-detail="context" data-edge-from="svc_nucleo" data-edge-to="db" data-edge-label="SQL — una conexión por módulo" data-edge-key="7" data-edge-id="nucleo-db">
-          <rect x="674.1999999999999" y="221.39999999999998" width="149.2" height="14" rx="3" class="c-mask"/>
-          <text x="748.8" y="231.39999999999998" class="t-muted" font-size="8" text-anchor="middle">SQL — una conexión por módulo</text>
+        <g data-detail="context" data-edge-from="ventas" data-edge-to="redis" data-edge-label="reserva atómica" data-edge-key="9" data-edge-id="ventas-redis">
+          <rect x="792" y="143" width="82" height="14" rx="3" class="c-mask"/>
+          <text x="833" y="153" class="t-backend" font-size="8" text-anchor="middle">reserva atómica</text>
         </g>
-        <g data-detail="context" data-edge-from="svc_entradas" data-edge-to="redis" data-edge-label="bloqueo checkout" data-edge-key="8" data-edge-id="entradas-redis">
-          <rect x="705.4" y="108.6" width="86.8" height="14" rx="3" class="c-mask"/>
-          <text x="748.8" y="118.6" class="t-backend" font-size="8" text-anchor="middle">bloqueo checkout</text>
+        <g data-detail="context" data-edge-from="ventas" data-edge-to="bd_micro" data-edge-label="SQL" data-edge-key="10" data-edge-id="ventas-bd">
+          <rect x="818" y="230" width="30" height="14" rx="3" class="c-mask"/>
+          <text x="833" y="240" class="t-muted" font-size="8" text-anchor="middle">SQL</text>
         </g>
-        <g data-detail="context" data-edge-from="svc_nucleo" data-edge-to="redis" data-edge-label="sesiones revocadas" data-edge-key="9" data-edge-id="nucleo-redis">
-          <rect x="700.5999999999999" y="54.099999999999994" width="96.39999999999999" height="14" rx="3" class="c-mask"/>
-          <text x="748.8" y="64.1" class="t-muted" font-size="8" text-anchor="middle">sesiones revocadas</text>
+        <g data-detail="context" data-edge-from="catalogo" data-edge-to="indice" data-edge-label="busca" data-edge-key="11" data-edge-id="catalogo-indice">
+          <rect x="816" y="148" width="34" height="14" rx="3" class="c-mask"/>
+          <text x="833" y="158" class="t-muted" font-size="8" text-anchor="middle">busca</text>
         </g>
-        <g data-detail="context" data-edge-from="svc_entradas" data-edge-to="queue" data-edge-label="publica evento" data-edge-key="10" data-edge-id="entradas-queue">
-          <rect x="710.1999999999999" y="210.5" width="77.2" height="14" rx="3" class="c-mask"/>
-          <text x="748.8" y="220.5" class="t-messagebus" font-size="8" text-anchor="middle">publica evento</text>
+        <g data-detail="context" data-edge-from="ventas" data-edge-to="broker" data-edge-label="CompraConfirmada" data-edge-key="12" data-edge-id="ventas-broker">
+          <rect x="789.6" y="271" width="86.8" height="14" rx="3" class="c-mask"/>
+          <text x="833" y="281" class="t-messagebus" font-size="8" text-anchor="middle">CompraConfirmada</text>
         </g>
-        <g data-detail="context" data-edge-from="svc_eventos" data-edge-to="queue" data-edge-label="alerta de evacuación" data-edge-key="11" data-edge-id="eventos-queue">
-          <rect x="695.8" y="261.5" width="106" height="14" rx="3" class="c-mask"/>
-          <text x="748.8" y="271.5" class="t-messagebus" font-size="8" text-anchor="middle">alerta de evacuación</text>
+        <g data-detail="context" data-edge-from="broker" data-edge-to="notificaciones" data-edge-label="envía QR" data-edge-key="13" data-edge-id="broker-notif">
+          <rect x="808.8" y="436.5" width="48.4" height="14" rx="3" class="c-mask"/>
+          <text x="833" y="446.5" class="t-messagebus" font-size="8" text-anchor="middle">envía QR</text>
         </g>
-        <g data-detail="context" data-edge-from="svc_entradas" data-edge-to="pagos" data-edge-label="cobra compra/reventa" data-edge-key="12" data-edge-id="entradas-pagos">
-          <rect x="641.8" y="141.1" width="106" height="14" rx="3" class="c-mask"/>
-          <text x="694.8" y="151.1" class="t-backend" font-size="8" text-anchor="middle">cobra compra/reventa</text>
+        <g data-detail="context" data-edge-from="broker" data-edge-to="qr" data-edge-label="activa el QR" data-edge-key="14" data-edge-id="broker-qr">
+          <rect x="799.2" y="394" width="67.6" height="14" rx="3" class="c-mask"/>
+          <text x="833" y="404" class="t-messagebus" font-size="8" text-anchor="middle">activa el QR</text>
         </g>
-        <g data-detail="context" data-edge-from="queue" data-edge-to="notif" data-edge-label="dispara notificación" data-edge-key="13" data-edge-id="queue-notif">
-          <rect x="1005.5999999999999" y="256.9" width="106" height="14" rx="3" class="c-mask"/>
-          <text x="1058.6" y="266.9" class="t-messagebus" font-size="8" text-anchor="middle">dispara notificación</text>
+        <g data-detail="context" data-edge-from="broker" data-edge-to="finanzas" data-edge-label="registra" data-edge-key="15" data-edge-id="broker-finanzas">
+          <rect x="1128.8" y="435" width="48.4" height="14" rx="3" class="c-mask"/>
+          <text x="1153" y="445" class="t-messagebus" font-size="8" text-anchor="middle">registra</text>
+        </g>
+        <g data-detail="context" data-edge-from="eventos" data-edge-to="broker" data-edge-label="EventoPublicado" data-edge-key="16" data-edge-id="eventos-broker">
+          <rect x="1112" y="185.5" width="82" height="14" rx="3" class="c-mask"/>
+          <text x="1153" y="195.5" class="t-messagebus" font-size="8" text-anchor="middle">EventoPublicado</text>
+        </g>
+        <g data-detail="context" data-edge-from="alimentos" data-edge-to="bd_central" data-edge-label="SQL (esquema propio)" data-edge-key="17" data-edge-id="dominio-bd">
+          <rect x="1100" y="312" width="106" height="14" rx="3" class="c-mask"/>
+          <text x="1153" y="322" class="t-muted" font-size="8" text-anchor="middle">SQL (esquema propio)</text>
+        </g>
+        <g data-detail="context" data-edge-from="finanzas" data-edge-to="replica_lectura" data-edge-label="solo lectura" data-edge-key="18" data-edge-id="finanzas-replica">
+          <rect x="1119.2" y="520.5" width="67.6" height="14" rx="3" class="c-mask"/>
+          <text x="1153" y="530.5" class="t-muted" font-size="8" text-anchor="middle">solo lectura</text>
+        </g>
+        <g data-detail="context" data-edge-from="pagos" data-edge-to="pasarela" data-edge-label="cobros y reembolsos" data-edge-key="19" data-edge-id="pagos-pasarela">
+          <rect x="782.4" y="435" width="101.2" height="14" rx="3" class="c-mask"/>
+          <text x="833" y="445" class="t-backend" font-size="8" text-anchor="middle">cobros y reembolsos</text>
+        </g>
+        <g data-detail="context" data-edge-from="notificaciones" data-edge-to="proveedor_notif" data-edge-label="correo y push" data-edge-key="20" data-edge-id="notif-proveedor">
+          <rect x="796.8" y="602.5" width="72.4" height="14" rx="3" class="c-mask"/>
+          <text x="833" y="612.5" class="t-messagebus" font-size="8" text-anchor="middle">correo y push</text>
         </g>
 
         <!-- Boundary labels (foreground masks keep routes out of titles) -->
-        <g data-graph-role="structural-frame-label" data-composition-frame-id="0" data-composition-frame-kind="region" data-composition-frame-label="Backend — 3 servicios de dominio (ADR-12)">
-          <rect data-graph-role="structural-frame-label-mask" x="461.6" y="34" width="231.19999999999993" height="16" rx="3" class="c-mask"/>
-          <text data-boundary-label="" x="465.6" y="46.99186991869919" class="t-cloud" font-size="8.991869918699186" font-weight="600">Backend — 3 servicios de dominio (ADR-12)</text>
+        <g data-graph-role="structural-frame-label" data-composition-frame-id="0" data-composition-frame-kind="region" data-composition-frame-label="Microservicios — base propia y réplicas que escalan solas">
+          <rect data-graph-role="structural-frame-label-mask" x="495.89675709354844" y="38" width="354.20648581290317" height="18" rx="3" class="c-mask"/>
+          <text data-boundary-label="" x="499.89675709354844" y="52.064517129032254" class="t-cloud" font-size="10.064517129032257" font-weight="600">Microservicios — base propia y réplicas que escalan solas</text>
+        </g>
+
+        <g data-graph-role="structural-frame-label" data-composition-frame-id="1" data-composition-frame-kind="region" data-composition-frame-label="Servicios de dominio — base central, redundancia sin escalado">
+          <rect data-graph-role="structural-frame-label-mask" x="1123.8193365387096" y="38" width="378.3613269225806" height="18" rx="3" class="c-mask"/>
+          <text data-boundary-label="" x="1127.8193365387096" y="52.064517129032254" class="t-cloud" font-size="10.064517129032257" font-weight="600">Servicios de dominio — base central, redundancia sin escalado</text>
         </g>
 
         <!-- Legend -->
         <g data-legend="" data-legend-bridge="">
-          <text x="40" y="454" class="t-primary" font-size="12" font-weight="650">Legend</text>
-          <g data-legend-semantic-kind="frontend" data-legend-kind="frontend" data-legend-label="Frontend" data-legend-x="40" data-legend-baseline="474" data-legend-width="83">
-            <rect x="40" y="465" width="16" height="10" rx="2.5" class="c-frontend" stroke-width="1"/>
-            <text x="62" y="474" class="t-muted" font-size="10" font-weight="500">Frontend</text>
+          <text x="40" y="764" class="t-primary" font-size="12" font-weight="650">Legend</text>
+          <g data-legend-semantic-kind="frontend" data-legend-kind="frontend" data-legend-label="Frontend" data-legend-x="40" data-legend-baseline="784" data-legend-width="83">
+            <rect x="40" y="775" width="16" height="10" rx="2.5" class="c-frontend" stroke-width="1"/>
+            <text x="62" y="784" class="t-muted" font-size="10" font-weight="500">Frontend</text>
           </g>
-          <g data-legend-semantic-kind="backend" data-legend-kind="backend" data-legend-label="Backend" data-legend-x="145" data-legend-baseline="474" data-legend-width="78">
-            <rect x="145" y="465" width="16" height="10" rx="2.5" class="c-backend" stroke-width="1"/>
-            <text x="167" y="474" class="t-muted" font-size="10" font-weight="500">Backend</text>
+          <g data-legend-semantic-kind="backend" data-legend-kind="backend" data-legend-label="Backend" data-legend-x="145" data-legend-baseline="784" data-legend-width="78">
+            <rect x="145" y="775" width="16" height="10" rx="2.5" class="c-backend" stroke-width="1"/>
+            <text x="167" y="784" class="t-muted" font-size="10" font-weight="500">Backend</text>
           </g>
-          <g data-legend-semantic-kind="database" data-legend-kind="database" data-legend-label="Database" data-legend-x="245" data-legend-baseline="474" data-legend-width="83">
-            <rect x="245" y="465" width="16" height="10" rx="2.5" class="c-database" stroke-width="1"/>
-            <text x="267" y="474" class="t-muted" font-size="10" font-weight="500">Database</text>
+          <g data-legend-semantic-kind="database" data-legend-kind="database" data-legend-label="Database" data-legend-x="245" data-legend-baseline="784" data-legend-width="83">
+            <rect x="245" y="775" width="16" height="10" rx="2.5" class="c-database" stroke-width="1"/>
+            <text x="267" y="784" class="t-muted" font-size="10" font-weight="500">Database</text>
           </g>
-          <g data-legend-semantic-kind="security" data-legend-kind="security" data-legend-label="Security" data-legend-x="350" data-legend-baseline="474" data-legend-width="83">
-            <rect x="350" y="465" width="16" height="10" rx="2.5" class="c-security" stroke-width="1"/>
-            <text x="372" y="474" class="t-muted" font-size="10" font-weight="500">Security</text>
+          <g data-legend-semantic-kind="security" data-legend-kind="security" data-legend-label="Security" data-legend-x="350" data-legend-baseline="784" data-legend-width="83">
+            <rect x="350" y="775" width="16" height="10" rx="2.5" class="c-security" stroke-width="1"/>
+            <text x="372" y="784" class="t-muted" font-size="10" font-weight="500">Security</text>
           </g>
-          <g data-legend-semantic-kind="messagebus" data-legend-kind="messagebus" data-legend-label="Message bus" data-legend-x="455" data-legend-baseline="474" data-legend-width="98">
-            <rect x="455" y="465" width="16" height="10" rx="2.5" class="c-messagebus" stroke-width="1"/>
-            <text x="477" y="474" class="t-muted" font-size="10" font-weight="500">Message bus</text>
+          <g data-legend-semantic-kind="messagebus" data-legend-kind="messagebus" data-legend-label="Message bus" data-legend-x="455" data-legend-baseline="784" data-legend-width="98">
+            <rect x="455" y="775" width="16" height="10" rx="2.5" class="c-messagebus" stroke-width="1"/>
+            <text x="477" y="784" class="t-muted" font-size="10" font-weight="500">Message bus</text>
           </g>
-          <g data-legend-semantic-kind="external" data-legend-kind="external" data-legend-label="External" data-legend-x="575" data-legend-baseline="474" data-legend-width="83">
-            <rect x="575" y="465" width="16" height="10" rx="2.5" class="c-external" stroke-width="1"/>
-            <text x="597" y="474" class="t-muted" font-size="10" font-weight="500">External</text>
+          <g data-legend-semantic-kind="external" data-legend-kind="external" data-legend-label="External" data-legend-x="575" data-legend-baseline="784" data-legend-width="83">
+            <rect x="575" y="775" width="16" height="10" rx="2.5" class="c-external" stroke-width="1"/>
+            <text x="597" y="784" class="t-muted" font-size="10" font-weight="500">External</text>
           </g>
         </g>
       </svg>
@@ -5478,38 +5685,40 @@
     <div class="cards">
       <div class="card">
         <div class="card-header">
-          <div class="card-dot cyan"></div>
-          <h3>Quién usa cada interfaz</h3>
+          <div class="card-dot emerald"></div>
+          <h3>Por qué estos siete son microservicios (ADR-14)</h3>
         </div>
         <ul>
-          <li>&bull; Cliente → App Móvil y Portal Web Cliente</li>
-          <li>&bull; Empleado → la misma App Móvil (Flutter); el login detecta el rol y el cargo, y abre su conjunto de pantallas (ADR-07)</li>
-          <li>&bull; Organizador, Administrador y Supervisor de Emergencia → Portal Web Admin</li>
+          <li>&bull; Un servicio se extrae si cumple al menos dos de cuatro criterios: picos de carga muy por encima del resto, lo usan varios dominios, su estado cabe en un almacén propio, o su falla debe quedar aislada</li>
+          <li>&bull; Cola virtual, Catálogo y Ventas se separan por carga: en la apertura de venta la mayor parte del tráfico es de consulta, y si compite con las compras en el mismo servicio ambas se degradan</li>
+          <li>&bull; Pagos, Autenticación y Notificaciones se separan por ser transversales: si uno cae no degrada un dominio, degrada muchos a la vez</li>
+          <li>&bull; Acceso QR se separa porque su pico es en la puerta del evento, en otro momento que el de la venta, y necesita caché propia para validar sin red</li>
         </ul>
       </div>
 
       <div class="card">
         <div class="card-header">
-          <div class="card-dot emerald"></div>
-          <h3>Arquitectura basada en servicios (ADR-12)</h3>
+          <div class="card-dot cyan"></div>
+          <h3>Por qué los otros siete no</h3>
         </div>
         <ul>
-          <li>&bull; El Núcleo agrupa cuatro módulos de dominio en una sola unidad desplegable: Administración (CU-027..032), Pedidos (CU-011..015), Personal (CU-007..009) y Parqueaderos (CU-021..025)</li>
-          <li>&bull; Cada módulo conserva su esquema de datos y su propia secuencia de migraciones, con fronteras verificadas por herramienta — un cambio en uno no toca a los demás</li>
-          <li>&bull; El API Gateway sigue siendo el único punto de entrada: ninguna app llama a un servicio directamente (ADR-02, RNF-06)</li>
+          <li>&bull; Alimentos, Parqueaderos, Personal, Postventa, Eventos y Finanzas tienen carga estable: convertirlos en microservicios multiplicaría bases y despliegues sin beneficio</li>
+          <li>&bull; Corren con dos instancias para disponibilidad, pero con número fijo: no escalan con la demanda</li>
+          <li>&bull; Operación del evento es la excepción interesante: atiende la evacuación (CU-010), así que es crítico para la disponibilidad aunque su carga sea baja. Necesita redundancia, no réplicas elásticas</li>
+          <li>&bull; Finanzas lee de la réplica, no de la base principal: así sus consultas pesadas no degradan la operación durante el evento</li>
         </ul>
       </div>
 
       <div class="card">
         <div class="card-header">
           <div class="card-dot amber"></div>
-          <h3>Por qué solo dos servicios quedan aparte</h3>
+          <h3>Qué está desplegado y qué no</h3>
         </div>
         <ul>
-          <li>&bull; Entradas / Mercado Secundario: su curva de carga difiere en orden de magnitud — RNF-07 exige p95 ≤ 500 ms con 2.000 concurrentes y RNF-10 un throughput ≥ 1,7× al duplicar instancias</li>
-          <li>&bull; Eventos / Emergencias: su disponibilidad no puede depender del resto — RNF-17 exige que la evacuación llegue al ≥ 99 % de los dispositivos en ≤ 10 s</li>
-          <li>&bull; Ningún otro dominio cumple ninguna de las dos condiciones, de ahí que los satélites sean exactamente dos</li>
-          <li>&bull; Para no saturar el diagrama solo se dibuja el detalle completo de Entradas; los otros dos servicios siguen el mismo patrón hacia Bases de Datos, Redis y la cola</li>
+          <li>&bull; ⚠️ Esta es la arquitectura OBJETIVO. Lo que corre hoy son los tres servicios de dominio de ADR-12 — ver la vista de contenedores del Nivel 2</li>
+          <li>&bull; Para no saturar el diagrama solo se dibuja el detalle completo del camino de compra; los demás servicios siguen el mismo patrón hacia la base que les toca y hacia el broker</li>
+          <li>&bull; El gateway enruta a los catorce servicios; se dibujan solo las flechas del camino de compra y la de Autenticación, para que el resto no tape el dibujo</li>
+          <li>&bull; La distancia entre este diseño y el código, con el orden para recorrerla, está en Documentation/Work/MIGRACION-ADR-14.md</li>
         </ul>
       </div>
     </div>

@@ -2,51 +2,359 @@
   "schema_version": 1,
   "diagram_type": "architecture",
   "meta": {
-    "title": "HEXACORE — Componentes",
-    "subtitle": "Servicio de Entradas y Mercado Secundario (CU-006)",
+    "title": "HEXACORE — Componentes del microservicio Ventas (ADR-14)",
+    "subtitle": "el orquestador de la Saga de CU-001",
     "output": "03-componentes.html",
-    "quality_profile": "standard"
+    "quality_profile": "standard",
+    "viewBox": [
+      1350,
+      690
+    ]
   },
   "components": [
-    { "id": "ext_gateway", "type": "external", "label": "API Gateway", "sublabel": "otro nivel", "pos": [20, 190], "size": [190, 56] },
-
-    { "id": "controlador", "type": "backend", "label": "Controlador API", "pos": [280, 190], "size": [190, 56] },
-    { "id": "publicacion", "type": "backend", "label": "Servicio de Publicación", "sublabel": "orquesta la reventa", "pos": [550, 190], "size": [220, 56] },
-
-    { "id": "procesador_pagos", "type": "backend", "label": "Procesador de Pagos", "pos": [850, 0], "size": [210, 54] },
-    { "id": "pasarela", "type": "external", "label": "Pasarela de Pagos", "sublabel": "otro nivel", "pos": [1140, 0], "size": [200, 54] },
-
-    { "id": "gestor_concurrencia", "type": "backend", "label": "Gestor de Concurrencia", "pos": [850, 90], "size": [210, 54] },
-    { "id": "redis", "type": "external", "label": "Redis", "sublabel": "otro nivel", "pos": [1140, 90], "size": [200, 54] },
-
-    { "id": "generador_qr", "type": "backend", "label": "Generador de QR", "pos": [850, 180], "size": [210, 54] },
-
-    { "id": "repositorio_entradas", "type": "backend", "label": "Repositorio de Entradas", "pos": [850, 270], "size": [210, 54] },
-    { "id": "basedatos", "type": "external", "label": "Base de Datos", "sublabel": "otro nivel", "pos": [1140, 270], "size": [200, 54] },
-
-    { "id": "publicador_eventos", "type": "backend", "label": "Publicador de Eventos", "pos": [850, 360], "size": [210, 54] },
-    { "id": "cola", "type": "external", "label": "Cola de Mensajes", "sublabel": "otro nivel", "pos": [1140, 360], "size": [200, 54] }
+    {
+      "id": "gateway",
+      "type": "security",
+      "label": "API Gateway",
+      "sublabel": "otro nivel",
+      "pos": [
+        25,
+        70
+      ],
+      "size": [
+        200,
+        62
+      ]
+    },
+    {
+      "id": "cola",
+      "type": "backend",
+      "label": "Cola virtual",
+      "sublabel": "otro nivel",
+      "pos": [
+        25,
+        190
+      ],
+      "size": [
+        200,
+        62
+      ]
+    },
+    {
+      "id": "controlador",
+      "type": "backend",
+      "label": "Controlador de compra",
+      "sublabel": "valida el token de turno",
+      "pos": [
+        300,
+        100
+      ],
+      "size": [
+        225,
+        62
+      ]
+    },
+    {
+      "id": "orquestador",
+      "type": "backend",
+      "label": "Orquestador de la Saga",
+      "sublabel": "fija el orden y decide si deshacer",
+      "pos": [
+        300,
+        280
+      ],
+      "size": [
+        225,
+        62
+      ]
+    },
+    {
+      "id": "reserva",
+      "type": "backend",
+      "label": "Gestor de reserva",
+      "sublabel": "atómica, con vencimiento",
+      "pos": [
+        740,
+        50
+      ],
+      "size": [
+        230,
+        62
+      ]
+    },
+    {
+      "id": "compensador",
+      "type": "backend",
+      "label": "Compensador",
+      "sublabel": "libera lo reservado",
+      "pos": [
+        740,
+        165
+      ],
+      "size": [
+        230,
+        62
+      ]
+    },
+    {
+      "id": "clipagos",
+      "type": "backend",
+      "label": "Cliente de Pagos",
+      "sublabel": "pone la llave de idempotencia",
+      "pos": [
+        740,
+        280
+      ],
+      "size": [
+        230,
+        62
+      ]
+    },
+    {
+      "id": "repo",
+      "type": "backend",
+      "label": "Repositorio de entradas",
+      "sublabel": "dueño de entrada y compra",
+      "pos": [
+        740,
+        395
+      ],
+      "size": [
+        230,
+        62
+      ]
+    },
+    {
+      "id": "publicador",
+      "type": "backend",
+      "label": "Publicador de eventos",
+      "sublabel": "con confirmación del broker",
+      "pos": [
+        740,
+        510
+      ],
+      "size": [
+        230,
+        62
+      ]
+    },
+    {
+      "id": "cache",
+      "type": "database",
+      "label": "Caché",
+      "sublabel": "otro nivel",
+      "pos": [
+        1100,
+        107
+      ],
+      "size": [
+        200,
+        62
+      ]
+    },
+    {
+      "id": "pagosms",
+      "type": "backend",
+      "label": "Pagos",
+      "sublabel": "otro nivel",
+      "pos": [
+        1100,
+        280
+      ],
+      "size": [
+        200,
+        62
+      ]
+    },
+    {
+      "id": "bdventas",
+      "type": "database",
+      "label": "Base de Ventas",
+      "sublabel": "otro nivel",
+      "pos": [
+        1100,
+        395
+      ],
+      "size": [
+        200,
+        62
+      ]
+    },
+    {
+      "id": "broker",
+      "type": "messagebus",
+      "label": "Broker",
+      "sublabel": "otro nivel",
+      "pos": [
+        1100,
+        510
+      ],
+      "size": [
+        200,
+        62
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Microservicio Ventas — un despliegue, una base propia",
+      "wraps": [
+        "controlador",
+        "orquestador",
+        "reserva",
+        "compensador",
+        "clipagos",
+        "repo",
+        "publicador"
+      ],
+      "pad": 24
+    }
   ],
   "connections": [
-    { "id": "gateway-controlador", "from": "ext_gateway", "to": "controlador", "label": "HTTPS/JSON", "variant": "emphasis" },
-    { "id": "controlador-publicacion", "from": "controlador", "to": "publicacion", "label": "delega la reventa", "variant": "emphasis", "labelAt": [510, 260] },
-
-    { "id": "publicacion-pagos", "from": "publicacion", "to": "procesador_pagos", "label": "llamada interna", "route": "orthogonal-h" },
-    { "id": "pagos-pasarela", "from": "procesador_pagos", "to": "pasarela", "label": "HTTPS/REST" },
-
-    { "id": "publicacion-concurrencia", "from": "publicacion", "to": "gestor_concurrencia", "label": "llamada interna", "route": "orthogonal-h" },
-    { "id": "concurrencia-redis", "from": "gestor_concurrencia", "to": "redis", "label": "Redis" },
-
-    { "id": "publicacion-qr", "from": "publicacion", "to": "generador_qr", "label": "llamada interna", "route": "orthogonal-h" },
-
-    { "id": "publicacion-repositorio", "from": "publicacion", "to": "repositorio_entradas", "label": "llamada interna", "route": "orthogonal-h" },
-    { "id": "repositorio-db", "from": "repositorio_entradas", "to": "basedatos", "label": "SQL" },
-
-    { "id": "publicacion-publicador", "from": "publicacion", "to": "publicador_eventos", "label": "llamada interna", "route": "orthogonal-h" },
-    { "id": "publicador-cola", "from": "publicador_eventos", "to": "cola", "label": "AMQP", "variant": "dashed" }
+    {
+      "id": "gw-ctrl",
+      "from": "gateway",
+      "to": "controlador",
+      "label": "enruta",
+      "variant": "emphasis"
+    },
+    {
+      "id": "cola-ctrl",
+      "from": "cola",
+      "to": "controlador",
+      "label": "turno a verificar",
+      "labelAt": [
+        263,
+        176
+      ]
+    },
+    {
+      "id": "ctrl-orq",
+      "from": "controlador",
+      "to": "orquestador",
+      "label": "inicia la Saga",
+      "variant": "emphasis",
+      "labelAt": [
+        413,
+        221
+      ]
+    },
+    {
+      "id": "orq-res",
+      "from": "orquestador",
+      "to": "reserva",
+      "label": "reserva",
+      "labelAt": [
+        685,
+        81
+      ]
+    },
+    {
+      "id": "orq-comp",
+      "from": "orquestador",
+      "to": "compensador",
+      "label": "deshace",
+      "labelAt": [
+        685,
+        196
+      ]
+    },
+    {
+      "id": "orq-pag",
+      "from": "orquestador",
+      "to": "clipagos",
+      "label": "cobra",
+      "variant": "emphasis",
+      "labelAt": [
+        685,
+        311
+      ]
+    },
+    {
+      "id": "orq-repo",
+      "from": "orquestador",
+      "to": "repo",
+      "label": "persiste",
+      "labelAt": [
+        685,
+        426
+      ]
+    },
+    {
+      "id": "orq-pub",
+      "from": "orquestador",
+      "to": "publicador",
+      "label": "publica",
+      "labelAt": [
+        685,
+        541
+      ]
+    },
+    {
+      "id": "res-cache",
+      "from": "reserva",
+      "to": "cache",
+      "label": "SET NX con TTL",
+      "variant": "emphasis"
+    },
+    {
+      "id": "comp-cache",
+      "from": "compensador",
+      "to": "cache",
+      "label": "borra la reserva",
+      "labelAt": [
+        1035,
+        190
+      ]
+    },
+    {
+      "id": "pag-ms",
+      "from": "clipagos",
+      "to": "pagosms",
+      "label": "HTTP"
+    },
+    {
+      "id": "repo-bd",
+      "from": "repo",
+      "to": "bdventas",
+      "label": "SQL"
+    },
+    {
+      "id": "pub-broker",
+      "from": "publicador",
+      "to": "broker",
+      "label": "hechos",
+      "variant": "dashed"
+    }
   ],
   "cards": [
-    { "dot": "cyan", "title": "Flujo de una reventa", "items": ["Controlador API recibe y delega en Servicio de Publicación", "Este bloquea la entrada, cobra, invalida/genera QR y persiste el cambio de dueño", "Al final publica el evento ENTRADA_TRANSFERIDA para notificar de forma asíncrona"] },
-    { "dot": "amber", "title": "Referencias a otros niveles", "items": ["API Gateway, Redis, Pasarela de Pagos, Base de Datos y Cola de Mensajes ya aparecen en el Nivel 2 — aquí solo se referencian, no se detallan"] }
+    {
+      "dot": "emerald",
+      "title": "Por qué Ventas y no otro",
+      "items": [
+        "Es el único servicio que cumple los cuatro criterios de extracción de ADR-14, no dos",
+        "Orquesta porque es quien conoce el estado del inventario: ponerlo en el gateway o en Pagos repartiría esa decisión",
+        "El Compensador es un componente aparte y no una rama del Orquestador, para poder correr también por vencimiento sin que nadie se lo pida"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Dónde vive el inventario",
+      "items": [
+        "El conteo de disponibles vive en la caché, no en la base: es lo que permite reservar de forma atómica bajo un pico",
+        "La base de Ventas guarda el hecho consumado —la compra y la entrada con su dueño—, no la reserva en vuelo",
+        "Si la caché se cae, se dejan de vender entradas pero no se venden dos veces: el fallo es cerrado"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Estado de implementación",
+      "items": [
+        "⚠️ Dibuja lo decidido. Hoy esto vive dentro de entradas-mercado-secundario junto a Catálogo, Postventa y Acceso QR",
+        "Ya existen el Gestor de reserva (gestor-concurrencia.service.ts) y la llave de idempotencia del Cliente de Pagos",
+        "Faltan el Orquestador y el Compensador: hoy no hay deshacer explícito"
+      ]
+    }
   ]
 }

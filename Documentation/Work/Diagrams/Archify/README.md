@@ -21,36 +21,24 @@ diferencia queda visible en el diff del commit.
 |---|---|---|---|
 | Nivel 1 — Contexto | `01-contexto.architecture.json` | `01-contexto.html` | `../ArchifyPDF/01-contexto.pdf` |
 | Nivel 2 — Contenedores | `02-contenedores.architecture.json` | `02-contenedores.html` | `../ArchifyPDF/02-contenedores.pdf` |
-| Nivel 3 — Componentes (Entradas, CU-006) | `03-componentes.architecture.json` | `03-componentes.html` | `../ArchifyPDF/03-componentes.pdf` |
+| Nivel 3 — Componentes (Ventas) | `03-componentes.architecture.json` | `03-componentes.html` | `../ArchifyPDF/03-componentes.pdf` |
 | Panorama de Sistemas | `04-panorama.architecture.json` | `04-panorama.html` | `../ArchifyPDF/04-panorama.pdf` |
-| Secuencia — Reventa (CU-006) | `05-secuencia.sequence.json` | `05-secuencia.html` | `../ArchifyPDF/05-secuencia.pdf` |
+| Secuencia — Compra con Saga (CU-001) | `05-secuencia.sequence.json` | `05-secuencia.html` | `../ArchifyPDF/05-secuencia.pdf` |
 | Despliegue | `06-despliegue.architecture.json` | `06-despliegue.html` | `../ArchifyPDF/06-despliegue.pdf` |
-| Nivel 2 — Contenedores (ADR-14) | `07-contenedores-adr14.architecture.json` | `07-contenedores-adr14.html` | `../ArchifyPDF/07-contenedores-adr14.pdf` |
-| Despliegue (ADR-14) | `08-despliegue-adr14.architecture.json` | `08-despliegue-adr14.html` | `../ArchifyPDF/08-despliegue-adr14.pdf` |
-| Nivel 3 — Componentes (Ventas, ADR-14) | `09-componentes-adr14.architecture.json` | `09-componentes-adr14.html` | `../ArchifyPDF/09-componentes-adr14.pdf` |
-| Secuencia — Compra con Saga (CU-001, ADR-14) | `10-secuencia-adr14.sequence.json` | `10-secuencia-adr14.html` | `../ArchifyPDF/10-secuencia-adr14.pdf` |
 
-Los `.html` son autocontenidos: se abren directamente en el navegador, sin servidor.
+## Una sola versión de cada vista
 
-## Cuáles usan los documentos
+Los seis diagramas describen **ADR-14** y son los que insertan `DescripcionArquitecturaSoftware.tex`,
+`C4Diagrams.tex` y `Presentacion.tex`. No hay variantes «objetivo» frente a «desplegado»: si quieres
+ver cómo era la arquitectura de ADR-12, está en el historial de git, no en esta carpeta.
 
-Las seis vistas que insertan `DescripcionArquitecturaSoftware.tex` y `C4Diagrams.tex` son
-**`01`, `04`, `07`, `08`, `09` y `10`**. Las cuatro de ADR-14 son `07`-`10`.
+`01-contexto` y `04-panorama` no cambiaron al pasar de ADR-12 a ADR-14, y es correcto: dibujan
+actores y sistemas externos, que son los mismos con 3 servicios o con 14.
 
-`01-contexto` y `04-panorama` no llevan sufijo porque **no cambian con la topología interna**:
-dibujan actores y sistemas externos, que son los mismos con 3 servicios o con 14.
-
-**Retirados.** `02-contenedores`, `03-componentes`, `05-secuencia` y `06-despliegue` describen
-ADR-12 y ya no los usa ningún documento. Se conservan porque son la topología que está desplegada:
-hasta que la migración avance, son el único dibujo fiel de lo que corre. No los borres sin
-confirmar que nadie los necesita para operar.
-
-| Retirado | Lo reemplaza | Por qué |
-|---|---|---|
-| `02-contenedores` | `07-contenedores-adr14` | 3 servicios de dominio → 7 microservicios + 7 de dominio |
-| `03-componentes` | `09-componentes-adr14` | hacía zoom en Entradas, que ADR-14 parte en cuatro |
-| `05-secuencia` | `10-secuencia-adr14` | dibujaba la reventa sin Saga; ahora es la compra con compensación |
-| `06-despliegue` | `08-despliegue-adr14` | Docker Compose → clúster con autoescalado |
+**Ojo al editar.** Los diagramas describen la arquitectura *decidida*, y lo desplegado todavía es
+ADR-12 (tres servicios sobre Docker Compose). Esa distancia está medida en
+`../../MIGRACION-ADR-14.md`. Si cambias un diagrama para que se parezca más a lo que corre hoy,
+estás deshaciendo ADR-14 sin un ADR que lo justifique.
 
 ## Cómo regenerar después de editar un JSON
 
@@ -83,3 +71,9 @@ aunque el `HTML` abra en tema oscuro.
 **No usar el campo `tag` de Archify.** En el visor interactivo queda oculto, pero al imprimir se
 dibuja encima del `sublabel` y los textos se solapan. Si hace falta esa información (roles, rangos
 de CU), va dentro del `sublabel` — así está hecho hoy en `02-contenedores`.
+
+**El `viewBox` tiene que caber en pantalla.** Archify valida legibilidad contra un
+navegador de 1440 px: un lienzo de más de ~1500 px de ancho hace que los `sublabel`
+bajen de 6 px al proyectarse y la entrega falla. Si el diagrama no cabe, reorganiza en
+menos columnas antes que ensanchar — así se resolvió `03-componentes`, que pasó de cinco
+columnas a cuatro apilando Controlador y Orquestador.

@@ -2,362 +2,642 @@
   "schema_version": 1,
   "diagram_type": "architecture",
   "meta": {
-    "title": "HEXACORE — Contenedores",
+    "title": "HEXACORE — Contenedores (ADR-14)",
     "output": "02-contenedores.html",
     "quality_profile": "standard",
     "views": [
       {
-        "id": "compra-entradas",
-        "label": "Compra de entradas",
+        "id": "camino-de-compra",
+        "label": "Camino de compra (CU-001)",
         "focus": [
           "portal_cliente",
-          "app_movil",
           "gateway",
-          "svc_entradas",
-          "db",
+          "cola",
+          "catalogo",
+          "ventas",
+          "pagos",
           "redis",
-          "pagos"
+          "broker"
         ],
-        "note": "El camino que resuelve CU-006, el hilo conductor del sistema."
+        "note": "Los cuatro servicios que escalan juntos en la apertura de venta."
       },
       {
-        "id": "nucleo-y-operacion",
-        "label": "Núcleo y operación",
+        "id": "transversales",
+        "label": "Servicios transversales",
         "focus": [
-          "portal_admin",
-          "app_movil",
           "gateway",
-          "svc_nucleo",
-          "svc_eventos",
-          "queue"
+          "auth",
+          "pagos",
+          "notificaciones",
+          "broker"
         ],
-        "note": "Cuentas, pedidos y el protocolo de emergencia: lo que atiende el núcleo y lo que se le saca aparte."
+        "note": "Los que usa más de un dominio: si uno cae, degrada muchos casos de uso a la vez."
       },
       {
-        "id": "replicacion",
-        "label": "Qué se replica",
+        "id": "dominio",
+        "label": "Servicios de dominio",
         "focus": [
-          "gateway",
-          "svc_nucleo",
-          "svc_entradas",
-          "svc_eventos"
+          "alimentos",
+          "parqueaderos",
+          "personal",
+          "operacion",
+          "finanzas",
+          "bd_central",
+          "replica_lectura"
         ],
-        "note": "Los dos satélites escalan por réplicas; el núcleo corre en instancia única (ADR-12)."
+        "note": "Carga estable: comparten base central con un esquema por servicio y no escalan con la demanda."
       }
+    ],
+    "viewBox": [
+      1560,
+      800
     ]
   },
   "components": [
     {
-      "id": "app_movil",
-      "type": "frontend",
-      "label": "App Móvil",
-      "sublabel": "Flutter — Cliente + Personal",
-      "pos": [
-        15.6,
-        89.8
-      ],
-      "size": [
-        171.6,
-        49.9
-      ]
-    },
-    {
       "id": "portal_cliente",
       "type": "frontend",
       "label": "Portal Web Cliente",
-      "sublabel": "Angular — rol Cliente",
+      "sublabel": "Angular",
       "pos": [
-        15.6,
-        186.5
+        60,
+        140
       ],
       "size": [
-        171.6,
-        49.9
+        172,
+        50
+      ]
+    },
+    {
+      "id": "app_cliente",
+      "type": "frontend",
+      "label": "App Móvil Cliente",
+      "sublabel": "Flutter",
+      "pos": [
+        60,
+        222
+      ],
+      "size": [
+        172,
+        50
       ]
     },
     {
       "id": "portal_admin",
       "type": "frontend",
       "label": "Portal Web Admin",
-      "sublabel": "Angular — Organizador/Admin/Supervisor",
+      "sublabel": "Angular",
       "pos": [
-        15.6,
-        283.2
+        60,
+        304
       ],
       "size": [
-        171.6,
-        49.9
+        172,
+        50
+      ]
+    },
+    {
+      "id": "app_personal",
+      "type": "frontend",
+      "label": "App Móvil Personal",
+      "sublabel": "Flutter · valida QR sin red",
+      "pos": [
+        60,
+        386
+      ],
+      "size": [
+        172,
+        50
       ]
     },
     {
       "id": "gateway",
       "type": "security",
       "label": "API Gateway",
-      "sublabel": "Balanceador de carga",
+      "sublabel": "autoriza por rol · 2+ réplicas",
       "pos": [
-        257.4,
-        184.1
+        310,
+        250
       ],
       "size": [
-        156.0,
-        54.6
+        168,
+        56
       ]
     },
     {
-      "id": "svc_nucleo",
+      "id": "cola",
       "type": "backend",
-      "label": "Núcleo",
-      "sublabel": "4 módulos · instancia única",
+      "label": "Cola virtual",
+      "sublabel": "turno de compra · 3+ réplicas",
       "pos": [
-        483.6,
-        54.0
+        580,
+        60
       ],
       "size": [
-        187.2,
-        62.0
+        186,
+        52
       ]
     },
     {
-      "id": "svc_entradas",
+      "id": "catalogo",
       "type": "backend",
-      "label": "Entradas / Mercado Secundario",
-      "sublabel": "CU-001..006 · satélite replicable",
+      "label": "Catálogo",
+      "sublabel": "CU-005 · 3+ réplicas",
       "pos": [
-        483.6,
-        176.0
+        580,
+        142
       ],
       "size": [
-        187.2,
-        62.0
+        186,
+        52
       ]
     },
     {
-      "id": "svc_eventos",
+      "id": "ventas",
       "type": "backend",
-      "label": "Eventos / Emergencias",
-      "sublabel": "CU-010, 016..020, 026 · satélite replicable",
+      "label": "Ventas",
+      "sublabel": "CU-001, 004 · orquesta la Saga",
       "pos": [
-        483.6,
-        298.0
+        580,
+        224
       ],
       "size": [
-        187.2,
-        62.0
+        186,
+        52
+      ]
+    },
+    {
+      "id": "pagos",
+      "type": "backend",
+      "label": "Pagos",
+      "sublabel": "único contacto con la pasarela",
+      "pos": [
+        580,
+        306
+      ],
+      "size": [
+        186,
+        52
+      ]
+    },
+    {
+      "id": "auth",
+      "type": "backend",
+      "label": "Autenticación",
+      "sublabel": "CU-027, 028 · lo usa todo",
+      "pos": [
+        580,
+        388
+      ],
+      "size": [
+        186,
+        52
+      ]
+    },
+    {
+      "id": "qr",
+      "type": "backend",
+      "label": "Acceso QR",
+      "sublabel": "CU-002 · pico en la puerta",
+      "pos": [
+        580,
+        470
+      ],
+      "size": [
+        186,
+        52
+      ]
+    },
+    {
+      "id": "notificaciones",
+      "type": "backend",
+      "label": "Notificaciones",
+      "sublabel": "escala por longitud de cola",
+      "pos": [
+        580,
+        552
+      ],
+      "size": [
+        186,
+        52
+      ]
+    },
+    {
+      "id": "eventos",
+      "type": "backend",
+      "label": "Eventos y recintos",
+      "sublabel": "CU-026, 029",
+      "pos": [
+        1220,
+        60
+      ],
+      "size": [
+        186,
+        52
+      ]
+    },
+    {
+      "id": "postventa",
+      "type": "backend",
+      "label": "Postventa",
+      "sublabel": "CU-003, 006",
+      "pos": [
+        1220,
+        142
+      ],
+      "size": [
+        186,
+        52
+      ]
+    },
+    {
+      "id": "alimentos",
+      "type": "backend",
+      "label": "Alimentos",
+      "sublabel": "CU-011..015",
+      "pos": [
+        1220,
+        224
+      ],
+      "size": [
+        186,
+        52
+      ]
+    },
+    {
+      "id": "parqueaderos",
+      "type": "backend",
+      "label": "Parqueaderos",
+      "sublabel": "CU-021..025",
+      "pos": [
+        1220,
+        306
+      ],
+      "size": [
+        186,
+        52
+      ]
+    },
+    {
+      "id": "personal",
+      "type": "backend",
+      "label": "Personal y logística",
+      "sublabel": "CU-007..009, 016..018, 030",
+      "pos": [
+        1220,
+        388
+      ],
+      "size": [
+        186,
+        52
+      ]
+    },
+    {
+      "id": "operacion",
+      "type": "backend",
+      "label": "Operación del evento",
+      "sublabel": "CU-010, 019, 020 · redundante",
+      "pos": [
+        1220,
+        470
+      ],
+      "size": [
+        186,
+        52
+      ]
+    },
+    {
+      "id": "finanzas",
+      "type": "backend",
+      "label": "Finanzas y reportes",
+      "sublabel": "CU-031, 032",
+      "pos": [
+        1220,
+        552
+      ],
+      "size": [
+        186,
+        52
+      ]
+    },
+    {
+      "id": "broker",
+      "type": "messagebus",
+      "label": "Broker de eventos",
+      "sublabel": "tópicos replicados",
+      "pos": [
+        900,
+        306
+      ],
+      "size": [
+        186,
+        52
       ]
     },
     {
       "id": "redis",
       "type": "database",
-      "label": "Redis",
-      "sublabel": "bloqueos + datos rápidos",
+      "label": "Clúster Redis",
+      "sublabel": "inventario · fila · sesiones · QR",
       "pos": [
-        826.8,
-        46.8
+        900,
+        60
       ],
       "size": [
-        163.8,
-        46.8
+        186,
+        52
       ]
     },
     {
-      "id": "queue",
-      "type": "messagebus",
-      "label": "Cola de Mensajes",
-      "sublabel": "RabbitMQ",
-      "pos": [
-        826.8,
-        210.6
-      ],
-      "size": [
-        163.8,
-        46.8
-      ]
-    },
-    {
-      "id": "db",
+      "id": "indice",
       "type": "database",
-      "label": "Bases de Datos",
-      "sublabel": "una por dominio",
+      "label": "Índice de búsqueda",
+      "sublabel": "lo alimentan eventos",
       "pos": [
-        826.8,
-        374.4
+        900,
+        142
       ],
       "size": [
-        163.8,
-        46.8
+        186,
+        52
       ]
     },
     {
-      "id": "pagos",
+      "id": "bd_micro",
+      "type": "database",
+      "label": "Bases por microservicio",
+      "sublabel": "Ventas · Pagos · Auth · QR",
+      "pos": [
+        900,
+        224
+      ],
+      "size": [
+        186,
+        52
+      ]
+    },
+    {
+      "id": "bd_central",
+      "type": "database",
+      "label": "Base central",
+      "sublabel": "un esquema por servicio de dominio",
+      "pos": [
+        900,
+        388
+      ],
+      "size": [
+        186,
+        52
+      ]
+    },
+    {
+      "id": "replica_lectura",
+      "type": "database",
+      "label": "Réplica de lectura",
+      "sublabel": "solo la leen los reportes",
+      "pos": [
+        900,
+        470
+      ],
+      "size": [
+        186,
+        52
+      ]
+    },
+    {
+      "id": "pasarela",
       "type": "external",
       "label": "Pasarela de Pagos",
-      "sublabel": "cobros y reembolsos",
+      "sublabel": "los datos de tarjeta no salen de aquí",
       "pos": [
-        1146.6,
-        124.8
+        900,
+        552
       ],
       "size": [
-        163.8,
-        46.8
+        186,
+        52
       ]
     },
     {
-      "id": "notif",
+      "id": "proveedor_notif",
       "type": "external",
       "label": "Proveedor de Notificaciones",
-      "sublabel": "push · correo · SMS",
+      "sublabel": "correo y push",
       "pos": [
-        1126.6,
-        296.4
+        900,
+        634
       ],
       "size": [
-        200,
-        46.8
+        186,
+        52
       ]
     }
   ],
   "boundaries": [
     {
       "kind": "region",
-      "label": "Backend — 3 servicios de dominio (ADR-12)",
+      "label": "Microservicios — base propia y réplicas que escalan solas",
       "wraps": [
-        "svc_nucleo",
-        "svc_entradas",
-        "svc_eventos"
+        "cola",
+        "catalogo",
+        "ventas",
+        "pagos",
+        "auth",
+        "qr",
+        "notificaciones"
       ],
-      "pad": 26
+      "pad": 22
+    },
+    {
+      "kind": "region",
+      "label": "Servicios de dominio — base central, redundancia sin escalado",
+      "wraps": [
+        "eventos",
+        "postventa",
+        "alimentos",
+        "parqueaderos",
+        "personal",
+        "operacion",
+        "finanzas"
+      ],
+      "pad": 22
     }
   ],
   "connections": [
     {
-      "id": "app-movil-gateway",
-      "from": "app_movil",
-      "to": "gateway",
-      "label": "HTTPS/JSON",
-      "variant": "emphasis"
-    },
-    {
-      "id": "portal-cliente-gateway",
+      "id": "portal-cliente-gw",
       "from": "portal_cliente",
       "to": "gateway",
       "label": "HTTPS/JSON",
       "variant": "emphasis"
     },
     {
-      "id": "portal-admin-gateway",
-      "from": "portal_admin",
+      "id": "app-cliente-gw",
+      "from": "app_cliente",
       "to": "gateway",
-      "label": "HTTPS/JSON"
+      "label": "HTTPS/JSON",
+      "variant": "emphasis"
     },
     {
-      "id": "gateway-nucleo",
+      "id": "portal-admin-gw",
+      "from": "portal_admin",
+      "to": "gateway"
+    },
+    {
+      "id": "app-personal-gw",
+      "from": "app_personal",
+      "to": "gateway"
+    },
+    {
+      "id": "gw-cola",
       "from": "gateway",
-      "to": "svc_nucleo",
-      "label": "/cuentas · /pedidos"
+      "to": "cola",
+      "label": "pide turno",
+      "labelDy": -14
     },
     {
-      "id": "gateway-entradas",
+      "id": "gw-catalogo",
       "from": "gateway",
-      "to": "svc_entradas",
-      "label": "/entradas · /reventa",
-      "variant": "emphasis",
-      "labelDy": -29
+      "to": "catalogo",
+      "label": "consulta",
+      "labelDy": -14
     },
     {
-      "id": "gateway-eventos",
+      "id": "gw-ventas",
       "from": "gateway",
-      "to": "svc_eventos",
-      "label": "/eventos · /aforo"
-    },
-    {
-      "id": "entradas-db",
-      "from": "svc_entradas",
-      "to": "db",
-      "label": "SQL",
+      "to": "ventas",
+      "label": "compra (con turno)",
       "variant": "emphasis",
-      "route": "orthogonal-h"
+      "labelDy": -16
     },
     {
-      "id": "nucleo-db",
-      "from": "svc_nucleo",
-      "to": "db",
-      "label": "SQL — una conexión por módulo",
-      "route": "orthogonal-h"
+      "id": "gw-auth",
+      "from": "gateway",
+      "to": "auth",
+      "label": "valida token",
+      "labelDy": 14
     },
     {
-      "id": "entradas-redis",
-      "from": "svc_entradas",
-      "to": "redis",
-      "label": "bloqueo checkout",
-      "variant": "emphasis",
-      "labelDy": -10
-    },
-    {
-      "id": "nucleo-redis",
-      "from": "svc_nucleo",
-      "to": "redis",
-      "label": "sesiones revocadas"
-    },
-    {
-      "id": "entradas-queue",
-      "from": "svc_entradas",
-      "to": "queue",
-      "label": "publica evento",
-      "variant": "dashed",
-      "route": "orthogonal-h",
-      "labelDy": 10
-    },
-    {
-      "id": "eventos-queue",
-      "from": "svc_eventos",
-      "to": "queue",
-      "label": "alerta de evacuación",
-      "variant": "dashed",
-      "route": "orthogonal-h"
-    },
-    {
-      "id": "entradas-pagos",
-      "from": "svc_entradas",
+      "id": "ventas-pagos",
+      "from": "ventas",
       "to": "pagos",
-      "label": "cobra compra/reventa",
+      "label": "cobra idempotente",
       "variant": "emphasis",
-      "labelDy": -20
+      "labelAt": [
+        673,
+        291
+      ]
     },
     {
-      "id": "queue-notif",
-      "from": "queue",
-      "to": "notif",
-      "label": "dispara notificación",
+      "id": "ventas-redis",
+      "from": "ventas",
+      "to": "redis",
+      "label": "reserva atómica",
+      "variant": "emphasis"
+    },
+    {
+      "id": "ventas-bd",
+      "from": "ventas",
+      "to": "bd_micro",
+      "label": "SQL"
+    },
+    {
+      "id": "catalogo-indice",
+      "from": "catalogo",
+      "to": "indice",
+      "label": "busca"
+    },
+    {
+      "id": "ventas-broker",
+      "from": "ventas",
+      "to": "broker",
+      "label": "CompraConfirmada",
+      "variant": "dashed"
+    },
+    {
+      "id": "broker-notif",
+      "from": "broker",
+      "to": "notificaciones",
+      "label": "envía QR",
+      "variant": "dashed"
+    },
+    {
+      "id": "broker-qr",
+      "from": "broker",
+      "to": "qr",
+      "label": "activa el QR",
+      "variant": "dashed"
+    },
+    {
+      "id": "broker-finanzas",
+      "from": "broker",
+      "to": "finanzas",
+      "label": "registra",
+      "variant": "dashed"
+    },
+    {
+      "id": "eventos-broker",
+      "from": "eventos",
+      "to": "broker",
+      "label": "EventoPublicado",
+      "variant": "dashed"
+    },
+    {
+      "id": "dominio-bd",
+      "from": "alimentos",
+      "to": "bd_central",
+      "label": "SQL (esquema propio)"
+    },
+    {
+      "id": "finanzas-replica",
+      "from": "finanzas",
+      "to": "replica_lectura",
+      "label": "solo lectura"
+    },
+    {
+      "id": "pagos-pasarela",
+      "from": "pagos",
+      "to": "pasarela",
+      "label": "cobros y reembolsos",
+      "variant": "emphasis"
+    },
+    {
+      "id": "notif-proveedor",
+      "from": "notificaciones",
+      "to": "proveedor_notif",
+      "label": "correo y push",
       "variant": "dashed"
     }
   ],
   "cards": [
     {
-      "dot": "cyan",
-      "title": "Quién usa cada interfaz",
+      "dot": "emerald",
+      "title": "Por qué estos siete son microservicios (ADR-14)",
       "items": [
-        "Cliente → App Móvil y Portal Web Cliente",
-        "Empleado → la misma App Móvil (Flutter); el login detecta el rol y el cargo, y abre su conjunto de pantallas (ADR-07)",
-        "Organizador, Administrador y Supervisor de Emergencia → Portal Web Admin"
+        "Un servicio se extrae si cumple al menos dos de cuatro criterios: picos de carga muy por encima del resto, lo usan varios dominios, su estado cabe en un almacén propio, o su falla debe quedar aislada",
+        "Cola virtual, Catálogo y Ventas se separan por carga: en la apertura de venta la mayor parte del tráfico es de consulta, y si compite con las compras en el mismo servicio ambas se degradan",
+        "Pagos, Autenticación y Notificaciones se separan por ser transversales: si uno cae no degrada un dominio, degrada muchos a la vez",
+        "Acceso QR se separa porque su pico es en la puerta del evento, en otro momento que el de la venta, y necesita caché propia para validar sin red"
       ]
     },
     {
-      "dot": "emerald",
-      "title": "Arquitectura basada en servicios (ADR-12)",
+      "dot": "cyan",
+      "title": "Por qué los otros siete no",
       "items": [
-        "El Núcleo agrupa cuatro módulos de dominio en una sola unidad desplegable: Administración (CU-027..032), Pedidos (CU-011..015), Personal (CU-007..009) y Parqueaderos (CU-021..025)",
-        "Cada módulo conserva su esquema de datos y su propia secuencia de migraciones, con fronteras verificadas por herramienta — un cambio en uno no toca a los demás",
-        "El API Gateway sigue siendo el único punto de entrada: ninguna app llama a un servicio directamente (ADR-02, RNF-06)"
+        "Alimentos, Parqueaderos, Personal, Postventa, Eventos y Finanzas tienen carga estable: convertirlos en microservicios multiplicaría bases y despliegues sin beneficio",
+        "Corren con dos instancias para disponibilidad, pero con número fijo: no escalan con la demanda",
+        "Operación del evento es la excepción interesante: atiende la evacuación (CU-010), así que es crítico para la disponibilidad aunque su carga sea baja. Necesita redundancia, no réplicas elásticas",
+        "Finanzas lee de la réplica, no de la base principal: así sus consultas pesadas no degradan la operación durante el evento"
       ]
     },
     {
       "dot": "amber",
-      "title": "Por qué solo dos servicios quedan aparte",
+      "title": "Qué está desplegado y qué no",
       "items": [
-        "Entradas / Mercado Secundario: su curva de carga difiere en orden de magnitud — RNF-07 exige p95 ≤ 500 ms con 2.000 concurrentes y RNF-10 un throughput ≥ 1,7× al duplicar instancias",
-        "Eventos / Emergencias: su disponibilidad no puede depender del resto — RNF-17 exige que la evacuación llegue al ≥ 99 % de los dispositivos en ≤ 10 s",
-        "Ningún otro dominio cumple ninguna de las dos condiciones, de ahí que los satélites sean exactamente dos",
-        "Para no saturar el diagrama solo se dibuja el detalle completo de Entradas; los otros dos servicios siguen el mismo patrón hacia Bases de Datos, Redis y la cola"
+        "⚠️ Esta es la arquitectura OBJETIVO. Lo que corre hoy son los tres servicios de dominio de ADR-12 — ver la vista de contenedores del Nivel 2",
+        "Para no saturar el diagrama solo se dibuja el detalle completo del camino de compra; los demás servicios siguen el mismo patrón hacia la base que les toca y hacia el broker",
+        "El gateway enruta a los catorce servicios; se dibujan solo las flechas del camino de compra y la de Autenticación, para que el resto no tape el dibujo",
+        "La distancia entre este diseño y el código, con el orden para recorrerla, está en Documentation/Work/MIGRACION-ADR-14.md"
       ]
     }
   ]

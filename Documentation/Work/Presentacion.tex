@@ -334,7 +334,7 @@
     \begin{column}{0.5\textwidth}
       \textbf{Técnicas}
       \begin{itemize}\small
-        \item Microservicios con \textbf{base de datos independiente por dominio} (ADR-01).
+        \item Separación por dominio con \textbf{almacén propio donde hace falta} (ADR-14).
               Cualquier solución debe respetar esa separación.
         \item Soportar picos de \textbf{miles de usuarios concurrentes} en la apertura de venta y
               el ingreso masivo.
@@ -379,56 +379,57 @@
     \includegraphics[height=0.66\textheight]{Diagrams/ArchifyPDF/02-contenedores.pdf}
   \end{center}
   \scriptsize
-  \textbf{Tres interfaces} sobre un \textbf{único API Gateway} (ADR-02), que centraliza
-  autenticación, autorización y enrutamiento. Detrás, microservicios por dominio con su propia
-  base de datos, más Redis (bloqueo distribuido y datos de baja latencia) y RabbitMQ
-  (operaciones asíncronas).
+  \textbf{Cuatro interfaces} sobre un \textbf{único API Gateway} (ADR-02). Detrás, la decisión de
+  ADR-14: \textbf{siete microservicios} con base propia y réplicas que escalan solas ---los que
+  cumplen al menos dos de los cuatro criterios de extracción--- y \textbf{siete servicios de
+  dominio} que comparten una base central con un esquema por servicio. Se comunican de forma
+  asíncrona por un broker de eventos.
 \end{frame}
 
-\begin{frame}{Componentes --- Servicio de Entradas y Mercado Secundario}
+\begin{frame}{Componentes --- microservicio Ventas}
   \begin{columns}[T]
     \begin{column}{0.58\textwidth}
       \includegraphics[width=\textwidth]{Diagrams/ArchifyPDF/03-componentes.pdf}
     \end{column}
     \begin{column}{0.40\textwidth}
       \scriptsize
-      \textbf{El flujo de una reventa}
+      \textbf{Por qué Ventas}: es el único de los catorce que cumple los \textbf{cuatro}
+      criterios de extracción, no dos, y el que orquesta la Saga.
       \begin{enumerate}
-        \item El \textbf{Controlador API} recibe lo que enrutó el Gateway.
-        \item El \textbf{Servicio de Publicación} orquesta la operación.
-        \item El \textbf{Gestor de Concurrencia} bloquea la entrada en Redis.
-        \item El \textbf{Procesador de Pagos} cobra contra la pasarela.
-        \item El \textbf{Generador de QR} invalida el código anterior y emite el nuevo.
-        \item El \textbf{Repositorio} persiste el cambio de propiedad.
-        \item El \textbf{Publicador de Eventos} avisa por la cola.
+        \item El \textbf{Controlador de compra} verifica el turno de la cola virtual.
+        \item El \textbf{Orquestador de la Saga} fija el orden y decide si deshacer.
+        \item El \textbf{Gestor de reserva} aparta las entradas en la caché, atómicamente.
+        \item El \textbf{Cliente de Pagos} cobra con llave de idempotencia.
+        \item El \textbf{Repositorio} confirma la venta en la base propia.
+        \item El \textbf{Publicador} anuncia el hecho por el broker.
       \end{enumerate}
       \vspace{0.3em}
-      Los otros tres servicios de dominio (Personal, Eventos/Emergencias, Parqueaderos) se
-      documentan al mismo nivel en el SAD.
+      El \textbf{Compensador} es componente aparte, no una rama: tiene que liberar reservas
+      vencidas \textit{sin que nadie se lo pida}.
     \end{column}
   \end{columns}
 \end{frame}
 
-\begin{frame}{Procesos --- reventa de una entrada (CU-006)}
+\begin{frame}{Procesos --- compra de una entrada (CU-001)}
   \begin{columns}[T]
     \begin{column}{0.56\textwidth}
       \includegraphics[width=\textwidth]{Diagrams/ArchifyPDF/05-secuencia.pdf}
     \end{column}
     \begin{column}{0.42\textwidth}
       \scriptsize
+      La compra cruza \textbf{cuatro despliegues con almacén propio}, así que no hay una
+      transacción que los abarque: por eso el deshacer es explícito. Eso es una \textbf{Saga}.
       \begin{enumerate}
-        \item El comprador confirma la compra.
-        \item El Gateway enruta la solicitud \textbf{ya autenticada}.
-        \item Entradas \textbf{bloquea la publicación en Redis}: nadie más puede adquirirla.
-        \item Se cobra por la pasarela de pagos.
-        \item Se transfiere la propiedad y \textbf{se invalida el QR anterior}, en una sola
-              transacción.
-        \item Se publica \texttt{ENTRADA\_TRANSFERIDA} en la cola.
-        \item Notificaciones envía el QR nuevo, desacoplado del flujo principal.
+        \item La \textbf{cola virtual} entrega un turno con vencimiento corto.
+        \item Ventas \textbf{reserva en la caché}, atómicamente y con vencimiento.
+        \item Cobra por Pagos con \textbf{llave de idempotencia}: un reintento no cobra dos veces.
+        \item Confirma la venta y publica \texttt{COMPRA\_CONFIRMADA}.
+        \item Responde; \textbf{notificar queda fuera} del camino de respuesta.
+        \item \textbf{Compensación} --- si el pago falla o vence, libera lo reservado.
       \end{enumerate}
       \vspace{0.4em}
       \textbf{Evacuación (CU-010)} sigue el mismo patrón asíncrono: identificar zonas, confirmar
-      protocolo, difundir por la cola y monitorear hasta el cierre.
+      protocolo, difundir por el broker y monitorear hasta el cierre.
     \end{column}
   \end{columns}
 \end{frame}
@@ -440,8 +441,11 @@
     \end{column}
     \begin{column}{0.42\textwidth}
       \scriptsize
-      \textbf{Producción} --- CDN para estáticos, balanceador + Gateway, clúster de aplicación con
-      réplicas por microservicio, y clústeres de base de datos, Redis y mensajería.
+      \textbf{Producción} --- CDN para estáticos, balanceador + Gateway, y un clúster con
+      \textbf{autoescalado horizontal}. Cola, Catálogo y Ventas se \textbf{pre-escalan} antes de
+      una apertura anunciada: esperar a que el autoescalador reaccione al pico llega tarde.
+      Notificaciones escala \textbf{por longitud de cola}, no por CPU. Los servicios de dominio
+      corren con dos réplicas fijas: redundancia, no elasticidad.
 
       \vspace{0.5em}
       \textbf{Desarrollo y pruebas} --- misma topología a menor escala: una réplica por servicio,
@@ -457,7 +461,7 @@
   \end{columns}
 \end{frame}
 
-\begin{frame}{Modelo de datos --- una base por microservicio}
+\begin{frame}{Modelo de datos --- dos regímenes de almacenamiento}
   \scriptsize
   \begin{columns}[T]
     \begin{column}{0.5\textwidth}
@@ -489,7 +493,7 @@
       \begin{alertblock}{La regla que lo sostiene}
         \scriptsize Las referencias entre dominios se resuelven \textbf{en la aplicación}, con el
         identificador, y \textbf{no con llaves foráneas físicas} entre bases distintas. Es lo que
-        permite que cada servicio evolucione y se despliegue solo (ADR-01).
+        permite que cada servicio evolucione y se despliegue solo (ADR-14).
       \end{alertblock}
       \vspace{0.3em}
       \scriptsize PostgreSQL para lo transaccional; MongoDB queda reservado para Reportes
@@ -501,14 +505,14 @@
 % =============================================================================
 \section{Decisiones y riesgos}
 
-\begin{frame}{Once decisiones arquitectónicas registradas}
+\begin{frame}{Trece decisiones arquitectónicas registradas}
   \scriptsize
   \begin{tabular}{C{1.1cm}L{4.6cm}L{6.6cm}}
     \toprule
     \textbf{ADR} & \textbf{Decisión} & \textbf{Por qué, y qué se descartó} \\
     \midrule
     ADR-01 & Microservicios por dominio & Escalar Entradas sin sobre-aprovisionar el resto;
-      se descartó el monolito modular \\
+      se descartó el monolito modular \textit{(superado por ADR-12)} \\
     ADR-02 & API Gateway + balanceador & Un solo punto seguro de entrada; evita duplicar
       seguridad en tres interfaces \\
     ADR-03 & Redis para bloqueo y caché & Evita la doble venta sin volver la base el cuello de
@@ -526,6 +530,12 @@
     \rowcolor{hexagris}
     ADR-10 & \textbf{RabbitMQ} como cola & Decidido con PoC medida, no por popularidad \\
     ADR-11 & RS256 y dos tokens & Solo Administración firma; los demás solo verifican \\
+    \rowcolor{hexagris}
+    ADR-12 & Arquitectura basada en servicios & La granularidad de ADR-01 no tenía evidencia:
+      1 servicio replicable y 2 sin implementar \textit{(superado por ADR-14)} \\
+    \rowcolor{hexagris}
+    ADR-14 & \textbf{Híbrida SOA + microservicios} & El criterio de ADR-12 no veía los servicios
+      transversales ni el almacén propio: 7 microservicios + 7 de dominio \\
     \bottomrule
   \end{tabular}
 \end{frame}
