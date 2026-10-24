@@ -86,4 +86,4 @@ cd ../infra && docker compose --profile servicios up -d
 python3 ../gateway/pruebas/gateway.py
 ```
 
-Necesita las cuentas de ejemplo (`cd ../services/administracion && npm run semilla`).
+Necesita las cuentas de ejemplo (`cd ../services/nucleo && npm run semilla`).
