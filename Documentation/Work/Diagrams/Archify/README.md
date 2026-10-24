@@ -25,8 +25,16 @@ diferencia queda visible en el diff del commit.
 | Panorama de Sistemas | `04-panorama.architecture.json` | `04-panorama.html` | `../ArchifyPDF/04-panorama.pdf` |
 | Secuencia — Reventa (CU-006) | `05-secuencia.sequence.json` | `05-secuencia.html` | `../ArchifyPDF/05-secuencia.pdf` |
 | Despliegue | `06-despliegue.architecture.json` | `06-despliegue.html` | `../ArchifyPDF/06-despliegue.pdf` |
+| Nivel 2 — Contenedores **objetivo** (ADR-14) | `07-contenedores-adr14.architecture.json` | `07-contenedores-adr14.html` | `../ArchifyPDF/07-contenedores-adr14.pdf` |
 
 Los `.html` son autocontenidos: se abren directamente en el navegador, sin servidor.
+
+## Dos vistas de contenedores, a propósito
+
+`02-contenedores` describe **lo desplegado** (ADR-12: tres servicios de dominio) y
+`07-contenedores-adr14` describe **lo decidido y no ejecutado** (ADR-14: siete microservicios y
+siete servicios de dominio). Al cambiar la arquitectura hay que decidir cuál de las dos se toca: si
+el cambio es de código ya desplegado, va en `02`; si es de diseño, en `07`.
 
 ## Cómo regenerar después de editar un JSON
 

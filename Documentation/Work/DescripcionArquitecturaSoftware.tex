@@ -115,6 +115,18 @@ Mercado Secundario y de Eventos / Emergencias. Incluye el criterio de extracció
 qué dominio queda como servicio propio, y la reformulación de la métrica de RNF-13 que la decisión
 obliga. ADR-01 queda marcado como superado. & Equipo Hexacore (vía asistente) \\
 \hline
+23/10/2026 & Versión 1.5: se registra \textbf{ADR-14}, que revisa el criterio de extracción de
+ADR-12 ---de dos condiciones a cuatro--- y adopta una \textbf{arquitectura híbrida entre SOA y
+microservicios}: siete microservicios con base propia y réplicas elásticas, y siete servicios de
+dominio sobre una base central con un esquema por servicio. Incorpora además la Saga orquestada de
+CU-001, la réplica de lectura para Finanzas y el criterio de redundancia sin escalado para los
+servicios de dominio. ADR-12 queda marcado como superado.
+
+\textbf{Las vistas de contenedores y de despliegue (§\ref{sec:contenedores}, §\ref{sec:fisica})
+siguen describiendo ADR-12 a propósito}: es la arquitectura que está desplegada. ADR-14 está tomada y
+no ejecutada; la distancia entre ambas, y el orden para recorrerla, están en
+\texttt{Documentation/Work/MIGRACION-ADR-14.md}. & Equipo Hexacore (vía asistente) \\
+\hline
 \end{longtable}
 \end{center}
 
@@ -1157,6 +1169,10 @@ sigue sin necesitar la privada.
 
 \subsection*{ADR-12 --- Arquitectura basada en servicios: un servicio de dominio agregado y dos replicables}
 
+\textbf{Estado:} \textit{superado por ADR-14} --- el estilo basado en servicios sigue vigente; lo que
+se revisó es el criterio de extracción, que aquí tenía dos condiciones y en ADR-14 pasa a cuatro. Con
+el criterio nuevo, Autenticación sale del Núcleo como microservicio y Alimentos queda como servicio de
+dominio. \textbf{Esta decisión es la que está desplegada hoy}: ADR-14 está tomada y no ejecutada.\\
 \textbf{Contexto:} ADR-01 fijó seis microservicios, uno por dominio, cada uno con base de datos
 propia. Al construir el prototipo funcional aparecieron tres hechos medibles sobre el sistema
 desplegado que esa decisión no previó:
@@ -1309,6 +1325,53 @@ su propio ciclo de despliegue, se le aplica el criterio de extracción y sale co
 independiente. La estructura elegida ---un módulo por dominio, con esquema, \texttt{data-source} y
 migraciones propios--- está pensada precisamente para que esa extracción sea una operación de
 empaquetado y no una reescritura del dominio.
+
+\input{ADR-14-hibrida-soa-microservicios}
+
+
+% ==================== Vista objetivo (ADR-14) ====================
+\section{Vista de contenedores objetivo (ADR-14)}
+\label{sec:contenedores-objetivo}
+
+La vista de contenedores de la sección \ref{sec:contenedores} describe \textbf{lo que está
+desplegado}: los tres servicios de dominio de ADR-12. Esta sección describe \textbf{lo que ADR-14
+decidió}, que todavía no se ha ejecutado. Se presentan las dos a propósito: un documento que
+describiera catorce servicios mientras corren tres estaría mintiendo, y uno que no dejara ver hacia
+dónde va la arquitectura no serviría para planear.
+
+La Figura \ref{fig:contenedores-objetivo} presenta la arquitectura híbrida entre SOA y
+microservicios. Las dos regiones son la división que fija ADR-14: a la izquierda los
+\textbf{siete microservicios}, con base de datos propia y réplicas que escalan solas; a la derecha
+los \textbf{siete servicios de dominio}, que comparten una base central con un esquema por servicio
+y corren redundados pero sin escalar. Entre ambos grupos está la infraestructura que comparten.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth,height=0.8\textheight,keepaspectratio]{Diagrams/ArchifyPDF/07-contenedores-adr14.pdf}
+\caption{Vista de contenedores objetivo (ADR-14): siete microservicios y siete servicios de dominio.
+Generado con Archify; la versión interactiva está en \texttt{Diagrams/Archify/}.}
+\label{fig:contenedores-objetivo}
+\end{figure}
+
+Tres lecturas que el diagrama hace explícitas:
+
+\begin{itemize}
+\item \textbf{El camino de compra está completo y aislado.} Cola virtual, Catálogo, Ventas y Pagos
+      son los cuatro servicios que el primer ASR obliga a escalar juntos en la apertura de venta, y
+      ninguno comparte base con el resto del sistema. La Saga que orquesta Ventas ---reserva
+      atómica, cobro idempotente, confirmación o compensación--- recorre exactamente esa franja.
+\item \textbf{Los transversales quedan fuera de todo dominio.} Pagos, Autenticación y
+      Notificaciones no cuelgan de ningún servicio de negocio: son el segundo criterio de ADR-14, y
+      aislarlos es lo que impide que una falla suya degrade varios casos de uso a la vez.
+\item \textbf{Los almacenes delatan la división.} Los microservicios apuntan a Redis, al índice de
+      búsqueda y a sus bases propias; los servicios de dominio, a la base central. Finanzas y
+      reportes es el único que apunta a la réplica de lectura, que es como el sexto ASR impide que
+      un reporte pesado degrade la operación durante el evento.
+\end{itemize}
+
+Para no saturar el dibujo, del gateway solo salen las flechas del camino de compra y la de
+Autenticación; en realidad enruta a los catorce. El resto de los servicios sigue el mismo patrón
+hacia el almacén que les corresponde y hacia el broker.
 
 % ==================== Tácticas arquitectónicas ====================
 \section{Tácticas arquitectónicas por atributo de calidad}
