@@ -533,7 +533,11 @@
       "from": "ventas",
       "to": "redis",
       "label": "reserva atómica",
-      "variant": "emphasis"
+      "variant": "emphasis",
+      "labelAt": [
+        833,
+        127
+      ]
     },
     {
       "id": "ventas-bd",

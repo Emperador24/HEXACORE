@@ -5044,10 +5044,10 @@
         <path data-edge-from="gateway" data-edge-to="ventas" data-edge-label="compra (con turno)" data-edge-key="6" data-edge-id="gw-ventas" data-composition-points="478,282;529,282;529,250;580,250" d="M 478 282 L 521 282 Q 529 282 529 274 L 529 258 Q 529 250 537 250 L 580 250" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         <path data-edge-from="gateway" data-edge-to="auth" data-edge-label="valida token" data-edge-key="7" data-edge-id="gw-auth" data-composition-points="478,290;529,290;529,414;580,414" d="M 478 290 L 521 290 Q 529 290 529 298 L 529 406 Q 529 414 537 414 L 580 414" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         <path data-edge-from="ventas" data-edge-to="pagos" data-edge-label="cobra idempotente" data-edge-key="8" data-edge-id="ventas-pagos" data-composition-points="673,276;673,306" d="M 673 276 L 673 306" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="ventas" data-edge-to="redis" data-edge-label="reserva atómica" data-edge-key="9" data-edge-id="ventas-redis" data-composition-points="766,240;833,240;833,86;900,86" d="M 766 240 L 825 240 Q 833 240 833 232 L 833 94 Q 833 86 841 86 L 900 86" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="ventas" data-edge-to="bd_micro" data-edge-label="SQL" data-edge-key="10" data-edge-id="ventas-bd" data-composition-points="766,250;900,250" d="M 766 250 L 900 250" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="ventas" data-edge-to="redis" data-edge-label="reserva atómica" data-edge-key="9" data-edge-id="ventas-redis" data-composition-points="766,250;833,250;833,86;900,86" d="M 766 250 L 825 250 Q 833 250 833 242 L 833 94 Q 833 86 841 86 L 900 86" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="ventas" data-edge-to="bd_micro" data-edge-label="SQL" data-edge-key="10" data-edge-id="ventas-bd" data-composition-points="766,243;900,243" d="M 766 243 L 900 243" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         <path data-edge-from="catalogo" data-edge-to="indice" data-edge-label="busca" data-edge-key="11" data-edge-id="catalogo-indice" data-composition-points="766,168;900,168" d="M 766 168 L 900 168" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="ventas" data-edge-to="broker" data-edge-label="CompraConfirmada" data-edge-key="12" data-edge-id="ventas-broker" data-composition-points="766,260;833,260;833,322;900,322" d="M 766 260 L 825 260 Q 833 260 833 268 L 833 314 Q 833 322 841 322 L 900 322" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="ventas" data-edge-to="broker" data-edge-label="CompraConfirmada" data-edge-key="12" data-edge-id="ventas-broker" data-composition-points="766,257;833,257;833,322;900,322" d="M 766 257 L 825 257 Q 833 257 833 265 L 833 314 Q 833 322 841 322 L 900 322" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
         <path data-edge-from="broker" data-edge-to="notificaciones" data-edge-label="envía QR" data-edge-key="13" data-edge-id="broker-notif" data-composition-points="900,342;833,342;833,571;766,571" d="M 900 342 L 841 342 Q 833 342 833 350 L 833 563 Q 833 571 825 571 L 766 571" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
         <path data-edge-from="broker" data-edge-to="qr" data-edge-label="activa el QR" data-edge-key="14" data-edge-id="broker-qr" data-composition-points="900,332;833,332;833,496;766,496" d="M 900 332 L 841 332 Q 833 332 833 340 L 833 488 Q 833 496 825 496 L 766 496" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
         <path data-edge-from="broker" data-edge-to="finanzas" data-edge-label="registra" data-edge-key="15" data-edge-id="broker-finanzas" data-composition-points="1086,339;1153,339;1153,571;1220,571" d="M 1086 339 L 1145 339 Q 1153 339 1153 347 L 1153 563 Q 1153 571 1161 571 L 1220 571" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
@@ -5410,20 +5410,20 @@
           <text x="673" y="291" class="t-backend" font-size="8" text-anchor="middle">cobra idempotente</text>
         </g>
         <g data-detail="context" data-edge-from="ventas" data-edge-to="redis" data-edge-label="reserva atómica" data-edge-key="9" data-edge-id="ventas-redis">
-          <rect x="792" y="143" width="82" height="14" rx="3" class="c-mask"/>
-          <text x="833" y="153" class="t-backend" font-size="8" text-anchor="middle">reserva atómica</text>
+          <rect x="792" y="117" width="82" height="14" rx="3" class="c-mask"/>
+          <text x="833" y="127" class="t-backend" font-size="8" text-anchor="middle">reserva atómica</text>
         </g>
         <g data-detail="context" data-edge-from="ventas" data-edge-to="bd_micro" data-edge-label="SQL" data-edge-key="10" data-edge-id="ventas-bd">
-          <rect x="818" y="230" width="30" height="14" rx="3" class="c-mask"/>
-          <text x="833" y="240" class="t-muted" font-size="8" text-anchor="middle">SQL</text>
+          <rect x="818" y="223" width="30" height="14" rx="3" class="c-mask"/>
+          <text x="833" y="233" class="t-muted" font-size="8" text-anchor="middle">SQL</text>
         </g>
         <g data-detail="context" data-edge-from="catalogo" data-edge-to="indice" data-edge-label="busca" data-edge-key="11" data-edge-id="catalogo-indice">
           <rect x="816" y="148" width="34" height="14" rx="3" class="c-mask"/>
           <text x="833" y="158" class="t-muted" font-size="8" text-anchor="middle">busca</text>
         </g>
         <g data-detail="context" data-edge-from="ventas" data-edge-to="broker" data-edge-label="CompraConfirmada" data-edge-key="12" data-edge-id="ventas-broker">
-          <rect x="789.6" y="271" width="86.8" height="14" rx="3" class="c-mask"/>
-          <text x="833" y="281" class="t-messagebus" font-size="8" text-anchor="middle">CompraConfirmada</text>
+          <rect x="789.6" y="269.5" width="86.8" height="14" rx="3" class="c-mask"/>
+          <text x="833" y="279.5" class="t-messagebus" font-size="8" text-anchor="middle">CompraConfirmada</text>
         </g>
         <g data-detail="context" data-edge-from="broker" data-edge-to="notificaciones" data-edge-label="envía QR" data-edge-key="13" data-edge-id="broker-notif">
           <rect x="808.8" y="436.5" width="48.4" height="14" rx="3" class="c-mask"/>
