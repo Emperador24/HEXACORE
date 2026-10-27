@@ -66,11 +66,38 @@ pdfcrop --margins 6 ../ArchifyPDF/02-contenedores.pdf ../ArchifyPDF/02-contenedo
 Archify trae su propio bloque `@media print` que fuerza la paleta clara, así que el PDF sale legible
 aunque el `HTML` abra en tema oscuro.
 
+## Trampa conocida: `deliver` falla aunque el diagrama esté bien
+
+En `02-contenedores`, con 33 relaciones, `archify deliver` y `archify validate` revientan con
+`Could not parse the successful artifact-check receipt` o `Unterminated string in JSON`. **No es el
+diagrama.** `bin/archify.mjs` lanza el comprobador con `spawnSync` y lee su salida por un tubo que
+corta a 64 KB; el informe de este diagrama ocupa 146 KB. El propio mensaje lo delata: dice
+*successful* artifact-check.
+
+La vuelta es hacer los dos pasos a mano, escribiendo a fichero en vez de a un tubo:
+
+```bash
+A=~/.claude/skills/archify
+node $A/renderers/architecture/render-architecture.mjs 02-contenedores.architecture.json /tmp/t.html --quality standard
+node $A/scripts/check-render-output.mjs /tmp/t.html > /tmp/check.json   # ok:true y 9 comprobaciones
+cp /tmp/t.html 02-contenedores.html
+```
+
+Después se genera el PDF como se explica arriba.
+
 ## Trampa conocida
 
 **No usar el campo `tag` de Archify.** En el visor interactivo queda oculto, pero al imprimir se
 dibuja encima del `sublabel` y los textos se solapan. Si hace falta esa información (roles, rangos
 de CU), va dentro del `sublabel` — así está hecho hoy en `02-contenedores`.
+
+**El validador no ve los rótulos que se tapan entre sí.** Dio 0 errores con «busca» encima de
+«reserva atómica», y el PDF leía `rese...ómica`. La comprobación que vale es **renderizar el PDF y
+mirarlo**; el informe de Archify avisa de choques de ruta, no de máscaras de texto superpuestas.
+
+**Los avisos cuentan.** Este diagrama tolera avisos con el perfil `standard`, pero cuando pasaron de
+20 a 120 al añadir flechas, el dibujo era ilegible de verdad. Si el número se dispara, el diagrama
+está saturado: separa filas o quita flechas antes que seguir recolocando rótulos.
 
 **El `viewBox` tiene que caber en pantalla.** Archify valida legibilidad contra un
 navegador de 1440 px: un lienzo de más de ~1500 px de ancho hace que los `sublabel`

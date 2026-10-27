@@ -50,7 +50,7 @@
     ],
     "viewBox": [
       1560,
-      800
+      960
     ]
   },
   "components": [
@@ -60,11 +60,11 @@
       "label": "Portal Web Cliente",
       "sublabel": "Angular",
       "pos": [
-        60,
-        140
+        40,
+        270
       ],
       "size": [
-        172,
+        180,
         50
       ]
     },
@@ -74,11 +74,11 @@
       "label": "App Móvil Cliente",
       "sublabel": "Flutter",
       "pos": [
-        60,
-        222
+        40,
+        374
       ],
       "size": [
-        172,
+        180,
         50
       ]
     },
@@ -88,11 +88,11 @@
       "label": "Portal Web Admin",
       "sublabel": "Angular",
       "pos": [
-        60,
-        304
+        40,
+        478
       ],
       "size": [
-        172,
+        180,
         50
       ]
     },
@@ -102,11 +102,11 @@
       "label": "App Móvil Personal",
       "sublabel": "Flutter · valida QR sin red",
       "pos": [
-        60,
-        386
+        40,
+        582
       ],
       "size": [
-        172,
+        180,
         50
       ]
     },
@@ -116,8 +116,8 @@
       "label": "API Gateway",
       "sublabel": "autoriza por rol · 2+ réplicas",
       "pos": [
-        310,
-        250
+        280,
+        422
       ],
       "size": [
         168,
@@ -130,11 +130,11 @@
       "label": "Cola virtual",
       "sublabel": "turno de compra · 3+ réplicas",
       "pos": [
-        580,
+        540,
         60
       ],
       "size": [
-        186,
+        180,
         52
       ]
     },
@@ -144,11 +144,11 @@
       "label": "Catálogo",
       "sublabel": "CU-005 · 3+ réplicas",
       "pos": [
-        580,
-        142
+        540,
+        164
       ],
       "size": [
-        186,
+        180,
         52
       ]
     },
@@ -158,11 +158,11 @@
       "label": "Ventas",
       "sublabel": "CU-001, 004 · orquesta la Saga",
       "pos": [
-        580,
-        224
+        540,
+        268
       ],
       "size": [
-        186,
+        180,
         52
       ]
     },
@@ -172,11 +172,11 @@
       "label": "Pagos",
       "sublabel": "único contacto con la pasarela",
       "pos": [
-        580,
-        306
+        540,
+        372
       ],
       "size": [
-        186,
+        180,
         52
       ]
     },
@@ -186,11 +186,11 @@
       "label": "Autenticación",
       "sublabel": "CU-027, 028 · lo usa todo",
       "pos": [
-        580,
-        388
+        540,
+        476
       ],
       "size": [
-        186,
+        180,
         52
       ]
     },
@@ -200,11 +200,11 @@
       "label": "Acceso QR",
       "sublabel": "CU-002 · pico en la puerta",
       "pos": [
-        580,
-        470
+        540,
+        580
       ],
       "size": [
-        186,
+        180,
         52
       ]
     },
@@ -214,11 +214,11 @@
       "label": "Notificaciones",
       "sublabel": "escala por longitud de cola",
       "pos": [
-        580,
-        552
+        540,
+        684
       ],
       "size": [
-        186,
+        180,
         52
       ]
     },
@@ -228,11 +228,11 @@
       "label": "Eventos y recintos",
       "sublabel": "CU-026, 029",
       "pos": [
-        1220,
+        1270,
         60
       ],
       "size": [
-        186,
+        180,
         52
       ]
     },
@@ -242,11 +242,11 @@
       "label": "Postventa",
       "sublabel": "CU-003, 006",
       "pos": [
-        1220,
-        142
+        1270,
+        164
       ],
       "size": [
-        186,
+        180,
         52
       ]
     },
@@ -256,11 +256,11 @@
       "label": "Alimentos",
       "sublabel": "CU-011..015",
       "pos": [
-        1220,
-        224
+        1270,
+        268
       ],
       "size": [
-        186,
+        180,
         52
       ]
     },
@@ -270,11 +270,11 @@
       "label": "Parqueaderos",
       "sublabel": "CU-021..025",
       "pos": [
-        1220,
-        306
+        1270,
+        372
       ],
       "size": [
-        186,
+        180,
         52
       ]
     },
@@ -284,11 +284,11 @@
       "label": "Personal y logística",
       "sublabel": "CU-007..009, 016..018, 030",
       "pos": [
-        1220,
-        388
+        1270,
+        476
       ],
       "size": [
-        186,
+        180,
         52
       ]
     },
@@ -298,11 +298,11 @@
       "label": "Operación del evento",
       "sublabel": "CU-010, 019, 020 · redundante",
       "pos": [
-        1220,
-        470
+        1270,
+        580
       ],
       "size": [
-        186,
+        180,
         52
       ]
     },
@@ -312,11 +312,11 @@
       "label": "Finanzas y reportes",
       "sublabel": "CU-031, 032",
       "pos": [
-        1220,
-        552
+        1270,
+        684
       ],
       "size": [
-        186,
+        180,
         52
       ]
     },
@@ -326,11 +326,11 @@
       "label": "Broker de eventos",
       "sublabel": "tópicos replicados",
       "pos": [
-        900,
-        306
+        950,
+        372
       ],
       "size": [
-        186,
+        180,
         52
       ]
     },
@@ -340,11 +340,11 @@
       "label": "Clúster Redis",
       "sublabel": "inventario · fila · sesiones · QR",
       "pos": [
-        900,
+        950,
         60
       ],
       "size": [
-        186,
+        180,
         52
       ]
     },
@@ -354,11 +354,11 @@
       "label": "Índice de búsqueda",
       "sublabel": "lo alimentan eventos",
       "pos": [
-        900,
-        142
+        950,
+        164
       ],
       "size": [
-        186,
+        180,
         52
       ]
     },
@@ -368,11 +368,11 @@
       "label": "Bases por microservicio",
       "sublabel": "Ventas · Pagos · Auth · QR",
       "pos": [
-        900,
-        224
+        950,
+        268
       ],
       "size": [
-        186,
+        180,
         52
       ]
     },
@@ -382,11 +382,11 @@
       "label": "Base central",
       "sublabel": "un esquema por servicio de dominio",
       "pos": [
-        900,
-        388
+        950,
+        476
       ],
       "size": [
-        186,
+        180,
         52
       ]
     },
@@ -396,11 +396,11 @@
       "label": "Réplica de lectura",
       "sublabel": "solo la leen los reportes",
       "pos": [
-        900,
-        470
+        950,
+        580
       ],
       "size": [
-        186,
+        180,
         52
       ]
     },
@@ -410,11 +410,11 @@
       "label": "Pasarela de Pagos",
       "sublabel": "los datos de tarjeta no salen de aquí",
       "pos": [
-        900,
-        552
+        950,
+        684
       ],
       "size": [
-        186,
+        180,
         52
       ]
     },
@@ -424,11 +424,11 @@
       "label": "Proveedor de Notificaciones",
       "sublabel": "correo y push",
       "pos": [
-        900,
-        634
+        950,
+        788
       ],
       "size": [
-        186,
+        180,
         52
       ]
     }
@@ -436,7 +436,7 @@
   "boundaries": [
     {
       "kind": "region",
-      "label": "Microservicios — base propia y réplicas que escalan solas",
+      "label": "Microservicios — base propia, escalan solas",
       "wraps": [
         "cola",
         "catalogo",
@@ -450,7 +450,7 @@
     },
     {
       "kind": "region",
-      "label": "Servicios de dominio — base central, redundancia sin escalado",
+      "label": "Servicios de dominio — base central, 2 réplicas",
       "wraps": [
         "eventos",
         "postventa",
@@ -514,8 +514,12 @@
       "id": "gw-auth",
       "from": "gateway",
       "to": "auth",
-      "label": "valida token",
-      "labelDy": 14
+      "label": "login / emite token",
+      "labelDy": 14,
+      "labelAt": [
+        494,
+        542
+      ]
     },
     {
       "id": "ventas-pagos",
@@ -524,8 +528,8 @@
       "label": "cobra idempotente",
       "variant": "emphasis",
       "labelAt": [
-        673,
-        291
+        630,
+        334
       ]
     },
     {
@@ -535,42 +539,62 @@
       "label": "reserva atómica",
       "variant": "emphasis",
       "labelAt": [
-        833,
-        127
+        835,
+        138
       ]
     },
     {
       "id": "ventas-bd",
       "from": "ventas",
       "to": "bd_micro",
-      "label": "SQL"
+      "label": "SQL",
+      "labelAt": [
+        835,
+        294
+      ]
     },
     {
       "id": "catalogo-indice",
       "from": "catalogo",
       "to": "indice",
-      "label": "busca"
+      "label": "busca",
+      "labelAt": [
+        835,
+        190
+      ]
     },
     {
       "id": "ventas-broker",
       "from": "ventas",
       "to": "broker",
       "label": "CompraConfirmada",
-      "variant": "dashed"
+      "variant": "dashed",
+      "labelAt": [
+        890,
+        346
+      ]
     },
     {
       "id": "broker-notif",
       "from": "broker",
       "to": "notificaciones",
       "label": "envía QR",
-      "variant": "dashed"
+      "variant": "dashed",
+      "labelAt": [
+        835,
+        710
+      ]
     },
     {
       "id": "broker-qr",
       "from": "broker",
       "to": "qr",
       "label": "activa el QR",
-      "variant": "dashed"
+      "variant": "dashed",
+      "labelAt": [
+        835,
+        554
+      ]
     },
     {
       "id": "broker-finanzas",
@@ -603,7 +627,11 @@
       "from": "pagos",
       "to": "pasarela",
       "label": "cobros y reembolsos",
-      "variant": "emphasis"
+      "variant": "emphasis",
+      "labelAt": [
+        835,
+        502
+      ]
     },
     {
       "id": "notif-proveedor",
@@ -611,6 +639,152 @@
       "to": "proveedor_notif",
       "label": "correo y push",
       "variant": "dashed"
+    },
+    {
+      "id": "gw-dominio",
+      "from": "gateway",
+      "to": "finanzas",
+      "label": "y a los 7 de dominio",
+      "fromSide": "bottom",
+      "toSide": "bottom",
+      "via": [
+        [
+          364,
+          890
+        ],
+        [
+          1360,
+          890
+        ]
+      ]
+    },
+    {
+      "id": "gw-qr",
+      "from": "gateway",
+      "to": "qr",
+      "label": "valida QR"
+    },
+    {
+      "id": "pagos-broker",
+      "from": "pagos",
+      "to": "broker",
+      "label": "PagoAprobado / PagoRechazado",
+      "variant": "dashed",
+      "labelAt": [
+        835,
+        398
+      ]
+    },
+    {
+      "id": "pasarela-pagos",
+      "from": "pasarela",
+      "to": "pagos",
+      "label": "webhook",
+      "variant": "dashed",
+      "labelAt": [
+        890,
+        606
+      ]
+    },
+    {
+      "id": "broker-catalogo",
+      "from": "broker",
+      "to": "catalogo",
+      "label": "EventoPublicado",
+      "variant": "dashed",
+      "labelAt": [
+        770,
+        242
+      ]
+    },
+    {
+      "id": "broker-ventas",
+      "from": "broker",
+      "to": "ventas",
+      "variant": "dashed"
+    },
+    {
+      "id": "operacion-broker",
+      "from": "operacion",
+      "to": "broker",
+      "label": "AlertaEvacuación",
+      "variant": "dashed"
+    },
+    {
+      "id": "broker-notif-evac",
+      "from": "broker",
+      "to": "notificaciones",
+      "label": "AlertaEvacuación",
+      "variant": "dashed",
+      "labelAt": [
+        835,
+        658
+      ]
+    },
+    {
+      "id": "postventa-pagos",
+      "from": "postventa",
+      "to": "pagos",
+      "label": "cobro de reventa",
+      "fromSide": "left",
+      "toSide": "bottom",
+      "via": [
+        [
+          1230,
+          190
+        ],
+        [
+          1230,
+          450
+        ],
+        [
+          630,
+          450
+        ]
+      ],
+      "labelAt": [
+        1230,
+        334
+      ]
+    },
+    {
+      "id": "postventa-ventas",
+      "from": "postventa",
+      "to": "ventas",
+      "label": "cambia el dueño",
+      "fromSide": "left",
+      "toSide": "top",
+      "via": [
+        [
+          1200,
+          190
+        ],
+        [
+          1200,
+          242
+        ],
+        [
+          630,
+          242
+        ]
+      ]
+    },
+    {
+      "id": "bd-replica",
+      "from": "bd_central",
+      "to": "replica_lectura",
+      "label": "replica",
+      "variant": "dashed",
+      "labelAt": [
+        1040,
+        542
+      ]
+    },
+    {
+      "id": "cola-redis",
+      "from": "cola",
+      "to": "redis",
+      "label": "fila"
     }
   ],
   "cards": [
@@ -638,6 +812,7 @@
       "dot": "amber",
       "title": "Qué está desplegado y qué no",
       "items": [
+        "El broker reparte EventoPublicado a Catálogo y a Ventas: la flecha a Ventas no repite el rótulo para no cargar el pasillo",
         "⚠️ Esta es la arquitectura OBJETIVO. Lo que corre hoy son los tres servicios de dominio de ADR-12 — ver la vista de contenedores del Nivel 2",
         "Para no saturar el diagrama solo se dibuja el detalle completo del camino de compra; los demás servicios siguen el mismo patrón hacia la base que les toca y hacia el broker",
         "El gateway enruta a los catorce servicios; se dibujan solo las flechas del camino de compra y la de Autenticación, para que el resto no tape el dibujo",
