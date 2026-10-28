@@ -4,19 +4,16 @@ import { RabbitMqModule } from './comun/rabbitmq/rabbitmq.module';
 import { RedisModule } from './comun/redis/redis.module';
 import { SaludController } from './comun/salud/salud.controller';
 import { AdministracionModule } from './modulos/administracion/administracion.module';
-import { PedidosModule } from './modulos/pedidos/pedidos.module';
 
 /**
- * Núcleo — servicio de dominio agregado (ADR-12).
+ * Núcleo — lo que queda del servicio agregado de ADR-12.
  *
- * Una sola unidad desplegable que agrupa varios dominios como **módulos**, en
- * lugar de un microservicio por dominio. Cada módulo conserva su esquema de
- * datos, su `data-source` y su propia secuencia de migraciones, de modo que un
- * cambio de esquema en uno sigue sin tocar a los demás.
+ * Alimentos (CU-011..015) salió a su propio servicio de dominio en la fase A
+ * de ADR-14, y Notificaciones a su propio microservicio. Aquí queda
+ * Administración, que es Autenticación: el siguiente paso es renombrarlo.
  *
  * Módulos:
  *   - Administración — CU-027..032 · base `administracion`
- *   - Pedidos        — CU-011..015 · base `pedidos`
  *   - Personal       — CU-007..009 · sin implementar
  *   - Parqueaderos   — CU-021..025 · sin implementar
  *
@@ -31,7 +28,7 @@ import { PedidosModule } from './modulos/pedidos/pedidos.module';
  * criterio de extracción y siguen siendo despliegues independientes.
  */
 @Module({
-  imports: [ConfigModule, RedisModule, RabbitMqModule, AdministracionModule, PedidosModule],
+  imports: [ConfigModule, RedisModule, RabbitMqModule, AdministracionModule],
   controllers: [SaludController],
 })
 export class AppModule {}

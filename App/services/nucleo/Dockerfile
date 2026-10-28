@@ -39,4 +39,4 @@ HEALTHCHECK --interval=5s --timeout=3s --start-period=20s --retries=3 \
 # vuelve a intentar: no hace falta ningún "esperar a que la base esté lista".
 # Con varias réplicas, las migraciones deberían ir en un paso aparte del
 # despliegue para que no las corran todas a la vez.
-CMD ["sh", "-c", "node node_modules/typeorm/cli.js migration:run -d dist/modulos/administracion/persistencia/data-source.js && node node_modules/typeorm/cli.js migration:run -d dist/modulos/pedidos/persistencia/data-source.js && exec node dist/main.js"]
+CMD ["sh", "-c", "node node_modules/typeorm/cli.js migration:run -d dist/modulos/administracion/persistencia/data-source.js && exec node dist/main.js"]

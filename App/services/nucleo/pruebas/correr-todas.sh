@@ -22,12 +22,8 @@ if ! curl -sf http://localhost:3002/api/v1/salud > /dev/null; then
 fi
 
 fallos=0
-# Pedidos va antes que `cu027-disponibilidad`, que pausa dependencias a
-# propósito: si fuera al revés, el barrido de reservas se mediría con Redis a
-# medio levantar.
 for suite in cu027-registro cu027-verificacion cu027-login cu027-renovacion \
              cu027-recuperacion-perfil cu027b-administracion \
-             cu011-flujo-completo cu011-autenticacion cu011b-pagos \
              cu027-disponibilidad; do
   printf '  %-26s ' "$suite"
   if salida=$(python3 "pruebas/$suite.py" 2>&1); then

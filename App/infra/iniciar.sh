@@ -139,7 +139,7 @@ case "$ROL" in
     gris "  Levantando los servicios de dominio y el API Gateway"
     "${COMPOSE[@]}" --profile servicios up -d $CONSTRUIR \
       --scale entradas-mercado-secundario="$REPLICAS" \
-      nucleo entradas-mercado-secundario catalogo notificaciones eventos-emergencias \
+      nucleo entradas-mercado-secundario catalogo notificaciones alimentos eventos-emergencias \
       api-gateway portal-web-cliente portal-web-admin
     ;;
   todo)
@@ -177,7 +177,7 @@ contenedor_de() {
 if [[ "$ROL" != "datos" ]]; then
   titulo "Esperando a que los servicios respondan"
   for servicio in nucleo eventos-emergencias entradas-mercado-secundario catalogo \
-                  notificaciones \
+                  notificaciones alimentos \
                   api-gateway portal-web-cliente portal-web-admin; do
     id="$(contenedor_de "$servicio")"
     if [[ -n "$id" ]] && esperar_sano "$id"; then
@@ -365,7 +365,7 @@ if [[ "$DEMO" == "si" && "$ROL" != "datos" ]]; then
     # El Núcleo tiene una secuencia de migraciones por módulo: cada uno contra
     # su propia base, que es la separación de datos que ADR-12 conserva.
     migrar nucleo || true
-    migrar nucleo migracion:pedidos:correr || true
+    migrar alimentos || true
     migrar entradas-mercado-secundario || true
     migrar catalogo || true
     migrar eventos-emergencias || true
@@ -380,7 +380,7 @@ if [[ "$DEMO" == "si" && "$ROL" != "datos" ]]; then
     # La de logística va después de la de administración a propósito: da de alta
     # a cada empleado sobre la cuenta que aquella acaba de crear.
     sembrar eventos-emergencias seed
-    sembrar nucleo semilla:pedidos
+    sembrar alimentos
     # Y el inventario de Redis después de la semilla, que es de donde sale.
     preparar_inventario_pedidos
   else

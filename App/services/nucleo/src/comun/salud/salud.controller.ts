@@ -5,7 +5,7 @@ import { Response } from 'express';
 import Redis from 'ioredis';
 import { DataSource } from 'typeorm';
 import { CONFIGURACION, ConfiguracionServicio } from '../config/configuracion';
-import { CONEXION_ADMINISTRACION, CONEXION_PEDIDOS } from '../persistencia/conexiones';
+import { CONEXION_ADMINISTRACION } from '../persistencia/conexiones';
 import { ConexionRabbitMq } from '../rabbitmq/conexion-rabbitmq.service';
 import { REDIS } from '../redis/redis.module';
 
@@ -51,7 +51,6 @@ export class SaludController {
   constructor(
     @Inject(CONFIGURACION) private readonly config: ConfiguracionServicio,
     @InjectDataSource(CONEXION_ADMINISTRACION) private readonly administracion: DataSource,
-    @InjectDataSource(CONEXION_PEDIDOS) private readonly pedidos: DataSource,
     @Inject(REDIS) private readonly redis: Redis,
     private readonly rabbitmq: ConexionRabbitMq,
   ) {}
@@ -61,13 +60,12 @@ export class SaludController {
   @ApiResponse({ status: 200, description: 'La instancia puede atender tráfico' })
   @ApiResponse({ status: 503, description: 'Alguna base no responde: no debería recibir tráfico' })
   async estado(@Res({ passthrough: true }) respuesta: Response) {
-    const [bdAdministracion, bdPedidos, redis] = await Promise.all([
+    const [bdAdministracion, redis] = await Promise.all([
       this.responde(() => this.administracion.query('SELECT 1')),
-      this.responde(() => this.pedidos.query('SELECT 1')),
       this.responde(() => this.redis.ping()),
     ]);
     const rabbitmq = this.rabbitmq.conectado;
-    const basesArriba = bdAdministracion && bdPedidos;
+    const basesArriba = bdAdministracion;
 
     // Por el código HTTP, no por el cuerpo: es lo que miran los balanceadores.
     respuesta.status(basesArriba ? HttpStatus.OK : HttpStatus.SERVICE_UNAVAILABLE);
@@ -76,10 +74,6 @@ export class SaludController {
       servicio: 'nucleo',
       estado: !basesArriba ? 'caido' : redis && rabbitmq ? 'arriba' : 'degradado',
       entorno: this.config.entorno,
-      modulos: {
-        administracion: bdAdministracion ? 'arriba' : 'caido',
-        pedidos: bdPedidos ? 'arriba' : 'caido',
-      },
       dependencias: {
         postgres: basesArriba ? 'arriba' : 'caido',
         // Informativos: ver arriba.

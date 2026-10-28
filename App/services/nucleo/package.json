@@ -17,10 +17,6 @@
     "semilla": "ts-node src/modulos/administracion/persistencia/semillas/sembrar.ts",
     "carga": "ts-node src/modulos/administracion/persistencia/semillas/carga.ts",
     "test:integracion": "bash pruebas/correr-todas.sh",
-    "migracion:pedidos:correr": "typeorm-ts-node-commonjs migration:run -d src/modulos/pedidos/persistencia/data-source.ts",
-    "migracion:pedidos:revertir": "typeorm-ts-node-commonjs migration:revert -d src/modulos/pedidos/persistencia/data-source.ts",
-    "migracion:pedidos:estado": "typeorm-ts-node-commonjs migration:show -d src/modulos/pedidos/persistencia/data-source.ts",
-    "semilla:pedidos": "ts-node src/modulos/pedidos/persistencia/semillas/sembrar.ts",
     "test:e2e": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config test/jest-e2e.json --runInBand"
   },
   "dependencies": {
@@ -70,6 +66,7 @@
     "testEnvironment": "node",
     "moduleNameMapper": {
       "^@nestjs/typeorm$": "<rootDir>/../test/dobles/nestjs-typeorm.ts"
-    }
+    },
+    "collectCoverageFrom": []
   }
 }

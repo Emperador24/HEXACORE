@@ -261,6 +261,34 @@ services:
     ports:
       - "3001:3001"
 
+  # Servicio de dominio de Alimentos — CU-011 a CU-015. Fase A de ADR-14.
+  alimentos:
+    profiles: ["servicios"]
+    build: ../services/alimentos
+    # Sin `container_name`: ADR-14 le pone dos réplicas fijas por
+    # disponibilidad. No escala por carga: su demanda es estable.
+    restart: unless-stopped
+    init: true
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+      pasarela: { condition: service_healthy }
+    environment:
+      <<: *entorno-comun
+      PUERTO: "3007"
+      PAGOS_PROVEEDOR_URL: http://${HOST_PASARELA:-pasarela}:${PUERTO_PASARELA:-3099}
+    volumes:
+      - ./claves-desarrollo/jwt-publica.pem:/claves/jwt-publica.pem:ro
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3007/api/v1/salud',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      start_period: 90s
+      retries: 10
+    ports:
+      - "3007:3007"
+
   # Microservicio de Notificaciones — envío asíncrono de correos. Fase A de ADR-14.
   notificaciones:
     profiles: ["servicios"]
