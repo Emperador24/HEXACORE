@@ -260,6 +260,34 @@ services:
     ports:
       - "3001:3001"
 
+  # Microservicio de Cola virtual — turno de compra. Sostiene el primer ASR.
+  cola-virtual:
+    profiles: ["servicios"]
+    build: ../services/cola-virtual
+    # Sin `container_name`: ADR-14 le pone 3+ réplicas con pre-escalado, porque
+    # su pico es el más agudo del sistema.
+    restart: unless-stopped
+    init: true
+    # Solo Redis: la fila es Redis. No tiene base de datos.
+    depends_on:
+      redis: { condition: service_healthy }
+    environment:
+      <<: *entorno-comun
+      PUERTO: "3009"
+      # Bajo a propósito en desarrollo: con 100 nunca se vería la fila
+      # funcionar. En producción se calibra con las pruebas de carga.
+      COLA_AFORO_CONCURRENTE: "25"
+    volumes:
+      - ./claves-desarrollo/jwt-publica.pem:/claves/jwt-publica.pem:ro
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3009/api/v1/salud',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      start_period: 60s
+      retries: 10
+    ports:
+      - "3009:3009"
+
   # Microservicio de Pagos — el único que habla con la pasarela. Fase A de ADR-14.
   pagos:
     profiles: ["servicios"]

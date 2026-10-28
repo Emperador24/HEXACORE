@@ -1,0 +1,57 @@
+{
+  "name": "hexacore-cola-virtual",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Microservicio de Cola virtual (ADR-14) — turno de compra",
+  "scripts": {
+    "build": "nest build",
+    "start": "nest start",
+    "start:dev": "nest start --watch",
+    "start:prod": "node dist/main.js",
+    "test": "jest",
+    "test:cov": "jest --coverage",
+    "lint": "tsc --noEmit",
+    "test:integracion": "bash pruebas/correr-todas.sh"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.1.6",
+    "@nestjs/config": "^4.0.2",
+    "@nestjs/core": "^11.1.6",
+    "@nestjs/platform-express": "^11.1.6",
+    "@nestjs/swagger": "^11.2.0",
+    "@types/amqplib": "^0.10.8",
+    "amqplib": "^2.0.1",
+    "dotenv": "^17.4.2",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "@nestjs/jwt": "^11.0.2",
+    "ioredis": "^5.11.1",
+    "class-validator": "^0.14.2",
+    "class-transformer": "^0.5.1"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^11.0.10",
+    "@nestjs/schematics": "^11.0.8",
+    "@nestjs/testing": "^11.1.6",
+    "@types/express": "^5.0.3",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^22.18.1",
+    "jest": "^30.1.3",
+    "ts-jest": "^29.4.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2"
+  },
+  "jest": {
+    "moduleFileExtensions": [
+      "js",
+      "json",
+      "ts"
+    ],
+    "rootDir": "src",
+    "testRegex": ".*\\.spec\\.ts$",
+    "transform": {
+      "^.+\\.(t|j)s$": "ts-jest"
+    },
+    "testEnvironment": "node"
+  }
+}
