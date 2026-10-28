@@ -170,7 +170,7 @@ describe('CheckoutService', () => {
     it('transfiere la propiedad y emite un código QR nuevo', async () => {
       const { servicio, seguimiento } = construir({ resultadoCobro: ResultadoCobro.APROBADO });
 
-      const resultado = await servicio.pagar(COMPRADOR, CHECKOUT, { metodoPago: 'TARJETA', token: 'tok_ok' });
+      const resultado = await servicio.pagar(COMPRADOR, CHECKOUT, { metodoPago: 'TARJETA', token: 'tok_ok' }, 'tok-prueba');
 
       expect(resultado.transferida).toBe(true);
 
@@ -192,7 +192,7 @@ describe('CheckoutService', () => {
     it('registra la transferencia en el historial con los dos códigos', async () => {
       const { servicio, seguimiento } = construir({ resultadoCobro: ResultadoCobro.APROBADO });
 
-      await servicio.pagar(COMPRADOR, CHECKOUT, { metodoPago: 'TARJETA', token: 'tok_ok' });
+      await servicio.pagar(COMPRADOR, CHECKOUT, { metodoPago: 'TARJETA', token: 'tok_ok' }, 'tok-prueba');
 
       // Paso 11 y post-condición 3. Sin esta fila, RNF-11 (100 % auditado) no
       // se cumpliría.
@@ -209,7 +209,7 @@ describe('CheckoutService', () => {
     it('marca la publicación como vendida con su comprador', async () => {
       const { servicio, seguimiento } = construir({ resultadoCobro: ResultadoCobro.APROBADO });
 
-      await servicio.pagar(COMPRADOR, CHECKOUT, { metodoPago: 'TARJETA', token: 'tok_ok' });
+      await servicio.pagar(COMPRADOR, CHECKOUT, { metodoPago: 'TARJETA', token: 'tok_ok' }, 'tok-prueba');
 
       const [, , cambios] = seguimiento.update.mock.calls.find((c) => c[0] === PublicacionReventa) as [
         unknown,
@@ -223,7 +223,7 @@ describe('CheckoutService', () => {
     it('libera el bloqueo y publica el evento', async () => {
       const { servicio, concurrencia, publicador } = construir({ resultadoCobro: ResultadoCobro.APROBADO });
 
-      await servicio.pagar(COMPRADOR, CHECKOUT, { metodoPago: 'TARJETA', token: 'tok_ok' });
+      await servicio.pagar(COMPRADOR, CHECKOUT, { metodoPago: 'TARJETA', token: 'tok_ok' }, 'tok-prueba');
 
       expect(concurrencia.liberar).toHaveBeenCalledWith(PUBLICACION, CHECKOUT);
       expect(publicador.publicarEntradaTransferida).toHaveBeenCalledTimes(1);
@@ -234,7 +234,7 @@ describe('CheckoutService', () => {
       // vencida y la publicación en manos de otro comprador.
       const { servicio, concurrencia } = construir({ resultadoCobro: ResultadoCobro.APROBADO });
 
-      await servicio.pagar(COMPRADOR, CHECKOUT, { metodoPago: 'TARJETA', token: 'tok_ok' });
+      await servicio.pagar(COMPRADOR, CHECKOUT, { metodoPago: 'TARJETA', token: 'tok_ok' }, 'tok-prueba');
 
       expect(concurrencia.renovar).toHaveBeenCalledWith(PUBLICACION, CHECKOUT);
     });
@@ -242,7 +242,7 @@ describe('CheckoutService', () => {
     it('cobra con el id de la transacción como clave de idempotencia', async () => {
       const { servicio, pagos } = construir({ resultadoCobro: ResultadoCobro.APROBADO });
 
-      await servicio.pagar(COMPRADOR, CHECKOUT, { metodoPago: 'TARJETA', token: 'tok_ok' });
+      await servicio.pagar(COMPRADOR, CHECKOUT, { metodoPago: 'TARJETA', token: 'tok_ok' }, 'tok-prueba');
 
       const solicitud = (pagos.cobrar as jest.Mock).mock.calls[0][0] as { claveIdempotencia: string; token: string };
       expect(solicitud.claveIdempotencia).toBe(CHECKOUT);
@@ -259,7 +259,7 @@ describe('CheckoutService', () => {
       (concurrencia.esTitular as jest.Mock).mockResolvedValue(false);
 
       await expect(
-        servicio.pagar(COMPRADOR, CHECKOUT, { metodoPago: 'TARJETA', token: 'tok_ok' }),
+        servicio.pagar(COMPRADOR, CHECKOUT, { metodoPago: 'TARJETA', token: 'tok_ok' }, 'tok-prueba'),
       ).rejects.toMatchObject({ response: { codigo: 'CHECKOUT_NO_VIGENTE' } });
 
       // Y sobre todo: no se llega a cobrar.
@@ -273,7 +273,7 @@ describe('CheckoutService', () => {
       (concurrencia.renovar as jest.Mock).mockResolvedValue(false);
 
       await expect(
-        servicio.pagar(COMPRADOR, CHECKOUT, { metodoPago: 'TARJETA', token: 'tok_ok' }),
+        servicio.pagar(COMPRADOR, CHECKOUT, { metodoPago: 'TARJETA', token: 'tok_ok' }, 'tok-prueba'),
       ).rejects.toMatchObject({ response: { codigo: 'CHECKOUT_NO_VIGENTE' } });
       expect(pagos.cobrar).not.toHaveBeenCalled();
     });
@@ -286,7 +286,7 @@ describe('CheckoutService', () => {
       seguimiento.update.mockResolvedValue({ affected: 0 });
 
       await expect(
-        servicio.pagar(COMPRADOR, CHECKOUT, { metodoPago: 'TARJETA', token: 'tok_ok' }),
+        servicio.pagar(COMPRADOR, CHECKOUT, { metodoPago: 'TARJETA', token: 'tok_ok' }, 'tok-prueba'),
       ).rejects.toMatchObject({
         response: { codigo: 'COBRADO_SIN_TRANSFERIR', requiereConciliacion: true },
       });
@@ -298,7 +298,7 @@ describe('CheckoutService', () => {
       const { servicio, concurrencia } = construir({ resultadoCobro: ResultadoCobro.RECHAZADO });
 
       await expect(
-        servicio.pagar(COMPRADOR, CHECKOUT, { metodoPago: 'TARJETA', token: 'tok_rechazo' }),
+        servicio.pagar(COMPRADOR, CHECKOUT, { metodoPago: 'TARJETA', token: 'tok_rechazo' }, 'tok-prueba'),
       ).rejects.toMatchObject({ response: { codigo: 'CU-006G' } });
 
       // Se sabe que no hubo cargo: la publicación vuelve al mercado ya, en vez
@@ -310,7 +310,7 @@ describe('CheckoutService', () => {
       const { servicio, seguimiento } = construir({ resultadoCobro: ResultadoCobro.RECHAZADO });
 
       await expect(
-        servicio.pagar(COMPRADOR, CHECKOUT, { metodoPago: 'TARJETA', token: 'tok_rechazo' }),
+        servicio.pagar(COMPRADOR, CHECKOUT, { metodoPago: 'TARJETA', token: 'tok_rechazo' }, 'tok-prueba'),
       ).rejects.toThrow();
 
       expect(seguimiento.update).not.toHaveBeenCalledWith(Entrada, expect.anything(), expect.anything());
@@ -323,7 +323,7 @@ describe('CheckoutService', () => {
       const { servicio, concurrencia } = construir({ resultadoCobro: ResultadoCobro.INDETERMINADO });
 
       await expect(
-        servicio.pagar(COMPRADOR, CHECKOUT, { metodoPago: 'TARJETA', token: 'tok_timeout' }),
+        servicio.pagar(COMPRADOR, CHECKOUT, { metodoPago: 'TARJETA', token: 'tok_timeout' }, 'tok-prueba'),
       ).rejects.toMatchObject({ response: { codigo: 'CU-006I', requiereConciliacion: true } });
 
       // Esta es la diferencia con CU-006G y la razón de que existan tres
@@ -336,7 +336,7 @@ describe('CheckoutService', () => {
       const { servicio, publicador } = construir({ resultadoCobro: ResultadoCobro.INDETERMINADO });
 
       await expect(
-        servicio.pagar(COMPRADOR, CHECKOUT, { metodoPago: 'TARJETA', token: 'tok_timeout' }),
+        servicio.pagar(COMPRADOR, CHECKOUT, { metodoPago: 'TARJETA', token: 'tok_timeout' }, 'tok-prueba'),
       ).rejects.toThrow();
 
       expect(publicador.publicarEntradaTransferida).not.toHaveBeenCalled();
@@ -350,7 +350,7 @@ describe('CheckoutService', () => {
       // Se responde como si no existiera: decir "existe pero no es tuyo"
       // confirmaría a un desconocido que ese identificador es real.
       await expect(
-        servicio.pagar('otro-comprador', CHECKOUT, { metodoPago: 'TARJETA', token: 'tok_ok' }),
+        servicio.pagar('otro-comprador', CHECKOUT, { metodoPago: 'TARJETA', token: 'tok_ok' }, 'tok-prueba'),
       ).rejects.toMatchObject({ response: { codigo: 'CHECKOUT_NO_ENCONTRADO' } });
       expect(pagos.cobrar).not.toHaveBeenCalled();
     });
@@ -364,7 +364,7 @@ describe('CheckoutService', () => {
         });
 
         await expect(
-          servicio.pagar(COMPRADOR, CHECKOUT, { metodoPago: 'TARJETA', token: 'tok_ok' }),
+          servicio.pagar(COMPRADOR, CHECKOUT, { metodoPago: 'TARJETA', token: 'tok_ok' }, 'tok-prueba'),
         ).rejects.toMatchObject({ response: { codigo: 'CHECKOUT_NO_VIGENTE' } });
         expect(pagos.cobrar).not.toHaveBeenCalled();
       },
@@ -377,7 +377,7 @@ describe('CheckoutService', () => {
       });
 
       await expect(
-        servicio.pagar(COMPRADOR, CHECKOUT, { metodoPago: 'TARJETA', token: 'tok_ok' }),
+        servicio.pagar(COMPRADOR, CHECKOUT, { metodoPago: 'TARJETA', token: 'tok_ok' }, 'tok-prueba'),
       ).rejects.toMatchObject({ response: { codigo: 'PUBLICACION_NO_ACTIVA' } });
       expect(pagos.cobrar).not.toHaveBeenCalled();
     });

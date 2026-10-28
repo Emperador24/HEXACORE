@@ -63,7 +63,12 @@ export class CancelacionService {
   }
 
   //  confirmar, reembolsar, anular, registrar y notificar
-  async cancelar(usuarioId: string, compraId: string, datos: CancelarCompraDto): Promise<CancelacionDto> {
+  async cancelar(
+    usuarioId: string,
+    compraId: string,
+    datos: CancelarCompraDto,
+    tokenSesion: string,
+  ): Promise<CancelacionDto> {
    const { evaluacion, cancelacion } = await this.fuenteDatos.transaction(async (tx) => {
       // Bloqueo de la compra: no pueden cotizar sobre las mismas entradas
       await tx.findOne(Compra, { where: { id: compraId }, lock: { mode: 'pessimistic_write' } });
@@ -107,7 +112,7 @@ export class CancelacionService {
       moneda: 'COP',
       motivo: datos.motivo,
       claveIdempotencia: cancelacion.id,
-    });
+    }, tokenSesion);
 
     if (reembolso.resultado === ResultadoCobro.RECHAZADO) {
       const motivo = reembolso.motivo ?? 'La pasarela rechazó el reembolso';

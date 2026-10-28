@@ -134,9 +134,12 @@ describe('CompraService — CU-001', () => {
       responder(gestor, new Map<unknown, unknown>([[Compra, compra()], [LocalidadEvento, localidad()], [EventoReferencia, evento()]]));
       pagos.cobrar.mockResolvedValue({ resultado: ResultadoCobro.APROBADO, referencia: 'pas_1', motivo: null });
 
-      const resultado = await servicio.pagar(ANA, 'compra-1', { metodoPago: 'TARJETA', token: 'tok_ok' });
+      const resultado = await servicio.pagar(ANA, 'compra-1', { metodoPago: 'TARJETA', token: 'tok_ok' }, 'tok-prueba');
 
-      expect(pagos.cobrar).toHaveBeenCalledWith(expect.objectContaining({ monto: 324000, token: 'tok_ok', claveIdempotencia: 'compra-1:0' }));
+      expect(pagos.cobrar).toHaveBeenCalledWith(
+        expect.objectContaining({ monto: 324000, token: 'tok_ok', claveIdempotencia: 'compra-1:0' }),
+        expect.any(String),
+      );
       expect(contadores.confirmarCupo).toHaveBeenCalledWith(gestor, 'loc-1', 2);
       expect(promociones.confirmarUso).toHaveBeenCalledWith(gestor, 'compra-1');
       expect(resultado.estado).toBe(EstadoCompra.PAGADA);
@@ -163,7 +166,7 @@ describe('CompraService — CU-001', () => {
         return Promise.resolve({ resultado: ResultadoCobro.RECHAZADO, referencia: null, motivo: 'no' });
       });
 
-      await expect(servicio.pagar(ANA, 'compra-1', { metodoPago: 'TARJETA', token: 't' })).rejects.toThrow();
+      await expect(servicio.pagar(ANA, 'compra-1', { metodoPago: 'TARJETA', token: 't' }, 'tok-prueba')).rejects.toThrow();
       expect(orden.slice(0, 2)).toEqual([`update:${EstadoCompra.PAGANDO}`, 'cobrar']);
     });
 
@@ -172,7 +175,7 @@ describe('CompraService — CU-001', () => {
       responder(gestor, new Map<unknown, unknown>([[Compra, compra()]]));
       pagos.cobrar.mockResolvedValue({ resultado: ResultadoCobro.RECHAZADO, referencia: null, motivo: 'Fondos insuficientes' });
 
-      await expect(servicio.pagar(ANA, 'compra-1', { metodoPago: 'TARJETA', token: 'tok_rechazo' })).rejects.toThrow(PagoCompraRechazado);
+      await expect(servicio.pagar(ANA, 'compra-1', { metodoPago: 'TARJETA', token: 'tok_rechazo' }, 'tok-prueba')).rejects.toThrow(PagoCompraRechazado);
       expect(gestor.update).toHaveBeenCalledWith(
         Compra,
         { id: 'compra-1', estado: EstadoCompra.PAGANDO },
@@ -185,7 +188,7 @@ describe('CompraService — CU-001', () => {
       responder(gestor, new Map<unknown, unknown>([[Compra, compra()]]));
       pagos.cobrar.mockResolvedValue({ resultado: ResultadoCobro.INDETERMINADO, referencia: null, motivo: 'timeout' });
 
-      await expect(servicio.pagar(ANA, 'compra-1', { metodoPago: 'TARJETA', token: 'tok_timeout' })).rejects.toThrow(PagoCompraIndeterminado);
+      await expect(servicio.pagar(ANA, 'compra-1', { metodoPago: 'TARJETA', token: 'tok_timeout' }, 'tok-prueba')).rejects.toThrow(PagoCompraIndeterminado);
       expect(qr.emitir).not.toHaveBeenCalled();
       expect(gestor.update).not.toHaveBeenCalledWith(Compra, expect.anything(), expect.objectContaining({ estado: EstadoCompra.PENDIENTE }));
     });
@@ -195,7 +198,7 @@ describe('CompraService — CU-001', () => {
       const vencida = compra({ expiraEn: new Date(Date.now() - 1000) });
       responder(gestor, new Map<unknown, unknown>([[Compra, vencida]]));
 
-      await expect(servicio.pagar(ANA, 'compra-1', { metodoPago: 'TARJETA', token: 't' })).rejects.toThrow(ReservaVencida);
+      await expect(servicio.pagar(ANA, 'compra-1', { metodoPago: 'TARJETA', token: 't' }, 'tok-prueba')).rejects.toThrow(ReservaVencida);
       expect(pagos.cobrar).not.toHaveBeenCalled();
       expect(contadores.liberarReserva).toHaveBeenCalledWith(gestor, 'loc-1', 2);
       expect(promociones.liberarUso).toHaveBeenCalledWith(gestor, vencida);
@@ -205,13 +208,13 @@ describe('CompraService — CU-001', () => {
       const { servicio, gestor, pagos } = construir();
       responder(gestor, new Map<unknown, unknown>([[Compra, compra({ estado })]]));
 
-      await expect(servicio.pagar(ANA, 'compra-1', { metodoPago: 'TARJETA', token: 't' })).rejects.toThrow(CompraNoPagable);
+      await expect(servicio.pagar(ANA, 'compra-1', { metodoPago: 'TARJETA', token: 't' }, 'tok-prueba')).rejects.toThrow(CompraNoPagable);
       expect(pagos.cobrar).not.toHaveBeenCalled();
     });
 
     it('una compra de otra persona no existe para quien paga', async () => {
       const { servicio } = construir();
-      await expect(servicio.pagar(ANA, 'ajena', { metodoPago: 'TARJETA', token: 't' })).rejects.toThrow(CompraNoEncontrada);
+      await expect(servicio.pagar(ANA, 'ajena', { metodoPago: 'TARJETA', token: 't' }, 'tok-prueba')).rejects.toThrow(CompraNoEncontrada);
     });
 
     it('CU-001D: si un QR choca con uno existente, alerta y reintenta con códigos nuevos', async () => {
@@ -221,7 +224,7 @@ describe('CompraService — CU-001', () => {
       const colision = new QueryFailedError('INSERT', [], Object.assign(new Error('duplicado'), { constraint: 'uq_entradas_codigo_qr' }));
       gestor.save.mockRejectedValueOnce(colision);
 
-      const resultado = await servicio.pagar(ANA, 'compra-1', { metodoPago: 'TARJETA', token: 'tok_ok' });
+      const resultado = await servicio.pagar(ANA, 'compra-1', { metodoPago: 'TARJETA', token: 'tok_ok' }, 'tok-prueba');
 
       expect(qr.emitir).toHaveBeenCalledTimes(2);
       expect(resultado.estado).toBe(EstadoCompra.PAGADA);
@@ -234,7 +237,7 @@ describe('CompraService — CU-001', () => {
       // Primer update: PENDIENTE → PAGANDO. Segundo: PAGANDO → PAGADA, que ya hizo la otra petición.
       gestor.update.mockResolvedValueOnce({ affected: 1 }).mockResolvedValueOnce({ affected: 0 });
 
-      await servicio.pagar(ANA, 'compra-1', { metodoPago: 'TARJETA', token: 'tok_ok' });
+      await servicio.pagar(ANA, 'compra-1', { metodoPago: 'TARJETA', token: 'tok_ok' }, 'tok-prueba');
 
       expect(qr.emitir).not.toHaveBeenCalled();
     });

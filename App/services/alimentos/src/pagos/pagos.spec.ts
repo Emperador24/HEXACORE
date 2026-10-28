@@ -11,7 +11,7 @@ import { Establecimiento } from '../persistencia/entidades/establecimiento.entit
 import { PublicadorPedidos } from './eventos/publicador-pedidos.service';
 import { CrearPagoDto } from './dto/crear-pago.dto';
 import { PagosService } from './pagos.service';
-import { PasarelaHttp } from './pasarela-http.service';
+import { ClientePagos } from './cliente-pagos.service';
 import { PagosController } from './pagos.controller';
 import { PagoDto } from './dto/pago.dto';
 import { GUARDS_METADATA, HTTP_CODE_METADATA, PIPES_METADATA, ROUTE_ARGS_METADATA } from '@nestjs/common/constants';
@@ -123,15 +123,17 @@ describe('PagosService (gestor transaccional simulado)', () => {
       return true;
     });
     servicio = new PagosService({ transaction, manager: { update: actualizarConsumo } } as unknown as DataSource,
-      { cobrar } as unknown as PasarelaHttp, { consumir } as unknown as ReservasService, { publicarPedidoConfirmado: publicar } as unknown as PublicadorPedidos);
+      { cobrar } as unknown as ClientePagos, { consumir } as unknown as ReservasService, { publicarPedidoConfirmado: publicar } as unknown as PublicadorPedidos);
   });
   afterEach(() => jest.restoreAllMocks());
   const errorCodigo = async (promesa: Promise<unknown>, codigo: string) => {
     await expect(promesa).rejects.toMatchObject({ response: { codigo } });
   };
   it('cobra el total guardado, confirma el pedido y consume el inventario reservado', async () => {
-    const resultado = await servicio.pagar(cliente, id, clave, 'tok_secreto');
-    expect(cobrar).toHaveBeenCalledWith(clave, '25000.00', 'COP', 'tok_secreto');
+    const resultado = await servicio.pagar(cliente, id, clave, 'tok_secreto', 'tok-sesion');
+    // El quinto argumento es el token de sesión, que se reenvía a Pagos para
+    // que la operación quede a nombre de quien la pidió.
+    expect(cobrar).toHaveBeenCalledWith(clave, '25000.00', 'COP', 'tok_secreto', expect.any(String));
     expect(resultado).toMatchObject({ estadoPago: Estado.APROBADA, estadoPedido: EstadoPedido.CONFIRMADO, compraConfirmada: true });
     expect(pedido).toMatchObject({ codigoQr: expect.stringMatching(/^[0-9a-f]{64}$/), confirmadoEn: expect.any(Date) });
     expect(productos[0].cantidadInventario).toBe(3);
@@ -155,7 +157,7 @@ describe('PagosService (gestor transaccional simulado)', () => {
       }
       return fila;
     });
-    const respuesta = await servicio.pagar(cliente, id, clave, 'tok_ok');
+    const respuesta = await servicio.pagar(cliente, id, clave, 'tok_ok', 'tok-sesion');
     expect(aleatorio).toHaveBeenCalledTimes(1);
     expect(aleatorio).toHaveBeenCalledWith(32);
     expect(respuesta.codigoQr).toBe(qrGuardado);
@@ -164,10 +166,10 @@ describe('PagosService (gestor transaccional simulado)', () => {
   });
   it('replays de aprobación conservan exactamente el QR sin generar ni guardar otro', async () => {
     const aleatorio = jest.spyOn(crypto, 'randomBytes');
-    const primera = await servicio.pagar(cliente, id, clave, 'tok_ok');
+    const primera = await servicio.pagar(cliente, id, clave, 'tok_ok', 'tok-sesion');
     const guardados = gestor.save.mock.calls.length;
     const [segunda, tercera] = await Promise.all([
-      servicio.pagar(cliente, id, clave, 'tok_ok'), servicio.pagar(cliente, id, clave, 'tok_ok'),
+      servicio.pagar(cliente, id, clave, 'tok_ok', 'tok-sesion'), servicio.pagar(cliente, id, clave, 'tok_ok', 'tok-sesion'),
     ]);
     expect(segunda.codigoQr).toBe(primera.codigoQr);
     expect(tercera.codigoQr).toBe(primera.codigoQr);
@@ -177,7 +179,7 @@ describe('PagosService (gestor transaccional simulado)', () => {
   it('rollback de la confirmación no persiste un QR ni confirma el pedido', async () => {
     const aleatorio = jest.spyOn(crypto, 'randomBytes');
     fallarCommitConfirmacion = true;
-    await expect(servicio.pagar(cliente, id, clave, 'tok_ok')).rejects.toThrow('falló commit de confirmación');
+    await expect(servicio.pagar(cliente, id, clave, 'tok_ok', 'tok-sesion')).rejects.toThrow('falló commit de confirmación');
     expect(aleatorio).toHaveBeenCalledTimes(1);
     expect(pedido.codigoQr).toBeNull();
     expect(pedido.estado).toBe(EstadoPedido.PENDIENTE_PAGO);
@@ -185,21 +187,21 @@ describe('PagosService (gestor transaccional simulado)', () => {
   it('pago rechazado no genera QR y responde codigoQr null', async () => {
     const aleatorio = jest.spyOn(crypto, 'randomBytes');
     cobrar.mockResolvedValue({ estado: Estado.RECHAZADA, referenciaPasarela: aprobado.referenciaPasarela, motivo: 'PAGO_RECHAZADO' });
-    expect((await servicio.pagar(cliente, id, clave, 'tok_rechazo')).codigoQr).toBeNull();
+    expect((await servicio.pagar(cliente, id, clave, 'tok_rechazo', 'tok-sesion')).codigoQr).toBeNull();
     expect(pedido.codigoQr).toBeNull();
     expect(aleatorio).not.toHaveBeenCalled();
   });
   it('el QR persiste aunque falle cerrar Redis y el replay conserva el mismo valor', async () => {
     const aleatorio = jest.spyOn(crypto, 'randomBytes');
     consumir.mockRejectedValueOnce(new Error('Redis no disponible'));
-    const primera = await servicio.pagar(cliente, id, clave, 'tok_ok');
+    const primera = await servicio.pagar(cliente, id, clave, 'tok_ok', 'tok-sesion');
     expect(primera.codigoQr).toMatch(/^[0-9a-f]{64}$/);
     expect(primera.codigoQr).toBe(pedido.codigoQr);
-    expect((await servicio.pagar(cliente, id, clave, 'tok_ok')).codigoQr).toBe(primera.codigoQr);
+    expect((await servicio.pagar(cliente, id, clave, 'tok_ok', 'tok-sesion')).codigoQr).toBe(primera.codigoQr);
     expect(aleatorio).toHaveBeenCalledTimes(1);
   });
   it('publica después del commit solo los datos necesarios y snapshots del pedido confirmado', async () => {
-    await servicio.pagar(cliente, id, clave, 'tok_secreto');
+    await servicio.pagar(cliente, id, clave, 'tok_secreto', 'tok-sesion');
     expect(publicar).toHaveBeenCalledTimes(1);
     expect(publicar).toHaveBeenCalledWith({
       pedidoId: id, establecimientoId, clienteId: cliente, total: '25000.00', moneda: 'COP',
@@ -212,33 +214,33 @@ describe('PagosService (gestor transaccional simulado)', () => {
   });
   it('no publica por un pago rechazado', async () => {
     cobrar.mockResolvedValue({ estado: Estado.RECHAZADA, referenciaPasarela: aprobado.referenciaPasarela, motivo: 'PAGO_RECHAZADO' });
-    await servicio.pagar(cliente, id, clave, 'tok_rechazo');
+    await servicio.pagar(cliente, id, clave, 'tok_rechazo', 'tok-sesion');
     expect(publicar).not.toHaveBeenCalled();
   });
   it('no publica si falla el commit PostgreSQL', async () => {
     fallarCommitConfirmacion = true;
-    await expect(servicio.pagar(cliente, id, clave, 'tok_ok')).rejects.toThrow('falló commit de confirmación');
+    await expect(servicio.pagar(cliente, id, clave, 'tok_ok', 'tok-sesion')).rejects.toThrow('falló commit de confirmación');
     expect(publicar).not.toHaveBeenCalled();
   });
   it('replays simultáneos no vuelven a publicar el pedido confirmado', async () => {
-    await servicio.pagar(cliente, id, clave, 'tok_ok');
-    await Promise.all([servicio.pagar(cliente, id, clave, 'tok_ok'), servicio.pagar(cliente, id, clave, 'tok_ok')]);
+    await servicio.pagar(cliente, id, clave, 'tok_ok', 'tok-sesion');
+    await Promise.all([servicio.pagar(cliente, id, clave, 'tok_ok', 'tok-sesion'), servicio.pagar(cliente, id, clave, 'tok_ok', 'tok-sesion')]);
     expect(publicar).toHaveBeenCalledTimes(1);
   });
   it.each(['sin confirmación del broker', 'excepción'])('un fallo RabbitMQ (%s) no revierte la compra ni se reenvía en replay', async (caso) => {
     if (caso === 'excepción') publicar.mockRejectedValue(new Error('broker no disponible'));
     else publicar.mockResolvedValue(false);
-    expect((await servicio.pagar(cliente, id, clave, 'tok_ok')).compraConfirmada).toBe(true);
+    expect((await servicio.pagar(cliente, id, clave, 'tok_ok', 'tok-sesion')).compraConfirmada).toBe(true);
     expect(pedido.estado).toBe(EstadoPedido.CONFIRMADO);
     expect(productos[0].cantidadInventario).toBe(3);
-    await servicio.pagar(cliente, id, clave, 'tok_ok');
+    await servicio.pagar(cliente, id, clave, 'tok_ok', 'tok-sesion');
     expect(publicar).toHaveBeenCalledTimes(1);
   });
   it('repite aprobación aun vencido sin cobrar y bloquea otra clave', async () => {
-    const primero = await servicio.pagar(cliente, id, clave, 'tok_ok');
+    const primero = await servicio.pagar(cliente, id, clave, 'tok_ok', 'tok-sesion');
     pedido.expiraEn = new Date(0);
-    expect(await servicio.pagar(cliente, id, clave, 'tok_otro')).toEqual(primero);
-    await errorCodigo(servicio.pagar(cliente, id, otraClave, 'tok_otro'), 'PEDIDO_YA_PAGADO');
+    expect(await servicio.pagar(cliente, id, clave, 'tok_otro', 'tok-sesion')).toEqual(primero);
+    await errorCodigo(servicio.pagar(cliente, id, otraClave, 'tok_otro', 'tok-sesion'), 'PEDIDO_YA_PAGADO');
     expect(cobrar).toHaveBeenCalledTimes(1);
     expect(gestor.decrement).toHaveBeenCalledTimes(1);
     expect(productos[0].cantidadInventario).toBe(3);
@@ -246,28 +248,28 @@ describe('PagosService (gestor transaccional simulado)', () => {
   });
   it('conserva rechazo y permite un nuevo intento mientras esté vigente', async () => {
     cobrar.mockResolvedValueOnce({ estado: Estado.RECHAZADA, referenciaPasarela: aprobado.referenciaPasarela, motivo: 'PAGO_RECHAZADO' });
-    await servicio.pagar(cliente, id, clave, 'tok_rechazo');
+    await servicio.pagar(cliente, id, clave, 'tok_rechazo', 'tok-sesion');
     expect(gestor.decrement).not.toHaveBeenCalled();
     expect(consumir).not.toHaveBeenCalled();
     expect(reserva?.estado).toBe(EstadoReserva.ACTIVA);
     expect(productos[0].cantidadInventario).toBe(5);
-    expect((await servicio.pagar(cliente, id, clave, 'tok_ok')).estadoPago).toBe(Estado.RECHAZADA);
-    await servicio.pagar(cliente, id, otraClave, 'tok_ok');
+    expect((await servicio.pagar(cliente, id, clave, 'tok_ok', 'tok-sesion')).estadoPago).toBe(Estado.RECHAZADA);
+    await servicio.pagar(cliente, id, otraClave, 'tok_ok', 'tok-sesion');
     expect(intentos.map((t) => t.estado)).toEqual([Estado.RECHAZADA, Estado.APROBADA]);
     expect(cobrar).toHaveBeenCalledTimes(2);
   });
   it.each(['PASARELA_TIMEOUT', 'PASARELA_ERROR_TECNICO'])('conserva %s y bloquea nuevos cobros incluso al expirar', async (motivo) => {
     cobrar.mockResolvedValue({ estado: Estado.FALLIDA, referenciaPasarela: null, motivo });
-    await servicio.pagar(cliente, id, clave, 'tok_ok');
+    await servicio.pagar(cliente, id, clave, 'tok_ok', 'tok-sesion');
     pedido.expiraEn = new Date(0);
-    expect((await servicio.pagar(cliente, id, clave, 'tok_ok')).estadoPago).toBe(Estado.FALLIDA);
-    await errorCodigo(servicio.pagar(cliente, id, otraClave, 'tok_ok'), 'PAGO_PENDIENTE_RESOLUCION');
+    expect((await servicio.pagar(cliente, id, clave, 'tok_ok', 'tok-sesion')).estadoPago).toBe(Estado.FALLIDA);
+    await errorCodigo(servicio.pagar(cliente, id, otraClave, 'tok_ok', 'tok-sesion'), 'PAGO_PENDIENTE_RESOLUCION');
     expect(cobrar).toHaveBeenCalledTimes(1);
     expect(pedido.estado).toBe(EstadoPedido.PENDIENTE_PAGO);
   });
   it('persiste expiración antes de responder el conflicto y no cobra', async () => {
     pedido.expiraEn = new Date(0);
-    await errorCodigo(servicio.pagar(cliente, id, clave, 'tok_ok'), 'CHECKOUT_EXPIRADO');
+    await errorCodigo(servicio.pagar(cliente, id, clave, 'tok_ok', 'tok-sesion'), 'CHECKOUT_EXPIRADO');
     expect(pedido.estado).toBe(EstadoPedido.EXPIRADO);
     expect(gestor.save).toHaveBeenCalledWith(Pedido, pedido);
     expect(cobrar).not.toHaveBeenCalled();
@@ -275,22 +277,22 @@ describe('PagosService (gestor transaccional simulado)', () => {
   });
   it.each([EstadoPedido.CONFIRMADO, EstadoPedido.CANCELADO, EstadoPedido.EXPIRADO])('no cobra pedido %s', async (estado) => {
     pedido.estado = estado;
-    await errorCodigo(servicio.pagar(cliente, id, clave, 'tok_ok'), 'ESTADO_PEDIDO_NO_PERMITE_PAGO');
+    await errorCodigo(servicio.pagar(cliente, id, clave, 'tok_ok', 'tok-sesion'), 'ESTADO_PEDIDO_NO_PERMITE_PAGO');
     expect(cobrar).not.toHaveBeenCalled();
   });
   it('oculta pedido ajeno antes de consultar intentos', async () => {
-    await errorCodigo(servicio.pagar('otro-cliente', id, clave, 'tok_ok'), 'PEDIDO_NO_ENCONTRADO');
+    await errorCodigo(servicio.pagar('otro-cliente', id, clave, 'tok_ok', 'tok-sesion'), 'PEDIDO_NO_ENCONTRADO');
     expect(gestor.findOne).toHaveBeenCalledTimes(1);
     expect(cobrar).not.toHaveBeenCalled();
   });
   it('rechaza una clave de otro pedido', async () => {
     intentos.push({ id: clave, pedidoId: 'otro-pedido' } as TransaccionPedido);
-    await errorCodigo(servicio.pagar(cliente, id, clave, 'tok_ok'), 'CLAVE_IDEMPOTENCIA_INCOMPATIBLE');
+    await errorCodigo(servicio.pagar(cliente, id, clave, 'tok_ok', 'tok-sesion'), 'CLAVE_IDEMPOTENCIA_INCOMPATIBLE');
     expect(cobrar).not.toHaveBeenCalled();
   });
   it('la colisión simultánea de PK no dispara el cobro', async () => {
     gestor.insert.mockRejectedValue({ driverError: { code: '23505' } });
-    await errorCodigo(servicio.pagar(cliente, id, clave, 'tok_ok'), 'CLAVE_IDEMPOTENCIA_INCOMPATIBLE');
+    await errorCodigo(servicio.pagar(cliente, id, clave, 'tok_ok', 'tok-sesion'), 'CLAVE_IDEMPOTENCIA_INCOMPATIBLE');
     expect(cobrar).not.toHaveBeenCalled();
   });
   it('coordina llamadas concurrentes durante el HTTP y conserva aprobación tardía', async () => {
@@ -298,10 +300,10 @@ describe('PagosService (gestor transaccional simulado)', () => {
     let avisar!: () => void;
     const iniciada = new Promise<void>((resolve) => { avisar = resolve; });
     cobrar.mockImplementation(() => { expect(dentro).toBe(false); avisar(); return new Promise((resolve) => { terminar = resolve; }); });
-    const primera = servicio.pagar(cliente, id, clave, 'tok_ok');
+    const primera = servicio.pagar(cliente, id, clave, 'tok_ok', 'tok-sesion');
     await iniciada;
-    expect((await servicio.pagar(cliente, id, clave, 'tok_ok')).estadoPago).toBe(Estado.PENDIENTE);
-    await errorCodigo(servicio.pagar(cliente, id, otraClave, 'tok_ok'), 'PAGO_PENDIENTE_RESOLUCION');
+    expect((await servicio.pagar(cliente, id, clave, 'tok_ok', 'tok-sesion')).estadoPago).toBe(Estado.PENDIENTE);
+    await errorCodigo(servicio.pagar(cliente, id, otraClave, 'tok_ok', 'tok-sesion'), 'PAGO_PENDIENTE_RESOLUCION');
     pedido.expiraEn = new Date(0);
     terminar(aprobado);
     expect((await primera).estadoPago).toBe(Estado.APROBADA);
@@ -310,18 +312,18 @@ describe('PagosService (gestor transaccional simulado)', () => {
   });
   it('expira tras rechazo tardío', async () => {
     cobrar.mockImplementation(async () => { pedido.expiraEn = new Date(0); return { estado: Estado.RECHAZADA, referenciaPasarela: aprobado.referenciaPasarela, motivo: 'PAGO_RECHAZADO' }; });
-    expect((await servicio.pagar(cliente, id, clave, 'tok_ok')).estadoPedido).toBe(EstadoPedido.EXPIRADO);
+    expect((await servicio.pagar(cliente, id, clave, 'tok_ok', 'tok-sesion')).estadoPedido).toBe(EstadoPedido.EXPIRADO);
   });
   it('una caída al guardar el resultado impide otro cobro', async () => {
     gestor.save.mockImplementation(async () => { intentos[0].estado = Estado.PENDIENTE; throw new Error('DB no disponible'); });
-    await expect(servicio.pagar(cliente, id, clave, 'tok_ok')).rejects.toThrow('DB no disponible');
-    await errorCodigo(servicio.pagar(cliente, id, otraClave, 'tok_ok'), 'PAGO_PENDIENTE_RESOLUCION');
+    await expect(servicio.pagar(cliente, id, clave, 'tok_ok', 'tok-sesion')).rejects.toThrow('DB no disponible');
+    await errorCodigo(servicio.pagar(cliente, id, otraClave, 'tok_ok', 'tok-sesion'), 'PAGO_PENDIENTE_RESOLUCION');
     expect(cobrar).toHaveBeenCalledTimes(1);
   });
   it.each([null, EstadoReserva.PREPARANDO, EstadoReserva.LIBERACION_PENDIENTE, EstadoReserva.LIBERADA, EstadoReserva.CONSUMO_PENDIENTE, EstadoReserva.CONSUMIDA])('no cobra sin reserva ACTIVA (%s)', async (estado) => {
     if (estado === null) reserva = null;
     else reserva!.estado = estado;
-    await errorCodigo(servicio.pagar(cliente, id, clave, 'tok_ok'), 'RESERVA_NO_ACTIVA');
+    await errorCodigo(servicio.pagar(cliente, id, clave, 'tok_ok', 'tok-sesion'), 'RESERVA_NO_ACTIVA');
     expect(cobrar).not.toHaveBeenCalled();
     expect(intentos).toHaveLength(0);
     expect(gestor.decrement).not.toHaveBeenCalled();
@@ -330,7 +332,7 @@ describe('PagosService (gestor transaccional simulado)', () => {
   it('descuenta varios productos dentro de la misma confirmación', async () => {
     detalles.push({ pedidoId: id, productoId: productoDosId, cantidad: 3 } as DetallePedido);
     productos.push({ id: productoDosId, establecimientoId, cantidadInventario: 3 } as Producto);
-    await servicio.pagar(cliente, id, clave, 'tok_ok');
+    await servicio.pagar(cliente, id, clave, 'tok_ok', 'tok-sesion');
     expect(productos.map((p) => p.cantidadInventario)).toEqual([3, 0]);
     expect(gestor.decrement).toHaveBeenCalledTimes(2);
     expect(pedido.estado).toBe(EstadoPedido.CONFIRMADO);
@@ -338,7 +340,7 @@ describe('PagosService (gestor transaccional simulado)', () => {
   it('stock insuficiente en el segundo producto revierte el primer descuento, sin inventario negativo', async () => {
     detalles.push({ pedidoId: id, productoId: productoDosId, cantidad: 3 } as DetallePedido);
     productos.push({ id: productoDosId, establecimientoId, cantidadInventario: 2 } as Producto);
-    await errorCodigo(servicio.pagar(cliente, id, clave, 'tok_ok'), 'INVENTARIO_INSUFICIENTE_CONFIRMACION');
+    await errorCodigo(servicio.pagar(cliente, id, clave, 'tok_ok', 'tok-sesion'), 'INVENTARIO_INSUFICIENTE_CONFIRMACION');
     expect(gestor.decrement).toHaveBeenCalledTimes(2);
     expect(productos.map((p) => p.cantidadInventario)).toEqual([5, 2]);
     expect(pedido).toMatchObject({ estado: EstadoPedido.PENDIENTE_PAGO, confirmadoEn: null });
@@ -351,7 +353,7 @@ describe('PagosService (gestor transaccional simulado)', () => {
       if (tipo === ReservaInventario) throw new Error('fallo SQL');
       return datos;
     });
-    await expect(servicio.pagar(cliente, id, clave, 'tok_ok')).rejects.toThrow('fallo SQL');
+    await expect(servicio.pagar(cliente, id, clave, 'tok_ok', 'tok-sesion')).rejects.toThrow('fallo SQL');
     expect(productos[0].cantidadInventario).toBe(5);
     expect(pedido.estado).toBe(EstadoPedido.PENDIENTE_PAGO);
     expect(reserva?.estado).toBe(EstadoReserva.ACTIVA);
@@ -360,24 +362,24 @@ describe('PagosService (gestor transaccional simulado)', () => {
   });
   it('si falla el commit de confirmación no consume Redis; un replay puede completar sin recobrar', async () => {
     fallarCommitConfirmacion = true;
-    await expect(servicio.pagar(cliente, id, clave, 'tok_ok')).rejects.toThrow('falló commit de confirmación');
+    await expect(servicio.pagar(cliente, id, clave, 'tok_ok', 'tok-sesion')).rejects.toThrow('falló commit de confirmación');
     expect(consumir).not.toHaveBeenCalled();
     expect(intentos[0].estado).toBe(Estado.APROBADA);
     expect(productos[0].cantidadInventario).toBe(5);
     fallarCommitConfirmacion = false;
-    expect((await servicio.pagar(cliente, id, clave, 'tok_ok')).compraConfirmada).toBe(true);
+    expect((await servicio.pagar(cliente, id, clave, 'tok_ok', 'tok-sesion')).compraConfirmada).toBe(true);
     expect(cobrar).toHaveBeenCalledTimes(1);
     expect(productos[0].cantidadInventario).toBe(3);
   });
   it('fallo Redis deja CONSUMO_PENDIENTE y compra confirmada; replay solo reintenta el cierre', async () => {
     consumir.mockRejectedValueOnce(new Error('Redis no disponible'));
-    expect((await servicio.pagar(cliente, id, clave, 'tok_ok')).compraConfirmada).toBe(true);
+    expect((await servicio.pagar(cliente, id, clave, 'tok_ok', 'tok-sesion')).compraConfirmada).toBe(true);
     expect(reserva?.estado).toBe(EstadoReserva.CONSUMO_PENDIENTE);
     expect(pedido.estado).toBe(EstadoPedido.CONFIRMADO);
     expect(productos[0].cantidadInventario).toBe(3);
     expect(actualizarConsumo).not.toHaveBeenCalled();
     expect(Logger.prototype.error).toHaveBeenCalledWith(expect.stringContaining('CONSUMO_REDIS_PENDIENTE'));
-    await servicio.pagar(cliente, id, clave, 'tok_ok');
+    await servicio.pagar(cliente, id, clave, 'tok_ok', 'tok-sesion');
     expect(reserva?.estado).toBe(EstadoReserva.CONSUMIDA);
     expect(gestor.decrement).toHaveBeenCalledTimes(1);
     expect(cobrar).toHaveBeenCalledTimes(1);
@@ -385,16 +387,16 @@ describe('PagosService (gestor transaccional simulado)', () => {
   });
   it('fallo al guardar CONSUMIDA no desconfirma ni vuelve a sumar inventario', async () => {
     actualizarConsumo.mockRejectedValueOnce(new Error('DB no disponible'));
-    expect((await servicio.pagar(cliente, id, clave, 'tok_ok')).compraConfirmada).toBe(true);
+    expect((await servicio.pagar(cliente, id, clave, 'tok_ok', 'tok-sesion')).compraConfirmada).toBe(true);
     expect(reserva?.estado).toBe(EstadoReserva.CONSUMO_PENDIENTE);
     expect(productos[0].cantidadInventario).toBe(3);
-    await servicio.pagar(cliente, id, clave, 'tok_ok');
+    await servicio.pagar(cliente, id, clave, 'tok_ok', 'tok-sesion');
     expect(reserva?.estado).toBe(EstadoReserva.CONSUMIDA);
     expect(gestor.decrement).toHaveBeenCalledTimes(1);
   });
   it('vuelve a validar la reserva después del cobro, preservando la aprobación si dejó de estar activa', async () => {
     cobrar.mockImplementation(async () => { reserva!.estado = EstadoReserva.LIBERADA; return aprobado; });
-    await errorCodigo(servicio.pagar(cliente, id, clave, 'tok_ok'), 'PEDIDO_NO_CONFIRMABLE');
+    await errorCodigo(servicio.pagar(cliente, id, clave, 'tok_ok', 'tok-sesion'), 'PEDIDO_NO_CONFIRMABLE');
     expect(intentos[0].estado).toBe(Estado.APROBADA);
     expect(gestor.decrement).not.toHaveBeenCalled();
     expect(consumir).not.toHaveBeenCalled();
@@ -407,14 +409,14 @@ describe('PagosService (gestor transaccional simulado)', () => {
       if (caso === 'pedido cancelado') pedido.estado = EstadoPedido.CANCELADO;
       return aprobado;
     });
-    await expect(servicio.pagar(cliente, id, clave, 'tok_ok')).rejects.toMatchObject({ status: 409 });
+    await expect(servicio.pagar(cliente, id, clave, 'tok_ok', 'tok-sesion')).rejects.toMatchObject({ status: 409 });
     expect(intentos[0].estado).toBe(Estado.APROBADA);
     expect(gestor.decrement).not.toHaveBeenCalled();
     expect(consumir).not.toHaveBeenCalled();
   });
   it('un cierre Redis inesperado no marca la reserva como CONSUMIDA', async () => {
     consumir.mockResolvedValue({ estado: 'LIBERADA' });
-    expect((await servicio.pagar(cliente, id, clave, 'tok_ok')).compraConfirmada).toBe(true);
+    expect((await servicio.pagar(cliente, id, clave, 'tok_ok', 'tok-sesion')).compraConfirmada).toBe(true);
     expect(reserva?.estado).toBe(EstadoReserva.CONSUMO_PENDIENTE);
     expect(actualizarConsumo).not.toHaveBeenCalled();
     expect(productos[0].cantidadInventario).toBe(3);
@@ -423,7 +425,7 @@ describe('PagosService (gestor transaccional simulado)', () => {
     intentos.push({ id: clave, pedidoId: id, estado: Estado.APROBADA, monto: pedido.total, moneda: pedido.moneda } as TransaccionPedido);
     // El cierre Redis es idempotente; dos peticiones pueden observar CONSUMO_PENDIENTE.
     consumir.mockResolvedValue({ estado: 'CONSUMIDA' });
-    await Promise.all([servicio.pagar(cliente, id, clave, 'tok_ok'), servicio.pagar(cliente, id, clave, 'tok_ok')]);
+    await Promise.all([servicio.pagar(cliente, id, clave, 'tok_ok', 'tok-sesion'), servicio.pagar(cliente, id, clave, 'tok_ok', 'tok-sesion')]);
     expect(gestor.decrement).toHaveBeenCalledTimes(1);
     expect(productos[0].cantidadInventario).toBe(3);
     expect(cobrar).not.toHaveBeenCalled();
@@ -452,17 +454,17 @@ describe('PagosController', () => {
   it.each([[Estado.PENDIENTE, 'PAGO_PENDIENTE', 202], [Estado.FALLIDA, 'PASARELA_TIMEOUT', 504], [Estado.FALLIDA, 'PAGO_INCIERTO', 502]])('responde con código HTTP apropiado', async (estadoPago, codigo, status) => {
     const pagar = jest.fn().mockResolvedValue({ estadoPago, codigo });
     const controller = new PagosController({ pagar } as unknown as PagosService);
-    await expect(controller.pagar(cliente, id, clave, { tokenPago: 'tok_ok' })).rejects.toMatchObject({ status });
+    await expect(controller.pagar(cliente, id, clave, { tokenPago: 'tok_ok' }, 'tok-sesion')).rejects.toMatchObject({ status });
   });
   it('pasa la identidad y no recibe cliente en el DTO', async () => {
     const resultado = { estadoPago: Estado.APROBADA } as PagoDto;
     const pagar = jest.fn().mockResolvedValue(resultado);
-    expect(await new PagosController({ pagar } as unknown as PagosService).pagar(cliente, id, clave, { tokenPago: 'tok_ok' })).toBe(resultado);
-    expect(pagar).toHaveBeenCalledWith(cliente, id, clave, 'tok_ok');
+    expect(await new PagosController({ pagar } as unknown as PagosService).pagar(cliente, id, clave, { tokenPago: 'tok_ok' }, 'tok-sesion')).toBe(resultado);
+    expect(pagar).toHaveBeenCalledWith(cliente, id, clave, 'tok_ok', expect.any(String));
   });
   it.each([undefined, 'no-uuid'])('rechaza clave ausente o inválida', async (key) => {
     const pagar = jest.fn();
-    await expect(new PagosController({ pagar } as unknown as PagosService).pagar(cliente, id, key as string, { tokenPago: 'tok_ok' })).rejects.toBeInstanceOf(HttpException);
+    await expect(new PagosController({ pagar } as unknown as PagosService).pagar(cliente, id, key as string, { tokenPago: 'tok_ok' }, 'tok-sesion')).rejects.toBeInstanceOf(HttpException);
     expect(pagar).not.toHaveBeenCalled();
   });
 });

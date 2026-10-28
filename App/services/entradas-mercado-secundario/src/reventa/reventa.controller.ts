@@ -14,6 +14,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiForbiddenResponse, ApiOperation, ApiResponse, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
 import { RolesPermitidos, SesionValida } from '../comun/autenticacion/sesion-valida.guard';
+import { TokenSesion } from '../comun/token-sesion.decorator';
 import { UsuarioActual } from '../comun/usuario-actual.decorator';
 import { CheckoutService } from './checkout.service';
 import { ExpiracionService, ResultadoExpiracion } from './expiracion.service';
@@ -168,10 +169,11 @@ export class ReventaController {
   @ApiResponse({ status: 503, description: 'CU-006I no hubo respuesta de la pasarela; requiere conciliación' })
   pagar(
     @UsuarioActual() usuarioId: string,
+    @TokenSesion() tokenSesion: string,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() datos: PagarDto,
   ): Promise<ResultadoCompraDto> {
-    return this.checkout.pagar(usuarioId, id, datos);
+    return this.checkout.pagar(usuarioId, id, datos, tokenSesion);
   }
 
   @Delete('checkout/:id')

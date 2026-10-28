@@ -116,7 +116,12 @@ export class CompraService {
    * alguien podria haber pagado por entradas que ya son de otro
    * Solucion: pagando saca la compra del alcance del barrido.
    */
-  async pagar(compradorId: string, compraId: string, pago: PagarDto): Promise<CompraDto> {
+  async pagar(
+    compradorId: string,
+    compraId: string,
+    pago: PagarDto,
+    tokenSesion: string,
+  ): Promise<CompraDto> {
     const { compra, vencida } = await this.fuenteDatos.transaction(async (tx) => {
       const actual = await tx.findOne(Compra, {
         where: { id: compraId, compradorId },
@@ -143,7 +148,7 @@ export class CompraService {
       token: pago.token,
       descripcion: `Compra ${compra.numeroCompra} (${compra.cantidad} entradas)`,
       claveIdempotencia: `${compra.id}:${compra.intentosRechazados}`,
-    });
+    }, tokenSesion);
 
     if (cobro.resultado === ResultadoCobro.RECHAZADO) {
       // CU-001C: la reserva sigue viva y se puede reintentar

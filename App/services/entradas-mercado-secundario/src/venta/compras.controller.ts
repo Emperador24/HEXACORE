@@ -8,6 +8,7 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { RolesPermitidos, SesionValida } from '../comun/autenticacion/sesion-valida.guard';
+import { TokenSesion } from '../comun/token-sesion.decorator';
 import { UsuarioActual } from '../comun/usuario-actual.decorator';
 import { PagarDto } from '../reventa/dto/pagar.dto';
 import { CancelacionService } from './cancelacion.service';
@@ -89,10 +90,11 @@ export class ComprasController {
   @ApiResponse({ status: 503, description: 'La pasarela no respondió; reintentar es seguro' })
   pagar(
     @UsuarioActual() usuarioId: string,
+    @TokenSesion() tokenSesion: string,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() pago: PagarDto,
   ): Promise<CompraDto> {
-    return this.compras.pagar(usuarioId, id, pago);
+    return this.compras.pagar(usuarioId, id, pago, tokenSesion);
   }
 
   @Put(':id/cupon')
@@ -149,9 +151,10 @@ export class ComprasController {
   @ApiResponse({ status: 503, description: 'La pasarela no respondió; requiere conciliación' })
   cancelar(
     @UsuarioActual() usuarioId: string,
+    @TokenSesion() tokenSesion: string,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() datos: CancelarCompraDto,
   ): Promise<CancelacionDto> {
-    return this.cancelaciones.cancelar(usuarioId, id, datos);
+    return this.cancelaciones.cancelar(usuarioId, id, datos, tokenSesion);
   }
 }

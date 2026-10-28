@@ -12,7 +12,7 @@ import { aPagoDto, PagoDto } from './dto/pago.dto';
 import { Establecimiento } from '../persistencia/entidades/establecimiento.entity';
 import { PedidoConfirmado } from './eventos/pedido-confirmado.evento';
 import { PublicadorPedidos } from './eventos/publicador-pedidos.service';
-import { PasarelaHttp } from './pasarela-http.service';
+import { ClientePagos } from './cliente-pagos.service';
 
 type Preparacion = { pedido: Pedido; intento: TransaccionPedido; cobrar: boolean } | { expirado: true };
 
@@ -22,12 +22,18 @@ export class PagosService {
 
   constructor(
     @InjectDataSource() private readonly datos: DataSource,
-    private readonly pasarela: PasarelaHttp,
+    private readonly pasarela: ClientePagos,
     private readonly reservas: ReservasService,
     private readonly publicador: PublicadorPedidos,
   ) {}
 
-  async pagar(clienteId: string, pedidoId: string, clave: string, tokenPago: string): Promise<PagoDto> {
+  async pagar(
+    clienteId: string,
+    pedidoId: string,
+    clave: string,
+    tokenPago: string,
+    tokenSesion: string,
+  ): Promise<PagoDto> {
     pedidoId = pedidoId.toLowerCase();
     clave = clave.toLowerCase();
     let preparacion: Preparacion;
@@ -85,7 +91,13 @@ export class PagosService {
     }
 
     // Sin conexión transaccional ni bloqueo de PostgreSQL durante el HTTP externo.
-    const resultado = await this.pasarela.cobrar(clave, preparacion.intento.monto, preparacion.intento.moneda, tokenPago);
+    const resultado = await this.pasarela.cobrar(
+      clave,
+      preparacion.intento.monto,
+      preparacion.intento.moneda,
+      tokenPago,
+      tokenSesion,
+    );
     // Guardar primero la evidencia del cobro: un fallo del descuento no debe borrar la aprobación.
     const respuesta = await this.datos.transaction(async (gestor) => {
       const pedido = await gestor.findOneOrFail(Pedido, { where: { id: pedidoId }, lock: { mode: 'pessimistic_write' } });

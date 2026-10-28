@@ -1,6 +1,7 @@
 import { Body, Controller, Headers, HttpCode, HttpException, HttpStatus, Param, ParseUUIDPipe, Post, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
 import { ApiBearerAuth, ApiHeader, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { RolesPermitidos, SesionValida } from '../comun/autenticacion/sesion-valida.guard';
+import { TokenSesion } from '../comun/token-sesion.decorator';
 import { UsuarioActual } from '../comun/usuario-actual.decorator';
 import { EstadoTransaccionPedido } from '../persistencia/entidades/transaccion-pedido.entity';
 import { CrearPagoDto } from './dto/crear-pago.dto';
@@ -30,9 +31,10 @@ export class PagosController {
     @Param('pedidoId', new ParseUUIDPipe()) pedidoId: string,
     @Headers('idempotency-key') clave: string,
     @Body() entrada: CrearPagoDto,
+    @TokenSesion() tokenSesion: string,
   ): Promise<PagoDto> {
     await new ParseUUIDPipe().transform(clave, { type: 'custom' });
-    const resultado = await this.pagos.pagar(clienteId, pedidoId, clave, entrada.tokenPago);
+    const resultado = await this.pagos.pagar(clienteId, pedidoId, clave, entrada.tokenPago, tokenSesion);
     if (resultado.estadoPago === EstadoTransaccionPedido.PENDIENTE) throw new HttpException(resultado, HttpStatus.ACCEPTED);
     if (resultado.estadoPago === EstadoTransaccionPedido.FALLIDA) {
       throw new HttpException(resultado, resultado.codigo === 'PASARELA_TIMEOUT' ? HttpStatus.GATEWAY_TIMEOUT : HttpStatus.BAD_GATEWAY);

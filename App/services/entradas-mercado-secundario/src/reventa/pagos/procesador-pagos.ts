@@ -72,12 +72,19 @@ export interface SolicitudReembolso {
 }
 
 export interface ProcesadorPagos {
-  cobrar(solicitud: SolicitudCobro): Promise<RespuestaCobro>;
+  /**
+   * `tokenSesion` es el token del usuario, tal como llegó, para reenviarlo.
+   *
+   * Va como parámetro y no dentro de `SolicitudCobro` a propósito: es
+   * transporte, no dominio. Desde ADR-14 el implementador llama al
+   * microservicio de Pagos, que autentica como cualquier otra ruta (RNF-06).
+   */
+  cobrar(solicitud: SolicitudCobro, tokenSesion: string): Promise<RespuestaCobro>;
   /**
    * Los tres resultados significan lo mismo que al cobrar: APROBADO se
    * devolvió, RECHAZADO con certeza no, INDETERMINADO no se sabe.
    */
-  reembolsar(solicitud: SolicitudReembolso): Promise<RespuestaCobro>;
+  reembolsar(solicitud: SolicitudReembolso, tokenSesion: string): Promise<RespuestaCobro>;
 }
 
 /** Clave de inyección del Procesador de Pagos. */

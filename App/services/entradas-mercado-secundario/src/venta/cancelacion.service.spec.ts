@@ -147,11 +147,15 @@ describe('CancelacionService — CU-003', () => {
     it('anula primero, reembolsa con clave idempotente, devuelve el cupo y notifica', async () => {
       const { servicio, gestor, pagos, contadores, notificaciones } = construir();
 
-      const resultado = await servicio.cancelar(ANA, 'compra-1', datos(140000, ['e1', 'e2']));
+      const resultado = await servicio.cancelar(ANA, 'compra-1', datos(140000, ['e1', 'e2']), 'tok-prueba');
 
       expect(gestor.update.mock.calls[0][0]).toBe(Entrada);
       expect(gestor.update.mock.calls[0][2]).toEqual({ estado: EstadoEntrada.ANULADA });
-      expect(pagos.reembolsar).toHaveBeenCalledWith(expect.objectContaining({ referenciaCobro: 'pas_1', monto: 140000 }));
+      expect(pagos.reembolsar).toHaveBeenCalledWith(
+        expect.objectContaining({ referenciaCobro: 'pas_1', monto: 140000 }),
+        // El token del usuario se reenvía a Pagos: la operación va a su nombre.
+        expect.any(String),
+      );
       expect(contadores.devolverVendidas).toHaveBeenCalledWith(gestor, 'loc-1', 2);
       expect(resultado).toMatchObject({ estado: EstadoCancelacion.APROBADA, referenciaReembolso: 'ree_1' });
       expect(notificaciones.publicar).toHaveBeenCalledWith(expect.objectContaining({ tipo: 'COMPRA_CANCELADA', monto: 140000 }));
@@ -160,19 +164,19 @@ describe('CancelacionService — CU-003', () => {
     it('deja la compra PARCIALMENTE_CANCELADA si quedan entradas activas, CANCELADA si no', async () => {
       const parcial = construir();
       parcial.gestor.count.mockResolvedValue(1);
-      await parcial.servicio.cancelar(ANA, 'compra-1', datos(70000, ['e1']));
+      await parcial.servicio.cancelar(ANA, 'compra-1', datos(70000, ['e1']), 'tok-prueba');
       expect(parcial.gestor.update).toHaveBeenCalledWith(Compra, { id: 'compra-1' }, { estado: EstadoCompra.PARCIALMENTE_CANCELADA });
 
       const total = construir();
       total.gestor.count.mockResolvedValue(0);
-      await total.servicio.cancelar(ANA, 'compra-1', datos(210000));
+      await total.servicio.cancelar(ANA, 'compra-1', datos(210000), 'tok-prueba');
       expect(total.gestor.update).toHaveBeenCalledWith(Compra, { id: 'compra-1' }, { estado: EstadoCompra.CANCELADA });
     });
 
     it('paso 5: si el monto cambió desde la cotización, no toca nada', async () => {
       const { servicio, pagos } = construir();
 
-      await expect(servicio.cancelar(ANA, 'compra-1', datos(1))).rejects.toThrow(MontoCambio);
+      await expect(servicio.cancelar(ANA, 'compra-1', datos(1), 'tok-prueba')).rejects.toThrow(MontoCambio);
       expect(pagos.reembolsar).not.toHaveBeenCalled();
     });
 
@@ -180,7 +184,7 @@ describe('CancelacionService — CU-003', () => {
       const { servicio, gestor, pagos } = construir();
       gestor.update.mockResolvedValueOnce({ affected: 1 }); // pidió 3, solo 1 seguía VALIDA
 
-      await expect(servicio.cancelar(ANA, 'compra-1', datos(210000))).rejects.toThrow(CompraNoCancelable);
+      await expect(servicio.cancelar(ANA, 'compra-1', datos(210000), 'tok-prueba')).rejects.toThrow(CompraNoCancelable);
       expect(pagos.reembolsar).not.toHaveBeenCalled();
     });
 
@@ -188,7 +192,7 @@ describe('CancelacionService — CU-003', () => {
       const { servicio, gestor, pagos, contadores } = construir();
       pagos.reembolsar.mockResolvedValue({ resultado: ResultadoCobro.RECHAZADO, referencia: null, motivo: 'No admite reembolsos' });
 
-      await expect(servicio.cancelar(ANA, 'compra-1', datos(210000))).rejects.toThrow(ReembolsoRechazado);
+      await expect(servicio.cancelar(ANA, 'compra-1', datos(210000), 'tok-prueba')).rejects.toThrow(ReembolsoRechazado);
       expect(gestor.update).toHaveBeenCalledWith(Entrada, expect.objectContaining({ estado: EstadoEntrada.ANULADA }), { estado: EstadoEntrada.VALIDA });
       expect(gestor.update).toHaveBeenCalledWith(Cancelacion, expect.anything(), expect.objectContaining({ estado: EstadoCancelacion.RECHAZADA }));
       expect(contadores.devolverVendidas).not.toHaveBeenCalled();
@@ -198,7 +202,7 @@ describe('CancelacionService — CU-003', () => {
       const { servicio, gestor, pagos } = construir();
       pagos.reembolsar.mockResolvedValue({ resultado: ResultadoCobro.INDETERMINADO, referencia: null, motivo: 'timeout' });
 
-      await expect(servicio.cancelar(ANA, 'compra-1', datos(210000))).rejects.toThrow(ReembolsoIndeterminado);
+      await expect(servicio.cancelar(ANA, 'compra-1', datos(210000), 'tok-prueba')).rejects.toThrow(ReembolsoIndeterminado);
       expect(gestor.update).toHaveBeenCalledWith(Cancelacion, expect.anything(), expect.objectContaining({ estado: EstadoCancelacion.FALLIDA }));
       expect(gestor.update).not.toHaveBeenCalledWith(Entrada, expect.anything(), { estado: EstadoEntrada.VALIDA });
     });

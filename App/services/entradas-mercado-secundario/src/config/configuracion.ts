@@ -60,10 +60,13 @@ export interface ConfiguracionServicio {
   rabbitmq: {
     url: string;
   };
-  pasarelaPagos: {
-    /** URL del adaptador HTTP al proveedor de pagos. Es el único punto que cambia al sustituir de proveedor (RNF-16). */
+  /**
+   * Microservicio de Pagos (ADR-14). Este servicio ya no habla con la pasarela:
+   * la conoce solo Pagos, que es lo que quitó la copia duplicada del adaptador.
+   */
+  pagos: {
     url: string;
-    /** Corta la espera ante una pasarela lenta o caída — camino de excepción CU-006I (riesgo #3 del SAD §13). */
+    /** Corta la espera ante Pagos lento o caído — camino de excepción CU-006I. */
     timeoutMs: number;
   };
   reventa: ReglasReventa;
@@ -156,14 +159,20 @@ export function cargarConfiguracion(): ConfiguracionServicio {
     );
   }
 
-  // Un bloqueo que caduque antes de que la pasarela responda dejaría la
+  // Un bloqueo que caduque antes de que el cobro responda dejaría la
   // publicación libre con un cobro en vuelo: exactamente la doble venta que
   // ASR-01 debe impedir.
-  const timeoutPasarelaMs = entero('PASARELA_TIMEOUT_MS', 10_000);
-  if (reventa.bloqueoTtlSegundos * 1000 <= timeoutPasarelaMs) {
+  //
+  // Desde ADR-14 el cobro va por el microservicio de Pagos, así que el tiempo
+  // que hay que cubrir es el de **esa** llamada, no el de la pasarela. Ponlo
+  // por encima del PASARELA_TIMEOUT_MS de Pagos: si Pagos espera 10 s a la
+  // pasarela, esperar menos que eso aquí cortaría la llamada justo cuando
+  // Pagos todavía puede resolverla.
+  const timeoutPagosMs = entero('PAGOS_TIMEOUT_MS', 12_000);
+  if (reventa.bloqueoTtlSegundos * 1000 <= timeoutPagosMs) {
     throw new Error(
       `REVENTA_BLOQUEO_TTL_SEGUNDOS (${reventa.bloqueoTtlSegundos}s) debe superar ` +
-        `PASARELA_TIMEOUT_MS (${timeoutPasarelaMs}ms), o el bloqueo caducaría con el cobro en vuelo`,
+        `PAGOS_TIMEOUT_MS (${timeoutPagosMs}ms), o el bloqueo caducaría con el cobro en vuelo`,
     );
   }
 
@@ -177,9 +186,9 @@ export function cargarConfiguracion(): ConfiguracionServicio {
   // Una reserva que caduque antes de que la pasarela pueda responder dejaría el
   // cupo libre con el cobro en vuelo. Mismo razonamiento que el del bloqueo de
   // la reventa, aunque aquí `PAGANDO` ya lo protege del barrido.
-  if (venta.reservaMinutos * 60_000 <= timeoutPasarelaMs) {
+  if (venta.reservaMinutos * 60_000 <= timeoutPagosMs) {
     throw new Error(
-      `COMPRA_RESERVA_MINUTOS (${venta.reservaMinutos}) debe superar PASARELA_TIMEOUT_MS (${timeoutPasarelaMs}ms)`,
+      `COMPRA_RESERVA_MINUTOS (${venta.reservaMinutos}) debe superar PAGOS_TIMEOUT_MS (${timeoutPagosMs}ms)`,
     );
   }
   if (venta.cancelacionParcialHoras < 0 || venta.cancelacionParcialHoras > venta.cancelacionTotalDias * 24) {
@@ -214,9 +223,9 @@ export function cargarConfiguracion(): ConfiguracionServicio {
     rabbitmq: {
       url: texto('RABBITMQ_URL', 'amqp://hexacore:hexacore@localhost:5672'),
     },
-    pasarelaPagos: {
-      url: texto('PASARELA_URL', 'http://localhost:3099'),
-      timeoutMs: timeoutPasarelaMs,
+    pagos: {
+      url: texto('PAGOS_URL', 'http://localhost:3008/api/v1'),
+      timeoutMs: timeoutPagosMs,
     },
     reventa,
     venta,

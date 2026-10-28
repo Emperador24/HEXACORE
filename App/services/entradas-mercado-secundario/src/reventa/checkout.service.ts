@@ -172,7 +172,12 @@ export class CheckoutService {
    *    o cambian el dueño, el QR, la publicación y el historial, o no cambia
    *    nada. No hay estados intermedios que reparar.
    */
-  async pagar(compradorId: string, checkoutId: string, datos: PagarDto): Promise<ResultadoCompraDto> {
+  async pagar(
+    compradorId: string,
+    checkoutId: string,
+    datos: PagarDto,
+    tokenSesion: string,
+  ): Promise<ResultadoCompraDto> {
     const gestor = this.fuenteDatos.manager;
     const transaccion = await this.cargarTransaccionDelComprador(gestor, compradorId, checkoutId);
     await this.exigirVigente(transaccion.id, transaccion.publicacionId, transaccion.estado);
@@ -204,7 +209,7 @@ export class CheckoutService {
       token: datos.token,
       descripcion: `Reventa ${contexto.evento.nombre} · ${contexto.entrada.localidadNombre}`,
       claveIdempotencia: transaccion.id,
-    });
+    }, tokenSesion);
 
     if (cobro.resultado === ResultadoCobro.RECHAZADO) {
       // CU-006G. Se sabe que no hubo cargo, así que la publicación vuelve al

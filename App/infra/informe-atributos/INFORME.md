@@ -1,6 +1,6 @@
 # HEXACORE — Resultados cuantitativos de los atributos de calidad
 
-Medido el 2026-10-28 10:06 contra el sistema desplegado, a través del API Gateway
+Medido el 2026-10-28 15:07 contra el sistema desplegado, a través del API Gateway
 (ADR-02), que es por donde entra el tráfico real.
 
 Generado por `App/infra/atributos-calidad.py`. Cada fila se puede volver a
@@ -9,13 +9,13 @@ de cada suite está en los `.log` de esta misma carpeta.
 
 | Atributo | RNF | Medición | Resultado | Referencia |
 |---|---|---|---|---|
-| **Desempeño** | RNF-07, RNF-08 | Peor p95 bajo carga | **184.6 ms con 200 peticiones simultáneas** | umbral 500 ms |
-|  |  | Capacidad máxima | **1116.7 peticiones por segundo** | — |
+| **Desempeño** | RNF-07, RNF-08 | Peor p95 bajo carga | **219.5 ms con 200 peticiones simultáneas** | umbral 500 ms |
+|  |  | Capacidad máxima | **991.4 peticiones por segundo** | — |
 |  |  | Peticiones fallidas | **0** | exigido 0 |
-| **Disponibilidad** | RNF-03, RNF-04 | Recuperación tras kill -9 | **1.6 s** | exigido ≤ 30 s |
-|  |  | Login con Redis caído | **200 en    92 ms** | debe seguir sirviendo |
-|  |  | Login con RabbitMQ caído | **200 en    88 ms** | debe seguir sirviendo |
-|  |  | Login con PostgreSQL caído | **503 en  3015 ms** | 503 honesto, no 200 falso |
+| **Disponibilidad** | RNF-03, RNF-04 | Recuperación tras kill -9 | **1.3 s** | exigido ≤ 30 s |
+|  |  | Login con Redis caído | **200 en    97 ms** | debe seguir sirviendo |
+|  |  | Login con RabbitMQ caído | **200 en    94 ms** | debe seguir sirviendo |
+|  |  | Login con PostgreSQL caído | **503 en  3032 ms** | 503 honesto, no 200 falso |
 | **Seguridad** | RNF-05, RNF-06 | Rutas de negocio abiertas | **11 de 11 rutas de negocio responden 401 sin token (0 % abiertas)** | exigido 0 % |
 |  |  | Intentos de entrar rechazados | **8 con 401** | sin token, firma ajena, alg none, HS256, caducado, otro emisor, manipulado |
 |  |  | Revocación al cerrar sesión | **inmediata** | el token deja de valer en todo el sistema |
@@ -30,7 +30,7 @@ de cada suite está en los `.log` de esta misma carpeta.
 
 Consulta de catálogo durante la apertura de venta.
 
-Suite: `entradas-mercado-secundario/pruebas/rnf07-desempeno.py` · salida completa en `rnf07-desempeno.log` · duración 5 s
+Suite: `entradas-mercado-secundario/pruebas/rnf07-desempeno.py` · salida completa en `rnf07-desempeno.log` · duración 6 s
 
 ### Disponibilidad (RNF-03, RNF-04)
 

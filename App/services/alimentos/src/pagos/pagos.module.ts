@@ -12,7 +12,7 @@ import {
 import { PublicadorPedidos } from './eventos/publicador-pedidos.service';
 import { PagosController } from './pagos.controller';
 import { PagosService } from './pagos.service';
-import { PasarelaHttp } from './pasarela-http.service';
+import { ClientePagos } from './cliente-pagos.service';
 
 /**
  * Pago del pedido (CU-012) y publicación del hecho `pedido.confirmado`.
@@ -23,7 +23,7 @@ import { PasarelaHttp } from './pasarela-http.service';
 @Module({
   imports: [PersistenciaModule, AutenticacionModule, InventarioModule],
   controllers: [PagosController],
-  providers: [PagosService, PasarelaHttp, PublicadorPedidos],
+  providers: [PagosService, ClientePagos, PublicadorPedidos],
 })
 export class PagosModule implements OnModuleInit {
   constructor(private readonly conexion: ConexionRabbitMq) {}

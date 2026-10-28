@@ -17,3 +17,7 @@ CREATE DATABASE administracion              OWNER hexacore;
 -- Fase A de ADR-14: el Catalogo sale de entradas_mercado_secundario con su
 -- propia base. Solo contiene la proyeccion de eventos que lee la cartelera.
 CREATE DATABASE catalogo                    OWNER hexacore;
+
+-- Fase A de ADR-14: Pagos sale con su propia base. Solo guarda el libro de
+-- idempotencia: ni pedidos ni compras, que son de quien llama.
+CREATE DATABASE pagos                       OWNER hexacore;

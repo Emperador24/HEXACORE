@@ -139,7 +139,7 @@ case "$ROL" in
     gris "  Levantando los servicios de dominio y el API Gateway"
     "${COMPOSE[@]}" --profile servicios up -d $CONSTRUIR \
       --scale entradas-mercado-secundario="$REPLICAS" \
-      autenticacion entradas-mercado-secundario catalogo notificaciones alimentos eventos-emergencias \
+      autenticacion entradas-mercado-secundario catalogo notificaciones alimentos pagos eventos-emergencias \
       api-gateway portal-web-cliente portal-web-admin
     ;;
   todo)
@@ -177,7 +177,7 @@ contenedor_de() {
 if [[ "$ROL" != "datos" ]]; then
   titulo "Esperando a que los servicios respondan"
   for servicio in autenticacion eventos-emergencias entradas-mercado-secundario catalogo \
-                  notificaciones alimentos \
+                  notificaciones alimentos pagos \
                   api-gateway portal-web-cliente portal-web-admin; do
     id="$(contenedor_de "$servicio")"
     if [[ -n "$id" ]] && esperar_sano "$id"; then
@@ -366,6 +366,7 @@ if [[ "$DEMO" == "si" && "$ROL" != "datos" ]]; then
     # su propia base, que es la separación de datos que ADR-12 conserva.
     migrar autenticacion || true
     migrar alimentos || true
+    migrar pagos || true
     migrar entradas-mercado-secundario || true
     migrar catalogo || true
     migrar eventos-emergencias || true

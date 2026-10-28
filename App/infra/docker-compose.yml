@@ -209,7 +209,6 @@ services:
       POSTGRES_MAX_CONEXIONES: "10"
       POSTGRES_ESPERA_MAXIMA_MS: "3000"
       CORREO_PROVEEDOR_URL: http://${HOST_CORREO:-correo}:${PUERTO_CORREO:-3098}
-      PAGOS_PROVEEDOR_URL: http://${HOST_PASARELA:-pasarela}:${PUERTO_PASARELA:-3099}
       PASARELA_TIMEOUT_MS: "10000"
     volumes:
       - ./claves-desarrollo/jwt-privada.pem:/claves/jwt-privada.pem:ro
@@ -245,7 +244,7 @@ services:
       pasarela: { condition: service_healthy }
     environment:
       <<: *entorno-comun
-      PASARELA_URL: http://${HOST_PASARELA:-pasarela}:${PUERTO_PASARELA:-3099}
+      PAGOS_URL: http://pagos:3008/api/v1
     volumes:
       - ./claves-desarrollo/jwt-publica.pem:/claves/jwt-publica.pem:ro
     # En una máquina limpia, el primer arranque incluye inicializar PostgreSQL
@@ -260,6 +259,33 @@ services:
       retries: 10
     ports:
       - "3001:3001"
+
+  # Microservicio de Pagos — el único que habla con la pasarela. Fase A de ADR-14.
+  pagos:
+    profiles: ["servicios"]
+    build: ../services/pagos
+    # Sin `container_name`: ADR-14 le pone tres réplicas con autoescalado.
+    restart: unless-stopped
+    init: true
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      pasarela: { condition: service_healthy }
+    environment:
+      <<: *entorno-comun
+      PUERTO: "3008"
+      POSTGRES_BASE: pagos
+      PAGOS_PROVEEDOR_URL: http://${HOST_PASARELA:-pasarela}:${PUERTO_PASARELA:-3099}
+    volumes:
+      - ./claves-desarrollo/jwt-publica.pem:/claves/jwt-publica.pem:ro
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3008/api/v1/salud',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      start_period: 90s
+      retries: 10
+    # No se publica puerto al host: es un servicio interno, no lo llama ningún
+    # cliente. Se alcanza por la red de compose desde Entradas y Alimentos.
 
   # Servicio de dominio de Alimentos — CU-011 a CU-015. Fase A de ADR-14.
   alimentos:
@@ -277,7 +303,7 @@ services:
     environment:
       <<: *entorno-comun
       PUERTO: "3007"
-      PAGOS_PROVEEDOR_URL: http://${HOST_PASARELA:-pasarela}:${PUERTO_PASARELA:-3099}
+      PAGOS_URL: http://pagos:3008/api/v1
     volumes:
       - ./claves-desarrollo/jwt-publica.pem:/claves/jwt-publica.pem:ro
     healthcheck:

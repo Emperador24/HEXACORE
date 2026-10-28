@@ -10,7 +10,7 @@ import { ConexionRabbitMq } from './eventos/conexion-rabbitmq.service';
 import { ConsumidorLiquidaciones } from './eventos/consumidor-liquidaciones.service';
 import { ConsumidorNotificaciones } from './eventos/consumidor-notificaciones.service';
 import { PublicadorEventos } from './eventos/publicador-eventos.service';
-import { PasarelaHttp } from './pagos/pasarela-http.service';
+import { ClientePagos } from './pagos/cliente-pagos.service';
 import { PROCESADOR_PAGOS } from './pagos/procesador-pagos';
 import { GeneradorQr } from './qr/generador-qr.service';
 import { ExpiracionService } from './expiracion.service';
@@ -49,7 +49,7 @@ import { ReventaController } from './reventa.controller';
     // El dominio depende de la interfaz, no de este adaptador concreto:
     // cambiar de proveedor de pagos es cambiar esta línea y escribir otra
     // implementación (RNF-16: "componentes a modificar: 1").
-    { provide: PROCESADOR_PAGOS, useClass: PasarelaHttp },
+    { provide: PROCESADOR_PAGOS, useClass: ClientePagos },
     ConexionRabbitMq,
     PublicadorEventos,
     // Los consumidores viven en este mismo servicio porque notificar y

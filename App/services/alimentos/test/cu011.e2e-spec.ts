@@ -8,22 +8,22 @@ import { JwtService } from '@nestjs/jwt';
 import { Channel, ChannelModel, connect, ConsumeMessage } from 'amqplib';
 import Redis from 'ioredis';
 import { DataSource, In } from 'typeorm';
-import { PedidosModule } from '../src/modulos/pedidos/pedidos.module';
+import { PedidosModule } from '../src/pedidos.module';
 import { cargarConfiguracion } from '../src/comun/config/configuracion';
-import { opcionesDataSource } from '../src/modulos/pedidos/persistencia/data-source';
-import { EventoReferencia } from '../src/modulos/pedidos/persistencia/entidades/evento-referencia.entity';
-import { Establecimiento, EstadoEstablecimiento } from '../src/modulos/pedidos/persistencia/entidades/establecimiento.entity';
-import { Producto } from '../src/modulos/pedidos/persistencia/entidades/producto.entity';
-import { Pedido } from '../src/modulos/pedidos/persistencia/entidades/pedido.entity';
-import { DetallePedido } from '../src/modulos/pedidos/persistencia/entidades/detalle-pedido.entity';
-import { ReservaInventario } from '../src/modulos/pedidos/persistencia/entidades/reserva-inventario.entity';
-import { TransaccionPedido } from '../src/modulos/pedidos/persistencia/entidades/transaccion-pedido.entity';
-import { PreparacionInventarioService } from '../src/modulos/pedidos/inventario/preparacion-inventario.service';
-import { clavesReserva } from '../src/modulos/pedidos/inventario/reservas.service';
-import { REDIS_INVENTARIO } from '../src/modulos/pedidos/inventario/redis-inventario.provider';
+import { opcionesDataSource } from '../src/persistencia/data-source';
+import { EventoReferencia } from '../src/persistencia/entidades/evento-referencia.entity';
+import { Establecimiento, EstadoEstablecimiento } from '../src/persistencia/entidades/establecimiento.entity';
+import { Producto } from '../src/persistencia/entidades/producto.entity';
+import { Pedido } from '../src/persistencia/entidades/pedido.entity';
+import { DetallePedido } from '../src/persistencia/entidades/detalle-pedido.entity';
+import { ReservaInventario } from '../src/persistencia/entidades/reserva-inventario.entity';
+import { TransaccionPedido } from '../src/persistencia/entidades/transaccion-pedido.entity';
+import { PreparacionInventarioService } from '../src/inventario/preparacion-inventario.service';
+import { clavesReserva } from '../src/inventario/reservas.service';
+import { REDIS_INVENTARIO } from '../src/inventario/redis-inventario.provider';
 import { REDIS } from '../src/comun/redis/redis.module';
 import { ConexionRabbitMq } from '../src/comun/rabbitmq/conexion-rabbitmq.service';
-import { CLAVE_PEDIDO_CONFIRMADO, EVENTO_PEDIDO_CONFIRMADO, EXCHANGE_PEDIDOS } from '../src/modulos/pedidos/pagos/eventos/pedido-confirmado.evento';
+import { CLAVE_PEDIDO_CONFIRMADO, EVENTO_PEDIDO_CONFIRMADO, EXCHANGE_PEDIDOS } from '../src/pagos/eventos/pedido-confirmado.evento';
 
 const pausa = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 async function esperar(condicion: () => Promise<boolean> | boolean): Promise<void> {
@@ -59,7 +59,7 @@ describe('CU-011 HTTP + PostgreSQL + Redis + RabbitMQ reales', () => {
 
   beforeAll(async () => {
     const config = cargarConfiguracion();
-    expect(config.postgres.bases.pedidos).toBe('pedidos_e2e');
+    expect(config.postgres.base).toBe('pedidos_e2e');
     datos = new DataSource(opcionesDataSource(config));
     await datos.initialize();
     await datos.runMigrations();

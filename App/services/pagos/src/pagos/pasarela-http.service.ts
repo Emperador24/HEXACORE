@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { CONFIGURACION, ConfiguracionServicio } from '../../config/configuracion';
+import { CONFIGURACION, ConfiguracionServicio } from '../comun/config/configuracion';
 import { ProcesadorPagos, RespuestaCobro, ResultadoCobro, SolicitudCobro, SolicitudReembolso } from './procesador-pagos';
 
 /** Forma de la respuesta de la pasarela. */
