@@ -261,6 +261,31 @@ services:
     ports:
       - "3001:3001"
 
+  # Microservicio de Notificaciones — envío asíncrono de correos. Fase A de ADR-14.
+  notificaciones:
+    profiles: ["servicios"]
+    build: ../services/notificaciones
+    # Sin `container_name`: ADR-14 lo escala por longitud de cola.
+    restart: unless-stopped
+    init: true
+    # Sin PostgreSQL: su estado es la cola. Necesita el broker, de donde toma
+    # el trabajo, y el proveedor de correo, que es a quien se lo entrega.
+    depends_on:
+      rabbitmq: { condition: service_healthy }
+      correo: { condition: service_healthy }
+    environment:
+      <<: *entorno-comun
+      PUERTO: "3006"
+      CORREO_PROVEEDOR_URL: http://${HOST_CORREO:-correo}:${PUERTO_CORREO:-3098}
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3006/api/v1/salud',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      start_period: 60s
+      retries: 10
+    ports:
+      - "3006:3006"
+
   # Microservicio de Catálogo — CU-005 (cartelera pública). Fase A de ADR-14.
   catalogo:
     profiles: ["servicios"]

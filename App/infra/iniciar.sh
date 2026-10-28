@@ -139,7 +139,7 @@ case "$ROL" in
     gris "  Levantando los servicios de dominio y el API Gateway"
     "${COMPOSE[@]}" --profile servicios up -d $CONSTRUIR \
       --scale entradas-mercado-secundario="$REPLICAS" \
-      nucleo entradas-mercado-secundario catalogo eventos-emergencias \
+      nucleo entradas-mercado-secundario catalogo notificaciones eventos-emergencias \
       api-gateway portal-web-cliente portal-web-admin
     ;;
   todo)
@@ -177,6 +177,7 @@ contenedor_de() {
 if [[ "$ROL" != "datos" ]]; then
   titulo "Esperando a que los servicios respondan"
   for servicio in nucleo eventos-emergencias entradas-mercado-secundario catalogo \
+                  notificaciones \
                   api-gateway portal-web-cliente portal-web-admin; do
     id="$(contenedor_de "$servicio")"
     if [[ -n "$id" ]] && esperar_sano "$id"; then

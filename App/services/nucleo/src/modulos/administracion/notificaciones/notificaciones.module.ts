@@ -1,7 +1,6 @@
 import { Module, OnModuleInit } from '@nestjs/common';
 import { ConfirmChannel } from 'amqplib';
 import { ConexionRabbitMq } from '../../../comun/rabbitmq/conexion-rabbitmq.service';
-import { ConsumidorCorreos } from './consumidor-correos.service';
 import { PublicadorCorreos } from './publicador-correos.service';
 import {
   CLAVE_CORREO_PENDIENTE,
@@ -15,13 +14,16 @@ import {
  * Envío asíncrono de correos (CU-027: *"cola de mensajes para el envío
  * asíncrono de correos de verificación/recuperación"*).
  *
- * La conexión al broker la pone el Núcleo (`comun/rabbitmq`): aquí solo se
- * registra **esta** topología, separada de la de Pedidos. Comparten broker y
- * nada más: si la cola de correos se atasca, los eventos de pedido siguen
- * saliendo.
+ * Aquí vive **solo el publicador**. El consumidor salió al microservicio
+ * `notificaciones` en la fase A de ADR-14: lo que este servicio sabe hacer es
+ * anunciar que hay un correo por enviar, no enviarlo.
+ *
+ * La topología se sigue declarando desde los dos lados. `assertExchange` y
+ * `assertQueue` con los mismos parámetros son idempotentes, así que no chocan,
+ * y permiten que cualquiera de los dos arranque sin esperar al otro (RNF-18).
  */
 @Module({
-  providers: [PublicadorCorreos, ConsumidorCorreos],
+  providers: [PublicadorCorreos],
   exports: [PublicadorCorreos],
 })
 export class NotificacionesModule implements OnModuleInit {
