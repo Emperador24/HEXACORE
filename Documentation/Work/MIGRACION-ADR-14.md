@@ -16,9 +16,9 @@ Las rutas de este documento se verificaron contra el repositorio el 24 oct 2026.
 | **Catálogo** | CU-005 | ✅ `services/catalogo/` — despliegue propio y base propia | Cambiar PostgreSQL por índice de búsqueda (fase D) |
 | **Ventas** | CU-001, CU-004 | `entradas-mercado-secundario/src/venta/` | Sacarlo; ya tiene reserva atómica en Redis |
 | **Pagos** | pagos de CU-001/003/006/011/021 | **duplicado**: `nucleo/src/modulos/pedidos/pagos/` y `entradas-mercado-secundario/src/reventa/pagos/` | Unificar las dos copias en un servicio. Las llaves de idempotencia ya existen en ambas |
-| **Autenticación** | CU-027, CU-028 | `nucleo/src/modulos/administracion/` | **Sacarlo del Núcleo** — revierte ADR-12 |
+| **Autenticación** | CU-027, CU-028 | ✅ `services/autenticacion/` — despliegue y base propios | Nada estructural |
 | **Acceso QR** | CU-002 | `entradas-mercado-secundario/src/venta/ingreso.service.ts` y `ingresos.controller.ts` | Sacarlo; añadir caché de estado y modo sin red |
-| **Notificaciones** | transversal | `nucleo/src/modulos/administracion/notificaciones/` | Sacarlo; hoy solo manda correo, falta push y prioridad alta |
+| **Notificaciones** | transversal | ✅ `services/notificaciones/` — sin base: su estado es la cola | Falta push y prioridad alta |
 
 ### Los siete servicios de dominio
 
@@ -26,7 +26,7 @@ Las rutas de este documento se verificaron contra el repositorio el 24 oct 2026.
 |---|---|---|---|
 | **Eventos y recintos** | CU-026, CU-029 | CU-026 parcial en `entradas-mercado-secundario` | CU-029 entero; publicar eventos hacia Catálogo y Ventas |
 | **Postventa** | CU-003, CU-006 | `entradas-mercado-secundario/src/reventa/` | Separarlo de Ventas; CU-003 entero |
-| **Alimentos** | CU-011–015 | `nucleo/src/modulos/pedidos/` | **Sacarlo del Núcleo**; CU-013, 014 y 015 enteros |
+| **Alimentos** | CU-011–015 | ✅ `services/alimentos/` — despliegue y base propios | CU-013, 014 y 015 enteros |
 | **Parqueaderos** | CU-021–025 | solo `nucleo/src/modulos/parqueaderos/README.md` | Todo |
 | **Personal y logística** | CU-007–009, 016–018, 030 | `eventos-emergencias/src/logistica/` (CU-017, 018) | CU-007, 008, 009, 016 y 030 |
 | **Operación del evento** | CU-010, 019, 020 | CU-019 en `eventos-emergencias` | CU-010 y CU-020 |
@@ -34,10 +34,10 @@ Las rutas de este documento se verificaron contra el repositorio el 24 oct 2026.
 
 ### Resumen
 
-- **14 unidades desplegables** frente a las 4 de hoy (Catálogo ya salió).
+- **14 unidades desplegables** frente a las **6 de hoy**: Autenticación, Notificaciones, Alimentos, Catálogo, Entradas y Eventos/Emergencias.
 - **6 servicios desde cero**: Cola virtual, Pagos, Notificaciones, Parqueaderos, Finanzas, Eventos y recintos.
 - **2 servicios se parten**: `entradas-mercado-secundario` en cuatro, `eventos-emergencias` en dos.
-- **1 servicio se deshace**: el Núcleo, en Autenticación (microservicio) y Alimentos (dominio).
+- ~~**1 servicio se deshace**: el Núcleo~~ — ✅ hecho: quedó en Autenticación (microservicio), Notificaciones (microservicio) y Alimentos (dominio).
 - **14 de 32 CU siguen sin backend.**
 
 ## La evidencia que ya está en el código
@@ -107,16 +107,22 @@ medido una vez.
   esté funcionando y se pueda reutilizar el patrón en vez de inventarlo tres
   veces.
 
-### Fase B — Deshacer el Núcleo
+### Fase B — Deshacer el Núcleo ✅ hecha
 
-De 6 a 7. Autenticación sale como microservicio con base y Redis propios;
-Alimentos queda como servicio de dominio.
+De 4 a 6 deployables. El Núcleo se repartió en tres:
 
-Revierte lo de ADR-12. La buena noticia: el trabajo de ayer dejó los dos
-dominios como módulos separados con conexión nombrada propia
-(`src/modulos/administracion/` y `src/modulos/pedidos/`), así que separarlos es
-deshacer el `app.module.ts` y duplicar la configuración — mucho más fácil que
-antes de la fusión.
+- **Notificaciones** → microservicio. Era el corte más limpio del proyecto: la
+  costura ya existía y nadie la había visto. Autenticación nunca llamó a
+  Notificaciones, publicaba al broker; separarlos fue quedarse cada uno con su
+  mitad. No tiene base de datos: su estado es la cola.
+- **Alimentos** → servicio de dominio. No cumple dos criterios —carga estable,
+  ningún otro dominio lo usa—, así que dos réplicas fijas.
+- **Autenticación** → lo que quedó, renombrado.
+
+Dos cosas se simplificaron solas al separar, y las dos venían de compartir
+proceso: las **conexiones nombradas** de ADR-12 desaparecen (con una sola base
+el mecanismo sobra) y Alimentos pasa a cargar **solo la clave pública**, porque
+ya no convive con quien firma.
 
 ### Fase C — Extraer Pagos y Notificaciones
 
