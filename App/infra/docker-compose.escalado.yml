@@ -15,15 +15,20 @@
 # Eventos / Emergencias ya no publica puerto en el compose base, así que se
 # replica sin necesidad de este archivo (ADR-12: es el segundo satélite).
 #
-# ⚠️ El Núcleo admite `--scale nucleo=2` **solo cuando** la caducidad de
+# ⚠️ Alimentos admite `--scale alimentos=2` **solo cuando** la caducidad de
 # reservas de inventario esté protegida con un candado en Redis: hoy es un
 # temporizador, y dos instancias caducarían las mismas reservas. Está anotado
 # en ADR-12 como consecuencia conocida y es la tarjeta 21 del tablero.
+#
+# Autenticación sí se replica sin más: no tiene trabajos programados.
 #
 # Para volver a lo de siempre, basta con levantar sin este archivo.
 services:
   entradas-mercado-secundario:
     ports: !reset []
 
-  nucleo:
+  autenticacion:
+    ports: !reset []
+
+  alimentos:
     ports: !reset []

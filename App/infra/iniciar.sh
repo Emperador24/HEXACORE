@@ -139,7 +139,7 @@ case "$ROL" in
     gris "  Levantando los servicios de dominio y el API Gateway"
     "${COMPOSE[@]}" --profile servicios up -d $CONSTRUIR \
       --scale entradas-mercado-secundario="$REPLICAS" \
-      nucleo entradas-mercado-secundario catalogo notificaciones alimentos eventos-emergencias \
+      autenticacion entradas-mercado-secundario catalogo notificaciones alimentos eventos-emergencias \
       api-gateway portal-web-cliente portal-web-admin
     ;;
   todo)
@@ -176,7 +176,7 @@ contenedor_de() {
 
 if [[ "$ROL" != "datos" ]]; then
   titulo "Esperando a que los servicios respondan"
-  for servicio in nucleo eventos-emergencias entradas-mercado-secundario catalogo \
+  for servicio in autenticacion eventos-emergencias entradas-mercado-secundario catalogo \
                   notificaciones alimentos \
                   api-gateway portal-web-cliente portal-web-admin; do
     id="$(contenedor_de "$servicio")"
@@ -226,7 +226,7 @@ migrar() {
 # que es lo correcto en producción; aquí eso no es un error, solo significa que
 # ya estaba hecho.
 preparar_inventario_pedidos() {
-  local carpeta="$RAIZ/App/services/nucleo"
+  local carpeta="$RAIZ/App/services/autenticacion"
   [[ -d "$carpeta/node_modules" ]] || return 0
 
   local establecimientos
@@ -352,7 +352,7 @@ if [[ "$DEMO" == "si" && "$ROL" != "datos" ]]; then
   if [[ "$metodo" == "auto" ]]; then
     # Con Node se usan las semillas, que son la fuente de verdad. Sin Node
     # —una máquina que solo tiene Docker— se cargan los volcados.
-    if command -v npm >/dev/null 2>&1 && [[ -d "$RAIZ/App/services/nucleo/node_modules" ]]; then
+    if command -v npm >/dev/null 2>&1 && [[ -d "$RAIZ/App/services/autenticacion/node_modules" ]]; then
       metodo="npm"
     else
       metodo="sql"
@@ -364,14 +364,14 @@ if [[ "$DEMO" == "si" && "$ROL" != "datos" ]]; then
     gris "  Aplicando migraciones"
     # El Núcleo tiene una secuencia de migraciones por módulo: cada uno contra
     # su propia base, que es la separación de datos que ADR-12 conserva.
-    migrar nucleo || true
+    migrar autenticacion || true
     migrar alimentos || true
     migrar entradas-mercado-secundario || true
     migrar catalogo || true
     migrar eventos-emergencias || true
 
     gris "  Sembrando datos"
-    sembrar nucleo
+    sembrar autenticacion
     sembrar entradas-mercado-secundario
     # La misma proyección de eventos, en la base propia del Catálogo. Mientras
     # no exista Eventos y recintos que la publique por el broker, hay que

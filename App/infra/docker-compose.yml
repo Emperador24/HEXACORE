@@ -136,7 +136,7 @@ services:
   # proceso muere, Docker lo levanta de nuevo sin intervención. Lo que Docker
   # Compose NO hace es reiniciar un contenedor que sigue vivo pero `unhealthy`
   # (colgado); eso es trabajo de la sonda de vida de Kubernetes en producción
-  # (SAD §11). Ver services/nucleo/DECISIONES.md §18.
+  # (SAD §11). Ver services/autenticacion/DECISIONES.md §18.
   #
   # NODE_ENV=development porque usan las claves JWT de desarrollo, que en
   # producción se rechazan a propósito.
@@ -150,7 +150,7 @@ services:
     container_name: hexacore-gateway
     restart: unless-stopped
     depends_on:
-      nucleo: { condition: service_healthy }
+      autenticacion: { condition: service_healthy }
       entradas-mercado-secundario: { condition: service_healthy }
       eventos-emergencias: { condition: service_healthy }
     volumes:
@@ -166,11 +166,11 @@ services:
   # Núcleo — servicio de dominio que agrupa Administración y Pedidos (ADR-12).
   # Antes eran dos contenedores; ahora es uno con dos módulos, cada uno contra
   # su propia base. Sin `container_name`: es lo que permitirá replicarlo
-  # (`--scale nucleo=2`) cuando el temporizador de reservas esté protegido con
+  # (`--scale autenticacion=2`) cuando el temporizador de reservas esté protegido con
   # un candado en Redis.
-  nucleo:
+  autenticacion:
     profiles: ["servicios"]
-    build: ../services/nucleo
+    build: ../services/autenticacion
     restart: unless-stopped
     # Un init mínimo como PID 1: reenvía las señales a node y recoge procesos
     # huérfanos. Sin él, node es el PID 1 y el kernel le trata las señales de
