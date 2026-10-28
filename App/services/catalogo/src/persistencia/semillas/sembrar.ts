@@ -20,8 +20,10 @@ async function sembrar(): Promise<void> {
   await fuenteDatos.initialize();
   try {
     await fuenteDatos.transaction(async (gestor) => {
-      await gestor.delete(LocalidadEvento, {});
-      await gestor.delete(EventoReferencia, {});
+      // TRUNCATE y no DELETE: vacía las dos de una vez, resuelve el orden por
+      // la dependencia entre ellas y reinicia cualquier secuencia. Además,
+      // TypeORM rechaza `delete` sin criterio, que es lo que querríamos aquí.
+      await gestor.query(`TRUNCATE TABLE "localidades_evento", "eventos_referencia" CASCADE`);
       await gestor.insert(EventoReferencia, EVENTOS);
       await gestor.insert(LocalidadEvento, LOCALIDADES_EVENTO);
     });

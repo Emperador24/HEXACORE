@@ -10,7 +10,7 @@ import { REDIS_INVENTARIO } from './redis-inventario.provider';
 async function preparar(): Promise<void> {
   const [establecimientoId, confirmacion, ...extras] = process.argv.slice(2);
   if (!establecimientoId || !isUUID(establecimientoId) || confirmacion !== '--compras-detenidas' || extras.length) {
-    throw new Error('Uso: npx ts-node src/inventario/preparar-inventario.ts <establecimientoId> --compras-detenidas. Detén compras y cambios de stock en todas las instancias antes de ejecutar.');
+    throw new Error('Uso: npx ts-node src/modulos/pedidos/inventario/preparar-inventario.ts <establecimientoId> --compras-detenidas. Detén compras y cambios de stock en todas las instancias antes de ejecutar.');
   }
   const app = await NestFactory.createApplicationContext(InventarioModule, { abortOnError: false });
   try {
@@ -26,7 +26,26 @@ async function preparar(): Promise<void> {
     }
     const resultado = await app.get(PreparacionInventarioService).preparar(establecimientoId);
     console.log(`Inventario preparado: ${resultado.establecimientoId}, ${resultado.productosPreparados} productos.`);
-  } finally { await app.close(); }
+  } finally {
+    // El cierre va aparte y no tumba el comando: desde ADR-12 las conexiones
+    // de TypeORM van **nombradas** (`administracion`, `pedidos`) y no existe
+    // la conexión por defecto, pero el gancho de apagado de @nestjs/typeorm la
+    // busca igual y lanza `UnknownElementException: could not find DataSource`.
+    //
+    // Pasa DESPUÉS de que el inventario ya quedó escrito, así que hacerlo
+    // fallar diría que no se preparó cuando sí se preparó —y eso es lo que
+    // rompía las suites de CU-011—. Se avisa en vez de callarlo: el fallo de
+    // apagado es real y hay que arreglarlo en su sitio.
+    try {
+      await app.close();
+    } catch (error) {
+      console.warn(
+        'Aviso: el inventario quedó preparado, pero el apagado falló. ' +
+          'Es el gancho de @nestjs/typeorm buscando la conexión por defecto, que aquí no existe (ADR-12).',
+        error instanceof Error ? error.message : error,
+      );
+    }
+  }
 }
 
 preparar().catch((error: unknown) => {

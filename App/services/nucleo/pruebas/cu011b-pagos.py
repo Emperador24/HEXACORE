@@ -82,7 +82,7 @@ def sql(consulta):
 
 def preparar_entorno():
     """Base recién sembrada y el inventario de Redis cargado, como `iniciar.sh`."""
-    subprocess.run(['npm', 'run', 'semilla'], cwd=RAIZ, capture_output=True, check=True)
+    subprocess.run(['npm', 'run', 'semilla:pedidos'], cwd=RAIZ, capture_output=True, check=True)
     subprocess.run(
         ['docker', 'exec', 'hexacore-redis', 'sh', '-c',
          "redis-cli --scan --pattern 'pedidos:inv:*' | xargs -r redis-cli del"],
@@ -91,7 +91,7 @@ def preparar_entorno():
                'REDIS_HOST': os.environ.get('REDIS_HOST', 'localhost'),
                'REDIS_PUERTO': os.environ.get('REDIS_PUERTO', '6380')}
     for establecimiento in ESTABLECIMIENTOS:
-        subprocess.run(['npx', 'ts-node', 'src/inventario/preparar-inventario.ts',
+        subprocess.run(['npx', 'ts-node', 'src/modulos/pedidos/inventario/preparar-inventario.ts',
                         establecimiento, '--compras-detenidas'],
                        cwd=RAIZ, env=entorno, capture_output=True, check=True)
 

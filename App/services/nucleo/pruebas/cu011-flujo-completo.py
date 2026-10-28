@@ -61,7 +61,7 @@ def preparar_entorno():
     siguiente falla por agotado. El inventario de Redis se carga con el mismo
     comando de mantenimiento que se usaría en producción.
     """
-    subprocess.run(['npm', 'run', 'semilla'], cwd=RAIZ,
+    subprocess.run(['npm', 'run', 'semilla:pedidos'], cwd=RAIZ,
                    capture_output=True, check=True)
 
     # El preparador se niega a pisar un inventario ya cargado
@@ -77,7 +77,7 @@ def preparar_entorno():
                'REDIS_PUERTO': os.environ.get('REDIS_PUERTO', '6380')}
     for establecimiento in ESTABLECIMIENTOS:
         subprocess.run(
-            ['npx', 'ts-node', 'src/inventario/preparar-inventario.ts',
+            ['npx', 'ts-node', 'src/modulos/pedidos/inventario/preparar-inventario.ts',
              establecimiento, '--compras-detenidas'],
             cwd=RAIZ, env=entorno, capture_output=True, check=True)
 

@@ -22,7 +22,7 @@ Resiembra al empezar, así que no depende del estado que dejen otras pruebas.
 
 import sys
 
-from venta import (
+from cartelera import (
     CAFE, CLASICO, FEST, GALA, JAZZ, MAGO, ROCK, SALSA, STANDUP, VERANO, VOLEIBOL,
     correr, pedir, resembrar, titulo,
 )
@@ -247,19 +247,25 @@ def es_publica():
         estado, _ = pedir('GET', ruta)
         assert estado == 200, (ruta, estado)
 
-    # Y el resto del servicio sí la exige: la excepción es solo la cartelera.
-    for ruta in ('compras', 'reventa/publicaciones'):
-        estado, _ = pedir('GET', ruta)
-        assert estado == 401, (ruta, estado)
-    print('  3 rutas de cartelera sin token → 200 · compras y reventa → 401')
+    # El contraste con las rutas que sí exigen sesión ya no se comprueba aquí:
+    # desde la fase A de ADR-14 este servicio solo sirve la cartelera, y
+    # `compras` o `reventa` viven en otro proceso. Que aquellas devuelvan 401
+    # lo verifica la suite de entradas-mercado-secundario, y que el gateway no
+    # deje pasar escrituras a la cartelera, la de gateway.
+    #
+    # Lo que sí es de este servicio: no acepta métodos de escritura.
+    for metodo in ('POST', 'PUT', 'DELETE'):
+        estado, _ = pedir(metodo, 'cartelera')
+        assert estado in (404, 405), (metodo, estado)
+    print('  3 rutas de cartelera sin token → 200 · escrituras rechazadas')
 
 
 def cache_del_navegador():
     titulo('ASR — la cartelera se puede guardar en caché unos segundos')
     import urllib.request
-    with urllib.request.urlopen(f'http://localhost:3001/api/v1/cartelera', timeout=30) as r:
+    with urllib.request.urlopen(f'http://localhost:3004/api/v1/cartelera', timeout=30) as r:
         listado = r.headers.get('Cache-Control')
-    with urllib.request.urlopen(f'http://localhost:3001/api/v1/cartelera/{FEST}', timeout=30) as r:
+    with urllib.request.urlopen(f'http://localhost:3004/api/v1/cartelera/{FEST}', timeout=30) as r:
         detalle = r.headers.get('Cache-Control')
 
     assert listado == 'public, max-age=30', listado
