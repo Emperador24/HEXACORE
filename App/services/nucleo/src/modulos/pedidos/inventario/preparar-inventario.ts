@@ -27,15 +27,15 @@ async function preparar(): Promise<void> {
     const resultado = await app.get(PreparacionInventarioService).preparar(establecimientoId);
     console.log(`Inventario preparado: ${resultado.establecimientoId}, ${resultado.productosPreparados} productos.`);
   } finally {
-    // El cierre va aparte y no tumba el comando: desde ADR-12 las conexiones
-    // de TypeORM van **nombradas** (`administracion`, `pedidos`) y no existe
-    // la conexión por defecto, pero el gancho de apagado de @nestjs/typeorm la
-    // busca igual y lanza `UnknownElementException: could not find DataSource`.
+    // El cierre va aparte y no tumba el comando. Ocurre DESPUÉS de que el
+    // inventario ya quedó escrito, así que un fallo aquí no puede reportar
+    // "no se preparó" cuando sí se preparó.
     //
-    // Pasa DESPUÉS de que el inventario ya quedó escrito, así que hacerlo
-    // fallar diría que no se preparó cuando sí se preparó —y eso es lo que
-    // rompía las suites de CU-011—. Se avisa en vez de callarlo: el fallo de
-    // apagado es real y hay que arreglarlo en su sitio.
+    // No es hipotético: eso pasaba cuando las conexiones nombradas de ADR-12
+    // no llevaban su nombre dentro de lo que devuelve la fábrica, y el gancho
+    // de @nestjs/typeorm buscaba la conexión por defecto. Está arreglado en
+    // los `persistencia.module.ts` de los dos módulos; esto se queda como
+    // red, no como parche.
     try {
       await app.close();
     } catch (error) {

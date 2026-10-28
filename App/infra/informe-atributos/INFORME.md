@@ -1,6 +1,6 @@
 # HEXACORE — Resultados cuantitativos de los atributos de calidad
 
-Medido el 2026-10-28 00:06 contra el sistema desplegado, a través del API Gateway
+Medido el 2026-10-28 00:24 contra el sistema desplegado, a través del API Gateway
 (ADR-02), que es por donde entra el tráfico real.
 
 Generado por `App/infra/atributos-calidad.py`. Cada fila se puede volver a
@@ -9,13 +9,13 @@ de cada suite está en los `.log` de esta misma carpeta.
 
 | Atributo | RNF | Medición | Resultado | Referencia |
 |---|---|---|---|---|
-| **Desempeño** | RNF-07, RNF-08 | Peor p95 bajo carga | **177.0 ms con 200 peticiones simultáneas** | umbral 500 ms |
-|  |  | Capacidad máxima | **1157.9 peticiones por segundo** | — |
+| **Desempeño** | RNF-07, RNF-08 | Peor p95 bajo carga | **147.8 ms con 200 peticiones simultáneas** | umbral 500 ms |
+|  |  | Capacidad máxima | **1296.0 peticiones por segundo** | — |
 |  |  | Peticiones fallidas | **0** | exigido 0 |
 | **Disponibilidad** | RNF-03, RNF-04 | Recuperación tras kill -9 | **1.5 s** | exigido ≤ 30 s |
-|  |  | Login con Redis caído | **200 en    80 ms** | debe seguir sirviendo |
-|  |  | Login con RabbitMQ caído | **200 en    59 ms** | debe seguir sirviendo |
-|  |  | Login con PostgreSQL caído | **503 en  3012 ms** | 503 honesto, no 200 falso |
+|  |  | Login con Redis caído | **200 en    86 ms** | debe seguir sirviendo |
+|  |  | Login con RabbitMQ caído | **200 en    88 ms** | debe seguir sirviendo |
+|  |  | Login con PostgreSQL caído | **503 en  3018 ms** | 503 honesto, no 200 falso |
 | **Seguridad** | RNF-05, RNF-06 | Rutas de negocio abiertas | **11 de 11 rutas de negocio responden 401 sin token (0 % abiertas)** | exigido 0 % |
 |  |  | Intentos de entrar rechazados | **8 con 401** | sin token, firma ajena, alg none, HS256, caducado, otro emisor, manipulado |
 |  |  | Revocación al cerrar sesión | **inmediata** | el token deja de valer en todo el sistema |

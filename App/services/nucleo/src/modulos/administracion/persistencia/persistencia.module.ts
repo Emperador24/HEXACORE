@@ -17,7 +17,17 @@ import { ENTIDADES, opcionesDataSource } from './data-source';
     TypeOrmModule.forRootAsync({
       name: CONEXION_ADMINISTRACION,
       inject: [CONFIGURACION],
-      useFactory: (config: ConfiguracionServicio) => opcionesDataSource(config),
+      // El nombre va TAMBIÉN dentro de lo que devuelve la fábrica, no solo
+      // arriba. `TypeOrmCoreModule` guarda como `this.options` el resultado de
+      // esta fábrica, y su gancho de apagado resuelve con él qué DataSource
+      // cerrar. Sin el nombre aquí resuelve al token por defecto —que en el
+      // Núcleo no existe— y el apagado lanza `UnknownElementException`
+      // después de haber hecho su trabajo, ensuciando el SIGTERM que RNF-15
+      // necesita limpio.
+      useFactory: (config: ConfiguracionServicio) => ({
+        ...opcionesDataSource(config),
+        name: CONEXION_ADMINISTRACION,
+      }),
     }),
     TypeOrmModule.forFeature(ENTIDADES, CONEXION_ADMINISTRACION),
   ],
