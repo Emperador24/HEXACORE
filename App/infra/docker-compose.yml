@@ -261,6 +261,32 @@ services:
     ports:
       - "3001:3001"
 
+  # Microservicio de Catálogo — CU-005 (cartelera pública). Fase A de ADR-14.
+  catalogo:
+    profiles: ["servicios"]
+    build: ../services/catalogo
+    # Sin `container_name`: ADR-14 le pone tres réplicas con pre-escalado, y un
+    # nombre fijo lo impediría.
+    restart: unless-stopped
+    init: true
+    # Solo PostgreSQL. Ni Redis, ni el broker, ni la pasarela: es exactamente
+    # lo que la extracción buscaba — que una caída de Redis no se lleve por
+    # delante la cartelera.
+    depends_on:
+      postgres: { condition: service_healthy }
+    environment:
+      <<: *entorno-comun
+      POSTGRES_BASE: catalogo
+      PUERTO: "3004"
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3004/api/v1/salud',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      start_period: 90s
+      retries: 10
+    ports:
+      - "3004:3004"
+
   # Servicio de Eventos / Emergencias — CU-018 (turnos y asistencia del personal).
   eventos-emergencias:
     profiles: ["servicios"]

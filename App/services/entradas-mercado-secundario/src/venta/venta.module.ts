@@ -20,7 +20,7 @@ import { PromocionesService } from './promociones.service';
  * QR y la verificación de sesión— en vez de abrir conexiones propias. No usa
  * nada de la lógica de la reventa.
  *
- * Separado de `CatalogoModule` (CU-005) a propósito: la cartelera no depende de
+ * Separado de la cartelera (CU-005) a propósito: la cartelera no depende de
  * Redis, RabbitMQ ni la pasarela, y así sigue respondiendo aunque caigan.
  */
 @Module({

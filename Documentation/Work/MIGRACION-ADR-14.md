@@ -13,7 +13,7 @@ Las rutas de este documento se verificaron contra el repositorio el 24 oct 2026.
 | Servicio | CU | Dónde está hoy | Qué falta |
 |---|---|---|---|
 | **Cola virtual** | apoya CU-001 | — | Todo. No existe |
-| **Catálogo** | CU-005 | `entradas-mercado-secundario/src/catalogo/` | Sacarlo a su propio despliegue y cambiar PostgreSQL por índice de búsqueda |
+| **Catálogo** | CU-005 | ✅ `services/catalogo/` — despliegue propio y base propia | Cambiar PostgreSQL por índice de búsqueda (fase D) |
 | **Ventas** | CU-001, CU-004 | `entradas-mercado-secundario/src/venta/` | Sacarlo; ya tiene reserva atómica en Redis |
 | **Pagos** | pagos de CU-001/003/006/011/021 | **duplicado**: `nucleo/src/modulos/pedidos/pagos/` y `entradas-mercado-secundario/src/reventa/pagos/` | Unificar las dos copias en un servicio. Las llaves de idempotencia ya existen en ambas |
 | **Autenticación** | CU-027, CU-028 | `nucleo/src/modulos/administracion/` | **Sacarlo del Núcleo** — revierte ADR-12 |
@@ -34,7 +34,7 @@ Las rutas de este documento se verificaron contra el repositorio el 24 oct 2026.
 
 ### Resumen
 
-- **14 unidades desplegables** frente a las 3 de hoy.
+- **14 unidades desplegables** frente a las 4 de hoy (Catálogo ya salió).
 - **6 servicios desde cero**: Cola virtual, Pagos, Notificaciones, Parqueaderos, Finanzas, Eventos y recintos.
 - **2 servicios se parten**: `entradas-mercado-secundario` en cuatro, `eventos-emergencias` en dos.
 - **1 servicio se deshace**: el Núcleo, en Autenticación (microservicio) y Alimentos (dominio).
@@ -65,16 +65,47 @@ que tiene costura, después lo que hay que construir, al final la
 infraestructura** — porque cambiar el broker y el orquestador con el código a
 medias multiplica los frentes abiertos.
 
-### Fase A — Partir Entradas en cuatro
+### Fase A — Partir Entradas
 
-De 3 deployables a 6. Catálogo, Ventas, Acceso QR y Postventa salen de
-`entradas-mercado-secundario`, cada uno con su base.
+**Corregido el 27 oct 2026, al ejecutarla.** Este documento decía que la fase A
+era «la de mejor relación entre beneficio y riesgo» porque «las costuras
+existen». Las costuras existen en las **carpetas**, no en los **datos**. De los
+cuatro servicios que se iban a extraer, solo uno sale limpio.
 
-Es la fase con mejor relación entre beneficio y riesgo: las costuras existen, y
-deja operativos cuatro de los siete microservicios. El punto delicado es que
-Ventas y Postventa comparten hoy las tablas de entradas y publicaciones; hay que
-decidir cuál de los dos se queda con `entrada.entity.ts` (debería ser Ventas,
-porque es quien cambia el dueño) y cómo se entera el otro.
+#### A1 — Catálogo ✅ hecho
+
+De 3 deployables a 4. Sale limpio porque **no escribe nada**: sus dos tablas
+(`eventos_referencia`, `localidades_evento`) son una proyección de sólo lectura
+que hoy puebla la semilla y mañana alimentará `EventoPublicado`. No comparte
+ninguna transacción con el resto.
+
+Su copia lleva solo lo que la cartelera lee: `permite_reventa` se queda en
+Postventa y `aforo_maximo`/`asistentes` en Acceso QR.
+
+#### A2 y A3 — Acceso QR y Postventa: **no son un movimiento de carpetas**
+
+Los dos escriben `Entrada` —que es de Ventas— dentro de una transacción ACID, y
+en los dos casos esa transacción es lo que sostiene un atributo de calidad
+medido:
+
+| Servicio | Qué hace la transacción | Qué se rompe al separarla |
+|---|---|---|
+| **Acceso QR** | marca la entrada `USADA`, suma al aforo y guarda el `Ingreso` | si el aforo está lleno **se deshace todo y el QR no queda marcado**. Separada, alguien puede quedarse fuera con su entrada ya gastada |
+| **Postventa** | cierra la publicación, transfiere la entrada y cambia el QR, y escribe el historial | el `UPDATE` condicionado es la última defensa contra la doble venta (RNF-01/02), y el cambio de QR atómico es lo que hace que *nunca* haya dos códigos válidos a la vez |
+
+Separarlos convierte las dos en Sagas con compensación, igual que CU-001. Eso
+**no es la fase A**: es trabajo de diseño del mismo tamaño que la fase E, y
+debería ir después de ella, cuando el patrón de Saga ya esté construido y
+medido una vez.
+
+#### Orden revisado
+
+- **A1. Catálogo** — hecho.
+- **A2. Ventas** — lo que queda de `entradas-mercado-secundario` tras sacar
+  Catálogo, Acceso QR y Postventa. Depende de las dos de abajo.
+- Acceso QR y Postventa pasan **después de la fase E**, cuando la Saga de CU-001
+  esté funcionando y se pueda reutilizar el patrón en vez de inventarlo tres
+  veces.
 
 ### Fase B — Deshacer el Núcleo
 

@@ -139,7 +139,7 @@ case "$ROL" in
     gris "  Levantando los servicios de dominio y el API Gateway"
     "${COMPOSE[@]}" --profile servicios up -d $CONSTRUIR \
       --scale entradas-mercado-secundario="$REPLICAS" \
-      nucleo entradas-mercado-secundario eventos-emergencias \
+      nucleo entradas-mercado-secundario catalogo eventos-emergencias \
       api-gateway portal-web-cliente portal-web-admin
     ;;
   todo)
@@ -176,7 +176,7 @@ contenedor_de() {
 
 if [[ "$ROL" != "datos" ]]; then
   titulo "Esperando a que los servicios respondan"
-  for servicio in nucleo eventos-emergencias entradas-mercado-secundario \
+  for servicio in nucleo eventos-emergencias entradas-mercado-secundario catalogo \
                   api-gateway portal-web-cliente portal-web-admin; do
     id="$(contenedor_de "$servicio")"
     if [[ -n "$id" ]] && esperar_sano "$id"; then
@@ -366,11 +366,16 @@ if [[ "$DEMO" == "si" && "$ROL" != "datos" ]]; then
     migrar nucleo || true
     migrar nucleo migracion:pedidos:correr || true
     migrar entradas-mercado-secundario || true
+    migrar catalogo || true
     migrar eventos-emergencias || true
 
     gris "  Sembrando datos"
     sembrar nucleo
     sembrar entradas-mercado-secundario
+    # La misma proyección de eventos, en la base propia del Catálogo. Mientras
+    # no exista Eventos y recintos que la publique por el broker, hay que
+    # sembrar las dos (ADR-14, fase A).
+    sembrar catalogo
     # La de logística va después de la de administración a propósito: da de alta
     # a cada empleado sobre la cuenta que aquella acaba de crear.
     sembrar eventos-emergencias seed

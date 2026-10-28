@@ -13,3 +13,7 @@ CREATE DATABASE eventos_emergencias         OWNER hexacore;
 CREATE DATABASE parqueaderos                OWNER hexacore;
 CREATE DATABASE pedidos                     OWNER hexacore;
 CREATE DATABASE administracion              OWNER hexacore;
+
+-- Fase A de ADR-14: el Catalogo sale de entradas_mercado_secundario con su
+-- propia base. Solo contiene la proyeccion de eventos que lee la cartelera.
+CREATE DATABASE catalogo                    OWNER hexacore;
