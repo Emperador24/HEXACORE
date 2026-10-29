@@ -82,7 +82,7 @@ jobs:
         # apuntaba a una carpeta que no existe — el trabajo fallaba entero.
         servicio:
           - autenticacion
-          - entradas-mercado-secundario
+          - ventas
           - postventa
           - acceso-qr
           - catalogo
@@ -195,7 +195,7 @@ jobs:
         run: npm ci && npm run test:integracion
 
       - name: Ventas (CU-001 a CU-004)
-        working-directory: App/services/entradas-mercado-secundario
+        working-directory: App/services/ventas
         run: npm ci && npm run test:integracion
 
       # Postventa necesita a Ventas levantado: es el dueño de las entradas, y

@@ -58,8 +58,8 @@ jobs:
           # fallaba.
           - nombre: autenticacion
             contexto: App/services/autenticacion
-          - nombre: entradas-mercado-secundario
-            contexto: App/services/entradas-mercado-secundario
+          - nombre: ventas
+            contexto: App/services/ventas
           - nombre: postventa
             contexto: App/services/postventa
           - nombre: acceso-qr
