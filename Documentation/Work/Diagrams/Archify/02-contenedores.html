@@ -5061,13 +5061,14 @@
         <path data-edge-from="pagos" data-edge-to="broker" data-edge-label="PagoAprobado / PagoRechazado" data-edge-key="23" data-edge-id="pagos-broker" data-composition-points="720,398;950,398" d="M 720 398 L 950 398" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
         <path data-edge-from="pasarela" data-edge-to="pagos" data-edge-label="webhook" data-edge-key="24" data-edge-id="pasarela-pagos" data-composition-points="950,710;835,710;835,398;720,398" d="M 950 710 L 843 710 Q 835 710 835 702 L 835 406 Q 835 398 827 398 L 720 398" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
         <path data-edge-from="broker" data-edge-to="catalogo" data-edge-label="EventoPublicado" data-edge-key="25" data-edge-id="broker-catalogo" data-composition-points="950,398;835,398;835,190;720,190" d="M 950 398 L 843 398 Q 835 398 835 390 L 835 198 Q 835 190 827 190 L 720 190" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        <path data-edge-from="broker" data-edge-to="ventas" data-edge-key="26" data-edge-id="broker-ventas" data-composition-points="950,398;835,398;835,294;720,294" d="M 950 398 L 843 398 Q 835 398 835 390 L 835 302 Q 835 294 827 294 L 720 294" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="broker" data-edge-to="ventas" data-edge-key="26" data-edge-id="broker-ventas" data-composition-points="950,398;835,398;835,287;720,287" d="M 950 398 L 843 398 Q 835 398 835 390 L 835 295 Q 835 287 827 287 L 720 287" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
         <path data-edge-from="operacion" data-edge-to="broker" data-edge-label="AlertaEvacuación" data-edge-key="27" data-edge-id="operacion-broker" data-composition-points="1270,606;1200,606;1200,398;1130,398" d="M 1270 606 L 1208 606 Q 1200 606 1200 598 L 1200 406 Q 1200 398 1192 398 L 1130 398" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
         <path data-edge-from="broker" data-edge-to="notificaciones" data-edge-label="AlertaEvacuación" data-edge-key="28" data-edge-id="broker-notif-evac" data-composition-points="950,398;835,398;835,710;720,710" d="M 950 398 L 843 398 Q 835 398 835 406 L 835 702 Q 835 710 827 710 L 720 710" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
         <path data-edge-from="postventa" data-edge-to="pagos" data-edge-label="cobro de reventa" data-edge-key="29" data-edge-id="postventa-pagos" data-composition-points="1270,190;1230,190;1230,450;630,450;630,424" d="M 1270 190 L 1238 190 Q 1230 190 1230 198 L 1230 442 Q 1230 450 1222 450 L 638 450 Q 630 450 630 442 L 630 424" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="postventa" data-edge-to="ventas" data-edge-label="cambia el dueño" data-edge-key="30" data-edge-id="postventa-ventas" data-composition-points="1270,190;1200,190;1200,242;630,242;630,268" d="M 1270 190 L 1208 190 Q 1200 190 1200 198 L 1200 234 Q 1200 242 1192 242 L 638 242 Q 630 242 630 250 L 630 268" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="bd_central" data-edge-to="replica_lectura" data-edge-label="replica" data-edge-key="31" data-edge-id="bd-replica" data-composition-points="1040,528;1040,580" d="M 1040 528 L 1040 580" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        <path data-edge-from="cola" data-edge-to="redis" data-edge-label="fila" data-edge-key="32" data-edge-id="cola-redis" data-composition-points="720,86;950,86" d="M 720 86 L 950 86" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="qr" data-edge-to="ventas" data-edge-label="gasta el QR" data-edge-key="30" data-edge-id="qr-ventas" data-composition-points="720,606;744,606;744,301;720,301" d="M 720 606 L 736 606 Q 744 606 744 598 L 744 309 Q 744 301 736 301 L 720 301" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="postventa" data-edge-to="ventas" data-edge-label="cambia el dueño" data-edge-key="31" data-edge-id="postventa-ventas" data-composition-points="1270,190;1200,190;1200,242;630,242;630,268" d="M 1270 190 L 1208 190 Q 1200 190 1200 198 L 1200 234 Q 1200 242 1192 242 L 638 242 Q 630 242 630 250 L 630 268" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="bd_central" data-edge-to="replica_lectura" data-edge-label="replica" data-edge-key="32" data-edge-id="bd-replica" data-composition-points="1040,528;1040,580" d="M 1040 528 L 1040 580" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="cola" data-edge-to="redis" data-edge-label="fila" data-edge-key="33" data-edge-id="cola-redis" data-composition-points="720,86;950,86" d="M 720 86 L 950 86" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
 
         <!-- Components -->
         <g id="node-portal_cliente" data-node-id="portal_cliente" data-node-label="Portal Web Cliente" tabindex="0" role="button" aria-label="Focus Portal Web Cliente, Angular, Architecture component" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="Angular" data-node-context="Architecture component">
@@ -5502,15 +5503,19 @@
           <rect x="1186.6" y="324" width="86.8" height="14" rx="3" class="c-mask"/>
           <text x="1230" y="334" class="t-muted" font-size="8" text-anchor="middle">cobro de reventa</text>
         </g>
-        <g data-detail="context" data-edge-from="postventa" data-edge-to="ventas" data-edge-label="cambia el dueño" data-edge-key="30" data-edge-id="postventa-ventas">
+        <g data-detail="context" data-edge-from="qr" data-edge-to="ventas" data-edge-label="gasta el QR" data-edge-key="30" data-edge-id="qr-ventas">
+          <rect x="712.6" y="433.5" width="62.8" height="14" rx="3" class="c-mask"/>
+          <text x="744" y="443.5" class="t-muted" font-size="8" text-anchor="middle">gasta el QR</text>
+        </g>
+        <g data-detail="context" data-edge-from="postventa" data-edge-to="ventas" data-edge-label="cambia el dueño" data-edge-key="31" data-edge-id="postventa-ventas">
           <rect x="1159" y="196" width="82" height="14" rx="3" class="c-mask"/>
           <text x="1200" y="206" class="t-muted" font-size="8" text-anchor="middle">cambia el dueño</text>
         </g>
-        <g data-detail="context" data-edge-from="bd_central" data-edge-to="replica_lectura" data-edge-label="replica" data-edge-key="31" data-edge-id="bd-replica">
+        <g data-detail="context" data-edge-from="bd_central" data-edge-to="replica_lectura" data-edge-label="replica" data-edge-key="32" data-edge-id="bd-replica">
           <rect x="1018.2" y="532" width="43.6" height="14" rx="3" class="c-mask"/>
           <text x="1040" y="542" class="t-messagebus" font-size="8" text-anchor="middle">replica</text>
         </g>
-        <g data-detail="context" data-edge-from="cola" data-edge-to="redis" data-edge-label="fila" data-edge-key="32" data-edge-id="cola-redis">
+        <g data-detail="context" data-edge-from="cola" data-edge-to="redis" data-edge-label="fila" data-edge-key="33" data-edge-id="cola-redis">
           <rect x="820" y="66" width="30" height="14" rx="3" class="c-mask"/>
           <text x="835" y="76" class="t-muted" font-size="8" text-anchor="middle">fila</text>
         </g>

@@ -748,6 +748,14 @@
       ]
     },
     {
+      "id": "qr-ventas",
+      "from": "qr",
+      "to": "ventas",
+      "label": "gasta el QR",
+      "fromSide": "right",
+      "toSide": "right"
+    },
+    {
       "id": "postventa-ventas",
       "from": "postventa",
       "to": "ventas",
