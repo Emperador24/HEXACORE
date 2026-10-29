@@ -65,7 +65,7 @@ def pedir(metodo, ruta, usuario, cuerpo=None, espera=60, roles=('Cliente',)):
 def resembrar():
     # La semilla es de Ventas: las entradas son suyas.
     subprocess.run(['npm', 'run', 'semilla'], capture_output=True, check=True,
-                   cwd='../entradas-mercado-secundario')
+                   cwd='../ventas')
     sql('TRUNCATE TABLE transacciones_reventa, publicaciones_reventa CASCADE')
     limpiar_reventa()
 

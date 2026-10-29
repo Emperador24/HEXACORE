@@ -4,7 +4,7 @@
  * Se valida en el arranque y no en el primer uso: un servicio mal configurado
  * debe negarse a arrancar, no fallar luego con una consulta a medias.
  *
- * Es notablemente más corta que la de `entradas-mercado-secundario`, y esa es
+ * Es notablemente más corta que la de `ventas`, y esa es
  * la señal de que la separación de ADR-14 vale: la cartelera no necesita
  * Redis, ni la pasarela de pagos, ni el broker, ni las reglas de reventa.
  */

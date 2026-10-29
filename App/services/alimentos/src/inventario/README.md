@@ -1,6 +1,6 @@
 # Preparación explícita del inventario Redis
 
-Desde `App/services/pedidos`, con las migraciones aplicadas:
+Desde `App/services/alimentos`, con las migraciones aplicadas:
 
 ```sh
 npx ts-node src/inventario/preparar-inventario.ts <establecimientoId> --compras-detenidas

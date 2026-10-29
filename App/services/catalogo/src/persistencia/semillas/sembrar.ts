@@ -12,7 +12,7 @@ import { EVENTOS, LOCALIDADES_EVENTO } from './datos-demo';
  * Eventos y recintos, esto hace el papel que hará el consumidor de
  * `EventoPublicado`.
  *
- * Los ids coinciden con los que siembra `entradas-mercado-secundario`: son la
+ * Los ids coinciden con los que siembra `ventas`: son la
  * misma proyección en dos bases distintas, y tienen que seguir cuadrando hasta
  * que el broker las mantenga al día.
  */

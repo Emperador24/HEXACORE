@@ -30,7 +30,7 @@ de cada suite está en los `.log` de esta misma carpeta.
 
 Consulta de catálogo durante la apertura de venta.
 
-Suite: `entradas-mercado-secundario/pruebas/rnf07-desempeno.py` · salida completa en `rnf07-desempeno.log` · duración 5 s
+Suite: `ventas/pruebas/rnf07-desempeno.py` · salida completa en `rnf07-desempeno.log` · duración 5 s
 
 ### Disponibilidad (RNF-03, RNF-04)
 
@@ -42,13 +42,13 @@ Suite: `autenticacion/pruebas/cu027-disponibilidad.py` · salida completa en `cu
 
 Toda petición llega autenticada y autorizada por rol desde el gateway.
 
-Suite: `entradas-mercado-secundario/pruebas/rnf06-autenticacion.py` · salida completa en `rnf06-autenticacion.log` · duración 3 s
+Suite: `ventas/pruebas/rnf06-autenticacion.py` · salida completa en `rnf06-autenticacion.log` · duración 3 s
 
 ### Consistencia (RNF-01, RNF-02)
 
 Ninguna entrada publicada puede venderse a dos compradores.
 
-Suite: `entradas-mercado-secundario/pruebas/rnf01-concurrencia.py` · salida completa en `rnf01-concurrencia.log` · duración 4 s
+Suite: `ventas/pruebas/rnf01-concurrencia.py` · salida completa en `rnf01-concurrencia.log` · duración 4 s
 
 ## Cómo se reproduce
 

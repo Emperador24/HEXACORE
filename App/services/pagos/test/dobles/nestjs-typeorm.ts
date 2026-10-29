@@ -8,7 +8,7 @@
  * inyección de Nest, y estas pruebas instancian los servicios con `new`,
  * pasándoles los dobles a mano.
  *
- * Es el mismo doble que ya usaba `entradas-mercado-secundario`; se repite aquí
+ * Es el mismo doble que ya usaba `ventas`; se repite aquí
  * porque cada servicio tiene su propio `node_modules` y su propia
  * configuración de Jest (ADR-01: los servicios no comparten código).
  *

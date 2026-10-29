@@ -5,7 +5,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  *
  * ## Qué se llevó y qué no
  *
- * Las tres tablas de aquí salieron del esquema de `entradas-mercado-secundario`:
+ * Las tres tablas de aquí salieron del esquema de `ventas`:
  * `publicaciones_reventa`, `transacciones_reventa` y la proyección
  * `eventos_referencia`. **No** se llevó `entradas` ni `historial_propietarios`:
  * son de Ventas, que es quien manda sobre la propiedad de una entrada.

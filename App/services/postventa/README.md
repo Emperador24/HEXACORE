@@ -2,7 +2,7 @@
 
 El mercado secundario de entradas: **CU-006**.
 
-Salió de `entradas-mercado-secundario` en la fase A de ADR-14. Fue la
+Salió de `ventas` en la fase A de ADR-14. Fue la
 extracción más cara del proyecto: tenía **dos** transacciones que había que
 convertir en Sagas, y una de ellas corre con el pago ya cobrado.
 

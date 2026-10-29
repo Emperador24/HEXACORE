@@ -7,7 +7,7 @@ import { SaludController } from './salud/salud.controller';
 /**
  * Microservicio de Postventa (ADR-14): CU-006, el mercado secundario.
  *
- * Salió de `entradas-mercado-secundario` en la fase A. Cumple tres de los
+ * Salió de `ventas` en la fase A. Cumple tres de los
  * cuatro criterios de extracción del ADR-14:
  *
  * - **Pico propio y en otro momento.** La reventa se mueve en los días

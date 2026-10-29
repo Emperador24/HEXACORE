@@ -16,7 +16,7 @@ Lo que esta copia añade es **saber que ahora hay dos servicios y dos bases**:
 en vez de obligar a cada aserto a recordarlo.
 
 Los identificadores son los de la semilla de Ventas
-(`../entradas-mercado-secundario/src/persistencia/semillas/datos-demo.ts`):
+(`../ventas/src/persistencia/semillas/datos-demo.ts`):
 fijos a propósito, para poder escribir una petición sin consultar antes.
 
 Lo que NO está aquí son los asertos: cada suite dice qué espera de su caso de
@@ -166,7 +166,7 @@ def resembrar():
     dejó la suite anterior.
     """
     subprocess.run(['npm', 'run', 'semilla'], capture_output=True, check=True,
-                   cwd='../entradas-mercado-secundario')
+                   cwd='../ventas')
     sql('TRUNCATE TABLE transacciones_reventa, publicaciones_reventa CASCADE',
         base=BASE_POSTVENTA)
 

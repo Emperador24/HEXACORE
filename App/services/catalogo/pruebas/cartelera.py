@@ -1,7 +1,7 @@
 """
 Ayudas de las pruebas de integración del Catálogo.
 
-Es la parte de `entradas-mercado-secundario/pruebas/venta.py` que la cartelera
+Es la parte de `ventas/pruebas/venta.py` que la cartelera
 necesita, apuntando al puerto del nuevo servicio. Se copia y no se importa:
 cada microservicio tiene que poder probarse solo, sin el código del otro
 (RNF-18). Los ids son los de la semilla, que es la misma proyección en las dos

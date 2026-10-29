@@ -138,14 +138,14 @@ case "$ROL" in
     fi
     gris "  Levantando los servicios de dominio y el API Gateway"
     "${COMPOSE[@]}" --profile servicios up -d $CONSTRUIR \
-      --scale entradas-mercado-secundario="$REPLICAS" \
-      autenticacion entradas-mercado-secundario postventa catalogo notificaciones alimentos pagos cola-virtual acceso-qr eventos-emergencias \
+      --scale ventas="$REPLICAS" \
+      autenticacion ventas postventa catalogo notificaciones alimentos pagos cola-virtual acceso-qr eventos-emergencias \
       api-gateway portal-web-cliente portal-web-admin
     ;;
   todo)
     gris "  Levantando la capa de datos, los microservicios y el API Gateway"
     "${COMPOSE[@]}" --profile servicios up -d $CONSTRUIR \
-      --scale entradas-mercado-secundario="$REPLICAS"
+      --scale ventas="$REPLICAS"
     ;;
 esac
 
@@ -176,7 +176,7 @@ contenedor_de() {
 
 if [[ "$ROL" != "datos" ]]; then
   titulo "Esperando a que los servicios respondan"
-  for servicio in autenticacion eventos-emergencias entradas-mercado-secundario postventa catalogo \
+  for servicio in autenticacion eventos-emergencias ventas postventa catalogo \
                   notificaciones alimentos pagos cola-virtual acceso-qr \
                   api-gateway portal-web-cliente portal-web-admin; do
     id="$(contenedor_de "$servicio")"
@@ -371,7 +371,7 @@ if [[ "$DEMO" == "si" && "$ROL" != "datos" ]]; then
     migrar alimentos || true
     migrar pagos || true
     migrar acceso-qr || true
-    migrar entradas-mercado-secundario || true
+    migrar ventas || true
     # Postventa después de Ventas: no por el esquema —son bases distintas y no
     # hay llave foránea entre ellas desde ADR-14— sino porque la semilla de
     # Ventas crea las entradas que la reventa publica.
@@ -381,7 +381,7 @@ if [[ "$DEMO" == "si" && "$ROL" != "datos" ]]; then
 
     gris "  Sembrando datos"
     sembrar autenticacion
-    sembrar entradas-mercado-secundario
+    sembrar ventas
     # La misma proyección de eventos, en la base propia del Catálogo. Mientras
     # no exista Eventos y recintos que la publique por el broker, hay que
     # sembrar las dos (ADR-14, fase A).

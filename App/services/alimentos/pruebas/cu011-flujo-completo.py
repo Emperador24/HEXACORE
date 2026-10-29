@@ -17,7 +17,7 @@ confirmar.
 Necesita la infraestructura y el servicio levantados:
 
     cd App/infra && ./iniciar.sh
-    cd App/services/nucleo
+    cd App/services/autenticacion
     npm run migracion:correr && npm run semilla
     python3 pruebas/cu011-flujo-completo.py
 

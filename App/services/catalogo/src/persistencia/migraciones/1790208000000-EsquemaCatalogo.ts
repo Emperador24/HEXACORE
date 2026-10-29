@@ -4,7 +4,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  * Esquema de la base propia del Catálogo (ADR-14, fase A).
  *
  * Son las dos tablas que la cartelera (CU-005) lee, con la misma forma que
- * tenían dentro de `entradas-mercado-secundario`. No se copian las columnas
+ * tenían dentro de `ventas`. No se copian las columnas
  * que allí usaban otros módulos —`permite_reventa` es de Postventa y
  * `aforo_maximo`/`asistentes` de Acceso QR—: una proyección lleva lo que su
  * consumidor necesita.

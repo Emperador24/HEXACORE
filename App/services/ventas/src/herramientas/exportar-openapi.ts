@@ -44,7 +44,7 @@ async function exportar(): Promise<void> {
       .build(),
   );
 
-  const destino = join(__dirname, '../../../../shared/api/entradas-mercado-secundario.openapi.json');
+  const destino = join(__dirname, '../../../../shared/api/ventas.openapi.json');
   writeFileSync(destino, `${JSON.stringify(documento, null, 2)}\n`, 'utf8');
 
   const rutas = Object.keys(documento.paths).length;

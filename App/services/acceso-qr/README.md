@@ -2,7 +2,7 @@
 
 Validar la entrada en la puerta: **CU-002**.
 
-Salió de `entradas-mercado-secundario` en la fase A de ADR-14. Es el primero
+Salió de `ventas` en la fase A de ADR-14. Es el primero
 del proyecto que **no fue una mudanza**: la transacción que lo sostenía había
 que convertirla en una Saga.
 

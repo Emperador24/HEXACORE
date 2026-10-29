@@ -13,7 +13,7 @@ import { join } from 'node:path';
  */
 describe('contrato OpenAPI publicado', () => {
   const contrato = JSON.parse(
-    readFileSync(join(__dirname, '../../../../shared/api/entradas-mercado-secundario.openapi.json'), 'utf8'),
+    readFileSync(join(__dirname, '../../../../shared/api/ventas.openapi.json'), 'utf8'),
   ) as {
     openapi: string;
     info: { title: string; version: string };

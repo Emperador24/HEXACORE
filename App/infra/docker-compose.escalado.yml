@@ -10,7 +10,7 @@
 # por el API Gateway — que es como se despliega en producción (SAD §11).
 #
 #   docker compose -f docker-compose.yml -f docker-compose.escalado.yml \
-#     --profile servicios up -d --scale entradas-mercado-secundario=2
+#     --profile servicios up -d --scale ventas=2
 #
 # Eventos / Emergencias ya no publica puerto en el compose base, así que se
 # replica sin necesidad de este archivo (ADR-12: es el segundo satélite).
@@ -24,7 +24,7 @@
 #
 # Para volver a lo de siempre, basta con levantar sin este archivo.
 services:
-  entradas-mercado-secundario:
+  ventas:
     ports: !reset []
 
   autenticacion:

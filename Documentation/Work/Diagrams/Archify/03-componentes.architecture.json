@@ -351,7 +351,7 @@
       "dot": "amber",
       "title": "Estado de implementación",
       "items": [
-        "⚠️ Dibuja lo decidido. Hoy esto vive dentro de entradas-mercado-secundario junto a Catálogo, Postventa y Acceso QR",
+        "⚠️ Dibuja lo decidido. Hoy esto vive dentro de ventas junto a Catálogo, Postventa y Acceso QR",
         "Ya existen el Gestor de reserva (gestor-concurrencia.service.ts) y la llave de idempotencia del Cliente de Pagos",
         "Faltan el Orquestador y el Compensador: hoy no hay deshacer explícito"
       ]

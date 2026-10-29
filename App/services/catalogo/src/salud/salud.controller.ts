@@ -13,7 +13,7 @@ import { CONFIGURACION, ConfiguracionServicio } from '../config/configuracion';
  * errores: es lo que RNF-15 (desplegar con 0 solicitudes fallidas) necesita
  * del balanceador.
  *
- * La lista es corta a propósito. Dentro de `entradas-mercado-secundario` esta
+ * La lista es corta a propósito. Dentro de `ventas` esta
  * misma sonda miraba además Redis y RabbitMQ, y una caída de Redis sacaba de
  * rotación a la cartelera aunque la cartelera no use Redis. Separar el
  * servicio arregló eso solo.

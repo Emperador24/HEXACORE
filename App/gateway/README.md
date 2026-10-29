@@ -64,7 +64,7 @@ el gateway empieza a repartir sin reiniciarlo, y al caer una deja de usarla:
 ```bash
 cd ../infra
 docker compose -f docker-compose.yml -f docker-compose.escalado.yml \
-  --profile servicios up -d --scale entradas-mercado-secundario=2
+  --profile servicios up -d --scale ventas=2
 python3 ../gateway/pruebas/gateway.py
 ```
 
@@ -86,4 +86,4 @@ cd ../infra && docker compose --profile servicios up -d
 python3 ../gateway/pruebas/gateway.py
 ```
 
-Necesita las cuentas de ejemplo (`cd ../services/nucleo && npm run semilla`).
+Necesita las cuentas de ejemplo (`cd ../services/autenticacion && npm run semilla`).

@@ -54,7 +54,7 @@ export class SaludController {
     respuesta.status(listo ? HttpStatus.OK : HttpStatus.SERVICE_UNAVAILABLE);
 
     return {
-      servicio: 'entradas-mercado-secundario',
+      servicio: 'ventas',
       estado: listo ? 'arriba' : 'degradado',
       entorno: this.config.entorno,
       dependencias: {

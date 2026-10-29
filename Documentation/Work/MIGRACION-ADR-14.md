@@ -14,17 +14,17 @@ Las rutas de este documento se verificaron contra el repositorio el 24 oct 2026.
 |---|---|---|---|
 | **Cola virtual** | apoya CU-001 | — | Todo. No existe |
 | **Catálogo** | CU-005 | ✅ `services/catalogo/` — despliegue propio y base propia | Cambiar PostgreSQL por índice de búsqueda (fase D) |
-| **Ventas** | CU-001, CU-004 | `entradas-mercado-secundario/src/venta/` | Sacarlo; ya tiene reserva atómica en Redis |
-| **Pagos** | pagos de CU-001/003/006/011/021 | **duplicado**: `nucleo/src/modulos/pedidos/pagos/` y `entradas-mercado-secundario/src/reventa/pagos/` | Unificar las dos copias en un servicio. Las llaves de idempotencia ya existen en ambas |
+| **Ventas** | CU-001, CU-004 | `ventas/src/venta/` | Sacarlo; ya tiene reserva atómica en Redis |
+| **Pagos** | pagos de CU-001/003/006/011/021 | **duplicado**: `nucleo/src/modulos/pedidos/pagos/` y `ventas/src/reventa/pagos/` | Unificar las dos copias en un servicio. Las llaves de idempotencia ya existen en ambas |
 | **Autenticación** | CU-027, CU-028 | ✅ `services/autenticacion/` — despliegue y base propios | Nada estructural |
-| **Acceso QR** | CU-002 | `entradas-mercado-secundario/src/venta/ingreso.service.ts` y `ingresos.controller.ts` | Sacarlo; añadir caché de estado y modo sin red |
+| **Acceso QR** | CU-002 | `ventas/src/venta/ingreso.service.ts` y `ingresos.controller.ts` | Sacarlo; añadir caché de estado y modo sin red |
 | **Notificaciones** | transversal | ✅ `services/notificaciones/` — sin base: su estado es la cola | Falta push y prioridad alta |
 
 ### Los siete servicios de dominio
 
 | Servicio | CU | Dónde está hoy | Qué falta |
 |---|---|---|---|
-| **Eventos y recintos** | CU-026, CU-029 | CU-026 parcial en `entradas-mercado-secundario` | CU-029 entero; publicar eventos hacia Catálogo y Ventas |
+| **Eventos y recintos** | CU-026, CU-029 | CU-026 parcial en `ventas` | CU-029 entero; publicar eventos hacia Catálogo y Ventas |
 | **Postventa** | CU-003, CU-006 | `postventa/` ✅ extraído | CU-003 entero (sigue en Ventas) |
 | **Alimentos** | CU-011–015 | ✅ `services/alimentos/` — despliegue y base propios | CU-013, 014 y 015 enteros |
 | **Parqueaderos** | CU-021–025 | solo `nucleo/src/modulos/parqueaderos/README.md` | Todo |
@@ -36,7 +36,7 @@ Las rutas de este documento se verificaron contra el repositorio el 24 oct 2026.
 
 - **14 unidades desplegables** frente a las **6 de hoy**: Autenticación, Notificaciones, Alimentos, Catálogo, Entradas y Eventos/Emergencias.
 - **6 servicios desde cero**: Cola virtual, Pagos, Notificaciones, Parqueaderos, Finanzas, Eventos y recintos.
-- **2 servicios se parten**: `entradas-mercado-secundario` en cuatro, `eventos-emergencias` en dos.
+- **2 servicios se parten**: `ventas` en cuatro, `eventos-emergencias` en dos.
 - ~~**1 servicio se deshace**: el Núcleo~~ — ✅ hecho: quedó en Autenticación (microservicio), Notificaciones (microservicio) y Alimentos (dominio).
 - **14 de 32 CU siguen sin backend.**
 
@@ -111,7 +111,7 @@ reutiliza en vez de inventarlo.
 - **A1. Catálogo** ✅ hecho.
 - **A2. Acceso QR** ✅ hecho. Saga con compensación local.
 - **A3. Postventa** ✅ hecho. Dos Sagas: publicar y vender.
-- **A4. Ventas** — lo que queda de `entradas-mercado-secundario`. Solo le falta
+- **A4. Ventas** — lo que queda de `ventas`. Solo le falta
   el renombrado de la carpeta.
 
 #### Lo que la extracción de Postventa obligó a construir

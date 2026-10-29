@@ -8,7 +8,7 @@ import { SaludController } from './salud/salud.controller';
 /**
  * Microservicio de Acceso QR (ADR-14): CU-002, validar la entrada en la puerta.
  *
- * Salió de `entradas-mercado-secundario` en la fase A. Cumple tres criterios:
+ * Salió de `ventas` en la fase A. Cumple tres criterios:
  * su pico es **en otro momento** que el de la venta —la puerta se llena media
  * hora antes de empezar, la venta fue semanas atrás—, su estado cabe en un
  * almacén propio, y su falla tiene que quedar aislada: si no valida, la gente

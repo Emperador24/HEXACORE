@@ -33,9 +33,9 @@ services:
     build: !reset null
     image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-nucleo:${HEXACORE_ETIQUETA:-develop}
 
-  entradas-mercado-secundario:
+  ventas:
     build: !reset null
-    image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-entradas-mercado-secundario:${HEXACORE_ETIQUETA:-develop}
+    image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-ventas:${HEXACORE_ETIQUETA:-develop}
 
   eventos-emergencias:
     build: !reset null

@@ -3,7 +3,7 @@ import { EstadoEvento } from '../entidades/evento-referencia.entity';
 /**
  * Datos de demostración de la cartelera (CU-005).
  *
- * Son la **misma proyección de eventos** que siembra `entradas-mercado-secundario`.
+ * Son la **misma proyección de eventos** que siembra `ventas`.
  * Están duplicados a propósito y por ahora: cada servicio tiene su propia base
  * (ADR-14), y la copia se mantendrá al día consumiendo `EventoPublicado` del
  * servicio de Eventos y recintos cuando exista. Mientras tanto hay que sembrar

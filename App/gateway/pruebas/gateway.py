@@ -14,7 +14,7 @@ Comprueba lo que el SAD le atribuye:
   - **RNF-10:** varias instancias del Servicio de Entradas reparten el trabajo.
 
     docker compose -f ../../docker-compose.yml -f ../../docker-compose.escalado.yml \
-      --profile servicios up -d --scale entradas-mercado-secundario=2
+      --profile servicios up -d --scale ventas=2
     python3 pruebas/gateway.py
 
 Con una sola instancia, las dos últimas comprobaciones se saltan y se avisa.
@@ -56,7 +56,7 @@ def entrar(email, contrasena=DEMO):
 
 
 def replicas():
-    salida = subprocess.run(['docker', 'ps', '--filter', 'name=entradas-mercado-secundario',
+    salida = subprocess.run(['docker', 'ps', '--filter', 'name=ventas',
                              '--filter', 'health=healthy', '--format', '{{.Names}}'],
                             capture_output=True, text=True).stdout.split()
     return salida

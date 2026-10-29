@@ -8,7 +8,7 @@ export const REDIS = 'CLIENTE_REDIS';
  * Cliente de Redis, usado solo para comprobar sesiones revocadas
  * (`sesion-revocada:<jti>`, ver `App/shared/seguridad/token-sesion.md`).
  * Mismos parámetros que el proveedor de referencia en
- * `entradas-mercado-secundario/src/reventa/concurrencia/redis.provider.ts`:
+ * `ventas/src/reventa/concurrencia/redis.provider.ts`:
  * hay que fallar rápido y en claro si Redis no responde, no encolar y
  * esperar — el guard debe devolver 503, no colgarse.
  */

@@ -162,7 +162,7 @@ que parar esos procesos antes:
 
 ```bash
 docker compose -f App/infra/docker-compose.yml --profile servicios up -d --build
-docker compose -f App/infra/docker-compose.yml --profile servicios stop administracion entradas-mercado-secundario
+docker compose -f App/infra/docker-compose.yml --profile servicios stop administracion ventas
 ```
 
 - Tras cambiar código, `--build` reconstruye la imagen.
@@ -171,7 +171,7 @@ docker compose -f App/infra/docker-compose.yml --profile servicios stop administ
 - Usan las claves JWT de `claves-desarrollo/` montadas como archivos; la privada solo se monta en
   Administración.
 - Docker Compose reinicia un proceso que muere, pero **no** uno colgado que sigue vivo. Eso queda
-  para Kubernetes en producción. Ver `services/nucleo/DECISIONES.md` §18.
+  para Kubernetes en producción. Ver `services/autenticacion/DECISIONES.md` §18.
 
 ### El API Gateway (ADR-02)
 
@@ -187,7 +187,7 @@ servicio que se escala (dos contenedores no pueden publicar el mismo puerto):
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.escalado.yml \
-  --profile servicios up -d --scale entradas-mercado-secundario=2
+  --profile servicios up -d --scale ventas=2
 python3 ../gateway/pruebas/gateway.py
 ```
 

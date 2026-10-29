@@ -469,12 +469,12 @@ propuestos están en [`DECISIONES.md`](DECISIONES.md).
 ## Contratos publicados
 
 ```bash
-npm run contrato:api    # regenera App/shared/api/entradas-mercado-secundario.openapi.json
+npm run contrato:api    # regenera App/shared/api/ventas.openapi.json
 ```
 
 | Contrato | Qué describe |
 |---|---|
-| [`shared/api/entradas-mercado-secundario.openapi.json`](../../shared/api/entradas-mercado-secundario.openapi.json) | Las 12 operaciones de la API REST |
+| [`shared/api/ventas.openapi.json`](../../shared/api/ventas.openapi.json) | Las 12 operaciones de la API REST |
 | [`shared/eventos/entrada-transferida.schema.json`](../../shared/eventos/entrada-transferida.schema.json) | El evento `ENTRADA_TRANSFERIDA` |
 
 Los dos se **generan o verifican desde el código**: un contrato mantenido a mano en paralelo se

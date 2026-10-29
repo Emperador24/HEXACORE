@@ -25,7 +25,7 @@ fi
 # comprobación exista es la dependencia de ADR-14 hecha explícita.
 if ! curl -sf http://localhost:3001/api/v1/salud > /dev/null; then
   echo "Ventas no responde en localhost:3001. Es el dueño de las entradas: sin él no hay reventa." >&2
-  echo "Levántalo con 'cd ../entradas-mercado-secundario && npm run start:dev'." >&2
+  echo "Levántalo con 'cd ../ventas && npm run start:dev'." >&2
   exit 1
 fi
 

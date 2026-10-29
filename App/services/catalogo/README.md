@@ -2,7 +2,7 @@
 
 Cartelera pública de eventos: **CU-005 (Consultar evento)**.
 
-Salió de `entradas-mercado-secundario` en la **fase A** de la migración a ADR-14
+Salió de `ventas` en la **fase A** de la migración a ADR-14
 (ver `Documentation/Work/MIGRACION-ADR-14.md`).
 
 ## Por qué es un microservicio
@@ -29,7 +29,7 @@ Nada de este servicio las escribe en caliente. Hoy las puebla `npm run semilla`;
 cuando exista Eventos y recintos las mantendrá al día el evento `EventoPublicado`
 del broker.
 
-**La misma proyección vive también en `entradas-mercado-secundario`**, con sus
+**La misma proyección vive también en `ventas`**, con sus
 propias columnas (`permite_reventa`, `aforo_maximo`, `asistentes`) que aquí no
 están porque la cartelera no las lee. Las dos copias se siembran con los mismos
 ids a propósito; hasta que el broker las sincronice, hay que sembrar las dos.

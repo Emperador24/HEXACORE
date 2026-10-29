@@ -72,7 +72,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 PUERTO="${PUERTO:-3001}"
 # Este servicio se replica para demostrar el balanceo, así que no tiene un
 # `container_name` fijo: se busca por el nombre que compone Docker Compose.
-CONTENEDOR="$(docker ps --format '{{.Names}}' 2>/dev/null | grep entradas-mercado-secundario | head -1)"
+CONTENEDOR="$(docker ps --format '{{.Names}}' 2>/dev/null | grep ventas | head -1)"
 COBERTURA="cobertura-integracion"
 
 verde() { printf '\033[32m%s\033[0m\n' "$*"; }

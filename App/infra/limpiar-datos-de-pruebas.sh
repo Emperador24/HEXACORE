@@ -114,7 +114,7 @@ sembrar() {
 # Catálogo, Acceso QR y Postventa se siembran aparte porque cada una vive en su
 # propia base (ADR-01) y nadie las publica todavía por el broker.
 sembrar autenticacion
-sembrar entradas-mercado-secundario
+sembrar ventas
 sembrar eventos-emergencias seed
 sembrar alimentos
 sembrar catalogo

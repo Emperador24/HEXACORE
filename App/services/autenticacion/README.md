@@ -141,7 +141,7 @@ falla.
 ### Los identificadores cuadran con el servicio de Entradas
 
 Ana, Bruno y Carla llevan **los mismos UUID** que la semilla de
-`entradas-mercado-secundario`, donde aparecen como `propietario_id` y `vendedor_id`. Es
+`ventas`, donde aparecen como `propietario_id` y `vendedor_id`. Es
 imprescindible: ADR-01 prohíbe las llaves foráneas entre bases de microservicios, así que la
 coherencia entre dominios la sostiene el acuerdo sobre los identificadores, no el motor.
 

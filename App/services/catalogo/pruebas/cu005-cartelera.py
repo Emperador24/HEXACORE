@@ -250,7 +250,7 @@ def es_publica():
     # El contraste con las rutas que sí exigen sesión ya no se comprueba aquí:
     # desde la fase A de ADR-14 este servicio solo sirve la cartelera, y
     # `compras` o `reventa` viven en otro proceso. Que aquellas devuelvan 401
-    # lo verifica la suite de entradas-mercado-secundario, y que el gateway no
+    # lo verifica la suite de ventas, y que el gateway no
     # deje pasar escrituras a la cartelera, la de gateway.
     #
     # Lo que sí es de este servicio: no acepta métodos de escritura.

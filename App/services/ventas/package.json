@@ -1,5 +1,5 @@
 {
-  "name": "hexacore-entradas-mercado-secundario",
+  "name": "hexacore-ventas",
   "version": "0.1.0",
   "private": true,
   "description": "Servicio de Ventas (ADR-14) — CU-001 a CU-004 y dueño de la tabla de entradas",

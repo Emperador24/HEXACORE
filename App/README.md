@@ -35,7 +35,7 @@ compartido — ver `shared/README.md`.
 App/
 ├── gateway/                             API Gateway + balanceador de carga (ADR-02) — Nginx, puerto 8080
 ├── services/                            Microservicios de dominio (NestJS, ADR-09)
-│   ├── entradas-mercado-secundario/     CU-001–006 — PostgreSQL
+│   ├── ventas/     CU-001–006 — PostgreSQL
 │   ├── personal/                        CU-007–009 — PostgreSQL
 │   ├── eventos-emergencias/             CU-010, CU-016–020, CU-026 — PostgreSQL
 │   ├── parqueaderos/                    CU-021–025 — PostgreSQL
@@ -56,17 +56,25 @@ Igual que en `Submission/DistribucionCasosUso.pdf`, cada bloque de CU mantiene s
 
 | Carpeta | CU | Responsable(s) |
 |---|---|---|
-| `services/entradas-mercado-secundario` | CU-001–006 | Daniel Cristancho (001–005), Samuel Emperador (006) |
+| `services/ventas` | CU-001–004 | Daniel Cristancho |
+| `services/postventa` | CU-006 | Samuel Emperador |
+| `services/acceso-qr` | CU-002 | Daniel Cristancho |
+| `services/catalogo` | CU-005 | Daniel Cristancho |
 | `services/eventos-emergencias` | CU-010, CU-016–020, CU-026 | Samuel Emperador (010, 026), Diego Coronado (016–020) |
-| `services/nucleo` → `src/modulos/administracion` | CU-027–032 | Sebastián Sánchez (027–029), Diego Coronado (030–032) |
-| `services/nucleo` → `src/modulos/pedidos` | CU-011–015 | Sebastián Sánchez |
-| `services/nucleo` → `src/modulos/personal` | CU-007–009 | Samuel Emperador |
-| `services/nucleo` → `src/modulos/parqueaderos` | CU-021–025 | Daniel Cristancho (021–023), Samuel Emperador (024–025) |
+| `services/autenticacion` | CU-027–032 | Sebastián Sánchez (027–029), Diego Coronado (030–032) |
+| `services/alimentos` | CU-011–015 | Sebastián Sánchez |
+| `services/personal` | CU-007–009 | Samuel Emperador |
+| `services/parqueaderos` | CU-021–025 | Daniel Cristancho (021–023), Samuel Emperador (024–025) |
+| `services/pagos`, `services/cola-virtual`, `services/notificaciones` | transversales | Samuel Emperador |
 
-Administración, Pedidos, Personal y Parqueaderos **ya no son servicios propios**: ADR-12 los
-absorbió como módulos del Núcleo, cada uno en `src/modulos/`, y por eso la tabla los lista así.
-Los dos últimos siguen sin implementar: son solo un README.
+Los responsables son los del SAD y no cambian al moverse el código: lo que cambia es dónde vive.
 
-Ojo con el horizonte: **ADR-14 vuelve a separarlos**, pero no como estaban. Autenticación sale
-como microservicio con base propia y Alimentos (los antiguos Pedidos) queda como servicio de
-dominio. El orden para llegar ahí está en `Documentation/Work/MIGRACION-ADR-14.md`, fase B.
+**Esta tabla ya refleja ADR-14, no ADR-12.** El Núcleo que ADR-12 había formado se repartió: lo
+que era `nucleo/src/modulos/administracion` es hoy `services/autenticacion`, y `.../pedidos` es
+`services/alimentos`. Personal y Parqueaderos siguen sin implementar —son un README y un módulo
+vacío dentro de Autenticación— y tienen carpeta propia reservada.
+
+De `services/ventas` salieron tres servicios en la fase A: la cartelera a `catalogo`, la puerta a
+`acceso-qr` y el mercado secundario a `postventa`. Lo que se quedó es la venta primaria y, sobre
+todo, **la tabla `entradas`**: Ventas es su dueño, y los otros dos se la piden por una API interna.
+El estado de la migración está en `Documentation/Work/MIGRACION-ADR-14.md`.

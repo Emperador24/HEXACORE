@@ -6,7 +6,7 @@ Administración y por tanto no pueden iniciar sesión. Así que las pruebas
 **fabrican** sus tokens, firmándolos con la clave privada de desarrollo,
 exactamente como lo haría Administración.
 
-Es copia literal del ayudante de `entradas-mercado-secundario`: los servicios no
+Es copia literal del ayudante de `ventas`: los servicios no
 comparten código (ADR-01), y duplicar veinte líneas de prueba cuesta menos que
 crear un paquete común entre microservicios.
 

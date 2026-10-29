@@ -28,7 +28,7 @@ services:
   nucleo:
     depends_on: !reset []
 
-  entradas-mercado-secundario:
+  ventas:
     depends_on: !reset []
 
   eventos-emergencias:

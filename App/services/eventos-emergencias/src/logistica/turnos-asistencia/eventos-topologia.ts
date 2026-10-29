@@ -1,7 +1,7 @@
 /**
  * Topología de RabbitMQ de CU-018 (ADR-10). Un solo archivo para que
  * publicador y consumidor no puedan desincronizarse por una errata — mismo
- * criterio que `entradas-mercado-secundario/src/reventa/eventos/topologia.ts`.
+ * criterio que `ventas/src/reventa/eventos/topologia.ts`.
  */
 
 /**

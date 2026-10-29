@@ -4,9 +4,9 @@ Requiere Docker y las dependencias Node instaladas (`npm ci` en el servicio).
 Desde la raíz del repositorio:
 
 ```bash
-docker compose -f App/services/pedidos/test/docker-compose.e2e.yml up -d --build --wait
-npm --prefix App/services/pedidos run test:e2e
-docker compose -f App/services/pedidos/test/docker-compose.e2e.yml down -v
+docker compose -f App/services/alimentos/test/docker-compose.e2e.yml up -d --build --wait
+npm --prefix App/services/alimentos run test:e2e
+docker compose -f App/services/alimentos/test/docker-compose.e2e.yml down -v
 ```
 
 La suite usa PostgreSQL 16, Redis 7, RabbitMQ 3.13 y la pasarela simulada
