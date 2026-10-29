@@ -1,4 +1,4 @@
-import { GestorConcurrencia } from '../reventa/concurrencia/gestor-concurrencia.service';
+import { GestorConcurrencia } from '../comun/concurrencia/gestor-concurrencia.service';
 import { CompraService } from './compra.service';
 import { ExpiracionReservas } from './expiracion-reservas.service';
 

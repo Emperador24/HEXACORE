@@ -1,5 +1,5 @@
 import { ConsumeMessage } from 'amqplib';
-import { ConexionRabbitMq } from '../reventa/eventos/conexion-rabbitmq.service';
+import { ConexionRabbitMq } from '../comun/eventos/conexion-rabbitmq.service';
 import {
   COLA_NOTIFICACIONES_VENTA,
   EXCHANGE_VENTAS,

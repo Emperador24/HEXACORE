@@ -192,6 +192,11 @@ services:
       REDIS_PUERTO: ${PUERTO_REDIS:-6379}
       RABBITMQ_URL: amqp://hexacore:hexacore@${HOST_RABBIT:-rabbitmq}:${PUERTO_RABBIT:-5672}
       AUTH_JWT_CLAVE_PUBLICA_ARCHIVO: /claves/jwt-publica.pem
+      # Con qué se identifican los servicios entre sí en las rutas `/interno/`,
+      # donde no hay usuario cuyo token reenviar — el trabajo de expiración de
+      # Postventa (CU-006D). En desarrollo es un valor fijo y conocido; en
+      # producción lo inyecta el orquestador y el servicio no arranca sin él.
+      TOKEN_SERVICIOS: ${TOKEN_SERVICIOS:-hexacore-servicios-dev}
     # Solo aquí se monta también la privada: el módulo de Administración es el
     # único que firma tokens (ADR-11).
     environment:
@@ -287,6 +292,43 @@ services:
       retries: 10
     ports:
       - "3010:3010"
+
+  # Microservicio de Postventa — CU-006, mercado secundario. Fase A de ADR-14.
+  #
+  # Salió de `entradas-mercado-secundario`: su pico va en los días previos al
+  # evento, cuando la venta primaria ya se agotó, y un checkout de reventa
+  # atascado ya no consume los hilos de la venta ni de la puerta.
+  #
+  # `Entrada` se quedó en Ventas, así que depende de él para retener,
+  # transferir y liberar entradas. Esa dependencia es la Saga del CU-006.
+  postventa:
+    profiles: ["servicios"]
+    build: ../services/postventa
+    # Sin `container_name`: puede escalar con el pico de la reventa.
+    restart: unless-stopped
+    init: true
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+      pagos: { condition: service_healthy }
+      entradas-mercado-secundario: { condition: service_healthy }
+    environment:
+      <<: *entorno-comun
+      PUERTO: "3011"
+      POSTGRES_BASE: postventa
+      PAGOS_URL: http://pagos:3008/api/v1
+      VENTAS_URL: http://entradas-mercado-secundario:3001/api/v1
+    volumes:
+      - ./claves-desarrollo/jwt-publica.pem:/claves/jwt-publica.pem:ro
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3011/api/v1/salud',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      start_period: 90s
+      retries: 10
+    ports:
+      - "3011:3011"
 
   # Microservicio de Cola virtual — turno de compra. Sostiene el primer ASR.
   cola-virtual:

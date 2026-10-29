@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { ConfirmChannel, ConsumeMessage } from 'amqplib';
-import { ConexionRabbitMq } from '../reventa/eventos/conexion-rabbitmq.service';
-import { MAXIMO_INTENTOS } from '../reventa/eventos/topologia';
+import { ConexionRabbitMq } from '../comun/eventos/conexion-rabbitmq.service';
+import { MAXIMO_INTENTOS } from '../comun/eventos/topologia';
 
 /** Exchange de los hechos de la venta primaria. Aparte del de la reventa: son dos dominios de eventos. */
 export const EXCHANGE_VENTAS = 'ventas.eventos';

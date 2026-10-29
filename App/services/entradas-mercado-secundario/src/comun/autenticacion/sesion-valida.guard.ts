@@ -13,7 +13,7 @@ import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
 import Redis from 'ioredis';
-import { REDIS } from '../../reventa/concurrencia/redis.provider';
+import { REDIS } from '../../comun/concurrencia/redis.provider';
 
 /**
  * Prefijo de las sesiones revocadas en Redis.

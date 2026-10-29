@@ -72,6 +72,11 @@ export interface ConfiguracionServicio {
   reventa: ReglasReventa;
   venta: ReglasVenta;
   /**
+   * Secreto compartido con el que otros servicios se identifican ante la API
+   * interna (`/interno/`). Ver `llamada-interna.guard.ts` para por qué existe.
+   */
+  tokenServicios: string;
+  /**
    * Verificación de los tokens de sesión (RNF-06). Solo la clave pública: este
    * servicio verifica tokens, no los emite.
    */
@@ -229,6 +234,12 @@ export function cargarConfiguracion(): ConfiguracionServicio {
     },
     reventa,
     venta,
+    // En producción es obligatorio: sin él, la API interna solo aceptaría
+    // tokens de usuario y el trabajo de expiración de Postventa no podría
+    // liberar ninguna entrada. En desarrollo tiene un valor fijo y conocido
+    // para que `docker compose up` funcione sin configurar nada.
+    tokenServicios:
+      entorno === 'production' ? requerido('TOKEN_SERVICIOS') : texto('TOKEN_SERVICIOS', 'hexacore-servicios-dev'),
     autenticacion: {
       clavePublica: cargarClavePublica(entorno === 'production'),
       emisor: texto('AUTH_JWT_EMISOR', 'hexacore-administracion'),

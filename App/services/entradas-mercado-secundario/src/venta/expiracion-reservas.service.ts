@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { GestorConcurrencia } from '../reventa/concurrencia/gestor-concurrencia.service';
+import { GestorConcurrencia } from '../comun/concurrencia/gestor-concurrencia.service';
 import { CompraService } from './compra.service';
 
 /**

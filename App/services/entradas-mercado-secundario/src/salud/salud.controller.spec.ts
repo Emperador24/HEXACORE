@@ -2,8 +2,8 @@ import { HttpStatus } from '@nestjs/common';
 import { Response } from 'express';
 import { DataSource } from 'typeorm';
 import { ConfiguracionServicio } from '../config/configuracion';
-import { GestorConcurrencia } from '../reventa/concurrencia/gestor-concurrencia.service';
-import { ConexionRabbitMq } from '../reventa/eventos/conexion-rabbitmq.service';
+import { GestorConcurrencia } from '../comun/concurrencia/gestor-concurrencia.service';
+import { ConexionRabbitMq } from '../comun/eventos/conexion-rabbitmq.service';
 import { SaludController } from './salud.controller';
 
 /**

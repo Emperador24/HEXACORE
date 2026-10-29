@@ -139,7 +139,7 @@ case "$ROL" in
     gris "  Levantando los servicios de dominio y el API Gateway"
     "${COMPOSE[@]}" --profile servicios up -d $CONSTRUIR \
       --scale entradas-mercado-secundario="$REPLICAS" \
-      autenticacion entradas-mercado-secundario catalogo notificaciones alimentos pagos cola-virtual acceso-qr eventos-emergencias \
+      autenticacion entradas-mercado-secundario postventa catalogo notificaciones alimentos pagos cola-virtual acceso-qr eventos-emergencias \
       api-gateway portal-web-cliente portal-web-admin
     ;;
   todo)
@@ -176,7 +176,7 @@ contenedor_de() {
 
 if [[ "$ROL" != "datos" ]]; then
   titulo "Esperando a que los servicios respondan"
-  for servicio in autenticacion eventos-emergencias entradas-mercado-secundario catalogo \
+  for servicio in autenticacion eventos-emergencias entradas-mercado-secundario postventa catalogo \
                   notificaciones alimentos pagos cola-virtual acceso-qr \
                   api-gateway portal-web-cliente portal-web-admin; do
     id="$(contenedor_de "$servicio")"
@@ -226,7 +226,10 @@ migrar() {
 # que es lo correcto en producción; aquí eso no es un error, solo significa que
 # ya estaba hecho.
 preparar_inventario_pedidos() {
-  local carpeta="$RAIZ/App/services/autenticacion"
+  # El inventario es de Alimentos desde ADR-14: salió del Núcleo con los CU-011
+  # a CU-015. Esta función seguía apuntando a `autenticacion/src/modulos/...`,
+  # que ya no existe, así que no preparaba nada y lo decía en gris.
+  local carpeta="$RAIZ/App/services/alimentos"
   [[ -d "$carpeta/node_modules" ]] || return 0
 
   local establecimientos
@@ -244,7 +247,7 @@ preparar_inventario_pedidos() {
     local salida
     salida="$(cd "$carpeta" && REDIS_HOST="${HOST_REDIS:-localhost}" \
       REDIS_PUERTO="${PUERTO_REDIS:-6380}" \
-      npx ts-node src/modulos/pedidos/inventario/preparar-inventario.ts \
+      npx ts-node src/inventario/preparar-inventario.ts \
       "$establecimiento" --compras-detenidas 2>&1 || true)"
     if grep -q 'Inventario preparado' <<<"$salida"; then
       preparados=$(( preparados + 1 ))
@@ -369,6 +372,10 @@ if [[ "$DEMO" == "si" && "$ROL" != "datos" ]]; then
     migrar pagos || true
     migrar acceso-qr || true
     migrar entradas-mercado-secundario || true
+    # Postventa después de Ventas: no por el esquema —son bases distintas y no
+    # hay llave foránea entre ellas desde ADR-14— sino porque la semilla de
+    # Ventas crea las entradas que la reventa publica.
+    migrar postventa || true
     migrar catalogo || true
     migrar eventos-emergencias || true
 

@@ -7,9 +7,9 @@ import { Entrada, EstadoEntrada } from '../persistencia/entidades/entrada.entity
 import { EstadoEvento, EventoReferencia } from '../persistencia/entidades/evento-referencia.entity';
 import { HistorialPropietario, MotivoCambioPropietario } from '../persistencia/entidades/historial-propietario.entity';
 import { LocalidadEvento } from '../persistencia/entidades/localidad-evento.entity';
-import { PagarDto } from '../reventa/dto/pagar.dto';
-import { PROCESADOR_PAGOS, ProcesadorPagos, ResultadoCobro } from '../reventa/pagos/procesador-pagos';
-import { GeneradorQr } from '../reventa/qr/generador-qr.service';
+import { PagarDto } from './dto/pagar.dto';
+import { PROCESADOR_PAGOS, ProcesadorPagos, ResultadoCobro } from '../comun/pagos/procesador-pagos';
+import { GeneradorQr } from '../comun/qr/generador-qr.service';
 import { Contadores } from './contadores';
 import { CompraDto, CrearCompraDto, aCompraDto } from './dto/compra.dto';
 import { NotificacionesVenta } from './notificaciones-venta.service';

@@ -109,14 +109,21 @@ sembrar() {
   fi
 }
 
-sembrar administracion
+# Los nombres de servicio son los de ADR-14, no los de antes: `administracion`
+# es `autenticacion` y `pedidos` es `alimentos`. Las proyecciones de eventos de
+# Catálogo, Acceso QR y Postventa se siembran aparte porque cada una vive en su
+# propia base (ADR-01) y nadie las publica todavía por el broker.
+sembrar autenticacion
 sembrar entradas-mercado-secundario
 sembrar eventos-emergencias seed
-sembrar pedidos
+sembrar alimentos
+sembrar catalogo
+sembrar acceso-qr
+sembrar postventa
 
 # --- Inventario de Redis -----------------------------------------------------
 
-carpeta_pedidos="$RAIZ/App/services/nucleo"
+carpeta_pedidos="$RAIZ/App/services/alimentos"
 if [[ -d "$carpeta_pedidos/node_modules" ]]; then
   # Las reservas y el stock viejos ya no corresponden a la base recién
   # sembrada: se rehacen desde cero.

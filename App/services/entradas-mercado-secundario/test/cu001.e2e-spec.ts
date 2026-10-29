@@ -16,8 +16,8 @@ import { CodigoPromocional } from '../src/persistencia/entidades/codigo-promocio
 import { Entrada, EstadoEntrada } from '../src/persistencia/entidades/entrada.entity';
 import { EstadoEvento, EventoReferencia } from '../src/persistencia/entidades/evento-referencia.entity';
 import { LocalidadEvento } from '../src/persistencia/entidades/localidad-evento.entity';
-import { REDIS } from '../src/reventa/concurrencia/redis.provider';
-import { ConexionRabbitMq } from '../src/reventa/eventos/conexion-rabbitmq.service';
+import { REDIS } from '../src/comun/concurrencia/redis.provider';
+import { ConexionRabbitMq } from '../src/comun/eventos/conexion-rabbitmq.service';
 import { EXCHANGE_VENTAS } from '../src/venta/notificaciones-venta.service';
 
 const pausa = (ms: number) => new Promise<void>((listo) => setTimeout(listo, ms));

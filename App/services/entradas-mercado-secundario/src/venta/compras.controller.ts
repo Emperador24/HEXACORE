@@ -10,7 +10,7 @@ import {
 import { RolesPermitidos, SesionValida } from '../comun/autenticacion/sesion-valida.guard';
 import { TokenSesion } from '../comun/token-sesion.decorator';
 import { UsuarioActual } from '../comun/usuario-actual.decorator';
-import { PagarDto } from '../reventa/dto/pagar.dto';
+import { PagarDto } from './dto/pagar.dto';
 import { CancelacionService } from './cancelacion.service';
 import { CompraService } from './compra.service';
 import {

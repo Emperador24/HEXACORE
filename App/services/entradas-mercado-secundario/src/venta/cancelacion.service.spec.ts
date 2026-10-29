@@ -4,7 +4,7 @@ import { Cancelacion, EstadoCancelacion } from '../persistencia/entidades/cancel
 import { Compra, EstadoCompra } from '../persistencia/entidades/compra.entity';
 import { Entrada, EstadoEntrada } from '../persistencia/entidades/entrada.entity';
 import { EstadoEvento, EventoReferencia } from '../persistencia/entidades/evento-referencia.entity';
-import { ProcesadorPagos, ResultadoCobro } from '../reventa/pagos/procesador-pagos';
+import { ProcesadorPagos, ResultadoCobro } from '../comun/pagos/procesador-pagos';
 import { CancelacionService } from './cancelacion.service';
 import { Contadores } from './contadores';
 import { NotificacionesVenta } from './notificaciones-venta.service';

@@ -1423,14 +1423,39 @@ los módulos del núcleo pueden compartir una transacción en lugar de reconcili
 aplicación; y \textbf{Comprobabilidad} (RNF-18), porque un módulo se prueba con dobles en proceso
 sin levantar contenedores.
 
-\textbf{Evidencia:} la justificación de la decisión es verificable hoy sobre el repositorio y sobre
-el sistema desplegado. Que solo un servicio admite réplicas se comprueba en
+\textbf{Evidencia (al decidirse ADR-12):} la justificación era verificable sobre el repositorio y
+sobre el sistema desplegado. Que solo un servicio admitía réplicas se comprobaba en
 \texttt{docker-compose.escalado.yml} y en los \texttt{container\_name} del \texttt{docker-compose.yml};
-que dos dominios no están implementados, en
-\texttt{App/services/nucleo/src/modulos/personal/} y \texttt{.../parqueaderos/}; que las seis bases comparten instancia, en
-\texttt{initdb/01-bases.sql}; y que \textbf{no hay una sola llamada HTTP síncrona entre servicios}
----lo que distingue esta arquitectura de un monolito distribuido--- en que los servicios solo se
-comunican por el gateway, por la cola de mensajes y verificando el token con la clave pública.
+que dos dominios no estaban implementados, en los módulos \texttt{personal/} y
+\texttt{parqueaderos/} del núcleo; que las seis bases comparten instancia, en
+\texttt{initdb/01-bases.sql}; y que \textbf{no había una sola llamada HTTP síncrona entre servicios}
+---lo que distinguía esa arquitectura de un monolito distribuido--- en que los servicios solo se
+comunicaban por el gateway, por la cola de mensajes y verificando el token con la clave pública.
+
+\medskip
+\textbf{Qué de esto cambió con ADR-14.} Dos de las cuatro evidencias ya no describen el sistema, y
+conviene decirlo aquí en vez de dejar el párrafo en presente:
+
+\begin{itemize}
+  \item \textbf{Las rutas de los dominios sin implementar.} El núcleo se repartió y se renombró:
+        esos dos módulos están hoy en \texttt{App/services/autenticacion/src/modulos/}, con sendos
+        marcadores en \texttt{App/services/personal/} y \texttt{App/services/parqueaderos/}. Siguen
+        sin implementarse.
+  \item \textbf{Ya hay llamadas HTTP síncronas entre servicios, y son deliberadas.} Al extraer
+        Acceso QR y Postventa, la tabla \texttt{entradas} se quedó en Ventas, que es su dueño. Los
+        dos servicios la necesitan y se la piden por una API interna
+        (\texttt{/interno/entradas/}) que el gateway no enruta. Postventa llama además a Pagos.
+
+        Esto no convierte la arquitectura en un monolito distribuido, pero la afirmación de arriba
+        ya no es el argumento que lo demuestra. Lo que lo sostiene ahora es \textbf{qué} se hace
+        síncrono y qué no: las llamadas síncronas son las que no pueden ser de otra manera porque
+        alguien espera una respuesta ---gastar un QR en la puerta, transferir una entrada con el
+        pago hecho--- y cada una está envuelta en una Saga con compensación explícita, con un
+        resultado «no respondió» distinto de «dijo que no». Todo lo demás ---notificar, liquidar,
+        proyectar--- sigue yendo por el broker. La diferencia con un monolito distribuido no es el
+        número de llamadas síncronas: es que ninguna de ellas lee la base de otro servicio, y que
+        cada una tiene definido qué pasa cuando falla.
+\end{itemize}
 
 La línea base contra la que se validará la migración es la de
 \texttt{App/infra/informe-atributos/INFORME.md}: p95 de \textbf{189,9 ms} con 200 peticiones

@@ -2,7 +2,7 @@
   "name": "hexacore-entradas-mercado-secundario",
   "version": "0.1.0",
   "private": true,
-  "description": "Servicio de Entradas y Mercado Secundario (SAD §9) — CU-006",
+  "description": "Servicio de Ventas (ADR-14) — CU-001 a CU-004 y dueño de la tabla de entradas",
   "scripts": {
     "build": "nest build",
     "start": "nest start",
@@ -78,11 +78,11 @@
       "!persistencia/migraciones/**",
       "!persistencia/semillas/**",
       "!persistencia/data-source.ts",
-      "!reventa/reventa.controller.ts",
       "!venta/compras.controller.ts",
       "!venta/ingresos.controller.ts",
-      "!reventa/concurrencia/redis.provider.ts",
-      "!herramientas/**"
+      "!herramientas/**",
+      "!comun/concurrencia/redis.provider.ts",
+      "!salud/salud.controller.ts"
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node",

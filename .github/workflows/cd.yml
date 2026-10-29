@@ -52,10 +52,28 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - nombre: nucleo
-            contexto: App/services/nucleo
+          # Los diez microservicios de ADR-14, más el gateway y los portales.
+          # `nucleo` ya no está: se renombró a `autenticacion` cuando Pedidos
+          # salió a `alimentos`, y publicar desde una carpeta inexistente
+          # fallaba.
+          - nombre: autenticacion
+            contexto: App/services/autenticacion
           - nombre: entradas-mercado-secundario
             contexto: App/services/entradas-mercado-secundario
+          - nombre: postventa
+            contexto: App/services/postventa
+          - nombre: acceso-qr
+            contexto: App/services/acceso-qr
+          - nombre: catalogo
+            contexto: App/services/catalogo
+          - nombre: pagos
+            contexto: App/services/pagos
+          - nombre: cola-virtual
+            contexto: App/services/cola-virtual
+          - nombre: alimentos
+            contexto: App/services/alimentos
+          - nombre: notificaciones
+            contexto: App/services/notificaciones
           - nombre: eventos-emergencias
             contexto: App/services/eventos-emergencias
           - nombre: gateway

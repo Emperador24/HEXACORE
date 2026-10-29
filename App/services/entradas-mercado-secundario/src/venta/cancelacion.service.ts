@@ -6,7 +6,7 @@ import { Cancelacion, EstadoCancelacion } from '../persistencia/entidades/cancel
 import { Compra, EstadoCompra } from '../persistencia/entidades/compra.entity';
 import { Entrada, EstadoEntrada } from '../persistencia/entidades/entrada.entity';
 import { EstadoEvento, EventoReferencia } from '../persistencia/entidades/evento-referencia.entity';
-import { PROCESADOR_PAGOS, ProcesadorPagos, ResultadoCobro } from '../reventa/pagos/procesador-pagos';
+import { PROCESADOR_PAGOS, ProcesadorPagos, ResultadoCobro } from '../comun/pagos/procesador-pagos';
 import { Contadores } from './contadores';
 import {
   CancelacionDto,

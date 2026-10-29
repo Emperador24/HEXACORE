@@ -25,7 +25,7 @@ Las rutas de este documento se verificaron contra el repositorio el 24 oct 2026.
 | Servicio | CU | Dónde está hoy | Qué falta |
 |---|---|---|---|
 | **Eventos y recintos** | CU-026, CU-029 | CU-026 parcial en `entradas-mercado-secundario` | CU-029 entero; publicar eventos hacia Catálogo y Ventas |
-| **Postventa** | CU-003, CU-006 | `entradas-mercado-secundario/src/reventa/` | Separarlo de Ventas; CU-003 entero |
+| **Postventa** | CU-003, CU-006 | `postventa/` ✅ extraído | CU-003 entero (sigue en Ventas) |
 | **Alimentos** | CU-011–015 | ✅ `services/alimentos/` — despliegue y base propios | CU-013, 014 y 015 enteros |
 | **Parqueaderos** | CU-021–025 | solo `nucleo/src/modulos/parqueaderos/README.md` | Todo |
 | **Personal y logística** | CU-007–009, 016–018, 030 | `eventos-emergencias/src/logistica/` (CU-017, 018) | CU-007, 008, 009, 016 y 030 |
@@ -98,14 +98,64 @@ Separarlos convierte las dos en Sagas con compensación, igual que CU-001. Eso
 debería ir después de ella, cuando el patrón de Saga ya esté construido y
 medido una vez.
 
-#### Orden revisado
+#### Qué se hizo, y en qué se equivocó este documento
 
-- **A1. Catálogo** — hecho.
-- **A2. Ventas** — lo que queda de `entradas-mercado-secundario` tras sacar
-  Catálogo, Acceso QR y Postventa. Depende de las dos de abajo.
-- Acceso QR y Postventa pasan **después de la fase E**, cuando la Saga de CU-001
-  esté funcionando y se pueda reutilizar el patrón en vez de inventarlo tres
-  veces.
+**Actualizado el 29 oct 2026.** El apartado de arriba proponía aplazar Acceso QR
+y Postventa a después de la fase E. Se hicieron igual, antes. Las dos
+afirmaciones de arriba siguen siendo ciertas —no eran un movimiento de carpetas,
+y costaron lo que cuesta una Saga— pero la conclusión de aplazarlas no se siguió.
+Lo que se ganó a cambio es que el patrón de Saga ya está construido y medido
+**tres veces** (CU-002, publicar y vender en CU-006), así que la fase E lo
+reutiliza en vez de inventarlo.
+
+- **A1. Catálogo** ✅ hecho.
+- **A2. Acceso QR** ✅ hecho. Saga con compensación local.
+- **A3. Postventa** ✅ hecho. Dos Sagas: publicar y vender.
+- **A4. Ventas** — lo que queda de `entradas-mercado-secundario`. Solo le falta
+  el renombrado de la carpeta.
+
+#### Lo que la extracción de Postventa obligó a construir
+
+Ninguna de estas cuatro cosas estaba prevista en este documento. Son el coste
+real de separar un servicio que compartía transacción con otro:
+
+1. **Columnas de copia en la publicación** (`evento_id`, `numero_ticket`,
+   `localidad_nombre`). Listar el mercado hacía un `innerJoin` a `entradas`, que
+   ahora está en otra base. Un anuncio muestra lo que se anunció, y esos datos no
+   cambian mientras está publicado, así que copiarlos es correcto — y evita una
+   llamada HTTP por publicación listada, que habría hecho que el mercado se
+   cayera cada vez que se cayera Ventas.
+2. **Un credencial de servicio** (`TOKEN_SERVICIOS`, `llamada-interna.guard.ts`).
+   El trabajo de expiración (CU-006D) corre por reloj y tiene que pedirle a
+   Ventas que libere entradas: no hay usuario cuyo token reenviar. Es además el
+   modelo más correcto para las llamadas que hoy reenvían el del usuario — la
+   autoridad de «gasta este QR» no es el operario, es que Acceso QR tenga permiso
+   de pedirlo.
+3. **`ComunModule` en Ventas.** La venta primaria tomaba de `ReventaModule` la
+   conexión a Redis, la de RabbitMQ, el adaptador de pagos y el generador de QR.
+   Al irse el módulo, esas piezas pasaron a donde debían estar desde el
+   principio.
+4. **Diagnóstico en el camino de fallo.** El `UPDATE` condicionado que retiene la
+   entrada junta «es tuya» y «está disponible» para decidirlas a la vez y en la
+   base. El precio es que su negativa no dice cuál falló, y el CU-006 tiene un
+   camino distinto para cada una: publicar una entrada ajena pasó a devolver 409
+   en vez de 403. Se recuperó leyendo la fila **solo cuando el `UPDATE` ya
+   falló**: la autoridad sigue siendo el `UPDATE`, y el `SELECT` es informativo.
+   Lo detectó `cu006b-publicaciones`, que es exactamente para lo que existen las
+   pruebas de integración.
+
+#### Lo que no se movió
+
+`Entrada` y `HistorialPropietario` se quedaron en Ventas, y con ellas las dos
+garantías que no se podían aflojar: el cambio de dueño, el QR nuevo y la fila de
+historial siguen ocurriendo **en una sola transacción local de Ventas**. Es lo
+que queda de la transacción grande, y es donde viven RNF-02 y RNF-11.
+
+Lo que sí se perdió son las dos llaves foráneas que apuntaban a `entradas`
+(`fk_publicaciones_entrada` y `fk_transacciones_entrada`): PostgreSQL no las
+admite entre bases. Es la consecuencia que ADR-01 anunció por escrito, y aquí se
+pagó en efectivo. `uq_publicacion_activa_por_entrada` —el índice que de verdad
+protege RNF-01— sobrevive intacto, porque era local.
 
 ### Fase B — Deshacer el Núcleo ✅ hecha
 
