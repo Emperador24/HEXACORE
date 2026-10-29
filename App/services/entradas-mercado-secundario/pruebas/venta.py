@@ -20,6 +20,10 @@ import urllib.request
 from identidad import cabeceras
 
 API = 'http://localhost:3001/api/v1'
+# Validar un QR dejó de ser de este servicio en la fase A de ADR-14: la puerta
+# es de Acceso QR. Algunas suites lo usan como preparación —"esta entrada ya se
+# usó"— y por eso necesitan poder llamar allá.
+API_ACCESO = 'http://localhost:3010/api/v1'
 
 # --- Usuarios de la semilla --------------------------------------------------
 
@@ -67,7 +71,7 @@ JAZZ_TERRAZA = '1000000d-0000-4000-8000-000000000001'    # 150 000 · solo 3 lib
 LOCALIDAD_FANTASMA = '1f000000-0000-4000-8000-0000000000ff'
 
 
-def pedir(metodo, ruta, usuario=None, cuerpo=None, espera=60, roles=('Cliente',)):
+def pedir(metodo, ruta, usuario=None, cuerpo=None, espera=60, roles=('Cliente',), base=None):
     """
     Una petición al servicio. Sin `usuario`, va sin cabecera de sesión.
 
@@ -77,7 +81,7 @@ def pedir(metodo, ruta, usuario=None, cuerpo=None, espera=60, roles=('Cliente',)
     """
     datos = json.dumps(cuerpo).encode() if cuerpo is not None else None
     encabezados = cabeceras(usuario, roles) if usuario else {'Content-Type': 'application/json'}
-    destino = f'{API}/{urllib.parse.quote(ruta, safe="/?&=")}'
+    destino = f'{base or API}/{urllib.parse.quote(ruta, safe="/?&=")}'
     req = urllib.request.Request(destino, data=datos, method=metodo, headers=encabezados)
     try:
         with urllib.request.urlopen(req, timeout=espera) as r:

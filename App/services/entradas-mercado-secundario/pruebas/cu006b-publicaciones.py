@@ -28,6 +28,7 @@ import sys
 import uuid
 
 from venta import (
+    API_ACCESO,
     ANA, BRUNO, CAFE_GENERAL, CARLA, FEST, FEST_GENERAL, FEST_PALCO, GALA_PLATEA,
     PORTERO, ROCK_GENERAL, SINFONICA_LUNETA, STANDUP_GENERAL,
     comprar, correr, pedir, resembrar, sql, titulo,
@@ -99,7 +100,7 @@ def el_veredicto_explica_por_que_no():
     # Una entrada usada para ingresar (CU-006E).
     fest = comprar(comprador, FEST_GENERAL, 1)['entradas'][0]
     pedir('POST', 'ingresos', PORTERO,
-          {'eventoId': FEST, 'codigoQr': fest['codigoQr']}, roles=('Personal',))
+          {'eventoId': FEST, 'codigoQr': fest['codigoQr']}, roles=('Personal',), base=API_ACCESO)
 
     _, r = pedir('GET', 'reventa/mis-entradas', comprador)
     porid = {e['id']: e for e in r}
@@ -186,7 +187,7 @@ def entrada_no_revendible():
     usada, anulada = compra['entradas']
 
     pedir('POST', 'ingresos', PORTERO,
-          {'eventoId': FEST, 'codigoQr': usada['codigoQr']}, roles=('Personal',))
+          {'eventoId': FEST, 'codigoQr': usada['codigoQr']}, roles=('Personal',), base=API_ACCESO)
     estado, r = publicar(comprador, usada['id'], 200000)
     assert estado == 409 and r['codigo'] == 'CU-006E', (estado, r)
     assert 'USADA' in str(r), r

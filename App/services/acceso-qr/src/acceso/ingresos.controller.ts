@@ -8,6 +8,7 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { RolesPermitidos, SesionValida } from '../comun/autenticacion/sesion-valida.guard';
+import { TokenSesion } from '../comun/token-sesion.decorator';
 import { UsuarioActual } from '../comun/usuario-actual.decorator';
 import {
   CacheQrDto,
@@ -44,8 +45,12 @@ export class IngresosController {
   @ApiResponse({ status: 200, type: IngresoAutorizadoDto })
   @ApiResponse({ status: 404, description: 'CU-002A QR inválido, de otro evento o anulado' })
   @ApiResponse({ status: 409, description: 'CU-002D ya utilizado · CU-002B aforo completo' })
-  validar(@UsuarioActual() personalId: string, @Body() datos: ValidarQrDto): Promise<IngresoAutorizadoDto> {
-    return this.ingresos.validar(personalId, datos);
+  validar(
+    @UsuarioActual() personalId: string,
+    @Body() datos: ValidarQrDto,
+    @TokenSesion() tokenSesion: string,
+  ): Promise<IngresoAutorizadoDto> {
+    return this.ingresos.validar(personalId, datos, tokenSesion);
   }
 
   @Get('eventos/:eventoId/cache')
@@ -54,8 +59,11 @@ export class IngresosController {
     description: 'CU-002E: los hashes SHA-256 de los QR que hoy pueden ingresar. Los códigos no viajan.',
   })
   @ApiResponse({ status: 200, type: CacheQrDto })
-  cache(@Param('eventoId', ParseUUIDPipe) eventoId: string): Promise<CacheQrDto> {
-    return this.ingresos.cache(eventoId);
+  cache(
+    @Param('eventoId', ParseUUIDPipe) eventoId: string,
+    @TokenSesion() tokenSesion: string,
+  ): Promise<CacheQrDto> {
+    return this.ingresos.cache(eventoId, tokenSesion);
   }
 
   @Post('sincronizacion')
@@ -67,7 +75,11 @@ export class IngresosController {
       'como conflicto para revisar, no se descarta.',
   })
   @ApiResponse({ status: 200, type: SincronizacionDto })
-  sincronizar(@UsuarioActual() personalId: string, @Body() datos: SincronizarIngresosDto): Promise<SincronizacionDto> {
-    return this.ingresos.sincronizar(personalId, datos);
+  sincronizar(
+    @UsuarioActual() personalId: string,
+    @Body() datos: SincronizarIngresosDto,
+    @TokenSesion() tokenSesion: string,
+  ): Promise<SincronizacionDto> {
+    return this.ingresos.sincronizar(personalId, datos, tokenSesion);
   }
 }

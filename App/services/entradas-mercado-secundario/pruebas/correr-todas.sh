@@ -26,7 +26,7 @@ if ! curl -sf http://localhost:3002/api/v1/salud > /dev/null; then
 fi
 
 fallos=0
-for suite in cu001-compra cu002-ingreso cu003-cancelacion \
+for suite in cu001-compra cu003-cancelacion \
              cu006-flujo-completo cu006b-publicaciones cu006-eventos-cola \
              cu006d-expiracion rnf01-concurrencia rnf06-autenticacion; do
   printf '  %-26s ' "$suite"

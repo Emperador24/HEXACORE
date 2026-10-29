@@ -7,7 +7,6 @@ import { Compra } from './entidades/compra.entity';
 import { Entrada } from './entidades/entrada.entity';
 import { EventoReferencia } from './entidades/evento-referencia.entity';
 import { HistorialPropietario } from './entidades/historial-propietario.entity';
-import { Ingreso } from './entidades/ingreso.entity';
 import { LocalidadEvento } from './entidades/localidad-evento.entity';
 import { PublicacionReventa } from './entidades/publicacion-reventa.entity';
 import { TransaccionReventa } from './entidades/transaccion-reventa.entity';
@@ -17,6 +16,15 @@ import { SecuenciaNumeroTransaccion1789344000000 } from './migraciones/178934400
 import { CarteleraCu0051789776000000 } from './migraciones/1789776000000-CarteleraCu005';
 import { VentaPrimariaCu001a0041789862400000 } from './migraciones/1789862400000-VentaPrimariaCu001a004';
 
+/**
+ * La entidad `Ingreso` ya no está aquí: se fue a `acceso-qr` en la fase A de
+ * ADR-14, junto con la puerta.
+ *
+ * **La tabla `ingresos` sigue en esta base**, con sus datos y su llave foránea
+ * a `entradas`. No se borra en esta migración porque esos datos no se han
+ * copiado a la base nueva: un `DROP` ahora se los llevaría. Queda como deuda
+ * explícita — cuando se migren, se tira.
+ */
 export const ENTIDADES = [
   EventoReferencia,
   LocalidadEvento,
@@ -27,7 +35,6 @@ export const ENTIDADES = [
   Compra,
   CodigoPromocional,
   UsoPromocion,
-  Ingreso,
   Cancelacion,
 ];
 

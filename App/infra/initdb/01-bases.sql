@@ -21,3 +21,7 @@ CREATE DATABASE catalogo                    OWNER hexacore;
 -- Fase A de ADR-14: Pagos sale con su propia base. Solo guarda el libro de
 -- idempotencia: ni pedidos ni compras, que son de quien llama.
 CREATE DATABASE pagos                       OWNER hexacore;
+
+-- Fase A de ADR-14: Acceso QR sale con su propia base. Guarda los ingresos y
+-- su proyeccion del evento con el aforo; la tabla de entradas es de Ventas.
+CREATE DATABASE acceso_qr                   OWNER hexacore;

@@ -33,6 +33,8 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 from venta import (
+    API_ACCESO,
+    BD_VENTAS,
     CAFE_GENERAL, FEST, FEST_GENERAL, FEST_PALCO, GALA, GALA_PLATEA, PORTERO, ROCK,
     ROCK_GENERAL, SINFONICA_LUNETA, VOLEIBOL,
     comprar, correr, pedir, resembrar, sql, titulo,
@@ -47,7 +49,7 @@ def alguien():
 
 def validar(codigo, evento=FEST, punto='Puerta 3', quien=PORTERO):
     return pedir('POST', 'ingresos', quien,
-                 {'eventoId': evento, 'codigoQr': codigo, 'puntoAcceso': punto}, roles=PUERTA)
+                 {'eventoId': evento, 'codigoQr': codigo, 'puntoAcceso': punto}, roles=PUERTA, base=API_ACCESO)
 
 
 def asistentes(evento):
@@ -74,7 +76,7 @@ def camino_feliz():
     assert fila == f'{PORTERO}|Puerta 3|EN_LINEA', fila
     # Post-condición 2: el aforo sube. Post-condición 3: el QR queda usado.
     assert asistentes(FEST) == antes + 1
-    assert sql(f"SELECT estado FROM entradas WHERE id='{entrada['id']}'") == 'USADA'
+    assert sql(f"SELECT estado FROM entradas WHERE id='{entrada['id']}'", bd=BD_VENTAS) == 'USADA'
     print(f"  {r['numeroTicket']} autorizado en Puerta 3 · aforo {antes} → {r['asistentes']}")
 
 
@@ -134,12 +136,12 @@ def qr_anulado_o_en_reventa():
     compra = comprar(alguien(), FEST_PALCO, 1)
     entrada = compra['entradas'][0]
 
-    sql(f"UPDATE entradas SET estado='ANULADA' WHERE id='{entrada['id']}'")
+    sql(f"UPDATE entradas SET estado='ANULADA' WHERE id='{entrada['id']}'", bd=BD_VENTAS)
     estado, anulada = validar(entrada['codigoQr'])
     assert estado == 404 and anulada['codigo'] == 'CU-002A', (estado, anulada)
     assert 'anulada' in anulada['mensaje']
 
-    sql(f"UPDATE entradas SET estado='EN_REVENTA' WHERE id='{entrada['id']}'")
+    sql(f"UPDATE entradas SET estado='EN_REVENTA' WHERE id='{entrada['id']}'", bd=BD_VENTAS)
     estado, reventa = validar(entrada['codigoQr'])
     assert estado == 404 and reventa['codigo'] == 'CU-002A', (estado, reventa)
     assert 'retirarla primero' in reventa['mensaje'], reventa
@@ -161,7 +163,7 @@ def aforo_completo():
 
     # Lo que importa del camino: la transacción se deshace entera. Una entrada
     # válida que se queda fuera por aforo NO puede quedar quemada.
-    assert sql(f"SELECT estado FROM entradas WHERE id='{entrada['id']}'") == 'VALIDA', \
+    assert sql(f"SELECT estado FROM entradas WHERE id='{entrada['id']}'", bd=BD_VENTAS) == 'VALIDA', \
         'CU-002B no puede dejar la entrada marcada como usada'
     assert sql(f"SELECT count(*) FROM ingresos WHERE entrada_id='{entrada['id']}'") == '0'
     assert asistentes(GALA) == antes
@@ -194,7 +196,7 @@ def cache_para_operar_sin_conexion():
     compra = comprar(alguien(), SINFONICA_LUNETA, 2)
     evento = compra['eventoId']
 
-    estado, cache = pedir('GET', f'ingresos/eventos/{evento}/cache', PORTERO, roles=PUERTA)
+    estado, cache = pedir('GET', f'ingresos/eventos/{evento}/cache', PORTERO, roles=PUERTA, base=API_ACCESO)
     assert estado == 200, (estado, cache)
     assert cache['eventoId'] == evento and cache['generadaEn']
 
@@ -213,7 +215,7 @@ def cache_para_operar_sin_conexion():
 
     # Una entrada ya usada sale de la caché: no debería poder validarse offline.
     validar(compra['entradas'][0]['codigoQr'], evento=compra['eventoId'])
-    _, despues = pedir('GET', f'ingresos/eventos/{evento}/cache', PORTERO, roles=PUERTA)
+    _, despues = pedir('GET', f'ingresos/eventos/{evento}/cache', PORTERO, roles=PUERTA, base=API_ACCESO)
     usado = hashlib.sha256(compra['entradas'][0]['codigoQr'].encode()).hexdigest()
     assert usado not in {q['hash'] for q in despues['validos']}
     print(f"  {len(cache['validos'])} hashes SHA-256, ningún código en claro · la usada sale de la caché")
@@ -233,7 +235,7 @@ def sincronizar_lo_escaneado_sin_conexion():
             {'codigoQr': compra['entradas'][0]['codigoQr'], 'escaneadoEn': iso(20), 'puntoAcceso': 'Puerta A'},
             {'codigoQr': compra['entradas'][1]['codigoQr'], 'escaneadoEn': iso(15), 'puntoAcceso': 'Puerta A'},
         ],
-    }, roles=PUERTA)
+    }, roles=PUERTA, base=API_ACCESO)
 
     assert estado == 200, (estado, r)
     assert r['registrados'] == 2 and r['conflictos'] == 0
@@ -268,7 +270,7 @@ def sincronizacion_con_conflictos():
             {'codigoQr': valido, 'escaneadoEn': iso(10), 'puntoAcceso': 'Puerta B'},
             {'codigoQr': 'HXC-QR-INVENTADO', 'escaneadoEn': iso(5)},
         ],
-    }, roles=PUERTA)
+    }, roles=PUERTA, base=API_ACCESO)
 
     assert estado == 200, 'una sincronización con conflictos no es un error de la petición'
     assert r['registrados'] == 1 and r['conflictos'] == 2, r
@@ -292,7 +294,7 @@ def sincronizacion_invalida():
         ({'eventoId': FEST, 'ingresos': [{'codigoQr': 'HXC-QR-000001', 'escaneadoEn': 'ayer'}]}, 'no es ISO 8601'),
         ({'eventoId': 'no-uuid', 'ingresos': [{'codigoQr': 'x', 'escaneadoEn': '2026-01-01T00:00:00Z'}]}, 'uuid'),
     ):
-        estado, _ = pedir('POST', 'ingresos/sincronizacion', PORTERO, cuerpo, roles=PUERTA)
+        estado, _ = pedir('POST', 'ingresos/sincronizacion', PORTERO, cuerpo, roles=PUERTA, base=API_ACCESO)
         assert estado == 400, f'{porque}: esperaba 400 y fue {estado}'
     print('  4 cuerpos inválidos, 4 respuestas 400')
 
@@ -302,18 +304,18 @@ def solo_el_personal_valida():
     compra = comprar(alguien(), FEST_GENERAL, 1)
     codigo = compra['entradas'][0]['codigoQr']
 
-    estado, _ = pedir('POST', 'ingresos', None, {'eventoId': FEST, 'codigoQr': codigo})
+    estado, _ = pedir('POST', 'ingresos', None, {'eventoId': FEST, 'codigoQr': codigo}, base=API_ACCESO)
     assert estado == 401, estado
 
     # Un cliente con sesión válida tampoco: el rol es lo que decide, no tener
     # token. (Por eso va por `pedir` y no por `validar`, que firma como Personal.)
     estado, _ = pedir('POST', 'ingresos', alguien(),
-                      {'eventoId': FEST, 'codigoQr': codigo}, roles=('Cliente',))
+                      {'eventoId': FEST, 'codigoQr': codigo}, roles=('Cliente',), base=API_ACCESO)
     assert estado == 403, estado
 
     # Un administrador sí, para poder cubrir una puerta.
     estado, admin = pedir('POST', 'ingresos', PORTERO,
-                          {'eventoId': FEST, 'codigoQr': codigo}, roles=('Administrador',))
+                          {'eventoId': FEST, 'codigoQr': codigo}, roles=('Administrador',), base=API_ACCESO)
     assert estado == 200 and admin['autorizado'] is True, (estado, admin)
     print('  sin token → 401 · rol Cliente → 403 · rol Administrador → 200')
 

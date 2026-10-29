@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { EntradasInternasController } from './interno/entradas-internas.controller';
+import { EntradasInternasService } from './interno/entradas-internas.service';
 import { PersistenciaModule } from '../persistencia/persistencia.module';
 import { ReventaModule } from '../reventa/reventa.module';
 import { CancelacionService } from './cancelacion.service';
@@ -6,8 +8,6 @@ import { CompraService } from './compra.service';
 import { ComprasController } from './compras.controller';
 import { Contadores } from './contadores';
 import { ExpiracionReservas } from './expiracion-reservas.service';
-import { IngresoService } from './ingreso.service';
-import { IngresosController } from './ingresos.controller';
 import { NotificacionesVenta } from './notificaciones-venta.service';
 import { PromocionesService } from './promociones.service';
 
@@ -25,7 +25,7 @@ import { PromocionesService } from './promociones.service';
  */
 @Module({
   imports: [PersistenciaModule, ReventaModule],
-  controllers: [ComprasController, IngresosController],
+  controllers: [ComprasController, EntradasInternasController],
   providers: [
     Contadores,
     NotificacionesVenta,
@@ -33,7 +33,7 @@ import { PromocionesService } from './promociones.service';
     CompraService,
     ExpiracionReservas,
     CancelacionService,
-    IngresoService,
+    EntradasInternasService,
   ],
 })
 export class VentaModule {}

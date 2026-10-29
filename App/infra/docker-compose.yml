@@ -260,6 +260,34 @@ services:
     ports:
       - "3001:3001"
 
+  # Microservicio de Acceso QR — CU-002, la puerta. Fase A de ADR-14.
+  acceso-qr:
+    profiles: ["servicios"]
+    build: ../services/acceso-qr
+    # Sin `container_name`: ADR-14 le pone 2+ réplicas. Su pico es en la puerta
+    # del evento, en otro momento que el de la venta.
+    restart: unless-stopped
+    init: true
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      entradas-mercado-secundario: { condition: service_healthy }
+    environment:
+      <<: *entorno-comun
+      PUERTO: "3010"
+      POSTGRES_BASE: acceso_qr
+      VENTAS_URL: http://entradas-mercado-secundario:3001/api/v1
+    volumes:
+      - ./claves-desarrollo/jwt-publica.pem:/claves/jwt-publica.pem:ro
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3010/api/v1/salud',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      start_period: 90s
+      retries: 10
+    ports:
+      - "3010:3010"
+
   # Microservicio de Cola virtual — turno de compra. Sostiene el primer ASR.
   cola-virtual:
     profiles: ["servicios"]

@@ -27,6 +27,7 @@ import sys
 import uuid
 
 from venta import (
+    API_ACCESO,
     FEST, FEST_GENERAL, FEST_PALCO, JAZZ_TERRAZA, PORTERO, ROCK_GENERAL,
     SINFONICA_LUNETA, STANDUP_GENERAL, VOLEIBOL,
     comprar, correr, pedir, resembrar, sql, titulo,
@@ -199,7 +200,7 @@ def ninguna_cancelable():
 
     # Una se usó para entrar al evento.
     estado, _ = pedir('POST', 'ingresos', PORTERO,
-                      {'eventoId': FEST, 'codigoQr': usada['codigoQr']}, roles=('Personal',))
+                      {'eventoId': FEST, 'codigoQr': usada['codigoQr']}, roles=('Personal',), base=API_ACCESO)
     assert estado == 200, estado
 
     estado, r = cotizar(comprador, compra, entradas=[usada['id']])

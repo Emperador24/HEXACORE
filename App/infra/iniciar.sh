@@ -139,7 +139,7 @@ case "$ROL" in
     gris "  Levantando los servicios de dominio y el API Gateway"
     "${COMPOSE[@]}" --profile servicios up -d $CONSTRUIR \
       --scale entradas-mercado-secundario="$REPLICAS" \
-      autenticacion entradas-mercado-secundario catalogo notificaciones alimentos pagos cola-virtual eventos-emergencias \
+      autenticacion entradas-mercado-secundario catalogo notificaciones alimentos pagos cola-virtual acceso-qr eventos-emergencias \
       api-gateway portal-web-cliente portal-web-admin
     ;;
   todo)
@@ -177,7 +177,7 @@ contenedor_de() {
 if [[ "$ROL" != "datos" ]]; then
   titulo "Esperando a que los servicios respondan"
   for servicio in autenticacion eventos-emergencias entradas-mercado-secundario catalogo \
-                  notificaciones alimentos pagos cola-virtual \
+                  notificaciones alimentos pagos cola-virtual acceso-qr \
                   api-gateway portal-web-cliente portal-web-admin; do
     id="$(contenedor_de "$servicio")"
     if [[ -n "$id" ]] && esperar_sano "$id"; then
@@ -367,6 +367,7 @@ if [[ "$DEMO" == "si" && "$ROL" != "datos" ]]; then
     migrar autenticacion || true
     migrar alimentos || true
     migrar pagos || true
+    migrar acceso-qr || true
     migrar entradas-mercado-secundario || true
     migrar catalogo || true
     migrar eventos-emergencias || true
