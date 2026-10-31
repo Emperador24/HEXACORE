@@ -6,6 +6,7 @@ import { CodigoPromocional } from './entidades/codigo-promocional.entity';
 import { Compra } from './entidades/compra.entity';
 import { Entrada } from './entidades/entrada.entity';
 import { EventoReferencia } from './entidades/evento-referencia.entity';
+import { EventoSaliente } from './entidades/evento-saliente.entity';
 import { HistorialPropietario } from './entidades/historial-propietario.entity';
 import { LocalidadEvento } from './entidades/localidad-evento.entity';
 import { PublicacionReventa } from './entidades/publicacion-reventa.entity';
@@ -15,6 +16,7 @@ import { EsquemaInicialCu0061789257600000 } from './migraciones/1789257600000-Es
 import { SecuenciaNumeroTransaccion1789344000000 } from './migraciones/1789344000000-SecuenciaNumeroTransaccion';
 import { CarteleraCu0051789776000000 } from './migraciones/1789776000000-CarteleraCu005';
 import { VentaPrimariaCu001a0041789862400000 } from './migraciones/1789862400000-VentaPrimariaCu001a004';
+import { BandejaSalida1790553600000 } from './migraciones/1790553600000-BandejaSalida';
 
 /**
  * La entidad `Ingreso` ya no está aquí: se fue a `acceso-qr` en la fase A de
@@ -36,6 +38,7 @@ export const ENTIDADES = [
   CodigoPromocional,
   UsoPromocion,
   Cancelacion,
+  EventoSaliente,
 ];
 
 export const MIGRACIONES = [
@@ -43,6 +46,7 @@ export const MIGRACIONES = [
   SecuenciaNumeroTransaccion1789344000000,
   CarteleraCu0051789776000000,
   VentaPrimariaCu001a0041789862400000,
+  BandejaSalida1790553600000,
 ];
 
 export function opcionesDataSource(config: ConfiguracionServicio): DataSourceOptions {

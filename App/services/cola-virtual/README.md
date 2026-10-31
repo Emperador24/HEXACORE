@@ -23,7 +23,7 @@ Tres estructuras por evento, y hacen falta las tres:
 
 | Clave | Qué guarda | Por qué |
 |---|---|---|
-| `cola:{evento}:admitidos` | `token → cuándo caduca` | Ventas gasta el turno **por token** |
+| `cola:{evento}:admitidos` | `token → cuándo caduca` | el gateway gasta el turno **por token** |
 | `cola:{evento}:espera` | `usuario → cuándo llegó` | el orden de la fila |
 | `cola:{evento}:por-usuario` | `usuario → token` | saber si **este** ya tiene turno |
 
@@ -38,7 +38,12 @@ dejaría pasar de más — dos instancias leerían 99 y las dos admitirían.
 
 ## El token es de un solo uso
 
-Lo gasta Ventas con `DELETE /interno/cola/...`, no el cliente. Es `DELETE`
+Lo gasta el **API Gateway** con `DELETE /interno/cola/turnos/{token}`, no el
+cliente ni Ventas (ADR-15): la ruta `POST /api/v1/compras` exige la cabecera
+`X-Turno-Cola`, y el gateway la gasta aquí antes de dejar pasar la compra. Como
+el gateway no sabe de qué evento es la localidad que se compra, el token se
+resuelve solo: `cola:turno:{token}` guarda su evento y su dueño, y un token de
+otra cuenta no vale. Es `DELETE`
 porque gastarlo **lo destruye**: si sirviera dos veces, el aforo dejaría de
 significar nada.
 

@@ -128,6 +128,19 @@ describe('ColaService contra Redis', () => {
     expect((await cola.pedirTurno(EVENTO, 'bruno')).estado).toBe(EstadoTurno.ADMITIDO);
   });
 
+  it('con solo el token, el turno se gasta una vez y solo su dueño', async () => {
+    if (!hayRedis) return;
+    const cola = servicio(2);
+    const turno = await cola.pedirTurno(EVENTO, 'ana');
+    const token = turno.token as string;
+
+    // Un token ajeno no sirve aunque esté vivo: el gateway reenvía la sesión
+    // de quien compra, y el turno tiene que ser suyo.
+    expect(await cola.consumirTurnoDe(token, 'bruno')).toBeNull();
+    expect(await cola.consumirTurnoDe(token, 'ana')).toBe(EVENTO);
+    expect(await cola.consumirTurnoDe(token, 'ana')).toBeNull();
+  });
+
   it('un token inventado no sirve', async () => {
     if (!hayRedis) return;
     expect(await servicio(2).consumirTurno(EVENTO, 'no-existe')).toBe(false);

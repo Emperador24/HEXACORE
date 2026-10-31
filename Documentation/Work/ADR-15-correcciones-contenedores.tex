@@ -1,0 +1,157 @@
+% ADR-15 — se incluye desde DescripcionArquitecturaSoftware.tex con \input,
+% igual que ADR-14, al que complementa.
+
+\subsection*{ADR-15 --- Correcciones a la vista de contenedores y decisiones que el diagrama dejaba abiertas}
+
+\textbf{Estado:} \textit{aceptado; complementa a ADR-14}, no lo supera. El estilo
+híbrido, los catorce servicios y el criterio de extracción no cambian. Lo que
+cambia son \textbf{cuatro relaciones} del diagrama de contenedores y
+\textbf{seis puntos} que ADR-14 no fijaba.
+
+\textbf{Contexto:} la revisión del diagrama de contenedores de ADR-14 lo
+contrastó contra una especificación escrita a partir de él y encontró dos tipos
+de problema.
+
+\begin{itemize}
+  \item \textbf{Relaciones que contradicen el propio diseño.} Acceso QR llamaba
+        de forma síncrona a Ventas para gastar cada QR, aunque ADR-14 lo separa
+        justamente porque su pico ---la puerta--- ocurre en otro momento que el
+        de la venta: con esa llamada, una Ventas lenta atascaba la puerta. El
+        \textit{webhook} de la pasarela llegaba directo a Pagos, saltándose el
+        punto único de entrada. Y el gateway le preguntaba a Autenticación por
+        cada petición, lo que ponía a quien emite los tokens en el camino de
+        todo el tráfico.
+  \item \textbf{Decisiones sin tomar.} El diagrama no dice con qué se construyen
+        los servicios, qué broker ni qué motor de búsqueda se usan, cuántas
+        réplicas mínimas llevan los microservicios que «escalan solos», cómo se
+        invalida el QR anterior en una reventa, cómo se avisa de un evento
+        cancelado, ni cómo se garantiza que un cambio guardado llegue al broker.
+\end{itemize}
+
+\textbf{Decisión --- relaciones corregidas:}
+
+\begin{enumerate}
+  \item \textbf{El API Gateway valida el JWT localmente, con la clave pública},
+        y autoriza por el rol del token. No llama a Autenticación en cada
+        petición: Autenticación solo emite tokens (\textit{login}, renovación).
+        Los servicios siguen verificando el token por su cuenta y comprobando en
+        Redis que la sesión no esté cerrada (RNF-06, ADR-11).
+  \item \textbf{El gateway exige el turno de la Cola virtual en la ruta de
+        compra} y lo gasta antes de reenviar la petición a Ventas. Ventas no
+        llama a la Cola: solo recibe a cuantos puede atender. El turno es de un
+        solo uso y solo vale para la cuenta que lo pidió.
+  \item \textbf{Acceso QR no llama a Ventas.} Mantiene su propia copia del estado
+        de cada QR, alimentada por \texttt{CompraConfirmada} (activa los QR) y
+        por un evento nuevo, \texttt{EntradaActualizada}, que Ventas publica
+        cuando una entrada sale a reventa, vuelve, cambia de dueño o se anula.
+        La validación pasa a ser \textbf{una transacción local} ---QR, aforo y
+        registro del ingreso--- en lugar de una Saga con compensación remota.
+        En sentido contrario, Acceso QR publica \texttt{IngresoRegistrado} y
+        Ventas marca la entrada como usada: sin eso permitiría reembolsar
+        (CU-003D) o revender una entrada con la que ya se entró.
+  \item \textbf{El \textit{webhook} de la pasarela entra por el gateway}, por la
+        única ruta pública sin JWT; Pagos lo autentica con la firma HMAC del
+        cuerpo. Con él, Pagos publica \texttt{PagoAprobado} /
+        \texttt{PagoRechazado}, y un cobro que quedó indeterminado por un
+        \textit{timeout} se resuelve cuando la pasarela confirma.
+\end{enumerate}
+
+\textbf{Decisión --- lo que el diagrama dejaba abierto:}
+
+\begin{enumerate}
+  \setcounter{enumi}{4}
+  \item \textbf{Tecnologías.} Backend en \textbf{NestJS} (ya decidido en ADR-09);
+        bases en \textbf{PostgreSQL} (ADR-06); broker \textbf{RabbitMQ} (ADR-10)
+        con colas \textit{quorum}, que son su forma de «tópicos replicados»; e
+        índice de búsqueda sobre una \textbf{instancia PostgreSQL dedicada con
+        búsqueda de texto completo} (\texttt{tsvector} con índice GIN y
+        \texttt{pg\_trgm} para errores de escritura). Se prefiere a OpenSearch
+        porque los filtros de CU-005 ---categoría, fecha, ciudad, artista--- no
+        necesitan relevancia ni facetas, y así el índice no añade una
+        tecnología más que operar. Se revisa si la búsqueda empieza a necesitar
+        ordenar por relevancia.
+  \item \textbf{Réplicas mínimas:} las de la vista física
+        (§\ref{sec:fisica}), que el diagrama no repetía. Ventas \textbf{3},
+        igual que Cola virtual y Catálogo, porque los tres forman el camino de
+        compra; Pagos y Autenticación \textbf{3}, porque si caen degradan muchos
+        casos de uso a la vez; Acceso QR \textbf{2}, porque su carga se
+        concentra en las horas de ingreso y escala por validaciones por segundo.
+  \item \textbf{Transactional Outbox} para todo evento que un servicio publique
+        como consecuencia de escribir en su base: el evento se guarda en una
+        tabla de salida \textit{en la misma transacción} que el cambio, y un
+        publicador lo saca al broker después. Se elige frente a «publicar
+        después del commit» porque ese hueco pierde el evento si el broker o el
+        proceso caen, y sin \texttt{CompraConfirmada} una entrada pagada no
+        entraría por la puerta. La entrega es «al menos una vez»: cada evento
+        lleva un \texttt{id} y una \texttt{secuencia} para descartar repetidos y
+        desordenados.
+  \item \textbf{\texttt{EventoCancelado}}, publicado por Eventos y recintos y
+        consumido por Catálogo (lo retira), Ventas (cierra la venta), Acceso QR
+        (rechaza en la puerta) y Notificaciones (avisa a los compradores). Con
+        solo \texttt{EventoPublicado}, cancelar no tenía cómo llegar a nadie.
+\end{enumerate}
+
+Con esto el diagrama tiene \textbf{27 contenedores}: 4 \textit{frontends}, el
+gateway, 7 microservicios, 7 servicios de dominio, 5 almacenes, el broker y 2
+sistemas externos. La especificación de la revisión decía 34, pero su propia
+tabla suma 27.
+
+\textbf{Alternativas consideradas:}
+\begin{itemize}
+  \item \textbf{Mantener la llamada de Acceso QR a Ventas} y protegerla con un
+        \textit{circuit breaker}. Acota el daño pero no lo quita: con el
+        circuito abierto la puerta deja de validar, que es justo lo que ADR-14
+        quería evitar.
+  \item \textbf{Que Ventas gaste el turno llamando a la Cola.} Funciona, pero
+        añade una dependencia síncrona más en el servicio que más carga
+        soporta, y una flecha que el diagrama no tiene.
+  \item \textbf{Validar el JWT en cada servicio y no en el gateway.} Ya se hace
+        (RNF-06); hacerlo también en el gateway rechaza lo inválido antes de
+        consumir un salto de red y una réplica.
+\end{itemize}
+
+\textbf{Atributo de calidad:} \textbf{Disponibilidad} ---la puerta ya no
+depende de Ventas, ni el tráfico de Autenticación---; \textbf{Rendimiento},
+porque una validación de QR y una autenticación dejan de costar un salto de
+red; \textbf{Consistencia}, por el Outbox y por la validación atómica en la
+puerta; y \textbf{Seguridad}, porque el turno solo vale para su dueño y el
+\textit{webhook} solo se acepta firmado.
+
+\textbf{Consecuencias:}
+\begin{itemize}
+  \item \textbf{Consistencia eventual en la puerta.} Una entrada recién comprada
+        tarda en poder entrar lo que tarda su evento en llegar ---medio segundo
+        en condiciones normales---. Para una puerta que abre horas después de la
+        compra es irrelevante.
+  \item \textbf{RNF-02 se cumple por orden, no por atomicidad.} Antes, el QR
+        viejo y el nuevo se cambiaban en el mismo \texttt{UPDATE} que consultaba
+        la puerta. Ahora la puerta deja de aceptar la entrada cuando sale a
+        reventa ---mucho antes de transferirla---, así que el QR viejo ya no
+        vale cuando llega el nuevo. Queda una ventana: entre que Ventas marca la
+        entrada \texttt{EN\_REVENTA} y la puerta se entera, el vendedor podría
+        entrar con ella. Si después se transfiere, Acceso QR conserva el estado
+        \texttt{USADA} y registra una alerta para resolverla con el comprador.
+  \item \textbf{Ventas ya no sabe quién entró.} \texttt{USADA} vive solo en
+        Acceso QR. No afecta a la cancelación ni a la reventa, que cierran antes
+        de que empiece el evento.
+  \item \textbf{Una sesión cerrada pasa el gateway} y la rechaza el servicio de
+        destino. La garantía es la misma; cambia quién responde el 401.
+  \item \textbf{Un turno se gasta aunque la reserva falle} ---por ejemplo, si la
+        localidad se agotó---. Es lo correcto para el aforo de la cola, pero
+        obliga al comprador a volver a la fila si quiere intentar otra
+        localidad.
+\end{itemize}
+
+\textbf{Estado de implementación.} Ya en el código: la validación local del JWT,
+la autorización por rol y la exigencia del turno en el gateway
+(\texttt{App/gateway/autenticacion.js}); la ruta pública del \textit{webhook}
+con firma HMAC y la publicación de \texttt{PagoAprobado} /
+\texttt{PagoRechazado} en Pagos; el Outbox en Ventas para
+\texttt{CompraConfirmada} y \texttt{EntradaActualizada} y en Acceso QR para
+\texttt{IngresoRegistrado}; y la copia local de los QR en Acceso QR, que ya no
+llama a Ventas. Pendiente, porque depende de
+servicios que todavía no existen: \texttt{EventoPublicado} y
+\texttt{EventoCancelado} (Eventos y recintos), el consumo de
+\texttt{PagoAprobado} en Ventas para cerrar la Saga (fase E de
+\texttt{MIGRACION-ADR-14.md}), el Outbox en los demás publicadores, y el índice
+de búsqueda dedicado del Catálogo.

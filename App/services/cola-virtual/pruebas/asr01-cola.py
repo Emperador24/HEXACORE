@@ -87,10 +87,10 @@ def la_fila_respeta_el_orden_de_llegada():
 
 
 def la_ruta_interna_no_se_expone():
-    titulo('Gastar el turno es cosa de Ventas, no del cliente')
+    titulo('Gastar el turno es cosa del gateway, no del cliente')
     # Por el puerto del servicio sí existe, pero exige sesión; lo que no existe
     # es por el gateway, y eso se comprueba en la suite del gateway.
-    estado, _ = pedir('DELETE', f'interno/cola/eventos/{EVENTO}/turnos/{uuid.uuid4()}')
+    estado, _ = pedir('DELETE', f'interno/cola/turnos/{uuid.uuid4()}')
     assert estado == 401, estado
     print('  sin token → 401 también en la ruta interna')
 

@@ -11,6 +11,12 @@ const admitidos = (eventoId: string): string => `cola:${eventoId}:admitidos`;
 const espera = (eventoId: string): string => `cola:${eventoId}:espera`;
 /** Turno vigente de cada usuario: hace falta para no dar dos sitios al mismo. */
 const porUsuario = (eventoId: string): string => `cola:${eventoId}:por-usuario`;
+/**
+ * De qué evento y de quién es un token. El gateway gasta el turno solo con el
+ * token —no sabe de qué evento es la localidad que se compra—, y esto es lo
+ * que le permite hacerlo.
+ */
+const duenoTurno = (token: string): string => `cola:turno:${token}`;
 
 @Injectable()
 export class ColaService {
@@ -47,6 +53,11 @@ export class ColaService {
       if (typeof bruto.token !== 'string' || !Number.isSafeInteger(expiraEn)) {
         throw new ServiceUnavailableException({ codigo: 'COLA_RESULTADO_INCIERTO' });
       }
+      // Fuera del guion a propósito: en un clúster Redis un guion solo puede
+      // tocar claves del mismo nodo, y esta va por token, no por evento. No
+      // necesita ser atómica con la admisión: el turno solo se gasta si
+      // también está entre los admitidos, que es lo que decide el guion.
+      await this.recordarDueno(bruto.token, eventoId, usuarioId, expiraEn);
       return {
         estado: EstadoTurno.ADMITIDO,
         token: bruto.token,
@@ -74,15 +85,39 @@ export class ColaService {
   }
 
   /**
-   * Gasta un turno. Lo llama Ventas, no el comprador.
+   * Gasta un turno sabiendo su evento.
    *
-   * Devuelve `false` en vez de lanzar cuando el turno no vale: para Ventas no
-   * es un fallo del sistema, es la respuesta —"este no tiene turno"— y la
-   * traduce a su propio 403.
+   * Devuelve `false` en vez de lanzar cuando el turno no vale: no es un fallo
+   * del sistema, es la respuesta —"este no tiene turno"—.
    */
   async consumirTurno(eventoId: string, token: string): Promise<boolean> {
     const bruto = await this.ejecutar(CONSUMIR_TURNO, [admitidos(eventoId)], [String(Date.now()), token]);
     return bruto.codigo === 'OK';
+  }
+
+  /**
+   * Gasta un turno con solo el token. Lo pide el API Gateway al dejar pasar
+   * una compra (ADR-15).
+   *
+   * El turno tiene que ser **de quien compra**: un token copiado de otra
+   * cuenta no sirve. Devuelve el evento del turno, o `null` si no vale — sin
+   * decir por qué, para no confirmarle a nadie que un token ajeno existe.
+   */
+  async consumirTurnoDe(token: string, usuarioId: string): Promise<string | null> {
+    let dueno: string | null;
+    try {
+      dueno = await this.redis.get(duenoTurno(token));
+    } catch (error) {
+      this.log.error(`La fila no respondió: ${error instanceof Error ? error.message : 'desconocido'}`);
+      throw new ServiceUnavailableException({ codigo: 'COLA_NO_DISPONIBLE' });
+    }
+    if (!dueno) return null;
+    const [eventoId, propietario] = dueno.split('|');
+    if (propietario !== usuarioId) return null;
+
+    if (!(await this.consumirTurno(eventoId, token))) return null;
+    await this.redis.del(duenoTurno(token)).catch(() => undefined); // caduca solo si esto falla
+    return eventoId;
   }
 
   /** Cuántos están comprando y cuántos esperan. Para operar y para las pruebas de carga. */
@@ -93,6 +128,16 @@ export class ColaService {
       this.redis.zcard(espera(eventoId)),
     ]);
     return { comprando, enEspera };
+  }
+
+  private async recordarDueno(token: string, eventoId: string, usuarioId: string, expiraEn: number): Promise<void> {
+    const vidaMs = Math.max(expiraEn - Date.now(), 1);
+    try {
+      await this.redis.set(duenoTurno(token), `${eventoId}|${usuarioId}`, 'PX', vidaMs);
+    } catch (error) {
+      this.log.error(`La fila no respondió: ${error instanceof Error ? error.message : 'desconocido'}`);
+      throw new ServiceUnavailableException({ codigo: 'COLA_NO_DISPONIBLE' });
+    }
   }
 
   private async ejecutar(guion: string, claves: string[], args: string[]): Promise<Record<string, unknown>> {

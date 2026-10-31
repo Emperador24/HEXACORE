@@ -1,8 +1,10 @@
-import { ConflictException, Inject, Injectable, Logger } from '@nestjs/common';
+import { ConflictException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { TipoOperacion, TransaccionPago } from '../persistencia/entidades/transaccion-pago.entity';
 import { CobrarDto, ReembolsarDto, RespuestaPagoDto } from './dto/pagos.dto';
+import { NotificacionPasarelaDto } from './dto/webhook.dto';
+import { EventoPago } from './eventos/publicador-pagos.service';
 import { PROCESADOR_PAGOS, ProcesadorPagos, RespuestaCobro, ResultadoCobro } from './procesador-pagos';
 
 @Injectable()
@@ -113,6 +115,65 @@ export class PagosService {
       referencia: respuesta.referencia,
       motivo: respuesta.motivo,
       repetida: false,
+    };
+  }
+
+  /**
+   * La pasarela confirma una operación por webhook (ADR-15).
+   *
+   * Es lo que **resuelve un INDETERMINADO**: un cobro que se cortó por timeout
+   * queda en duda hasta que la pasarela dice qué pasó, y esta es la vía por la
+   * que lo dice sin que nadie tenga que reintentar.
+   *
+   * Si el libro ya tenía un resultado final distinto, gana la pasarela —es la
+   * que sabe dónde está el dinero— y se registra fuerte, porque una
+   * discrepancia así es para revisar a mano.
+   *
+   * Devuelve el evento a publicar. Se publica también cuando el resultado ya
+   * se conocía: el webhook es la confirmación, y la Saga de compra espera esa
+   * confirmación aunque el cobro haya respondido a tiempo.
+   */
+  async confirmar(notificacion: NotificacionPasarelaDto): Promise<EventoPago> {
+    const repositorio = this.datos.getRepository(TransaccionPago);
+    const transaccion = await repositorio.findOne({ where: { claveIdempotencia: notificacion.claveIdempotencia } });
+    if (!transaccion) {
+      // Pagos no pidió esta operación, o se cayó antes de anotarla. Lo
+      // segundo es para conciliar a mano; responder 404 hace que se vea.
+      this.log.error(`Webhook de una operación desconocida: ${notificacion.claveIdempotencia}`);
+      throw new NotFoundException({ codigo: 'OPERACION_DESCONOCIDA' });
+    }
+    if (transaccion.tipo !== notificacion.operacion) {
+      throw new ConflictException({ codigo: 'OPERACION_INCOMPATIBLE' });
+    }
+
+    if (transaccion.resultado !== notificacion.resultado) {
+      if (transaccion.resultado === ResultadoCobro.INDETERMINADO) {
+        this.log.log(`${transaccion.tipo} ${transaccion.claveIdempotencia} resuelto por webhook: ${notificacion.resultado}`);
+      } else {
+        this.log.error(
+          `DISCREPANCIA en ${transaccion.claveIdempotencia}: el libro decía ${transaccion.resultado} ` +
+            `y la pasarela confirma ${notificacion.resultado}. Gana la pasarela; revisar a mano.`,
+        );
+      }
+      transaccion.resultado = notificacion.resultado;
+      transaccion.referencia = notificacion.referencia ?? transaccion.referencia;
+      transaccion.motivo = notificacion.motivo ?? null;
+      await repositorio.save(transaccion);
+    }
+
+    const aprobado = notificacion.resultado === ResultadoCobro.APROBADO;
+    return {
+      id: `${transaccion.claveIdempotencia}:${notificacion.resultado}`,
+      tipo: aprobado ? 'PAGO_APROBADO' : 'PAGO_RECHAZADO',
+      version: 1,
+      ocurridoEn: new Date().toISOString(),
+      claveIdempotencia: transaccion.claveIdempotencia,
+      operacion: transaccion.tipo,
+      solicitante: transaccion.solicitante,
+      monto: Number(transaccion.monto),
+      moneda: transaccion.moneda,
+      referencia: transaccion.referencia,
+      motivo: transaccion.motivo,
     };
   }
 }

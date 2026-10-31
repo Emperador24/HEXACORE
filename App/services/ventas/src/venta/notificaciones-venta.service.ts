@@ -3,8 +3,10 @@ import { ConfirmChannel, ConsumeMessage } from 'amqplib';
 import { ConexionRabbitMq } from '../comun/eventos/conexion-rabbitmq.service';
 import { MAXIMO_INTENTOS } from '../comun/eventos/topologia';
 
+import { EXCHANGE_VENTAS } from '../comun/eventos/bandeja-salida.service';
+
 /** Exchange de los hechos de la venta primaria. Aparte del de la reventa: son dos dominios de eventos. */
-export const EXCHANGE_VENTAS = 'ventas.eventos';
+export { EXCHANGE_VENTAS };
 export const EXCHANGE_VENTAS_MUERTOS = 'ventas.muertos';
 export const COLA_NOTIFICACIONES_VENTA = 'ventas.notificaciones';
 
@@ -24,9 +26,24 @@ export interface EventoVenta {
   ocurridoEn: string;
   clienteId: string;
   numeroCompra: string;
+  /** Lo necesita la puerta para saber en qué evento vale cada QR (ADR-15). */
+  eventoId?: string;
   eventoNombre: string;
-  /** Tickets afectados: los emitidos o los anulados. */
-  entradas: { numeroTicket: string; localidadNombre: string; codigoQr?: string }[];
+  /**
+   * Tickets afectados: los emitidos o los anulados.
+   *
+   * En `COMPRA_CONFIRMADA` van también `entradaId`, `estado` y `hashQr`: con
+   * ellos Acceso QR activa el QR sin preguntarle nada a Ventas. Son campos
+   * añadidos, no cambiados, así que el contrato sigue siendo la versión 1.
+   */
+  entradas: {
+    entradaId?: string;
+    numeroTicket: string;
+    localidadNombre: string;
+    estado?: string;
+    codigoQr?: string;
+    hashQr?: string;
+  }[];
   /** Total cobrado, o monto reembolsado. */
   monto: number;
 }

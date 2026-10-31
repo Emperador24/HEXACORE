@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
 import { AutenticacionModule } from '../comun/autenticacion/autenticacion.module';
 import { PersistenciaModule } from '../persistencia/persistencia.module';
+import { PublicadorPagos } from './eventos/publicador-pagos.service';
 import { PagosController } from './pagos.controller';
 import { PagosService } from './pagos.service';
 import { PasarelaHttp } from './pasarela-http.service';
 import { PROCESADOR_PAGOS } from './procesador-pagos';
+import { WebhookController } from './webhook.controller';
 
 /**
  * Pagos: el único punto del sistema que habla con la pasarela.
@@ -19,7 +21,7 @@ import { PROCESADOR_PAGOS } from './procesador-pagos';
  */
 @Module({
   imports: [PersistenciaModule, AutenticacionModule],
-  controllers: [PagosController],
-  providers: [PagosService, { provide: PROCESADOR_PAGOS, useClass: PasarelaHttp }],
+  controllers: [PagosController, WebhookController],
+  providers: [PagosService, PublicadorPagos, { provide: PROCESADOR_PAGOS, useClass: PasarelaHttp }],
 })
 export class PagosModule {}

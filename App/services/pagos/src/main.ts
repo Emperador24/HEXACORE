@@ -5,7 +5,9 @@ import { AppModule } from './app.module';
 import { CONFIGURACION, ConfiguracionServicio } from './comun/config/configuracion';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule);
+  // `rawBody`: el webhook se autentica con la firma HMAC del cuerpo tal como
+  // llegó. Volver a serializar el JSON ya parseado no da los mismos bytes.
+  const app = await NestFactory.create(AppModule, { rawBody: true });
   const config = app.get<ConfiguracionServicio>(CONFIGURACION);
 
   app.setGlobalPrefix(config.prefijoApi);

@@ -6,6 +6,7 @@ import { Cancelacion, EstadoCancelacion } from '../persistencia/entidades/cancel
 import { Compra, EstadoCompra } from '../persistencia/entidades/compra.entity';
 import { Entrada, EstadoEntrada } from '../persistencia/entidades/entrada.entity';
 import { EstadoEvento, EventoReferencia } from '../persistencia/entidades/evento-referencia.entity';
+import { BandejaSalida } from '../comun/eventos/bandeja-salida.service';
 import { PROCESADOR_PAGOS, ProcesadorPagos, ResultadoCobro } from '../comun/pagos/procesador-pagos';
 import { Contadores } from './contadores';
 import {
@@ -51,6 +52,7 @@ export class CancelacionService {
     @InjectDataSource() private readonly fuenteDatos: DataSource,
     private readonly contadores: Contadores,
     private readonly notificaciones: NotificacionesVenta,
+    private readonly bandeja: BandejaSalida,
     @Inject(PROCESADOR_PAGOS) private readonly pagos: ProcesadorPagos,
     @Inject(CONFIGURACION) config: ConfiguracionServicio,
   ) {
@@ -88,6 +90,9 @@ export class CancelacionService {
       if (anuladas.affected !== ids.length) {
         throw new CompraNoCancelable('Una de las entradas cambió de estado mientras se procesaba. Vuelve a intentarlo.');
       }
+      // La puerta deja de aceptarlas desde ya (ADR-15). Si el reembolso se
+      // rechaza, se vuelven a publicar VALIDA más abajo.
+      await this.bandeja.encolarEstadoDe(tx, ids);
 
       const registro = await tx.save(
         tx.create(Cancelacion, {
@@ -123,6 +128,7 @@ export class CancelacionService {
           { id: In(cancelacion.entradasIds), estado: EstadoEntrada.ANULADA },
           { estado: EstadoEntrada.VALIDA },
         );
+        await this.bandeja.encolarEstadoDe(tx, cancelacion.entradasIds);
         await tx.update(Cancelacion, { id: cancelacion.id }, { estado: EstadoCancelacion.RECHAZADA, motivoPasarela: motivo });
       });
       this.log.log(`Reembolso de ${evaluacion.compra.numeroCompra} rechazado: ${motivo}`);

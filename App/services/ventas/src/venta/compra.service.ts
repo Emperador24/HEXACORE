@@ -9,10 +9,12 @@ import { HistorialPropietario, MotivoCambioPropietario } from '../persistencia/e
 import { LocalidadEvento } from '../persistencia/entidades/localidad-evento.entity';
 import { PagarDto } from './dto/pagar.dto';
 import { PROCESADOR_PAGOS, ProcesadorPagos, ResultadoCobro } from '../comun/pagos/procesador-pagos';
+import { BandejaSalida, EXCHANGE_VENTAS } from '../comun/eventos/bandeja-salida.service';
 import { GeneradorQr } from '../comun/qr/generador-qr.service';
+import { hashQr } from '../comun/qr/hash-qr';
 import { Contadores } from './contadores';
 import { CompraDto, CrearCompraDto, aCompraDto } from './dto/compra.dto';
-import { NotificacionesVenta } from './notificaciones-venta.service';
+import { EventoVenta } from './notificaciones-venta.service';
 import { PromocionesService } from './promociones.service';
 import { calcularImportes, repartirPorEntrada } from './reglas';
 import {
@@ -45,7 +47,7 @@ export class CompraService {
     private readonly contadores: Contadores,
     private readonly promociones: PromocionesService,
     private readonly qr: GeneradorQr,
-    private readonly notificaciones: NotificacionesVenta,
+    private readonly bandeja: BandejaSalida,
     @Inject(PROCESADOR_PAGOS) private readonly pagos: ProcesadorPagos,
     @Inject(CONFIGURACION) config: ConfiguracionServicio,
   ) {
@@ -187,29 +189,38 @@ export class CompraService {
 
           await this.contadores.confirmarCupo(tx, compra.localidadId, compra.cantidad);
           await this.promociones.confirmarUso(tx, compra.id);
-          return this.crearEntradas(tx, compra);
+          const emitidas = await this.crearEntradas(tx, compra);
+
+          // CompraConfirmada va a la bandeja de salida, en esta transacción
+          // (ADR-15): la puerta activa el QR con ella, así que no puede
+          // perderse si el broker está caído justo ahora.
+          const confirmada: EventoVenta = {
+            id: `confirmada:${compra.id}`,
+            tipo: 'COMPRA_CONFIRMADA',
+            version: 1,
+            ocurridoEn: new Date().toISOString(),
+            clienteId: compra.compradorId,
+            numeroCompra: compra.numeroCompra,
+            eventoId: compra.eventoId,
+            eventoNombre: emitidas.evento?.nombre ?? '',
+            entradas: emitidas.entradas.map((e) => ({
+              entradaId: e.id,
+              numeroTicket: e.numeroTicket,
+              localidadNombre: e.localidadNombre,
+              estado: e.estado,
+              codigoQr: e.codigoQr,
+              hashQr: hashQr(e.codigoQr),
+            })),
+            monto: compra.total,
+          };
+          await this.bandeja.encolar(tx, EXCHANGE_VENTAS, 'compra.confirmada', confirmada);
+          return emitidas;
         });
 
         if (!resultado) return this.detalle(compra.compradorId, compra.id);
 
-        const { entradas, evento } = resultado;
+        const { entradas } = resultado;
         this.log.log(`Compra ${compra.numeroCompra} pagada: ${entradas.length} entradas emitidas`);
-        // si falla y la compra está hecha, el cliente ya tiene sus QR en la respuesta.
-        void this.notificaciones.publicar({
-          id: `confirmada:${compra.id}`,
-          tipo: 'COMPRA_CONFIRMADA',
-          version: 1,
-          ocurridoEn: new Date().toISOString(),
-          clienteId: compra.compradorId,
-          numeroCompra: compra.numeroCompra,
-          eventoNombre: evento?.nombre ?? '',
-          entradas: entradas.map((e) => ({
-            numeroTicket: e.numeroTicket,
-            localidadNombre: e.localidadNombre,
-            codigoQr: e.codigoQr,
-          })),
-          monto: compra.total,
-        });
         return aCompraDto(
           { ...compra, estado: EstadoCompra.PAGADA, referenciaPasarela: referencia, pagadaEn: new Date(), motivo: null },
           entradas,

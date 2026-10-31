@@ -1,10 +1,11 @@
 import { HttpException, Injectable, Logger } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { createHash } from 'node:crypto';
-import { DataSource } from 'typeorm';
+import { DataSource, EntityManager } from 'typeorm';
 import { EstadoEvento, EventoReferencia } from '../persistencia/entidades/evento-referencia.entity';
 import { Ingreso, OrigenIngreso } from '../persistencia/entidades/ingreso.entity';
-import { ClienteVentas, RespuestaVentas } from './cliente-ventas.service';
+import { EstadoQr, QrEntrada } from '../persistencia/entidades/qr-entrada.entity';
+import { BandejaSalida } from '../comun/eventos/bandeja-salida.service';
 import { Contadores } from './contadores';
 import {
   CacheQrDto,
@@ -25,22 +26,28 @@ interface Escaneo {
 }
 
 /**
- * Validar QR CU-002
- * Un mismo QR no puede validar dos ingresos simultaneos
- * Lo que decide:
- * UPDATE entradas SET estado = 'USADA' WHERE estado = 'VALIDA'`: Postgres lo
- * ejecuta en una puerta y la otra ya no encuentra la fila en ese estado
- * 
- * la restricción `UNIQUE (entrada_id)` de `ingresos` rechaza el segundo registro.
+ * Validar QR CU-002.
  *
+ * Desde ADR-15 se valida **contra la copia local de los QR** (`qr_entradas`),
+ * que mantiene `ProyeccionQr` con los eventos de Ventas. Ya no se llama a
+ * Ventas en ningún momento: el diagrama de contenedores no tiene esa flecha.
  *
- * Operar sin conexión CU-002E
- * El dispositivo descarga los QR validos del evento como **hashes**
- * valida contra ellos si pierde la red, y al volver sube lo que
- * escaneo, se mandan hashes y no los codigos
- * el telefono de la puerta no tiene codigos con los que entrar
- * Los codigos son de 96 bits aleatorios
+ * Cada ingreso sale como `IngresoRegistrado` por la bandeja de salida, en la
+ * misma transacción, para que Ventas marque la entrada como usada.
+ *
+ * Un mismo QR no puede validar dos ingresos simultáneos. Lo decide el
+ * `UPDATE qr_entradas SET estado = 'USADA' WHERE estado = 'VALIDA'`, ahora en la
+ * base propia y **en la misma transacción** que el aforo y el registro del
+ * ingreso. Antes era una Saga con compensación remota; ahora es atómico.
+ *
+ * Operar sin conexión CU-002E: el dispositivo descarga los QR válidos del
+ * evento como **hashes**, valida contra ellos si pierde la red, y al volver
+ * sube lo que escaneó. Se guardan y se mandan hashes, no códigos: ni la base ni
+ * el teléfono de la puerta tienen códigos con los que entrar.
  */
+/** Exchange de los hechos de la puerta. Lo consume Ventas. */
+export const EXCHANGE_ACCESO = 'acceso.eventos';
+
 @Injectable()
 export class IngresoService {
   private readonly log = new Logger(IngresoService.name);
@@ -48,44 +55,40 @@ export class IngresoService {
   constructor(
     @InjectDataSource() private readonly fuenteDatos: DataSource,
     private readonly contadores: Contadores,
-    private readonly ventas: ClienteVentas,
+    private readonly bandeja: BandejaSalida,
   ) {}
 
-  async validar(personalId: string, datos: ValidarQrDto, tokenSesion: string): Promise<IngresoAutorizadoDto> {
+  async validar(personalId: string, datos: ValidarQrDto): Promise<IngresoAutorizadoDto> {
     return this.registrar(personalId, {
       eventoId: datos.eventoId,
       codigoQr: datos.codigoQr.trim(),
       puntoAcceso: datos.puntoAcceso ?? null,
       origen: OrigenIngreso.EN_LINEA,
       escaneadoEn: new Date(),
-    }, tokenSesion);
+    });
   }
 
-  /**
-   * CU-002E: los QR que podrían ingresar, para validar sin conexión.
-   *
-   * Se piden a Ventas, que es quien tiene las entradas. Vienen ya hasheados:
-   * este servicio tampoco llega a conocer los códigos en claro.
-   */
-  async cache(eventoId: string, tokenSesion: string): Promise<CacheQrDto> {
+  /** CU-002E: los QR que podrían ingresar, para validar sin conexión. Ya vienen hasheados. */
+  async cache(eventoId: string): Promise<CacheQrDto> {
+    const validos = await this.fuenteDatos.getRepository(QrEntrada).find({
+      where: { eventoId, estado: EstadoQr.VALIDA },
+      select: { hashQr: true, numeroTicket: true, localidadNombre: true },
+      order: { numeroTicket: 'ASC' },
+    });
     return {
       eventoId,
       generadaEn: new Date().toISOString(),
-      validos: await this.ventas.qrValidos(eventoId, tokenSesion),
+      validos: validos.map((q) => ({ hash: q.hashQr, numeroTicket: q.numeroTicket, localidadNombre: q.localidadNombre })),
     };
   }
 
   /**
-   * CU-002E: sube los ingresos hechos sin conexio
+   * CU-002E: sube los ingresos hechos sin conexión.
    *
    * Si un mismo QR es escaneado en dos puertas desconectadas
    * vuelve como conflicto para que el personal lo revise
    */
-  async sincronizar(
-    personalId: string,
-    datos: SincronizarIngresosDto,
-    tokenSesion: string,
-  ): Promise<SincronizacionDto> {
+  async sincronizar(personalId: string, datos: SincronizarIngresosDto): Promise<SincronizacionDto> {
     const resultados: ResultadoSincronizacionDto[] = [];
     // Uno a uno y en orden, si el mismo QR aparece dos veces cuenta el primero
     const ordenados = [...datos.ingresos].sort((a, b) => a.escaneadoEn.localeCompare(b.escaneadoEn));
@@ -97,7 +100,7 @@ export class IngresoService {
           puntoAcceso: ingreso.puntoAcceso ?? null,
           origen: OrigenIngreso.SINCRONIZADO,
           escaneadoEn: new Date(ingreso.escaneadoEn),
-        }, tokenSesion);
+        });
         resultados.push({ codigoQr: ingreso.codigoQr, resultado: 'REGISTRADO', mensaje: 'Ingreso registrado' });
       } catch (error) {
         if (!(error instanceof HttpException)) throw error;
@@ -115,116 +118,96 @@ export class IngresoService {
   }
 
   /**
-   * Registra un ingreso. **Es una Saga**, desde ADR-14.
+   * Registra un ingreso: QR, aforo y registro **en una sola transacción local**.
    *
-   * `Entrada` es de Ventas y los ingresos son de aquí, así que ya no hay una
-   * transacción que abarque las dos cosas. El orden de los pasos no es
-   * arbitrario: está elegido para que el fallo caro no pueda ocurrir.
+   * 1. Se bloquea la fila del QR (`FOR UPDATE`). Dos puertas escaneando el
+   *    mismo código a la vez: la segunda espera, y al seguir ya lo ve `USADA`.
+   * 2. Se suma al aforo con la condición `asistentes < aforo_maximo`.
+   * 3. Se marca el QR `USADA` y se deja la fila de ingreso.
    *
-   * 1. **Aforo e ingreso, en una transacción local.** Suma uno al aforo con la
-   *    condición `asistentes < aforo_maximo` y deja la fila de ingreso. Las dos
-   *    son de este servicio, así que siguen siendo atómicas entre sí: no puede
-   *    haber un ingreso sin su plaza de aforo.
-   * 2. **Ventas gasta el QR.** El `UPDATE ... WHERE estado = VALIDA` sigue
-   *    siendo la autoridad contra la doble entrada, solo que en otra base.
-   * 3. **Si Ventas dice que no, se deshace el paso 1.**
-   *
-   * ## Por qué el aforo va antes y no después
-   *
-   * Al revés —gastar el QR primero y comprobar el aforo después— la
-   * compensación sería **remota**: pedirle a Ventas que devuelva la entrada a
-   * `VALIDA`. Si esa llamada falla, alguien se queda en la puerta con su
-   * entrada gastada sin haber entrado.
-   *
-   * En este orden la compensación es **local**: devolver una plaza de aforo y
-   * borrar una fila propia. Lo peor que puede pasar es que una plaza quede
-   * tomada unos instantes por un código que no servía — y eso no deja a nadie
-   * fuera.
-   *
-   * La compensación remota existe igual (`revertirUso`), pero solo para el
-   * caso en que Ventas **sí** gastó el QR y el registro local falló después.
+   * Si algo falla —el aforo está lleno, por ejemplo—, se deshace todo junto: un
+   * aforo lleno no puede dejar la entrada quemada. No hay compensación que
+   * pueda fallar, porque no hay nada fuera de esta base.
    */
-  private async registrar(personalId: string, escaneo: Escaneo, tokenSesion: string): Promise<IngresoAutorizadoDto> {
+  private async registrar(personalId: string, escaneo: Escaneo): Promise<IngresoAutorizadoDto> {
     const evento = await this.fuenteDatos
       .getRepository(EventoReferencia)
       .findOne({ where: { eventoId: escaneo.eventoId } });
     if (!evento) throw new QrInvalido('el evento no existe');
     if (evento.estado === EstadoEvento.CANCELADO) throw new QrInvalido('el evento fue cancelado');
 
-    // --- Paso 2 primero en el código, pero sin efecto todavía: se necesita el
-    // id de la entrada para poder guardar el ingreso, y Ventas es quien lo
-    // sabe. Se pide ANTES de tocar nada propio para no tener que compensar
-    // cuando el código sencillamente no vale, que es el caso más común.
-    const gastada = await this.ventas.marcarUsada(escaneo.codigoQr, escaneo.eventoId, tokenSesion);
-
-    if (gastada.respuesta === RespuestaVentas.YA_UTILIZADA) throw await this.yaUtilizado(gastada.entradaId);
-    if (gastada.respuesta === RespuestaVentas.ANULADA) throw new QrInvalido('la entrada fue anulada');
-    if (gastada.respuesta === RespuestaVentas.EN_REVENTA) {
-      throw new QrInvalido('la entrada está publicada en reventa; su dueño debe retirarla primero');
-    }
-    if (gastada.respuesta !== RespuestaVentas.OK) {
-      if (gastada.respuesta === RespuestaVentas.SIN_RESPUESTA) {
-        // No se sabe si quedó marcada. No se deja pasar: en una puerta el
-        // error caro es dejar entrar a quien no debía.
-        this.log.error(`Ventas no respondió al validar un QR de ${escaneo.eventoId}`);
-        throw new QrInvalido('no se pudo comprobar la entrada; intente de nuevo');
-      }
-      throw new QrInvalido('el código no corresponde a una entrada de este evento');
-    }
-
-    const entradaId = gastada.entradaId as string;
-
-    try {
-      // --- Paso 1: aforo e ingreso, atómicos entre sí.
-      return await this.fuenteDatos.transaction(async (tx) => {
-        if (!(await this.contadores.sumarAsistente(tx, escaneo.eventoId))) {
-          this.log.error(
-            `ALERTA CU-002B: ${evento.nombre} llego a su aforo (${evento.aforoMaximo}) ` +
-              `y la entrada ${gastada.numeroTicket} se quedo fuera`,
-          );
-          throw new AforoCompleto(evento.aforoMaximo ?? 0);
-        }
-
-        // El UNIQUE(entrada_id) es la segunda defensa contra la doble entrada,
-        // y sigue aquí: si dos puertas llegaran a pasar el filtro de Ventas,
-        // esta restricción rechaza el segundo registro.
-        const ingreso = await tx.save(
-          tx.create(Ingreso, {
-            entradaId,
-            eventoId: escaneo.eventoId,
-            validadoPor: personalId,
-            puntoAcceso: escaneo.puntoAcceso,
-            origen: escaneo.origen,
-            escaneadoEn: escaneo.escaneadoEn,
-          }),
-        );
-
-        return {
-          autorizado: true,
-          mensaje: 'Ingreso autorizado',
-          numeroTicket: gastada.numeroTicket ?? '',
-          localidadNombre: gastada.localidadNombre ?? '',
-          eventoNombre: evento.nombre,
-          registradoEn: ingreso.registradoEn.toISOString(),
-          asistentes: evento.asistentes + 1,
-          aforoMaximo: evento.aforoMaximo,
-        };
+    return this.fuenteDatos.transaction(async (tx) => {
+      const qr = await tx.findOne(QrEntrada, {
+        where: { hashQr: hashQr(escaneo.codigoQr) },
+        lock: { mode: 'pessimistic_write' },
       });
-    } catch (error) {
-      // --- Paso 3: Ventas ya gastó el QR y aquí no se pudo registrar. Se
-      // deshace allá, o esa persona se queda fuera con la entrada consumida.
-      await this.ventas.revertirUso(entradaId, tokenSesion);
-      throw error;
-    }
+      if (!qr || qr.eventoId !== escaneo.eventoId) {
+        throw new QrInvalido('el código no corresponde a una entrada de este evento');
+      }
+      if (qr.estado === EstadoQr.USADA) throw await this.yaUtilizado(tx, qr.entradaId);
+      if (qr.estado === EstadoQr.ANULADA) throw new QrInvalido('la entrada fue anulada');
+      if (qr.estado === EstadoQr.EN_REVENTA) {
+        throw new QrInvalido('la entrada está publicada en reventa; su dueño debe retirarla primero');
+      }
+
+      if (!(await this.contadores.sumarAsistente(tx, escaneo.eventoId))) {
+        this.log.error(
+          `ALERTA CU-002B: ${evento.nombre} llego a su aforo (${evento.aforoMaximo}) ` +
+            `y la entrada ${qr.numeroTicket} se quedo fuera`,
+        );
+        throw new AforoCompleto(evento.aforoMaximo ?? 0);
+      }
+
+      // La condición `estado = VALIDA` sigue en el UPDATE aunque la fila esté
+      // bloqueada: es la regla escrita donde se aplica, no una suposición.
+      const marcada = await tx.update(
+        QrEntrada,
+        { entradaId: qr.entradaId, estado: EstadoQr.VALIDA },
+        { estado: EstadoQr.USADA },
+      );
+      if (!marcada.affected) throw await this.yaUtilizado(tx, qr.entradaId);
+
+      // El UNIQUE(entrada_id) de `ingresos` sigue siendo la segunda defensa.
+      const ingreso = await tx.save(
+        tx.create(Ingreso, {
+          entradaId: qr.entradaId,
+          eventoId: escaneo.eventoId,
+          validadoPor: personalId,
+          puntoAcceso: escaneo.puntoAcceso,
+          origen: escaneo.origen,
+          escaneadoEn: escaneo.escaneadoEn,
+        }),
+      );
+
+      // Ventas no se entera de quién entró si no se le dice: sin esto dejaría
+      // cancelar con reembolso (CU-003D) o revender una entrada ya usada.
+      await this.bandeja.encolar(tx, EXCHANGE_ACCESO, 'ingreso.registrado', {
+        id: ingreso.id,
+        tipo: 'INGRESO_REGISTRADO',
+        version: 1,
+        ocurridoEn: ingreso.registradoEn.toISOString(),
+        entradaId: qr.entradaId,
+        eventoId: escaneo.eventoId,
+        puntoAcceso: escaneo.puntoAcceso,
+        escaneadoEn: escaneo.escaneadoEn.toISOString(),
+      });
+
+      return {
+        autorizado: true,
+        mensaje: 'Ingreso autorizado',
+        numeroTicket: qr.numeroTicket,
+        localidadNombre: qr.localidadNombre,
+        eventoNombre: evento.nombre,
+        registradoEn: ingreso.registradoEn.toISOString(),
+        asistentes: evento.asistentes + 1,
+        aforoMaximo: evento.aforoMaximo,
+      };
+    });
   }
 
   // CU-002D  cuándo y por donde se entro
-  private async yaUtilizado(entradaId: string | null): Promise<QrYaUtilizado> {
-    // Se mira en la tabla propia: los ingresos son de este servicio. Ventas
-    // solo dice "ya se usó" y de qué entrada; el cuándo y el dónde están aquí.
-    const previo = entradaId
-      ? await this.fuenteDatos.getRepository(Ingreso).findOne({ where: { entradaId } })
-      : null;
+  private async yaUtilizado(tx: EntityManager, entradaId: string): Promise<QrYaUtilizado> {
+    const previo = await tx.getRepository(Ingreso).findOne({ where: { entradaId } });
     this.log.warn(`CU-002D: intento de reutilizar la entrada ${entradaId}`);
     return new QrYaUtilizado(previo?.escaneadoEn ?? null, previo?.puntoAcceso ?? null);
   }

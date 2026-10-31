@@ -30,7 +30,7 @@ from venta import (
     API_ACCESO,
     FEST, FEST_GENERAL, FEST_PALCO, JAZZ_TERRAZA, PORTERO, ROCK_GENERAL,
     SINFONICA_LUNETA, STANDUP_GENERAL, VOLEIBOL,
-    comprar, correr, pedir, resembrar, sql, titulo,
+    comprar, correr, esperar, pedir, resembrar, sql, titulo,
 )
 
 
@@ -198,10 +198,14 @@ def ninguna_cancelable():
     compra = comprar(comprador, FEST_GENERAL, 2)
     usada, otra = compra['entradas']
 
-    # Una se usó para entrar al evento.
+    # Una se usó para entrar al evento. La puerta y Ventas se enteran una de
+    # otra por eventos (ADR-15): primero la puerta tiene que conocer la entrada,
+    # y después Ventas tiene que saber que se usó.
+    esperar(f"SELECT estado FROM qr_entradas WHERE entrada_id='{usada['id']}'", 'VALIDA', bd='acceso_qr')
     estado, _ = pedir('POST', 'ingresos', PORTERO,
                       {'eventoId': FEST, 'codigoQr': usada['codigoQr']}, roles=('Personal',), base=API_ACCESO)
     assert estado == 200, estado
+    esperar(f"SELECT estado FROM entradas WHERE id='{usada['id']}'", 'USADA')
 
     estado, r = cotizar(comprador, compra, entradas=[usada['id']])
     assert estado == 409 and r['codigo'] == 'CU-003D', (estado, r)

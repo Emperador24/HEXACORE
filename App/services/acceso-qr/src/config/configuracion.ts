@@ -3,9 +3,10 @@ import { cargarClavePublica, ClavePublica } from './clave-publica';
 /**
  * Configuración de Acceso QR.
  *
- * Tiene base propia, pero pequeña: los ingresos y su proyección del evento con
- * el aforo. **No tiene la tabla de entradas**, que es de Ventas: aquí se pide
- * que gasten un QR, no se decide.
+ * Tiene base propia, pero pequeña: los ingresos, su proyección del evento con
+ * el aforo y su copia de los QR. **No tiene la tabla de entradas**, que es de
+ * Ventas; la copia de los QR le llega por el broker (ADR-15), así que validar
+ * no depende de que Ventas responda.
  */
 
 function requerido(nombre: string): string {
@@ -46,16 +47,8 @@ export interface ConfiguracionServicio {
   redis: { host: string; puerto: number };
   jwt: ClavePublica;
   emisorTokens: string;
-  /** Ventas: el dueño de `Entrada`. Aquí se le pide gastar un QR. */
-  ventas: {
-    url: string;
-    /**
-     * Corta la espera en la puerta. Es más corto que en otras llamadas a
-     * propósito: hay una persona esperando delante del lector, y un lector que
-     * se queda pensando diez segundos genera cola física.
-     */
-    timeoutMs: number;
-  };
+  /** De aquí llegan `CompraConfirmada` y `EntradaActualizada` (ADR-15). */
+  rabbitmq: { url: string };
 }
 
 export const CONFIGURACION = 'CONFIGURACION_SERVICIO';
@@ -65,8 +58,6 @@ export function cargarConfiguracion(): ConfiguracionServicio {
   if (!['development', 'test', 'production'].includes(entorno)) {
     throw new Error(`NODE_ENV inválido: "${entorno}"`);
   }
-  const timeoutMs = entero('VENTAS_TIMEOUT_MS', 4000);
-  if (timeoutMs <= 0) throw new Error('VENTAS_TIMEOUT_MS debe ser mayor que 0');
 
   return {
     entorno,
@@ -87,6 +78,6 @@ export function cargarConfiguracion(): ConfiguracionServicio {
     },
     jwt: cargarClavePublica(entorno === 'production'),
     emisorTokens: texto('AUTH_JWT_EMISOR', 'hexacore-administracion'),
-    ventas: { url: texto('VENTAS_URL', 'http://localhost:3001/api/v1'), timeoutMs },
+    rabbitmq: { url: texto('RABBITMQ_URL', 'amqp://hexacore:hexacore@localhost:5672') },
   };
 }

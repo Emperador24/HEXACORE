@@ -1,10 +1,29 @@
 # De ADR-12 a ADR-14 — distancia real y orden de migración
 
 Mide lo que separa el sistema desplegado hoy del diseño de ADR-14, y ordena el
-camino. **Nada de esto está hecho.** Lo que corre sigue siendo ADR-12: tres
-servicios de dominio, RabbitMQ, Docker Compose y seis bases separadas.
+camino. Se escribió el 24 oct 2026, cuando no había nada hecho; las fases A y B
+ya se ejecutaron y lo dicen en su propia sección.
 
-Las rutas de este documento se verificaron contra el repositorio el 24 oct 2026.
+## Actualización del 30 oct 2026 — ADR-15
+
+ADR-15 corrige cuatro relaciones del diagrama de contenedores y fija lo que
+dejaba abierto. Lo que ya está en el código:
+
+| Cambio | Dónde |
+|---|---|
+| El gateway valida el JWT con la clave pública, sin llamar a Autenticación, y autoriza por rol | `App/gateway/autenticacion.js`, `autenticar.conf` |
+| El gateway exige el turno de la Cola virtual en `POST /api/v1/compras` (`X-Turno-Cola`) y lo gasta antes de reenviar | `autenticacion.js`; `cola-virtual/src/cola/turnos-internos.controller.ts` |
+| El portal pide turno antes de reservar y muestra el puesto si hay fila | `portal-web-cliente/src/app/core/entradas.service.ts` |
+| Ruta pública del *webhook* de la pasarela, firmado con HMAC; Pagos publica `PagoAprobado` / `PagoRechazado` | `nginx.conf`; `pagos/src/pagos/webhook.controller.ts`; `infra/pasarela-pagos-simulada` |
+| Bandeja de salida (Transactional Outbox) en Ventas para `CompraConfirmada` y `EntradaActualizada` | `ventas/src/comun/eventos/bandeja-salida.service.ts` |
+| Acceso QR no llama a Ventas: valida contra su copia `qr_entradas`, en una sola transacción local | `acceso-qr/src/acceso/proyeccion-qr.service.ts`, `ingreso.service.ts` |
+| Acceso QR publica `IngresoRegistrado` por su bandeja de salida; Ventas marca la entrada `USADA` | `acceso-qr/src/comun/eventos/`; `ventas/src/venta/consumidor-ingresos.service.ts` |
+
+Lo que ADR-15 decide y todavía no tiene código: `EventoPublicado` y
+`EventoCancelado` (falta Eventos y recintos), el consumo de `PagoAprobado` en
+Ventas para cerrar la Saga (fase E), el Outbox en los demás publicadores, el
+índice de búsqueda dedicado del Catálogo (fase D) y la App Móvil Personal como
+aplicación separada —hoy es una sola app Flutter con las dos caras (ADR-07)—.
 
 ## Dónde vive hoy cada servicio del diseño
 
@@ -12,12 +31,12 @@ Las rutas de este documento se verificaron contra el repositorio el 24 oct 2026.
 
 | Servicio | CU | Dónde está hoy | Qué falta |
 |---|---|---|---|
-| **Cola virtual** | apoya CU-001 | — | Todo. No existe |
+| **Cola virtual** | apoya CU-001 | ✅ `services/cola-virtual/` — el gateway exige y gasta el turno (ADR-15) | Nada estructural |
 | **Catálogo** | CU-005 | ✅ `services/catalogo/` — despliegue propio y base propia | Cambiar PostgreSQL por índice de búsqueda (fase D) |
 | **Ventas** | CU-001, CU-004 | `ventas/src/venta/` | Sacarlo; ya tiene reserva atómica en Redis |
-| **Pagos** | pagos de CU-001/003/006/011/021 | **duplicado**: `nucleo/src/modulos/pedidos/pagos/` y `ventas/src/reventa/pagos/` | Unificar las dos copias en un servicio. Las llaves de idempotencia ya existen en ambas |
+| **Pagos** | pagos de CU-001/003/006/011/021 | ✅ `services/pagos/` — único adaptador de la pasarela, con *webhook* firmado (ADR-15) | Que Ventas consuma `PagoAprobado` / `PagoRechazado` (fase E) |
 | **Autenticación** | CU-027, CU-028 | ✅ `services/autenticacion/` — despliegue y base propios | Nada estructural |
-| **Acceso QR** | CU-002 | `ventas/src/venta/ingreso.service.ts` y `ingresos.controller.ts` | Sacarlo; añadir caché de estado y modo sin red |
+| **Acceso QR** | CU-002 | ✅ `services/acceso-qr/` — copia propia de los QR por eventos, sin llamar a Ventas (ADR-15) | Mover el estado de los QR a Redis, como dice el diagrama; hoy vive en su PostgreSQL |
 | **Notificaciones** | transversal | ✅ `services/notificaciones/` — sin base: su estado es la cola | Falta push y prioridad alta |
 
 ### Los siete servicios de dominio

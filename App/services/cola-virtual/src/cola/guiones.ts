@@ -22,8 +22,8 @@
  * ARGV[5] vida del turno, en ms
  * ARGV[6] vida de la espera, en ms
  *
- * Hacen falta las tres claves porque se busca de dos maneras: Ventas gasta el
- * turno **por token**, y aquí hay que saber si **este usuario** ya tiene uno.
+ * Hacen falta las tres claves porque se busca de dos maneras: el gateway gasta
+ * el turno **por token**, y aquí hay que saber si **este usuario** ya tiene uno.
  * Con una sola estructura una de las dos búsquedas sale mal — y la que salía
  * mal era esta: dar turno dos veces al mismo comprador, que es justo lo que
  * rompe el aforo.
@@ -83,7 +83,7 @@ return cjson.encode({
 `;
 
 /**
- * Consumir un turno. Lo llama Ventas antes de dejar entrar al checkout.
+ * Consumir un turno. Lo pide el API Gateway antes de dejar pasar una compra.
  *
  * Es de un solo uso: `ZREM` devuelve cuántos quitó, así que dos peticiones con
  * el mismo token no pueden ganar las dos. Sin eso, un token filtrado serviría

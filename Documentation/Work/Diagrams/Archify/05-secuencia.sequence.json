@@ -2,13 +2,13 @@
   "schema_version": 1,
   "diagram_type": "sequence",
   "meta": {
-    "title": "HEXACORE — Compra de una entrada con Saga orquestada (ADR-14)",
+    "title": "HEXACORE — Compra de una entrada con Saga orquestada (ADR-14, ADR-15)",
     "subtitle": "CU-001 · Ventas orquesta la compra y la deshace si falla",
     "output": "05-secuencia.html",
     "quality_profile": "standard",
     "viewBox": [
       1500,
-      1000
+      1068
     ],
     "column_fit": "spread"
   },
@@ -67,17 +67,17 @@
     },
     {
       "from": 320,
-      "to": 625,
+      "to": 693,
       "label": "Reserva y cobro"
     },
     {
-      "from": 645,
-      "to": 790,
+      "from": 713,
+      "to": 858,
       "label": "Confirmación"
     },
     {
-      "from": 810,
-      "to": 920,
+      "from": 878,
+      "to": 988,
       "label": "Compensación — solo si el pago falla o vence"
     }
   ],
@@ -119,14 +119,30 @@
       "from": "portal",
       "to": "gateway",
       "y": 358,
-      "label": "checkout con el token de turno",
+      "label": "reserva con el turno (X-Turno-Cola)",
       "variant": "emphasis"
+    },
+    {
+      "id": "m5a",
+      "from": "gateway",
+      "to": "cola",
+      "y": 394,
+      "label": "valida el JWT y gasta el turno",
+      "variant": "default"
+    },
+    {
+      "id": "m5b",
+      "from": "cola",
+      "to": "gateway",
+      "y": 426,
+      "label": "turno válido · un solo uso",
+      "variant": "return"
     },
     {
       "id": "m6",
       "from": "gateway",
       "to": "ventas",
-      "y": 396,
+      "y": 464,
       "label": "inicia la Saga",
       "variant": "emphasis"
     },
@@ -134,7 +150,7 @@
       "id": "m7",
       "from": "ventas",
       "to": "cache",
-      "y": 434,
+      "y": 502,
       "label": "reserva atómica con vencimiento",
       "variant": "emphasis"
     },
@@ -142,7 +158,7 @@
       "id": "m8",
       "from": "cache",
       "to": "ventas",
-      "y": 466,
+      "y": 534,
       "label": "reservado",
       "variant": "return"
     },
@@ -150,7 +166,7 @@
       "id": "m9",
       "from": "ventas",
       "to": "pagos",
-      "y": 504,
+      "y": 572,
       "label": "cobra · llave de idempotencia",
       "variant": "emphasis"
     },
@@ -158,7 +174,7 @@
       "id": "m10",
       "from": "pagos",
       "to": "pasarela",
-      "y": 542,
+      "y": 610,
       "label": "autoriza el cargo",
       "variant": "default"
     },
@@ -166,7 +182,7 @@
       "id": "m11",
       "from": "pasarela",
       "to": "pagos",
-      "y": 574,
+      "y": 642,
       "label": "aprobado",
       "variant": "return"
     },
@@ -174,7 +190,7 @@
       "id": "m12",
       "from": "pagos",
       "to": "ventas",
-      "y": 606,
+      "y": 674,
       "label": "pago confirmado",
       "variant": "return"
     },
@@ -182,7 +198,7 @@
       "id": "m13",
       "from": "ventas",
       "to": "cache",
-      "y": 680,
+      "y": 748,
       "label": "convierte la reserva en venta",
       "variant": "emphasis"
     },
@@ -190,15 +206,15 @@
       "id": "m14",
       "from": "ventas",
       "to": "broker",
-      "y": 718,
-      "label": "publica COMPRA_CONFIRMADA",
+      "y": 786,
+      "label": "COMPRA_CONFIRMADA por la bandeja de salida",
       "variant": "dashed"
     },
     {
       "id": "m15",
       "from": "ventas",
       "to": "portal",
-      "y": 756,
+      "y": 824,
       "label": "200 OK con la entrada y su QR",
       "variant": "return"
     },
@@ -206,7 +222,7 @@
       "id": "m16",
       "from": "ventas",
       "to": "cache",
-      "y": 848,
+      "y": 916,
       "label": "libera la reserva",
       "variant": "emphasis"
     },
@@ -214,7 +230,7 @@
       "id": "m17",
       "from": "ventas",
       "to": "portal",
-      "y": 886,
+      "y": 954,
       "label": "409 · la compra no se completó",
       "variant": "return"
     }
@@ -223,7 +239,7 @@
     {
       "participant": "portal",
       "from": 222,
-      "to": 890,
+      "to": 958,
       "type": "frontend"
     },
     {
@@ -235,7 +251,7 @@
     {
       "participant": "gateway",
       "from": 354,
-      "to": 400,
+      "to": 468,
       "type": "security"
     },
     {
@@ -246,45 +262,51 @@
     },
     {
       "participant": "ventas",
-      "from": 392,
-      "to": 890,
+      "from": 460,
+      "to": 958,
       "type": "backend"
     },
     {
       "participant": "cache",
-      "from": 429,
-      "to": 471,
+      "from": 497,
+      "to": 539,
       "type": "database"
     },
     {
       "participant": "cache",
-      "from": 675,
-      "to": 685,
+      "from": 743,
+      "to": 753,
       "type": "database"
     },
     {
       "participant": "cache",
-      "from": 843,
-      "to": 853,
+      "from": 911,
+      "to": 921,
       "type": "database"
     },
     {
       "participant": "pagos",
-      "from": 499,
-      "to": 610,
+      "from": 567,
+      "to": 678,
       "type": "backend"
     },
     {
       "participant": "pasarela",
-      "from": 537,
-      "to": 578,
+      "from": 605,
+      "to": 646,
       "type": "external"
     },
     {
       "participant": "broker",
-      "from": 713,
-      "to": 723,
+      "from": 781,
+      "to": 791,
       "type": "messagebus"
+    },
+    {
+      "participant": "cola",
+      "from": 390,
+      "to": 430,
+      "type": "backend"
     }
   ],
   "cards": [
@@ -312,16 +334,16 @@
       "items": [
         "Ventas responde al portal en cuanto confirma; notificar es trabajo del consumidor del broker",
         "Notificaciones toma COMPRA_CONFIRMADA y manda el correo y el push; si tarda o falla, la compra ya está hecha",
-        "La cola virtual solo reparte turnos: no participa en la Saga ni puede invalidarla"
+        "La cola virtual no participa en la Saga: el gateway gasta el turno antes de dejar pasar a Ventas (ADR-15), y Ventas no la llama"
       ]
     },
     {
       "dot": "rose",
       "title": "Estado de implementación",
       "items": [
-        "⚠️ Dibuja lo decidido, no lo desplegado. Hoy la compra la resuelve un solo servicio sin orquestación con compensación",
-        "Ya existen la reserva atómica con vencimiento y las llaves de idempotencia; falta el orquestador y el deshacer explícito",
-        "La cola virtual no tiene código todavía"
+        "⚠️ Dibuja lo decidido. Ya existen la reserva atómica con vencimiento, las llaves de idempotencia, la cola virtual con el turno exigido en el gateway y la bandeja de salida de Ventas",
+        "Falta el orquestador con compensación explícita: Ventas todavía no consume PagoAprobado / PagoRechazado (fase E)",
+        "El webhook de la pasarela ya llega a Pagos por el gateway y publica el resultado; aquí se dibuja la respuesta síncrona del cobro"
       ]
     }
   ]

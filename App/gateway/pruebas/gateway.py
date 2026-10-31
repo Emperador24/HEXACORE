@@ -108,19 +108,67 @@ def autentica_antes_de_enrutar():
         estado, _, _ = pedir(f'{API}/reventa/mis-entradas', token=malo)
         assert estado == 401, (malo, estado)
 
-    # Sesión cerrada: el gateway lo consulta con Administración en cada petición.
+    # Sesión cerrada: el gateway ya no pregunta a Autenticación (ADR-15), así
+    # que el token pasa el gateway y lo rechaza el servicio, que sí mira en
+    # Redis. Para quien llama es el mismo 401.
     token = entrar('bruno@hexacore.com')
     assert pedir(f'{API}/reventa/mis-entradas', token=token)[0] == 200
     assert pedir(f'{API}/sesiones/actual', 'DELETE', token=token)[0] == 200
     assert pedir(f'{API}/reventa/mis-entradas', token=token)[0] == 401
     print('  token falsificado o de una sesión cerrada: 401')
 
-    # La autorización por rol sigue siendo del dominio: el gateway solo dice
-    # "quién eres", el servicio decide "qué puedes hacer".
+    # El rol lo comprueba ya el gateway (ADR-15), y el servicio vuelve a
+    # comprobarlo: el mismo 403 desde los dos sitios.
     personal = entrar('personal@hexacore.com')
     estado, cuerpo, _ = pedir(f'{API}/reventa/mis-entradas', token=personal)
     assert estado == 403 and cuerpo['codigo'] == 'ROL_INSUFICIENTE', (estado, cuerpo)
-    print('  con sesión válida pero rol que no toca: 403 del servicio')
+    print('  con sesión válida pero rol que no toca: 403')
+
+
+FEST = 'e0000001-0000-4000-8000-000000000001'
+FEST_GENERAL = '10000001-0000-4000-8000-000000000001'
+
+
+def exige_turno_para_comprar():
+    print('\n### ADR-15: sin turno de la Cola virtual no se compra')
+    reserva = {'localidadId': FEST_GENERAL, 'cantidad': 1}
+    bruno = entrar('bruno@hexacore.com')
+
+    estado, cuerpo, _ = pedir(f'{API}/compras', 'POST', token=bruno, cuerpo=reserva)
+    assert estado == 428 and cuerpo['codigo'] == 'TURNO_REQUERIDO', (estado, cuerpo)
+    print('  reservar sin X-Turno-Cola: 428')
+
+    estado, turno, _ = pedir(f'{API}/cola/eventos/{FEST}/turnos', 'POST', token=bruno, cuerpo={})
+    assert estado in (200, 201) and turno['estado'] == 'ADMITIDO', (estado, turno)
+
+    # El turno es de quien lo pidió: con otra cuenta no vale.
+    carla = entrar('carla@hexacore.com')
+    estado, cuerpo, _ = pedir(f'{API}/compras', 'POST', token=carla, cuerpo=reserva,
+                              cabeceras={'X-Turno-Cola': turno['token']})
+    assert estado == 403 and cuerpo['codigo'] == 'TURNO_INVALIDO', (estado, cuerpo)
+    print('  el turno de otra cuenta: 403')
+
+    estado, cuerpo, _ = pedir(f'{API}/compras', 'POST', token=bruno, cuerpo=reserva,
+                              cabeceras={'X-Turno-Cola': turno['token']})
+    assert estado == 201, (estado, cuerpo)
+    estado, cuerpo, _ = pedir(f'{API}/compras', 'POST', token=bruno, cuerpo=reserva,
+                              cabeceras={'X-Turno-Cola': turno['token']})
+    assert estado == 403 and cuerpo['codigo'] == 'TURNO_INVALIDO', (estado, cuerpo)
+    print('  con su turno reserva; el mismo turno otra vez: 403 (un solo uso)')
+
+
+def webhook_solo_firmado():
+    print('\n### ADR-15: el webhook de la pasarela entra por el gateway, y solo firmado')
+    estado, _, _ = pedir(f'{API}/pagos/webhook')
+    assert estado == 403, estado
+    estado, cuerpo, _ = pedir(f'{API}/pagos/webhook', 'POST', cuerpo={
+        'claveIdempotencia': 'inventada-123', 'operacion': 'COBRO', 'resultado': 'APROBADO',
+        'referencia': 'pas_x', 'motivo': None})
+    assert estado == 401 and cuerpo['codigo'] == 'FIRMA_INVALIDA', (estado, cuerpo)
+    # Y nada más de Pagos queda expuesto: cobrar sigue siendo interno.
+    estado, _, _ = pedir(f'{API}/pagos', 'POST', cuerpo={})
+    assert estado == 404, estado
+    print('  GET: 403 · POST sin firma: 401 · el resto de Pagos no existe por fuera: 404')
 
 
 def cors():
@@ -191,6 +239,8 @@ def servicios_tambien_validan():
 if __name__ == '__main__':
     enruta()
     autentica_antes_de_enrutar()
+    exige_turno_para_comprar()
+    webhook_solo_firmado()
     cors()
     balanceo_y_caida()
     servicios_tambien_validan()

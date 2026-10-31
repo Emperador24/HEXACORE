@@ -103,6 +103,12 @@ services:
     build: ./pasarela-pagos-simulada
     container_name: hexacore-pasarela
     restart: unless-stopped
+    # Confirma cada operación por webhook a la ruta pública del gateway, como
+    # una pasarela real (ADR-15). Si el gateway no está levantado, reintenta
+    # unas veces y desiste: la pasarela no depende de él para cobrar.
+    environment:
+      WEBHOOK_URL: http://api-gateway:8080/api/v1/pagos/webhook
+      SECRETO_WEBHOOK: secreto-webhook-desarrollo
     ports:
       - "3099:3099"
     healthcheck:
@@ -142,8 +148,9 @@ services:
   # producción se rechazan a propósito.
 
   # API Gateway + balanceador (ADR-02): el punto único de entrada al backend.
-  # Autentica cada petición contra el Servicio de Administración antes de
-  # enrutarla, y reparte entre las réplicas de cada servicio.
+  # Valida el JWT con la clave pública sin llamar a Autenticación, autoriza por
+  # rol, exige el turno de la Cola virtual al comprar (ADR-15), y reparte entre
+  # las réplicas de cada servicio.
   api-gateway:
     profiles: ["servicios"]
     image: nginx:1.27-alpine
@@ -152,9 +159,14 @@ services:
     depends_on:
       autenticacion: { condition: service_healthy }
       ventas: { condition: service_healthy }
+      cola-virtual: { condition: service_healthy }
       eventos-emergencias: { condition: service_healthy }
     volumes:
+      - ../gateway/nginx-principal.conf:/etc/nginx/nginx.conf:ro
       - ../gateway/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ../gateway/autenticar.conf:/etc/nginx/hexacore/autenticar.conf:ro
+      - ../gateway/autenticacion.js:/etc/nginx/njs/autenticacion.js:ro
+      - ./claves-desarrollo/jwt-publica.pem:/etc/nginx/claves/jwt-publica.pem:ro
     ports:
       - "8080:8080"
     healthcheck:
@@ -271,17 +283,19 @@ services:
     build: ../services/acceso-qr
     # Sin `container_name`: ADR-14 le pone 2+ réplicas. Su pico es en la puerta
     # del evento, en otro momento que el de la venta.
+    #
+    # No depende de Ventas (ADR-15): valida contra su propia copia de los QR,
+    # que le llega por el broker. Si Ventas cae, la puerta sigue abierta.
     restart: unless-stopped
     init: true
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
-      ventas: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
     environment:
       <<: *entorno-comun
       PUERTO: "3010"
       POSTGRES_BASE: acceso_qr
-      VENTAS_URL: http://ventas:3001/api/v1
     volumes:
       - ./claves-desarrollo/jwt-publica.pem:/claves/jwt-publica.pem:ro
     healthcheck:
@@ -374,6 +388,8 @@ services:
       PUERTO: "3008"
       POSTGRES_BASE: pagos
       PAGOS_PROVEEDOR_URL: http://${HOST_PASARELA:-pasarela}:${PUERTO_PASARELA:-3099}
+      # El mismo que firma la pasarela. En producción es obligatorio y secreto.
+      PASARELA_SECRETO_WEBHOOK: secreto-webhook-desarrollo
     volumes:
       - ./claves-desarrollo/jwt-publica.pem:/claves/jwt-publica.pem:ro
     healthcheck:
@@ -383,7 +399,8 @@ services:
       start_period: 90s
       retries: 10
     # No se publica puerto al host: es un servicio interno, no lo llama ningún
-    # cliente. Se alcanza por la red de compose desde Entradas y Alimentos.
+    # cliente. Se alcanza por la red de compose desde Ventas, Postventa y
+    # Alimentos, y la pasarela llega a su webhook a través del gateway.
 
   # Servicio de dominio de Alimentos — CU-011 a CU-015. Fase A de ADR-14.
   alimentos:

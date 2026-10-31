@@ -13,6 +13,7 @@ uso, y eso es justo lo que hay que poder leer sin saltar de archivo.
 
 import json
 import subprocess
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -94,9 +95,10 @@ def sql(consulta, bd='acceso_qr'):
     """
     Consulta una de las dos bases.
 
-    Desde ADR-14 los datos del CU-002 viven repartidos: los ingresos y el
-    aforo son de Acceso QR, y las entradas de Ventas. Por eso hay que decir
-    dónde se mira — y que haya que decirlo es la separación funcionando.
+    Los datos del CU-002 viven repartidos: las entradas son de Ventas, y los
+    ingresos, el aforo y la copia de los QR que usa la puerta, de Acceso QR
+    (ADR-15). Por eso hay que decir dónde se mira — y que haya que decirlo es
+    la separación funcionando.
     """
     return subprocess.run(
         ['docker', 'exec', 'hexacore-postgres', 'psql', '-U', 'hexacore',
@@ -110,6 +112,24 @@ BD_VENTAS = 'entradas_mercado_secundario'
 def resembrar():
     """Deja la base como la describe `datos-demo.ts`. Trunca antes de insertar."""
     subprocess.run(['npm', 'run', 'semilla'], capture_output=True, check=True)
+
+
+def esperar_en_puerta(entradas, estado='VALIDA', espera=10):
+    """
+    Espera a que la puerta tenga esas entradas en `estado`.
+
+    La puerta se entera por eventos (ADR-15), no en el momento: Ventas publica
+    desde su bandeja de salida y Acceso QR actualiza su copia. Es consistencia
+    eventual, y la prueba la respeta en vez de esconderla.
+    """
+    ids = ','.join(f"'{e['id']}'" for e in entradas)
+    limite = time.monotonic() + espera
+    while time.monotonic() < limite:
+        listas = sql(f"SELECT count(*) FROM qr_entradas WHERE entrada_id IN ({ids}) AND estado='{estado}'")
+        if listas == str(len(entradas)):
+            return
+        time.sleep(0.1)
+    raise AssertionError(f'La puerta no vio {len(entradas)} entradas {estado} en {espera} s')
 
 
 def comprar(usuario, localidad, cantidad=1, token='tok_ok', cupon=None):
@@ -127,6 +147,7 @@ def comprar(usuario, localidad, cantidad=1, token='tok_ok', cupon=None):
     estado, pagada = pedir('POST', f"compras/{compra['id']}/pagar", usuario,
                            {'metodoPago': 'TARJETA', 'token': token})
     assert estado == 200, (estado, pagada)
+    esperar_en_puerta(pagada['entradas'])
     return pagada
 
 

@@ -9,7 +9,7 @@ import { ProcesadorPagos, ResultadoCobro } from '../comun/pagos/procesador-pagos
 import { GeneradorQr } from '../comun/qr/generador-qr.service';
 import { CompraService } from './compra.service';
 import { Contadores } from './contadores';
-import { NotificacionesVenta } from './notificaciones-venta.service';
+import { BandejaSalida } from '../comun/eventos/bandeja-salida.service';
 import { PromocionesService } from './promociones.service';
 import {
   CompraNoEncontrada,
@@ -68,7 +68,7 @@ describe('CompraService — CU-001', () => {
     };
     const promociones = { confirmarUso: jest.fn(), liberarUso: jest.fn() };
     const pagos = { cobrar: jest.fn(), reembolsar: jest.fn() };
-    const notificaciones = { publicar: jest.fn().mockResolvedValue(true) };
+    const bandeja = { encolar: jest.fn().mockResolvedValue(undefined), encolarEstadoDe: jest.fn() };
     let n = 0;
     const qr = { emitir: jest.fn(() => `HXC-QR-${++n}`) };
     const servicio = new CompraService(
@@ -76,11 +76,11 @@ describe('CompraService — CU-001', () => {
       contadores as unknown as Contadores,
       promociones as unknown as PromocionesService,
       qr as unknown as GeneradorQr,
-      notificaciones as unknown as NotificacionesVenta,
+      bandeja as unknown as BandejaSalida,
       pagos as unknown as ProcesadorPagos,
       config,
     );
-    return { servicio, gestor, contadores, promociones, pagos, notificaciones, qr };
+    return { servicio, gestor, contadores, promociones, pagos, bandeja, qr };
   }
 
   /** Programa `findOne` según la entidad que se pida. */
@@ -130,7 +130,7 @@ describe('CompraService — CU-001', () => {
 
   describe('pagar (pasos 5-8)', () => {
     it('con el cobro aprobado: vende el cupo, confirma el cupón, emite un QR por entrada y notifica', async () => {
-      const { servicio, gestor, contadores, promociones, pagos, notificaciones } = construir();
+      const { servicio, gestor, contadores, promociones, pagos, bandeja } = construir();
       responder(gestor, new Map<unknown, unknown>([[Compra, compra()], [LocalidadEvento, localidad()], [EventoReferencia, evento()]]));
       pagos.cobrar.mockResolvedValue({ resultado: ResultadoCobro.APROBADO, referencia: 'pas_1', motivo: null });
 
@@ -150,7 +150,21 @@ describe('CompraService — CU-001', () => {
       const emisiones = gestor.insert.mock.calls.filter(([entidad]) => entidad === HistorialPropietario);
       expect(emisiones).toHaveLength(2);
       expect(emisiones[0][1]).toMatchObject({ motivo: MotivoCambioPropietario.EMISION, propietarioAnteriorId: null });
-      expect(notificaciones.publicar).toHaveBeenCalledWith(expect.objectContaining({ tipo: 'COMPRA_CONFIRMADA' }));
+      // CompraConfirmada se encola en la MISMA transacción que emite (ADR-15):
+      // por eso se espera el gestor de la transacción, no una publicación suelta.
+      expect(bandeja.encolar).toHaveBeenCalledWith(
+        gestor,
+        'ventas.eventos',
+        'compra.confirmada',
+        expect.objectContaining({
+          tipo: 'COMPRA_CONFIRMADA',
+          eventoId: 'evt-1',
+          entradas: [
+            expect.objectContaining({ codigoQr: 'HXC-QR-1', hashQr: expect.stringMatching(/^[0-9a-f]{64}$/) }),
+            expect.objectContaining({ codigoQr: 'HXC-QR-2' }),
+          ],
+        }),
+      );
     });
 
     it('marca la compra PAGANDO antes de cobrar, para que el barrido no la venza con el cobro en vuelo', async () => {

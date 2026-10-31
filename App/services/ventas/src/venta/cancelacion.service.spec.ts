@@ -7,6 +7,7 @@ import { EstadoEvento, EventoReferencia } from '../persistencia/entidades/evento
 import { ProcesadorPagos, ResultadoCobro } from '../comun/pagos/procesador-pagos';
 import { CancelacionService } from './cancelacion.service';
 import { Contadores } from './contadores';
+import { BandejaSalida } from '../comun/eventos/bandeja-salida.service';
 import { NotificacionesVenta } from './notificaciones-venta.service';
 import {
   CompraNoCancelable,
@@ -57,6 +58,7 @@ describe('CancelacionService — CU-003', () => {
       fuenteDatos,
       contadores as unknown as Contadores,
       notificaciones as unknown as NotificacionesVenta,
+      { encolar: jest.fn(), encolarEstadoDe: jest.fn() } as unknown as BandejaSalida,
       pagos as unknown as ProcesadorPagos,
       config,
     );

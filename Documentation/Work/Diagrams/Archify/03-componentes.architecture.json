@@ -2,7 +2,7 @@
   "schema_version": 1,
   "diagram_type": "architecture",
   "meta": {
-    "title": "HEXACORE — Componentes del microservicio Ventas (ADR-14)",
+    "title": "HEXACORE — Componentes del microservicio Ventas (ADR-14, ADR-15)",
     "subtitle": "el orquestador de la Saga de CU-001",
     "output": "03-componentes.html",
     "quality_profile": "standard",
@@ -44,7 +44,7 @@
       "id": "controlador",
       "type": "backend",
       "label": "Controlador de compra",
-      "sublabel": "valida el token de turno",
+      "sublabel": "recibe la compra ya con turno",
       "pos": [
         300,
         100
@@ -128,7 +128,7 @@
       "id": "publicador",
       "type": "backend",
       "label": "Publicador de eventos",
-      "sublabel": "con confirmación del broker",
+      "sublabel": "bandeja de salida · confirmación",
       "pos": [
         740,
         510
@@ -220,13 +220,13 @@
       "variant": "emphasis"
     },
     {
-      "id": "cola-ctrl",
-      "from": "cola",
-      "to": "controlador",
-      "label": "turno a verificar",
+      "id": "gw-cola",
+      "from": "gateway",
+      "to": "cola",
+      "label": "gasta el turno",
       "labelAt": [
-        263,
-        176
+        185,
+        161
       ]
     },
     {
@@ -351,8 +351,8 @@
       "dot": "amber",
       "title": "Estado de implementación",
       "items": [
-        "⚠️ Dibuja lo decidido. Hoy esto vive dentro de ventas junto a Catálogo, Postventa y Acceso QR",
-        "Ya existen el Gestor de reserva (gestor-concurrencia.service.ts) y la llave de idempotencia del Cliente de Pagos",
+        "Ya existen el Gestor de reserva (gestor-concurrencia.service.ts), la llave de idempotencia del Cliente de Pagos y el Publicador con bandeja de salida (ADR-15)",
+        "Ventas no llama a la Cola virtual: el gateway gasta el turno antes de enrutar la compra (ADR-15)",
         "Faltan el Orquestador y el Compensador: hoy no hay deshacer explícito"
       ]
     }

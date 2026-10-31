@@ -2,7 +2,7 @@
   "schema_version": 1,
   "diagram_type": "architecture",
   "meta": {
-    "title": "HEXACORE — Contenedores (ADR-14)",
+    "title": "HEXACORE — Contenedores (ADR-14, ADR-15)",
     "output": "02-contenedores.html",
     "quality_profile": "standard",
     "views": [
@@ -114,7 +114,7 @@
       "id": "gateway",
       "type": "security",
       "label": "API Gateway",
-      "sublabel": "autoriza por rol · 2+ réplicas",
+      "sublabel": "JWT local · rol · turno · 2+ réplicas",
       "pos": [
         280,
         422
@@ -198,7 +198,7 @@
       "id": "qr",
       "type": "backend",
       "label": "Acceso QR",
-      "sublabel": "CU-002 · pico en la puerta",
+      "sublabel": "CU-002 · valida sin llamar a Ventas",
       "pos": [
         540,
         580
@@ -567,7 +567,7 @@
       "id": "ventas-broker",
       "from": "ventas",
       "to": "broker",
-      "label": "CompraConfirmada",
+      "label": "CompraConfirmada · EntradaActualizada",
       "variant": "dashed",
       "labelAt": [
         890,
@@ -589,7 +589,7 @@
       "id": "broker-qr",
       "from": "broker",
       "to": "qr",
-      "label": "activa el QR",
+      "label": "activa / invalida el QR",
       "variant": "dashed",
       "labelAt": [
         835,
@@ -607,7 +607,7 @@
       "id": "eventos-broker",
       "from": "eventos",
       "to": "broker",
-      "label": "EventoPublicado",
+      "label": "EventoPublicado / EventoCancelado",
       "variant": "dashed"
     },
     {
@@ -676,15 +676,11 @@
       ]
     },
     {
-      "id": "pasarela-pagos",
+      "id": "pasarela-gw",
       "from": "pasarela",
-      "to": "pagos",
-      "label": "webhook",
-      "variant": "dashed",
-      "labelAt": [
-        890,
-        606
-      ]
+      "to": "gateway",
+      "label": "webhook firmado",
+      "variant": "dashed"
     },
     {
       "id": "broker-catalogo",
@@ -748,14 +744,6 @@
       ]
     },
     {
-      "id": "qr-ventas",
-      "from": "qr",
-      "to": "ventas",
-      "label": "gasta el QR",
-      "fromSide": "right",
-      "toSide": "right"
-    },
-    {
       "id": "postventa-ventas",
       "from": "postventa",
       "to": "ventas",
@@ -793,6 +781,25 @@
       "from": "cola",
       "to": "redis",
       "label": "fila"
+    },
+    {
+      "id": "gw-pagos",
+      "from": "gateway",
+      "to": "pagos",
+      "label": "webhook",
+      "variant": "dashed",
+      "labelDy": 14
+    },
+    {
+      "id": "qr-broker",
+      "from": "qr",
+      "to": "broker",
+      "label": "IngresoRegistrado",
+      "variant": "dashed",
+      "labelAt": [
+        835,
+        438
+      ]
     }
   ],
   "cards": [
@@ -818,13 +825,14 @@
     },
     {
       "dot": "amber",
-      "title": "Qué está desplegado y qué no",
+      "title": "Qué cambió con ADR-15 y qué no se dibuja",
       "items": [
-        "El broker reparte EventoPublicado a Catálogo y a Ventas: la flecha a Ventas no repite el rótulo para no cargar el pasillo",
-        "⚠️ Esta es la arquitectura OBJETIVO. Lo que corre hoy son los tres servicios de dominio de ADR-12 — ver la vista de contenedores del Nivel 2",
-        "Para no saturar el diagrama solo se dibuja el detalle completo del camino de compra; los demás servicios siguen el mismo patrón hacia la base que les toca y hacia el broker",
-        "El gateway enruta a los catorce servicios; se dibujan solo las flechas del camino de compra y la de Autenticación, para que el resto no tape el dibujo",
-        "La distancia entre este diseño y el código, con el orden para recorrerla, está en Documentation/Work/MIGRACION-ADR-14.md"
+        "Acceso QR no llama a Ventas: valida contra su propia copia de los QR, que mantiene con CompraConfirmada y EntradaActualizada. La puerta sigue abierta aunque Ventas esté saturada",
+        "El gateway valida el JWT con la clave pública (no llama a Autenticación en cada petición), autoriza por rol y gasta el turno de la Cola virtual antes de dejar pasar una compra",
+        "El webhook de la pasarela entra por la ruta pública del gateway, firmado con HMAC; Pagos publica PagoAprobado / PagoRechazado",
+        "Los eventos que un servicio publica tras escribir salen por una bandeja de salida (Transactional Outbox): no se pierden si el broker cae",
+        "El gateway enruta a los catorce servicios; se dibujan solo las flechas del camino de compra, Autenticación, Acceso QR y el webhook. El broker reparte EventoPublicado también a Ventas",
+        "27 contenedores: 4 interfaces, gateway, 7 microservicios, 7 de dominio, 5 almacenes, broker y 2 externos"
       ]
     }
   ]

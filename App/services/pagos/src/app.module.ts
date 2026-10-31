@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from './comun/config/config.module';
+import { RabbitMqModule } from './comun/rabbitmq/rabbitmq.module';
 import { RedisModule } from './comun/redis/redis.module';
 import { PagosModule } from './pagos/pagos.module';
 import { PersistenciaModule } from './persistencia/persistencia.module';
@@ -16,7 +17,7 @@ import { SaludController } from './salud/salud.controller';
  * confinados a un despliegue, y si se cae nadie paga pero el evento sigue.
  */
 @Module({
-  imports: [ConfigModule, RedisModule, PersistenciaModule, PagosModule],
+  imports: [ConfigModule, RedisModule, RabbitMqModule, PersistenciaModule, PagosModule],
   controllers: [SaludController],
 })
 export class AppModule {}

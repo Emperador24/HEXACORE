@@ -1,6 +1,8 @@
+import { CLAVE_ENTRADA_ACTUALIZADA, entradaActualizada, EXCHANGE_VENTAS } from '../../comun/eventos/bandeja-salida.service';
 import fuenteDatos from '../data-source';
 import { Entrada } from '../entidades/entrada.entity';
 import { EventoReferencia } from '../entidades/evento-referencia.entity';
+import { EventoSaliente } from '../entidades/evento-saliente.entity';
 import { HistorialPropietario, MotivoCambioPropietario } from '../entidades/historial-propietario.entity';
 import { CodigoPromocional } from '../entidades/codigo-promocional.entity';
 import { LocalidadEvento } from '../entidades/localidad-evento.entity';
@@ -83,6 +85,21 @@ async function sembrar(): Promise<void> {
           codigoQrAnterior: null,
           codigoQrNuevo: demo.codigoQr,
         });
+      }
+
+      // Las entradas sembradas también tienen que llegar a la puerta: Acceso
+      // QR solo conoce las que le llegan por eventos (ADR-15). Van a la bandeja
+      // de salida como cualquier otro cambio, y las publica el servicio en
+      // cuanto esté en marcha.
+      const sembradas = await gestor.find(Entrada);
+      for (const entrada of sembradas) {
+        await gestor
+          .createQueryBuilder()
+          .insert()
+          .into(EventoSaliente)
+          .values({ exchange: EXCHANGE_VENTAS, clave: CLAVE_ENTRADA_ACTUALIZADA, cuerpo: () => ':cuerpo' })
+          .setParameter('cuerpo', JSON.stringify(entradaActualizada(entrada)))
+          .execute();
       }
     });
 

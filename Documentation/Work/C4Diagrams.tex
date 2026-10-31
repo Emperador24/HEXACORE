@@ -161,7 +161,8 @@ Sistema & Proveedor de Notificaciones & Envía notificaciones push, correo y SMS
 
 \textbf{Tipo:} diagrama de contenedores. \textbf{Alcance:} zoom dentro del sistema, mostrando las
 cuatro interfaces desplegables, los catorce servicios del backend —siete microservicios y siete
-servicios de dominio (ADR-14)— y la infraestructura que comparten.
+servicios de dominio (ADR-14)— y la infraestructura que comparten: 27 contenedores en total, con las
+correcciones de ADR-15.
 \textbf{Audiencia:} arquitectos y desarrolladores.
 
 \begin{figure}[H]
@@ -198,19 +199,26 @@ Organizador & Portal Web Admin & Crea eventos, asigna personal y coordina la ope
 Empleado & App Móvil & Consulta turnos y registra ingreso/salida. & HTTPS\\
 Administrador & Portal Web Admin & Administra usuarios, personal y configuración. & HTTPS\\
 Supervisor de emergencia & Portal Web Admin & Activa y coordina el protocolo de evacuación. & HTTPS\\
-Las tres interfaces & API Gateway & Envía las solicitudes del usuario al backend. & HTTPS/JSON\\
-API Gateway & Los catorce servicios & Enruta cada solicitud al servicio correspondiente y balancea entre sus réplicas. & HTTPS/JSON\\
-Cola virtual & Ventas & Entrega un token de turno con vencimiento corto; sin él, el gateway no deja llegar la petición. & HTTPS/JSON\\
+Las cuatro interfaces & API Gateway & Envía las solicitudes del usuario al backend. & HTTPS/JSON\\
+API Gateway & Los catorce servicios & Valida el JWT con la clave pública, autoriza por rol, enruta cada solicitud y balancea entre sus réplicas. & HTTPS/JSON\\
+API Gateway & Cola virtual & Pide turno y, en la ruta de compra, gasta el turno del comprador antes de dejar pasar a Ventas (ADR-15). & HTTPS/JSON\\
+API Gateway & Autenticación & Solo \textit{login} y emisión de tokens: el gateway no le consulta cada petición. & HTTPS/JSON\\
 Ventas & Redis & Reserva atómica del inventario con vencimiento y contador de usos de cupones. & Redis\\
 Ventas & Base propia & Persiste órdenes y entradas emitidas. & SQL\\
 Ventas & Pagos & Solicita el cobro con una llave de idempotencia. & HTTPS/REST\\
-Pagos & Pasarela de Pagos & Único punto de contacto: cobros, reembolsos y confirmación por webhook. & HTTPS/REST\\
+Pagos & Pasarela de Pagos & Único punto de contacto: cobros y reembolsos. & HTTPS/REST\\
+Pasarela de Pagos & API Gateway $\rightarrow$ Pagos & \textit{Webhook} de confirmación por la única ruta pública sin JWT, firmado con HMAC. & HTTPS/JSON\\
+Pagos & Broker & Publica \texttt{PagoAprobado} / \texttt{PagoRechazado}, que cierran la Saga de compra en Ventas. & AMQP\\
+Postventa & Ventas & Cambia el dueño de la entrada revendida. & HTTPS/JSON\\
+Postventa & Pagos & Cobro de la reventa. & HTTPS/JSON\\
 Catálogo & Índice de búsqueda & Resuelve búsqueda y filtros por categoría, fecha, ciudad o artista. & HTTP\\
-Eventos y recintos & Broker & Publica el evento publicado, que alimenta a Catálogo y a Ventas. & AMQP/Kafka\\
-Ventas & Broker & Publica \texttt{CompraConfirmada} al confirmar la orden. & AMQP/Kafka\\
-Broker & Notificaciones & Dispara el envío del QR al comprador. & AMQP/Kafka\\
-Broker & Acceso QR & Activa los QR emitidos para que puedan validarse en la puerta. & AMQP/Kafka\\
-Broker & Finanzas y reportes & Registra el ingreso para la conciliación. & AMQP/Kafka\\
+Eventos y recintos & Broker & Publica \texttt{EventoPublicado} y \texttt{EventoCancelado}, que alimentan a Catálogo, Ventas, Acceso QR y Notificaciones. & AMQP\\
+Ventas & Broker & Publica \texttt{CompraConfirmada} y \texttt{EntradaActualizada} desde su bandeja de salida (Transactional Outbox). & AMQP\\
+Broker & Notificaciones & Dispara el envío del QR al comprador. & AMQP\\
+Broker & Acceso QR & Activa los QR emitidos e invalida el anterior en una reventa; Acceso QR valida contra esa copia y no llama a Ventas (ADR-15). & AMQP\\
+Broker & Finanzas y reportes & Registra el ingreso para la conciliación. & AMQP\\
+Acceso QR & Broker $\rightarrow$ Ventas & Publica \texttt{IngresoRegistrado}; Ventas marca la entrada como usada. & AMQP\\
+Operación del evento & Broker & Publica \texttt{AlertaEvacuación}, que Notificaciones atiende con prioridad alta. & AMQP\\
 Notificaciones & Proveedor de Notificaciones & Dispara correo y push; prioridad alta para evacuación. & HTTPS/REST\\
 Servicios de dominio & Base central & Persisten en su propio esquema dentro de la base compartida. & SQL\\
 Finanzas y reportes & Réplica de lectura & Consulta los reportes sin tocar el primario. & SQL\\

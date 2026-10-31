@@ -34,10 +34,9 @@ from datetime import datetime, timedelta, timezone
 
 from venta import (
     API_ACCESO,
-    BD_VENTAS,
     CAFE_GENERAL, FEST, FEST_GENERAL, FEST_PALCO, GALA, GALA_PLATEA, PORTERO, ROCK,
     ROCK_GENERAL, SINFONICA_LUNETA, VOLEIBOL,
-    comprar, correr, pedir, resembrar, sql, titulo,
+    comprar, correr, esperar_en_puerta, pedir, resembrar, sql, titulo,
 )
 
 PUERTA = ('Personal',)
@@ -74,9 +73,10 @@ def camino_feliz():
     fila = sql(f"SELECT validado_por || '|' || punto_acceso || '|' || origen "
                f"FROM ingresos WHERE entrada_id='{entrada['id']}'")
     assert fila == f'{PORTERO}|Puerta 3|EN_LINEA', fila
-    # Post-condición 2: el aforo sube. Post-condición 3: el QR queda usado.
+    # Post-condición 2: el aforo sube. Post-condición 3: el QR queda usado, en
+    # la copia de la puerta: desde ADR-15 Ventas no se entera de quién entró.
     assert asistentes(FEST) == antes + 1
-    assert sql(f"SELECT estado FROM entradas WHERE id='{entrada['id']}'", bd=BD_VENTAS) == 'USADA'
+    assert sql(f"SELECT estado FROM qr_entradas WHERE entrada_id='{entrada['id']}'") == 'USADA'
     print(f"  {r['numeroTicket']} autorizado en Puerta 3 · aforo {antes} → {r['asistentes']}")
 
 
@@ -133,19 +133,31 @@ def qr_invalido():
 
 def qr_anulado_o_en_reventa():
     titulo('CU-002A — una entrada anulada o publicada en reventa no ingresa')
-    compra = comprar(alguien(), FEST_PALCO, 1)
+    comprador = alguien()
+    compra = comprar(comprador, FEST_PALCO, 1)
     entrada = compra['entradas'][0]
 
-    sql(f"UPDATE entradas SET estado='ANULADA' WHERE id='{entrada['id']}'", bd=BD_VENTAS)
+    # De punta a punta y sin atajos: se cancela en Ventas, Ventas lo publica
+    # desde su bandeja de salida, y la puerta lo rechaza sin haberle
+    # preguntado nada a Ventas (ADR-15).
+    estado, cotizacion = pedir('POST', f"compras/{compra['id']}/cancelacion/cotizacion", comprador, {})
+    assert estado == 200, (estado, cotizacion)
+    estado, cancelada = pedir('POST', f"compras/{compra['id']}/cancelaciones", comprador,
+                              {'motivo': 'No puedo asistir', 'montoAceptado': cotizacion['montoReembolso']})
+    assert estado in (200, 201), (estado, cancelada)
+    esperar_en_puerta([entrada], estado='ANULADA')
     estado, anulada = validar(entrada['codigoQr'])
     assert estado == 404 and anulada['codigo'] == 'CU-002A', (estado, anulada)
     assert 'anulada' in anulada['mensaje']
 
-    sql(f"UPDATE entradas SET estado='EN_REVENTA' WHERE id='{entrada['id']}'", bd=BD_VENTAS)
-    estado, reventa = validar(entrada['codigoQr'])
+    # La reventa tiene su propia suite en Postventa; aquí basta con que la
+    # puerta respete el estado cuando le llega.
+    otra = comprar(alguien(), FEST_PALCO, 1)['entradas'][0]
+    sql(f"UPDATE qr_entradas SET estado='EN_REVENTA' WHERE entrada_id='{otra['id']}'")
+    estado, reventa = validar(otra['codigoQr'])
     assert estado == 404 and reventa['codigo'] == 'CU-002A', (estado, reventa)
     assert 'retirarla primero' in reventa['mensaje'], reventa
-    print('  ANULADA y EN_REVENTA → CU-002A, con el motivo que el portero puede explicar')
+    print('  cancelada en Ventas → ANULADA en la puerta por evento → CU-002A · EN_REVENTA → CU-002A')
 
 
 def aforo_completo():
@@ -163,7 +175,7 @@ def aforo_completo():
 
     # Lo que importa del camino: la transacción se deshace entera. Una entrada
     # válida que se queda fuera por aforo NO puede quedar quemada.
-    assert sql(f"SELECT estado FROM entradas WHERE id='{entrada['id']}'", bd=BD_VENTAS) == 'VALIDA', \
+    assert sql(f"SELECT estado FROM qr_entradas WHERE entrada_id='{entrada['id']}'") == 'VALIDA', \
         'CU-002B no puede dejar la entrada marcada como usada'
     assert sql(f"SELECT count(*) FROM ingresos WHERE entrada_id='{entrada['id']}'") == '0'
     assert asistentes(GALA) == antes

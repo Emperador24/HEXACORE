@@ -58,7 +58,14 @@ export interface ConfiguracionServicio {
     url: string;
     /** Corta la espera ante una pasarela lenta: sin esto, un cobro sin respuesta cuelga al llamante. */
     timeoutMs: number;
+    /**
+     * Secreto compartido con la pasarela para firmar el webhook (HMAC-SHA256).
+     * Es lo único que autentica esa ruta: la pasarela no tiene sesión.
+     */
+    secretoWebhook: string;
   };
+  /** Para publicar `PagoAprobado` / `PagoRechazado` (ADR-15). */
+  rabbitmq: { url: string };
 }
 
 export const CONFIGURACION = 'CONFIGURACION_SERVICIO';
@@ -98,6 +105,13 @@ export function cargarConfiguracion(): ConfiguracionServicio {
     pasarelaPagos: {
       url: texto('PAGOS_PROVEEDOR_URL', 'http://localhost:3099'),
       timeoutMs: pasarelaTimeoutMs,
+      // En producción no hay valor por defecto: un secreto conocido dejaría a
+      // cualquiera confirmar pagos que no hizo.
+      secretoWebhook:
+        entorno === 'production'
+          ? requerido('PASARELA_SECRETO_WEBHOOK')
+          : texto('PASARELA_SECRETO_WEBHOOK', 'secreto-webhook-desarrollo'),
     },
+    rabbitmq: { url: texto('RABBITMQ_URL', 'amqp://hexacore:hexacore@localhost:5672') },
   };
 }

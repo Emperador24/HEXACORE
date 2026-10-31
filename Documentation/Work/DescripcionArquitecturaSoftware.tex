@@ -138,6 +138,14 @@ Las secciones afectadas llevan una nota de \textbf{estado de implementación}: l
 siendo ADR-12 sobre Docker Compose. Se mantiene por exactitud, no como arquitectura alternativa.
 & Equipo Hexacore (vía asistente) \\
 \hline
+30/10/2026 & Versión 1.7: se registra \textbf{ADR-15}, que corrige cuatro relaciones de la vista
+de contenedores ---el gateway valida el JWT con la clave pública y exige el turno de la Cola
+virtual; Acceso QR deja de llamar a Ventas y valida contra su propia copia de los QR; el
+\textit{webhook} de la pasarela entra por el gateway--- y fija lo que el diagrama dejaba abierto:
+tecnologías, réplicas mínimas, Transactional Outbox, el evento \texttt{EntradaActualizada} que
+invalida el QR anterior en una reventa y \texttt{EventoCancelado}. El conteo de contenedores queda
+en 27. & Equipo Hexacore (vía asistente) \\
+\hline
 \end{longtable}
 \end{center}
 
@@ -611,11 +619,55 @@ El backend son \textbf{catorce servicios} repartidos en dos grupos por el criter
       reportes} (CU-031, CU-032).
 \end{itemize}
 
-Todos se exponen por un \textbf{único API Gateway} (ADR-02) y se comunican de forma asíncrona por un
-\textbf{broker de eventos}: los servicios no se llaman en cadena para avisarse de cambios, publican
-hechos y quien le interese los consume. Cuando Ventas confirma una compra publica
-\texttt{Compra\-Confirmada}, y con ese solo evento Notificaciones manda el QR, Acceso QR lo activa y
-Finanzas registra el ingreso.
+En total el diagrama tiene \textbf{27 contenedores}: 4 interfaces, el API Gateway, 7 microservicios,
+7 servicios de dominio, 5 almacenes de datos, el broker y 2 sistemas externos.
+
+Todos los servicios se exponen por un \textbf{único API Gateway} (ADR-02), que valida el JWT con la
+clave pública ---sin llamar a Autenticación en cada petición---, autoriza por el rol del token y, en
+la ruta de compra, exige y gasta el turno de la Cola virtual antes de dejar pasar a Ventas
+(ADR-15). Entre ellos se comunican de forma asíncrona por un \textbf{broker de eventos}: los
+servicios no se llaman en cadena para avisarse de cambios, publican hechos y quien le interese los
+consume. Cuando Ventas confirma una compra publica \texttt{Compra\-Confirmada}, y con ese solo
+evento Notificaciones manda el QR, Acceso QR lo activa y Finanzas registra el ingreso.
+
+Las llamadas síncronas entre servicios son solo tres, y las tres van hacia quien tiene la
+autoridad: Ventas y Postventa piden cobros a Pagos, y Postventa le pide a Ventas cambiar el dueño
+de una entrada. \textbf{Acceso QR no llama a Ventas}: valida contra su propia copia de los QR, que
+mantiene con \texttt{CompraConfirmada} y \texttt{EntradaActualizada}, así que la puerta sigue
+abierta aunque Ventas esté saturada por una apertura de venta. Ventas, a su vez, se entera de qué
+entradas se usaron por \texttt{IngresoRegistrado}.
+
+La Tabla \ref{tab:eventos} es el catálogo de eventos del broker. Todo evento que un servicio
+publique como consecuencia de escribir en su base sale por una \textbf{bandeja de salida}
+(Transactional Outbox, ADR-15): se guarda en la misma transacción que el cambio y un publicador lo
+saca al broker después, de modo que ni se pierde si el broker cae ni se publica uno de una
+transacción deshecha.
+
+\begin{center}
+\begin{longtable}{p{3.4cm}p{2.9cm}p{3.6cm}p{4.4cm}}
+\toprule
+\textbf{Evento} & \textbf{Lo publica} & \textbf{Lo consumen} & \textbf{Para qué}\\
+\midrule
+\endhead
+\texttt{EventoPublicado} & Eventos y recintos & Ventas, Catálogo & Cargar el inventario y alimentar
+el índice de búsqueda\\[0.3em]
+\texttt{EventoCancelado} & Eventos y recintos & Catálogo, Ventas, Acceso QR, Notificaciones &
+Retirarlo de la búsqueda, cerrar la venta, rechazar en la puerta y avisar a los compradores\\[0.3em]
+\texttt{PagoAprobado} / \texttt{PagoRechazado} & Pagos & Ventas & Cerrar o compensar la Saga de
+compra\\[0.3em]
+\texttt{CompraConfirmada} & Ventas & Acceso QR, Notificaciones, Finanzas y reportes & Activar el QR,
+enviarlo y registrar el ingreso\\[0.3em]
+\texttt{EntradaActualizada} & Ventas & Acceso QR & Invalidar el QR anterior en una reventa, y
+reflejar una entrada en reventa o anulada\\[0.3em]
+\texttt{IngresoRegistrado} & Acceso QR & Ventas & Marcar la entrada como usada, para no
+reembolsarla (CU-003D) ni revenderla\\[0.3em]
+\texttt{AlertaEvacuación} & Operación del evento & Notificaciones & Difundir la evacuación con
+prioridad alta\\
+\bottomrule
+\caption{Catálogo de eventos del broker (ADR-14 y ADR-15).}
+\label{tab:eventos}
+\end{longtable}
+\end{center}
 
 La Figura \ref{fig:contenedores} presenta el diagrama de contenedores.
 
@@ -653,7 +705,8 @@ La infraestructura de soporte es la misma para los dos grupos:
       eventos que publica Eventos y recintos.
 \item \textbf{Broker de eventos} con tópicos replicados, para no perder hechos si se cae un nodo.
 \item \textbf{Servicios externos:} la Pasarela de Pagos ---con la que solo habla Pagos, de modo que
-      los datos de tarjeta nunca entran al sistema--- y el Proveedor de Notificaciones.
+      los datos de tarjeta nunca entran al sistema; su \textit{webhook} de confirmación entra por la
+      ruta pública del gateway, firmado--- y el Proveedor de Notificaciones.
 \end{itemize}
 
 Para no saturar el dibujo, del gateway solo salen las flechas del camino de compra y la de
@@ -661,9 +714,11 @@ Autenticación; en realidad enruta a los catorce. El resto de los servicios sigu
 hacia el almacén que le corresponde y hacia el broker.
 
 \medskip
-\noindent\textbf{Estado de implementación.} Lo desplegado hoy no es esta vista todavía, sino la
-arquitectura de ADR-12: tres servicios de dominio sobre Docker Compose. El orden para recorrer la
-distancia está en \texttt{Documentation/Work/MIGRACION-ADR-14.md}.
+\noindent\textbf{Estado de implementación.} Corren doce de los catorce servicios sobre Docker
+Compose, con las relaciones de ADR-15 ya aplicadas en el gateway, Pagos, Ventas y Acceso QR. Faltan
+Eventos y recintos, Parqueaderos y Finanzas y reportes como servicios propios, y con ellos
+\texttt{EventoPublicado}, \texttt{EventoCancelado} y la réplica de lectura. El orden para recorrer
+esa distancia está en \texttt{Documentation/Work/MIGRACION-ADR-14.md}.
 
 % ==================== Vista de componentes ====================
 \section{Vista de componentes}
@@ -1306,15 +1361,15 @@ tokens evitan que la sesión se cierre sola con la aplicación abierta.
 \texttt{App/services/*/pruebas/} comprueban que un token con \texttt{alg: none} o firmado con la
 clave pública como secreto HMAC se rechaza; que una sesión cerrada deja de valer \textit{en el otro
 microservicio}; y que reutilizar un token de renovación ya gastado cierra la sesión. El API Gateway
-(ADR-02) valida por subpetición contra \texttt{/sesiones/verificar}, y una prueba de defensa en
-profundidad confirma que llamar directo a un servicio con la cabecera de identidad falsificada
-devuelve 401.
+(ADR-02) valida la firma con la clave pública sin consultar a Autenticación (ADR-15), y una prueba
+de defensa en profundidad confirma que llamar directo a un servicio con la cabecera de identidad
+falsificada devuelve 401.
 
-\textbf{Consecuencias:} firmar con RSA cuesta más CPU que con HMAC, y cada petición protegida añade
-una subpetición interna del gateway. A cambio, ningún servicio distinto del emisor puede fabricar un
-token. \textbf{Cuándo revisar:} si el coste de la subpetición se notara bajo carga, los servicios
-pueden verificar la firma por su cuenta con la clave pública y consultar Redis directamente ---
-sigue sin necesitar la privada.
+\textbf{Consecuencias:} firmar con RSA cuesta más CPU que con HMAC. A cambio, ningún servicio
+distinto del emisor puede fabricar un token. Hasta ADR-15 el gateway validaba con una subpetición a
+\texttt{/sesiones/verificar} en cada petición protegida; esa era la condición de revisión de este
+ADR, y se ejerció: ahora valida la firma por su cuenta, y la revocación la siguen comprobando en
+Redis los servicios.
 
 \subsection*{ADR-12 --- Arquitectura basada en servicios: un servicio de dominio agregado y dos replicables}
 
@@ -1502,6 +1557,8 @@ empaquetado y no una reescritura del dominio.
 
 \input{ADR-14-hibrida-soa-microservicios}
 
+\input{ADR-15-correcciones-contenedores}
+
 
 % ==================== Tácticas arquitectónicas ====================
 \section{Tácticas arquitectónicas por atributo de calidad}
@@ -1683,8 +1740,8 @@ pública como secreto, caducado, de otro emisor y manipulado: \textbf{6 de 6} re
 
 Autorizar a los actores &
 Guarda \texttt{SesionValida} con \texttt{@RolesPermitidos} en cada controlador. El gateway valida
-antes de enrutar (\texttt{auth\_request} a \texttt{/sesiones/verificar}) y propaga la identidad ya
-comprobada en \texttt{X-Usuario-Id} y \texttt{X-Usuario-Roles}. &
+el JWT con la clave pública y el rol de la ruta antes de enrutar (\texttt{autenticacion.js}, ADR-15)
+y propaga la identidad ya comprobada en \texttt{X-Usuario-Id} y \texttt{X-Usuario-Roles}. &
 RNF-06, ADR-02 &
 \textbf{11 de 11} rutas de negocio responden 401 sin token (\textbf{0\,\% abiertas}). Un rol
 \texttt{Personal} recibe 403 en la reventa; el barrido de mantenimiento da 403 a \texttt{Cliente}

@@ -4,9 +4,13 @@ import { ConfiguracionServicio, cargarConfiguracion } from '../config/configurac
 import { EventoReferencia } from './entidades/evento-referencia.entity';
 import { Ingreso } from './entidades/ingreso.entity';
 import { EsquemaAccesoQr1790467200000 } from './migraciones/1790467200000-EsquemaAccesoQr';
+import { QrEntradas1790553600000 } from './migraciones/1790553600000-QrEntradas';
+import { QrEntrada } from './entidades/qr-entrada.entity';
+import { EventoSaliente } from './entidades/evento-saliente.entity';
+import { BandejaSalida1790553600001 } from './migraciones/1790553600001-BandejaSalida';
 
-export const ENTIDADES = [EventoReferencia, Ingreso];
-export const MIGRACIONES = [EsquemaAccesoQr1790467200000];
+export const ENTIDADES = [EventoReferencia, Ingreso, QrEntrada, EventoSaliente];
+export const MIGRACIONES = [EsquemaAccesoQr1790467200000, QrEntradas1790553600000, BandejaSalida1790553600001];
 
 export function opcionesDataSource(config: ConfiguracionServicio): DataSourceOptions {
   return {

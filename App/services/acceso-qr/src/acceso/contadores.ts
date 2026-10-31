@@ -26,20 +26,4 @@ export class Contadores {
       .execute();
     return (resultado.affected ?? 0) > 0;
   }
-
-  /**
-   * Devuelve una plaza. Es la compensación de `sumarAsistente`.
-   *
-   * Condicionada a `asistentes > 0` para no dejar el conteo en negativo si se
-   * compensara dos veces.
-   */
-  async restarAsistente(tx: EntityManager, eventoId: string): Promise<boolean> {
-    const resultado = await tx
-      .createQueryBuilder()
-      .update(EventoReferencia)
-      .set({ asistentes: () => 'asistentes - 1' })
-      .where('evento_id = :id AND asistentes > 0', { id: eventoId })
-      .execute();
-    return (resultado.affected ?? 0) > 0;
-  }
 }

@@ -11,7 +11,7 @@ export class TurnoDto {
   @ApiProperty({ enum: EstadoTurno })
   estado: EstadoTurno;
 
-  @ApiProperty({ nullable: true, description: 'Token de un solo uso. Lo gasta Ventas al abrir el checkout.' })
+  @ApiProperty({ nullable: true, description: 'Token de un solo uso. Se manda en X-Turno-Cola al reservar y lo gasta el gateway.' })
   token: string | null;
 
   @ApiProperty({ nullable: true })

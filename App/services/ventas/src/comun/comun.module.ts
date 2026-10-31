@@ -4,6 +4,7 @@ import { CONFIGURACION, ConfiguracionServicio } from '../config/configuracion';
 import { SesionValida } from './autenticacion/sesion-valida.guard';
 import { GestorConcurrencia } from './concurrencia/gestor-concurrencia.service';
 import { REDIS, proveedorRedis } from './concurrencia/redis.provider';
+import { BandejaSalida } from './eventos/bandeja-salida.service';
 import { ConexionRabbitMq } from './eventos/conexion-rabbitmq.service';
 import { ClientePagos } from './pagos/cliente-pagos.service';
 import { PROCESADOR_PAGOS } from './pagos/procesador-pagos';
@@ -48,11 +49,21 @@ import { GeneradorQr } from './qr/generador-qr.service';
     GestorConcurrencia,
     GeneradorQr,
     ConexionRabbitMq,
+    BandejaSalida,
     // El dominio depende de la interfaz, no de este adaptador concreto:
     // cambiar de proveedor de pagos es cambiar esta línea y escribir otra
     // implementación (RNF-16: "componentes a modificar: 1").
     { provide: PROCESADOR_PAGOS, useClass: ClientePagos },
   ],
-  exports: [REDIS, SesionValida, JwtModule, GestorConcurrencia, GeneradorQr, ConexionRabbitMq, PROCESADOR_PAGOS],
+  exports: [
+    REDIS,
+    SesionValida,
+    JwtModule,
+    GestorConcurrencia,
+    GeneradorQr,
+    ConexionRabbitMq,
+    BandejaSalida,
+    PROCESADOR_PAGOS,
+  ],
 })
 export class ComunModule {}

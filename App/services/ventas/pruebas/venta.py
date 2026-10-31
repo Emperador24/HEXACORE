@@ -13,6 +13,7 @@ uso, y eso es justo lo que hay que poder leer sin saltar de archivo.
 
 import json
 import subprocess
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -91,11 +92,28 @@ def pedir(metodo, ruta, usuario=None, cuerpo=None, espera=60, roles=('Cliente',)
         return e.code, json.loads(e.read() or b'{}')
 
 
-def sql(consulta):
+def sql(consulta, bd='entradas_mercado_secundario'):
     return subprocess.run(
         ['docker', 'exec', 'hexacore-postgres', 'psql', '-U', 'hexacore',
-         '-d', 'entradas_mercado_secundario', '-tAc', consulta],
+         '-d', bd, '-tAc', consulta],
         capture_output=True, text=True).stdout.strip()
+
+
+def esperar(consulta, esperado, bd='entradas_mercado_secundario', espera=10):
+    """
+    Espera a que una consulta devuelva `esperado`.
+
+    Ventas y Acceso QR se enteran uno del otro por eventos (ADR-15): la puerta
+    conoce la entrada cuando le llega `CompraConfirmada`, y Ventas sabe que se
+    usó cuando le llega `IngresoRegistrado`. La prueba respeta esa consistencia
+    eventual en vez de esconderla.
+    """
+    limite = time.monotonic() + espera
+    while time.monotonic() < limite:
+        if sql(consulta, bd) == esperado:
+            return
+        time.sleep(0.1)
+    raise AssertionError(f'{consulta!r} no llegó a {esperado!r} en {espera} s')
 
 
 def resembrar():
