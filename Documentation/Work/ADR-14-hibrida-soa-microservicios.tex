@@ -1,0 +1,136 @@
+% ADR-14 — se incluye desde DescripcionArquitecturaSoftware.tex con \input.
+% Vive en su propio archivo porque es el ADR más largo del documento y así el
+% SAD no crece sin control; el resto de los ADR siguen en línea.
+
+\subsection*{ADR-14 --- Arquitectura híbrida entre SOA y microservicios}
+
+\textbf{Estado:} \textit{supera a ADR-12.} La separación por dominio sigue
+vigente; lo que se revisa es el \textbf{criterio} con el que se decide qué
+dominio merece ser un despliegue propio, y el resultado pasa de tres servicios
+de dominio a \textbf{siete microservicios y siete servicios de dominio}.
+
+\textbf{Contexto:} ADR-12 adoptó una arquitectura basada en servicios con un
+criterio de extracción de dos condiciones --- curva de carga e independencia de
+disponibilidad --- y produjo tres servicios de dominio. Al recorrer los seis ASR
+contra los 32 casos de uso, ese criterio resulta \textbf{insuficiente en dos
+sentidos}:
+
+\begin{itemize}
+  \item \textbf{No reconoce los servicios transversales.} Pagos lo usan la
+        compra (CU-001), la reventa (CU-006), los reembolsos (CU-003), los
+        pedidos de alimentos (CU-011) y los parqueaderos (CU-021).
+        Autenticación lo usan todas las peticiones del sistema.
+        Notificaciones lo usa casi todo. Que uno de ellos falle no degrada un
+        dominio: degrada muchos a la vez. ADR-12 no tenía forma de expresar eso.
+  \item \textbf{No reconoce el almacén propio.} El Catálogo (CU-005) necesita un
+        índice de búsqueda para filtrar por categoría, fecha, ciudad o artista;
+        la Cola virtual necesita una estructura de fila en memoria; Acceso QR
+        necesita una caché del estado de cada código para validar sin red. Son
+        servicios cuyas réplicas \textbf{no competirían} por la base central,
+        precisamente porque su estado no vive ahí.
+\end{itemize}
+
+Hay además un hecho de carga que ADR-12 sí veía pero resolvía a medias: en la
+apertura de venta de un evento muy demandado, la mayor parte del tráfico es de
+\textbf{consulta} del catálogo, no de compra. Con ambas cosas en el mismo
+servicio, las dos se degradan.
+
+\textbf{Alternativas consideradas:}
+\begin{itemize}
+  \item \textbf{Todo en microservicios.} Un despliegue por dominio para los 32
+        casos de uso. Multiplica bases de datos, despliegues y monitoreo sin
+        beneficio para dominios de carga estable --- personal, parqueaderos,
+        alimentos ---. Es exactamente el error que ADR-12 corrigió, y con un
+        equipo pequeño vuelve a dejar dominios sin implementar.
+  \item \textbf{Todo en \textit{service-based}} (lo que fijó ADR-12). Con una
+        sola base central y servicios grandes, el pico de la apertura de venta
+        obliga a escalar el sistema entero, y las compras compiten por la misma
+        base que el resto de los dominios.
+  \item \textbf{Híbrida entre SOA y microservicios} --- la elegida.
+\end{itemize}
+
+\textbf{Decisión:} la base del sistema es \textit{service-based} ---servicios
+grandes por dominio que comparten una base central con un esquema por
+servicio--- y de ella se \textbf{extraen como microservicios}, con base de datos
+propia y réplicas que escalan solas, los servicios que cumplen al menos
+\textbf{dos de cuatro} criterios:
+
+\begin{enumerate}
+  \item \textbf{Picos de carga muy por encima del resto:} necesita sumar
+        réplicas sin escalar todo el sistema.
+  \item \textbf{Lo usan varios dominios:} si se cae, afecta a muchos casos de
+        uso a la vez.
+  \item \textbf{Su estado cabe en un almacén propio} ---caché, base pequeña,
+        índice de búsqueda---: sus réplicas no compiten por la base central.
+  \item \textbf{Su falla debe quedar aislada:} un problema en él no puede tumbar
+        la operación del evento.
+\end{enumerate}
+
+El resultado son \textbf{siete microservicios} ---Cola virtual, Catálogo,
+Ventas, Pagos, Autenticación, Acceso QR y Notificaciones--- y \textbf{siete
+servicios de dominio} ---Eventos y recintos, Postventa, Alimentos,
+Parqueaderos, Personal y logística, Operación del evento, y Finanzas y
+reportes---. Todos se exponen por un \textbf{único API Gateway} (ADR-02, que no
+cambia) y se comunican de forma asíncrona por un \textbf{broker de eventos}.
+
+\medskip
+Tres decisiones acompañan a la principal:
+
+\begin{itemize}
+  \item \textbf{Los servicios de dominio también corren redundados, pero no
+        escalan.} Dos instancias para disponibilidad, número fijo. Operación del
+        evento ---que atiende la evacuación, CU-010--- es crítico para la
+        disponibilidad aunque su carga sea baja: necesita redundancia, no
+        réplicas elásticas.
+  \item \textbf{Finanzas y reportes lee de una réplica de lectura} de la base
+        central, no de la principal. Es lo que impide que sus consultas pesadas
+        (CU-032) degraden la operación durante el evento, que es el sexto ASR.
+  \item \textbf{La compra se resuelve con una Saga orquestada por Ventas}, con
+        reserva atómica y vencimiento en la caché, y con llaves de idempotencia
+        en Pagos. La compra termina completa o se deshace sin dejar entradas
+        bloqueadas; un reintento del comprador o un \textit{webhook} reenviado
+        por la pasarela no cobran dos veces (CU-001B, CU-001C, CU-001D).
+\end{itemize}
+
+\textbf{Atributo de calidad:} \textbf{Rendimiento} y \textbf{Escalabilidad}
+como motivación principal ---los cuatro servicios del camino de compra escalan
+sin arrastrar al resto---; \textbf{Disponibilidad}, porque aislar Pagos,
+Autenticación y Notificaciones acota el radio de cada falla;
+\textbf{Consistencia}, por la Saga y la reserva atómica; y
+\textbf{Modificabilidad}, porque los servicios se enteran de los cambios por
+eventos y añadir un consumidor nuevo no obliga a tocar a quien los publica.
+
+\textbf{Consecuencias:} es la decisión más cara del documento y conviene no
+disimularlo.
+
+\begin{itemize}
+  \item \textbf{De 3 unidades desplegables a 14.} La complejidad operativa que
+        ADR-12 redujo vuelve a subir, ahora de forma deliberada y acotada: solo
+        siete servicios escalan, y los otros siete comparten base y ciclo de
+        despliegue.
+  \item \textbf{El Núcleo de ADR-12 se deshace.} Aquel agrupó Administración y
+        Pedidos en un proceso; aquí Autenticación es microservicio con base
+        propia y Alimentos es servicio de dominio sobre la base central. Es el
+        único punto donde esta decisión \textit{revierte} trabajo ya hecho, y
+        está anotado como tal.
+  \item \textbf{Cambia la infraestructura, no solo el código.} El broker pasa a
+        uno con tópicos replicados, la orquestación pasa a un clúster con
+        autoescalado horizontal, el Catálogo requiere un índice de búsqueda y
+        los frontends se sirven por CDN. Nada de eso existe hoy.
+  \item \textbf{Riesgo de consistencia eventual.} Catálogo se alimenta por
+        eventos de Eventos y recintos, así que un evento recién publicado tarda
+        en aparecer en la búsqueda. Es aceptable para CU-005 y no lo es para el
+        inventario, que por eso vive en Ventas con reserva atómica.
+\end{itemize}
+
+\textbf{Estado de implementación.} A la fecha de este registro la decisión está
+\textbf{tomada y no ejecutada}. Lo desplegado sigue siendo lo de ADR-12: tres
+servicios de dominio, RabbitMQ, Docker Compose y seis bases separadas. La
+distancia entre este diseño y el código está medida en
+\texttt{Documentation/Work/MIGRACION-ADR-14.md}, que ordena el camino por fases
+y dice qué depende de qué.
+
+\textbf{Cuándo revisar:} si al medir la apertura de venta con carga real alguno
+de los cuatro servicios del camino de compra no necesitara escalar de forma
+independiente, vuelve a ser candidato a servicio de dominio. El criterio de los
+cuatro puntos se aplica igual a cualquier dominio que entre al sistema después.

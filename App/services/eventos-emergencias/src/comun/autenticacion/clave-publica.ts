@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url';
  * este servicio se viera comprometido, no podría usarse para fabricar
  * tokens. Ver `App/shared/seguridad/token-sesion.md`.
  *
- * Adaptado de `services/entradas-mercado-secundario/src/comun/autenticacion/clave-publica.ts`
+ * Adaptado de `services/ventas/src/comun/autenticacion/clave-publica.ts`
  * — mismo contrato, misma huella de desarrollo.
  */
 

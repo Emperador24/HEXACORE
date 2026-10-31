@@ -29,21 +29,17 @@
 # publicado, y estaríamos probando otra cosa distinta de la que se despliega.
 
 services:
-  administracion:
+  nucleo:
     build: !reset null
-    image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-administracion:${HEXACORE_ETIQUETA:-develop}
+    image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-nucleo:${HEXACORE_ETIQUETA:-develop}
 
-  entradas-mercado-secundario:
+  ventas:
     build: !reset null
-    image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-entradas-mercado-secundario:${HEXACORE_ETIQUETA:-develop}
+    image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-ventas:${HEXACORE_ETIQUETA:-develop}
 
   eventos-emergencias:
     build: !reset null
     image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-eventos-emergencias:${HEXACORE_ETIQUETA:-develop}
-
-  pedidos:
-    build: !reset null
-    image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-pedidos:${HEXACORE_ETIQUETA:-develop}
 
   api-gateway:
     # La imagen publicada lleva el `nginx.conf` dentro, así que no se monta

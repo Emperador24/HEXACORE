@@ -36,7 +36,7 @@ nuevo y el mismo `jti`.
 **Clientes web:** con la cabecera `X-Hexacore-Cliente: web`, el token de renovación no va en el
 cuerpo sino en una cookie `hxc_renovacion` (`HttpOnly`, `SameSite=Strict`,
 `Path=/api/v1/sesiones`), y el portal guarda el token de acceso solo en memoria. Ver
-`services/administracion/DECISIONES.md` §22.
+`services/autenticacion/DECISIONES.md` §22.
 
 Consecuencia para los verificadores: un cambio de roles llega como mucho cuando caduca el token de
 acceso vigente (15 minutos). Si una operación no puede esperar tanto, debe consultar los roles a
@@ -77,15 +77,15 @@ servicio limpia solo sus propias claves (`reventa:*`, por ejemplo).
 ## El API Gateway valida antes, y no sustituye a nadie
 
 Todo el tráfico de los clientes entra por el **API Gateway** (ADR-02, `App/gateway/`). Antes de
-enrutar una ruta protegida, el gateway pregunta a `GET /api/v1/sesiones/verificar` del Servicio de
-Administración, que aplica exactamente estas mismas reglas y responde:
+enrutar una ruta protegida, el gateway **verifica el token él mismo, con la clave pública**
+(`gateway/autenticacion.js`, ADR-15): firma RS256, emisor, caducidad, forma del contenido y el rol que
+pida la ruta. No pregunta a Autenticación en cada petición; hasta ADR-15 lo hacía contra
+`GET /api/v1/sesiones/verificar`, que sigue existiendo pero ya no está en el camino del tráfico.
 
-| Respuesta | Cabeceras | Significa |
-|---|---|---|
-| `204 No Content` | `X-Usuario-Id`, `X-Usuario-Roles` (separados por coma) | Token válido y sesión abierta |
-| `401` | — | Cualquier otro caso |
+Lo que el gateway **no** comprueba es la revocación: no mira Redis. Un token de una sesión cerrada
+pasa el gateway y lo rechaza el servicio de destino con el mismo 401.
 
-El gateway reenvía la petición solo tras un 204, y añade esas dos cabeceras. **Un servicio no debe
+El gateway añade `X-Usuario-Id` y `X-Usuario-Roles` (separados por coma). **Un servicio no debe
 confiar en ellas**: son una comodidad para trazas y logs, no una credencial. Cada servicio sigue
 verificando el `Authorization: Bearer` por su cuenta (RNF-06), porque un atacante dentro de la red
 puede llamar al servicio directamente y poner la cabecera que quiera. Comprobado en
@@ -101,7 +101,7 @@ puede llamar al servicio directamente y poner la cabecera que quiera. Comprobado
 
 ## Implementaciones
 
-- Emisión: `services/administracion/src/sesiones/`
-- Verificación: `services/entradas-mercado-secundario/src/comun/autenticacion/sesion-valida.guard.ts`
-- Prueba entre servicios: `services/entradas-mercado-secundario/pruebas/rnf06-autenticacion.py`
-- Validación en el borde: `gateway/nginx.conf` (`auth_request`) y `gateway/pruebas/gateway.py`
+- Emisión: `services/autenticacion/src/modulos/administracion/sesiones/`
+- Verificación: `services/ventas/src/comun/autenticacion/sesion-valida.guard.ts`
+- Prueba entre servicios: `services/ventas/pruebas/rnf06-autenticacion.py`
+- Validación en el borde: `gateway/autenticacion.js` (njs) y `gateway/pruebas/gateway.py`

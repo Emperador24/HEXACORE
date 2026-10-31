@@ -1,0 +1,251 @@
+import { cargarClavePublica, ClavePublica } from '../comun/autenticacion/clave-publica';
+
+/**
+ * Configuración del servicio, leída del entorno y validada al arrancar.
+ *
+ * Se valida en el arranque y no en el primer uso a propósito: un servicio mal
+ * configurado debe negarse a arrancar, no fallar más tarde en mitad de un
+ * checkout con el pago ya cobrado.
+ */
+
+function requerido(nombre: string): string {
+  const valor = process.env[nombre];
+  if (valor === undefined || valor.trim() === '') {
+    throw new Error(`Falta la variable de entorno ${nombre} (ver .env.example)`);
+  }
+  return valor.trim();
+}
+
+function texto(nombre: string, porDefecto: string): string {
+  const valor = process.env[nombre];
+  return valor === undefined || valor.trim() === '' ? porDefecto : valor.trim();
+}
+
+function numero(nombre: string, porDefecto: number): number {
+  const valor = process.env[nombre];
+  if (valor === undefined || valor.trim() === '') return porDefecto;
+  const n = Number(valor);
+  if (!Number.isFinite(n)) {
+    throw new Error(`La variable ${nombre} debe ser numérica, llegó "${valor}"`);
+  }
+  return n;
+}
+
+function entero(nombre: string, porDefecto: number): number {
+  const n = numero(nombre, porDefecto);
+  if (!Number.isInteger(n)) {
+    throw new Error(`La variable ${nombre} debe ser un entero, llegó "${n}"`);
+  }
+  return n;
+}
+
+export type Entorno = 'development' | 'test' | 'production';
+
+export interface ConfiguracionServicio {
+  entorno: Entorno;
+  puerto: number;
+  /** Prefijo de todas las rutas; el API Gateway (ADR-02) enruta por él. */
+  prefijoApi: string;
+  postgres: {
+    host: string;
+    puerto: number;
+    usuario: string;
+    contrasena: string;
+    base: string;
+  };
+  redis: {
+    host: string;
+    puerto: number;
+  };
+  rabbitmq: {
+    url: string;
+  };
+  /**
+   * Microservicio de Pagos (ADR-14). Este servicio ya no habla con la pasarela:
+   * la conoce solo Pagos, que es lo que quitó la copia duplicada del adaptador.
+   */
+  pagos: {
+    url: string;
+    /** Corta la espera ante Pagos lento o caído — camino de excepción CU-006I. */
+    timeoutMs: number;
+  };
+  reventa: ReglasReventa;
+  venta: ReglasVenta;
+  /**
+   * Secreto compartido con el que otros servicios se identifican ante la API
+   * interna (`/interno/`). Ver `llamada-interna.guard.ts` para por qué existe.
+   */
+  tokenServicios: string;
+  /**
+   * Verificación de los tokens de sesión (RNF-06). Solo la clave pública: este
+   * servicio verifica tokens, no los emite.
+   */
+  autenticacion: {
+    clavePublica: ClavePublica;
+    /** Quién debe haber firmado el token. Contrato con el Servicio de Administración. */
+    emisor: string;
+  };
+}
+
+/**
+ * Reglas de negocio de la reventa.
+ *
+ * NINGUNO de estos cuatro valores está fijado en la documentación del
+ * proyecto: el CU-006 dice "Establece el precio de venta" sin tope, "Liquidar
+ * el pago correspondiente al vendedor" sin porcentaje, y el flujo alterno
+ * CU-006D ("la publicación expira sin haberse vendido") no da plazo; el TTL
+ * del bloqueo Redis aparece en la tabla de riesgos del SAD §13 sin valor.
+ *
+ * Se dejan configurables —no constantes en el código— porque son decisiones de
+ * producto pendientes de ratificar por el equipo, no verdades arquitectónicas.
+ * El razonamiento de cada valor por defecto está en DECISIONES.md.
+ */
+export interface ReglasReventa {
+  /** Tope del precio de reventa como múltiplo del precio original de la entrada. */
+  topePrecioFactor: number;
+  /** Porcentaje que retiene la plataforma al liquidar al vendedor (paso 13 del CU-006). */
+  comisionPorcentaje: number;
+  /** Vida del bloqueo de Redis durante el checkout (ADR-03, ASR-01). */
+  bloqueoTtlSegundos: number;
+  /**
+   * Minutos antes del inicio del evento en que deja de poderse revender.
+   * Es lo que hace expirar una publicación no vendida (CU-006D).
+   */
+  margenCierreMinutos: number;
+}
+
+/**
+ * Reglas de la venta primaria (CU-001) y de las cancelaciones (CU-003).
+ *
+ * Igual que las de la reventa, ninguna está fijada en la documentación: el
+ * CU-001B habla de que *"el tiempo de compra expira"* sin decir cuánto, y el
+ * CU-003 de *"plazos y políticas aplicables"* y de un reembolso *"parcial según
+ * la política de tiempo del evento"* sin dar cifras. DECISIONES.md §13.
+ */
+export interface ReglasVenta {
+  /** Cuánto se mantiene apartado el cupo de una compra sin pagar (CU-001B). */
+  reservaMinutos: number;
+  /** Con al menos estos días de antelación, el reembolso es del 100 %. */
+  cancelacionTotalDias: number;
+  /** Con al menos estas horas (y menos de los días de arriba), el reembolso es parcial (CU-003A). */
+  cancelacionParcialHoras: number;
+  /** Porcentaje del reembolso parcial. */
+  cancelacionParcialPorcentaje: number;
+}
+
+export function cargarConfiguracion(): ConfiguracionServicio {
+  const entorno = texto('NODE_ENV', 'development') as Entorno;
+  if (!['development', 'test', 'production'].includes(entorno)) {
+    throw new Error(`NODE_ENV inválido: "${entorno}"`);
+  }
+
+  const reventa: ReglasReventa = {
+    topePrecioFactor: numero('REVENTA_TOPE_PRECIO_FACTOR', 1.5),
+    comisionPorcentaje: numero('REVENTA_COMISION_PORCENTAJE', 10),
+    bloqueoTtlSegundos: entero('REVENTA_BLOQUEO_TTL_SEGUNDOS', 120),
+    margenCierreMinutos: entero('REVENTA_MARGEN_CIERRE_MINUTOS', 0),
+  };
+
+  if (reventa.topePrecioFactor < 1) {
+    throw new Error(
+      `REVENTA_TOPE_PRECIO_FACTOR debe ser >= 1 (llegó ${reventa.topePrecioFactor}): ` +
+        'un tope por debajo del precio original haría irrevendible toda entrada',
+    );
+  }
+  if (reventa.comisionPorcentaje < 0 || reventa.comisionPorcentaje >= 100) {
+    throw new Error(
+      `REVENTA_COMISION_PORCENTAJE debe estar en [0, 100) (llegó ${reventa.comisionPorcentaje})`,
+    );
+  }
+  if (reventa.bloqueoTtlSegundos <= 0) {
+    throw new Error(
+      `REVENTA_BLOQUEO_TTL_SEGUNDOS debe ser > 0 (llegó ${reventa.bloqueoTtlSegundos}): ` +
+        'un bloqueo sin vida no protege de la doble venta que prohíbe RNF-01',
+    );
+  }
+
+  // Un bloqueo que caduque antes de que el cobro responda dejaría la
+  // publicación libre con un cobro en vuelo: exactamente la doble venta que
+  // ASR-01 debe impedir.
+  //
+  // Desde ADR-14 el cobro va por el microservicio de Pagos, así que el tiempo
+  // que hay que cubrir es el de **esa** llamada, no el de la pasarela. Ponlo
+  // por encima del PASARELA_TIMEOUT_MS de Pagos: si Pagos espera 10 s a la
+  // pasarela, esperar menos que eso aquí cortaría la llamada justo cuando
+  // Pagos todavía puede resolverla.
+  const timeoutPagosMs = entero('PAGOS_TIMEOUT_MS', 12_000);
+  if (reventa.bloqueoTtlSegundos * 1000 <= timeoutPagosMs) {
+    throw new Error(
+      `REVENTA_BLOQUEO_TTL_SEGUNDOS (${reventa.bloqueoTtlSegundos}s) debe superar ` +
+        `PAGOS_TIMEOUT_MS (${timeoutPagosMs}ms), o el bloqueo caducaría con el cobro en vuelo`,
+    );
+  }
+
+  const venta: ReglasVenta = {
+    reservaMinutos: entero('COMPRA_RESERVA_MINUTOS', 10),
+    cancelacionTotalDias: entero('CANCELACION_TOTAL_DIAS', 7),
+    cancelacionParcialHoras: entero('CANCELACION_PARCIAL_HORAS', 48),
+    cancelacionParcialPorcentaje: entero('CANCELACION_PARCIAL_PORCENTAJE', 50),
+  };
+
+  // Una reserva que caduque antes de que la pasarela pueda responder dejaría el
+  // cupo libre con el cobro en vuelo. Mismo razonamiento que el del bloqueo de
+  // la reventa, aunque aquí `PAGANDO` ya lo protege del barrido.
+  if (venta.reservaMinutos * 60_000 <= timeoutPagosMs) {
+    throw new Error(
+      `COMPRA_RESERVA_MINUTOS (${venta.reservaMinutos}) debe superar PAGOS_TIMEOUT_MS (${timeoutPagosMs}ms)`,
+    );
+  }
+  if (venta.cancelacionParcialHoras < 0 || venta.cancelacionParcialHoras > venta.cancelacionTotalDias * 24) {
+    throw new Error(
+      `CANCELACION_PARCIAL_HORAS (${venta.cancelacionParcialHoras}) debe estar entre 0 y ` +
+        `CANCELACION_TOTAL_DIAS en horas (${venta.cancelacionTotalDias * 24}): el tramo parcial va antes del total`,
+    );
+  }
+  if (venta.cancelacionParcialPorcentaje < 1 || venta.cancelacionParcialPorcentaje > 100) {
+    throw new Error(
+      `CANCELACION_PARCIAL_PORCENTAJE debe estar en [1, 100] (llegó ${venta.cancelacionParcialPorcentaje})`,
+    );
+  }
+
+  return {
+    entorno,
+    puerto: entero('PUERTO', 3001),
+    prefijoApi: texto('PREFIJO_API', 'api/v1'),
+    postgres: {
+      host: texto('POSTGRES_HOST', 'localhost'),
+      puerto: entero('POSTGRES_PUERTO', 5432),
+      usuario: texto('POSTGRES_USUARIO', 'hexacore'),
+      contrasena: entorno === 'production' ? requerido('POSTGRES_CONTRASENA') : texto('POSTGRES_CONTRASENA', 'hexacore'),
+      base: texto('POSTGRES_BASE', 'entradas_mercado_secundario'),
+    },
+    redis: {
+      host: texto('REDIS_HOST', 'localhost'),
+      // 6380 y no 6379: es el puerto en que App/infra/docker-compose.yml lo
+      // expone, para no chocar con un Redis instalado localmente.
+      puerto: entero('REDIS_PUERTO', 6380),
+    },
+    rabbitmq: {
+      url: texto('RABBITMQ_URL', 'amqp://hexacore:hexacore@localhost:5672'),
+    },
+    pagos: {
+      url: texto('PAGOS_URL', 'http://localhost:3008/api/v1'),
+      timeoutMs: timeoutPagosMs,
+    },
+    reventa,
+    venta,
+    // En producción es obligatorio: sin él, la API interna solo aceptaría
+    // tokens de usuario y el trabajo de expiración de Postventa no podría
+    // liberar ninguna entrada. En desarrollo tiene un valor fijo y conocido
+    // para que `docker compose up` funcione sin configurar nada.
+    tokenServicios:
+      entorno === 'production' ? requerido('TOKEN_SERVICIOS') : texto('TOKEN_SERVICIOS', 'hexacore-servicios-dev'),
+    autenticacion: {
+      clavePublica: cargarClavePublica(entorno === 'production'),
+      emisor: texto('AUTH_JWT_EMISOR', 'hexacore-administracion'),
+    },
+  };
+}
+
+/** Clave con la que se inyecta la configuración: `@Inject(CONFIGURACION)`. */
+export const CONFIGURACION = 'CONFIGURACION_SERVICIO';

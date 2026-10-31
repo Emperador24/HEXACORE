@@ -48,7 +48,7 @@ function sinAutenticar(mensaje: string): UnauthorizedException {
 /**
  * Exige un token de sesión válido (RNF-06). Adaptado 1:1 del contrato y la
  * implementación de referencia en
- * `services/entradas-mercado-secundario/src/comun/autenticacion/sesion-valida.guard.ts`
+ * `services/ventas/src/comun/autenticacion/sesion-valida.guard.ts`
  * — ver ese archivo para la justificación completa de por qué se verifica
  * aquí y no solo en el gateway.
  */

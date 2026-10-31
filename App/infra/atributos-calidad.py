@@ -62,7 +62,7 @@ MEDICIONES = [
         'atributo': 'Desempeño',
         'rnf': 'RNF-07, RNF-08',
         'escenario': 'Consulta de catálogo durante la apertura de venta',
-        'carpeta': SERVICIOS / 'entradas-mercado-secundario',
+        'carpeta': SERVICIOS / 'ventas',
         'suite': 'pruebas/rnf07-desempeno.py',
         'cifras': lambda t: [
             ('Peor p95 bajo carga', extraer(t, r'Peor p95 medido:\s*(.+?)\s*\(umbral'), 'umbral 500 ms'),
@@ -74,7 +74,7 @@ MEDICIONES = [
         'atributo': 'Disponibilidad',
         'rnf': 'RNF-03, RNF-04',
         'escenario': 'El login sigue atendiendo con una dependencia caída, y se recupera solo',
-        'carpeta': SERVICIOS / 'administracion',
+        'carpeta': SERVICIOS / 'autenticacion',
         'suite': 'pruebas/cu027-disponibilidad.py',
         'cifras': lambda t: [
             ('Recuperación tras kill -9', extraer(t, r'atendiendo logins de nuevo en\s*(.+)'), 'exigido ≤ 30 s'),
@@ -87,7 +87,7 @@ MEDICIONES = [
         'atributo': 'Seguridad',
         'rnf': 'RNF-05, RNF-06',
         'escenario': 'Toda petición llega autenticada y autorizada por rol desde el gateway',
-        'carpeta': SERVICIOS / 'entradas-mercado-secundario',
+        'carpeta': SERVICIOS / 'ventas',
         'suite': 'pruebas/rnf06-autenticacion.py',
         'cifras': lambda t: [
             ('Rutas de negocio abiertas', extraer(t, r'RNF-06:\s*(.+)'), 'exigido 0 %'),
@@ -101,7 +101,7 @@ MEDICIONES = [
         'atributo': 'Consistencia',
         'rnf': 'RNF-01, RNF-02',
         'escenario': 'Ninguna entrada publicada puede venderse a dos compradores',
-        'carpeta': SERVICIOS / 'entradas-mercado-secundario',
+        'carpeta': SERVICIOS / 'ventas',
         'suite': 'pruebas/rnf01-concurrencia.py',
         'cifras': lambda t: [
             ('50 compradores a la vez', f"{extraer(t, r'checkouts abiertos\s*:\s*(\d+)')} checkout, "

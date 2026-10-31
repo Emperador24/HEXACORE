@@ -77,7 +77,20 @@ jobs:
       # resultados.
       fail-fast: false
       matrix:
-        servicio: [administracion, entradas-mercado-secundario, pedidos]
+        # Los diez microservicios de ADR-14. `nucleo` ya no está: se renombró a
+        # `autenticacion` cuando Pedidos salió a `alimentos`, y la matriz
+        # apuntaba a una carpeta que no existe — el trabajo fallaba entero.
+        servicio:
+          - autenticacion
+          - ventas
+          - postventa
+          - acceso-qr
+          - catalogo
+          - pagos
+          - cola-virtual
+          - alimentos
+          - notificaciones
+          - eventos-emergencias
     defaults:
       run:
         working-directory: App/services/${{ matrix.servicio }}
@@ -177,16 +190,22 @@ jobs:
         working-directory: App/infra
         run: ./iniciar.sh
 
-      - name: Servicio de Administración (CU-027)
-        working-directory: App/services/administracion
+      - name: Autenticación (CU-027)
+        working-directory: App/services/autenticacion
         run: npm ci && npm run test:integracion
 
-      - name: Servicio de Entradas y Mercado Secundario (CU-001 a CU-006)
-        working-directory: App/services/entradas-mercado-secundario
+      - name: Ventas (CU-001 a CU-004)
+        working-directory: App/services/ventas
         run: npm ci && npm run test:integracion
 
-      - name: Servicio de Pedidos (CU-011)
-        working-directory: App/services/pedidos
+      # Postventa necesita a Ventas levantado: es el dueño de las entradas, y
+      # las dos Sagas del CU-006 le hablan. `iniciar.sh` ya levantó los dos.
+      - name: Postventa (CU-006)
+        working-directory: App/services/postventa
+        run: npm ci && npm run test:integracion
+
+      - name: Acceso QR (CU-002)
+        working-directory: App/services/acceso-qr
         run: npm ci && npm run test:integracion
 
       # Estas son e2e de Vitest contra su propia base, no guiones de Python.
@@ -261,9 +280,11 @@ jobs:
         run: flutter test test/
 
   # --------------------------------------------------------------------------
-  # API Gateway (ADR-02): no tiene código, tiene configuración — y una coma
-  # fuera de sitio en el nginx.conf tumba la entrada al backend entero. Nginx
-  # la valida él mismo con `nginx -t`.
+  # API Gateway (ADR-02, ADR-15): configuración de Nginx y un módulo njs que
+  # valida el JWT — y una coma fuera de sitio tumba la entrada al backend
+  # entero. Construir la imagen corre `nginx -t`, que valida la configuración
+  # y además carga el njs: así se detecta también un error de sintaxis en
+  # `autenticacion.js`.
   # --------------------------------------------------------------------------
   gateway:
     name: Configuración del API Gateway
@@ -271,11 +292,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validar nginx.conf
-        run: |
-          docker run --rm \
-            -v "$PWD/App/gateway/nginx.conf:/etc/nginx/conf.d/default.conf:ro" \
-            nginx:1.27-alpine nginx -t
+      - name: Validar nginx.conf y autenticacion.js
+        run: docker build -t hexacore-gateway-ci App/gateway
 
       - name: Validar docker-compose
         run: docker compose -f App/infra/docker-compose.yml --profile servicios config -q

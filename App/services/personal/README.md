@@ -1,6 +1,16 @@
-# Servicio de Personal
+# Servicio de dominio de Personal y logística
 
 SAD §9 (vista de componentes), CU-007–CU-009.
+
+> **Parcialmente implementado.** CU-017 y CU-018 viven hoy en
+> `eventos-emergencias/src/logistica/`. Bajo ADR-14 este dominio es un
+> **servicio de dominio**, no un microservicio: no cumple ningún criterio de
+> extracción, así que correrá con dos réplicas fijas sobre la base central.
+>
+> Necesita antes su esquema de datos: la base `personal` existe y está vacía
+> (`App/infra/initdb/01-bases.sql`).
+
+
 
 **Responsabilidad:** administración y asignación de personal operativo, cambios de turno y registro
 de asistencia.

@@ -122,7 +122,7 @@ async function misEntradas(email) {
  */
 function resembrar() {
   const servicio = fileURLToPath(
-    new URL('../../../services/entradas-mercado-secundario', import.meta.url)
+    new URL('../../../services/ventas', import.meta.url)
   );
   execFileSync('npm', ['run', 'semilla'], { cwd: servicio, stdio: 'ignore', shell: true });
   // Los bloqueos de checkout viven en Redis y sobreviven al resembrado: una

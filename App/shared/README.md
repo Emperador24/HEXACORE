@@ -16,7 +16,7 @@ contratos no pueden ser código compartido literal: se expresan como especificac
 ```
 shared/
 ├── api/
-│   └── entradas-mercado-secundario.openapi.json   API REST del CU-006
+│   └── ventas.openapi.json   API REST del CU-006
 ├── eventos/
 │   └── entrada-transferida.schema.json            Evento ENTRADA_TRANSFERIDA
 └── seguridad/
@@ -30,7 +30,7 @@ anuncia en Redis una sesión cerrada. Es la única parte de la autenticación qu
 que acordar.
 
 
-### `api/entradas-mercado-secundario.openapi.json`
+### `api/ventas.openapi.json`
 
 Especificación **OpenAPI 3** del Servicio de Entradas y Mercado Secundario: 12 operaciones que
 cubren los 13 pasos del CU-006 y sus nueve caminos alternos.
@@ -38,7 +38,7 @@ cubren los 13 pasos del CU-006 y sus nueve caminos alternos.
 **Se genera desde el código**, no se escribe a mano:
 
 ```bash
-cd ../services/entradas-mercado-secundario
+cd ../services/ventas
 npm run contrato:api
 ```
 
@@ -69,7 +69,7 @@ versión que no entiende debe mandar el mensaje a la cola de muertos en lugar de
 medias.
 
 La topología de RabbitMQ que lo transporta (exchange, colas y DLQ) la documenta
-`services/entradas-mercado-secundario/README.md`.
+`services/ventas/README.md`.
 
 **Estado:** los dos contratos del CU-006 están publicados. Los demás dominios añadirán los suyos
 cuando los implementen; la convención es la misma — OpenAPI para las API REST en `api/`, JSON Schema

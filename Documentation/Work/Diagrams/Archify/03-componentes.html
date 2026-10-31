@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="generator" content="archify 2.16.0">
-  <title>HEXACORE — Componentes Diagram</title>
+  <title>HEXACORE — Componentes del microservicio Ventas (ADR-14, ADR-15) Diagram</title>
   <script>
     // Resolve the theme before first paint so light-preference users don't
     // see a dark flash. The toolbar script below re-applies with UI state.
@@ -4955,9 +4955,9 @@
            data-preset-badge-blueprint="BLUEPRINT / REV 01"
            data-preset-badge-editorial="EDITORIAL / FIELD NOTE">
         <div class="pulse-dot"></div>
-        <h1>HEXACORE — Componentes</h1>
+        <h1>HEXACORE — Componentes del microservicio Ventas (ADR-14, ADR-15)</h1>
       </div>
-      <p class="subtitle">Servicio de Entradas y Mercado Secundario (CU-006)</p>
+      <p class="subtitle">el orquestador de la Saga de CU-001</p>
     </div>
 
     <script id="archify-guided-views-data" type="application/json">[]</script>
@@ -5005,9 +5005,9 @@
     <!-- Main Diagram -->
     <div class="diagram-container" data-detail-level="read"
          data-preset-badge-editorial-plate="ARCHIFY / PLATE 04">
-      <svg viewBox="0 0 1380 482" role="img" lang="en" aria-labelledby="archify-diagram-title archify-diagram-description" data-preset="classic" data-quality-profile="standard">
-        <title id="archify-diagram-title">HEXACORE — Componentes</title>
-        <desc id="archify-diagram-description">Servicio de Entradas y Mercado Secundario (CU-006)</desc>
+      <svg viewBox="0 0 1350 690" role="img" lang="en" aria-labelledby="archify-diagram-title archify-diagram-description" data-preset="classic" data-quality-profile="standard">
+        <title id="archify-diagram-title">HEXACORE — Componentes del microservicio Ventas (ADR-14, ADR-15)</title>
+        <desc id="archify-diagram-description">el orquestador de la Saga de CU-001</desc>
         <!-- Definitions -->
         <defs>
           <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
@@ -5031,212 +5031,251 @@
         <rect width="100%" height="100%" fill="url(#grid)" />
 
         <!-- Boundaries (behind everything) -->
-
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="0" data-composition-frame-label="Microservicio Ventas — un despliegue, una base propia" x="276" y="26" width="718" height="566" rx="12" class="c-region" stroke-width="1"/>
 
         <!-- Connection paths (before components for correct z-order) -->
-        <path data-edge-from="ext_gateway" data-edge-to="controlador" data-edge-label="HTTPS/JSON" data-edge-key="0" data-edge-id="gateway-controlador" data-composition-points="210,218;280,218" d="M 210 218 L 280 218" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="controlador" data-edge-to="publicacion" data-edge-label="delega la reventa" data-edge-key="1" data-edge-id="controlador-publicacion" data-composition-points="470,218;550,218" d="M 470 218 L 550 218" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="publicacion" data-edge-to="procesador_pagos" data-edge-label="llamada interna" data-edge-key="2" data-edge-id="publicacion-pagos" data-composition-points="770,218;810,218;810,27;850,27" d="M 770 218 L 802 218 Q 810 218 810 210 L 810 35 Q 810 27 818 27 L 850 27" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="procesador_pagos" data-edge-to="pasarela" data-edge-label="HTTPS/REST" data-edge-key="3" data-edge-id="pagos-pasarela" data-composition-points="1060,27;1140,27" d="M 1060 27 L 1140 27" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="publicacion" data-edge-to="gestor_concurrencia" data-edge-label="llamada interna" data-edge-key="4" data-edge-id="publicacion-concurrencia" data-composition-points="770,218;810,218;810,117;850,117" d="M 770 218 L 802 218 Q 810 218 810 210 L 810 125 Q 810 117 818 117 L 850 117" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="gestor_concurrencia" data-edge-to="redis" data-edge-label="Redis" data-edge-key="5" data-edge-id="concurrencia-redis" data-composition-points="1060,117;1140,117" d="M 1060 117 L 1140 117" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="publicacion" data-edge-to="generador_qr" data-edge-label="llamada interna" data-edge-key="6" data-edge-id="publicacion-qr" data-composition-points="770,218;810,218;810,207;850,207" d="M 770 218 L 804.5 218 Q 810 218 810 212.5 L 810 212.5 Q 810 207 815.5 207 L 850 207" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="publicacion" data-edge-to="repositorio_entradas" data-edge-label="llamada interna" data-edge-key="7" data-edge-id="publicacion-repositorio" data-composition-points="770,218;810,218;810,297;850,297" d="M 770 218 L 802 218 Q 810 218 810 226 L 810 289 Q 810 297 818 297 L 850 297" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="repositorio_entradas" data-edge-to="basedatos" data-edge-label="SQL" data-edge-key="8" data-edge-id="repositorio-db" data-composition-points="1060,297;1140,297" d="M 1060 297 L 1140 297" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="publicacion" data-edge-to="publicador_eventos" data-edge-label="llamada interna" data-edge-key="9" data-edge-id="publicacion-publicador" data-composition-points="770,218;810,218;810,387;850,387" d="M 770 218 L 802 218 Q 810 218 810 226 L 810 379 Q 810 387 818 387 L 850 387" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="publicador_eventos" data-edge-to="cola" data-edge-label="AMQP" data-edge-key="10" data-edge-id="publicador-cola" data-composition-points="1060,387;1140,387" d="M 1060 387 L 1140 387" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="gateway" data-edge-to="controlador" data-edge-label="enruta" data-edge-key="0" data-edge-id="gw-ctrl" data-composition-points="225,101;262.5,101;262.5,131;300,131" d="M 225 101 L 254.5 101 Q 262.5 101 262.5 109 L 262.5 123 Q 262.5 131 270.5 131 L 300 131" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="gateway" data-edge-to="cola" data-edge-label="gasta el turno" data-edge-key="1" data-edge-id="gw-cola" data-composition-points="125,132;125,190" d="M 125 132 L 125 190" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="controlador" data-edge-to="orquestador" data-edge-label="inicia la Saga" data-edge-key="2" data-edge-id="ctrl-orq" data-composition-points="412.5,162;412.5,280" d="M 412.5 162 L 412.5 280" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="orquestador" data-edge-to="reserva" data-edge-label="reserva" data-edge-key="3" data-edge-id="orq-res" data-composition-points="525,311;632.5,311;632.5,81;740,81" d="M 525 311 L 624.5 311 Q 632.5 311 632.5 303 L 632.5 89 Q 632.5 81 640.5 81 L 740 81" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="orquestador" data-edge-to="compensador" data-edge-label="deshace" data-edge-key="4" data-edge-id="orq-comp" data-composition-points="525,311;632.5,311;632.5,196;740,196" d="M 525 311 L 624.5 311 Q 632.5 311 632.5 303 L 632.5 204 Q 632.5 196 640.5 196 L 740 196" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="orquestador" data-edge-to="clipagos" data-edge-label="cobra" data-edge-key="5" data-edge-id="orq-pag" data-composition-points="525,311;740,311" d="M 525 311 L 740 311" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="orquestador" data-edge-to="repo" data-edge-label="persiste" data-edge-key="6" data-edge-id="orq-repo" data-composition-points="525,311;632.5,311;632.5,426;740,426" d="M 525 311 L 624.5 311 Q 632.5 311 632.5 319 L 632.5 418 Q 632.5 426 640.5 426 L 740 426" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="orquestador" data-edge-to="publicador" data-edge-label="publica" data-edge-key="7" data-edge-id="orq-pub" data-composition-points="525,311;632.5,311;632.5,541;740,541" d="M 525 311 L 624.5 311 Q 632.5 311 632.5 319 L 632.5 533 Q 632.5 541 640.5 541 L 740 541" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="reserva" data-edge-to="cache" data-edge-label="SET NX con TTL" data-edge-key="8" data-edge-id="res-cache" data-composition-points="970,81;1035,81;1035,138;1100,138" d="M 970 81 L 1027 81 Q 1035 81 1035 89 L 1035 130 Q 1035 138 1043 138 L 1100 138" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="compensador" data-edge-to="cache" data-edge-label="borra la reserva" data-edge-key="9" data-edge-id="comp-cache" data-composition-points="970,196;1035,196;1035,138;1100,138" d="M 970 196 L 1027 196 Q 1035 196 1035 188 L 1035 146 Q 1035 138 1043 138 L 1100 138" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="clipagos" data-edge-to="pagosms" data-edge-label="HTTP" data-edge-key="10" data-edge-id="pag-ms" data-composition-points="970,311;1100,311" d="M 970 311 L 1100 311" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="repo" data-edge-to="bdventas" data-edge-label="SQL" data-edge-key="11" data-edge-id="repo-bd" data-composition-points="970,426;1100,426" d="M 970 426 L 1100 426" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="publicador" data-edge-to="broker" data-edge-label="hechos" data-edge-key="12" data-edge-id="pub-broker" data-composition-points="970,541;1100,541" d="M 970 541 L 1100 541" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
 
         <!-- Components -->
-        <g id="node-ext_gateway" data-node-id="ext_gateway" data-node-label="API Gateway" tabindex="0" role="button" aria-label="Focus API Gateway, otro nivel, Architecture component" aria-pressed="false" data-node-kind="external" data-node-sublabel="otro nivel" data-node-context="Architecture component">
+        <g id="node-gateway" data-node-id="gateway" data-node-label="API Gateway" tabindex="0" role="button" aria-label="Focus API Gateway, otro nivel, Architecture component" aria-pressed="false" data-node-kind="security" data-node-sublabel="otro nivel" data-node-context="Architecture component">
           <title>API Gateway · otro nivel · Architecture component</title>
-          <rect x="20" y="190" width="190" height="56" rx="6" class="c-mask"/>
-          <rect x="20" y="190" width="190" height="56" rx="6" class="c-external" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(26 196) scale(0.6875)">
-            <rect x="2.5" y="5" width="8.5" height="8" rx="1.5"/>
-            <path d="M8 2.5h5.5V8M13.5 2.5 7.5 8.5"/>
+          <rect x="25" y="70" width="200" height="62" rx="6" class="c-mask"/>
+          <rect x="25" y="70" width="200" height="62" rx="6" class="c-security" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(31 76) scale(0.6875)">
+            <path d="M8 2.2 13 4v3.5c0 3.1-1.8 5.4-5 6.5-3.2-1.1-5-3.4-5-6.5V4Z"/>
+            <path d="m5.8 8 1.5 1.5 3-3"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="115" y="216" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">API Gateway</text>
-        <text data-detail="context" x="115" y="232" class="t-muted" font-size="9" text-anchor="middle">otro nivel</text>
+          <text data-node-label="" data-detail-anchor="" x="125" y="99" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">API Gateway</text>
+        <text data-detail="context" x="125" y="115" class="t-muted" font-size="9" text-anchor="middle">otro nivel</text>
         </g>
 
-        <g id="node-controlador" data-node-id="controlador" data-node-label="Controlador API" tabindex="0" role="button" aria-label="Focus Controlador API, Architecture component" aria-pressed="false" data-node-kind="backend" data-node-context="Architecture component">
-          <title>Controlador API · Architecture component</title>
-          <rect x="280" y="190" width="190" height="56" rx="6" class="c-mask"/>
-          <rect x="280" y="190" width="190" height="56" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(286 196) scale(0.6875)">
+        <g id="node-cola" data-node-id="cola" data-node-label="Cola virtual" tabindex="0" role="button" aria-label="Focus Cola virtual, otro nivel, Architecture component" aria-pressed="false" data-node-kind="backend" data-node-sublabel="otro nivel" data-node-context="Architecture component">
+          <title>Cola virtual · otro nivel · Architecture component</title>
+          <rect x="25" y="190" width="200" height="62" rx="6" class="c-mask"/>
+          <rect x="25" y="190" width="200" height="62" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(31 196) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" x="375" y="222" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Controlador API</text>
+          <text data-node-label="" data-detail-anchor="" x="125" y="219" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Cola virtual</text>
+        <text data-detail="context" x="125" y="235" class="t-muted" font-size="9" text-anchor="middle">otro nivel</text>
         </g>
 
-        <g id="node-publicacion" data-node-id="publicacion" data-node-label="Servicio de Publicación" tabindex="0" role="button" aria-label="Focus Servicio de Publicación, orquesta la reventa, Architecture component" aria-pressed="false" data-node-kind="backend" data-node-sublabel="orquesta la reventa" data-node-context="Architecture component">
-          <title>Servicio de Publicación · orquesta la reventa · Architecture component</title>
-          <rect x="550" y="190" width="220" height="56" rx="6" class="c-mask"/>
-          <rect x="550" y="190" width="220" height="56" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(556 196) scale(0.6875)">
+        <g id="node-controlador" data-node-id="controlador" data-node-label="Controlador de compra" tabindex="0" role="button" aria-label="Focus Controlador de compra, recibe la compra ya con turno, Microservicio Ventas — un despliegue, una base propia" aria-pressed="false" data-node-kind="backend" data-node-sublabel="recibe la compra ya con turno" data-node-context="Microservicio Ventas — un despliegue, una base propia">
+          <title>Controlador de compra · recibe la compra ya con turno · Microservicio Ventas — un despliegue, una base propia</title>
+          <rect x="300" y="100" width="225" height="62" rx="6" class="c-mask"/>
+          <rect x="300" y="100" width="225" height="62" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(306 106) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="660" y="216" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Servicio de Publicación</text>
-        <text data-detail="context" x="660" y="232" class="t-muted" font-size="9" text-anchor="middle">orquesta la reventa</text>
+          <text data-node-label="" data-detail-anchor="" x="412.5" y="129" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Controlador de compra</text>
+        <text data-detail="context" x="412.5" y="145" class="t-muted" font-size="9" text-anchor="middle">recibe la compra ya con turno</text>
         </g>
 
-        <g id="node-procesador_pagos" data-node-id="procesador_pagos" data-node-label="Procesador de Pagos" tabindex="0" role="button" aria-label="Focus Procesador de Pagos, Architecture component" aria-pressed="false" data-node-kind="backend" data-node-context="Architecture component">
-          <title>Procesador de Pagos · Architecture component</title>
-          <rect x="850" y="0" width="210" height="54" rx="6" class="c-mask"/>
-          <rect x="850" y="0" width="210" height="54" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(856 6) scale(0.6875)">
+        <g id="node-orquestador" data-node-id="orquestador" data-node-label="Orquestador de la Saga" tabindex="0" role="button" aria-label="Focus Orquestador de la Saga, fija el orden y decide si deshacer, Microservicio Ventas — un despliegue, una base propia" aria-pressed="false" data-node-kind="backend" data-node-sublabel="fija el orden y decide si deshacer" data-node-context="Microservicio Ventas — un despliegue, una base propia">
+          <title>Orquestador de la Saga · fija el orden y decide si deshacer · Microservicio Ventas — un despliegue, una base propia</title>
+          <rect x="300" y="280" width="225" height="62" rx="6" class="c-mask"/>
+          <rect x="300" y="280" width="225" height="62" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(306 286) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" x="955" y="31" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Procesador de Pagos</text>
+          <text data-node-label="" data-detail-anchor="" x="412.5" y="309" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Orquestador de la Saga</text>
+        <text data-detail="context" x="412.5" y="325" class="t-muted" font-size="9" text-anchor="middle">fija el orden y decide si deshacer</text>
         </g>
 
-        <g id="node-pasarela" data-node-id="pasarela" data-node-label="Pasarela de Pagos" tabindex="0" role="button" aria-label="Focus Pasarela de Pagos, otro nivel, Architecture component" aria-pressed="false" data-node-kind="external" data-node-sublabel="otro nivel" data-node-context="Architecture component">
-          <title>Pasarela de Pagos · otro nivel · Architecture component</title>
-          <rect x="1140" y="0" width="200" height="54" rx="6" class="c-mask"/>
-          <rect x="1140" y="0" width="200" height="54" rx="6" class="c-external" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(1146 6) scale(0.6875)">
-            <rect x="2.5" y="5" width="8.5" height="8" rx="1.5"/>
-            <path d="M8 2.5h5.5V8M13.5 2.5 7.5 8.5"/>
-          </g>
-          <text data-node-label="" data-detail-anchor="" x="1240" y="25" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Pasarela de Pagos</text>
-        <text data-detail="context" x="1240" y="41" class="t-muted" font-size="9" text-anchor="middle">otro nivel</text>
-        </g>
-
-        <g id="node-gestor_concurrencia" data-node-id="gestor_concurrencia" data-node-label="Gestor de Concurrencia" tabindex="0" role="button" aria-label="Focus Gestor de Concurrencia, Architecture component" aria-pressed="false" data-node-kind="backend" data-node-context="Architecture component">
-          <title>Gestor de Concurrencia · Architecture component</title>
-          <rect x="850" y="90" width="210" height="54" rx="6" class="c-mask"/>
-          <rect x="850" y="90" width="210" height="54" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(856 96) scale(0.6875)">
+        <g id="node-reserva" data-node-id="reserva" data-node-label="Gestor de reserva" tabindex="0" role="button" aria-label="Focus Gestor de reserva, atómica, con vencimiento, Microservicio Ventas — un despliegue, una base propia" aria-pressed="false" data-node-kind="backend" data-node-sublabel="atómica, con vencimiento" data-node-context="Microservicio Ventas — un despliegue, una base propia">
+          <title>Gestor de reserva · atómica, con vencimiento · Microservicio Ventas — un despliegue, una base propia</title>
+          <rect x="740" y="50" width="230" height="62" rx="6" class="c-mask"/>
+          <rect x="740" y="50" width="230" height="62" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(746 56) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" x="955" y="121" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Gestor de Concurrencia</text>
+          <text data-node-label="" data-detail-anchor="" x="855" y="79" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Gestor de reserva</text>
+        <text data-detail="context" x="855" y="95" class="t-muted" font-size="9" text-anchor="middle">atómica, con vencimiento</text>
         </g>
 
-        <g id="node-redis" data-node-id="redis" data-node-label="Redis" tabindex="0" role="button" aria-label="Focus Redis, otro nivel, Architecture component" aria-pressed="false" data-node-kind="external" data-node-sublabel="otro nivel" data-node-context="Architecture component">
-          <title>Redis · otro nivel · Architecture component</title>
-          <rect x="1140" y="90" width="200" height="54" rx="6" class="c-mask"/>
-          <rect x="1140" y="90" width="200" height="54" rx="6" class="c-external" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(1146 96) scale(0.6875)">
-            <rect x="2.5" y="5" width="8.5" height="8" rx="1.5"/>
-            <path d="M8 2.5h5.5V8M13.5 2.5 7.5 8.5"/>
-          </g>
-          <text data-node-label="" data-detail-anchor="" x="1240" y="115" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Redis</text>
-        <text data-detail="context" x="1240" y="131" class="t-muted" font-size="9" text-anchor="middle">otro nivel</text>
-        </g>
-
-        <g id="node-generador_qr" data-node-id="generador_qr" data-node-label="Generador de QR" tabindex="0" role="button" aria-label="Focus Generador de QR, Architecture component" aria-pressed="false" data-node-kind="backend" data-node-context="Architecture component">
-          <title>Generador de QR · Architecture component</title>
-          <rect x="850" y="180" width="210" height="54" rx="6" class="c-mask"/>
-          <rect x="850" y="180" width="210" height="54" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(856 186) scale(0.6875)">
+        <g id="node-compensador" data-node-id="compensador" data-node-label="Compensador" tabindex="0" role="button" aria-label="Focus Compensador, libera lo reservado, Microservicio Ventas — un despliegue, una base propia" aria-pressed="false" data-node-kind="backend" data-node-sublabel="libera lo reservado" data-node-context="Microservicio Ventas — un despliegue, una base propia">
+          <title>Compensador · libera lo reservado · Microservicio Ventas — un despliegue, una base propia</title>
+          <rect x="740" y="165" width="230" height="62" rx="6" class="c-mask"/>
+          <rect x="740" y="165" width="230" height="62" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(746 171) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" x="955" y="211" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Generador de QR</text>
+          <text data-node-label="" data-detail-anchor="" x="855" y="194" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Compensador</text>
+        <text data-detail="context" x="855" y="210" class="t-muted" font-size="9" text-anchor="middle">libera lo reservado</text>
         </g>
 
-        <g id="node-repositorio_entradas" data-node-id="repositorio_entradas" data-node-label="Repositorio de Entradas" tabindex="0" role="button" aria-label="Focus Repositorio de Entradas, Architecture component" aria-pressed="false" data-node-kind="backend" data-node-context="Architecture component">
-          <title>Repositorio de Entradas · Architecture component</title>
-          <rect x="850" y="270" width="210" height="54" rx="6" class="c-mask"/>
-          <rect x="850" y="270" width="210" height="54" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(856 276) scale(0.6875)">
+        <g id="node-clipagos" data-node-id="clipagos" data-node-label="Cliente de Pagos" tabindex="0" role="button" aria-label="Focus Cliente de Pagos, pone la llave de idempotencia, Microservicio Ventas — un despliegue, una base propia" aria-pressed="false" data-node-kind="backend" data-node-sublabel="pone la llave de idempotencia" data-node-context="Microservicio Ventas — un despliegue, una base propia">
+          <title>Cliente de Pagos · pone la llave de idempotencia · Microservicio Ventas — un despliegue, una base propia</title>
+          <rect x="740" y="280" width="230" height="62" rx="6" class="c-mask"/>
+          <rect x="740" y="280" width="230" height="62" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(746 286) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" x="955" y="301" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Repositorio de Entradas</text>
+          <text data-node-label="" data-detail-anchor="" x="855" y="309" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Cliente de Pagos</text>
+        <text data-detail="context" x="855" y="325" class="t-muted" font-size="9" text-anchor="middle">pone la llave de idempotencia</text>
         </g>
 
-        <g id="node-basedatos" data-node-id="basedatos" data-node-label="Base de Datos" tabindex="0" role="button" aria-label="Focus Base de Datos, otro nivel, Architecture component" aria-pressed="false" data-node-kind="external" data-node-sublabel="otro nivel" data-node-context="Architecture component">
-          <title>Base de Datos · otro nivel · Architecture component</title>
-          <rect x="1140" y="270" width="200" height="54" rx="6" class="c-mask"/>
-          <rect x="1140" y="270" width="200" height="54" rx="6" class="c-external" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(1146 276) scale(0.6875)">
-            <rect x="2.5" y="5" width="8.5" height="8" rx="1.5"/>
-            <path d="M8 2.5h5.5V8M13.5 2.5 7.5 8.5"/>
-          </g>
-          <text data-node-label="" data-detail-anchor="" x="1240" y="295" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Base de Datos</text>
-        <text data-detail="context" x="1240" y="311" class="t-muted" font-size="9" text-anchor="middle">otro nivel</text>
-        </g>
-
-        <g id="node-publicador_eventos" data-node-id="publicador_eventos" data-node-label="Publicador de Eventos" tabindex="0" role="button" aria-label="Focus Publicador de Eventos, Architecture component" aria-pressed="false" data-node-kind="backend" data-node-context="Architecture component">
-          <title>Publicador de Eventos · Architecture component</title>
-          <rect x="850" y="360" width="210" height="54" rx="6" class="c-mask"/>
-          <rect x="850" y="360" width="210" height="54" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(856 366) scale(0.6875)">
+        <g id="node-repo" data-node-id="repo" data-node-label="Repositorio de entradas" tabindex="0" role="button" aria-label="Focus Repositorio de entradas, dueño de entrada y compra, Microservicio Ventas — un despliegue, una base propia" aria-pressed="false" data-node-kind="backend" data-node-sublabel="dueño de entrada y compra" data-node-context="Microservicio Ventas — un despliegue, una base propia">
+          <title>Repositorio de entradas · dueño de entrada y compra · Microservicio Ventas — un despliegue, una base propia</title>
+          <rect x="740" y="395" width="230" height="62" rx="6" class="c-mask"/>
+          <rect x="740" y="395" width="230" height="62" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(746 401) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" x="955" y="391" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Publicador de Eventos</text>
+          <text data-node-label="" data-detail-anchor="" x="855" y="424" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Repositorio de entradas</text>
+        <text data-detail="context" x="855" y="440" class="t-muted" font-size="9" text-anchor="middle">dueño de entrada y compra</text>
         </g>
 
-        <g id="node-cola" data-node-id="cola" data-node-label="Cola de Mensajes" tabindex="0" role="button" aria-label="Focus Cola de Mensajes, otro nivel, Architecture component" aria-pressed="false" data-node-kind="external" data-node-sublabel="otro nivel" data-node-context="Architecture component">
-          <title>Cola de Mensajes · otro nivel · Architecture component</title>
-          <rect x="1140" y="360" width="200" height="54" rx="6" class="c-mask"/>
-          <rect x="1140" y="360" width="200" height="54" rx="6" class="c-external" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(1146 366) scale(0.6875)">
-            <rect x="2.5" y="5" width="8.5" height="8" rx="1.5"/>
-            <path d="M8 2.5h5.5V8M13.5 2.5 7.5 8.5"/>
+        <g id="node-publicador" data-node-id="publicador" data-node-label="Publicador de eventos" tabindex="0" role="button" aria-label="Focus Publicador de eventos, bandeja de salida · confirmación, Microservicio Ventas — un despliegue, una base propia" aria-pressed="false" data-node-kind="backend" data-node-sublabel="bandeja de salida · confirmación" data-node-context="Microservicio Ventas — un despliegue, una base propia">
+          <title>Publicador de eventos · bandeja de salida · confirmación · Microservicio Ventas — un despliegue, una base propia</title>
+          <rect x="740" y="510" width="230" height="62" rx="6" class="c-mask"/>
+          <rect x="740" y="510" width="230" height="62" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(746 516) scale(0.6875)">
+            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="1240" y="385" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Cola de Mensajes</text>
-        <text data-detail="context" x="1240" y="401" class="t-muted" font-size="9" text-anchor="middle">otro nivel</text>
+          <text data-node-label="" data-detail-anchor="" x="855" y="539" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Publicador de eventos</text>
+        <text data-detail="context" x="855" y="555" class="t-muted" font-size="9" text-anchor="middle">bandeja de salida · confirmación</text>
+        </g>
+
+        <g id="node-cache" data-node-id="cache" data-node-label="Caché" tabindex="0" role="button" aria-label="Focus Caché, otro nivel, Architecture component" aria-pressed="false" data-node-kind="database" data-node-sublabel="otro nivel" data-node-context="Architecture component">
+          <title>Caché · otro nivel · Architecture component</title>
+          <rect x="1100" y="107" width="200" height="62" rx="6" class="c-mask"/>
+          <rect x="1100" y="107" width="200" height="62" rx="6" class="c-database" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(1106 113) scale(0.6875)">
+            <ellipse cx="8" cy="4" rx="5" ry="2"/>
+            <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="1200" y="136" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Caché</text>
+        <text data-detail="context" x="1200" y="152" class="t-muted" font-size="9" text-anchor="middle">otro nivel</text>
+        </g>
+
+        <g id="node-pagosms" data-node-id="pagosms" data-node-label="Pagos" tabindex="0" role="button" aria-label="Focus Pagos, otro nivel, Architecture component" aria-pressed="false" data-node-kind="backend" data-node-sublabel="otro nivel" data-node-context="Architecture component">
+          <title>Pagos · otro nivel · Architecture component</title>
+          <rect x="1100" y="280" width="200" height="62" rx="6" class="c-mask"/>
+          <rect x="1100" y="280" width="200" height="62" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(1106 286) scale(0.6875)">
+            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="1200" y="309" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Pagos</text>
+        <text data-detail="context" x="1200" y="325" class="t-muted" font-size="9" text-anchor="middle">otro nivel</text>
+        </g>
+
+        <g id="node-bdventas" data-node-id="bdventas" data-node-label="Base de Ventas" tabindex="0" role="button" aria-label="Focus Base de Ventas, otro nivel, Architecture component" aria-pressed="false" data-node-kind="database" data-node-sublabel="otro nivel" data-node-context="Architecture component">
+          <title>Base de Ventas · otro nivel · Architecture component</title>
+          <rect x="1100" y="395" width="200" height="62" rx="6" class="c-mask"/>
+          <rect x="1100" y="395" width="200" height="62" rx="6" class="c-database" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(1106 401) scale(0.6875)">
+            <ellipse cx="8" cy="4" rx="5" ry="2"/>
+            <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="1200" y="424" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Base de Ventas</text>
+        <text data-detail="context" x="1200" y="440" class="t-muted" font-size="9" text-anchor="middle">otro nivel</text>
+        </g>
+
+        <g id="node-broker" data-node-id="broker" data-node-label="Broker" tabindex="0" role="button" aria-label="Focus Broker, otro nivel, Architecture component" aria-pressed="false" data-node-kind="messagebus" data-node-sublabel="otro nivel" data-node-context="Architecture component">
+          <title>Broker · otro nivel · Architecture component</title>
+          <rect x="1100" y="510" width="200" height="62" rx="6" class="c-mask"/>
+          <rect x="1100" y="510" width="200" height="62" rx="6" class="c-messagebus" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="messagebus" class="semantic-sigil s-messagebus" transform="translate(1106 516) scale(0.6875)">
+            <path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11"/>
+            <circle cx="5" cy="4.5" r="1" class="sigil-fill"/>
+            <circle cx="10.5" cy="8" r="1" class="sigil-fill"/>
+            <circle cx="7" cy="11.5" r="1" class="sigil-fill"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="1200" y="539" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Broker</text>
+        <text data-detail="context" x="1200" y="555" class="t-muted" font-size="9" text-anchor="middle">otro nivel</text>
         </g>
 
         <!-- Connection labels -->
-        <g data-detail="context" data-edge-from="ext_gateway" data-edge-to="controlador" data-edge-label="HTTPS/JSON" data-edge-key="0" data-edge-id="gateway-controlador">
-          <rect x="216" y="198" width="58" height="14" rx="3" class="c-mask"/>
-          <text x="245" y="208" class="t-backend" font-size="8" text-anchor="middle">HTTPS/JSON</text>
+        <g data-detail="context" data-edge-from="gateway" data-edge-to="controlador" data-edge-label="enruta" data-edge-key="0" data-edge-id="gw-ctrl">
+          <rect x="243.1" y="96" width="38.8" height="14" rx="3" class="c-mask"/>
+          <text x="262.5" y="106" class="t-backend" font-size="8" text-anchor="middle">enruta</text>
         </g>
-        <g data-detail="context" data-edge-from="controlador" data-edge-to="publicacion" data-edge-label="delega la reventa" data-edge-key="1" data-edge-id="controlador-publicacion">
-          <rect x="464.2" y="250" width="91.6" height="14" rx="3" class="c-mask"/>
-          <text x="510" y="260" class="t-backend" font-size="8" text-anchor="middle">delega la reventa</text>
+        <g data-detail="context" data-edge-from="gateway" data-edge-to="cola" data-edge-label="gasta el turno" data-edge-key="1" data-edge-id="gw-cola">
+          <rect x="146.4" y="151" width="77.2" height="14" rx="3" class="c-mask"/>
+          <text x="185" y="161" class="t-muted" font-size="8" text-anchor="middle">gasta el turno</text>
         </g>
-        <g data-detail="context" data-edge-from="publicacion" data-edge-to="procesador_pagos" data-edge-label="llamada interna" data-edge-key="2" data-edge-id="publicacion-pagos">
-          <rect x="769" y="102.5" width="82" height="14" rx="3" class="c-mask"/>
-          <text x="810" y="112.5" class="t-muted" font-size="8" text-anchor="middle">llamada interna</text>
+        <g data-detail="context" data-edge-from="controlador" data-edge-to="orquestador" data-edge-label="inicia la Saga" data-edge-key="2" data-edge-id="ctrl-orq">
+          <rect x="374.4" y="211" width="77.2" height="14" rx="3" class="c-mask"/>
+          <text x="413" y="221" class="t-backend" font-size="8" text-anchor="middle">inicia la Saga</text>
         </g>
-        <g data-detail="context" data-edge-from="procesador_pagos" data-edge-to="pasarela" data-edge-label="HTTPS/REST" data-edge-key="3" data-edge-id="pagos-pasarela">
-          <rect x="1071" y="7" width="58" height="14" rx="3" class="c-mask"/>
-          <text x="1100" y="17" class="t-muted" font-size="8" text-anchor="middle">HTTPS/REST</text>
+        <g data-detail="context" data-edge-from="orquestador" data-edge-to="reserva" data-edge-label="reserva" data-edge-key="3" data-edge-id="orq-res">
+          <rect x="663.2" y="71" width="43.6" height="14" rx="3" class="c-mask"/>
+          <text x="685" y="81" class="t-muted" font-size="8" text-anchor="middle">reserva</text>
         </g>
-        <g data-detail="context" data-edge-from="publicacion" data-edge-to="gestor_concurrencia" data-edge-label="llamada interna" data-edge-key="4" data-edge-id="publicacion-concurrencia">
-          <rect x="769" y="147.5" width="82" height="14" rx="3" class="c-mask"/>
-          <text x="810" y="157.5" class="t-muted" font-size="8" text-anchor="middle">llamada interna</text>
+        <g data-detail="context" data-edge-from="orquestador" data-edge-to="compensador" data-edge-label="deshace" data-edge-key="4" data-edge-id="orq-comp">
+          <rect x="663.2" y="186" width="43.6" height="14" rx="3" class="c-mask"/>
+          <text x="685" y="196" class="t-muted" font-size="8" text-anchor="middle">deshace</text>
         </g>
-        <g data-detail="context" data-edge-from="gestor_concurrencia" data-edge-to="redis" data-edge-label="Redis" data-edge-key="5" data-edge-id="concurrencia-redis">
-          <rect x="1083" y="97" width="34" height="14" rx="3" class="c-mask"/>
-          <text x="1100" y="107" class="t-muted" font-size="8" text-anchor="middle">Redis</text>
+        <g data-detail="context" data-edge-from="orquestador" data-edge-to="clipagos" data-edge-label="cobra" data-edge-key="5" data-edge-id="orq-pag">
+          <rect x="668" y="301" width="34" height="14" rx="3" class="c-mask"/>
+          <text x="685" y="311" class="t-backend" font-size="8" text-anchor="middle">cobra</text>
         </g>
-        <g data-detail="context" data-edge-from="publicacion" data-edge-to="generador_qr" data-edge-label="llamada interna" data-edge-key="6" data-edge-id="publicacion-qr">
-          <rect x="769" y="192.5" width="82" height="14" rx="3" class="c-mask"/>
-          <text x="810" y="202.5" class="t-muted" font-size="8" text-anchor="middle">llamada interna</text>
+        <g data-detail="context" data-edge-from="orquestador" data-edge-to="repo" data-edge-label="persiste" data-edge-key="6" data-edge-id="orq-repo">
+          <rect x="660.8" y="416" width="48.4" height="14" rx="3" class="c-mask"/>
+          <text x="685" y="426" class="t-muted" font-size="8" text-anchor="middle">persiste</text>
         </g>
-        <g data-detail="context" data-edge-from="publicacion" data-edge-to="repositorio_entradas" data-edge-label="llamada interna" data-edge-key="7" data-edge-id="publicacion-repositorio">
-          <rect x="769" y="237.5" width="82" height="14" rx="3" class="c-mask"/>
-          <text x="810" y="247.5" class="t-muted" font-size="8" text-anchor="middle">llamada interna</text>
+        <g data-detail="context" data-edge-from="orquestador" data-edge-to="publicador" data-edge-label="publica" data-edge-key="7" data-edge-id="orq-pub">
+          <rect x="663.2" y="531" width="43.6" height="14" rx="3" class="c-mask"/>
+          <text x="685" y="541" class="t-muted" font-size="8" text-anchor="middle">publica</text>
         </g>
-        <g data-detail="context" data-edge-from="repositorio_entradas" data-edge-to="basedatos" data-edge-label="SQL" data-edge-key="8" data-edge-id="repositorio-db">
-          <rect x="1085" y="277" width="30" height="14" rx="3" class="c-mask"/>
-          <text x="1100" y="287" class="t-muted" font-size="8" text-anchor="middle">SQL</text>
+        <g data-detail="context" data-edge-from="reserva" data-edge-to="cache" data-edge-label="SET NX con TTL" data-edge-key="8" data-edge-id="res-cache">
+          <rect x="996.4" y="89.5" width="77.2" height="14" rx="3" class="c-mask"/>
+          <text x="1035" y="99.5" class="t-backend" font-size="8" text-anchor="middle">SET NX con TTL</text>
         </g>
-        <g data-detail="context" data-edge-from="publicacion" data-edge-to="publicador_eventos" data-edge-label="llamada interna" data-edge-key="9" data-edge-id="publicacion-publicador">
-          <rect x="769" y="282.5" width="82" height="14" rx="3" class="c-mask"/>
-          <text x="810" y="292.5" class="t-muted" font-size="8" text-anchor="middle">llamada interna</text>
+        <g data-detail="context" data-edge-from="compensador" data-edge-to="cache" data-edge-label="borra la reserva" data-edge-key="9" data-edge-id="comp-cache">
+          <rect x="991.6" y="180" width="86.8" height="14" rx="3" class="c-mask"/>
+          <text x="1035" y="190" class="t-muted" font-size="8" text-anchor="middle">borra la reserva</text>
         </g>
-        <g data-detail="context" data-edge-from="publicador_eventos" data-edge-to="cola" data-edge-label="AMQP" data-edge-key="10" data-edge-id="publicador-cola">
-          <rect x="1085" y="367" width="30" height="14" rx="3" class="c-mask"/>
-          <text x="1100" y="377" class="t-messagebus" font-size="8" text-anchor="middle">AMQP</text>
+        <g data-detail="context" data-edge-from="clipagos" data-edge-to="pagosms" data-edge-label="HTTP" data-edge-key="10" data-edge-id="pag-ms">
+          <rect x="1020" y="291" width="30" height="14" rx="3" class="c-mask"/>
+          <text x="1035" y="301" class="t-muted" font-size="8" text-anchor="middle">HTTP</text>
+        </g>
+        <g data-detail="context" data-edge-from="repo" data-edge-to="bdventas" data-edge-label="SQL" data-edge-key="11" data-edge-id="repo-bd">
+          <rect x="1020" y="406" width="30" height="14" rx="3" class="c-mask"/>
+          <text x="1035" y="416" class="t-muted" font-size="8" text-anchor="middle">SQL</text>
+        </g>
+        <g data-detail="context" data-edge-from="publicador" data-edge-to="broker" data-edge-label="hechos" data-edge-key="12" data-edge-id="pub-broker">
+          <rect x="1015.6" y="521" width="38.8" height="14" rx="3" class="c-mask"/>
+          <text x="1035" y="531" class="t-messagebus" font-size="8" text-anchor="middle">hechos</text>
         </g>
 
         <!-- Boundary labels (foreground masks keep routes out of titles) -->
-
+        <g data-graph-role="structural-frame-label" data-composition-frame-id="0" data-composition-frame-kind="region" data-composition-frame-label="Microservicio Ventas — un despliegue, una base propia">
+          <rect data-graph-role="structural-frame-label-mask" x="280" y="30" width="296.2" height="16" rx="3" class="c-mask"/>
+          <text data-boundary-label="" x="284" y="43" class="t-cloud" font-size="9" font-weight="600">Microservicio Ventas — un despliegue, una base propia</text>
+        </g>
 
         <!-- Legend -->
         <g data-legend="" data-legend-bridge="">
-          <text x="40" y="446" class="t-primary" font-size="12" font-weight="650">Legend</text>
-          <g data-legend-semantic-kind="backend" data-legend-kind="backend" data-legend-label="Backend" data-legend-x="40" data-legend-baseline="466" data-legend-width="78">
-            <rect x="40" y="457" width="16" height="10" rx="2.5" class="c-backend" stroke-width="1"/>
-            <text x="62" y="466" class="t-muted" font-size="10" font-weight="500">Backend</text>
+          <text x="40" y="654" class="t-primary" font-size="12" font-weight="650">Legend</text>
+          <g data-legend-semantic-kind="backend" data-legend-kind="backend" data-legend-label="Backend" data-legend-x="40" data-legend-baseline="674" data-legend-width="78">
+            <rect x="40" y="665" width="16" height="10" rx="2.5" class="c-backend" stroke-width="1"/>
+            <text x="62" y="674" class="t-muted" font-size="10" font-weight="500">Backend</text>
           </g>
-          <g data-legend-semantic-kind="external" data-legend-kind="external" data-legend-label="External" data-legend-x="140" data-legend-baseline="466" data-legend-width="83">
-            <rect x="140" y="457" width="16" height="10" rx="2.5" class="c-external" stroke-width="1"/>
-            <text x="162" y="466" class="t-muted" font-size="10" font-weight="500">External</text>
+          <g data-legend-semantic-kind="database" data-legend-kind="database" data-legend-label="Database" data-legend-x="140" data-legend-baseline="674" data-legend-width="83">
+            <rect x="140" y="665" width="16" height="10" rx="2.5" class="c-database" stroke-width="1"/>
+            <text x="162" y="674" class="t-muted" font-size="10" font-weight="500">Database</text>
+          </g>
+          <g data-legend-semantic-kind="security" data-legend-kind="security" data-legend-label="Security" data-legend-x="245" data-legend-baseline="674" data-legend-width="83">
+            <rect x="245" y="665" width="16" height="10" rx="2.5" class="c-security" stroke-width="1"/>
+            <text x="267" y="674" class="t-muted" font-size="10" font-weight="500">Security</text>
+          </g>
+          <g data-legend-semantic-kind="messagebus" data-legend-kind="messagebus" data-legend-label="Message bus" data-legend-x="350" data-legend-baseline="674" data-legend-width="98">
+            <rect x="350" y="665" width="16" height="10" rx="2.5" class="c-messagebus" stroke-width="1"/>
+            <text x="372" y="674" class="t-muted" font-size="10" font-weight="500">Message bus</text>
           </g>
         </g>
       </svg>
@@ -5427,23 +5466,37 @@
     <div class="cards">
       <div class="card">
         <div class="card-header">
-          <div class="card-dot cyan"></div>
-          <h3>Flujo de una reventa</h3>
+          <div class="card-dot emerald"></div>
+          <h3>Por qué Ventas y no otro</h3>
         </div>
         <ul>
-          <li>&bull; Controlador API recibe y delega en Servicio de Publicación</li>
-          <li>&bull; Este bloquea la entrada, cobra, invalida/genera QR y persiste el cambio de dueño</li>
-          <li>&bull; Al final publica el evento ENTRADA_TRANSFERIDA para notificar de forma asíncrona</li>
+          <li>&bull; Es el único servicio que cumple los cuatro criterios de extracción de ADR-14, no dos</li>
+          <li>&bull; Orquesta porque es quien conoce el estado del inventario: ponerlo en el gateway o en Pagos repartiría esa decisión</li>
+          <li>&bull; El Compensador es un componente aparte y no una rama del Orquestador, para poder correr también por vencimiento sin que nadie se lo pida</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot cyan"></div>
+          <h3>Dónde vive el inventario</h3>
+        </div>
+        <ul>
+          <li>&bull; El conteo de disponibles vive en la caché, no en la base: es lo que permite reservar de forma atómica bajo un pico</li>
+          <li>&bull; La base de Ventas guarda el hecho consumado —la compra y la entrada con su dueño—, no la reserva en vuelo</li>
+          <li>&bull; Si la caché se cae, se dejan de vender entradas pero no se venden dos veces: el fallo es cerrado</li>
         </ul>
       </div>
 
       <div class="card">
         <div class="card-header">
           <div class="card-dot amber"></div>
-          <h3>Referencias a otros niveles</h3>
+          <h3>Estado de implementación</h3>
         </div>
         <ul>
-          <li>&bull; API Gateway, Redis, Pasarela de Pagos, Base de Datos y Cola de Mensajes ya aparecen en el Nivel 2 — aquí solo se referencian, no se detallan</li>
+          <li>&bull; Ya existen el Gestor de reserva (gestor-concurrencia.service.ts), la llave de idempotencia del Cliente de Pagos y el Publicador con bandeja de salida (ADR-15)</li>
+          <li>&bull; Ventas no llama a la Cola virtual: el gateway gasta el turno antes de enrutar la compra (ADR-15)</li>
+          <li>&bull; Faltan el Orquestador y el Compensador: hoy no hay deshacer explícito</li>
         </ul>
       </div>
     </div>

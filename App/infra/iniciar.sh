@@ -136,16 +136,16 @@ case "$ROL" in
       rojo "El rol 'servicios' necesita --datos <IP del computador con la capa de datos>"
       exit 1
     fi
-    gris "  Levantando los microservicios y el API Gateway"
+    gris "  Levantando los servicios de dominio y el API Gateway"
     "${COMPOSE[@]}" --profile servicios up -d $CONSTRUIR \
-      --scale entradas-mercado-secundario="$REPLICAS" \
-      administracion entradas-mercado-secundario eventos-emergencias pedidos \
+      --scale ventas="$REPLICAS" \
+      autenticacion ventas postventa catalogo notificaciones alimentos pagos cola-virtual acceso-qr eventos-emergencias \
       api-gateway portal-web-cliente portal-web-admin
     ;;
   todo)
     gris "  Levantando la capa de datos, los microservicios y el API Gateway"
     "${COMPOSE[@]}" --profile servicios up -d $CONSTRUIR \
-      --scale entradas-mercado-secundario="$REPLICAS"
+      --scale ventas="$REPLICAS"
     ;;
 esac
 
@@ -167,14 +167,23 @@ esperar_sano() {
   return 1
 }
 
+# Resuelve el contenedor de un servicio de Compose. El Núcleo y
+# Eventos/Emergencias no tienen `container_name` —es lo que permite replicarlos
+# (ADR-12)—, así que su nombre lo pone Docker y hay que preguntárselo.
+contenedor_de() {
+  "${COMPOSE[@]}" ps -q "$1" 2>/dev/null | head -1
+}
+
 if [[ "$ROL" != "datos" ]]; then
   titulo "Esperando a que los servicios respondan"
-  for contenedor in hexacore-administracion hexacore-logistica hexacore-pedidos \
-                    hexacore-gateway hexacore-portal hexacore-portal-admin; do
-    if esperar_sano "$contenedor"; then
-      verde "  $contenedor listo"
+  for servicio in autenticacion eventos-emergencias ventas postventa catalogo \
+                  notificaciones alimentos pagos cola-virtual acceso-qr \
+                  api-gateway portal-web-cliente portal-web-admin; do
+    id="$(contenedor_de "$servicio")"
+    if [[ -n "$id" ]] && esperar_sano "$id"; then
+      verde "  $servicio listo"
     else
-      rojo "  $contenedor no llegó a estar sano. Mira: docker logs $contenedor"
+      rojo "  $servicio no llegó a estar sano. Mira: ${COMPOSE[*]} logs $servicio"
       exit 1
     fi
   done
@@ -193,15 +202,15 @@ fi
 # lo que pasaba con Pedidos: contenedor en verde, base sin una sola tabla y el
 # gateway devolviendo 503.
 migrar() {
-  local servicio="$1" carpeta="$RAIZ/App/services/$1"
+  local servicio="$1" tarea="${2:-migracion:correr}" carpeta="$RAIZ/App/services/$1"
   if [[ ! -d "$carpeta/node_modules" ]]; then
     gris "  $servicio: sin node_modules, se omiten las migraciones"
     return 1
   fi
-  if (cd "$carpeta" && npm run migracion:correr >/dev/null 2>&1); then
-    verde "  $servicio: esquema al día"
+  if (cd "$carpeta" && npm run "$tarea" >/dev/null 2>&1); then
+    verde "  $servicio ($tarea): esquema al día"
   else
-    rojo "  $servicio: las migraciones fallaron (correr a mano: npm run migracion:correr)"
+    rojo "  $servicio: las migraciones fallaron (correr a mano: npm run $tarea)"
     return 1
   fi
 }
@@ -217,7 +226,10 @@ migrar() {
 # que es lo correcto en producción; aquí eso no es un error, solo significa que
 # ya estaba hecho.
 preparar_inventario_pedidos() {
-  local carpeta="$RAIZ/App/services/pedidos"
+  # El inventario es de Alimentos desde ADR-14: salió del Núcleo con los CU-011
+  # a CU-015. Esta función seguía apuntando a `autenticacion/src/modulos/...`,
+  # que ya no existe, así que no preparaba nada y lo decía en gris.
+  local carpeta="$RAIZ/App/services/alimentos"
   [[ -d "$carpeta/node_modules" ]] || return 0
 
   local establecimientos
@@ -343,7 +355,7 @@ if [[ "$DEMO" == "si" && "$ROL" != "datos" ]]; then
   if [[ "$metodo" == "auto" ]]; then
     # Con Node se usan las semillas, que son la fuente de verdad. Sin Node
     # —una máquina que solo tiene Docker— se cargan los volcados.
-    if command -v npm >/dev/null 2>&1 && [[ -d "$RAIZ/App/services/administracion/node_modules" ]]; then
+    if command -v npm >/dev/null 2>&1 && [[ -d "$RAIZ/App/services/autenticacion/node_modules" ]]; then
       metodo="npm"
     else
       metodo="sql"
@@ -353,18 +365,31 @@ if [[ "$DEMO" == "si" && "$ROL" != "datos" ]]; then
   if [[ "$metodo" == "npm" ]]; then
     # Primero el esquema: una semilla contra una base sin tablas falla entera.
     gris "  Aplicando migraciones"
-    migrar administracion || true
-    migrar entradas-mercado-secundario || true
+    # El Núcleo tiene una secuencia de migraciones por módulo: cada uno contra
+    # su propia base, que es la separación de datos que ADR-12 conserva.
+    migrar autenticacion || true
+    migrar alimentos || true
+    migrar pagos || true
+    migrar acceso-qr || true
+    migrar ventas || true
+    # Postventa después de Ventas: no por el esquema —son bases distintas y no
+    # hay llave foránea entre ellas desde ADR-14— sino porque la semilla de
+    # Ventas crea las entradas que la reventa publica.
+    migrar postventa || true
+    migrar catalogo || true
     migrar eventos-emergencias || true
-    migrar pedidos || true
 
     gris "  Sembrando datos"
-    sembrar administracion
-    sembrar entradas-mercado-secundario
+    sembrar autenticacion
+    sembrar ventas
+    # La misma proyección de eventos, en la base propia del Catálogo. Mientras
+    # no exista Eventos y recintos que la publique por el broker, hay que
+    # sembrar las dos (ADR-14, fase A).
+    sembrar catalogo
     # La de logística va después de la de administración a propósito: da de alta
     # a cada empleado sobre la cuenta que aquella acaba de crear.
     sembrar eventos-emergencias seed
-    sembrar pedidos
+    sembrar alimentos
     # Y el inventario de Redis después de la semilla, que es de donde sale.
     preparar_inventario_pedidos
   else

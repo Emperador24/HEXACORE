@@ -108,6 +108,44 @@ disponibilidad, \textbf{seguridad}, \textbf{consistencia} y desplegabilidad. Las
 columna «Evidencia medida» provienen de ejecutar los guiones de \texttt{pruebas/} contra el
 sistema desplegado, no de estimaciones de diseño. & Equipo Hexacore (vía asistente) \\
 \hline
+18/10/2026 & Versión 1.4: se registra \textbf{ADR-12}, que revisa la granularidad fijada en ADR-01 y
+adopta una \textbf{arquitectura basada en servicios} --- tres servicios de dominio en lugar de seis:
+un núcleo que agrupa Administración y Pedidos como módulos, y los servicios replicables de Entradas /
+Mercado Secundario y de Eventos / Emergencias. Incluye el criterio de extracción con el que se decide
+qué dominio queda como servicio propio, y la reformulación de la métrica de RNF-13 que la decisión
+obliga. ADR-01 queda marcado como superado. & Equipo Hexacore (vía asistente) \\
+\hline
+23/10/2026 & Versión 1.5: se registra \textbf{ADR-14}, que revisa el criterio de extracción de
+ADR-12 ---de dos condiciones a cuatro--- y adopta una \textbf{arquitectura híbrida entre SOA y
+microservicios}: siete microservicios con base propia y réplicas elásticas, y siete servicios de
+dominio sobre una base central con un esquema por servicio. Incorpora además la Saga orquestada de
+CU-001, la réplica de lectura para Finanzas y el criterio de redundancia sin escalado para los
+servicios de dominio. ADR-12 queda marcado como superado.
+
+\textbf{Las vistas de contenedores y de despliegue (§\ref{sec:contenedores}, §\ref{sec:fisica})
+siguen describiendo ADR-12 a propósito}: es la arquitectura que está desplegada. ADR-14 está tomada y
+no ejecutada; la distancia entre ambas, y el orden para recorrerla, están en
+\texttt{Documentation/Work/MIGRACION-ADR-14.md}. & Equipo Hexacore (vía asistente) \\
+\hline
+23/10/2026 & Versión 1.6: el documento pasa a describir \textbf{únicamente} la arquitectura de
+ADR-14. Se reemplazan la vista de contenedores (§\ref{sec:contenedores}) y la vista física
+(§\ref{sec:fisica}) por las de los catorce servicios y el clúster con autoescalado, y el modelo de
+datos (§\ref{sec:datos}) por los dos regímenes de almacenamiento ---base propia por microservicio y
+base central con un esquema por servicio de dominio---. ADR-12 se conserva como registro superado,
+que es lo que corresponde a un ADR.
+
+Las secciones afectadas llevan una nota de \textbf{estado de implementación}: lo desplegado sigue
+siendo ADR-12 sobre Docker Compose. Se mantiene por exactitud, no como arquitectura alternativa.
+& Equipo Hexacore (vía asistente) \\
+\hline
+30/10/2026 & Versión 1.7: se registra \textbf{ADR-15}, que corrige cuatro relaciones de la vista
+de contenedores ---el gateway valida el JWT con la clave pública y exige el turno de la Cola
+virtual; Acceso QR deja de llamar a Ventas y valida contra su propia copia de los QR; el
+\textit{webhook} de la pasarela entra por el gateway--- y fija lo que el diagrama dejaba abierto:
+tecnologías, réplicas mínimas, Transactional Outbox, el evento \texttt{EntradaActualizada} que
+invalida el QR anterior en una reventa y \texttt{EventoCancelado}. El conteo de contenedores queda
+en 27. & Equipo Hexacore (vía asistente) \\
+\hline
 \end{longtable}
 \end{center}
 
@@ -560,62 +598,172 @@ completo.
 \section{Vista de contenedores}
 \label{sec:contenedores}
 
-El sistema se divide en tres interfaces desplegables (Portal Web del Cliente, Portal Web
-Administrativo/Operativo y App Móvil), todas consumiendo el mismo backend a través de un API
-Gateway. La \textbf{App Móvil} está construida en \textbf{Flutter} (ADR-08), lo que permite generar
-desde una sola base de código los binarios de Android e iOS, y sirve tanto al rol Cliente como al rol
-Personal: el login identifica el rol del usuario autenticado y la navegación interna abre el conjunto
-de pantallas correspondiente — no son dos apps distribuidas por separado (ver ADR-07). El backend está compuesto por microservicios independientes por dominio
-(Entradas/Mercado Secundario, Personal, Eventos/Emergencias, Parqueaderos) y por infraestructura de
-soporte (Redis, cola de mensajes y bases de datos por servicio). La Figura \ref{fig:contenedores}
-presenta el diagrama de contenedores.
+El sistema se usa desde \textbf{cuatro interfaces}: Portal Web del Cliente, App Móvil del Cliente,
+Portal Web Administrativo/Operativo y App Móvil del Personal. Las dos móviles están construidas en
+\textbf{Flutter} (ADR-08), lo que permite generar desde una sola base de código los binarios de
+Android e iOS. La App Móvil del Personal guarda localmente los QR válidos del evento y las rutas de
+evacuación, para validar ingresos y mostrar la evacuación aunque se caiga la red.
+
+El backend son \textbf{catorce servicios} repartidos en dos grupos por el criterio de ADR-14:
+
+\begin{itemize}
+\item \textbf{Siete microservicios}, con base de datos propia y réplicas que escalan solas:
+      \textbf{Cola virtual}, \textbf{Catálogo} (CU-005), \textbf{Ventas} (CU-001, CU-004),
+      \textbf{Pagos}, \textbf{Autenticación} (CU-027, CU-028), \textbf{Acceso QR} (CU-002) y
+      \textbf{Notificaciones}.
+\item \textbf{Siete servicios de dominio}, que comparten una base central con un esquema por
+      servicio y corren redundados pero sin escalar con la demanda: \textbf{Eventos y recintos}
+      (CU-026, CU-029), \textbf{Postventa} (CU-003, CU-006), \textbf{Alimentos} (CU-011--015),
+      \textbf{Parqueaderos} (CU-021--025), \textbf{Personal y logística} (CU-007--009, CU-016--018,
+      CU-030), \textbf{Operación del evento} (CU-010, CU-019, CU-020) y \textbf{Finanzas y
+      reportes} (CU-031, CU-032).
+\end{itemize}
+
+En total el diagrama tiene \textbf{27 contenedores}: 4 interfaces, el API Gateway, 7 microservicios,
+7 servicios de dominio, 5 almacenes de datos, el broker y 2 sistemas externos.
+
+Todos los servicios se exponen por un \textbf{único API Gateway} (ADR-02), que valida el JWT con la
+clave pública ---sin llamar a Autenticación en cada petición---, autoriza por el rol del token y, en
+la ruta de compra, exige y gasta el turno de la Cola virtual antes de dejar pasar a Ventas
+(ADR-15). Entre ellos se comunican de forma asíncrona por un \textbf{broker de eventos}: los
+servicios no se llaman en cadena para avisarse de cambios, publican hechos y quien le interese los
+consume. Cuando Ventas confirma una compra publica \texttt{Compra\-Confirmada}, y con ese solo
+evento Notificaciones manda el QR, Acceso QR lo activa y Finanzas registra el ingreso.
+
+Las llamadas síncronas entre servicios son solo tres, y las tres van hacia quien tiene la
+autoridad: Ventas y Postventa piden cobros a Pagos, y Postventa le pide a Ventas cambiar el dueño
+de una entrada. \textbf{Acceso QR no llama a Ventas}: valida contra su propia copia de los QR, que
+mantiene con \texttt{CompraConfirmada} y \texttt{EntradaActualizada}, así que la puerta sigue
+abierta aunque Ventas esté saturada por una apertura de venta. Ventas, a su vez, se entera de qué
+entradas se usaron por \texttt{IngresoRegistrado}.
+
+La Tabla \ref{tab:eventos} es el catálogo de eventos del broker. Todo evento que un servicio
+publique como consecuencia de escribir en su base sale por una \textbf{bandeja de salida}
+(Transactional Outbox, ADR-15): se guarda en la misma transacción que el cambio y un publicador lo
+saca al broker después, de modo que ni se pierde si el broker cae ni se publica uno de una
+transacción deshecha.
+
+\begin{center}
+\begin{longtable}{p{3.4cm}p{2.9cm}p{3.6cm}p{4.4cm}}
+\toprule
+\textbf{Evento} & \textbf{Lo publica} & \textbf{Lo consumen} & \textbf{Para qué}\\
+\midrule
+\endhead
+\texttt{EventoPublicado} & Eventos y recintos & Ventas, Catálogo & Cargar el inventario y alimentar
+el índice de búsqueda\\[0.3em]
+\texttt{EventoCancelado} & Eventos y recintos & Catálogo, Ventas, Acceso QR, Notificaciones &
+Retirarlo de la búsqueda, cerrar la venta, rechazar en la puerta y avisar a los compradores\\[0.3em]
+\texttt{PagoAprobado} / \texttt{PagoRechazado} & Pagos & Ventas & Cerrar o compensar la Saga de
+compra\\[0.3em]
+\texttt{CompraConfirmada} & Ventas & Acceso QR, Notificaciones, Finanzas y reportes & Activar el QR,
+enviarlo y registrar el ingreso\\[0.3em]
+\texttt{EntradaActualizada} & Ventas & Acceso QR & Invalidar el QR anterior en una reventa, y
+reflejar una entrada en reventa o anulada\\[0.3em]
+\texttt{IngresoRegistrado} & Acceso QR & Ventas & Marcar la entrada como usada, para no
+reembolsarla (CU-003D) ni revenderla\\[0.3em]
+\texttt{AlertaEvacuación} & Operación del evento & Notificaciones & Difundir la evacuación con
+prioridad alta\\
+\bottomrule
+\caption{Catálogo de eventos del broker (ADR-14 y ADR-15).}
+\label{tab:eventos}
+\end{longtable}
+\end{center}
+
+La Figura \ref{fig:contenedores} presenta el diagrama de contenedores.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{Diagrams/ArchifyPDF/02-contenedores.pdf}
-\caption{Diagrama de contenedores (Nivel 2, modelo C4).}
+\includegraphics[width=\textwidth,height=0.8\textheight,keepaspectratio]{Diagrams/ArchifyPDF/02-contenedores.pdf}
+\caption{Diagrama de contenedores (Nivel 2, modelo C4): siete microservicios y siete servicios de
+dominio. Generado con Archify a partir de una especificación JSON; la versión interactiva está en
+\texttt{Diagrams/Archify/}.}
 \label{fig:contenedores}
 \end{figure}
 
+Tres lecturas que el diagrama hace explícitas:
 
 \begin{itemize}
-\item \textbf{API Gateway + balanceador de carga:} punto único de entrada al backend; centraliza
-autenticación, autorización, validación de tokens y enrutamiento hacia el microservicio
-correspondiente.
-\item \textbf{Microservicios:} Entradas/Mercado Secundario, Personal, Eventos/Emergencias y
-Parqueaderos, cada uno con su propia base de datos para reducir el acoplamiento entre dominios.
-\item \textbf{Redis:} bloqueo temporal de recursos en disputa (p. ej. una entrada en reventa
-durante el checkout) y datos de acceso rápido (aforo, ocupación, sesiones).
-\item \textbf{Cola de mensajes (RabbitMQ, ADR-10):} desacopla operaciones asíncronas: generación de
-QR, notificaciones, auditoría, liquidación de pagos y alertas de emergencia.
-\item \textbf{Servicios externos:} Pasarela de Pagos y Proveedor de Notificaciones, integrados vía
-API y, en el caso de notificaciones, disparados de forma asíncrona desde la cola de mensajes.
+\item \textbf{El camino de compra está completo y aislado.} Cola virtual, Catálogo, Ventas y Pagos
+      son los cuatro servicios que el primer ASR obliga a escalar juntos en la apertura de venta, y
+      ninguno comparte base con el resto del sistema. La Saga que orquesta Ventas ---reserva
+      atómica, cobro idempotente, confirmación o compensación--- recorre exactamente esa franja.
+\item \textbf{Los transversales quedan fuera de todo dominio.} Pagos, Autenticación y
+      Notificaciones no cuelgan de ningún servicio de negocio: es el segundo criterio de ADR-14, y
+      aislarlos es lo que impide que una falla suya degrade varios casos de uso a la vez.
+\item \textbf{Los almacenes delatan la división.} Los microservicios apuntan a Redis, al índice de
+      búsqueda y a sus bases propias; los de dominio, a la base central. Finanzas y reportes es el
+      único que apunta a la réplica de lectura, que es como el sexto ASR impide que un reporte
+      pesado degrade la operación durante el evento.
 \end{itemize}
+
+La infraestructura de soporte es la misma para los dos grupos:
+
+\begin{itemize}
+\item \textbf{Clúster Redis:} el inventario disponible y los bloqueos con vencimiento de Ventas, la
+      fila de la Cola virtual, las sesiones de Autenticación y el estado de cada QR.
+\item \textbf{Índice de búsqueda:} alimenta las consultas del Catálogo y lo mantienen al día los
+      eventos que publica Eventos y recintos.
+\item \textbf{Broker de eventos} con tópicos replicados, para no perder hechos si se cae un nodo.
+\item \textbf{Servicios externos:} la Pasarela de Pagos ---con la que solo habla Pagos, de modo que
+      los datos de tarjeta nunca entran al sistema; su \textit{webhook} de confirmación entra por la
+      ruta pública del gateway, firmado--- y el Proveedor de Notificaciones.
+\end{itemize}
+
+Para no saturar el dibujo, del gateway solo salen las flechas del camino de compra y la de
+Autenticación; en realidad enruta a los catorce. El resto de los servicios sigue el mismo patrón
+hacia el almacén que le corresponde y hacia el broker.
+
+\medskip
+\noindent\textbf{Estado de implementación.} Corren doce de los catorce servicios sobre Docker
+Compose, con las relaciones de ADR-15 ya aplicadas en el gateway, Pagos, Ventas y Acceso QR. Faltan
+Eventos y recintos, Parqueaderos y Finanzas y reportes como servicios propios, y con ellos
+\texttt{EventoPublicado}, \texttt{EventoCancelado} y la réplica de lectura. El orden para recorrer
+esa distancia está en \texttt{Documentation/Work/MIGRACION-ADR-14.md}.
 
 % ==================== Vista de componentes ====================
 \section{Vista de componentes}
 \label{sec:componentes}
 
-Se detalla primero el contenedor \textbf{Servicio de Entradas y Mercado Secundario}, por ser el
-que resuelve el caso de uso complejo CU-006 (Gestión del Mercado Secundario de Entradas), y luego,
-al mismo nivel de detalle, los otros tres microservicios de dominio. La Figura
-\ref{fig:componentes} muestra los componentes internos del Servicio de Entradas.
+Se detalla el microservicio \textbf{Ventas}, por dos razones. Es el único de los catorce que
+cumple los cuatro criterios de extracción de ADR-14 y no solo dos, y es el que orquesta la Saga de
+CU-001, que es el mecanismo nuevo que esta arquitectura introduce. La Figura
+\ref{fig:componentes} muestra sus componentes internos.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{Diagrams/ArchifyPDF/03-componentes.pdf}
-\caption{Diagrama de componentes — Servicio de Entradas y Mercado Secundario (Nivel 3, modelo
-C4).}
+\caption{Diagrama de componentes — microservicio Ventas (Nivel 3, modelo C4).}
 \label{fig:componentes}
 \end{figure}
 
-El flujo interno es: el \textbf{Controlador API} recibe la solicitud enrutada por el API Gateway y
-la delega al \textbf{Servicio de Publicación}, que orquesta la operación de reventa. Este componente
-solicita al \textbf{Gestor de Concurrencia} el bloqueo temporal de la entrada en Redis, invoca al
-\textbf{Procesador de Pagos} para cobrar la transacción contra la Pasarela de Pagos, usa el
-\textbf{Generador de QR} para invalidar el código anterior y emitir uno nuevo, persiste el cambio
-de propiedad mediante el \textbf{Repositorio de Entradas}, y finalmente notifica el resultado a
-través del \textbf{Publicador de Eventos} hacia la cola de mensajes.
+El flujo interno es: el \textbf{Controlador de compra} recibe la solicitud enrutada por el API
+Gateway y verifica contra la \textbf{Cola virtual} que el token de turno sea válido y no haya
+vencido; sin ese token la petición no entra. Delega entonces en el \textbf{Orquestador de la
+Saga}, que es quien fija el orden de los pasos y decide si hay que deshacerlos. El Orquestador
+pide al \textbf{Gestor de reserva} que aparte las entradas en la caché con una operación atómica
+y un vencimiento, encarga el cobro al \textbf{Cliente de Pagos} —que añade la llave de
+idempotencia antes de llamar al microservicio Pagos—, confirma la venta mediante el
+\textbf{Repositorio de entradas} contra la base propia de Ventas, y anuncia el hecho por el
+\textbf{Publicador de eventos} hacia el broker.
+
+El \textbf{Compensador} merece una línea aparte. Es un componente propio y no una rama del
+Orquestador porque tiene que poder actuar \emph{sin que nadie se lo pida}: además de deshacer una
+Saga que falló, libera por su cuenta las reservas que vencieron porque el comprador abandonó el
+proceso. Si fuera una rama del Orquestador, una instancia que muriera a mitad de la compra dejaría
+entradas bloqueadas hasta que alguien lo notara.
+
+\medskip
+\noindent Dos consecuencias de dónde vive cada dato, que el diagrama hace visibles. El conteo de
+entradas disponibles está en la caché y no en la base: es lo que permite reservar de forma atómica
+bajo un pico sin que las réplicas compitan por la misma fila. Y la base de Ventas guarda el hecho
+consumado —la compra y la entrada con su dueño—, no la reserva en vuelo. Si la caché se cae se
+dejan de vender entradas, pero no se venden dos veces: el fallo es cerrado.
+
+\medskip
+\noindent\textbf{Estado de implementación.} Estos componentes viven hoy dentro de
+\texttt{ventas}, junto a los de Catálogo, Postventa y Acceso QR. El Gestor de
+reserva existe (\texttt{gestor-concurrencia.service.ts}) y la llave de idempotencia del Cliente de
+Pagos también; el Orquestador y el Compensador no, y por eso hoy no hay un deshacer explícito.
 
 \subsection{Servicio de Personal}
 
@@ -649,33 +797,53 @@ Pagos para tarifas y reservas. El \textbf{Repositorio de Espacios} persiste las 
 \label{sec:procesos}
 
 Se documentan los dos procesos más críticos del sistema desde el punto de vista de los atributos
-de calidad: la reventa de una entrada (concurrencia y consistencia) y la evacuación ante una
+de calidad: la compra de una entrada (concurrencia y consistencia) y la evacuación ante una
 emergencia (disponibilidad y tiempo real).
 
-\subsection{Reventa de una entrada (CU-006)}
+\subsection{Compra de una entrada con Saga orquestada (CU-001)}
 
-La Figura \ref{fig:secuencia} muestra, con líneas de vida y mensajes numerados, cómo colaboran los
-contenedores para resolver una compra en el mercado secundario.
+La Figura \ref{fig:secuencia} muestra cómo colaboran los contenedores para resolver una compra.
+Es el proceso que mejor explica por qué ADR-14 separa estos servicios: la compra atraviesa cuatro
+despliegues distintos —Cola virtual, Ventas, Pagos y el broker— y cada uno tiene su propio
+almacén, así que \textbf{no existe una transacción que los abarque a todos}. Por eso el deshacer
+tiene que ser explícito, y eso es exactamente lo que es una Saga.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{Diagrams/ArchifyPDF/05-secuencia.pdf}
-\caption{Diagrama de secuencia — reventa de una entrada (CU-006).}
+\caption{Diagrama de secuencia — compra de una entrada con Saga orquestada (CU-001).}
 \label{fig:secuencia}
 \end{figure}
 
 \begin{enumerate}
-\item El comprador confirma la compra de una entrada publicada en el mercado secundario.
-\item El API Gateway enruta la solicitud autenticada hacia el Servicio de Entradas.
-\item El Servicio de Entradas bloquea temporalmente la publicación en Redis, para impedir que otro
-comprador la adquiera de forma simultánea.
-\item Se valida el medio de pago y se cobra el valor de la entrada mediante la Pasarela de Pagos.
-\item Se transfiere la propiedad de la entrada y se invalida el código QR anterior en la base de
-datos.
-\item Se publica el evento \texttt{ENTRADA\_TRANSFERIDA} en la cola de mensajes.
-\item El Proveedor de Notificaciones envía la confirmación y el nuevo código QR al comprador y al
-vendedor, de forma desacoplada del flujo principal.
+\item El comprador elige entradas para un evento; el Portal pide turno a la \textbf{Cola virtual}
+a través del Gateway y recibe un token con vencimiento corto. Sin turno no se entra al checkout:
+es lo que impide que el pico de una apertura de venta llegue entero a Ventas.
+\item El Portal reenvía el checkout con ese token y \textbf{Ventas} inicia la Saga. A partir de
+aquí Ventas orquesta: ningún otro servicio decide el orden de los pasos.
+\item Ventas aparta las entradas en la caché con una \textbf{reserva atómica con vencimiento}. El
+vencimiento es la red de seguridad: si la Saga muere a medias, la entrada vuelve a estar
+disponible sola.
+\item Ventas encarga el cobro a \textbf{Pagos} con una \textbf{llave de idempotencia}, y Pagos
+autoriza el cargo contra la Pasarela. La llave es lo que evita el cobro doble cuando el comprador
+reintenta o la pasarela reenvía un \textit{webhook}; una llave reusada con otro pedido se rechaza
+en lugar de cobrarse.
+\item Con el pago confirmado, Ventas convierte la reserva en venta y publica
+\texttt{COMPRA\_CONFIRMADA} en el broker.
+\item Ventas responde al Portal con la entrada y su QR. Notificar queda \textbf{fuera del camino
+de respuesta}: lo hace Notificaciones al consumir el evento, y si tarda o falla la compra ya está
+hecha.
+\item \textbf{Compensación.} Si el pago falla o la reserva vence, Ventas libera lo reservado y
+responde que la compra no se completó. Es el camino por el que una compra a medias deja de retener
+entradas de inmediato, en lugar de esperar al vencimiento.
 \end{enumerate}
+
+\medskip
+\noindent\textbf{Estado de implementación.} Hoy la compra la resuelve un solo servicio y no hay
+orquestación con compensación. Las dos piezas difíciles ya existen —la reserva atómica con
+vencimiento, medida en 1 comprador de 50 concurrentes, y las llaves de idempotencia en los dos
+caminos de pago—; faltan el orquestador, el deshacer explícito y la cola virtual, que no tiene
+código todavía.
 
 \subsection{Evacuación ante emergencias (CU-010)}
 
@@ -696,37 +864,98 @@ finalización.
 \section{Vista física}
 \label{sec:fisica}
 
-La Figura \ref{fig:despliegue} muestra el ambiente de \textbf{producción}: los dispositivos del
-usuario acceden vía CDN a los archivos estáticos y vía balanceador + API Gateway al backend, que
-corre en un clúster de aplicación con réplicas por microservicio, respaldado por un clúster de
-bases de datos, un clúster Redis y un clúster de mensajería.
+Cada servicio se empaqueta en un contenedor y corre en un \textbf{clúster de Kubernetes}. La
+diferencia entre los dos grupos de ADR-14 no está en cómo se empaquetan, sino en \textbf{cómo
+escalan}: los siete microservicios tienen autoescalado horizontal (HPA) y los siete servicios de
+dominio corren con un número fijo de instancias. La Figura \ref{fig:despliegue} presenta la
+topología, con los servicios agrupados por política de escalado.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{Diagrams/ArchifyPDF/06-despliegue.pdf}
-\caption{Diagrama de despliegue — ambiente de producción (modelo C4).}
+\includegraphics[width=\textwidth,height=0.8\textheight,keepaspectratio]{Diagrams/ArchifyPDF/06-despliegue.pdf}
+\caption{Diagrama de despliegue (modelo C4): dos regímenes de escalado sobre un clúster de
+Kubernetes. Generado con Archify; la versión interactiva está en \texttt{Diagrams/Archify/}.}
 \label{fig:despliegue}
 \end{figure}
 
-Los ambientes de \textbf{desarrollo} y \textbf{pruebas} reutilizan la misma topología del
-diagrama de despliegue de producción, a menor escala: una única réplica por microservicio (sin
-balanceo horizontal), sin CDN (los archivos estáticos se sirven directamente desde el servidor de
-aplicación), y con Redis, la cola de mensajes y las bases de datos desplegadas en un único nodo
-compartido en vez de un clúster. El ambiente de \textbf{desarrollo} se despliega automáticamente
-mediante integración continua ante cada cambio en la rama principal, con datos de prueba mínimos
-para verificación funcional rápida. El ambiente de \textbf{pruebas} se usa para validación
-funcional end-to-end y pruebas de carga previas a cada entrega, con datos sintéticos que simulan
-la concurrencia esperada durante la apertura de venta y el ingreso masivo, de forma que los ASR de
-disponibilidad y rendimiento (sección \ref{sec:asr}) puedan verificarse antes de producción. El
-script de despliegue automatizado que provisiona ambos ambientes se entregará junto con el
-prototipo funcional en la Entrega 2.
+\begin{center}
+\begin{longtable}{p{4.6cm}p{1.8cm}p{3.1cm}p{4.6cm}}
+\toprule
+\textbf{Componente} & \textbf{Réplicas mínimas} & \textbf{Escalado} & \textbf{Señal para escalar}\\
+\midrule
+\endhead
+Cola virtual, Catálogo, Ventas & 3 & Automático (HPA) & CPU y peticiones por segundo; además se
+pre-escalan antes de una apertura de venta anunciada\\[0.3em]
+Pagos, Autenticación & 3 & Automático (HPA) & CPU y peticiones por segundo\\[0.3em]
+Acceso QR & 2 & Automático (HPA) & Validaciones por segundo en las horas de ingreso\\[0.3em]
+Notificaciones & 2 & Automático & Mensajes pendientes en el broker\\[0.3em]
+Servicios de dominio & 2 & Fijo & --- (redundancia para disponibilidad)\\[0.3em]
+API Gateway & 2 & Automático (HPA) & Peticiones por segundo\\
+\bottomrule
+\caption{Réplicas y política de escalado por componente. Son valores iniciales propuestos y se
+ajustan con pruebas de carga.}
+\label{tab:replicas}
+\end{longtable}
+\end{center}
+
+El pre-escalado de los tres servicios del camino de compra merece el matiz: esperar a que el HPA
+reaccione al pico de una apertura anunciada llegaría tarde, porque la señal ---CPU y peticiones por
+segundo--- solo sube cuando el pico ya está encima. Notificaciones, en cambio, escala por longitud
+de la cola y no por CPU, porque su carga son ráfagas de mensajes pendientes y no uso de procesador.
+
+La infraestructura de datos:
+
+\begin{itemize}
+\item \textbf{PostgreSQL} con un servidor primario y una réplica en espera para cada microservicio
+      con base propia, y lo mismo para la base central de los servicios de dominio. Finanzas y
+      reportes lee de una \textbf{réplica de lectura} de la base central.
+\item \textbf{Redis en modo clúster} con réplicas: el inventario de Ventas, la fila de la Cola
+      virtual, las sesiones de Autenticación y el estado de los QR.
+\item \textbf{Broker con 3 nodos} y tópicos replicados, para no perder eventos si se cae uno.
+\item \textbf{CDN} para los frontends web y las imágenes de los eventos, de modo que esas
+      peticiones no lleguen al clúster.
+\item \textbf{Apps móviles:} consumen el mismo API Gateway que la web. La App Móvil del Personal
+      guarda localmente los QR válidos del evento y las zonas y rutas de evacuación, para validar
+      ingresos y mostrar la evacuación aunque se caiga la red.
+\end{itemize}
+
+Los ambientes de \textbf{desarrollo} y \textbf{pruebas} reutilizan la misma topología a menor
+escala: una réplica por servicio (sin autoescalado), sin CDN, y con Redis, el broker y las bases en
+un único nodo compartido en vez de clústeres. El de desarrollo se despliega por integración continua
+ante cada cambio en la rama principal; el de pruebas se usa para validación \textit{end-to-end} y
+pruebas de carga previas a cada entrega, con datos sintéticos que simulan la concurrencia de la
+apertura de venta y del ingreso masivo, de forma que los ASR de disponibilidad y rendimiento
+(sección \ref{sec:asr}) puedan verificarse antes de producción.
+
+\medskip
+\noindent\textbf{Estado de implementación.} El sistema corre hoy sobre \textbf{Docker Compose}, no
+sobre Kubernetes, y con los tres servicios de dominio de ADR-12. El paso a esta topología es la
+fase F de \texttt{Documentation/Work/MIGRACION-ADR-14.md}.
 
 % ==================== Modelo de datos ====================
 \section{Modelo de datos}
 \label{sec:datos}
 
-Siguiendo la decisión de una base de datos independiente por microservicio (ADR-01), cada dominio
-tiene su propio esquema relacional. Las referencias entre dominios (p. ej. el propietario de una
+El almacenamiento sigue la misma división que ADR-14 hace de los servicios, y es la parte del diseño
+donde esa división se vuelve concreta:
+
+\begin{itemize}
+\item Los \textbf{siete microservicios} tienen \textbf{base de datos propia}. Es el tercer criterio
+      de extracción: su estado cabe en un almacén separado, así que sus réplicas no compiten por la
+      base central. Ventas, Pagos, Autenticación y Acceso QR tienen cada uno su PostgreSQL; el
+      Catálogo vive en un índice de búsqueda y la Cola virtual, en Redis.
+\item Los \textbf{siete servicios de dominio} comparten una \textbf{base central} con un
+      \textbf{esquema por servicio}, que es lo habitual en el estilo basado en servicios. Comparten
+      servidor pero no tablas: cada uno escribe solo en su esquema.
+\end{itemize}
+
+Las referencias entre servicios ---el propietario de una \textit{Entrada} hacia \textit{Usuario},
+que vive en Autenticación--- se resuelven a nivel de aplicación mediante el identificador
+correspondiente, y no con llaves foráneas físicas, porque entre bases distintas no existe esa
+posibilidad. Dentro de la base central sí podrían existir llaves entre esquemas, pero se evitan por
+la misma razón: un servicio que dependa del esquema de otro deja de poder cambiarlo por su cuenta.
+
+A continuación se listan las entidades principales de cada esquema, con sus llaves foráneas lógicas. Las referencias entre dominios (p. ej. el propietario de una
 \textit{Entrada} hacia \textit{Usuario}, que vive en el módulo de administración de cuentas) se
 resuelven a nivel de aplicación mediante el identificador correspondiente, y no con llaves foráneas
 físicas entre bases de datos distintas, lo cual es consistente con la separación de datos
@@ -780,6 +1009,9 @@ transaccionales y \textbf{MongoDB} para Reportes (ADR-06).
 \label{sec:adr}
 
 \subsection*{ADR-01 --- Arquitectura de microservicios por dominio}
+\textbf{Estado:} \textit{superado por ADR-12} --- el criterio de separar por dominio sigue vigente;
+la granularidad de un microservicio por dominio se revisó en ADR-12 a la vista de lo medido sobre el
+prototipo desplegado, y el backend queda en tres servicios de dominio en lugar de seis.\\
 \textbf{ASR relacionados:} ASR-06, ASR-09.\\
 \textbf{Problema:} el sistema debe permitir que sus dominios (Entradas, Mercado Secundario,
 Personal, Eventos, Parqueaderos, Emergencias) evolucionen y escalen de forma relativamente
@@ -1129,15 +1361,204 @@ tokens evitan que la sesión se cierre sola con la aplicación abierta.
 \texttt{App/services/*/pruebas/} comprueban que un token con \texttt{alg: none} o firmado con la
 clave pública como secreto HMAC se rechaza; que una sesión cerrada deja de valer \textit{en el otro
 microservicio}; y que reutilizar un token de renovación ya gastado cierra la sesión. El API Gateway
-(ADR-02) valida por subpetición contra \texttt{/sesiones/verificar}, y una prueba de defensa en
-profundidad confirma que llamar directo a un servicio con la cabecera de identidad falsificada
-devuelve 401.
+(ADR-02) valida la firma con la clave pública sin consultar a Autenticación (ADR-15), y una prueba
+de defensa en profundidad confirma que llamar directo a un servicio con la cabecera de identidad
+falsificada devuelve 401.
 
-\textbf{Consecuencias:} firmar con RSA cuesta más CPU que con HMAC, y cada petición protegida añade
-una subpetición interna del gateway. A cambio, ningún servicio distinto del emisor puede fabricar un
-token. \textbf{Cuándo revisar:} si el coste de la subpetición se notara bajo carga, los servicios
-pueden verificar la firma por su cuenta con la clave pública y consultar Redis directamente ---
-sigue sin necesitar la privada.
+\textbf{Consecuencias:} firmar con RSA cuesta más CPU que con HMAC. A cambio, ningún servicio
+distinto del emisor puede fabricar un token. Hasta ADR-15 el gateway validaba con una subpetición a
+\texttt{/sesiones/verificar} en cada petición protegida; esa era la condición de revisión de este
+ADR, y se ejerció: ahora valida la firma por su cuenta, y la revocación la siguen comprobando en
+Redis los servicios.
+
+\subsection*{ADR-12 --- Arquitectura basada en servicios: un servicio de dominio agregado y dos replicables}
+
+\textbf{Estado:} \textit{superado por ADR-14} --- el estilo basado en servicios sigue vigente; lo que
+se revisó es el criterio de extracción, que aquí tenía dos condiciones y en ADR-14 pasa a cuatro. Con
+el criterio nuevo, Autenticación sale del Núcleo como microservicio y Alimentos queda como servicio de
+dominio. \textbf{Esta decisión es la que está desplegada hoy}: ADR-14 está tomada y no ejecutada.\\
+\textbf{Contexto:} ADR-01 fijó seis microservicios, uno por dominio, cada uno con base de datos
+propia. Al construir el prototipo funcional aparecieron tres hechos medibles sobre el sistema
+desplegado que esa decisión no previó:
+
+\begin{itemize}
+  \item \textbf{Solo uno de los seis se replica.} El fichero
+        \texttt{App/infra/docker-compose.escalado.yml} existe únicamente para quitarle el puerto
+        fijo al servicio de Entradas y poder correr \texttt{-{}-scale=2}. Los otros cinco declaran
+        \texttt{container\_name} y puerto publicados, que por construcción impiden una segunda
+        instancia: la independencia de despliegue de seis servicios compró escalado independiente
+        de uno.
+  \item \textbf{Dos de los seis no existen.} \textit{Personal} y \textit{Parqueaderos} no pasaron
+        de su \texttt{README}. La granularidad elegida excedió la capacidad real del equipo, y con
+        ella la cobertura de pruebas de esos dos dominios es del \textbf{0\%}.
+  \item \textbf{La separación de datos ya es lógica, no física.} Las seis bases se crean sobre una
+        sola instancia de PostgreSQL (\texttt{App/infra/initdb/01-bases.sql}). El sistema paga el
+        coste de coordinar entre dominios --- \textit{Pago} en una base y \textit{Pedido} en otra,
+        reconciliados a nivel de aplicación --- sin obtener el aislamiento de fallos que
+        justificaría pagarlo.
+\end{itemize}
+
+El diagnóstico no es que ADR-01 eligiera mal el criterio, sino que lo aplicó a una granularidad que
+los requisitos no piden: en el vocabulario del \textit{Scale Cube}, se descompuso por función (eje
+Y) los seis dominios cuando solo uno tiene una curva de carga distinta del resto.
+
+\textbf{Alternativas consideradas:}
+\begin{itemize}
+  \item \textbf{Mantener ADR-01 y corregir solo la replicabilidad.} Quitar
+        \texttt{container\_name} y los puertos fijos a los servicios que no los necesitan. Cuesta
+        una tarde y cierra el defecto operativo, pero deja cinco unidades desplegables cuya curva
+        de carga no justifica el coste de mantenerlas, y no responde a la objeción de fondo.
+  \item \textbf{Monolito modular} --- una sola unidad desplegable con fronteras internas. Rompe
+        RNF-10: no permite duplicar el servicio de Entradas durante una apertura de venta sin
+        duplicar también Pedidos, Personal y Parqueaderos.
+  \item \textbf{Monolito replicado en bloque} (eje X puro). Absorbe la carga, pero sobre-aprovisiona:
+        cada réplica arrastra los módulos que nadie está usando.
+  \item \textbf{Arquitectura basada en servicios} --- la elegida.
+\end{itemize}
+
+\textbf{Decisión:} se adopta una \textbf{arquitectura basada en servicios}
+(\textit{Service-Based Architecture}), con partición por dominio, granularidad gruesa y la variante
+de \textbf{base de datos particionada por dominio}. El backend queda en \textbf{tres servicios de
+dominio} en lugar de seis:
+
+\begin{itemize}
+  \item \textbf{Núcleo} --- una unidad desplegable que contiene \textit{Administración} y
+        \textit{Pedidos} como módulos, y donde se incorporarán \textit{Personal} y
+        \textit{Parqueaderos} cuando se implementen. Cada módulo conserva su esquema de datos, su
+        \texttt{data-source} y su propia secuencia de migraciones, de modo que un cambio de esquema
+        en un dominio sigue sin tocar a los demás.
+  \item \textbf{Entradas / Mercado Secundario} --- servicio independiente y replicable.
+  \item \textbf{Eventos / Emergencias} --- servicio independiente y replicable.
+\end{itemize}
+
+El \textbf{API Gateway} (ADR-02), \textbf{Redis} (ADR-03), la \textbf{cola de mensajes} (ADR-10) y
+el esquema de \textbf{dos tokens RS256} (ADR-11) no cambian, y tampoco cambia ninguna ruta pública:
+el gateway pasa de enrutar hacia dos destinos a enrutar hacia uno, con lo que los portales web y la
+app móvil no se modifican. Esta decisión \textbf{supera a ADR-01}.
+
+\textbf{Criterio de extracción.} Un dominio permanece como servicio independiente ---y no como
+módulo del núcleo--- solo si cumple al menos una de estas dos condiciones:
+
+\begin{enumerate}
+  \item \textbf{Su curva de carga difiere en orden de magnitud de la del resto}, por lo que necesita
+        réplicas propias. Es el caso de Entradas: RNF-07 exige p95 $\leq$ 500 ms con 2.000 usuarios
+        concurrentes en la apertura de venta, y RNF-10 exige que al duplicar sus instancias el
+        \textit{throughput} crezca $\geq$ 1,7$\times$.
+  \item \textbf{Su disponibilidad no puede depender de la del resto del sistema.} Es el caso de
+        Eventos / Emergencias: RNF-17 exige que una evacuación llegue al $\geq$ 99\% de los
+        dispositivos en $\leq$ 10 s, y RNF-09 que el tablero de aforo refleje un ingreso en
+        $\leq$ 2 s. Si el núcleo deja de responder, la evacuación debe seguir funcionando.
+\end{enumerate}
+
+Ninguno de los cuatro dominios restantes cumple ninguna de las dos condiciones: su carga es plana y
+comparable entre sí, y su caída no compromete la seguridad física de nadie. De ahí que los satélites
+sean exactamente dos, y no tres ni cuatro. El criterio es además la regla con la que se decidirá
+dónde ubicar cualquier dominio que entre al sistema más adelante.
+
+\medskip
+Dos decisiones acompañan a la principal:
+
+\begin{itemize}
+  \item \textbf{Fronteras de módulo verificadas por herramienta.} Dentro del núcleo, lo que antes
+        garantizaba el límite de proceso lo garantiza ahora una regla de \textit{linting} y una
+        prueba automática que fallan si un módulo importa de otro algo que no sea su API pública.
+        Esto es \textit{más} verificable que la situación anterior, en la que nada impedía que un
+        servicio consultara la base de datos de otro.
+  \item \textbf{El núcleo arranca con una sola instancia.} Administración y Pedidos ya corren hoy en
+        instancia única, de modo que un núcleo de una réplica no degrada la disponibilidad respecto
+        al estado actual. La segunda réplica queda como iteración posterior porque exige resolver
+        antes la ejecución de trabajos en segundo plano (ver \textit{Consecuencias}).
+\end{itemize}
+
+\textbf{Atributo de calidad:} \textbf{Mantenibilidad} (ASR-09) y simplicidad operativa como
+motivación principal --- se pasa de seis unidades desplegables a tres sin perder ninguna capacidad
+medida; \textbf{Escalabilidad} (ASR-06), que se preserva intacta porque el único dominio que exigía
+escalar de forma independiente sigue haciéndolo; \textbf{Consistencia} (RNF-01), que mejora porque
+los módulos del núcleo pueden compartir una transacción en lugar de reconciliarse a nivel de
+aplicación; y \textbf{Comprobabilidad} (RNF-18), porque un módulo se prueba con dobles en proceso
+sin levantar contenedores.
+
+\textbf{Evidencia (al decidirse ADR-12):} la justificación era verificable sobre el repositorio y
+sobre el sistema desplegado. Que solo un servicio admitía réplicas se comprobaba en
+\texttt{docker-compose.escalado.yml} y en los \texttt{container\_name} del \texttt{docker-compose.yml};
+que dos dominios no estaban implementados, en los módulos \texttt{personal/} y
+\texttt{parqueaderos/} del núcleo; que las seis bases comparten instancia, en
+\texttt{initdb/01-bases.sql}; y que \textbf{no había una sola llamada HTTP síncrona entre servicios}
+---lo que distinguía esa arquitectura de un monolito distribuido--- en que los servicios solo se
+comunicaban por el gateway, por la cola de mensajes y verificando el token con la clave pública.
+
+\medskip
+\textbf{Qué de esto cambió con ADR-14.} Dos de las cuatro evidencias ya no describen el sistema, y
+conviene decirlo aquí en vez de dejar el párrafo en presente:
+
+\begin{itemize}
+  \item \textbf{Las rutas de los dominios sin implementar.} El núcleo se repartió y se renombró:
+        esos dos módulos están hoy en \texttt{App/services/autenticacion/src/modulos/}, con sendos
+        marcadores en \texttt{App/services/personal/} y \texttt{App/services/parqueaderos/}. Siguen
+        sin implementarse.
+  \item \textbf{Ya hay llamadas HTTP síncronas entre servicios, y son deliberadas.} Al extraer
+        Acceso QR y Postventa, la tabla \texttt{entradas} se quedó en Ventas, que es su dueño. Los
+        dos servicios la necesitan y se la piden por una API interna
+        (\texttt{/interno/entradas/}) que el gateway no enruta. Postventa llama además a Pagos.
+
+        Esto no convierte la arquitectura en un monolito distribuido, pero la afirmación de arriba
+        ya no es el argumento que lo demuestra. Lo que lo sostiene ahora es \textbf{qué} se hace
+        síncrono y qué no: las llamadas síncronas son las que no pueden ser de otra manera porque
+        alguien espera una respuesta ---gastar un QR en la puerta, transferir una entrada con el
+        pago hecho--- y cada una está envuelta en una Saga con compensación explícita, con un
+        resultado «no respondió» distinto de «dijo que no». Todo lo demás ---notificar, liquidar,
+        proyectar--- sigue yendo por el broker. La diferencia con un monolito distribuido no es el
+        número de llamadas síncronas: es que ninguna de ellas lee la base de otro servicio, y que
+        cada una tiene definido qué pasa cuando falla.
+\end{itemize}
+
+La línea base contra la que se validará la migración es la de
+\texttt{App/infra/informe-atributos/INFORME.md}: p95 de \textbf{189,9 ms} con 200 peticiones
+simultáneas (umbral 500 ms), recuperación tras \texttt{kill -9} en \textbf{1,3 s} (umbral 30 s),
+\textbf{0\%} de rutas de negocio alcanzables sin token, y \textbf{1 de 50} compras concurrentes
+aceptada sobre la misma publicación. La condición de aceptación de la migración es que
+\texttt{App/infra/atributos-calidad.py} devuelva cifras iguales o mejores que estas. \textit{Esa
+medición posterior está pendiente: a la fecha de este registro la decisión está tomada y la
+migración no se ha ejecutado.}
+
+\textbf{Consecuencias:} agrupar cuatro dominios en una unidad desplegable tiene tres costes
+identificados, y los tres tienen una respuesta explícita.
+
+\begin{itemize}
+  \item \textbf{RNF-13 deja de cumplirse en su formulación literal.} Su métrica exige
+        «microservicios que deben modificarse y redesplegarse ante un cambio típico de negocio:
+        1», y un cambio en las reglas de Pedidos redespliega ahora todo el núcleo. La métrica se
+        reformula a «\textbf{módulos de dominio que deben modificarse: 1}; unidades desplegables
+        afectadas: 1», porque el atributo que el requisito perseguía es el \textbf{bajo
+        acoplamiento}, no el número de procesos --- y eso lo garantizan las fronteras verificadas
+        por herramienta.
+  \item \textbf{El radio de impacto crece.} Una excepción no atrapada en un módulo puede detener el
+        proceso que también atiende el inicio de sesión, algo imposible mientras eran procesos
+        separados. El núcleo es \textit{stateless} y está preparado para correr con varias
+        réplicas detrás del balanceador; mientras corra con una sola, su disponibilidad es la misma
+        que la de hoy.
+  \item \textbf{Aparecen dos acoplamientos nuevos dentro del proceso.} El primero es el
+        \textbf{pool de hilos}: Administración fija \texttt{UV\_THREADPOOL\_SIZE} porque el derivado
+        de contraseñas es bloqueante, y ese pool queda compartido con las consultas de Pedidos; es
+        precisamente lo que debe vigilarse al volver a medir el desempeño. El segundo son los
+        \textbf{trabajos en segundo plano}: la caducidad de reservas de inventario de Pedidos es un
+        temporizador, y con dos réplicas se ejecutaría dos veces sobre las mismas reservas. Antes de
+        activar la segunda réplica debe protegerse con un candado en Redis (\texttt{SET NX} con
+        vencimiento, ADR-03), de modo que solo la instancia que lo obtiene ejecute el ciclo. Los
+        consumidores de la cola de mensajes no tienen este problema: RabbitMQ reparte cada mensaje a
+        una sola instancia.
+\end{itemize}
+
+\textbf{Cuándo revisar:} si alguno de los módulos del núcleo desarrolla su propia curva de carga o
+su propio ciclo de despliegue, se le aplica el criterio de extracción y sale como servicio
+independiente. La estructura elegida ---un módulo por dominio, con esquema, \texttt{data-source} y
+migraciones propios--- está pensada precisamente para que esa extracción sea una operación de
+empaquetado y no una reescritura del dominio.
+
+\input{ADR-14-hibrida-soa-microservicios}
+
+\input{ADR-15-correcciones-contenedores}
+
 
 % ==================== Tácticas arquitectónicas ====================
 \section{Tácticas arquitectónicas por atributo de calidad}
@@ -1152,6 +1573,14 @@ que la entrega exige demostrar en vivo: \textbf{desempeño}, \textbf{disponibili
 La columna \textbf{Evidencia} no es una promesa de diseño: son cifras obtenidas ejecutando los
 guiones de \texttt{pruebas/} contra el sistema desplegado, a través del API Gateway, que es por
 donde entra el tráfico real. Cada guion se puede volver a correr delante del evaluador.
+
+\medskip
+\noindent\textbf{Sobre qué arquitectura se midieron.} Las cifras de esta sección se tomaron contra
+el sistema \textbf{desplegado}, que es el de ADR-12. Las tácticas en sí ---balanceo, caché, reserva
+atómica, \textit{circuit breaker}, idempotencia--- son las mismas que ADR-14 conserva y amplía, pero
+los umbrales habrá que volver a medirlos cuando cambie la topología: un servicio que hoy atiende
+compra y consulta en el mismo proceso dará otros números cuando sean dos. Los ASR que ADR-14 añade
+---la cola virtual y la validación de QR sin red--- todavía no tienen suite.
 
 Las cinco mediciones se lanzan de una vez con \texttt{App/infra/atributos-calidad.py}, que corre
 cada suite y consolida sus cifras en \texttt{App/infra/informe-atributos/INFORME.md}. Las que
@@ -1311,8 +1740,8 @@ pública como secreto, caducado, de otro emisor y manipulado: \textbf{6 de 6} re
 
 Autorizar a los actores &
 Guarda \texttt{SesionValida} con \texttt{@RolesPermitidos} en cada controlador. El gateway valida
-antes de enrutar (\texttt{auth\_request} a \texttt{/sesiones/verificar}) y propaga la identidad ya
-comprobada en \texttt{X-Usuario-Id} y \texttt{X-Usuario-Roles}. &
+el JWT con la clave pública y el rol de la ruta antes de enrutar (\texttt{autenticacion.js}, ADR-15)
+y propaga la identidad ya comprobada en \texttt{X-Usuario-Id} y \texttt{X-Usuario-Roles}. &
 RNF-06, ADR-02 &
 \textbf{11 de 11} rutas de negocio responden 401 sin token (\textbf{0\,\% abiertas}). Un rol
 \texttt{Personal} recibe 403 en la reventa; el barrido de mantenimiento da 403 a \texttt{Cliente}

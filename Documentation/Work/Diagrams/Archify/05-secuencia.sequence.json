@@ -2,13 +2,13 @@
   "schema_version": 1,
   "diagram_type": "sequence",
   "meta": {
-    "title": "HEXACORE — Reventa de una entrada",
-    "subtitle": "CU-006 · Gestión del Mercado Secundario de Entradas",
+    "title": "HEXACORE — Compra de una entrada con Saga orquestada (ADR-14, ADR-15)",
+    "subtitle": "CU-001 · Ventas orquesta la compra y la deshace si falla",
     "output": "05-secuencia.html",
     "quality_profile": "standard",
     "viewBox": [
-      1250,
-      720
+      1500,
+      1068
     ],
     "column_fit": "spread"
   },
@@ -29,218 +29,321 @@
       "label": "API Gateway"
     },
     {
-      "id": "entradas",
+      "id": "cola",
       "type": "backend",
-      "label": "Entradas"
+      "label": "Cola virtual"
     },
     {
-      "id": "redis",
+      "id": "ventas",
+      "type": "backend",
+      "label": "Ventas"
+    },
+    {
+      "id": "cache",
       "type": "database",
-      "label": "Redis"
+      "label": "Caché"
     },
     {
       "id": "pagos",
+      "type": "backend",
+      "label": "Pagos"
+    },
+    {
+      "id": "pasarela",
       "type": "external",
-      "label": "Pasarela Pagos"
+      "label": "Pasarela"
     },
     {
-      "id": "db",
-      "type": "database",
-      "label": "Base de Datos"
-    },
-    {
-      "id": "cola",
+      "id": "broker",
       "type": "messagebus",
-      "label": "Cola Mensajes"
-    },
-    {
-      "id": "notif",
-      "type": "external",
-      "label": "Notificaciones"
+      "label": "Broker"
     }
   ],
   "segments": [
     {
       "from": 150,
-      "to": 267,
-      "label": "Solicitud"
+      "to": 300,
+      "label": "Turno de entrada"
     },
     {
-      "from": 287,
-      "to": 470,
-      "label": "Cobro y transferencia"
+      "from": 320,
+      "to": 693,
+      "label": "Reserva y cobro"
     },
     {
-      "from": 490,
-      "to": 645,
-      "label": "Confirmación y notificación"
+      "from": 713,
+      "to": 858,
+      "label": "Confirmación"
+    },
+    {
+      "from": 878,
+      "to": 988,
+      "label": "Compensación — solo si el pago falla o vence"
     }
   ],
   "messages": [
     {
-      "id": "confirma-compra",
+      "id": "m1",
       "from": "comprador",
       "to": "portal",
-      "y": 185,
-      "label": "confirma compra de entrada en reventa",
+      "y": 188,
+      "label": "elige entradas para un evento",
       "variant": "default"
     },
     {
-      "id": "solicitud-compra",
+      "id": "m2",
       "from": "portal",
       "to": "gateway",
-      "y": 225,
-      "label": "solicitud de compra autenticada",
+      "y": 226,
+      "label": "solicitud autenticada (CU-001)",
       "variant": "emphasis"
     },
     {
-      "id": "enruta-solicitud",
+      "id": "m3",
       "from": "gateway",
-      "to": "entradas",
-      "y": 265,
-      "label": "enruta solicitud",
+      "to": "cola",
+      "y": 262,
+      "label": "pide turno",
       "variant": "default"
     },
     {
-      "id": "bloquea-publicacion",
-      "from": "entradas",
-      "to": "redis",
-      "y": 308,
-      "label": "bloquea publicación (checkout)",
-      "variant": "emphasis"
-    },
-    {
-      "id": "valida-cobra",
-      "from": "entradas",
-      "to": "pagos",
-      "y": 351,
-      "label": "valida medio y cobra",
-      "variant": "emphasis"
-    },
-    {
-      "id": "pago-aprobado",
-      "from": "pagos",
-      "to": "entradas",
-      "y": 388,
-      "label": "pago aprobado",
-      "variant": "return"
-    },
-    {
-      "id": "transfiere-propiedad",
-      "from": "entradas",
-      "to": "db",
-      "y": 431,
-      "label": "transfiere propiedad, invalida QR anterior",
-      "variant": "emphasis"
-    },
-    {
-      "id": "db-ok",
-      "from": "db",
-      "to": "entradas",
-      "y": 468,
-      "label": "ok",
-      "variant": "return"
-    },
-    {
-      "id": "publica-evento",
-      "from": "entradas",
-      "to": "cola",
-      "y": 511,
-      "label": "publica ENTRADA_TRANSFERIDA",
-      "variant": "dashed"
-    },
-    {
-      "id": "confirma-portal",
-      "from": "entradas",
-      "to": "portal",
-      "y": 548,
-      "label": "200 OK, entrada transferida",
-      "variant": "return"
-    },
-    {
-      "id": "dispara-notificacion",
+      "id": "m4",
       "from": "cola",
-      "to": "notif",
-      "y": 591,
-      "label": "dispara notificaciones",
+      "to": "portal",
+      "y": 294,
+      "label": "token de turno con vencimiento corto",
+      "variant": "return"
+    },
+    {
+      "id": "m5",
+      "from": "portal",
+      "to": "gateway",
+      "y": 358,
+      "label": "reserva con el turno (X-Turno-Cola)",
+      "variant": "emphasis"
+    },
+    {
+      "id": "m5a",
+      "from": "gateway",
+      "to": "cola",
+      "y": 394,
+      "label": "valida el JWT y gasta el turno",
+      "variant": "default"
+    },
+    {
+      "id": "m5b",
+      "from": "cola",
+      "to": "gateway",
+      "y": 426,
+      "label": "turno válido · un solo uso",
+      "variant": "return"
+    },
+    {
+      "id": "m6",
+      "from": "gateway",
+      "to": "ventas",
+      "y": 464,
+      "label": "inicia la Saga",
+      "variant": "emphasis"
+    },
+    {
+      "id": "m7",
+      "from": "ventas",
+      "to": "cache",
+      "y": 502,
+      "label": "reserva atómica con vencimiento",
+      "variant": "emphasis"
+    },
+    {
+      "id": "m8",
+      "from": "cache",
+      "to": "ventas",
+      "y": 534,
+      "label": "reservado",
+      "variant": "return"
+    },
+    {
+      "id": "m9",
+      "from": "ventas",
+      "to": "pagos",
+      "y": 572,
+      "label": "cobra · llave de idempotencia",
+      "variant": "emphasis"
+    },
+    {
+      "id": "m10",
+      "from": "pagos",
+      "to": "pasarela",
+      "y": 610,
+      "label": "autoriza el cargo",
+      "variant": "default"
+    },
+    {
+      "id": "m11",
+      "from": "pasarela",
+      "to": "pagos",
+      "y": 642,
+      "label": "aprobado",
+      "variant": "return"
+    },
+    {
+      "id": "m12",
+      "from": "pagos",
+      "to": "ventas",
+      "y": 674,
+      "label": "pago confirmado",
+      "variant": "return"
+    },
+    {
+      "id": "m13",
+      "from": "ventas",
+      "to": "cache",
+      "y": 748,
+      "label": "convierte la reserva en venta",
+      "variant": "emphasis"
+    },
+    {
+      "id": "m14",
+      "from": "ventas",
+      "to": "broker",
+      "y": 786,
+      "label": "COMPRA_CONFIRMADA por la bandeja de salida",
       "variant": "dashed"
     },
     {
-      "id": "notifica-confirmacion",
-      "from": "notif",
-      "to": "comprador",
-      "y": 628,
-      "label": "notifica confirmación y nuevo QR (comprador y vendedor)",
+      "id": "m15",
+      "from": "ventas",
+      "to": "portal",
+      "y": 824,
+      "label": "200 OK con la entrada y su QR",
+      "variant": "return"
+    },
+    {
+      "id": "m16",
+      "from": "ventas",
+      "to": "cache",
+      "y": 916,
+      "label": "libera la reserva",
+      "variant": "emphasis"
+    },
+    {
+      "id": "m17",
+      "from": "ventas",
+      "to": "portal",
+      "y": 954,
+      "label": "409 · la compra no se completó",
       "variant": "return"
     }
   ],
   "activations": [
     {
       "participant": "portal",
-      "from": 220,
-      "to": 635,
+      "from": 222,
+      "to": 958,
       "type": "frontend"
     },
     {
       "participant": "gateway",
-      "from": 260,
-      "to": 270,
+      "from": 258,
+      "to": 268,
       "type": "security"
     },
     {
-      "participant": "entradas",
-      "from": 260,
-      "to": 555,
+      "participant": "gateway",
+      "from": 354,
+      "to": 468,
+      "type": "security"
+    },
+    {
+      "participant": "cola",
+      "from": 258,
+      "to": 298,
       "type": "backend"
     },
     {
-      "participant": "redis",
-      "from": 303,
-      "to": 315,
+      "participant": "ventas",
+      "from": 460,
+      "to": 958,
+      "type": "backend"
+    },
+    {
+      "participant": "cache",
+      "from": 497,
+      "to": 539,
+      "type": "database"
+    },
+    {
+      "participant": "cache",
+      "from": 743,
+      "to": 753,
+      "type": "database"
+    },
+    {
+      "participant": "cache",
+      "from": 911,
+      "to": 921,
       "type": "database"
     },
     {
       "participant": "pagos",
-      "from": 346,
-      "to": 392,
+      "from": 567,
+      "to": 678,
+      "type": "backend"
+    },
+    {
+      "participant": "pasarela",
+      "from": 605,
+      "to": 646,
       "type": "external"
     },
     {
-      "participant": "db",
-      "from": 426,
-      "to": 472,
-      "type": "database"
+      "participant": "broker",
+      "from": 781,
+      "to": 791,
+      "type": "messagebus"
     },
     {
       "participant": "cola",
-      "from": 506,
-      "to": 595,
-      "type": "messagebus"
+      "from": 390,
+      "to": 430,
+      "type": "backend"
     }
   ],
   "cards": [
     {
       "dot": "emerald",
-      "title": "Camino principal",
+      "title": "Qué hace a esto una Saga",
       "items": [
-        "Portal → Gateway → Entradas coordina todo el checkout",
-        "Redis bloquea la publicación mientras se cobra",
-        "Entradas responde al portal apenas confirma en base de datos"
+        "Ventas orquesta: ningún otro servicio decide el orden de los pasos",
+        "No hay una transacción que abarque los cuatro servicios, porque cada uno tiene su propio almacén; por eso el deshacer es explícito",
+        "La reserva se hace en la caché de forma atómica y con vencimiento: si la Saga muere a medias, la entrada se libera sola al vencer"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Por qué la llave de idempotencia",
+      "items": [
+        "Un comprador que reintenta, o un webhook reenviado por la pasarela, llegarían dos veces a Pagos",
+        "Con la misma llave el segundo cobro no se ejecuta: devuelve el resultado del primero",
+        "Una llave reusada con otro pedido se rechaza en lugar de cobrar: es lo que evita cruzar dos compras"
       ]
     },
     {
       "dot": "amber",
-      "title": "Notificación desacoplada",
+      "title": "Lo que queda fuera del camino de respuesta",
       "items": [
-        "Publicar y notificar es asíncrono, fuera del camino de respuesta",
-        "El mismo evento notifica a comprador y vendedor"
+        "Ventas responde al portal en cuanto confirma; notificar es trabajo del consumidor del broker",
+        "Notificaciones toma COMPRA_CONFIRMADA y manda el correo y el push; si tarda o falla, la compra ya está hecha",
+        "La cola virtual no participa en la Saga: el gateway gasta el turno antes de dejar pasar a Ventas (ADR-15), y Ventas no la llama"
       ]
     },
     {
       "dot": "rose",
-      "title": "No vive en la app móvil",
+      "title": "Estado de implementación",
       "items": [
-        "La reventa solo se gestiona desde el Portal Web Cliente"
+        "⚠️ Dibuja lo decidido. Ya existen la reserva atómica con vencimiento, las llaves de idempotencia, la cola virtual con el turno exigido en el gateway y la bandeja de salida de Ventas",
+        "Falta el orquestador con compensación explícita: Ventas todavía no consume PagoAprobado / PagoRechazado (fase E)",
+        "El webhook de la pasarela ya llega a Pagos por el gateway y publica el resultado; aquí se dibuja la respuesta síncrona del cobro"
       ]
     }
   ]

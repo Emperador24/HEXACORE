@@ -103,6 +103,12 @@ services:
     build: ./pasarela-pagos-simulada
     container_name: hexacore-pasarela
     restart: unless-stopped
+    # Confirma cada operación por webhook a la ruta pública del gateway, como
+    # una pasarela real (ADR-15). Si el gateway no está levantado, reintenta
+    # unas veces y desiste: la pasarela no depende de él para cobrar.
+    environment:
+      WEBHOOK_URL: http://api-gateway:8080/api/v1/pagos/webhook
+      SECRETO_WEBHOOK: secreto-webhook-desarrollo
     ports:
       - "3099:3099"
     healthcheck:
@@ -136,25 +142,31 @@ services:
   # proceso muere, Docker lo levanta de nuevo sin intervención. Lo que Docker
   # Compose NO hace es reiniciar un contenedor que sigue vivo pero `unhealthy`
   # (colgado); eso es trabajo de la sonda de vida de Kubernetes en producción
-  # (SAD §11). Ver services/administracion/DECISIONES.md §18.
+  # (SAD §11). Ver services/autenticacion/DECISIONES.md §18.
   #
   # NODE_ENV=development porque usan las claves JWT de desarrollo, que en
   # producción se rechazan a propósito.
 
   # API Gateway + balanceador (ADR-02): el punto único de entrada al backend.
-  # Autentica cada petición contra el Servicio de Administración antes de
-  # enrutarla, y reparte entre las réplicas de cada servicio.
+  # Valida el JWT con la clave pública sin llamar a Autenticación, autoriza por
+  # rol, exige el turno de la Cola virtual al comprar (ADR-15), y reparte entre
+  # las réplicas de cada servicio.
   api-gateway:
     profiles: ["servicios"]
     image: nginx:1.27-alpine
     container_name: hexacore-gateway
     restart: unless-stopped
     depends_on:
-      administracion: { condition: service_healthy }
-      entradas-mercado-secundario: { condition: service_healthy }
-      pedidos: { condition: service_healthy }
+      autenticacion: { condition: service_healthy }
+      ventas: { condition: service_healthy }
+      cola-virtual: { condition: service_healthy }
+      eventos-emergencias: { condition: service_healthy }
     volumes:
+      - ../gateway/nginx-principal.conf:/etc/nginx/nginx.conf:ro
       - ../gateway/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ../gateway/autenticar.conf:/etc/nginx/hexacore/autenticar.conf:ro
+      - ../gateway/autenticacion.js:/etc/nginx/njs/autenticacion.js:ro
+      - ./claves-desarrollo/jwt-publica.pem:/etc/nginx/claves/jwt-publica.pem:ro
     ports:
       - "8080:8080"
     healthcheck:
@@ -163,11 +175,14 @@ services:
       timeout: 3s
       retries: 5
 
-  # Servicio de Administración — CU-027 (cuentas, login, sesiones).
-  administracion:
+  # Núcleo — servicio de dominio que agrupa Administración y Pedidos (ADR-12).
+  # Antes eran dos contenedores; ahora es uno con dos módulos, cada uno contra
+  # su propia base. Sin `container_name`: es lo que permitirá replicarlo
+  # (`--scale autenticacion=2`) cuando el temporizador de reservas esté protegido con
+  # un candado en Redis.
+  autenticacion:
     profiles: ["servicios"]
-    build: ../services/administracion
-    container_name: hexacore-administracion
+    build: ../services/autenticacion
     restart: unless-stopped
     # Un init mínimo como PID 1: reenvía las señales a node y recoge procesos
     # huérfanos. Sin él, node es el PID 1 y el kernel le trata las señales de
@@ -177,6 +192,7 @@ services:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }
+      pasarela: { condition: service_healthy }
     # Los nombres de la capa de datos son variables para poder repartir el
     # sistema en dos computadores (RNF de desplegabilidad): por defecto son los
     # contenedores locales; `iniciar.sh --datos <IP>` los apunta a otra máquina.
@@ -188,11 +204,29 @@ services:
       REDIS_PUERTO: ${PUERTO_REDIS:-6379}
       RABBITMQ_URL: amqp://hexacore:hexacore@${HOST_RABBIT:-rabbitmq}:${PUERTO_RABBIT:-5672}
       AUTH_JWT_CLAVE_PUBLICA_ARCHIVO: /claves/jwt-publica.pem
-    # Solo en este servicio se monta también la privada: es el único que firma.
+      # Con qué se identifican los servicios entre sí en las rutas `/interno/`,
+      # donde no hay usuario cuyo token reenviar — el trabajo de expiración de
+      # Postventa (CU-006D). En desarrollo es un valor fijo y conocido; en
+      # producción lo inyecta el orquestador y el servicio no arranca sin él.
+      TOKEN_SERVICIOS: ${TOKEN_SERVICIOS:-hexacore-servicios-dev}
+    # Solo aquí se monta también la privada: el módulo de Administración es el
+    # único que firma tokens (ADR-11).
     environment:
       <<: *entorno-comun
       AUTH_JWT_CLAVE_PRIVADA_ARCHIVO: /claves/jwt-privada.pem
+      PUERTO: "3002"
+      PREFIJO_API: api/v1
+      AUTH_JWT_EMISOR: hexacore-administracion
+      POSTGRES_USUARIO: hexacore
+      POSTGRES_CONTRASENA: hexacore
+      # Una base por módulo: la separación de datos de ADR-01 que ADR-12
+      # mantiene. Cada módulo abre su propia conexión contra la suya.
+      POSTGRES_BD_ADMINISTRACION: administracion
+      POSTGRES_BD_PEDIDOS: pedidos
+      POSTGRES_MAX_CONEXIONES: "10"
+      POSTGRES_ESPERA_MAXIMA_MS: "3000"
       CORREO_PROVEEDOR_URL: http://${HOST_CORREO:-correo}:${PUERTO_CORREO:-3098}
+      PASARELA_TIMEOUT_MS: "10000"
     volumes:
       - ./claves-desarrollo/jwt-privada.pem:/claves/jwt-privada.pem:ro
       - ./claves-desarrollo/jwt-publica.pem:/claves/jwt-publica.pem:ro
@@ -210,11 +244,11 @@ services:
       - "3002:3002"
 
   # Servicio de Entradas y Mercado Secundario — CU-006.
-  entradas-mercado-secundario:
+  ventas:
     profiles: ["servicios"]
-    build: ../services/entradas-mercado-secundario
+    build: ../services/ventas
     # Sin `container_name`: es el que se replica para demostrar el balanceo
-    # (`--scale entradas-mercado-secundario=2`), y un nombre fijo lo impediría.
+    # (`--scale ventas=2`), y un nombre fijo lo impediría.
     restart: unless-stopped
     # Un init mínimo como PID 1: reenvía las señales a node y recoge procesos
     # huérfanos. Sin él, node es el PID 1 y el kernel le trata las señales de
@@ -227,7 +261,7 @@ services:
       pasarela: { condition: service_healthy }
     environment:
       <<: *entorno-comun
-      PASARELA_URL: http://${HOST_PASARELA:-pasarela}:${PUERTO_PASARELA:-3099}
+      PAGOS_URL: http://pagos:3008/api/v1
     volumes:
       - ./claves-desarrollo/jwt-publica.pem:/claves/jwt-publica.pem:ro
     # En una máquina limpia, el primer arranque incluye inicializar PostgreSQL
@@ -243,11 +277,137 @@ services:
     ports:
       - "3001:3001"
 
-  # Servicio de Pedidos — CU-011.
-  pedidos:
+  # Microservicio de Acceso QR — CU-002, la puerta. Fase A de ADR-14.
+  acceso-qr:
     profiles: ["servicios"]
-    container_name: hexacore-pedidos
-    build: ../services/pedidos
+    build: ../services/acceso-qr
+    # Sin `container_name`: ADR-14 le pone 2+ réplicas. Su pico es en la puerta
+    # del evento, en otro momento que el de la venta.
+    #
+    # No depende de Ventas (ADR-15): valida contra su propia copia de los QR,
+    # que le llega por el broker. Si Ventas cae, la puerta sigue abierta.
+    restart: unless-stopped
+    init: true
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+    environment:
+      <<: *entorno-comun
+      PUERTO: "3010"
+      POSTGRES_BASE: acceso_qr
+    volumes:
+      - ./claves-desarrollo/jwt-publica.pem:/claves/jwt-publica.pem:ro
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3010/api/v1/salud',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      start_period: 90s
+      retries: 10
+    ports:
+      - "3010:3010"
+
+  # Microservicio de Postventa — CU-006, mercado secundario. Fase A de ADR-14.
+  #
+  # Salió de `ventas`: su pico va en los días previos al
+  # evento, cuando la venta primaria ya se agotó, y un checkout de reventa
+  # atascado ya no consume los hilos de la venta ni de la puerta.
+  #
+  # `Entrada` se quedó en Ventas, así que depende de él para retener,
+  # transferir y liberar entradas. Esa dependencia es la Saga del CU-006.
+  postventa:
+    profiles: ["servicios"]
+    build: ../services/postventa
+    # Sin `container_name`: puede escalar con el pico de la reventa.
+    restart: unless-stopped
+    init: true
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+      pagos: { condition: service_healthy }
+      ventas: { condition: service_healthy }
+    environment:
+      <<: *entorno-comun
+      PUERTO: "3011"
+      POSTGRES_BASE: postventa
+      PAGOS_URL: http://pagos:3008/api/v1
+      VENTAS_URL: http://ventas:3001/api/v1
+    volumes:
+      - ./claves-desarrollo/jwt-publica.pem:/claves/jwt-publica.pem:ro
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3011/api/v1/salud',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      start_period: 90s
+      retries: 10
+    ports:
+      - "3011:3011"
+
+  # Microservicio de Cola virtual — turno de compra. Sostiene el primer ASR.
+  cola-virtual:
+    profiles: ["servicios"]
+    build: ../services/cola-virtual
+    # Sin `container_name`: ADR-14 le pone 3+ réplicas con pre-escalado, porque
+    # su pico es el más agudo del sistema.
+    restart: unless-stopped
+    init: true
+    # Solo Redis: la fila es Redis. No tiene base de datos.
+    depends_on:
+      redis: { condition: service_healthy }
+    environment:
+      <<: *entorno-comun
+      PUERTO: "3009"
+      # Bajo a propósito en desarrollo: con 100 nunca se vería la fila
+      # funcionar. En producción se calibra con las pruebas de carga.
+      COLA_AFORO_CONCURRENTE: "25"
+    volumes:
+      - ./claves-desarrollo/jwt-publica.pem:/claves/jwt-publica.pem:ro
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3009/api/v1/salud',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      start_period: 60s
+      retries: 10
+    ports:
+      - "3009:3009"
+
+  # Microservicio de Pagos — el único que habla con la pasarela. Fase A de ADR-14.
+  pagos:
+    profiles: ["servicios"]
+    build: ../services/pagos
+    # Sin `container_name`: ADR-14 le pone tres réplicas con autoescalado.
+    restart: unless-stopped
+    init: true
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      pasarela: { condition: service_healthy }
+    environment:
+      <<: *entorno-comun
+      PUERTO: "3008"
+      POSTGRES_BASE: pagos
+      PAGOS_PROVEEDOR_URL: http://${HOST_PASARELA:-pasarela}:${PUERTO_PASARELA:-3099}
+      # El mismo que firma la pasarela. En producción es obligatorio y secreto.
+      PASARELA_SECRETO_WEBHOOK: secreto-webhook-desarrollo
+    volumes:
+      - ./claves-desarrollo/jwt-publica.pem:/claves/jwt-publica.pem:ro
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3008/api/v1/salud',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      start_period: 90s
+      retries: 10
+    # No se publica puerto al host: es un servicio interno, no lo llama ningún
+    # cliente. Se alcanza por la red de compose desde Ventas, Postventa y
+    # Alimentos, y la pasarela llega a su webhook a través del gateway.
+
+  # Servicio de dominio de Alimentos — CU-011 a CU-015. Fase A de ADR-14.
+  alimentos:
+    profiles: ["servicios"]
+    build: ../services/alimentos
+    # Sin `container_name`: ADR-14 le pone dos réplicas fijas por
+    # disponibilidad. No escala por carga: su demanda es estable.
     restart: unless-stopped
     init: true
     depends_on:
@@ -257,32 +417,77 @@ services:
       pasarela: { condition: service_healthy }
     environment:
       <<: *entorno-comun
-      PUERTO: "3003"
-      PREFIJO_API: api/v1
-      AUTH_JWT_EMISOR: hexacore-administracion
-      POSTGRES_USUARIO: hexacore
-      POSTGRES_CONTRASENA: hexacore
-      POSTGRES_BASE: pedidos
-      POSTGRES_MAX_CONEXIONES: "10"
-      POSTGRES_ESPERA_MAXIMA_MS: "3000"
-      PAGOS_PROVEEDOR_URL: http://${HOST_PASARELA:-pasarela}:${PUERTO_PASARELA:-3099}
-      PASARELA_TIMEOUT_MS: "10000"
+      PUERTO: "3007"
+      PAGOS_URL: http://pagos:3008/api/v1
     volumes:
       - ./claves-desarrollo/jwt-publica.pem:/claves/jwt-publica.pem:ro
     healthcheck:
-      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3003/api/v1/salud',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3007/api/v1/salud',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
       interval: 10s
       timeout: 5s
       start_period: 90s
       retries: 10
     ports:
-      - "3003:3003"
+      - "3007:3007"
+
+  # Microservicio de Notificaciones — envío asíncrono de correos. Fase A de ADR-14.
+  notificaciones:
+    profiles: ["servicios"]
+    build: ../services/notificaciones
+    # Sin `container_name`: ADR-14 lo escala por longitud de cola.
+    restart: unless-stopped
+    init: true
+    # Sin PostgreSQL: su estado es la cola. Necesita el broker, de donde toma
+    # el trabajo, y el proveedor de correo, que es a quien se lo entrega.
+    depends_on:
+      rabbitmq: { condition: service_healthy }
+      correo: { condition: service_healthy }
+    environment:
+      <<: *entorno-comun
+      PUERTO: "3006"
+      CORREO_PROVEEDOR_URL: http://${HOST_CORREO:-correo}:${PUERTO_CORREO:-3098}
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3006/api/v1/salud',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      start_period: 60s
+      retries: 10
+    ports:
+      - "3006:3006"
+
+  # Microservicio de Catálogo — CU-005 (cartelera pública). Fase A de ADR-14.
+  catalogo:
+    profiles: ["servicios"]
+    build: ../services/catalogo
+    # Sin `container_name`: ADR-14 le pone tres réplicas con pre-escalado, y un
+    # nombre fijo lo impediría.
+    restart: unless-stopped
+    init: true
+    # Solo PostgreSQL. Ni Redis, ni el broker, ni la pasarela: es exactamente
+    # lo que la extracción buscaba — que una caída de Redis no se lleve por
+    # delante la cartelera.
+    depends_on:
+      postgres: { condition: service_healthy }
+    environment:
+      <<: *entorno-comun
+      POSTGRES_BASE: catalogo
+      PUERTO: "3004"
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3004/api/v1/salud',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      start_period: 90s
+      retries: 10
+    ports:
+      - "3004:3004"
 
   # Servicio de Eventos / Emergencias — CU-018 (turnos y asistencia del personal).
   eventos-emergencias:
     profiles: ["servicios"]
     build: ../services/eventos-emergencias
-    container_name: hexacore-logistica
+    # Sin `container_name` ni puerto fijo: es satélite replicable (ADR-12), y
+    # un nombre fijo impediría `--scale eventos-emergencias=2`. Se accede por
+    # el gateway, que es como entra el tráfico real (ADR-02).
     restart: unless-stopped
     init: true
     depends_on:
@@ -300,8 +505,6 @@ services:
       DB_SYNCHRONIZE: "true"
     volumes:
       - ./claves-desarrollo/jwt-publica.pem:/claves/jwt-publica.pem:ro
-    ports:
-      - "3016:3016"
     # La imagen no trae sonda propia, así que se declara aquí. `/turnos` exige
     # sesión y responde 401 sin token: eso ya demuestra que el proceso atiende
     # y que llegó a la base. Cualquier 5xx sí es un problema.
