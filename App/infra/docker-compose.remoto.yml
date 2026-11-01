@@ -2,34 +2,66 @@
 # la capa de datos en otro (desplegabilidad: el sistema repartido en dos o más
 # máquinas).
 #
-#   docker compose -f docker-compose.yml -f docker-compose.remoto.yml \
-#     --profile servicios up -d
+# Se invoca desde `./iniciar.sh --rol servicios --datos <IP>`, que exporta
+# HOST_POSTGRES, HOST_REDIS, HOST_RABBIT, HOST_CORREO y HOST_PASARELA con esa IP,
+# y PUERTO_REDIS=6380 (el puerto publicado por la máquina de datos).
+# El compose base sigue definiendo los destinos y el resto de puertos.
 #
-# Normalmente se invoca desde `./iniciar.sh --rol servicios --datos <IP>`, que
-# además exporta las variables HOST_* que el compose base ya sabe leer.
+# Se quitan las dependencias hacia PostgreSQL, Redis, RabbitMQ y los dos
+# proveedores simulados en los diez backends actuales. Los servicios comprueban
+# las conexiones remotas al arrancar; Compose no puede comprobar su salud.
+# Se conservan las dependencias entre aplicaciones que corren aquí:
+# Postventa -> Pagos/Ventas, gateway -> backends y portales -> gateway.
 #
-# Lo único que hace es **quitar las dependencias locales**: sin esto, Docker
-# levantaría un PostgreSQL, un Redis, un RabbitMQ y la pasarela simulada en
-# esta máquina para satisfacer el `depends_on`, que es justo lo contrario de lo
-# que se quiere. Quien comprueba que la otra máquina está viva es el propio
-# servicio, que reintenta la conexión al arrancar.
-#
-# **Tienen que estar los cuatro servicios.** Basta con que uno conserve su
-# `depends_on` para que Compose levante aquí la capa de datos entera y el
-# reparto en dos máquinas deje de ser tal: los servicios hablarían con un
-# PostgreSQL local vacío mientras el de verdad está en la otra máquina.
-#
-# El `api-gateway` y el `portal-web-cliente` no aparecen a propósito: sus
-# dependencias (los servicios de dominio y el gateway) viven en **esta** máquina, así
-# que las del compose base son las correctas y redeclararlas aquí solo serviría
-# para que se quedaran desactualizadas cuando se añada un servicio nuevo.
+# Los datos locales quedan en un perfil separado: incluso un `up` sin lista
+# explícita de servicios, con solo `--profile servicios`, los deja fuera.
+# Esto no cambia `iniciar.sh --rol datos` en la otra máquina, que usa el compose
+# base sin este override.
 
 services:
-  nucleo:
-    depends_on: !reset []
+  postgres:
+    profiles: ["datos"]
+
+  redis:
+    profiles: ["datos"]
+
+  rabbitmq:
+    profiles: ["datos"]
+
+  pasarela:
+    profiles: ["datos"]
+
+  correo:
+    profiles: ["datos"]
+
+  autenticacion:
+    depends_on: !reset {}
 
   ventas:
-    depends_on: !reset []
+    depends_on: !reset {}
+
+  acceso-qr:
+    depends_on: !reset {}
+
+  postventa:
+    depends_on: !override
+      pagos: { condition: service_healthy }
+      ventas: { condition: service_healthy }
+
+  cola-virtual:
+    depends_on: !reset {}
+
+  pagos:
+    depends_on: !reset {}
+
+  alimentos:
+    depends_on: !reset {}
+
+  notificaciones:
+    depends_on: !reset {}
+
+  catalogo:
+    depends_on: !reset {}
 
   eventos-emergencias:
-    depends_on: !reset []
+    depends_on: !reset {}
