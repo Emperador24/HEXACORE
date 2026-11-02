@@ -75,8 +75,8 @@ def pedir(metodo, ruta, usuario, cuerpo=None, roles=('Cliente',), espera=30, ext
 
 def sql(consulta):
     return subprocess.run(
-        ['docker', 'exec', 'hexacore-postgres', 'psql', '-qtA',
-         '--username=hexacore', '--dbname=pedidos', '-c', consulta],
+        ['docker', 'exec', '-e', 'PGOPTIONS=-c search_path=alimentos,pg_catalog,extensiones', os.environ.get('POSTGRES_CONTENEDOR', 'hexacore-postgres'), 'psql', '-qtA',
+         '--username=' + os.environ.get('POSTGRES_USUARIO', 'hexacore'), '--dbname=' + os.environ.get('POSTGRES_BD', 'hexacore'), '-c', consulta],
         capture_output=True, text=True, check=True).stdout.strip()
 
 

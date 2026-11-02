@@ -1,55 +1,45 @@
 # Estado de migración de HEXACORE
 
 Fecha de revisión: **2 de noviembre de 2026**, America/Bogota.
-Rama `feature/sebastian-arquitectura`, ensayo de consolidación desde
-**300a88ebd4337bb4538d9229c84af0361a6afd9f**. HEAD y trabajo local comprobados sin
-reset/stash/descarte. Pedidos se conserva aparte. **§22 describe el estado vigente**;
-las secciones anteriores conservan su evidencia histórica.
+Rama `feature/sebastian-arquitectura`, adaptación de conexiones desde
+**be57961472a0802c90a57d247fb67e96e6717b1b**. HEAD y trabajo local comprobados sin
+reset/stash/descarte. Pedidos se conserva aparte. **§23 es el estado vigente**;
+las secciones anteriores conservan evidencia histórica de cada entrega.
 
-**Alcance de toda la migración:** migrar funcionalidad existente y preparar sus
-fronteras, sin completar CU faltantes, F12 ni Operación. La consolidación de datos
-sigue siendo obligatoria. Se ha ejecutado únicamente el ensayo sobre datos aislados;
-adaptar aplicaciones y cambiar destinos habituales corresponde a otra entrega.
+**Alcance:** migrar funcionalidad existente y preparar fronteras, sin completar
+CU faltantes, F12 ni Operación. La configuración activa usa **una base PostgreSQL
+con ocho esquemas**, comprobada sobre copia transferida A y una instalación
+vacía B, ambas exclusivas de pruebas. **El entorno habitual no cambió de destinos
+ni se desplegó esta versión**. Su corte sigue pendiente.
 
-**Datos vigentes (§22):** ocho respaldos originales restaurados en ocho bases de
-prueba distintas; transferencia a hexacore por ocho esquemas conciliada: **49 tablas,
-247 filas, 18 migraciones**, 16 secuencias y restricciones/índices/funciones/triggers.
-**12/12 pruebas del procedimiento, dos ejecuciones aprobadas** sobre los mismos
-recursos, con fallo SQL e interrupción de conexión controlados, reanudación y repetición
-sin duplicados. Las aplicaciones conservan sus ocho bases originales. Una inconsistencia
-F12 ya existente se conserva igual, sin repararla. Redis y RabbitMQ inventariados;
-mensajes/reservas no se migraron ni purgaron. Ver mapa y comandos en
-App/backend/test/consolidacion/README.md.
+**Datos (§22–23):** referencia conservada de ocho bases en solo lectura, 49 tablas,
+247 filas y 18 migraciones; respaldos/restauraciones conciliados en §22. La copia A
+reconoce ocho historiales con **cero migraciones reaplicadas**; B crea las 18 desde
+cero. Preparación central serializada, repetición sin DDL y rechazo de variables
+heredadas. Las 18 fuentes/lockfile permanecen intactos; sin synchronize/migrationsRun.
+Las aplicaciones conservan autoridades/proyecciones y tablas legacy; compartir
+base no demuestra atomicidad nueva ni invalidación inmediata del QR.
 
-**Trabajador vigente (§21):** apps/trabajador consume el correo existente desde
-modulos/comunicaciones, con Node 22.22.3 y el único manifiesto/lockfile del backend.
-Solo usa RabbitMQ y proveedor HTTP de correo. No carga PostgreSQL, Redis,
-Identidad/JWT/clave privada ni Finanzas. Se retira el paquete/servidor independiente;
-la salud conserva puerto 3006, GET /api/v1/salud y servicio=notificaciones.
-Los demás consumidores/temporizadores siguen en Núcleo/Boletería con su dueño
-(inventario/razones en §21). Operación y las alertas ausentes siguen pendientes.
+**Procesos:** Núcleo reúne Identidad, Alimentos y Personal/Logística; Boletería las
+cinco implementaciones de Entradas. Ambos usan finanzas_pagos.transacciones_pago,
+mediante conexión finanzas-pagos, sin servidor financiero ni claves por proceso.
+Solo Núcleo recibe webhook rawBody/HMAC y publica por su conexión AMQP compartida.
+Trabajador consume correo existente, sin SQL/Redis/JWT/Finanzas. Otros consumidores
+y temporizadores permanecen con sus dueños (§21). Operación/alertas ausentes pendientes.
 
-**Pagos vigente (§20):** Alimentos y Entradas llaman localmente al módulo común,
-libro pagos único/finanzas-pagos, tarea única de migración y webhook solo en Núcleo.
-Se conservan las siete bases/diecisiete migraciones de negocio más libro financiero
-y migración original, sin synchronize. Solo el ensayo de §22 copia los datos de prueba;
-la configuración de ejecución de ambos procesos conserva las ocho bases originales.
+**Resultados vigentes (§23):** tipos y tres builds aprobados; **830/830 unitarias**
+(57 suites, Redis real). En cada A/B: **46 comprobaciones funcionales**, **5/5 de
+configuración/pools/datos/correo/colas/triggers**, **73/73 Núcleo**, **23/23 Boletería**,
+**13/13 contratos y 5/5 convivencia financieros**, módulo financiero y smokes de
+imagen/gateway. Correo: **20/20** y **3/3 Identidad en cada A/B**. Reinicio/persistencia,
+preparación concurrente y cierre SIGTERM comprobados. Intentos fallidos se registran
+sin omitir aserciones ni presentarlos como aprobados.
 
-Referencia de correo: **20/20 antes** del traslado y **20/20 dos veces después**,
-con las mismas aserciones. Recorrido real de los cinco correos desde Identidad:
-**3/3**. Regresiones **808/808 unitarias**, **73/73 Núcleo**, **23/23 Boletería**.
-Imagen Trabajador construida/saludable y smoke de envío, parada, pendientes y reinicio
-aprobado. **13/13 contratos y 5/5 convivencia financieros**, sin omisiones;
-fallos de preparación registrados en §21; no se ocultan intentos fallidos ni se aprueba con cero pruebas.
-
-**Límites de correo previos comprobados (§21, F15):** deduplicación/intentos solo en
-memoria; repetir tras reinicio o desde varias instancias puede enviar dos veces.
-SIGTERM no espera confirmación del envío en vuelo; el broker reentrega sin ack,
-incluso si el proveedor ya aceptó. Validación parcial: null bloquea prefetch sin ack;
-evento/tipo desconocidos conservan fallback. No se añade persistencia ni se promete
-entrega exactamente una vez. F01 se sustituye por pruebas reales en el workspace/CI;
-F12, F13, F14 y alertas operativas siguen pendientes. Publicación GHCR, CI/CD remoto
-y arranque habitual/remoto no se acreditan con los ensayos locales.
+**Deudas conservadas:** F12 (libro confirmado sin finalizar negocio), F13 (timeouts,
+reproducidos en A sin causa determinada), F14 (listado logístico global) y F15
+(correo: memoria/validación parcial/envíos en vuelo y carrera de resuscripción tras
+fallo inicial). No hay entrega exactamente una vez. Configuración e imágenes
+locales probadas; GHCR, CI/CD remoto y corte habitual/remoto siguen pendientes.
 
 El objetivo confirmado es **Núcleo modular, Boletería, Operación y Trabajador**:
 tres aplicaciones de negocio y un trabajador técnico, con Pagos reutilizable
@@ -2776,3 +2766,270 @@ Lockfile y 18 migraciones originales sin diferencias. La verificación final
 transferir --verificar-existente vuelve a conciliar restauraciones/destino,
 incluyendo encoding/collation, y confirma cero registros nuevos. git diff --check
 y selección explícita excluyen Pedidos y artefactos privados.
+
+## 23. Aplicaciones sobre base única por esquemas: copia A e instalación B
+
+### Base, alcance y conservación
+
+Base publicada/HEAD revisado: **be57961472a0802c90a57d247fb67e96e6717b1b**, rama
+feature/sebastian-arquitectura. Se continúa el trabajo local de esta misma etapa,
+sin reset, stash o descarte. Plan completo, §22, guía del ensayo e instrucciones
+locales consultados. WORKFLOW.md conserva el flujo de ramas; no hay AGENTS.md.
+Solo se migra comportamiento existente. No se completan CU, F12, Operación ni
+correcciones funcionales previas. No se ejecutó iniciar.sh, semillas, prehooks de
+truncado, despliegue habitual ni corte remoto.
+
+Antes de escribir: inventario de contenedores, manifiesto/dumps privados del ensayo
+ensayo-03 y conciliación de referencia aprobada. Se arrancaron **solo los dos PG de
+referencia** para lectura; las ocho bases originales siguen default_transaction_read_only=on.
+La referencia hexacore conciliada también se protege con ese ajuste. Sus filas,
+restauraciones y respaldos se conservan. Redis/RabbitMQ originales permanecen
+parados; ningún consumidor nuevo se conecta a ellos. No se borra volumen, reserva,
+cola o mensaje ni se modifica un TTL para facilitar la prueba.
+
+A es otra base/servidor: **hexacore-base-unica-e2e / hexacore_e2e**. La herramienta
+clonar-referencia.cjs exige huellas/identidad de contenedores/servidores, conciliación,
+puertos y roles fijos. Rechaza marca/proyecto/volúmenes existentes, B como destino
+y cualquier sobrescritura. Restaura un dump custom de la referencia SQL y compara
+los ocho inventarios antes de habilitar escritores. Copia los volúmenes detenidos
+Redis/RabbitMQ montando origen **solo lectura**; conserva hostname Rabbit para Mnesia,
+con otro volumen/red, sin usar su broker original. Metadatos/dump quedan privados.
+
+B es **hexacore-base-vacia-e2e / hexacore_vacia_e2e**, con otro PG/Redis/broker/red/
+volúmenes realmente nuevos. A se detiene antes para reutilizar puertos. Una primera
+sonda técnica había preparado una base vacía sin apps dentro del servidor A; **no
+se usa como evidencia de B**. La ejecución completa B se realiza en proyecto nuevo.
+[Guía reproducible](../../App/backend/test/base-unica/README.md), desde App/backend.
+
+### Configuración y estructura activa
+
+Destino común POSTGRES_HOST/PUERTO/USUARIO/CONTRASENA/**BD** para los ocho módulos.
+Se rechazan por presencia (también vacías) POSTGRES_BASE, POSTGRES_BD_ADMINISTRACION,
+PEDIDOS, VENTAS, CATALOGO, POSTVENTA, ACCESO_QR, PAGOS y DB_HOST/PORT/USER/PASSWORD/NAME.
+No se conserva un fallback silencioso a una base anterior. Se mantiene la conexión
+Nest/TypeORM nombrada, incluido el mismo nombre en registro/opciones/inyecciones.
+
+| Conexión | Esquema | Historial / migraciones |
+|---|---|---|
+| identidad | identidad | migraciones / 3 |
+| alimentos | alimentos | migraciones / 2 |
+| personal-logistica | personal_logistica | migraciones / 2 |
+| entradas-ventas | entradas_ventas | migraciones / 5 |
+| entradas-catalogo | entradas_catalogo | migraciones / 1 |
+| entradas-postventa | entradas_postventa | **migrations** / 1 |
+| entradas-acceso-qr | entradas_acceso_qr | migraciones / 3 |
+| finanzas-pagos | finanzas_pagos | migraciones / 1 |
+
+Cada pool usa schema explícito y search_path **solo su dueño, pg_catalog, extensiones**.
+No hay búsqueda indiscriminada entre los ocho esquemas. Se cualifican nextval de
+Ventas/Postventa. Las consultas ORM y SQL sin calificar resuelven su propietario;
+los triggers de auditoría/historial conservan las restricciones. Las sondas consultan
+su tabla de historial, no solo SELECT 1. synchronize=false, migrationsRun=false,
+installExtensions=false en todas las conexiones. Extensiones en extensiones:
+uuid-ossp 1.1 y pgcrypto 1.3; gen_random_uuid builtin precede al homónimo de extensión.
+
+Un libro: **finanzas_pagos.transacciones_pago**, conservado, sin copias por proceso.
+pg_stat_activity acredita finanzas-pagos:nucleo y finanzas-pagos:boleteria en la misma
+base, además de los otros siete pools. Solo Núcleo tiene rawBody/HMAC/webhook y
+publica por su AMQP compartido. Boletería solo clave pública; Trabajador sin SQL,
+Redis, JWT o Finanzas. No se mueven consumidores/cron de negocio al Trabajador.
+
+La separación de datos/autoridades de Entradas se conserva por esquemas: Ventas
+manda en entrada/propietario/QR/historial; Acceso mantiene proyección e ingreso;
+Catálogo referencias; Postventa publicaciones/transacciones. Outbox, eventos,
+compensaciones y tablas legacy intactos. **No hay nueva atomicidad entre sus
+operaciones ni invalidación inmediata del QR** por compartir base.
+
+### Instalación e historiales: una preparación por despliegue
+
+compartido/persistencia contiene mapa, procedencia original y preparar-base.ts.
+**Las 18 fuentes históricas no cambian**. El adaptador conserva nombres/clases
+lógicas y solo sustituye su cualificación DDL `"public".` por el propietario;
+no transforma parámetros, filas, respaldos o SQL de negocio. Las pruebas verifican
+SHA-256 originales. Postventa mantiene migrations, los otros siete migraciones.
+No se crea un historial global mezclado ni se renumeran registros originales.
+
+`npm run datos:preparar` es la tarea única. Bloqueo asesor **de sesión** en la base
+serializa ejecuciones incluso entre las transacciones de cada grupo. Crea/verifica
+extensiones y esquemas, aplica cada historial en transacción y verifica sus nombres;
+registra/verifica procedencia (ruta/SHA), conservando origen transferido. Cualquier
+error devuelve salida no cero; no hay || true. Una instalación con tablas public se
+rechaza. Después de fallo no se habilitan apps; repetir reconoce grupos ya aplicados.
+No se pretende una sola transacción para los ocho grupos, ni migración online.
+
+Compose usa preparacion-base, imagen Núcleo, sin listener ni claves/Redis/AMQP.
+Núcleo/Boletería esperan service_completed_successfully. Se retiran migraciones de
+Dockerfiles/helpers de arranque; ambos main arrancan directamente. Alias
+migracion:*:correr delegan al preparador central; se retiran reversores individuales.
+Los CLI de estado conservan cada conexión/esquema. Trece auxiliares SQL de los
+guiones HTTP aún referenciados por npm/CI también usan base común y search_path
+propietario, manteniendo las aserciones de negocio. Se verifica solo su función
+SQL con SELECT base/schema en B; no se ejecutan guiones completos destructivos.
+Iniciar.sh queda preparado para
+base única, sin semilla por defecto y con guarda contra instalación anterior;
+--datos-demo npm exige instalación local vacía/procedencia nueva y propaga errores.
+Se retira carga automática de SQL antiguos. Exportación explícita solo lectura,
+archivo custom privado/nuevo. **Ninguno de esos scripts habituales se ejecutó.**
+
+La referencia histórica sigue reproducible sin duplicar negocio: historico/ separa
+Compose/initdb de ocho bases; construir.cjs usa git archive del commit be57961 fuera
+del repositorio e imágenes fijadas. --levantar rechaza un proyecto existente;
+--verificar comprobó objeto Git/configuración. No se volvió a construir/arrancar
+esa fuente sobre sus datos congelados. CI prepara ese recorrido en runner nuevo,
+luego transferencia → A → B, con tareas pesadas secuenciales. No se acredita
+workflow remoto ni publicación GHCR por preparar su YAML o publicar esta rama.
+
+### Lectura, operaciones, mensajes y conciliación
+
+A: copia idéntica antes de escrituras. Preparación: **0 migraciones aplicadas**,
+ocho historiales reconocidos. Lectura real con ocho DataSources/ORM de cuentas,
+pedidos, compras, propietarios, QR, personal, auditoría y libro (18 movimientos
+conservados). showMigrations=false, base/schema/search_path efectivos correctos,
+ninguna tabla public. No se sustituye la referencia por semillas.
+
+B: primera preparación **18 aplicadas**. Antes de fixtures: **49 tablas, 22 filas**
+(18 entradas de historial y cuatro roles), cero otras filas de negocio/public;
+procedencia instalacion-vacia. Dos tareas centrales concurrentes en cada A/B:
+**0 reaplicaciones**, 18 procedencias y rechazo no cero de configuración heredada.
+Apps levantadas simultáneamente sin DDL desde sus bootstraps.
+
+Cada A/B ejecuta el mismo escenario de **46 comprobaciones** con UUID propios:
+login/perfil/auditoría, alimentos, promoción/compra/cancelación/reembolso,
+reventa/transferencia/QR/ingreso, asignación, solicitud/revisión y asistencia.
+Las regresiones añaden concurrencia de inventario/reventa/ingreso, autorización,
+revocación, pagos inciertos/HMAC y reinicio/replay. Se conserva el consumo único de
+turno. Los triggers rechazan DELETE en la copia con SQLSTATE P0001 (Ventas) y 23001
+(Identidad), dentro de rollback. Secuencias de transacción y restricciones se
+usan en operaciones reales; la comprobación exhaustiva de las 16 secuencias sobre
+copia sigue en §22, sin modificar la referencia conciliada.
+
+Comparación posterior por PK/fila completa exige todos los **247 registros originales**
+presentes. Cambios permitidos y comprobados en 14: dos fechas de acceso de cuentas
+del ensayo; cinco pedidos/reservas vencidos (cinco filas de cada tabla); una compra
+PENDIENTE→EXPIRADA/motivo CU-001B y un contador/fecha de localidad. Son efectos de
+login y temporizadores existentes sobre la copia, **no discrepancias de transferencia**.
+Los demás registros originales, incluidos libro, QR, propietarios, auditoría y
+migraciones, siguen idénticos. No se reparan inconsistencias ni se borran filas para
+igualar. La referencia original y restauraciones vuelven a conciliar al cierre.
+
+RabbitMQ original conserva sus siete pendientes. En la copia A el Trabajador envía
+el correo pendiente al simulador; se acredita además registro real nuevo desde
+Identidad. pedidos.establecimientos conserva pendientes y **cero consumidores**:
+no se construye la recepción ausente. Se comprueban siete colas con consumidores
+activos esperados y cierre sin consumidores; la carrera F15 observada se detalla
+abajo. Redis copiado conserva el estado disponible y caduca por sus TTL reales.
+No se purga ni se reconstruye el inventario anterior; solo inventario de UUID nuevos.
+
+### Comandos realmente ejecutados y resultados
+
+Node **v22.22.3**, npm **11.6.3**, seleccionados en este host con
+`export PATH=/private/tmp/hexacore-cu011-node22/node_modules/.bin:$PATH`.
+Alternativa reproducible nvm según .nvmrc. Docker 29.7.2 / Compose 5.3.1 /
+PostgreSQL 16.15. Evidencias privadas /private/tmp/hexacore-base-unica y
+.evidencia-e2e, ignoradas por Git. No se versionan datos, dumps, RDB, JWT ni correos.
+En macOS se usa caffeinate -dimsu para evitar suspensión, sin cambiar timeouts/TTL.
+Comandos desde App/backend, salvo Git/bash indicados:
+
+| Comando | Resultado real |
+|---|---|
+| git status --short; git rev-parse HEAD; git branch --show-current | Rama/base correctas; trabajo local preservado |
+| ensayo:datos -- conciliar --salida=.../ensayo-03 | Referencia original aprobada antes y al cierre |
+| datos:clonar-pruebas -- .../ensayo-03 | A restaurado e inventarios iguales antes de apps; copia de volúmenes detenidos |
+| datos:preparar con POSTGRES_* exclusivos | A 0 aplicadas; B 18 (también sondeo técnico vacío previo, separado de B real) |
+| datos:lectura-transferida; node test/base-unica/lectura-vacia.cjs | Lectura anterior a escrituras A aprobada; B 49 tablas/22 filas iniciales |
+| datos:verificar-preparacion, A y B | Dos tareas concurrentes por base, 0 reaplicadas; variable heredada rechazada |
+| npm run lint; build; build:boleteria; build:trabajador | Aprobados; final después de corregir tipos del arnés/adaptador |
+| REDIS_HOST=127.0.0.1 REDIS_PUERTO=16384 REDIS_INVENTARIO_PRUEBAS_URL=redis://127.0.0.1:16384 npm test -- --runInBand | **830/830, 57 suites**, 13,199 s; cero omisiones |
+| test:imagen:infra (A, después B con POSTGRES_BD_PRUEBAS=hexacore_vacia_e2e) | Tres imágenes construidas/saludables, preparación salida 0 y gateway arrancado en cada recorrido |
+| datos:flujos, una vez A y otra B | **46 comprobaciones en cada recorrido**, UUID nuevos, sin semillas |
+| datos:ejecucion, A y B | Final **5/5** cada uno; A tuvo un intento **4/5** por carrera F15, conservado |
+| test:imagen; test:boleteria:imagen, A y B | Ambos smokes aprobados en cada base; upstream único por programa, turno/QR/revocación |
+| test:e2e, A y B, con imágenes detenidas | **73/73** cada uno, 4 suites: 56,182 s A / 57,112 s B |
+| test:boleteria, A y B | **23/23** cada uno, 2 suites: 20,233 s A / 37,409 s B |
+| test:pagos:modulo, A y B | Módulo Nest real, sin controladores/transporte interno; pool/esquema correctos |
+| test:pagos:convivencia, A y B | **5/5** cada uno; 20,574 s A / 61,639 s B; reinicio/referencias/libro compartido |
+| test:pagos:contratos, A y B | **13/13** cada uno; 24,094 s A / 26,651 s B; webhook/estados/reinicio |
+| test:trabajador:infra; test:trabajador | Intento 1 **18/20**; repetición íntegra **20/20**, 53,244 s, ver suspensión abajo |
+| test:trabajador:identidad, A y B | **3/3** cada uno, 2,759 s A / 8,541 s B; cinco correos reales al simulador |
+| node test/base-unica/comparar-conservados.cjs | Todas las PK originales presentes; solo 14 transiciones esperadas; libro/historiales iguales |
+| node test/base-unica/cerrar-aplicaciones.cjs; test:limpiar | SIGTERM sin SIGKILL/OOM, pools/consumidores cerrados; STOP conserva volúmenes |
+| npm run verificar:infra | Ocho mezclas habituales, cuatro A/B, dos de correo y destino histórico aprobados; fronteras comprobadas |
+| ensayo:historico -- --verificar; parseo js-yaml CI | Configuración/commit histórico y YAML aprobados; sin arrancar escritores originales |
+| python3 test/base-unica/comprobar-auxiliares.py | **13 auxiliares SQL**, consultas de solo lectura base/schema en B; guiones HTTP completos no ejecutados |
+| bash -n iniciar.sh/exportar-datos-demo.sh; node --check CJS; git diff --check | Comprobaciones estáticas de cierre; sin ejecutar scripts habituales |
+
+No hay skip/passWithNoTests ni retorno silencioso. La suite Redis ejecuta sus
+aserciones. No se repiten interfaces ni scripts históricos destructivos. Las 12
+pruebas de fallos/restauración del ensayo anterior no se vuelven a ejecutar contra
+la referencia que debe conservarse; su conciliación sí se repite. La reconstrucción
+histórica completa en runner nuevo y el CI remoto quedan preparados, no ejecutados
+en este host sobre sus recursos congelados.
+
+### Intentos fallidos y deudas: no son éxitos ni correcciones de negocio
+
+- Compilación inicial bloqueada por MixedList de Alimentos/constructor adaptado;
+  se infiere la lista concreta. Otra compilación TS4094 por tipo anónimo con método
+  privado: retorno explícito MigrationInterface. Ambas compilaciones finales pasan.
+- Primera unitaria **811/820**, nueve fallos de fake de salud sin options.schema;
+  se añade configuración al doble, manteniendo aserciones. **820/820** después;
+  diez casos nuevos de namespace/procedencia elevan el final a **830/830**.
+- Un intento de prueba de lectura HTTP conservada pidió GET /pedidos/:id, ruta
+  inexistente previa (404); usa la consulta real de establecimiento con login Personal,
+  sin implementar esa ruta. Comparador inicial rechazó fechas de login/vencimientos:
+  se enumeran campos y se exigen transiciones/motivos reales, sin ignorar otras diferencias.
+- Una edición inicial de YAML local perdió variables del Núcleo; config resuelta
+  detectó KeyError PAGOS_PROVEEDOR_URL antes de ejecutar el entorno habitual.
+  Se corrige el bloque anclado; las ocho mezclas finales pasan. Intentos de herramientas
+  con ruta incorrecta no arrancaron pruebas B/observador; se corrigieron y repitieron.
+  En el chequeo de auxiliares SQL, el primer intento esperaba string del helper
+  CU-011 que devuelve filas/columnas; se conserva su contrato y se comprueba la
+  matriz exacta. Repetición: 13 auxiliares aprobados, sin ejecutar suites completas.
+- Trabajador intento 1 **18/20**: dos fallos con duraciones de 97,035 s y 217,251 s.
+  pmset confirma suspensión del equipo por 97 y 217 s en esos intervalos. Se repite
+  íntegro con caffeinate, sin cambiar suite/límites: **20/20**. El primer intento
+  sigue registrado como fallido; no demuestra regresión SQL en un proceso sin SQL.
+- **F15 adicional observado:** al reiniciar A, ECONNRESET inicial; conexión recuperada
+  y dos logs Escuchando cuentas.correos (20:21:29 y 20:21:40 UTC), dos consumer tags
+  en **la misma conexión/canal**. La comprobación de unicidad falla **4/5**. La lógica
+  de Comunicaciones no tiene diferencias respecto a be57961: callback de reconexión
+  y timer de suscripción pueden coincidir. No se corrige esta deuda funcional previa.
+  Reinicio solo del Trabajador con broker disponible: **5/5**, un consumidor. No se
+  atribuye unicidad bajo toda secuencia de reconexión ni entrega exactamente una vez.
+- **F13 reaparece en imagen A**, UTC 19:29:13 y 19:34:06: Query read timeout /
+  EXPIRACION_RESERVAS_FALLIDA; PostgreSQL registra canceling statement due to statement
+  timeout. Consulta de reservas_inventario JOIN pedidos, estados activos/pendientes,
+  expira_en<=ahora, ORDER BY pedido_id. Logs de aplicación y PG preservados. Observador
+  posterior A: **46 muestras**, 19:35:44–19:36:47 UTC, máximo ocho conexiones, cero
+  pg_blocking_pids no vacíos; **no captura los instantes del fallo**, no acredita causa.
+  B: **33 muestras**, 20:29:04–20:30:42 UTC, máximo 20 conexiones, cero bloqueadas.
+  Captura pg_stat_activity, wait_event, locks, CPU/memoria y logs de sus recursos;
+  VM Docker informa 2,844 GiB disponibles. No se aumentan límites ni se proclama solución.
+- **F12/F14 y resto de F15 siguen pendientes.** Los contratos comprueban el libro
+  APROBADO/publicación sin finalizar pedido incierto. Las proyecciones no acreditan
+  QR instantáneo; el listado logístico sigue global. No se añade recuperación,
+  persistencia de deduplicación, alertas operativas ni negocio ausente.
+
+### Corte pendiente y terminación de esta entrega
+
+Configuración preparada e imágenes/ejecución **aisladas comprobadas**, tanto A como B.
+El entorno habitual conserva destinos y contenedores anteriores. No se acredita
+arranque remoto, CI remoto, publicación GHCR ni cumplimiento RNF de disponibilidad.
+Antes del corte habitual: autorización operativa, pausa común de escritores/consumos/
+cron/callbacks, inventario de Redis/Rabbit y tratamiento de pendientes con sus dueños,
+respaldos/restauración/conciliación y copia de destino; preparación única y lectura
+antes de habilitar tráfico. No asumir coherencia global por varios pg_dump, ni purgar
+mensajes o resolver pagos inciertos por suposición. Las ventanas existentes se conservan.
+
+Reversión antes de escrituras: destinos/versiones/configuración anteriores coordinados,
+originales inmóviles y broker/Redis conservados. Después de nuevas escrituras requiere
+copia inversa/conciliación autorizada; volver de imagen no revierte datos. No se ensaya
+esa transformación inversa en este hito. Cada integrante conserva sus CU pendientes.
+
+Cierre: proyectos A/B/correo detenidos, volúmenes conservados; los dos PG de referencia
+vuelven a su estado previo detenido después de conciliar. Los 29 contenedores habituales
+y los nueve del ensayo anterior se contrastan por ID/nombre/estado con el inventario
+inicial. Pedidos queda fuera del commit, SHA-256
+7a18d9aff7cb03e42f0cf8c311ebbed2d4a6c4278e8c21472349425b13856346.
+Lockfile y 18 fuentes originales sin diferencias. Commit con selección explícita:
+`refactor(datos): conectar aplicaciones a base unica por esquemas`.
+Publicación solo en origin/feature/sebastian-arquitectura, sin integrar develop/main.

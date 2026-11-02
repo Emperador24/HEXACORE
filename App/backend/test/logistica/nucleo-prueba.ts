@@ -1,3 +1,4 @@
+const { base: basePruebas, opcionesPg } = require('../base-unica/conexiones.cjs');
 import { ChildProcess, spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { mkdirSync, writeFileSync, rmSync } from 'node:fs';
@@ -30,20 +31,20 @@ export class NucleoPrueba {
   private readonly previos = new Map<string, Set<string>>();
   private readonly cuentas: string[] = [];
   private readonly tablas = ['notificaciones', 'registros_asistencia', 'solicitudes_cambio_turno', 'turnos', 'zonas_evento', 'empleados'];
-  private readonly redis = new Redis({ host: '127.0.0.1', port: 16382, lazyConnect: true, retryStrategy: () => null });
+  private readonly redis = new Redis({ host: '127.0.0.1', port: 16384, lazyConnect: true, retryStrategy: () => null });
 
   constructor(private readonly nombre: string) {
     for (const [etiqueta, fuente] of [['identidad', this.identidad], ['alimentos', this.alimentos], ['logistica', this.datos]] as const) {
-      fuente.setOptions({ extra: { application_name: `observador-${etiqueta}` } });
+      fuente.setOptions({ extra: { ...(fuente.options as {extra?: Record<string,unknown>}).extra, application_name: `observador-${etiqueta}` } });
     }
   }
 
   async iniciar(): Promise<void> {
-    expect(this.datos.options).toMatchObject({ host: '127.0.0.1', port: 15435,
-      username: 'cu011_e2e', database: 'eventos_emergencias_nucleo_e2e', synchronize: false });
+    expect(this.datos.options).toMatchObject({ host: '127.0.0.1', port: 15439,
+      username: 'cu011_e2e', database: basePruebas, synchronize: false });
     expect(process.version).toBe('v22.22.3');
     for (const fuente of [this.identidad, this.alimentos, this.datos]) {
-      await fuente.initialize(); await fuente.runMigrations();
+      await fuente.initialize();
     }
     for (const tabla of this.tablas) {
       this.previos.set(tabla, new Set((await this.datos.query(`SELECT id FROM "${tabla}"`)).map((r: { id: string }) => r.id)));
@@ -89,7 +90,7 @@ export class NucleoPrueba {
   }
 
   private async conexionesRabbit(): Promise<unknown[]> {
-    const respuesta = await fetch('http://127.0.0.1:16775/api/connections', {
+    const respuesta = await fetch('http://127.0.0.1:16779/api/connections', {
       headers: { Authorization: `Basic ${Buffer.from('cu011_e2e:cu011_e2e').toString('base64')}` }, signal: AbortSignal.timeout(3000) });
     expect(respuesta.status).toBe(200);
     return ((await respuesta.json()) as { client_properties: { connection_name?: string } }[])
@@ -97,7 +98,7 @@ export class NucleoPrueba {
   }
 
   private async consumidores(): Promise<number> {
-    const respuesta = await fetch('http://127.0.0.1:16775/api/queues/cu011/nucleo-e2e.turnos.cambios', {
+    const respuesta = await fetch('http://127.0.0.1:16779/api/queues/cu011/nucleo-e2e.turnos.cambios', {
       headers: { Authorization: `Basic ${Buffer.from('cu011_e2e:cu011_e2e').toString('base64')}` }, signal: AbortSignal.timeout(3000) });
     expect(respuesta.status).toBe(200);
     return ((await respuesta.json()) as { consumers: number }).consumers;

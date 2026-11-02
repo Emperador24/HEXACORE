@@ -15,25 +15,25 @@ entradas/
   compartido/  configuración del programa, adaptador local de Pagos, guardas, QR y concurrencia
 ```
 
-Cuatro bases conservadas: entradas_mercado_secundario, catalogo, postventa y
-acceso_qr. Diez migraciones originales intactas (5/1/1/3); `synchronize=false` y
-`migrationsRun=false`. Postventa mantiene su historial **migrations**. No se
-trasladan datos entre bases ni se borran las tablas históricas de Ventas.
-La consolidación a una base por esquemas sigue siendo obligatoria y posterior.
+Cuatro esquemas conservados: entradas_ventas, entradas_catalogo,
+entradas_postventa y entradas_acceso_qr, dentro de POSTGRES_BD común.
+Diez migraciones originales intactas (5/1/1/3); synchronize=false y
+migrationsRun=false. Postventa mantiene **migrations**, los otros migraciones.
+No se fusionan las tablas legacy de Ventas con las de otros propietarios.
 
-La configuración usa tokens propios por parte; POSTGRES_BD_VENTAS/CATALOGO/
-POSTVENTA/ACCESO_QR eligen cada base, también en la CLI. POSTGRES_BASE no se
-usa en estos componentes: una variable antigua no debe apuntar las cuatro
-conexiones a una sola base. Los defaults conservan las cuatro bases originales.
-TypeORM usa entradas-ventas, entradas-catalogo, entradas-postventa y
-entradas-acceso-qr en fábrica, registro e inyecciones. Todos mantienen sus pools
-actuales; esta entrega no dimensiona ni certifica réplicas.
+La configuración usa tokens propios y el destino POSTGRES_* común. Se rechazan
+POSTGRES_BASE, POSTGRES_BD_* por módulo y DB_* heredadas. Cada pool tiene
+search_path limitado a su esquema, pg_catalog y extensiones. TypeORM conserva
+entradas-ventas, entradas-catalogo, entradas-postventa y entradas-acceso-qr en
+fábrica, registro e inyecciones. Preparacion-base es la única tarea de despliegue
+para los ocho historiales; ningún main ni Dockerfile aplica migraciones.
+No se dimensionan ni certifican réplicas en esta etapa.
 
 Redis, conexión AMQP, JWT, generador QR, adaptador local de Pagos y gestor de
 concurrencia tienen un registro por proceso. Dos políticas de sesión conservan
 sus diferencias anteriores (Cola/Acceso verifican además iat/exp/jti y cabecera
 estricta); ninguna firma tokens. Identidad conserva la firma. Un scheduler
-registra los dos cron; permanecen dos outbox porque pertenecen a bases distintas.
+registra los dos cron; permanecen dos outbox porque mantienen autoridades/proyecciones distintas.
 El Redis común se cierra después de drenar cron, outbox y consumidores.
 
 Postventa importa el contrato `ventas/api-ventas.ts`, no sus entidades ni
@@ -52,8 +52,8 @@ ni abono real al vendedor: los consumidores de reventa aún registran esas accio
 **Ventanas conservadas:** QR y estado de ingreso en Ventas siguen siendo
 proyecciones/eventos. Después de transferir puede persistir temporalmente el QR
 anterior en Acceso; una publicación puede figurar EXPIRADA antes de liberar su
-entrada. No hay atomicidad entre bases ni garantía inmediata por compartir
-proceso. Fallar una compensación puede requerir intervención; no se añade un
+entrada. Compartir base/proceso no cambia los límites de sus transacciones ni
+prueba invalidación inmediata. Fallar una compensación puede requerir intervención; no se añade un
 recuperador en este traslado. F12/F13/F14 permanecen pendientes.
 
 Instalación/arranque/migraciones: [workspace](../../README.md).
@@ -63,7 +63,7 @@ pero algunos resiembran/truncan datos habituales: no forman parte de esa ejecuci
 
 PagosModule se importa por su API pública desde el adaptador de Entradas. Ventas y
 Postventa mantienen solicitante=entradas, claves y referencias originales. La quinta
-conexión finanzas-pagos apunta al mismo libro pagos que Núcleo; no añade endpoints.
+conexión finanzas-pagos apunta al mismo libro finanzas_pagos que Núcleo; no añade endpoints.
 Solo Núcleo recibe el webhook. La migración financiera es una tarea única previa
 a los dos programas. Repetir un pago de compra PAGADA o cancelar una CANCELADA
 mantiene el 409 existente y no duplica cobro/entradas/reembolso; la API financiera

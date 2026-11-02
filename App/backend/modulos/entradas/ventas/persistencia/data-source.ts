@@ -1,3 +1,4 @@
+import { opcionesEsquema, opcionesSesion, migracionesEnEsquema } from '../../../../compartido/persistencia/esquemas';
 import { CONEXION } from './conexion';
 import { config as cargarEnv } from 'dotenv';
 import { DataSource, DataSourceOptions } from 'typeorm';
@@ -54,13 +55,14 @@ export function opcionesDataSource(config: ConfiguracionServicio): DataSourceOpt
   return {
     name: CONEXION,
     type: 'postgres',
+    ...opcionesEsquema('entradas-ventas'),
     host: config.postgres.host,
     port: config.postgres.puerto,
     username: config.postgres.usuario,
     password: config.postgres.contrasena,
     database: config.postgres.base,
     entities: ENTIDADES,
-    migrations: MIGRACIONES,
+    migrations: migracionesEnEsquema(MIGRACIONES, 'entradas-ventas'),
     migrationsTableName: 'migraciones',
 
     // NUNCA `synchronize: true`, ni siquiera en desarrollo.
@@ -73,18 +75,18 @@ export function opcionesDataSource(config: ConfiguracionServicio): DataSourceOpt
     // desaparecerían sin aviso, que es la peor forma de perderlas.
     synchronize: false,
 
-    // Las migraciones se corren a mano (`npm run migracion:correr`), no al
+    // La tarea central (`npm run datos:preparar`) aplica migraciones, no el
     // arrancar: con varias réplicas del servicio (ASR-06) arrancando a la vez,
     // `migrationsRun` las haría competir por migrar la misma base.
     migrationsRun: false,
 
-    extra: { application_name: 'boleteria-ventas' },
+    extra: { ...opcionesSesion('entradas-ventas'), application_name: 'boleteria-ventas' },
     logging: config.entorno === 'development' ? ['error', 'warn', 'migration'] : ['error'],
   };
 }
 
 /**
- * DataSource para la CLI de TypeORM (`migration:run`, `migration:revert`).
+ * DataSource para consultar el historial mediante la CLI (`migration:show`).
  *
  * Dentro de la aplicación NO se usa esta instancia: allí la crea Nest a través
  * de `PersistenciaModule`, para que el ciclo de vida de la conexión lo gestione

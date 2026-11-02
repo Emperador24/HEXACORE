@@ -1,3 +1,4 @@
+import { cargarDestinoPostgres } from '../../../../compartido/config/postgres';
 import { cargarConfiguracionProceso } from '../../../../compartido/config/configuracion';
 import { cargarClavePublica, ClavePublica } from '../../../../compartido/seguridad/clave-publica';
 
@@ -77,14 +78,9 @@ export function cargarConfiguracion(): ConfiguracionServicio {
     puerto: cargarConfiguracionProceso().puerto,
     prefijoApi: texto('PREFIJO_API', 'api/v1'),
     postgres: {
-      host: texto('POSTGRES_HOST', 'localhost'),
-      puerto: entero('POSTGRES_PUERTO', 5432),
-      usuario: texto('POSTGRES_USUARIO', 'hexacore'),
-      contrasena:
-        entorno === 'production' ? requerido('POSTGRES_CONTRASENA') : texto('POSTGRES_CONTRASENA', 'hexacore'),
+      ...cargarDestinoPostgres(),
       maxConexiones,
       esperaMaximaMs,
-      base: texto('POSTGRES_BD_PEDIDOS', 'pedidos'),
     },
     rabbitmq: { url: texto('RABBITMQ_URL', 'amqp://hexacore:hexacore@localhost:5672') },
     redis: {

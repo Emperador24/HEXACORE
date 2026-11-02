@@ -20,7 +20,7 @@ const mapa = [
 const q = s => '"' + s.replaceAll('"', '""') + '"';
 const lit = s => "'" + s.replaceAll("'", "''") + "'";
 const docker = (args, opciones = {}) => execFileSync('docker', args, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, ...opciones });
-const composeOrigen = ['compose', '-p', proyectoOrigen, '-f', join(raiz, 'test/docker-compose.e2e.yml'), '-f', join(raiz, 'test/docker-compose.imagen.yml')];
+const composeOrigen = ['compose', '-p', proyectoOrigen, '-f', join(raiz, 'test/consolidacion/historico/docker-compose.e2e.yml'), '-f', join(raiz, 'test/consolidacion/historico/docker-compose.imagen.yml')];
 const composeDestino = ['compose', '-p', proyectoDestino, '-f', join(__dirname, 'docker-compose.yml')];
 function validarInspeccion(c, proyecto, puerto) {
   assert.equal(c.Config.Labels['com.docker.compose.project'], proyecto, 'Proyecto no autorizado');

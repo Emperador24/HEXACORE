@@ -1,3 +1,4 @@
+const { base: basePruebas, opcionesPg } = require('../base-unica/conexiones.cjs');
 const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const { randomUUID } = require('node:crypto');
@@ -7,7 +8,7 @@ const nucleo = require('../proceso-nucleo.cjs');
 const trabajador = require('./proceso.cjs');
 const email = `identidad-${randomUUID()}@example.test`, contrasena = 'identidad correo aislado', nueva = 'otra frase para pruebas';
 let core, worker, token, observador, canalObservador;
-const datos = new Client({ host: '127.0.0.1', port: 15435, user: 'cu011_e2e', password: 'cu011_e2e', database: 'identidad_cu011_e2e' });
+const datos = new Client(opcionesPg('identidad'));
 async function pedir(ruta, body, auth) {
     const r = await fetch('http://127.0.0.1:13087/api/v1/' + ruta, { method: body === undefined ? 'GET' : 'POST', headers: { 'Content-Type': 'application/json', ...(auth ? { Authorization: 'Bearer ' + auth } : {}) }, body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(10000) });
     return { status: r.status, body: await r.json() };

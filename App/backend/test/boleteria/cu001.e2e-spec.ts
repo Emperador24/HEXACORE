@@ -1,3 +1,5 @@
+import { opcionesSesion } from '../../compartido/persistencia/esquemas';
+const { base: basePruebas, opcionesPg } = require('../base-unica/conexiones.cjs');
 import 'reflect-metadata';
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
@@ -75,11 +77,11 @@ describe('CU-001 HTTP + PostgreSQL + RabbitMQ reales', () => {
   beforeAll(async () => {
     const config = cargarConfiguracion();
     // No aceptar una conexión fuera del proyecto exclusivo, ni para los fixtures.
-    expect(config.postgres.base).toBe('entradas_e2e');
+    expect(config.postgres.base).toBe(basePruebas);
 
-    datos = new DataSource({...opcionesDataSource(config),extra:{application_name:'observador-cu001'}});
+    datos = new DataSource({...opcionesDataSource(config),extra:{...opcionesSesion('entradas-ventas'),application_name:'observador-cu001'}});
     await datos.initialize();
-    await datos.runMigrations();
+
 
     app = await procesos.iniciar();
     base = app.urls.ventas;
@@ -161,7 +163,7 @@ describe('CU-001 HTTP + PostgreSQL + RabbitMQ reales', () => {
   it('las migraciones dejan el esquema de la venta primaria en pie', async () => {
     const tablas = ['compras', 'localidades_evento', 'codigos_promocionales', 'usos_promocion', 'ingresos', 'cancelaciones'];
     const filas: { table_name: string }[] = await datos.query(
-      `SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name = ANY($1)`,
+      `SELECT table_name FROM information_schema.tables WHERE table_schema = 'entradas_ventas' AND table_name = ANY($1)`,
       [tablas],
     );
     expect(filas.map((f) => f.table_name).sort()).toEqual([...tablas].sort());

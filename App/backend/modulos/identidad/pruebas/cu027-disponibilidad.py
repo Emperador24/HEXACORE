@@ -63,8 +63,8 @@ def login(email):
 
 
 def sql(consulta):
-    return subprocess.run(['docker', 'exec', 'hexacore-postgres', 'psql', '-U', 'hexacore',
-                           '-d', 'administracion', '-tAc', consulta],
+    return subprocess.run(['docker', 'exec', '-e', 'PGOPTIONS=-c search_path=identidad,pg_catalog,extensiones', os.environ.get('POSTGRES_CONTENEDOR', 'hexacore-postgres'), 'psql', '-U', os.environ.get('POSTGRES_USUARIO', 'hexacore'),
+                           '-d', os.environ.get('POSTGRES_BD', 'hexacore'), '-tAc', consulta],
                           capture_output=True, text=True, check=True).stdout.strip()
 
 
@@ -192,7 +192,7 @@ def sin_inanicion():
     else:
         assert p95 < 2000, f'el 5 % más lento esperó {p95:.0f} ms: el pool se está quedando sin conexiones'
     en_transaccion = sql("""SELECT count(*) FROM pg_stat_activity
-                            WHERE datname = 'administracion' AND state = 'idle in transaction'""")
+                            WHERE datname = current_database() AND application_name = 'nucleo-identidad' AND state = 'idle in transaction'""")
     assert en_transaccion == '0', f'{en_transaccion} conexiones retenidas en transacción tras el pico'
 
 

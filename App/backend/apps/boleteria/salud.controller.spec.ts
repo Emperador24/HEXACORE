@@ -23,7 +23,11 @@ describe('SaludController', () => {
         : jest.fn().mockRejectedValue(new Error('sin conexión')),
     } as unknown as DataSource;
     const redis = { ping: opciones.redis ? jest.fn().mockResolvedValue('PONG') : jest.fn().mockRejectedValue(new Error('Redis caído')) } as unknown as Redis;
-    const bases = [0,1,2,3,4].map(i => opciones.baseCaida === undefined || opciones.baseCaida === i ? fuente : {query:jest.fn().mockResolvedValue([])} as unknown as DataSource);
+    const esquemas=['entradas_ventas','entradas_catalogo','entradas_postventa','entradas_acceso_qr','finanzas_pagos'];
+    const bases = esquemas.map((schema,i) => ({
+      options:{schema,migrationsTableName:i===2?'migrations':'migraciones'},
+      query:opciones.baseCaida === undefined || opciones.baseCaida === i ? fuente.query : jest.fn().mockResolvedValue([]),
+    } as unknown as DataSource));
     const scheduler = {getCronJobs:()=>new Map()} as unknown as SchedulerRegistry;
     const rabbitmq = { conectado: opciones.rabbitmq } as unknown as ConexionRabbitMq;
     return new SaludController(bases[0], bases[1], bases[2], bases[3], bases[4], redis, rabbitmq, scheduler);

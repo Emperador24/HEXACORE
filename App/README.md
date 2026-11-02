@@ -5,10 +5,10 @@ y [resultados](../Documentation/Work/ESTADO-MIGRACION.md).
 
 Identidad, Alimentos y Personal/Logística comparten **un único Núcleo NestJS** en
 [backend](backend/README.md), con Node 22.22.3, manifiesto/lockfile comunes y tres
-conexiones de negocio a sus bases actuales, más la financiera compartida. Las rutas públicas `/api/v1` de cuentas,
+conexiones de negocio a sus esquemas, más la financiera compartida. Las rutas públicas `/api/v1` de cuentas,
 sesiones, administración de cuentas, pedidos y logística se conservan mediante el gateway.
 Boletería reúne las cinco implementaciones de Entradas en otro proceso :3001,
-con cuatro bases y diez migraciones conservadas. Se retiran los servidores
+con cuatro esquemas y diez migraciones conservadas. Se retiran los servidores
 directos anteriores. Ambos usan el módulo Pagos y el mismo libro; solo Núcleo recibe el webhook. Las rutas de web/móvil en el gateway permanecen iguales.
 
 ```text
@@ -35,13 +35,15 @@ App/
 
 Este es un paso hacia Núcleo, Boletería, Operación y Trabajador. Pagos es reutilizable sin servidor; Personal/Logística ya pertenece al Núcleo; Operación sigue pendiente; Trabajador ejecuta solo el correo ya implementado. Los dominios sin
 backend o con pantallas simuladas siguen pendientes. No hay MongoDB desplegado
-ni se consolida aquí la información de las bases de desarrollo.
+ni se modifican aquí las bases habituales. La configuración activa usa una sola
+base con ocho esquemas, comprobada sobre copia transferida y base vacía aisladas;
+el corte del entorno habitual sigue pendiente.
 
 Seguir [las instrucciones del workspace](backend/README.md) para instalar,
 migrar y arrancar Núcleo/Boletería y el [Trabajador](backend/modulos/comunicaciones/README.md). Integración exclusiva: [Núcleo](backend/test/README.md)
 y [Boletería](backend/test/boleteria/README.md), sin datos habituales. Compose
 ejecuta Núcleo, Boletería y Trabajador, más una tarea única de migración
-del libro pagos. Todo backend activo comparte manifiesto/lockfile en App/backend. Se mantiene el flujo de [WORKFLOW.md](../WORKFLOW.md).
+de los ocho historiales (18 migraciones). Todo backend activo comparte manifiesto/lockfile en App/backend. Se mantiene el flujo de [WORKFLOW.md](../WORKFLOW.md).
 
 Los responsables funcionales se conservan: Identidad y Alimentos, Sebastián;
 Boletería, Daniel y Samuel; Personal/Logística y Operación, Samuel y Diego según

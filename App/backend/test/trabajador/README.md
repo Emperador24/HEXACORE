@@ -20,7 +20,7 @@ npm run test:trabajador           # compila y ejecuta 20 escenarios reales
 npm run test:trabajador           # mismos recursos, sin purgar ni vaciar
 npm run test:infra                # PG/Redis/pasarela exclusivos para Núcleo
 npm run test:trabajador:identidad # 3 escenarios con los cinco correos de Identidad
-REDIS_HOST=127.0.0.1 REDIS_PUERTO=16382 REDIS_INVENTARIO_PRUEBAS_URL=redis://127.0.0.1:16382 npm test -- --runInBand
+REDIS_HOST=127.0.0.1 REDIS_PUERTO=16384 REDIS_INVENTARIO_PRUEBAS_URL=redis://127.0.0.1:16384 npm test -- --runInBand
 npm run test:e2e
 npm run test:boleteria
 npm run verificar:infra
@@ -78,7 +78,7 @@ SQL/Redis y claves deliberadamente inutilizables para confirmar independencia.
 ## Identidad e imagen
 
 Los **3 escenarios de Identidad** arrancan un Núcleo compilado con las bases/Redis
-propias de hexacore-backend-e2e y el broker exclusivo del correo. No se utilizan
+propias de la base única de pruebas (A o B seleccionada) y el broker exclusivo del correo. No se utilizan
 migraciones/semillas de desarrollo. Crean una cuenta UUID por corrida, registran
 con Trabajador detenido, inspeccionan el mensaje persistente real (contrato/ID),
 lo reencolan y arrancan Trabajador: verifican correo/enlace/activación/login.
@@ -93,6 +93,7 @@ con cero consumidores, reinicia la misma imagen y verifica contenido/entrega ún
 observada. No certifica exactamente una vez, réplicas en producción ni correo real.
 
 Logs y módulos cargados quedan en .evidencia-e2e (ignorada). Limpieza solo con los
-dos comandos anteriores: proyectos propios, sus redes y volúmenes. Las imágenes
+dos comandos anteriores: detienen proyectos propios y conservan redes/volúmenes. Las imágenes
 locales no equivalen a publicación GHCR o CI/CD remotos. F12/F14/alertas operativas
-permanecen fuera de alcance; consolidación de datos es otra entrega.
+permanecen fuera de alcance. El Trabajador sigue sin SQL tras consolidar las
+conexiones de Núcleo/Boletería; ver ../base-unica/README.md.

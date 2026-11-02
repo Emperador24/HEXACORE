@@ -1,3 +1,4 @@
+import { cargarDestinoPostgres } from '../../../../compartido/config/postgres';
 
 /** Configuración propia del módulo: libro y pasarela; sin JWT, Redis ni AMQP. */
 
@@ -60,12 +61,7 @@ export function cargarConfiguracion(): ConfiguracionServicio {
   return {
     entorno,
     postgres: {
-      host: texto('POSTGRES_HOST', 'localhost'),
-      puerto: entero('POSTGRES_PUERTO', 5432),
-      usuario: texto('POSTGRES_USUARIO', 'hexacore'),
-      contrasena:
-        entorno === 'production' ? requerido('POSTGRES_CONTRASENA') : texto('POSTGRES_CONTRASENA', 'hexacore'),
-      base: texto('POSTGRES_BD_PAGOS', 'pagos'),
+      ...cargarDestinoPostgres(),
       maxConexiones,
       esperaMaximaMs,
     },

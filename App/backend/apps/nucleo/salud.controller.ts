@@ -27,10 +27,10 @@ export class SaludController {
   @Get()
   async estado(@Res({ passthrough: true }) respuesta: Response) {
     const [identidad, alimentos, logistica, pagos, redis] = await Promise.all([
-      this.responde(() => this.identidad.query('SELECT 1')),
-      this.responde(() => this.alimentos.query('SELECT 1')),
-      this.responde(() => this.logistica.query('SELECT 1')),
-      this.responde(() => this.pagos.query('SELECT 1')),
+      this.responde(() => this.identidad.query('SELECT 1 FROM identidad.migraciones LIMIT 1')),
+      this.responde(() => this.alimentos.query('SELECT 1 FROM alimentos.migraciones LIMIT 1')),
+      this.responde(() => this.logistica.query('SELECT 1 FROM personal_logistica.migraciones LIMIT 1')),
+      this.responde(() => this.pagos.query('SELECT 1 FROM finanzas_pagos.migraciones LIMIT 1')),
       this.responde(() => this.redis.ping()),
     ]);
     // Redis es necesario para aceptar reservas. Rabbit se informa como antes.

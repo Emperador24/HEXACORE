@@ -2,6 +2,7 @@
 import argparse
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
 import subprocess
 import time
@@ -13,7 +14,10 @@ args = parser.parse_args()
 raiz = Path(__file__).resolve().parents[3]
 salida = Path(args.salida).resolve()
 salida.parent.mkdir(parents=True, exist_ok=True)
-compose = ['docker', 'compose', '-p', 'hexacore-backend-e2e', '-f', str(raiz / 'App/backend/test/docker-compose.e2e.yml')]
+base = os.environ.get('POSTGRES_BD_PRUEBAS', 'hexacore_e2e')
+assert base in ('hexacore_e2e', 'hexacore_vacia_e2e')
+proyecto = 'hexacore-base-vacia-e2e' if base == 'hexacore_vacia_e2e' else 'hexacore-base-unica-e2e'
+compose = ['docker', 'compose', '-p', proyecto, '-f', str(raiz / 'App/backend/test/docker-compose.e2e.yml')]
 sql = """
 SELECT json_build_object(
  'conexiones', (SELECT coalesce(json_agg(x),'[]') FROM (

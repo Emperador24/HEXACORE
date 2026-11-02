@@ -1,5 +1,19 @@
 # Se combina únicamente con docker-compose.e2e.yml, en su proyecto exclusivo.
 services:
+  trabajador:
+    build: { context: .., dockerfile: Dockerfile.trabajador }
+    init: true
+    depends_on:
+      rabbitmq: { condition: service_healthy }
+      correo: { condition: service_healthy }
+    environment:
+      NODE_ENV: test
+      PUERTO: "3006"
+      RABBITMQ_URL: amqp://cu011_e2e:cu011_e2e@rabbitmq:5672/cu011
+      CORREO_PROVEEDOR_URL: http://correo:3098
+      CORREO_URL_BASE_ENLACES: https://portal.example.test/cuenta
+      AUTH_BLOQUEO_MINUTOS: "15"
+    ports: ["127.0.0.1:13110:3006"]
   nucleo:
     build: ..
     init: true
@@ -7,34 +21,27 @@ services:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }
-      migracion-pagos: { condition: service_completed_successfully }
+      preparacion-base: { condition: service_completed_successfully }
       pasarela: { condition: service_healthy }
     environment:
       NODE_ENV: test
       PUERTO: "3002"
+      POSTGRES_BD: ${POSTGRES_BD_PRUEBAS:-hexacore_e2e}
       POSTGRES_HOST: postgres
       POSTGRES_PUERTO: "5432"
       POSTGRES_USUARIO: cu011_e2e
       POSTGRES_CONTRASENA: cu011_e2e
-      POSTGRES_BD_ADMINISTRACION: identidad_cu011_e2e
-      POSTGRES_BD_PEDIDOS: alimentos_cu011_e2e
       POSTGRES_MAX_CONEXIONES: "4"
-      DB_HOST: postgres
-      DB_PORT: "5432"
-      DB_USER: cu011_e2e
-      DB_PASSWORD: cu011_e2e
-      DB_NAME: eventos_emergencias_nucleo_e2e
       PREFIJO_COLAS: nucleo-e2e.
       REDIS_HOST: redis
       REDIS_PUERTO: "6379"
       RABBITMQ_URL: amqp://cu011_e2e:cu011_e2e@rabbitmq:5672/cu011
-      POSTGRES_BD_PAGOS: pagos_e2e
       PAGOS_PROVEEDOR_URL: http://pasarela:3099
       PASARELA_TIMEOUT_MS: "3000"
       PASARELA_SECRETO_WEBHOOK: backend-webhook-pruebas
       AUTH_JWT_CLAVE_PUBLICA_ARCHIVO: /claves/jwt-publica.pem
       AUTH_JWT_CLAVE_PRIVADA_ARCHIVO: /claves/jwt-privada.pem
-    ports: ["127.0.0.1:13089:3002"]
+    ports: ["127.0.0.1:13109:3002"]
     volumes:
       - ./claves/jwt-publica.pem:/claves/jwt-publica.pem:ro
       - ./claves/jwt-privada.pem:/claves/jwt-privada.pem:ro
@@ -47,29 +54,25 @@ services:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }
-      migracion-pagos: { condition: service_completed_successfully }
+      preparacion-base: { condition: service_completed_successfully }
       pasarela: { condition: service_healthy }
     environment:
       NODE_ENV: test
       PUERTO: "3001"
+      POSTGRES_BD: ${POSTGRES_BD_PRUEBAS:-hexacore_e2e}
       POSTGRES_HOST: postgres
       POSTGRES_PUERTO: "5432"
       POSTGRES_USUARIO: cu011_e2e
       POSTGRES_CONTRASENA: cu011_e2e
-      POSTGRES_BD_VENTAS: entradas_e2e
-      POSTGRES_BD_CATALOGO: catalogo_boleteria_e2e
-      POSTGRES_BD_POSTVENTA: postventa_boleteria_e2e
-      POSTGRES_BD_ACCESO_QR: acceso_qr_boleteria_e2e
       REDIS_HOST: redis
       REDIS_PUERTO: "6379"
       RABBITMQ_URL: amqp://cu011_e2e:cu011_e2e@rabbitmq:5672/cu011
-      POSTGRES_BD_PAGOS: pagos_e2e
       PAGOS_PROVEEDOR_URL: http://pasarela:3099
       PASARELA_TIMEOUT_MS: "3000"
       VENTAS_URL: http://127.0.0.1:9/servidor-retirado
       AUTH_JWT_CLAVE_PUBLICA_ARCHIVO: /claves/jwt-publica.pem
       TOKEN_SERVICIOS: boleteria-e2e-servicios
-    ports: ["127.0.0.1:13097:3001"]
+    ports: ["127.0.0.1:13117:3001"]
     volumes:
       - ./claves/jwt-publica.pem:/claves/jwt-publica.pem:ro
   gateway:
@@ -77,7 +80,7 @@ services:
     depends_on:
       nucleo: { condition: service_healthy }
       boleteria: { condition: service_healthy }
-    ports: ["127.0.0.1:18080:8080"]
+    ports: ["127.0.0.1:18082:8080"]
     volumes:
       - ./claves/jwt-publica.pem:/etc/nginx/claves/jwt-publica.pem:ro
   pasarela:

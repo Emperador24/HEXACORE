@@ -72,9 +72,15 @@ Esta secuencia operativa se documenta; no se ejecutó sobre el entorno habitual.
 
 Pruebas reales y comandos: [test/trabajador](../../test/trabajador/README.md).
 Otros consumidores y temporizadores permanecen en sus dominios; inventario y
-razones en ESTADO-MIGRACION §21. Esta etapa termina aquí, sin consolidación de datos.
+razones en ESTADO-MIGRACION §21. La adaptación de SQL de Núcleo/Boletería no añade SQL al Trabajador.
 
 El arranque iniciar.sh detecta consumidores notificaciones activos (incluidos
 huérfanos, reiniciando o pausados) del mismo proyecto Compose y se detiene antes
 de arrancar Trabajador. Es una comprobación de lectura; no mata contenedores ni
 borra colas. La parada/transición del entorno habitual no se ejecutó en esta etapa.
+
+Observación adicional (§23): tras ECONNRESET inicial, el reintento de suscripción
+y el aviso de reconexión pueden suscribir dos veces al mismo canal. Se observaron
+dos consumer tags en una sola conexión; reiniciar con broker disponible volvió a
+una suscripción. El código no cambió en la etapa de esquemas. F15 incluye esta
+carrera previa; no se promete unicidad ante todas las secuencias de reconexión.

@@ -26,10 +26,10 @@ frontera HTTP. Los contratos y códigos de error existentes se conservan.
 Conexión TypeORM **finanzas-pagos** en registro, opciones devueltas, forFeature e
 inyecciones. Configuración **CONFIGURACION_FINANZAS_PAGOS** y puerto del adaptador
 **PROCESADOR_FINANZAS_PAGOS**; sin tokens globales de otros dominios. No hay imports
-a Identidad, Alimentos, Entradas o Personal. Base **pagos**, una tabla
-transacciones_pago y una migración original/historial **migraciones**.
-`POSTGRES_BD_PAGOS` selecciona la base; la librería ignora POSTGRES_BASE genérico.
-`synchronize=false` y `migrationsRun=false`; no se copian ni consolidan datos.
+a Identidad, Alimentos, Entradas o Personal. Destino común POSTGRES_BD, esquema
+**finanzas_pagos**, tabla transacciones_pago y migración original/historial
+**migraciones**. POSTGRES_BD_PAGOS/POSTGRES_BASE se rechazan. Ambos programas
+comparten el mismo libro. synchronize=false y migrationsRun=false.
 
 Se conservan importes, COP/USD, solicitante, claves, referencias, contador de
 intentos y APROBADO/RECHAZADO/INDETERMINADO. Un resultado terminal se devuelve sin
@@ -54,9 +54,9 @@ Boletería no carga el secreto HMAC ni una clave privada. La envoltura HTTP y su
 endpoints de cobro/reembolso se retiraron; sigue el HTTP hacia la pasarela externa.
 
 La migración del libro la ejecuta **una sola tarea de despliegue** antes de los dos
-programas. Compose usa migracion-pagos (imagen Núcleo, comando TypeORM CLI,
+programas. Compose usa preparacion-base (imagen Núcleo, preparación de los ocho historiales,
 restart=no, sin puertos); sus dos aplicaciones dependen de su terminación correcta.
-Fuera de Compose ejecutar una vez `npm run migracion:pagos:correr`, revisando antes
+Fuera de Compose ejecutar una vez `npm run datos:preparar`, revisando antes
 el destino con `migracion:pagos:estado`. No incluir esa orden en ambos bootstraps.
 No se cambia la migración 1790380800000 ni se crean libros por aplicación.
 

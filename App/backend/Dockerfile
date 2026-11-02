@@ -18,6 +18,4 @@ USER node
 EXPOSE 3002
 HEALTHCHECK --interval=5s --timeout=3s --start-period=20s --retries=10 \
   CMD node -e "require('http').get('http://127.0.0.1:'+process.env.PUERTO+'/api/v1/salud',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"
-# Transición: conserva las tres bases/historiales. Con réplicas las migraciones
-# deben ejecutarse como tarea de despliegue única antes de levantar instancias.
-CMD ["sh", "-c", "node node_modules/typeorm/cli.js migration:run -d dist/modulos/identidad/persistencia/data-source.js && node node_modules/typeorm/cli.js migration:run -d dist/modulos/alimentos/persistencia/data-source.js && node node_modules/typeorm/cli.js migration:run -d dist/modulos/personal-logistica/persistencia/data-source.js && exec node dist/apps/nucleo/main.js"]
+CMD ["node", "dist/apps/nucleo/main.js"]

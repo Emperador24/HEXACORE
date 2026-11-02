@@ -24,7 +24,7 @@ name: hexacore-infra
 
 services:
   # PostgreSQL — motor transaccional de todos los dominios (ADR-06).
-  # Una base de datos por microservicio (ADR-01): las crea initdb/01-bases.sql,
+  # Base única con esquemas: initdb/01-bases.sql crea solo la base vacía,
   # que solo se ejecuta la primera vez que se levanta el volumen.
   postgres:
     image: postgres:16-alpine
@@ -175,7 +175,7 @@ services:
 
   # Núcleo — servicio de dominio que agrupa Administración y Pedidos (ADR-12).
   # Ahora reúne Identidad, Alimentos y Personal/Logística, cada uno contra
-  # su propia base. Sin `container_name`: es lo que permitirá replicarlo
+  # su propio esquema. Sin `container_name`: es lo que permitirá replicarlo
   # (`--scale nucleo=2`) cuando el temporizador de reservas esté protegido con
   # un candado en Redis.
   nucleo:
@@ -190,7 +190,7 @@ services:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }
-      migracion-pagos: { condition: service_completed_successfully }
+      preparacion-base: { condition: service_completed_successfully }
       pasarela: { condition: service_healthy }
     # Los nombres de la capa de datos son variables para poder repartir el
     # sistema en dos computadores (RNF de desplegabilidad): por defecto son los
@@ -199,6 +199,7 @@ services:
       NODE_ENV: development
       POSTGRES_HOST: ${HOST_POSTGRES:-postgres}
       POSTGRES_PUERTO: ${PUERTO_POSTGRES:-5432}
+      POSTGRES_BD: ${POSTGRES_BD:-hexacore}
       REDIS_HOST: ${HOST_REDIS:-redis}
       REDIS_PUERTO: ${PUERTO_REDIS:-6379}
       RABBITMQ_URL: amqp://hexacore:hexacore@${HOST_RABBIT:-rabbitmq}:${PUERTO_RABBIT:-5672}
@@ -218,19 +219,10 @@ services:
       AUTH_JWT_EMISOR: hexacore-administracion
       POSTGRES_USUARIO: hexacore
       POSTGRES_CONTRASENA: hexacore
-      # Una base por módulo: la separación de datos de ADR-01 que ADR-12
-      # mantiene. Cada módulo abre su propia conexión contra la suya.
-      POSTGRES_BD_ADMINISTRACION: administracion
-      POSTGRES_BD_PEDIDOS: pedidos
-      DB_HOST: ${HOST_POSTGRES:-postgres}
-      DB_PORT: ${PUERTO_POSTGRES:-5432}
-      DB_USER: hexacore
-      DB_PASSWORD: hexacore
-      DB_NAME: eventos_emergencias
+      # Una base común con un esquema por propietario.
       POSTGRES_MAX_CONEXIONES: "10"
       POSTGRES_ESPERA_MAXIMA_MS: "3000"
       CORREO_PROVEEDOR_URL: http://${HOST_CORREO:-correo}:${PUERTO_CORREO:-3098}
-      POSTGRES_BD_PAGOS: pagos
       PAGOS_PROVEEDOR_URL: http://${HOST_PASARELA:-pasarela}:${PUERTO_PASARELA:-3099}
       PASARELA_TIMEOUT_MS: "10000"
       PASARELA_SECRETO_WEBHOOK: secreto-webhook-desarrollo
@@ -238,7 +230,7 @@ services:
       - ./claves-desarrollo/jwt-privada.pem:/claves/jwt-privada.pem:ro
       - ./claves-desarrollo/jwt-publica.pem:/claves/jwt-publica.pem:ro
     # En una máquina limpia, el primer arranque incluye inicializar PostgreSQL
-    # y correr las migraciones. La sonda que trae la imagen agota sus
+    # tras la preparación SQL separada. La sonda que trae la imagen agota sus
     # reintentos antes de eso y Compose da el sistema por fallido con todo ya
     # en pie; esta le da margen de sobra.
     healthcheck:
@@ -250,7 +242,7 @@ services:
     ports:
       - "3002:3002"
 
-  # Boletería: cinco componentes existentes en un proceso, cuatro bases separadas.
+  # Boletería: cinco componentes existentes en un proceso, cuatro esquemas propios.
   boleteria:
     profiles: ["servicios"]
     build:
@@ -262,18 +254,13 @@ services:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }
-      migracion-pagos: { condition: service_completed_successfully }
+      preparacion-base: { condition: service_completed_successfully }
       pasarela: { condition: service_healthy }
     environment:
       <<: *entorno-comun
       PUERTO: "3001"
       POSTGRES_USUARIO: hexacore
       POSTGRES_CONTRASENA: hexacore
-      POSTGRES_BD_VENTAS: entradas_mercado_secundario
-      POSTGRES_BD_CATALOGO: catalogo
-      POSTGRES_BD_POSTVENTA: postventa
-      POSTGRES_BD_ACCESO_QR: acceso_qr
-      POSTGRES_BD_PAGOS: pagos
       PAGOS_PROVEEDOR_URL: http://${HOST_PASARELA:-pasarela}:${PUERTO_PASARELA:-3099}
       PASARELA_TIMEOUT_MS: "10000"
       COLA_AFORO_CONCURRENTE: "25"
@@ -287,21 +274,22 @@ services:
       retries: 10
     ports: ["3001:3001"]
 
-  # Una ejecución del historial financiero antes de habilitar ambos programas.
+  # Una ejecución de los ocho historiales antes de habilitar ambos programas.
   # Usa la imagen Núcleo como herramienta CLI; no abre HTTP ni corre su main.
-  migracion-pagos:
+  preparacion-base:
     profiles: ["servicios"]
     build: ../backend
     restart: "no"
-    command: ["node", "node_modules/typeorm/cli.js", "migration:run", "-d", "dist/modulos/finanzas/pagos/persistencia/data-source.js"]
+    command: ["node", "dist/compartido/persistencia/preparar-base.js"]
     depends_on:
       postgres: { condition: service_healthy }
     environment:
-      <<: *entorno-comun
-      PROGRAMA_BACKEND: migracion
+      NODE_ENV: development
+      POSTGRES_HOST: ${HOST_POSTGRES:-postgres}
+      POSTGRES_PUERTO: ${PUERTO_POSTGRES:-5432}
       POSTGRES_USUARIO: hexacore
       POSTGRES_CONTRASENA: hexacore
-      POSTGRES_BD_PAGOS: pagos
+      POSTGRES_BD: ${POSTGRES_BD:-hexacore}
     healthcheck: { disable: true }
 
   # Trabajador: consumidor de correo existente, sin bases, Redis ni claves JWT.

@@ -1,3 +1,4 @@
+const { base: basePruebas, opcionesPg } = require('../base-unica/conexiones.cjs');
 const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const { randomUUID, createHmac } = require('node:crypto');
@@ -5,10 +6,10 @@ const { execFileSync } = require('node:child_process');
 const { resolve } = require('node:path');
 const { Client } = require('pg');
 const { cifrarContrasena } = require('../../dist/modulos/identidad/comun/contrasenas');
-const proyecto = 'hexacore-backend-e2e';
+const {proyecto} = require('../base-unica/conexiones.cjs');
 const compose = ['compose', '-p', proyecto, '-f', resolve(__dirname, '../docker-compose.e2e.yml'), '-f', resolve(__dirname, '../docker-compose.imagen.yml')];
-const gateway = 'http://127.0.0.1:18080/api/v1';
-const nucleo = 'http://127.0.0.1:13089/api/v1', boleteria = 'http://127.0.0.1:13097/api/v1';
+const gateway = 'http://127.0.0.1:18082/api/v1';
+const nucleo = 'http://127.0.0.1:13109/api/v1', boleteria = 'http://127.0.0.1:13117/api/v1';
 const id = randomUUID(), email = `convivencia-${id}@example.test`, contrasena = 'pagos-locales-aislados';
 const evento = randomUUID(), local = randomUUID(), producto = randomUUID(), localidad = randomUUID(), claveComida = randomUUID();
 const db = {};
@@ -31,8 +32,8 @@ async function checkout() {
 }
 before(async () => {
     assert.equal(process.version, 'v22.22.3');
-    for (const [n, database] of Object.entries({ identidad: 'identidad_cu011_e2e', alimentos: 'alimentos_cu011_e2e', ventas: 'entradas_e2e', catalogo: 'catalogo_boleteria_e2e', postventa: 'postventa_boleteria_e2e', acceso: 'acceso_qr_boleteria_e2e', libro: 'pagos_e2e' })) {
-        db[n] = new Client({ host: '127.0.0.1', port: 15435, user: 'cu011_e2e', password: 'cu011_e2e', database, application_name: 'convivencia-observador' });
+    for (const [n, database] of Object.entries({ identidad: basePruebas, alimentos: basePruebas, ventas: basePruebas, catalogo: basePruebas, postventa: basePruebas, acceso: basePruebas, libro: basePruebas })) {
+        db[n] = new Client(opcionesPg(n));
         await db[n].connect();
         assert.equal((await db[n].query('SELECT current_database() AS base')).rows[0].base, database);
     }
@@ -64,16 +65,16 @@ test('dos procesos, un mismo libro y una sola tarea de migración financiera', a
         assert.equal(ps.split('\n').filter(l => new RegExp(`^\\s*\\d+\\s+node dist/apps/${app}/main\\.js$`).test(l.trim())).length, 1, ps);
         assert.ok(!configs[app].PAGOS_URL);
     }
-    for (const key of ['POSTGRES_HOST', 'POSTGRES_PUERTO', 'POSTGRES_USUARIO', 'POSTGRES_BD_PAGOS'])
+    for (const key of ['POSTGRES_HOST', 'POSTGRES_PUERTO', 'POSTGRES_USUARIO', 'POSTGRES_BD'])
         assert.equal(configs.nucleo[key], configs.boleteria[key]);
-    assert.equal(configs.nucleo.POSTGRES_BD_PAGOS, 'pagos_e2e');
+    assert.equal(configs.nucleo.POSTGRES_BD, basePruebas);
     assert.ok(configs.nucleo.PASARELA_SECRETO_WEBHOOK);
     assert.ok(!configs.boleteria.PASARELA_SECRETO_WEBHOOK);
     assert.ok(!configs.boleteria.AUTH_JWT_CLAVE_PRIVADA_ARCHIVO);
     const conexiones = await db.libro.query("SELECT DISTINCT application_name,datname FROM pg_stat_activity WHERE application_name IN ('finanzas-pagos:nucleo','finanzas-pagos:boleteria') ORDER BY application_name");
-    assert.deepEqual(conexiones.rows, [{ application_name: 'finanzas-pagos:boleteria', datname: 'pagos_e2e' }, { application_name: 'finanzas-pagos:nucleo', datname: 'pagos_e2e' }]);
-    assert.equal(inspeccionar('migracion-pagos').State.ExitCode, 0);
-    assert.equal(inspeccionar('migracion-pagos').State.Status, 'exited');
+    assert.deepEqual(conexiones.rows, [{ application_name: 'finanzas-pagos:boleteria', datname: basePruebas }, { application_name: 'finanzas-pagos:nucleo', datname: basePruebas }]);
+    assert.equal(inspeccionar('preparacion-base').State.ExitCode, 0);
+    assert.equal(inspeccionar('preparacion-base').State.Status, 'exited');
     assert.equal((await db.libro.query('SELECT count(*)::int AS n FROM migraciones')).rows[0].n, 1);
 });
 test('login real, alimentos y entradas escriben sus claves y referencias en ese mismo libro', async () => {
@@ -110,7 +111,7 @@ test('login real, alimentos y entradas escriben sus claves y referencias en ese 
     assert.equal((await db.libro.query('SELECT count(*)::int AS n FROM transacciones_pago WHERE clave_idempotencia=ANY($1)', [[claveComida, entradaClave]])).rows[0].n, 2);
 });
 test('reinicio de ambos programas conserva resultados, referencias y efectos únicos', async () => {
-    const fin = inspeccionar('migracion-pagos').State.FinishedAt;
+    const fin = inspeccionar('preparacion-base').State.FinishedAt;
     execFileSync('docker', [...compose, 'stop', 'nucleo', 'boleteria'], { encoding: 'utf8' });
     for (const app of ['nucleo', 'boleteria']) {
         assert.ok([0, 143].includes(inspeccionar(app).State.ExitCode));
@@ -118,7 +119,7 @@ test('reinicio de ambos programas conserva resultados, referencias y efectos ún
         assert.equal((await db.libro.query('SELECT count(*)::int AS n FROM pg_stat_activity WHERE application_name=$1', ['finanzas-pagos:' + app])).rows[0].n, 0);
     }
     execFileSync('docker', [...compose, 'up', '-d', '--no-deps', '--no-build', '--wait', 'nucleo', 'boleteria'], { encoding: 'utf8' });
-    assert.equal(inspeccionar('migracion-pagos').State.FinishedAt, fin);
+    assert.equal(inspeccionar('preparacion-base').State.FinishedAt, fin);
     const replay = await pedir(gateway, `/pedidos/${pedido.id}/pagos`, 'POST', { tokenPago: 'tok_ok_convivencia' }, { 'Idempotency-Key': claveComida });
     assert.equal(replay.status, 200);
     assert.equal(replay.body.referenciaPasarela, comida.body.referenciaPasarela);

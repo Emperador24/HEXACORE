@@ -1,3 +1,4 @@
+import { opcionesEsquema, opcionesSesion, migracionesEnEsquema } from '../../../compartido/persistencia/esquemas';
 import { config as cargarEnv } from 'dotenv';
 import { CONEXION_LOGISTICA } from './conexion';
 import { cargarConfiguracion, ConfiguracionLogistica } from '../comun/config/configuracion';
@@ -28,20 +29,21 @@ export function opcionesDataSource(config: ConfiguracionLogistica = cargarConfig
   return {
     name: CONEXION_LOGISTICA,
     type: 'postgres',
+    ...opcionesEsquema('personal-logistica'),
     host: config.postgres.host,
     port: config.postgres.puerto,
     username: config.postgres.usuario,
     password: config.postgres.contrasena,
     database: config.postgres.base,
     entities: ENTIDADES,
-    migrations: MIGRACIONES,
+    migrations: migracionesEnEsquema(MIGRACIONES, 'personal-logistica'),
     migrationsTableName: 'migraciones',
     // Nunca true: se conservan las migraciones y los datos del servidor anterior.
     // Con TypeORM decidiendo el esquema solo, un cambio en una entidad puede
     // borrar una columna con datos sin avisar ni dejar rastro de qué cambió.
     synchronize: false,
     migrationsRun: false,
-    extra: { application_name: 'nucleo-personal-logistica' },
+    extra: { ...opcionesSesion('personal-logistica'), application_name: 'nucleo-personal-logistica' },
   };
 }
 

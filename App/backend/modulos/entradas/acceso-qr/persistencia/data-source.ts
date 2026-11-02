@@ -1,3 +1,4 @@
+import { opcionesEsquema, opcionesSesion, migracionesEnEsquema } from '../../../../compartido/persistencia/esquemas';
 import { CONEXION } from './conexion';
 import { config as cargarEnv } from 'dotenv';
 import { DataSource, DataSourceOptions } from 'typeorm';
@@ -17,13 +18,14 @@ export function opcionesDataSource(config: ConfiguracionServicio): DataSourceOpt
   return {
     name: CONEXION,
     type: 'postgres',
+    ...opcionesEsquema('entradas-acceso-qr'),
     host: config.postgres.host,
     port: config.postgres.puerto,
     username: config.postgres.usuario,
     password: config.postgres.contrasena,
     database: config.postgres.base,
     entities: ENTIDADES,
-    migrations: MIGRACIONES,
+    migrations: migracionesEnEsquema(MIGRACIONES, 'entradas-acceso-qr'),
     migrationsTableName: 'migraciones',
 
     // Nunca `synchronize: true`: el UNIQUE(entrada_id) que impide el doble
@@ -31,7 +33,7 @@ export function opcionesDataSource(config: ConfiguracionServicio): DataSourceOpt
     // segunda defensa de CU-002D.
     synchronize: false,
     migrationsRun: false,
-    extra: { application_name: 'boleteria-acceso-qr' },
+    extra: { ...opcionesSesion('entradas-acceso-qr'), application_name: 'boleteria-acceso-qr' },
     logging: config.entorno === 'development' ? ['error', 'warn', 'migration'] : ['error'],
   };
 }

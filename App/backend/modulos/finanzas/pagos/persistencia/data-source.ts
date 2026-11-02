@@ -1,3 +1,4 @@
+import { opcionesEsquema, opcionesSesion, migracionesEnEsquema } from '../../../../compartido/persistencia/esquemas';
 import { CONEXION_PAGOS } from './conexion';
 import { config as cargarEnv } from 'dotenv';
 import { DataSource, DataSourceOptions } from 'typeorm';
@@ -12,15 +13,16 @@ export function opcionesDataSource(config: ConfiguracionServicio): DataSourceOpt
   return {
     name: CONEXION_PAGOS,
     type: 'postgres',
+    ...opcionesEsquema('finanzas-pagos'),
     host: config.postgres.host,
     port: config.postgres.puerto,
     username: config.postgres.usuario,
     password: config.postgres.contrasena,
     database: config.postgres.base,
     entities: ENTIDADES,
-    migrations: MIGRACIONES,
+    migrations: migracionesEnEsquema(MIGRACIONES, 'finanzas-pagos'),
     migrationsTableName: 'migraciones',
-    extra: {
+    extra: { ...opcionesSesion('finanzas-pagos'),
       application_name: `finanzas-pagos:${process.env.PROGRAMA_BACKEND || 'modulo'}`,
       max: config.postgres.maxConexiones,
       connectionTimeoutMillis: config.postgres.esperaMaximaMs,

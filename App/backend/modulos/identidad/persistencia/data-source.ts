@@ -1,3 +1,4 @@
+import { opcionesEsquema, opcionesSesion, migracionesEnEsquema } from '../../../compartido/persistencia/esquemas';
 import { config as cargarEnv } from 'dotenv';
 import { CONEXION_IDENTIDAD } from './conexion';
 import { DataSource, DataSourceOptions } from 'typeorm';
@@ -24,13 +25,14 @@ export function opcionesDataSource(config: ConfiguracionServicio): DataSourceOpt
   return {
     name: CONEXION_IDENTIDAD,
     type: 'postgres',
+    ...opcionesEsquema('identidad'),
     host: config.postgres.host,
     port: config.postgres.puerto,
     username: config.postgres.usuario,
     password: config.postgres.contrasena,
     database: config.postgres.base,
     entities: ENTIDADES,
-    migrations: MIGRACIONES,
+    migrations: migracionesEnEsquema(MIGRACIONES, 'identidad'),
     migrationsTableName: 'migraciones',
 
     // Nunca `synchronize: true`: deduciría el esquema de las entidades y se
@@ -43,7 +45,7 @@ export function opcionesDataSource(config: ConfiguracionServicio): DataSourceOpt
     // Límites de espera (DECISIONES.md §17). Los dos del cliente son los que
     // importan con una base **colgada**: `statement_timeout` lo aplica el
     // propio servidor, y un servidor que no responde no aplica nada.
-    extra: {
+    extra: { ...opcionesSesion('identidad'),
       application_name: 'nucleo-identidad',
       max: config.postgres.maxConexiones,
       // Esperando una conexión libre del pool (o abriendo una nueva).

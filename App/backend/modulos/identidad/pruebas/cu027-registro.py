@@ -25,6 +25,7 @@ quién tiene cuenta.
 import json
 import statistics
 import pathlib
+import os
 import subprocess
 import time
 import urllib.error
@@ -48,8 +49,8 @@ def registrar(cuerpo):
 
 def sql(consulta):
     return subprocess.run(
-        ['docker', 'exec', 'hexacore-postgres', 'psql', '-U', 'hexacore',
-         '-d', 'administracion', '-tAc', consulta],
+        ['docker', 'exec', '-e', 'PGOPTIONS=-c search_path=identidad,pg_catalog,extensiones', os.environ.get('POSTGRES_CONTENEDOR', 'hexacore-postgres'), 'psql', '-U', os.environ.get('POSTGRES_USUARIO', 'hexacore'),
+         '-d', os.environ.get('POSTGRES_BD', 'hexacore'), '-tAc', consulta],
         capture_output=True, text=True).stdout.strip()
 
 

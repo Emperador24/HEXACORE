@@ -37,7 +37,7 @@ export class SaludBoleteriaController {
     };
     const valores = await Promise.all(
       [this.ventas, this.catalogo, this.postventa, this.acceso, this.pagos].map((d) =>
-        probar(() => d.query('SELECT 1')),
+        probar(() => d.query(`SELECT 1 FROM "${(d.options as {schema:string}).schema}"."${d.options.migrationsTableName || 'migrations'}" LIMIT 1`)),
       ),
     );
     const redis = await probar(() => this.redis.ping()),

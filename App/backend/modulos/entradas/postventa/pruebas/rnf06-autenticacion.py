@@ -23,6 +23,7 @@ import hmac
 import json
 import pathlib
 import re
+import os
 import subprocess
 import tempfile
 import time
@@ -64,8 +65,15 @@ def mis_entradas(token=None, **extra):
 
 
 def sql(base, consulta):
+    esquema = {
+        'administracion':'identidad', 'pedidos':'alimentos',
+        'eventos_emergencias':'personal_logistica',
+        'entradas_mercado_secundario':'entradas_ventas',
+        'catalogo':'entradas_catalogo', 'postventa':'entradas_postventa',
+        'acceso_qr':'entradas_acceso_qr', 'pagos':'finanzas_pagos',
+    }[base]
     return subprocess.run(
-        ['docker', 'exec', 'hexacore-postgres', 'psql', '-U', 'hexacore', '-d', base, '-tAc', consulta],
+        ['docker', 'exec', '-e', 'PGOPTIONS=-c search_path=' + esquema + ',pg_catalog,extensiones', os.environ.get('POSTGRES_CONTENEDOR', 'hexacore-postgres'), 'psql', '-U', os.environ.get('POSTGRES_USUARIO', 'hexacore'), '-d', os.environ.get('POSTGRES_BD', 'hexacore'), '-tAc', consulta],
         capture_output=True, text=True).stdout.strip()
 
 

@@ -13,6 +13,7 @@ uso, y eso es justo lo que hay que poder leer sin saltar de archivo.
 """
 
 import json
+import os
 import subprocess
 import time
 import urllib.error
@@ -101,9 +102,16 @@ def sql(consulta, bd='acceso_qr'):
     (ADR-15). Por eso hay que decir dónde se mira — y que haya que decirlo es
     la separación funcionando.
     """
+    esquema = {
+        'administracion':'identidad', 'pedidos':'alimentos',
+        'eventos_emergencias':'personal_logistica',
+        'entradas_mercado_secundario':'entradas_ventas',
+        'catalogo':'entradas_catalogo', 'postventa':'entradas_postventa',
+        'acceso_qr':'entradas_acceso_qr', 'pagos':'finanzas_pagos',
+    }[bd]
     return subprocess.run(
-        ['docker', 'exec', 'hexacore-postgres', 'psql', '-U', 'hexacore',
-         '-d', bd, '-tAc', consulta],
+        ['docker', 'exec', '-e', 'PGOPTIONS=-c search_path=' + esquema + ',pg_catalog,extensiones', os.environ.get('POSTGRES_CONTENEDOR', 'hexacore-postgres'), 'psql', '-U', os.environ.get('POSTGRES_USUARIO', 'hexacore'),
+         '-d', os.environ.get('POSTGRES_BD', 'hexacore'), '-tAc', consulta],
         capture_output=True, text=True).stdout.strip()
 
 

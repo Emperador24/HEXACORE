@@ -199,8 +199,10 @@ Ensayo físico aislado (§22 de ESTADO-MIGRACION): `identidad`, `alimentos`,
 y procedencia en `migracion_control`. El mapa tabla por tabla y sus historiales
 está en App/backend/test/consolidacion/README.md. Los cuatro esquemas de Entradas
 conservan sus autoridades, proyecciones y tablas legacy: reunirlos físicamente
-no implementa la unificación transaccional objetivo. El ensayo no cambia los
-destinos de las aplicaciones; adaptar consultas/conexiones/arranques será otra entrega.
+no implementa nuevas garantías transaccionales. La adaptación de conexiones, SQL
+y preparación coordinada (§23) está comprobada sobre copia transferida y base vacía
+**aisladas**. La configuración activa prepara base única; el entorno habitual sigue
+sin cambiar y requiere un corte autorizado. No se completa funcionalidad pendiente.
 
 | Datos | Propietario de las reglas |
 | --- | --- |

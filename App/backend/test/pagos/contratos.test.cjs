@@ -1,3 +1,4 @@
+const { base: basePruebas, opcionesPg } = require('../base-unica/conexiones.cjs');
 'use strict';
 // Contratos del módulo real y del webhook único, en infraestructura compartida exclusiva.
 const { test, before, after } = require('node:test');
@@ -9,16 +10,16 @@ const { Client } = require('pg');
 const Redis = require('ioredis');
 const { connect } = require('amqplib');
 const { JwtService } = require('@nestjs/jwt');
-Object.assign(process.env, { NODE_ENV: 'test', PROGRAMA_BACKEND: 'contratos', POSTGRES_HOST: '127.0.0.1', POSTGRES_PUERTO: '15435', POSTGRES_USUARIO: 'cu011_e2e', POSTGRES_CONTRASENA: 'cu011_e2e', POSTGRES_BD_PAGOS: 'pagos_e2e', PAGOS_PROVEEDOR_URL: 'http://127.0.0.1:13101', PASARELA_TIMEOUT_MS: '3000' });
+process.env = {...require('../base-unica/conexiones.cjs').entorno(), PROGRAMA_BACKEND:'contratos'};
 const { NestFactory } = require('@nestjs/core');
 const { PagosModule, PagosService, CobrarDto, ReembolsarDto, validarSolicitudPagos } = require('../../dist/modulos/finanzas/pagos');
 let contexto, pagos;
 const run = 'pagos-' + randomUUID();
 const clave = (nombre) => `${run}:${nombre}`;
-const base = 'http://127.0.0.1:13089/api/v1';
+const base = 'http://127.0.0.1:13109/api/v1';
 const secreto = 'backend-webhook-pruebas';
-const datos = new Client({ host: '127.0.0.1', port: 15435, user: 'cu011_e2e', password: 'cu011_e2e', database: 'pagos_e2e', application_name: 'contratos-pagos' });
-const redis = new Redis({ host: '127.0.0.1', port: 16382, lazyConnect: true });
+const datos = new Client(opcionesPg('pagos'));
+const redis = new Redis({ host: '127.0.0.1', port: 16384, lazyConnect: true });
 const jti = randomUUID();
 let token, amqp, canal, aprobado;
 const recibidos = [];
@@ -57,11 +58,11 @@ before(async () => {
     contexto = await NestFactory.createApplicationContext(PagosModule, { logger: ['error'] });
     pagos = contexto.get(PagosService);
     await datos.connect();
-    assert.equal((await datos.query('SELECT current_database() AS base')).rows[0].base, 'pagos_e2e');
+    assert.equal((await datos.query('SELECT current_database() AS base')).rows[0].base, basePruebas);
     await redis.connect();
     assert.equal(await redis.ping(), 'PONG');
     token = new JwtService().sign({ sub: randomUUID(), roles: ['Cliente'], jti }, { algorithm: 'RS256', issuer: 'hexacore-administracion', expiresIn: '10m', privateKey: readFileSync(resolve(__dirname, '../claves/jwt-privada.pem'), 'utf8') });
-    amqp = await connect('amqp://cu011_e2e:cu011_e2e@127.0.0.1:15675/cu011', { clientProperties: { connection_name: 'contratos-pagos' } });
+    amqp = await connect('amqp://cu011_e2e:cu011_e2e@127.0.0.1:15679/cu011', { clientProperties: { connection_name: 'contratos-pagos' } });
     canal = await amqp.createChannel();
     const cola = await canal.assertQueue('', { exclusive: true, autoDelete: true });
     await canal.bindQueue(cola.queue, 'pagos.eventos', 'pago.*');
@@ -93,14 +94,14 @@ test('salud y migración conservan la base y el historial existentes', async () 
     assert.deepEqual(m.rows.map(x => x.name), ['EsquemaPagos1790380800000']);
 });
 test('no hay endpoints financieros y las rutas llamantes conservan JWT/revocación', async () => {
-    for (const url of [base, 'http://127.0.0.1:13097/api/v1']) {
+    for (const url of [base, 'http://127.0.0.1:13117/api/v1']) {
         for (const ruta of ['/pagos', '/pagos/reembolsos']) {
             const r = await fetch(url + ruta, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cobro('sin-sesion')) });
             assert.equal(r.status, 404);
         }
     }
-    assert.equal((await fetch('http://127.0.0.1:13097/api/v1/pagos/webhook', { method: 'POST' })).status, 404);
-    for (const url of [base + '/pedidos/checkout', 'http://127.0.0.1:13097/api/v1/compras']) {
+    assert.equal((await fetch('http://127.0.0.1:13117/api/v1/pagos/webhook', { method: 'POST' })).status, 404);
+    for (const url of [base + '/pedidos/checkout', 'http://127.0.0.1:13117/api/v1/compras']) {
         const enviar = (auth) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(auth ? { Authorization: `Bearer ${auth}` } : {}) }, body: '{}' });
         assert.equal((await enviar()).status, 401);
         await redis.set('sesion-revocada:' + jti, '1', 'EX', 60);
@@ -244,9 +245,9 @@ test('DTO rechaza moneda desconocida, precisión inválida y campos adicionales'
 });
 test('SIGTERM cierra ambos programas y el reinicio conserva libro/referencia sin repetir migración', async () => {
     const { execFileSync } = require('node:child_process');
-    const compose = ['compose', '-p', 'hexacore-backend-e2e', '-f', resolve(__dirname, '../docker-compose.e2e.yml'), '-f', resolve(__dirname, '../docker-compose.imagen.yml')];
-    const inspeccionar = (servicio) => JSON.parse(execFileSync('docker', ['inspect', `hexacore-backend-e2e-${servicio}-1`], { encoding: 'utf8' }))[0];
-    const migracion = inspeccionar('migracion-pagos').State.FinishedAt;
+    const compose = require('../base-unica/compose.cjs').argumentos(true);
+    const inspeccionar = (servicio) => JSON.parse(execFileSync('docker', ['inspect', `${require('../base-unica/conexiones.cjs').proyecto}-${servicio}-1`], { encoding: 'utf8' }))[0];
+    const migracion = inspeccionar('preparacion-base').State.FinishedAt;
     execFileSync('docker', [...compose, 'stop', 'nucleo', 'boleteria'], { encoding: 'utf8' });
     for (const app of ['nucleo', 'boleteria']) {
         const estado = inspeccionar(app).State;
@@ -255,11 +256,11 @@ test('SIGTERM cierra ambos programas y el reinicio conserva libro/referencia sin
         assert.equal((await datos.query('SELECT count(*)::int AS n FROM pg_stat_activity WHERE application_name=$1', ['finanzas-pagos:' + app])).rows[0].n, 0);
         assert.ok(!(await redis.client('LIST')).includes('name=' + app + ' '));
     }
-    const r = await fetch('http://127.0.0.1:16775/api/connections', { headers: { Authorization: 'Basic ' + Buffer.from('cu011_e2e:cu011_e2e').toString('base64') } });
+    const r = await fetch('http://127.0.0.1:16779/api/connections', { headers: { Authorization: 'Basic ' + Buffer.from('cu011_e2e:cu011_e2e').toString('base64') } });
     assert.equal(r.status, 200);
     assert.equal((await r.json()).filter(c => ['hexacore-nucleo', 'hexacore-boleteria'].includes(c.client_properties.connection_name)).length, 0);
     execFileSync('docker', [...compose, 'up', '-d', '--no-deps', '--no-build', '--wait', 'nucleo', 'boleteria'], { encoding: 'utf8' });
-    assert.equal(inspeccionar('migracion-pagos').State.FinishedAt, migracion);
+    assert.equal(inspeccionar('preparacion-base').State.FinishedAt, migracion);
     const repetida = await pedir('/pagos', cobro('aprobado'));
     assert.equal(repetida.status, 200);
     assert.deepEqual(repetida.body, { ...aprobado, repetida: true });

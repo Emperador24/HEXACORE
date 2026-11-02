@@ -19,6 +19,7 @@ Necesita Administración (3002) y Entradas (3001) en marcha.
 
 import json
 import re
+import os
 import subprocess
 import time
 import urllib.error
@@ -47,8 +48,8 @@ def pedir(url, metodo='GET', token=None, cuerpo=None):
 
 
 def sql(consulta):
-    salida = subprocess.run(['docker', 'exec', 'hexacore-postgres', 'psql', '-U', 'hexacore',
-                             '-d', 'administracion', '-tAc', consulta], capture_output=True, text=True)
+    salida = subprocess.run(['docker', 'exec', '-e', 'PGOPTIONS=-c search_path=identidad,pg_catalog,extensiones', os.environ.get('POSTGRES_CONTENEDOR', 'hexacore-postgres'), 'psql', '-U', os.environ.get('POSTGRES_USUARIO', 'hexacore'),
+                             '-d', os.environ.get('POSTGRES_BD', 'hexacore'), '-tAc', consulta], capture_output=True, text=True)
     return salida.stdout.strip() or salida.stderr.strip()
 
 

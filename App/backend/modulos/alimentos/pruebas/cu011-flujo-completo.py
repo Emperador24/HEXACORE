@@ -103,8 +103,8 @@ def pedir(metodo, ruta, usuario, cuerpo=None, roles=('Cliente',), espera=30,
 def sql(consulta):
     """Una consulta contra la base del servicio, para comprobar efectos."""
     salida = subprocess.run(
-        ['docker', 'exec', 'hexacore-postgres', 'psql', '-qtA', '-F', '|',
-         '--username=hexacore', '--dbname=pedidos', '-c', consulta],
+        ['docker', 'exec', '-e', 'PGOPTIONS=-c search_path=alimentos,pg_catalog,extensiones', os.environ.get('POSTGRES_CONTENEDOR', 'hexacore-postgres'), 'psql', '-qtA', '-F', '|',
+         '--username=' + os.environ.get('POSTGRES_USUARIO', 'hexacore'), '--dbname=' + os.environ.get('POSTGRES_BD', 'hexacore'), '-c', consulta],
         capture_output=True, text=True, check=True).stdout.strip()
     return [l.split('|') for l in salida.splitlines() if l]
 

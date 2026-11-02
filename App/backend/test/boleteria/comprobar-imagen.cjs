@@ -1,3 +1,4 @@
+const { base: basePruebas, opcionesPg } = require('../base-unica/conexiones.cjs');
 const assert = require('node:assert/strict');
 const { randomUUID } = require('node:crypto');
 const { readFileSync } = require('node:fs');
@@ -5,13 +6,13 @@ const { resolve } = require('node:path');
 const { Client } = require('pg');
 const Redis = require('ioredis');
 const { JwtService } = require('@nestjs/jwt');
-const gateway = 'http://127.0.0.1:18080/api/v1',
-  directo = 'http://127.0.0.1:13097/api/v1';
+const gateway = 'http://127.0.0.1:18082/api/v1',
+  directo = 'http://127.0.0.1:13117/api/v1';
 const bases = {
-  ventas: 'entradas_e2e',
-  catalogo: 'catalogo_boleteria_e2e',
-  postventa: 'postventa_boleteria_e2e',
-  acceso: 'acceso_qr_boleteria_e2e',
+  ventas: basePruebas,
+  catalogo: basePruebas,
+  postventa: basePruebas,
+  acceso: basePruebas,
 };
 const claves = readFileSync(
   resolve(__dirname, '../claves/jwt-privada.pem'),
@@ -36,7 +37,7 @@ const token = (sub, roles, jti_) =>
 const cliente = token(usuario, ['Cliente'], jti),
   portero = token(personal, ['Personal'], randomUUID());
 const db = {},
-  redis = new Redis({ host: '127.0.0.1', port: 16382 });
+  redis = new Redis({ host: '127.0.0.1', port: 16384 });
 async function pedir(metodo, ruta, auth, cuerpo, extra = {}, base = gateway) {
   const r = await fetch(base + ruta, {
     method: metodo,
@@ -57,13 +58,7 @@ async function pedir(metodo, ruta, auth, cuerpo, extra = {}, base = gateway) {
 }
 async function main() {
   for (const [n, database] of Object.entries(bases)) {
-    db[n] = new Client({
-      host: '127.0.0.1',
-      port: 15435,
-      user: 'cu011_e2e',
-      password: 'cu011_e2e',
-      database,
-    });
+    db[n] = new Client(opcionesPg(n));
     await db[n].connect();
   }
   const salud = await pedir('GET', '/salud', null, undefined, {}, directo);

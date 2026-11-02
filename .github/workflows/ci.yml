@@ -30,6 +30,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  COMPOSE_PARALLEL_LIMIT: '1'
   NODE_VERSION: '22'
   FLUTTER_VERSION: '3.47.4'
 
@@ -84,13 +85,16 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version-file: App/backend/.nvmrc
 
       # Las suites son guiones de Python que hablan por HTTP; no necesitan
       # dependencias, solo el intérprete, que el runner ya trae.
-      - name: Levantar el sistema completo
+      - name: Preparar herramientas de las semillas explícitas
+        working-directory: App/backend
+        run: npm ci && npm run build
+      - name: Levantar instalación nueva con datos demo explícitos
         working-directory: App/infra
-        run: ./iniciar.sh
+        run: ./iniciar.sh --datos-demo npm
 
       - name: Autenticación (CU-027)
         working-directory: App/backend
@@ -126,15 +130,15 @@ jobs:
           cache: npm
           cache-dependency-path: App/backend/package-lock.json
       - run: npm ci
-      - name: Infraestructura exclusiva y migración financiera única
+      - name: Infraestructura exclusiva y preparación única de ocho esquemas
         run: npm run test:infra
       - name: Tipos
         run: npm run lint
       - name: Unitarias con Redis real
         env:
-          REDIS_INVENTARIO_PRUEBAS_URL: redis://127.0.0.1:16382
+          REDIS_INVENTARIO_PRUEBAS_URL: redis://127.0.0.1:16384
           REDIS_HOST: 127.0.0.1
-          REDIS_PUERTO: "16382"
+          REDIS_PUERTO: "16384"
         run: npm test -- --runInBand
       - name: Infraestructura de correo exclusiva
         run: npm run test:trabajador:infra
@@ -173,7 +177,7 @@ jobs:
       - name: Logs si falla
         if: failure()
         run: |
-          docker compose -p hexacore-backend-e2e -f test/docker-compose.e2e.yml -f test/docker-compose.imagen.yml logs --tail 100
+          docker compose -p hexacore-base-unica-e2e -f test/docker-compose.e2e.yml -f test/docker-compose.imagen.yml logs --tail 100
           docker compose -p hexacore-trabajador-e2e -f test/trabajador/docker-compose.yml --profile imagen logs --tail 100
       - name: Conservar logs de los procesos compilados
         if: always()
@@ -263,9 +267,9 @@ jobs:
         run: docker compose -f App/infra/docker-compose.yml --profile servicios config -q
 
   datos:
-    name: Ensayo de datos aislados por esquemas
+    name: Transferencia histórica y aplicaciones sobre esquemas
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 35
     defaults:
       run:
         working-directory: App/backend
@@ -276,25 +280,55 @@ jobs:
           node-version-file: App/backend/.nvmrc
           cache: npm
           cache-dependency-path: App/backend/package-lock.json
-      - run: npm ci
-      - run: npm run build
-      - name: Origen y destino exclusivos
+      - run: git fetch --no-tags origin be57961472a0802c90a57d247fb67e96e6717b1b
+      - run: npm ci && npm run build
+      - name: Fuente histórica fijada y destino del ensayo
         run: |
-          npm run test:imagen:infra
           npm run ensayo:datos:infra
-      - name: Referencia financiera existente
-        run: npm run test:pagos:convivencia
-      - name: Preparar, inmovilizar y respaldar
+          npm run ensayo:historico -- --levantar
+      - name: Respaldar y conciliar ocho bases anteriores
         run: |
           npm run ensayo:datos -- preparar --salida=/tmp/hexacore-consolidacion/ci
           npm run ensayo:datos -- capturar --salida=/tmp/hexacore-consolidacion/ci
-      - name: Restauración, fallos controlados, transferencia y conciliación
+          ENSAYO_SALIDA=/tmp/hexacore-consolidacion/ci npm run ensayo:datos:verificar
+          docker compose -p hexacore-backend-e2e -f test/consolidacion/historico/docker-compose.e2e.yml stop redis rabbitmq
+      - name: Copia identificada, historiales reconocidos y lectura anterior a escrituras
+        run: |
+          npm run datos:clonar-pruebas -- /tmp/hexacore-consolidacion/ci
+          npm run datos:preparar
         env:
-          ENSAYO_SALIDA: /tmp/hexacore-consolidacion/ci
-        run: npm run ensayo:datos:verificar
-      - name: Parar únicamente los proyectos del ensayo
+          NODE_ENV: test
+          POSTGRES_HOST: 127.0.0.1
+          POSTGRES_PUERTO: '15439'
+          POSTGRES_USUARIO: cu011_e2e
+          POSTGRES_CONTRASENA: cu011_e2e
+          POSTGRES_BD: hexacore_e2e
+      - run: npm run datos:lectura-transferida
+      - name: Aplicaciones sobre copia transferida
+        run: |
+          npm run test:imagen:infra
+          npm run datos:verificar-preparacion
+          npm run datos:flujos
+          npm run datos:ejecucion
+          npm run test:pagos:convivencia
+          npm run test:limpiar
+      - name: Instalación nueva aislada
+        env:
+          POSTGRES_BD_PRUEBAS: hexacore_vacia_e2e
+        run: |
+          npm run test:imagen:infra
+          node test/base-unica/lectura-vacia.cjs
+          python3 test/base-unica/comprobar-auxiliares.py
+          npm run datos:verificar-preparacion
+          npm run datos:flujos
+          npm run datos:ejecucion
+          npm run test:pagos:convivencia
+          npm run test:limpiar
+      - name: Parar proyectos propios sin borrar referencias/mensajes
         if: always()
         run: |
+          npm run test:limpiar
+          POSTGRES_BD_PRUEBAS=hexacore_vacia_e2e npm run test:limpiar
           docker compose -p hexacore-consolidacion-e2e -f test/consolidacion/docker-compose.yml stop
-          docker compose -p hexacore-backend-e2e -f test/docker-compose.e2e.yml -f test/docker-compose.imagen.yml stop
+          docker compose -p hexacore-backend-e2e -f test/consolidacion/historico/docker-compose.e2e.yml -f test/consolidacion/historico/docker-compose.imagen.yml stop
       # No se publican respaldos, registros de filas, RDB ni manifiestos sensibles.

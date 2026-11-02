@@ -1,3 +1,4 @@
+import { cargarDestinoPostgres } from '../../../../compartido/config/postgres';
 import { cargarClavePublica, ClavePublica } from './clave-publica';
 
 /**
@@ -64,12 +65,7 @@ export function cargarConfiguracion(): ConfiguracionServicio {
     puerto: entero('PUERTO', 3010),
     prefijoApi: texto('PREFIJO_API', 'api/v1'),
     postgres: {
-      host: texto('POSTGRES_HOST', 'localhost'),
-      puerto: entero('POSTGRES_PUERTO', 5432),
-      usuario: texto('POSTGRES_USUARIO', 'hexacore'),
-      contrasena:
-        entorno === 'production' ? requerido('POSTGRES_CONTRASENA') : texto('POSTGRES_CONTRASENA', 'hexacore'),
-      base: texto('POSTGRES_BD_ACCESO_QR', 'acceso_qr'),
+      ...cargarDestinoPostgres(),
     },
     redis: {
       host: texto('REDIS_HOST', 'localhost'),

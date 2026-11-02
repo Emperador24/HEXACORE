@@ -26,6 +26,7 @@ uso, y eso es justo lo que hay que poder leer sin saltar de archivo.
 
 import json
 import re
+import os
 import subprocess
 import urllib.error
 import urllib.parse
@@ -151,9 +152,16 @@ def sql(consulta, base=None):
                 'Desde ADR-14 no hay JOIN posible entre ellas. Sepárala en dos consultas.'
             )
         base = bases.pop() if bases else BASE_POSTVENTA
+    esquema = {
+        'administracion':'identidad', 'pedidos':'alimentos',
+        'eventos_emergencias':'personal_logistica',
+        'entradas_mercado_secundario':'entradas_ventas',
+        'catalogo':'entradas_catalogo', 'postventa':'entradas_postventa',
+        'acceso_qr':'entradas_acceso_qr', 'pagos':'finanzas_pagos',
+    }[base]
     return subprocess.run(
-        ['docker', 'exec', 'hexacore-postgres', 'psql', '-U', 'hexacore',
-         '-d', base, '-tAc', consulta],
+        ['docker', 'exec', '-e', 'PGOPTIONS=-c search_path=' + esquema + ',pg_catalog,extensiones', os.environ.get('POSTGRES_CONTENEDOR', 'hexacore-postgres'), 'psql', '-U', os.environ.get('POSTGRES_USUARIO', 'hexacore'),
+         '-d', os.environ.get('POSTGRES_BD', 'hexacore'), '-tAc', consulta],
         capture_output=True, text=True).stdout.strip()
 
 

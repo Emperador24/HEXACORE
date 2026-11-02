@@ -318,7 +318,7 @@ export class CompraService {
   }
 
   private async siguienteNumero(tx: EntityManager, secuencia: string, prefijo: string): Promise<string> {
-    const [{ valor }] = (await tx.query(`SELECT nextval('${secuencia}') AS valor`)) as { valor: string }[];
+    const [{ valor }] = (await tx.query(`SELECT nextval('entradas_ventas.${secuencia}') AS valor`)) as { valor: string }[];
     return `${prefijo}-${new Date().getFullYear()}-${String(valor).padStart(6, '0')}`;
   }
 }

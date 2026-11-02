@@ -1,3 +1,4 @@
+const { base: basePruebas, opcionesPg } = require('../base-unica/conexiones.cjs');
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { Empleado } from '../../modulos/personal-logistica/turnos-asistencia/entities/empleado.entity';
@@ -77,9 +78,9 @@ describe('Convivencia de Personal/Logística con Identidad y Alimentos en Núcle
   it('usa las tres bases correctas y conserva siete migraciones, sin synchronize', async () => {
     const conexiones = await nucleo.datos.query(`SELECT DISTINCT application_name,datname FROM pg_stat_activity WHERE application_name LIKE 'nucleo-%'`);
     expect(conexiones).toEqual(expect.arrayContaining([
-      { application_name: 'nucleo-identidad', datname: 'identidad_cu011_e2e' },
-      { application_name: 'nucleo-alimentos', datname: 'alimentos_cu011_e2e' },
-      { application_name: 'nucleo-personal-logistica', datname: 'eventos_emergencias_nucleo_e2e' },
+      { application_name: 'nucleo-identidad', datname: basePruebas },
+      { application_name: 'nucleo-alimentos', datname: basePruebas },
+      { application_name: 'nucleo-personal-logistica', datname: basePruebas },
     ]));
     const cantidades: number[] = [];
     for (const fuente of [nucleo.identidad, nucleo.alimentos, nucleo.datos]) {
@@ -87,8 +88,8 @@ describe('Convivencia de Personal/Logística con Identidad y Alimentos en Núcle
       cantidades.push((await fuente.query('SELECT count(*)::int AS n FROM migraciones'))[0].n as number);
     }
     expect(cantidades).toEqual([3, 2, 2]);
-    expect((await nucleo.identidad.query("SELECT to_regclass('public.empleados') AS tabla"))[0].tabla).toBeNull();
-    expect((await nucleo.alimentos.query("SELECT to_regclass('public.empleados') AS tabla"))[0].tabla).toBeNull();
+    expect((await nucleo.identidad.query("SELECT to_regclass('identidad.empleados') AS tabla"))[0].tabla).toBeNull();
+    expect((await nucleo.alimentos.query("SELECT to_regclass('alimentos.empleados') AS tabla"))[0].tabla).toBeNull();
   });
 
   it('logout real revoca inmediatamente el acceso a ficha, turnos y perfil', async () => {

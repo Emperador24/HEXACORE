@@ -1,3 +1,4 @@
+import { opcionesEsquema, opcionesSesion, migracionesEnEsquema } from '../../../compartido/persistencia/esquemas';
 import { config as cargarEnv } from 'dotenv';
 import { CONEXION_ALIMENTOS } from './conexion';
 import { DataSource, DataSourceOptions, EntitySchema } from 'typeorm';
@@ -22,7 +23,7 @@ export const ENTIDADES: (Function | EntitySchema)[] = [
   ReservaInventario,
 ];
 
-export const MIGRACIONES: NonNullable<DataSourceOptions['migrations']> = [
+export const MIGRACIONES = [
   EsquemaInicialCu0111789902006180,
   ReservasInventarioCu0111790000000000,
 ];
@@ -31,13 +32,14 @@ export function opcionesDataSource(config: ConfiguracionServicio): DataSourceOpt
   return {
     name: CONEXION_ALIMENTOS,
     type: 'postgres',
+    ...opcionesEsquema('alimentos'),
     host: config.postgres.host,
     port: config.postgres.puerto,
     username: config.postgres.usuario,
     password: config.postgres.contrasena,
     database: config.postgres.base,
     entities: ENTIDADES,
-    migrations: MIGRACIONES,
+    migrations: migracionesEnEsquema(MIGRACIONES, 'alimentos'),
     migrationsTableName: 'migraciones',
 
     // El esquema se administra mediante migraciones explícitas.
@@ -45,7 +47,7 @@ export function opcionesDataSource(config: ConfiguracionServicio): DataSourceOpt
     migrationsRun: false,
 
     // Límites del pool y de espera, siguiendo el servicio de Administración.
-    extra: {
+    extra: { ...opcionesSesion('alimentos'),
       application_name: 'nucleo-alimentos',
       max: config.postgres.maxConexiones,
       connectionTimeoutMillis: config.postgres.esperaMaximaMs,

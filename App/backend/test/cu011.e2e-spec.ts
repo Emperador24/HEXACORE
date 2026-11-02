@@ -1,3 +1,5 @@
+import { opcionesSesion } from '../compartido/persistencia/esquemas';
+const { base: basePruebas, opcionesPg } = require('./base-unica/conexiones.cjs');
 import { opcionesDataSource as opcionesLogistica } from '../modulos/personal-logistica/persistencia/data-source';
 import 'reflect-metadata';
 import { ChildProcess, execFileSync, spawn } from 'node:child_process';
@@ -81,7 +83,7 @@ describe('CU-011 Alimentos → Pagos → pasarela con persistencia y mensajería
   }
 
   async function conexionesRabbit(): Promise<{ client_properties: { connection_name?: string } }[]> {
-    const r = await fetch('http://127.0.0.1:16775/api/connections', {
+    const r = await fetch('http://127.0.0.1:16779/api/connections', {
       headers: { Authorization: `Basic ${Buffer.from('cu011_e2e:cu011_e2e').toString('base64')}` },
       signal: AbortSignal.timeout(3000),
     });
@@ -117,28 +119,28 @@ describe('CU-011 Alimentos → Pagos → pasarela con persistencia y mensajería
 
   beforeAll(async () => {
     const config = cargarConfiguracion();
-    expect(config.postgres).toMatchObject({ host: '127.0.0.1', puerto: 15435,
-      usuario: 'cu011_e2e', base: 'alimentos_cu011_e2e' });
-    expect(config.redis).toEqual({ host: '127.0.0.1', puerto: 16382 });
-    expect(config.rabbitmq.url).toBe('amqp://cu011_e2e:cu011_e2e@127.0.0.1:15675/cu011');
+    expect(config.postgres).toMatchObject({ host: '127.0.0.1', puerto: 15439,
+      usuario: 'cu011_e2e', base: basePruebas });
+    expect(config.redis).toEqual({ host: '127.0.0.1', puerto: 16384 });
+    expect(config.rabbitmq.url).toBe('amqp://cu011_e2e:cu011_e2e@127.0.0.1:15679/cu011');
     libroPagos = new DataSource({ type: 'postgres', host: config.postgres.host, port: config.postgres.puerto,
-      username: config.postgres.usuario, password: config.postgres.contrasena, database: 'pagos_e2e',
+      username: config.postgres.usuario, password: config.postgres.contrasena, database: basePruebas, extra: opcionesSesion('finanzas-pagos'), installExtensions: false,
       synchronize: false });
     await libroPagos.initialize();
-    datos = new DataSource({ ...opcionesDataSource(config), extra: { application_name: 'observador-alimentos' } });
+    datos = new DataSource({ ...opcionesDataSource(config), extra: { ...opcionesSesion('alimentos'), application_name: 'observador-alimentos' } });
     await datos.initialize();
-    await datos.runMigrations();
+
     redis = new Redis({ host: config.redis.host, port: config.redis.puerto, lazyConnect: true,
       retryStrategy: () => null, maxRetriesPerRequest: 1 });
     await redis.connect();
     const ci = configuracionIdentidad();
-    expect(ci.postgres.base).toBe('identidad_cu011_e2e');
-    identidad = new DataSource({ ...opcionesIdentidad(ci), extra: { application_name: 'observador-identidad' } });
+    expect(ci.postgres.base).toBe(basePruebas);
+    identidad = new DataSource({ ...opcionesIdentidad(ci), extra: { ...opcionesSesion('identidad'), application_name: 'observador-identidad' } });
     await identidad.initialize();
-    await identidad.runMigrations();
-    logistica = new DataSource({ ...opcionesLogistica(), extra: { application_name: 'observador-logistica' } });
-    expect(logistica.options).toMatchObject({ database: 'eventos_emergencias_nucleo_e2e', synchronize: false });
-    await logistica.initialize(); await logistica.runMigrations();
+
+    logistica = new DataSource({ ...opcionesLogistica(), extra: { ...opcionesSesion('personal-logistica'), application_name: 'observador-logistica' } });
+    expect(logistica.options).toMatchObject({ database: basePruebas, synchronize: false });
+    await logistica.initialize();
     await identidad.query(`INSERT INTO usuarios (id,nombre,email,hash_contrasena,estado,verificado_en)
       VALUES ($1,'Cuenta Núcleo E2E',$2,$3,'ACTIVA',now())`, [cliente, email, await cifrarContrasena(contrasena)]);
     await identidad.query(`INSERT INTO usuarios_roles (usuario_id,rol_id) SELECT $1,id FROM roles WHERE nombre='Cliente'`, [cliente]);
@@ -274,14 +276,14 @@ describe('CU-011 Alimentos → Pagos → pasarela con persistencia y mensajería
     await identidad.query(`DELETE FROM usuarios_roles WHERE usuario_id=$1 AND rol_id IN (SELECT id FROM roles WHERE nombre='Administrador')`, [cliente]);
     expect((await api('admin/cuentas', 'GET', undefined, cabeceraAdmin)).status).toBe(403);
     expect((await api('sesiones/actual', 'DELETE', undefined, cabeceraAdmin)).status).toBe(200);
-    expect((await identidad.query('SELECT current_database() AS base'))[0].base).toBe('identidad_cu011_e2e');
-    expect((await datos.query('SELECT current_database() AS base'))[0].base).toBe('alimentos_cu011_e2e');
-    expect((await identidad.query("SELECT to_regclass('public.pedidos') AS tabla"))[0].tabla).toBeNull();
-    expect((await datos.query("SELECT to_regclass('public.usuarios') AS tabla"))[0].tabla).toBeNull();
+    expect((await identidad.query('SELECT current_database() AS base'))[0].base).toBe(basePruebas);
+    expect((await datos.query('SELECT current_database() AS base'))[0].base).toBe(basePruebas);
+    expect((await identidad.query("SELECT to_regclass('identidad.pedidos') AS tabla"))[0].tabla).toBeNull();
+    expect((await datos.query("SELECT to_regclass('alimentos.usuarios') AS tabla"))[0].tabla).toBeNull();
     const activas = await identidad.query("SELECT DISTINCT application_name, datname, client_addr FROM pg_stat_activity WHERE application_name IN ('nucleo-identidad','nucleo-alimentos')");
     expect(activas).toEqual(expect.arrayContaining([
-      expect.objectContaining({ application_name: 'nucleo-identidad', datname: 'identidad_cu011_e2e' }),
-      expect.objectContaining({ application_name: 'nucleo-alimentos', datname: 'alimentos_cu011_e2e' }),
+      expect.objectContaining({ application_name: 'nucleo-identidad', datname: basePruebas }),
+      expect.objectContaining({ application_name: 'nucleo-alimentos', datname: basePruebas }),
     ]));
   });
 

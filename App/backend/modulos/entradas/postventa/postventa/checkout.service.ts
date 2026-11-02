@@ -534,7 +534,7 @@ export class CheckoutService {
   }
 
   private async siguienteNumeroTransaccion(gestor: EntityManager): Promise<string> {
-    const filas = (await gestor.query(`SELECT nextval('numero_transaccion_seq') AS valor`)) as { valor: string }[];
+    const filas = (await gestor.query(`SELECT nextval('entradas_postventa.numero_transaccion_seq') AS valor`)) as { valor: string }[];
     const consecutivo = String(filas[0].valor).padStart(6, '0');
     return `TXN-${new Date().getFullYear()}-${consecutivo}`;
   }

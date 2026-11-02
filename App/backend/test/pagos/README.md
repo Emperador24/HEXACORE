@@ -2,10 +2,9 @@
 
 Usar **Node 22.22.3** (`nvm install && nvm use` en App/backend), npm ci, Docker y
 Compose. [Entorno y secuencia completa](../README.md). No ejecutar iniciar.sh,
-semillas ni limpiezas de desarrollo. Solo proyecto **hexacore-backend-e2e**:
-PostgreSQL 15435/cu011_e2e, libro único pagos_e2e, Redis 16382, RabbitMQ
-15675/16775 (vhost cu011), simulador 13101. Las siete bases de negocio siguen
-separadas. No se lee ni modifica una base habitual.
+semillas ni limpiezas de desarrollo. Solo proyecto **hexacore-base-unica-e2e**:
+PostgreSQL 15439/cu011_e2e, base hexacore_e2e, libro finanzas_pagos.transacciones_pago, Redis 16384, RabbitMQ
+15679/16779 (vhost cu011), simulador 13105. Los ocho esquemas conservan sus historiales. No se lee ni modifica una base habitual.
 
 Desde raíz, con Node seleccionado:
 
@@ -13,7 +12,7 @@ Desde raíz, con Node seleccionado:
 npm --prefix App/backend ci
 npm --prefix App/backend run lint
 npm --prefix App/backend run test:infra
-REDIS_HOST=127.0.0.1 REDIS_PUERTO=16382 REDIS_INVENTARIO_PRUEBAS_URL=redis://127.0.0.1:16382 npm --prefix App/backend test -- --runInBand
+REDIS_HOST=127.0.0.1 REDIS_PUERTO=16384 REDIS_INVENTARIO_PRUEBAS_URL=redis://127.0.0.1:16384 npm --prefix App/backend test -- --runInBand
 npm --prefix App/backend run test:pagos:modulo
 npm --prefix App/backend run test:e2e
 npm --prefix App/backend run test:e2e
@@ -30,15 +29,15 @@ npm --prefix App/backend run test:limpiar
 ```
 
 Ejecutar secuencialmente. Los contratos/convivencia requieren ambas imágenes
-saludables: Núcleo 13089, Boletería 13097 y gateway 18080 (puertos en loopback).
+saludables: Núcleo 13109, Boletería 13117 y gateway 18082 (puertos en loopback).
 El webhook del simulador llama a nucleo:3002; no hay servicio Pagos ni endpoints
-de cobro/reembolso. La tarea migracion-pagos aplica el historial original una
+de cobro/reembolso. La tarea preparacion-base aplica/reconoce los ocho historiales/18 migraciones originales una
 vez por despliegue y sale; ambos programas esperan su terminación. Los tests
 no vuelven a ejecutar la migración financiera al reiniciar aplicaciones.
 
 Las **27 unitarias originales** de servicio/guarda se conservan (la guarda se
 prueba ahora en el llamante). Se añaden 13 de adaptadores locales y un caso de
-salud financiera. El conjunto del workspace tiene **808 casos en 56 suites**.
+salud financiera. El conjunto del workspace tiene **830 casos en 57 suites**.
 La guarda exige JWT/revocación como antes; importar Pagos no sustituye autorización.
 No se utiliza passWithNoTests ni skip. El código PAGOS_ERROR_HTTP se mantiene
 como contrato legado de error, aunque ya no haya transporte interno HTTP.
@@ -80,7 +79,7 @@ vez. Las carreras del libro/pasarela y consistencia eventual por proyecciones de
 Entradas conservan sus límites. No se añade atomicidad entre bases o proveedor.
 
 No se ejecutan TRUNCATE, FLUSHDB, purgas, ni reinicios de las bases/broker.
-El libro e historial permanecen hasta la limpieza explícita del proyecto.
+El libro e historial permanecen: test:limpiar solo detiene recursos, sin borrar volúmenes.
 No se prueban interfaces, banco real, réplicas ni publicación GHCR. Los contratos
 usan JWT/HMAC fixtures; convivencia sí usa login real. CI/CD configurados no
 equivalen a workflow/publicación remotos ejecutados.

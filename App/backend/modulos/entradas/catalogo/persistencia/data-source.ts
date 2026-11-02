@@ -1,3 +1,4 @@
+import { opcionesEsquema, opcionesSesion, migracionesEnEsquema } from '../../../../compartido/persistencia/esquemas';
 import { CONEXION } from './conexion';
 import { config as cargarEnv } from 'dotenv';
 import { DataSource, DataSourceOptions } from 'typeorm';
@@ -14,13 +15,14 @@ export function opcionesDataSource(config: ConfiguracionServicio): DataSourceOpt
   return {
     name: CONEXION,
     type: 'postgres',
+    ...opcionesEsquema('entradas-catalogo'),
     host: config.postgres.host,
     port: config.postgres.puerto,
     username: config.postgres.usuario,
     password: config.postgres.contrasena,
     database: config.postgres.base,
     entities: ENTIDADES,
-    migrations: MIGRACIONES,
+    migrations: migracionesEnEsquema(MIGRACIONES, 'entradas-catalogo'),
     migrationsTableName: 'migraciones',
 
     // Nunca `synchronize: true`. Las restricciones CHECK que mantienen
@@ -33,7 +35,7 @@ export function opcionesDataSource(config: ConfiguracionServicio): DataSourceOpt
     // migrar la misma base.
     migrationsRun: false,
 
-    extra: { application_name: 'boleteria-catalogo' },
+    extra: { ...opcionesSesion('entradas-catalogo'), application_name: 'boleteria-catalogo' },
     logging: config.entorno === 'development' ? ['error', 'warn', 'migration'] : ['error'],
   };
 }

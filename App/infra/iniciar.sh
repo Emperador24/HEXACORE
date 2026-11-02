@@ -8,18 +8,16 @@
 #   ./iniciar.sh --rol servicios --datos 192.168.1.20
 #                                         servicios y gateway apuntando al A (computador B)
 #   ./iniciar.sh --registro develop       desde las imágenes que publicó el CD
-#   ./iniciar.sh --datos-demo sql         datos de ejemplo sin necesitar Node
+#   ./iniciar.sh --datos-demo npm         semillas explícitas, solo instalación vacía
 #   ./iniciar.sh --parar                  baja todo, conservando los datos
 #
 # Por qué existe: el atributo de **desplegabilidad** exige que el sistema
 # completo se levante desde un único script en un computador, y que pueda estar
 # repartido en dos o más. Las dos cosas se hacen aquí.
 #
-# Lo que SÍ hace, y antes no: aplicar las migraciones de los cuatro servicios,
-# sembrar sus datos de ejemplo y cargar el inventario de Redis del CU-011. Sin
-# esos tres pasos el sistema arrancaba "sano" pero inservible — las sondas solo
-# comprueban que PostgreSQL responde, no que existan las tablas—, y la primera
-# petición real fallaba con 503.
+# Prepara ocho esquemas mediante una tarea única antes de habilitar aplicaciones.
+# Los datos demo requieren petición explícita y una instalación vacía; no forman
+# parte de una actualización ni de la migración de datos existentes.
 #
 # Lo que NO hace: instalar Docker, ni construir la app móvil. Tampoco borra
 # datos: para eso está `docker compose down -v`, a propósito fuera de este
@@ -33,13 +31,10 @@ RAIZ="$(cd ../.. && pwd)"
 ROL="todo"
 DATOS=""
 REPLICAS=1
-DEMO="si"
+DEMO="no"
 PARAR="no"
-# Cómo poblar los datos de ejemplo:
-#   auto  las semillas con npm si hay Node; si no, los volcados SQL
-#   sql   siempre los volcados (no necesita Node)
-#   npm   siempre las semillas
-DATOS_DEMO="auto"
+# Las semillas destructivas requieren --datos-demo npm y una base vacía.
+DATOS_DEMO="npm"
 # Etiqueta a desplegar desde el registro (develop, main, latest, sha-XXXXXXX).
 # Vacío = compilar aquí, que es lo normal mientras se desarrolla.
 REGISTRO=""
@@ -60,7 +55,7 @@ while [[ $# -gt 0 ]]; do
     --datos)     DATOS="${2:-}"; shift 2 ;;
     --replicas)  REPLICAS="${2:-1}"; shift 2 ;;
     --registro)  REGISTRO="${2:-develop}"; shift 2 ;;
-    --datos-demo) DATOS_DEMO="${2:-auto}"; shift 2 ;;
+    --datos-demo) DATOS_DEMO="${2:-npm}"; DEMO="si"; shift 2 ;;
     --sin-demo)  DEMO="no"; shift ;;
     --parar)     PARAR="si"; shift ;;
     -h|--help)   uso 0 ;;
@@ -113,6 +108,19 @@ if [[ "$PARAR" == "si" ]]; then
   "${COMPOSE[@]}" --profile servicios down
   verde "Listo. Para borrar también los datos: docker compose down -v"
   exit 0
+fi
+
+# Este script no realiza el corte de las ocho bases anteriores.
+if [[ -z "$DATOS" ]] && docker ps --format '{{.Names}}' | grep -qx hexacore-postgres; then
+  ANTERIORES="$(docker exec hexacore-postgres psql -U hexacore -d postgres -Atc "SELECT count(*) FROM pg_database WHERE datname IN ('administracion','pedidos','entradas_mercado_secundario','eventos_emergencias','catalogo','postventa','acceso_qr','pagos')")"
+  if [[ "$ANTERIORES" != "0" ]]; then
+    rojo "Instalación anterior detectada. Ejecuta el procedimiento autorizado de corte y conciliación; iniciar.sh no lo automatiza."
+    exit 1
+  fi
+fi
+if [[ "$DEMO" == "si" && "$DATOS_DEMO" != "npm" ]]; then
+  rojo "Los volcados por bases antiguas están retirados. Usa --datos-demo npm solo en una instalación vacía."
+  exit 1
 fi
 
 # Un servicio retirado puede seguir como huérfano del mismo proyecto Compose.
@@ -180,7 +188,7 @@ esperar_sano() {
 }
 
 # Resuelve el contenedor de un servicio de Compose. El Núcleo y
-# Eventos/Emergencias no tienen `container_name` —es lo que permite replicarlos
+# Boletería no tienen `container_name` —es lo que permite replicarlos
 # (ADR-12)—, así que su nombre lo pone Docker y hay que preguntárselo.
 contenedor_de() {
   "${COMPOSE[@]}" ps -q "$1" 2>/dev/null | head -1
@@ -202,30 +210,7 @@ fi
 
 # --- Esquema y datos de ejemplo ---------------------------------------------
 
-# Aplica las migraciones pendientes de un servicio.
-#
-# Hace falta porque ningún servicio migra al arrancar: todos llevan
-# `migrationsRun: false` a propósito, para que dos réplicas del mismo servicio
-# no compitan por migrar la misma base (ver `persistencia/data-source.ts`).
-#
-# Sin esto el sistema arranca "sano" —las sondas solo comprueban que PostgreSQL
-# responde, no que existan las tablas— y falla en la primera petición real. Es
-# lo que pasaba con Pedidos: contenedor en verde, base sin una sola tabla y el
-# gateway devolviendo 503.
-migrar() {
-  local servicio="$1" tarea="${2:-migracion:correr}" carpeta="$RAIZ/App/services/$1"
-  [[ "$servicio" == "nucleo" || "$servicio" == "boleteria" ]] && carpeta="$RAIZ/App/backend"
-  if [[ ! -d "$carpeta/node_modules" ]]; then
-    gris "  $servicio: sin node_modules, se omiten las migraciones"
-    return 1
-  fi
-  if (cd "$carpeta" && npm run "$tarea" >/dev/null 2>&1); then
-    verde "  $servicio ($tarea): esquema al día"
-  else
-    rojo "  $servicio: las migraciones fallaron (correr a mano: npm run $tarea)"
-    return 1
-  fi
-}
+# La tarea Compose preparacion-base migra una sola vez, antes de ambas aplicaciones.
 
 # Carga en Redis el inventario de cada establecimiento de Pedidos.
 #
@@ -238,16 +223,14 @@ migrar() {
 # que es lo correcto en producción; aquí eso no es un error, solo significa que
 # ya estaba hecho.
 preparar_inventario_pedidos() {
-  # El inventario es de Alimentos desde ADR-14: salió del Núcleo con los CU-011
-  # a CU-015. Esta función seguía apuntando a `autenticacion/src/modulos/...`,
-  # que ya no existe, así que no preparaba nada y lo decía en gris.
+  # El inventario pertenece a Alimentos, dentro del workspace del Núcleo.
   local carpeta="$RAIZ/App/backend"
   [[ -d "$carpeta/node_modules" ]] || return 0
 
   local establecimientos
   establecimientos="$(docker exec hexacore-postgres psql -qtA \
-    --username=hexacore --dbname=pedidos \
-    -c 'SELECT id FROM establecimientos;' 2>/dev/null || true)"
+    --username=hexacore --dbname="${POSTGRES_BD:-hexacore}" \
+    -c 'SELECT id FROM alimentos.establecimientos;' 2>/dev/null || true)"
   if [[ -z "$establecimientos" ]]; then
     gris "  pedidos: sin establecimientos, no hay inventario que preparar"
     return 0
@@ -273,144 +256,48 @@ preparar_inventario_pedidos() {
   verde "  pedidos: inventario en Redis ($preparados preparados, $ya ya estaban)"
 }
 
-# Deriva el inventario de Redis directamente de PostgreSQL, sin Node.
-#
-# Es la contrapartida de `preparar_inventario_pedidos` para una máquina que
-# solo tiene Docker: mismas claves, mismo contenido, pero construidas con
-# `redis-cli` a partir de lo que ya está en la base. Las claves son simples —un
-# hash `disponibles:<establecimiento>` de producto a cantidad, y una marca
-# `preparado:<establecimiento>` a 1— así que replicarlas es exacto y se puede
-# comprobar comparando con lo que deja el comando de mantenimiento.
-#
-# Respeta la misma guarda que el script Lua: si ya hay inventario preparado, no
-# se toca nada.
-preparar_inventario_sin_node() {
-  local prefijo='pedidos:inv:{inventario}'
-  local filas
-  filas="$(docker exec hexacore-postgres psql -qtA -F'|' \
-    --username=hexacore --dbname=pedidos \
-    -c 'SELECT establecimiento_id, id, cantidad_inventario FROM productos WHERE activo ORDER BY establecimiento_id;' \
-    2>/dev/null || true)"
-  if [[ -z "$filas" ]]; then
-    gris "  pedidos: sin productos, no hay inventario que preparar"
-    return 0
-  fi
-
-  local comandos="" establecimientos="" preparados=0
-  while IFS='|' read -r establecimiento producto cantidad; do
-    [[ -n "$establecimiento" ]] || continue
-    if ! grep -q " $establecimiento " <<<" $establecimientos "; then
-      # Ya preparado: no se pisa, igual que hace el Lua.
-      if [[ "$(docker exec hexacore-redis redis-cli EXISTS "$prefijo:preparado:$establecimiento")" == "1" ]]; then
-        continue
-      fi
-      establecimientos="$establecimientos $establecimiento"
-      comandos+="SET $prefijo:preparado:$establecimiento 1"$'\n'
-      preparados=$(( preparados + 1 ))
-    fi
-    comandos+="HSET $prefijo:disponibles:$establecimiento $producto $cantidad"$'\n'
-  done <<<"$filas"
-
-  if [[ "$preparados" -eq 0 ]]; then
-    verde "  pedidos: el inventario de Redis ya estaba preparado"
-    return 0
-  fi
-  printf '%s' "$comandos" | docker exec -i hexacore-redis redis-cli >/dev/null
-  verde "  pedidos: inventario en Redis derivado de la base ($preparados establecimientos)"
-}
-
 sembrar() {
   local servicio="$1" tarea="${2:-semilla}" carpeta="$RAIZ/App/services/$1"
   [[ "$servicio" == "nucleo" || "$servicio" == "boleteria" ]] && carpeta="$RAIZ/App/backend"
   if [[ ! -d "$carpeta/node_modules" ]]; then
-    gris "  $servicio: sin node_modules, se omite la semilla (npm install para tenerla)"
-    return
+    rojo "  $servicio: falta npm ci en $carpeta"
+    return 1
   fi
   if (cd "$carpeta" && npm run "$tarea" >/dev/null 2>&1); then
     verde "  $servicio: datos de ejemplo listos"
   else
-    gris "  $servicio: la semilla falló, se continúa (correr a mano: npm run semilla)"
+    rojo "  $servicio: falló $tarea"
+    return 1
   fi
-}
-
-# Carga los volcados SQL en PostgreSQL. No necesita Node ni el código fuente:
-# es lo que permite levantar el sistema con datos usables en una máquina que
-# solo tiene Docker.
-cargar_volcados() {
-  local contenedor="hexacore-postgres"
-  if [[ -n "$DATOS" ]]; then
-    gris "  La base está en otra máquina; carga los volcados allí"
-    return
-  fi
-  if ! docker ps --format '{{.Names}}' | grep -q "^${contenedor}$"; then
-    gris "  No encuentro el contenedor de PostgreSQL, se omiten los datos"
-    return
-  fi
-  for base in administracion entradas_mercado_secundario eventos_emergencias pedidos; do
-    local archivo="datos-demo/$base.sql"
-    if [[ ! -f "$archivo" ]]; then
-      gris "  falta $archivo (regenéralo con ./exportar-datos-demo.sh)"
-      continue
-    fi
-    if docker exec -i "$contenedor" psql --quiet --username=hexacore \
-         --dbname="$base" -v ON_ERROR_STOP=0 < "$archivo" >/dev/null 2>&1; then
-      verde "  $base: datos cargados desde el volcado"
-    else
-      gris "  $base: el volcado dio avisos, revisa con psql si algo falta"
-    fi
-  done
 }
 
 if [[ "$DEMO" == "si" && "$ROL" != "datos" ]]; then
-  titulo "Datos de ejemplo"
-
-  metodo="$DATOS_DEMO"
-  if [[ "$metodo" == "auto" ]]; then
-    # Con Node se usan las semillas, que son la fuente de verdad. Sin Node
-    # —una máquina que solo tiene Docker— se cargan los volcados.
-    if command -v npm >/dev/null 2>&1 && [[ -d "$RAIZ/App/backend/node_modules" ]]; then
-      metodo="npm"
-    else
-      metodo="sql"
-    fi
+  [[ -z "$DATOS" ]] || { rojo "Las semillas automáticas solo admiten instalación local vacía."; exit 1; }
+  command -v npm >/dev/null && [[ -d "$RAIZ/App/backend/node_modules" ]] || {
+    rojo "Instala Node 22.22.3 y npm ci en App/backend antes de solicitar semillas."; exit 1;
+  }
+  # Cuenta todas las tablas de negocio, salvo los cuatro roles iniciales y los
+  # historiales. No se confía en estadísticas aproximadas ni se trunca para vaciar.
+  OCUPADAS="$(docker exec -i hexacore-postgres psql -U hexacore -d "${POSTGRES_BD:-hexacore}" -At -v ON_ERROR_STOP=1 <<'SQL'
+SELECT format('SELECT count(*) FROM %I.%I;',schemaname,tablename)
+FROM pg_tables WHERE schemaname IN ('identidad','alimentos','personal_logistica',
+ 'entradas_ventas','entradas_catalogo','entradas_postventa','entradas_acceso_qr','finanzas_pagos')
+AND tablename NOT IN ('migraciones','migrations')
+AND NOT (schemaname='identidad' AND tablename='roles')
+\gexec
+SELECT count(*) FROM migracion_control.procedencia WHERE origen <> 'instalacion-vacia';
+SQL
+)"
+  if grep -qv '^0$' <<<"$OCUPADAS"; then
+    rojo "Semillas rechazadas: la base contiene datos o procede de una transferencia."; exit 1
   fi
-
-  if [[ "$metodo" == "npm" ]]; then
-    # Primero el esquema: una semilla contra una base sin tablas falla entera.
-    gris "  Aplicando migraciones"
-    # El Núcleo tiene una secuencia de migraciones por módulo: cada uno contra
-    # su propia base, que es la separación de datos que ADR-12 conserva.
-    migrar nucleo migracion:identidad:correr || true
-    migrar nucleo migracion:alimentos:correr || true
-    migrar boleteria migracion:acceso-qr:correr || true
-    migrar boleteria migracion:ventas:correr || true
-    # Postventa después de Ventas: no por el esquema —son bases distintas y no
-    # hay llave foránea entre ellas desde ADR-14— sino porque la semilla de
-    # Ventas crea las entradas que la reventa publica.
-    migrar boleteria migracion:postventa:correr || true
-    migrar boleteria migracion:catalogo:correr || true
-    migrar nucleo migracion:logistica:correr || true
-
-    gris "  Sembrando datos"
-    sembrar nucleo semilla:identidad
-    sembrar boleteria semilla:ventas
-    # La misma proyección de eventos, en la base propia del Catálogo. Mientras
-    # no exista Eventos y recintos que la publique por el broker, hay que
-    # sembrar las dos (ADR-14, fase A).
-    sembrar boleteria semilla:catalogo
-    # La de logística va después de la de administración a propósito: da de alta
-    # a cada empleado sobre la cuenta que aquella acaba de crear.
-    sembrar nucleo semilla:logistica
-    sembrar nucleo semilla:alimentos
-    # Y el inventario de Redis después de la semilla, que es de donde sale.
-    preparar_inventario_pedidos
-  else
-    gris "  Sin Node disponible: cargando los volcados SQL"
-    cargar_volcados
-    # El inventario del CU-011 no viaja en el volcado de PostgreSQL: vive en
-    # Redis. Se reconstruye desde la base recién cargada.
-    [[ -z "$DATOS" ]] && preparar_inventario_sin_node
-  fi
+  titulo "Datos de ejemplo explícitos sobre instalación vacía"
+  sembrar nucleo semilla:identidad
+  sembrar boleteria semilla:ventas
+  sembrar boleteria semilla:catalogo
+  sembrar nucleo semilla:logistica
+  sembrar nucleo semilla:alimentos
+  preparar_inventario_pedidos
 fi
 
 # --- Resumen ----------------------------------------------------------------
@@ -437,12 +324,7 @@ else
 
     http://$IP_LOCAL:8080/api/v1
 
-  Cuentas de ejemplo (contraseña: hexacore2026)
-
-    cliente@hexacore.com      Cliente
-    personal@hexacore.com     Personal
-    jefepersonal@hexacore.com Personal (jefe)
-    admin@hexacore.com        Administrador
+  No se crean cuentas salvo --datos-demo npm sobre instalación local vacía.
 
   Portales web (ya levantados):
 

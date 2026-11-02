@@ -1,3 +1,5 @@
+import { EsquemaPostventa1790035200000 } from './migraciones/1790035200000-EsquemaPostventa';
+import { opcionesEsquema, opcionesSesion, migracionesEnEsquema } from '../../../../compartido/persistencia/esquemas';
 import { CONEXION } from './conexion';
 import 'reflect-metadata';
 import { config as cargarEnv } from 'dotenv';
@@ -21,23 +23,25 @@ export function opcionesDataSource(config: ConfiguracionServicio): DataSourceOpt
   return {
     name: CONEXION,
     type: 'postgres',
+    ...opcionesEsquema('entradas-postventa'),
     host: config.postgres.host,
     port: config.postgres.puerto,
     username: config.postgres.usuario,
     password: config.postgres.contrasena,
     database: config.postgres.base,
     entities: ENTIDADES,
-    migrations: [__dirname + '/migraciones/*.{ts,js}'],
+    migrations: migracionesEnEsquema([EsquemaPostventa1790035200000], 'entradas-postventa'),
+    migrationsTableName: 'migrations',
     // Nunca `synchronize`: el esquema lo gobiernan las migraciones, también en
     // desarrollo. Una tabla que aparece sola no deja constancia de por qué.
     synchronize: false,
     migrationsRun: false,
-    extra: { application_name: 'boleteria-postventa' },
+    extra: { ...opcionesSesion('entradas-postventa'), application_name: 'boleteria-postventa' },
     logging: config.entorno === 'development' ? ['error', 'warn', 'migration'] : ['error'],
   };
 }
 
-// Este DataSource es solo para la CLI de TypeORM (`npm run migracion:correr`).
+// Este DataSource permite consultar el historial; la preparación es centralizada.
 // La aplicación usa el de PersistenciaModule.
 cargarEnv();
 export default new DataSource(opcionesDataSource(cargarConfiguracion()));

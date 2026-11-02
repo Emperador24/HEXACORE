@@ -1,3 +1,4 @@
+import { cargarDestinoPostgres } from '../../../../compartido/config/postgres';
 /**
  * Configuración del Catálogo, leída del entorno y validada al arrancar.
  *
@@ -58,13 +59,7 @@ export function cargarConfiguracion(): ConfiguracionServicio {
     puerto: entero('PUERTO', 3004),
     prefijoApi: texto('PREFIJO_API', 'api/v1'),
     postgres: {
-      host: texto('POSTGRES_HOST', 'localhost'),
-      puerto: entero('POSTGRES_PUERTO', 5432),
-      usuario: texto('POSTGRES_USUARIO', 'hexacore'),
-      // En producción no hay contraseña por defecto que valga.
-      contrasena:
-        entorno === 'production' ? requerido('POSTGRES_CONTRASENA') : texto('POSTGRES_CONTRASENA', 'hexacore'),
-      base: texto('POSTGRES_BD_CATALOGO', 'catalogo'),
+      ...cargarDestinoPostgres(),
     },
   };
 }

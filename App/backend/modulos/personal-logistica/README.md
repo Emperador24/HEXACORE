@@ -21,13 +21,14 @@ cobertura no declara completos todos esos CU. La disponibilidad general actual
 es global, no filtra por evento/franja; no se amplía como parte del traslado.
 
 Instalar/arrancar/migrar desde [el workspace](../../README.md), Node 22.22.3,
-Nest 11 y TypeScript 5.9. Se mantienen la base `eventos_emergencias`, las dos
-migraciones originales y `synchronize=false`. Token de configuración propio;
+Nest 11 y TypeScript 5.9. La conexión usa POSTGRES_BD común, esquema
+`personal_logistica`, las dos migraciones originales y `synchronize=false`.
+DB_NAME/DB_HOST/PORT/USER/PASSWORD se rechazan; no seleccionan otro destino. Token de configuración propio;
 conexión `personal-logistica` nombrada también en repositorios y cierre.
 
 ```bash
 npm run migracion:logistica:estado
-npm run migracion:logistica:correr
+npm run datos:preparar # tarea única para los ocho historiales antes de apps
 npm run start:prod
 ```
 

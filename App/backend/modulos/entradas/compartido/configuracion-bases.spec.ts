@@ -4,28 +4,24 @@ import { cargarConfiguracion as ventas } from '../ventas/config/configuracion';
 import { cargarConfiguracion as catalogo } from '../catalogo/config/configuracion';
 import { cargarConfiguracion as postventa } from '../postventa/config/configuracion';
 import { cargarConfiguracion as acceso } from '../acceso-qr/config/configuracion';
+import { VARIABLES_POSTGRES_RETIRADAS } from '../../../compartido/config/postgres';
 
-// Impide que el antiguo POSTGRES_BASE común mezcle las cuatro bases al arrancar.
-describe('Configuración independiente de las bases de Boletería', () => {
-  const claves = ['VENTAS', 'CATALOGO', 'POSTVENTA', 'ACCESO_QR'];
+describe('Destino único de Boletería, sin variables heredadas', () => {
   const anterior = { ...process.env };
   beforeEach(() => {
-    process.env.NODE_ENV = 'test';
-    process.env.POSTGRES_BASE = 'base_ajena';
-    process.env.AUTH_JWT_CLAVE_PUBLICA_ARCHIVO = resolve(__dirname, '../../../test/claves/jwt-publica.pem');
-    for (const clave of claves) delete process.env[`POSTGRES_BD_${clave}`];
+    VARIABLES_POSTGRES_RETIRADAS.forEach(k=>delete process.env[k]);
+    process.env.NODE_ENV='test';process.env.POSTGRES_BD='hexacore_prueba';
+    process.env.AUTH_JWT_CLAVE_PUBLICA_ARCHIVO=resolve(__dirname,'../../../test/claves/jwt-publica.pem');
   });
-  afterEach(() => { process.env = { ...anterior }; });
-  const bases = () => [ventas(), catalogo(), postventa(), acceso()].map(c => c.postgres.base);
-  it('conserva cuatro defaults distintos aunque exista una variable genérica antigua', () => {
-    expect(bases()).toEqual(['entradas_mercado_secundario', 'catalogo', 'postventa', 'acceso_qr']);
+  afterEach(()=>{process.env={...anterior};});
+  it('todos los componentes usan el mismo destino y conservan su configuración de negocio',()=>{
+    expect([ventas(),catalogo(),postventa(),acceso()].map(c=>c.postgres.base)).toEqual(Array(4).fill('hexacore_prueba'));
+    process.env.AUTH_JWT_EMISOR=' hexacore-administracion ';
+    expect(cargarConfiguracionBoleteria()).not.toHaveProperty('pagos');
+    expect(cargarConfiguracionBoleteria().emisor).toBe('hexacore-administracion');
   });
-  it('cada variable cambia solo la base de su componente', () => {
-    claves.forEach((clave, i) => { process.env[`POSTGRES_BD_${clave}`] = `prueba_${i}`; });
-    expect(bases()).toEqual(['prueba_0', 'prueba_1', 'prueba_2', 'prueba_3']);
-    process.env.AUTH_JWT_EMISOR = ' hexacore-administracion ';
-    const comun = cargarConfiguracionBoleteria();
-    expect(comun).not.toHaveProperty('pagos');
-    expect(comun.emisor).toBe('hexacore-administracion');
+  it.each(VARIABLES_POSTGRES_RETIRADAS)('rechaza el destino heredado %s en todos los componentes',clave=>{
+    process.env[clave]='base_anterior';
+    for(const cargar of [ventas,catalogo,postventa,acceso])expect(cargar).toThrow('Configuración PostgreSQL retirada');
   });
 });

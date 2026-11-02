@@ -1,3 +1,4 @@
+const { base: basePruebas, opcionesPg } = require('../base-unica/conexiones.cjs');
 import { randomUUID, createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -44,9 +45,9 @@ describe('Referencia real de Boletería: CU-001–006', () => {
   }
   beforeAll(async () => {
     app = await procesos.iniciar();
-    redis = new Redis({host:'127.0.0.1',port:16382}); await procesos.esperar(() => redis.status === 'ready');
-    for (const [n, base] of Object.entries({ ...procesos.bases, pagos: 'pagos_e2e' })) {
-      db[n] = new Client({host:'127.0.0.1',port:15435,user:'cu011_e2e',password:'cu011_e2e',database:base}); await db[n].connect();
+    redis = new Redis({host:'127.0.0.1',port:16384}); await procesos.esperar(() => redis.status === 'ready');
+    for (const [n, base] of Object.entries({ ...procesos.bases, pagos: basePruebas })) {
+      db[n] = new Client(opcionesPg(n)); await db[n].connect();
     }
     for (const n of ['ventas','catalogo','acceso-qr','postventa']) {
       const extra = n === 'postventa' ? ',permite_reventa' : `,estado${n==='acceso-qr'?',aforo_maximo':',categoria'}`;
@@ -68,7 +69,7 @@ describe('Referencia real de Boletería: CU-001–006', () => {
     }
     // Historial financiero y de propietarios inmutable: UUID nuevos, sin truncar.
   });
-  it('conserva las cuatro bases y sus diez migraciones', async () => {
+  it('conserva los cuatro esquemas y sus diez migraciones', async () => {
     const esperadas = { ventas:5, catalogo:1, postventa:1, 'acceso-qr':3 };
     for (const [n,cantidad] of Object.entries(esperadas)) expect((await sql(n,`SELECT count(*)::int n FROM ${n === 'postventa' ? 'migrations' : 'migraciones'}`))[0].n).toBe(cantidad);
   });
@@ -106,10 +107,10 @@ describe('Referencia real de Boletería: CU-001–006', () => {
   });
   it('reconecta una sola conexión AMQP y recupera sus cinco consumidores y el outbox', async () => {
     const headers={Authorization:`Basic ${Buffer.from('cu011_e2e:cu011_e2e').toString('base64')}`};
-    const r=await fetch('http://127.0.0.1:16775/api/connections',{headers});expect(r.status).toBe(200);
+    const r=await fetch('http://127.0.0.1:16779/api/connections',{headers});expect(r.status).toBe(200);
     const conexiones=(await r.json() as {name:string;client_properties:{connection_name?:string}}[]).filter(c=>c.client_properties.connection_name==='hexacore-boleteria');
     expect(conexiones).toHaveLength(1);
-    const cerrada=await fetch('http://127.0.0.1:16775/api/connections/'+encodeURIComponent(conexiones[0].name),{method:'DELETE',headers});expect(cerrada.status).toBe(204);
+    const cerrada=await fetch('http://127.0.0.1:16779/api/connections/'+encodeURIComponent(conexiones[0].name),{method:'DELETE',headers});expect(cerrada.status).toBe(204);
     await procesos.esperar(()=> (app.procesos[0].salida.match(/Conectado a RabbitMQ/g)||[]).length===2);
     await procesos.esperar(async()=>{const m=await procesos.metricasRabbit();return m.conexiones===1&&m.consumidores===5;});
     const c=await comprar();

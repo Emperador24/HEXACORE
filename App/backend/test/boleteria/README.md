@@ -8,7 +8,7 @@ Node **22.22.3**, npm ci en App/backend y Docker/Compose. Seleccionar Node con
 npm --prefix App/backend ci
 npm --prefix App/backend run lint
 npm --prefix App/backend run test:infra
-REDIS_HOST=127.0.0.1 REDIS_PUERTO=16382 REDIS_INVENTARIO_PRUEBAS_URL=redis://127.0.0.1:16382 npm --prefix App/backend test -- --runInBand
+REDIS_HOST=127.0.0.1 REDIS_PUERTO=16384 REDIS_INVENTARIO_PRUEBAS_URL=redis://127.0.0.1:16384 npm --prefix App/backend test -- --runInBand
 npm --prefix App/backend run test:boleteria
 npm --prefix App/backend run test:boleteria
 npm --prefix App/backend run verificar:infra
@@ -16,12 +16,12 @@ npm --prefix App/backend run test:boleteria:imagen:infra
 npm --prefix App/backend run test:boleteria:imagen
 npm --prefix App/backend run test:boleteria:imagen
 # Para volver a la suite de procesos, parar solo las imágenes de esta prueba:
-docker compose -p hexacore-backend-e2e -f App/backend/test/docker-compose.e2e.yml -f App/backend/test/docker-compose.imagen.yml stop gateway nucleo boleteria
+docker compose -p hexacore-base-unica-e2e -f App/backend/test/docker-compose.e2e.yml -f App/backend/test/docker-compose.imagen.yml stop gateway nucleo boleteria
 # Al terminar toda la inspección:
 npm --prefix App/backend run test:limpiar
 ```
 
-Proyecto **hexacore-backend-e2e**; sin contenedores, volúmenes ni redes externos.
+Proyecto **hexacore-base-unica-e2e**; sin contenedores, volúmenes ni redes externos.
 No ejecutar iniciar.sh, semillas de desarrollo ni guiones que truncan tablas.
 Los JWT usan las claves fixture de test/claves; esta suite no prueba login,
 interfaces ni un proveedor financiero real. Boletería/imagen reciben solo la
@@ -29,21 +29,21 @@ clave pública: las firmas fixture se hacen fuera del proceso del programa.
 
 | Recurso exclusivo | Destino del host |
 |---|---|
-| PostgreSQL, usuario/contraseña cu011_e2e | 127.0.0.1:15435 |
-| Redis | 127.0.0.1:16382 |
-| RabbitMQ, vhost cu011 | 127.0.0.1:15675; administración 16775 |
-| Pasarela simulada / Núcleo auxiliar del webhook | 127.0.0.1:13101 / 13087 |
+| PostgreSQL, usuario/contraseña cu011_e2e | 127.0.0.1:15439 |
+| Redis | 127.0.0.1:16384 |
+| RabbitMQ, vhost cu011 | 127.0.0.1:15679; administración 16779 |
+| Pasarela simulada / Núcleo auxiliar del webhook | 127.0.0.1:13105 / 13087 |
 | Proceso compilado controlado por Jest | 13096 |
-| Imagen / gateway | 127.0.0.1:13097 / 18080 |
+| Imagen / gateway | 127.0.0.1:13117 / 18082 |
 
-Bases exclusivas: entradas_e2e, catalogo_boleteria_e2e, postventa_boleteria_e2e,
-acceso_qr_boleteria_e2e y el libro común pagos_e2e. Cuatro historiales de negocio:
-5+1+1+3 migraciones; Postventa conserva **migrations**, las otras **migraciones**.
-El preparador impone las cuatro POSTGRES_BD_*; nunca synchronize. Ambos programas importan PagosModule y usan el mismo libro pagos_e2e, preparado
-por una única tarea migracion-pagos. No existe servidor Pagos. El proyecto conserva
-también las tres bases de Núcleo; no hay consolidación general de datos.
+Base exclusiva **hexacore_e2e**, esquemas entradas_ventas/catalogo/postventa/acceso_qr
+(con prefijo entradas_ en cada uno) y libro finanzas_pagos compartido con Núcleo.
+Los cuatro historiales conservan 5+1+1+3 migraciones; Postventa usa **migrations**.
+La tarea preparacion-base prepara los ocho esquemas/18 historiales antes de apps,
+synchronize/migrationsRun=false. Los helpers usan opcionesPg y el destino común;
+las POSTGRES_BD_* heredadas se rechazan. [Recorridos A y B](../base-unica/README.md).
 
-`pretest:boleteria` compila; procesos.cjs migra e inicia **un Node real** con
+`pretest:boleteria` compila; procesos.cjs reconoce historiales e inicia **un Node real** con
 `dist/apps/boleteria/main.js`. Inicia además un Núcleo compilado en 13087 para
 el webhook del simulador; no simula callbacks ni monta otro receptor en Boletería.
 Exige un PID por programa, los dos cron, una conexión AMQP y
@@ -58,7 +58,7 @@ duplicar consumidores/outbox, cron de publicaciones y reembolso temporal parcial
 Incluye concurrencia de reservas y de reventa, promoción, rechazo/aprobación,
 repetición de cobro sin otro movimiento, reembolso total o parcial según política,
 transferencia/historial/rotación de QR, doble ingreso concurrente, rutas internas,
-autorización/revocación y persistencia en bases correctas.
+autorización/revocación y persistencia en esquemas correctos.
 
 Se reutilizan los mismos datos entre corridas: UUID nuevos, sin TRUNCATE,
 FLUSHDB, purgas ni desactivar auditoría. El historial de propietarios y el libro
@@ -74,7 +74,7 @@ hexacore-boleteria**, no reinicia RabbitMQ ni los contenedores habituales.
 registra su convergencia y solo después se comprueba el rechazo del QR anterior.
 Esto acredita proyección eventual, sin invalidación inmediata. La prueba de
 expiración observa primero EXPIRADA y después la devolución a VALIDA; no promete
-atomicidad entre bases. Ingreso→Ventas también depende del outbox/evento.
+atomicidad entre operaciones. Ingreso→Ventas también depende del outbox/evento.
 Liquidación/notificación de reventa aún registran lo que se enviaría, sin abono
 real ni recepción acreditada. F12/F13/F14 permanecen pendientes.
 

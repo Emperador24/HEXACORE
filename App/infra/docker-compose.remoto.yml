@@ -1,7 +1,7 @@
 # Servicios en esta máquina con datos remotos. iniciar.sh exporta HOST_POSTGRES,
 # HOST_REDIS, HOST_RABBIT, HOST_CORREO, HOST_PASARELA y sus puertos.
 # Las cinco piezas de datos locales quedan fuera del perfil servicios.
-# Se conservan Núcleo/Boletería -> migración financiera única y las dependencias de gateway/portales.
+# Se conservan Núcleo/Boletería -> preparación única de los ocho historiales y las dependencias de gateway/portales.
 services:
   postgres:
     profiles: ["datos"]
@@ -15,11 +15,11 @@ services:
     profiles: ["datos"]
   nucleo:
     depends_on: !override
-      migracion-pagos: { condition: service_completed_successfully }
+      preparacion-base: { condition: service_completed_successfully }
   boleteria:
     depends_on: !override
-      migracion-pagos: { condition: service_completed_successfully }
-  migracion-pagos:
+      preparacion-base: { condition: service_completed_successfully }
+  preparacion-base:
     depends_on: !reset {}
   trabajador:
     depends_on: !reset {}

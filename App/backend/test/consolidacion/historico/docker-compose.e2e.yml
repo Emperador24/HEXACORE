@@ -1,0 +1,76 @@
+name: hexacore-backend-e2e
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: cu011_e2e
+      POSTGRES_PASSWORD: cu011_e2e
+      POSTGRES_DB: alimentos_cu011_e2e
+    ports: ["127.0.0.1:15435:5432"]
+    volumes:
+      - postgres:/var/lib/postgresql/data
+      - ./initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U cu011_e2e -d alimentos_cu011_e2e"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  redis:
+    image: redis:7-alpine
+    ports: ["127.0.0.1:16382:6379"]
+    volumes: ["redis:/data"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: cu011_e2e
+      RABBITMQ_DEFAULT_PASS: cu011_e2e
+      RABBITMQ_DEFAULT_VHOST: cu011
+    ports: ["127.0.0.1:15675:5672", "127.0.0.1:16775:15672"]
+    volumes: ["rabbitmq:/var/lib/rabbitmq"]
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
+      interval: 3s
+      timeout: 10s
+      retries: 30
+  pasarela:
+    image: node:22.22.3-alpine
+    user: node
+    working_dir: /app
+    command: ["node", "server.js"]
+    volumes:
+      - ../../../../infra/pasarela-pagos-simulada/server.js:/app/server.js:ro
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    environment:
+      # El override de imágenes usa el DNS nucleo:3002 en la misma red.
+      WEBHOOK_URL: http://host.docker.internal:13087/api/v1/pagos/webhook
+      SECRETO_WEBHOOK: backend-webhook-pruebas
+    ports: ["127.0.0.1:13101:3099"]
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3099/salud',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  migracion-pagos:
+    image: hexacore-historico-nucleo:be57961
+    command: ["node", "node_modules/typeorm/cli.js", "migration:run", "-d", "dist/modulos/finanzas/pagos/persistencia/data-source.js"]
+    depends_on:
+      postgres: { condition: service_healthy }
+    environment:
+      NODE_ENV: test
+      PROGRAMA_BACKEND: migracion
+      POSTGRES_HOST: postgres
+      POSTGRES_PUERTO: "5432"
+      POSTGRES_USUARIO: cu011_e2e
+      POSTGRES_CONTRASENA: cu011_e2e
+      POSTGRES_BD_PAGOS: pagos_e2e
+    healthcheck: { disable: true }
+    restart: "no"
+volumes:
+  postgres:
+  redis:
+  rabbitmq:

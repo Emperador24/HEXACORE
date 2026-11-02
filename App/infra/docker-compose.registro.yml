@@ -37,7 +37,7 @@ services:
     build: !reset null
     image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-boleteria:${HEXACORE_ETIQUETA:-develop}
 
-  migracion-pagos:
+  preparacion-base:
     build: !reset null
     image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-nucleo:${HEXACORE_ETIQUETA:-develop}
 

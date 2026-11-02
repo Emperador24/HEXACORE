@@ -1,9 +1,10 @@
 # Ensayo aislado: ocho bases → hexacore con esquemas
 
 Migra **datos y estructura de la funcionalidad existente** en copias desechables.
-No adapta las aplicaciones a hexacore, no fusiona autoridades/proyecciones ni
+Este arnés conserva la referencia histórica; no fusiona autoridades/proyecciones ni
 resuelve F12, F13, F14, F15 o casos de uso pendientes. No es un procedimiento
-autorizado para producción/desarrollo habitual. El cambio de destinos es otro hito.
+autorizado para producción/desarrollo habitual. La adaptación activa a base única se documenta en [base-unica](../base-unica/README.md);
+el entorno habitual sigue pendiente de corte.
 
 ## Mapa definitivo de esta transferencia
 
@@ -36,9 +37,9 @@ ingresos, publicaciones/transacciones de reventa, outbox, enums, índices y
 numero_transaccion_seq. Hay siete historiales migraciones y uno migrations;
 **no se crea un historial TypeORM global mezclado**. migracion_control.procedencia
 registra conexión/base/esquema/historial, nombre, ruta y SHA-256 de las **18 fuentes
-originales**, intactas. No ejecutar migration:run ni los Dockerfiles actuales
-contra hexacore: la siguiente entrega debe configurar explícitamente cada esquema
-e historial y comprobar migration:show antes de permitir escrituras.
+originales**, intactas. La referencia conciliada se conserva inmóvil; no arrancar
+las aplicaciones actuales sobre ella. Usar una copia identificada y la preparación
+central, según la guía base-unica.
 
 Extensiones compartidas: **uuid-ossp 1.1** y **pgcrypto 1.3** pasan a extensiones;
 plpgsql 1.0 permanece en pg_catalog. Se exige misma versión/propietario y que las
@@ -79,13 +80,20 @@ nvm use
 npm ci
 npm run lint
 npm run build
-npm run test:imagen:infra
 npm run ensayo:datos:infra
-npm run test:pagos:convivencia        # 5 pruebas existentes; conserva fixtures propias
+npm run ensayo:historico -- --levantar # solo si NO existe el proyecto histórico; incluye las 5 pruebas financieras
 npm run ensayo:datos -- preparar --salida=/tmp/hexacore-consolidacion/referencia-01
 npm run ensayo:datos -- capturar --salida=/tmp/hexacore-consolidacion/referencia-01
 ENSAYO_SALIDA=/tmp/hexacore-consolidacion/referencia-01 npm run ensayo:datos:verificar
 ```
+
+La referencia se obtiene mediante git archive del commit
+be57961472a0802c90a57d247fb67e96e6717b1b, fuera del repositorio; se construyen
+imágenes fijadas hexacore-historico-nucleo/boleteria:be57961. No hay una segunda
+copia versionada del negocio. Los Compose históricos e initdb viven en historico/.
+`ensayo:historico -- --levantar` rechaza un proyecto ya existente: **no repetirlo
+sobre la referencia retenida**. `--verificar` solo valida commit/configuración.
+La preparación activa test:infra/test:imagen:infra ya no crea las ocho bases.
 
 Preparar necesita el Núcleo compilado en el host para cifrar contraseñas con su
 implementación existente. Inserta únicamente credenciales iniciales y referencias
@@ -204,14 +212,14 @@ de configuración, volver a destinos/versiones anteriores de forma coordinada co
 Redis/broker. Con escrituras nuevas en hexacore, volver a una imagen antigua **no
 revierte los datos**: requiere pausa y estrategia de copia inversa/conciliación
 autorizada. Aquí se probó restaurar los ocho dumps originales, no una migración
-inversa desde datos modificados después del cambio. No se ensayó activar aplicaciones
-contra hexacore; es la siguiente entrega.
+inversa desde datos modificados después del cambio. La activación sobre copia y
+base vacía está comprobada en §23; el corte habitual sigue pendiente.
 
 Para conservar evidencia y mensajes al cerrar, **parar, sin borrar volúmenes**:
 
 ```bash
 docker compose -p hexacore-consolidacion-e2e -f test/consolidacion/docker-compose.yml stop
-docker compose -p hexacore-backend-e2e -f test/docker-compose.e2e.yml -f test/docker-compose.imagen.yml stop
+docker compose -p hexacore-backend-e2e -f test/consolidacion/historico/docker-compose.e2e.yml -f test/consolidacion/historico/docker-compose.imagen.yml stop
 ```
 
 No reiniciar las aplicaciones de origen después de capturar: siguen en modo de solo
