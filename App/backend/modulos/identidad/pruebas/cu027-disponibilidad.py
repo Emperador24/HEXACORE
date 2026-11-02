@@ -198,12 +198,14 @@ def sin_inanicion():
 
 def dependencias():
     print('\n### 3. El login con cada dependencia caída')
-    casos = [('hexacore-redis', 'pause', 'unpause', 200, 200),
-             ('hexacore-rabbitmq', 'stop', 'start', 200, 200),
+    # Salud es la disponibilidad del Núcleo completo: Redis es obligatorio para
+    # reservar alimentos, aunque Identidad siga atendiendo el login degradado.
+    casos = [('hexacore-redis', 'pause', 'unpause', 200, 503, 'redis'),
+             ('hexacore-rabbitmq', 'stop', 'start', 200, 200, 'rabbitmq'),
              # Sin base no hay login posible: lo que se exige es que falle
              # rápido y en claro, y que /salud lo diga.
-             ('hexacore-postgres', 'pause', 'unpause', 503, 503)]
-    for contenedor, accion, deshacer, login_esperado, salud_esperada in casos:
+             ('hexacore-postgres', 'pause', 'unpause', 503, 503, 'postgres')]
+    for contenedor, accion, deshacer, login_esperado, salud_esperada, dependencia in casos:
         docker(accion, contenedor)
         try:
             time.sleep(2)
@@ -215,13 +217,24 @@ def dependencias():
               f'{datos.get("dependencias", "")}')
         assert estado == login_esperado, (contenedor, estado, cuerpo)
         assert salud == salud_esperada, (contenedor, salud)
+        assert datos['servicio'] == 'nucleo', datos
+        assert datos['estado'] == 'degradado', datos
+        if dependencia == 'postgres':
+            assert datos['dependencias']['postgres'] == dict.fromkeys(
+                ['identidad', 'alimentos', 'logistica', 'pagos'], 'caido'), datos
+        else:
+            assert datos['dependencias'][dependencia] == 'caido', datos
         assert t < 5, f'con {contenedor} caído el login tardó {t:.1f} s'
         if estado == 503:
             assert cuerpo['codigo'] == 'SERVICIO_NO_DISPONIBLE', cuerpo
 
         t0 = time.perf_counter()
-        while login('carga-1@hexacore.com')[0] != 200:
-            assert time.perf_counter() - t0 < 60, f'el login no volvió tras {deshacer} {contenedor}'
+        while True:
+            login_recuperado = login('carga-1@hexacore.com')[0]
+            salud_recuperada, datos_recuperados, _ = pedir('salud', espera=5)
+            if login_recuperado == 200 and salud_recuperada == 200 and datos_recuperados['estado'] == 'arriba':
+                break
+            assert time.perf_counter() - t0 < 60, f'el Núcleo no volvió tras {deshacer} {contenedor}'
             time.sleep(0.5)
         print(f'  {"":<18} de vuelta en {time.perf_counter() - t0:.1f} s, sin intervención')
 

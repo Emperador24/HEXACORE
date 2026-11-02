@@ -38,6 +38,8 @@ on:
 env:
   REGISTRO: ghcr.io
   COMPOSE_PARALLEL_LIMIT: '1'
+  # El único artifact permitido es el manifiesto público de digest/revisión.
+  DOCKER_BUILD_RECORD_UPLOAD: 'false'
 
 jobs:
   imagenes:
