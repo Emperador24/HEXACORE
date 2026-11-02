@@ -1,9 +1,9 @@
 # Estado de migración de HEXACORE
 
 Fecha de revisión: **2 de noviembre de 2026**, America/Bogota.
-Rama `feature/sebastian-arquitectura`, adaptación de conexiones desde
-**be57961472a0802c90a57d247fb67e96e6717b1b**. HEAD y trabajo local comprobados sin
-reset/stash/descarte. Pedidos se conserva aparte. **§23 es el estado vigente**;
+Rama `feature/sebastian-arquitectura`, cierre técnico desde
+**6e2260a31651760f5867e7c3e0f121fbcc0f802f**. HEAD y trabajo local comprobados sin
+reset/stash/descarte. Pedidos se conserva aparte. **§24 es el estado vigente**;
 las secciones anteriores conservan evidencia histórica de cada entrega.
 
 **Alcance:** migrar funcionalidad existente y preparar fronteras, sin completar
@@ -27,7 +27,7 @@ Solo Núcleo recibe webhook rawBody/HMAC y publica por su conexión AMQP compart
 Trabajador consume correo existente, sin SQL/Redis/JWT/Finanzas. Otros consumidores
 y temporizadores permanecen con sus dueños (§21). Operación/alertas ausentes pendientes.
 
-**Resultados vigentes (§23):** tipos y tres builds aprobados; **830/830 unitarias**
+**Referencia local comprobada (§23):** tipos y tres builds aprobados; **830/830 unitarias**
 (57 suites, Redis real). En cada A/B: **46 comprobaciones funcionales**, **5/5 de
 configuración/pools/datos/correo/colas/triggers**, **73/73 Núcleo**, **23/23 Boletería**,
 **13/13 contratos y 5/5 convivencia financieros**, módulo financiero y smokes de
@@ -39,7 +39,17 @@ sin omitir aserciones ni presentarlos como aprobados.
 reproducidos en A sin causa determinada), F14 (listado logístico global) y F15
 (correo: memoria/validación parcial/envíos en vuelo y carrera de resuscripción tras
 fallo inicial). No hay entrega exactamente una vez. Configuración e imágenes
-locales probadas; GHCR, CI/CD remoto y corte habitual/remoto siguen pendientes.
+locales probadas; CI/CD remoto e imágenes GHCR comprobados en §24. El corte
+habitual/remoto y la integración a develop/main siguen pendientes.
+
+**Cierre remoto (§24):** [PR #44 en borrador](https://github.com/Emperador24/HEXACORE/pull/44),
+[CI de c36427a aprobado, 8 jobs](https://github.com/Emperador24/HEXACORE/actions/runs/41539992395)
+y [CD nativo aprobado, 25 jobs](https://github.com/Emperador24/HEXACORE/actions/runs/41541166454).
+Ocho imágenes amd64/arm64 del SHA **c36427ac7b217cdb3a37c8a75b545d0fe9aef5d9**;
+smoke real por digest sobre proyecto exclusivo, 5+13 contratos, correo y SIGTERM.
+ADR-16, diagramas/PDF, guía por integrante y procedimiento de corte/reversión actualizados.
+No se completan CU ausentes ni se certifican RNF. El commit documental posterior
+registra esta evidencia; no cambia retroactivamente la revisión de las imágenes.
 
 El objetivo confirmado es **Núcleo modular, Boletería, Operación y Trabajador**:
 tres aplicaciones de negocio y un trabajador técnico, con Pagos reutilizable
@@ -3128,3 +3138,197 @@ Se repiten las seis pruebas de seguridad, **6/6**, cero omitidas. Los cinco docu
 PDF se recompilan con latexmk fuera de Work; salida 0. El SAD conserva advertencias
 tipográficas/anclas de figuras históricas, sin atribuirles una validación funcional.
 Nueve bloques bash del procedimiento de corte pasan bash -n; **no se ejecutan**.
+
+### Referencia remota comprobada
+
+El job backend del primer CI terminó aprobado: **830/830 unitarias en 57 suites**,
+6/6 seguridad, 20/20 correo, 3/3 Identidad→Trabajador, composición financiera,
+Núcleo **73/73 dos veces**, Boletería **23/23 dos veces**, trabajador por imagen,
+smokes Núcleo/Boletería/gateway, contratos financieros **13/13 dos veces** y
+convivencia/reinicio **5/5**. Cero omisiones en esas suites; los dos jobs fallidos
+antes citados mantienen la conclusión general de esa corrida en failure.
+
+La siguiente corrida es [CI 41530101523](https://github.com/Emperador24/HEXACORE/actions/runs/41530101523),
+head **82c52188d441edc05d2488fd04de42abc272c958** (PR sobre develop). Su job de
+histórico→A→B aprueba:
+
+- Reconstrucción be57961 fuera del workspace activo, cinco pruebas financieras
+  sobre las ocho bases originales y 46 comprobaciones HTTP/proyecciones.
+- Captura/transferencia/conciliación y ocho restauraciones: **12/12**, cero omitidas;
+  **49 tablas y 135 filas** en esta referencia nueva del runner. No son las 247
+  filas de la referencia local conservada: cada corrida concilia su propio origen.
+- Ocho conexiones/historiales, 18 migraciones conocidas, **cero reaplicadas** sobre
+  A y lectura ORM antes de nuevas escrituras, sin tablas de negocio en public.
+- A y B: **46 comprobaciones funcionales + 5/5 ejecución + 5/5 convivencia** en
+  cada una. B instala las 18 desde cero y empieza sin filas de negocio. Preparación
+  única/repetida, libro común, mensajes/pools, persistencia/reinicio y cierre reales.
+
+No se publica ningún respaldo, RDB, cuerpo de mensaje, token o correo de ese job.
+Los originales, pendientes y referencias locales no intervienen en el runner.
+La conclusión completa del segundo CI y el CD se registran al terminar.
+
+**Segundo CI: success, los ocho jobs aprobados.** Las siete suites HTTP de Identidad
+(registro, verificación, login, renovación, recuperación/perfil, administración y
+caída/recuperación) aprueban en instalación nueva mediante iniciar.sh --datos-demo npm,
+solo en runner efímero. El backend repite todos los conteos del primer job aprobado,
+incluidas las dos pasadas de 73 y 23 y las dos de 13. Tipos/builds, correo por imagen,
+gateway y configuración también aprueban. Los umbrales de rendimiento que el guion
+histórico omite en CI siguen siendo mediciones sin certificación RNF; no se cambian.
+No se omiten escenarios funcionales para conseguir el resultado.
+
+El artifact backend-resumen de esa corrida fue descargado e inspeccionado:
+**un único backend.json**, revisión/ID, ocho estados y cinco conteos de Jest
+(830 aprobadas, 0 fallidas/pendientes, 57 suites), sin datos del ensayo. GitHub prueba
+el merge temporal **dd215bdcdde698aa2c01cdc103c087b63f99df0a**; su árbol Git
+9fc10136241720581a2367ddeabaf7883a32800f es idéntico al head 82c5218.
+La consulta del merge no lo integra ni cambia la rama.
+
+Después de CI se solicita CD por REST:
+`POST /repos/Emperador24/HEXACORE/actions/workflows/cd.yml/dispatches`,
+body `{"ref":"feature/sebastian-arquitectura"}`. **HTTP 204**, ejecución real
+[CD 41536759731](https://github.com/Emperador24/HEXACORE/actions/runs/41536759731),
+revisión **82c52188d441edc05d2488fd04de42abc272c958**. Publicación y smoke quedan
+registrados a continuación al terminar; no se deducen del dispatch aceptado.
+
+Revisión adicional del smoke publicado: convivencia.test.cjs componía dos YAML a
+mano, omitiendo el override de imágenes por digest al reiniciar Núcleo/Boletería.
+Se sustituye por el helper común argumentos(true), como el resto de contratos.
+Sin alterar reglas/aserciones, el Compose efectivo del reinicio se comprueba con
+las ocho referencias por digest, misma imagen de preparación y **cero builds**;
+solo configuración local, sin iniciar A/B. Corrección publicada en
+**36090b3b5a3591953fe32dfde231f21c01fbb06c** y [CI 41537103764](https://github.com/Emperador24/HEXACORE/actions/runs/41537103764).
+No se presenta como validada la ejecución del smoke por haber comprobado su YAML.
+
+Auditoría de referencias: permanece el adaptador HTTP compatible ClienteVentas y
+su configuración VENTAS_URL, cubierto por pruebas anteriores. ReventaModule exige
+API_VENTAS y construye ese cliente con el puerto local; su rama HTTP no se usa en
+Boletería. Las integraciones apuntan VENTAS_URL a un puerto inaccesible y conservan
+publicación/transferencia/expiración. Se distingue ese adaptador histórico de un
+servidor retirado aún activo; no se eliminan sus aserciones. No se encontraron
+llamadas activas a servidores Pagos/Identidad/Alimentos/Notificaciones retirados.
+
+El CI de **36090b3** termina **success en los ocho jobs**, conservando las suites y
+aserciones. El primer CD se cancela explícitamente (API **202**) al quedar superado
+por la corrección del reinicio; publicación parcial por SHA, **sin smoke completo
+ni garantía de conjunto de ocho**. No se presenta una predicción como fallo ejecutado.
+Tras el CI aprobado se despacha de nuevo (API **204**) la rama:
+[CD 41538916587](https://github.com/Emperador24/HEXACORE/actions/runs/41538916587),
+head **36090b3b5a3591953fe32dfde231f21c01fbb06c**. Este es el conjunto candidato a
+verificación completa. Las etiquetas anteriores por SHA se conservan, sin tocar
+main/develop/latest ni instalaciones con tráfico.
+
+
+Bloqueo técnico observado en el primer CD con QEMU: Núcleo y portal cliente permanecen
+en npm ci de linux/arm64. En los logs de 41536759731:
+`qemu: uncaught target signal 4 (Illegal instruction) - core dumped`, Núcleo a
+22:23:31Z y portal cliente a 22:23:48Z; sin completar instalación hasta cancelar.
+No se atribuye al negocio ni se da por resuelto repitiendo. La segunda pasada tampoco había completado el conjunto cuando se cancela
+41538916587 (API 202) para sustituir la estrategia; no se acredita smoke completo
+ni un conjunto de ocho imágenes en esas publicaciones parciales.
+
+El CD conserva Buildx/GHCR/GitHub Actions y las ocho imágenes, pero compila amd64 y
+arm64 en runners nativos ubuntu-24.04 / ubuntu-24.04-arm, exige uname correcto y
+no usa QEMU. Une únicamente digests con plataforma/etiqueta OCI de la misma corrida/
+SHA; valida que el índice final incluya exactamente amd64 y arm64. Etiquetas de
+arquitectura/SHA, nunca main/develop/latest desde la rama; solo ocho JSON finales
+como artifacts y ningún registro Buildx automático. Sin cambiar Dockerfiles,
+versiones Node/dependencias ni lógica funcional. Se amplía la validación de
+manifiestos a **7/7 locales**, cero omitidas; YAML y sintaxis Python aprobados.
+El arranque completo publicado se comprueba en amd64; compilación arm64 no equivale
+a probar todos sus recorridos. Guía reproducible: test/publicadas/README.md.
+
+Compilación nativa registrada en **c36427ac7b217cdb3a37c8a75b545d0fe9aef5d9**;
+[CI 41539992395](https://github.com/Emperador24/HEXACORE/actions/runs/41539992395).
+No cambia dependencias/manifiesto, migraciones, claves ni fuentes de negocio.
+La disponibilidad de runners arm64 se contrasta con la documentación oficial de
+[GitHub](https://docs.github.com/en/actions/reference/runners/github-hosted-runners);
+la estrategia nativa por plataforma y unión de manifests usa Buildx existente,
+según [Docker](https://docs.docker.com/build/building/multi-platform/), sin añadir
+servicios/plataformas al proyecto. La ejecución del CD nativo se registra tras CI.
+
+**CI de c36427a: success, ocho jobs aprobados**, sin cambios de aserciones funcionales.
+Se ejecutan siete pruebas de seguridad de publicación, además de las 830 unitarias,
+dos pasadas Núcleo/Boletería/contratos, correo, instalación general y el recorrido
+histórico→A→B. Después se solicita CD nativo con workflow_dispatch sobre la misma
+rama/revisión: API **204**, [CD 41541166454](https://github.com/Emperador24/HEXACORE/actions/runs/41541166454).
+
+
+### Imágenes realmente publicadas de la revisión validada
+
+CD 41541166454 publica las ocho imágenes, cada una con amd64 y arm64 nativos.
+Revisión **c36427ac7b217cdb3a37c8a75b545d0fe9aef5d9**; etiquetas
+`arquitectura-c36427ac7b217cdb3a37c8a75b545d0fe9aef5d9` y
+`sha-c36427ac7b217cdb3a37c8a75b545d0fe9aef5d9`, sin main/develop/latest.
+Los ocho artifacts se descargan e inspeccionan: un JSON por archivo, solo
+nombre/imagen/digest/revisión; validador del repositorio aprobado con los ocho.
+
+| Imagen | Digest del índice amd64/arm64 |
+|---|---|
+| `ghcr.io/emperador24/hexacore-nucleo` | `sha256:92c528fd33ec81187519bb564942a2842e26830fc40f46dc2747e4127be48cea` |
+| `ghcr.io/emperador24/hexacore-boleteria` | `sha256:72debad628a8c58fedb31c0903a651fbb46b8c9c5a4b5c7d72d25b80897ff05a` |
+| `ghcr.io/emperador24/hexacore-trabajador` | `sha256:4fbea94ff368ecbae6e2337c7d391d37232fa84b03db18b1ac5d66d15e0b8b41` |
+| `ghcr.io/emperador24/hexacore-gateway` | `sha256:303ad280692b7177377dfcae9ec03cf447523a3e7fcdda359aa134e7c71e0718` |
+| `ghcr.io/emperador24/hexacore-pasarela` | `sha256:d86dfcf86987da36d519b6f8c88711ca81743a488dc8494713fdd3407f72f5b1` |
+| `ghcr.io/emperador24/hexacore-correo` | `sha256:ef2f6aeba9ab1eb0f0defe3c0b17facb2693999c9c7616086dacb6c9a14e3e5c` |
+| `ghcr.io/emperador24/hexacore-portal-cliente` | `sha256:c3578e398b186d585d6f9b8bc990464a748c4240040b9d160061446ef6769827` |
+| `ghcr.io/emperador24/hexacore-portal-admin` | `sha256:554c4c6bcf6ec33cc21cfc366ba917e1e1295c84958b3245ed95d8870e5df9b2` |
+
+Se conserva este mapa público; los artifacts caducan a los 30 días. No contiene
+datos del ensayo. Publicación por digest no implica por sí sola arranque: resultado
+del job Digests publicados y arranque exclusivo a continuación.
+
+
+### Arranque publicado comprobado y cierre del hito
+
+**CD 41541166454: success, 25 jobs (16 compilaciones nativas + 8 índices + smoke).**
+En runner efímero amd64, `node test/publicadas/comprobar.cjs <ocho-JSON>` descarga
+por digest y exige revisión OCI c36427a de cada imagen. No compila imágenes locales.
+Proyecto/base exclusivos **hexacore-publicadas-e2e / hexacore_publicadas_e2e**:
+preparación antes de apps, un Núcleo, una Boletería, un Trabajador y gateway reales.
+Se comprueban las ocho imágenes efectivas, los dos portales HTTP con app-root,
+smokes de las familias públicas y restricciones internas, login/revocación,
+**5/5 convivencia financiera + 13/13 contratos/webhook**, cero omitidas, reinicio
+con referencias/efectos persistidos y sin repetir preparación. Registro real de
+Identidad llega por RabbitMQ/Trabajador al simulador publicado de correo.
+
+El cierre SIGTERM de las tres apps comprueba salida sin SIGKILL/OOM, cero pools
+SQL y cero consumidores, conservando datos/colas; finally para solo su proyecto.
+No hay despliegue local/habitual ni envíos/pagos reales. El smoke completo es amd64;
+arm64 tiene compilación nativa/publicación comprobadas, no todos esos recorridos.
+
+Comandos relevantes de cierre (desde raíz, salvo indicación):
+
+| Comando | Resultado real |
+|---|---|
+| PATH=/private/tmp/hexacore-cu011-node22/node_modules/.bin:$PATH; node --version | v22.22.3; npm local 11.6.3 |
+| node App/backend/test/consolidacion/historico/construir.cjs --verificar-archivo | Tres archivos idénticos al commit fijado; sin Docker |
+| node --test App/backend/test/publicadas/seguridad-ci.test.cjs | 7/7 finales, 0 omitidas |
+| npm --prefix App/backend run verificar:infra | Ocho mezclas base/remoto/escalado/registro + A/B + correo + ensayo y fronteras aprobadas; solo configuración |
+| bash -n App/infra/iniciar.sh App/infra/limpiar-datos-de-pruebas.sh; bash -n sobre 9 bloques del runbook | Sintaxis aprobada; no corte/limpieza ejecutados |
+| latexmk -pdf -interaction=nonstopmode -halt-on-error -outdir=/private/tmp/hexacore-cierre/latex <fuente>.tex | Cinco fuentes/PDF aprobados; advertencias históricas del SAD registradas arriba |
+| CI 41539992395: npm ci, lint, unitarias/Redis, build e integraciones del workflow completo | Ocho jobs aprobados; conteos y comandos de suites arriba y en ci.yml |
+| POST actions/workflows/cd.yml/dispatches con ref feature/sebastian-arquitectura | CD nativo 41541166454 aprobado, ocho imágenes por SHA/digest |
+| REVISION_PUBLICADA=c36427ac7b217cdb3a37c8a75b545d0fe9aef5d9 node test/publicadas/comprobar.cjs <directorio> (desde App/backend) | Ejecutado en CD: preparación, ocho imágenes, gateway, 5+13, correo, reinicio y cierre aprobados |
+| git diff --check; git diff --cached --check | Aprobados antes de cada commit con selección explícita |
+| docker ps -a comparado por ID/nombre/estado con el inventario inicial; SHA-256 Pedidos | Los 60 contenedores locales idénticos; Pedidos 7a18d9af…856346, intacto y fuera de Git |
+
+Cambios publicados por hitos: 58b8326 (CI/CD por digest), 7b34b71 (archivo histórico/
+salud conjunta), 82c5218 (ADR-16 y entrega al equipo), 36090b3 (reinicio por digest),
+c36427a (compilación nativa). El cierre documental posterior solo agrega resultados,
+precisiones del plan y referencias; no requiere publicar otra revisión de código.
+Solo origin/feature/sebastian-arquitectura; PR #44 sigue **borrador**, sin auto-merge,
+sin integrar develop/main ni autorizar el corte habitual.
+
+Pendientes conservados: F12 y finalización/conciliación financiera para Diego y los
+módulos llamantes; F13 para investigar con los dueños de consultas/recursos afectados;
+F14 de Personal/Logística para Samuel/Diego; F15 de Identidad/correo para sus dueños.
+QR/propiedad/ingreso conservan autoridades, proyecciones y ventanas anteriores.
+La tabla de GUIA-EQUIPO-MIGRACION.md ubica los 32 CU: los ausentes continúan con
+sus responsables. Operación, alertas, parqueaderos, administración completa de
+recintos/eventos, proveedores e informes no se construyen en este hito.
+
+Entrega técnica aislada **revisable**, con pruebas remotas y publicación/arranque
+comprobados. Corte del sitio, SQL/manifiesto con ACL reales, reversión después de
+escrituras nuevas, revisión del equipo e integración a develop continúan pendientes.
+F13/F15 no se declaran resueltos por las corridas aprobadas; no se certifican carga,
+disponibilidad mensual, interfaces completas ni proveedor real.

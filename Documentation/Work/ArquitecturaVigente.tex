@@ -63,9 +63,9 @@ se traslada al Trabajador. SIGTERM cierra pools, cron, consumidores y conexiones
 el correo en vuelo conserva su posible reentrega (F15).
 
 \section{Vista física}
+\label{sec:fisica}
 \begin{figure}[H]\centering\HexDespliegue
 \caption{Despliegue comprobado en pruebas; no representa el entorno habitual migrado.}\label{fig:despliegue}\end{figure}
-\label{sec:fisica}
 Docker Compose ejecuta los tres programas, gateway, PostgreSQL, Redis, RabbitMQ,
 dos proveedores simulados y dos portales. \texttt{preparacion-base} es una tarea
 sin listener: ejecuta las migraciones antes de habilitar ambas apps. No es un cuarto

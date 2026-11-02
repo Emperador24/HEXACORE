@@ -8,7 +8,8 @@ con libro único y webhook solo en Núcleo. Operación sigue pendiente.
 **El entorno habitual no se ha migrado ni reiniciado.** La ejecución de esta
 versión está comprobada exclusivamente sobre copias aisladas. No ejecutar este
 arranque para convertir una instalación anterior: requiere corte autorizado,
-respaldos, transferencia y conciliación según ESTADO-MIGRACION §22–23.
+respaldos, transferencia y conciliación según ESTADO-MIGRACION §22–24 y
+[CORTE-Y-REVERSIÓN](../../Documentation/Work/CORTE-Y-REVERSION.md).
 
 ## Preparación y arranque previstos
 
@@ -90,7 +91,10 @@ sobre estos recursos habituales.
 CD conserva Dockerfile, Dockerfile.boleteria y Dockerfile.trabajador del workspace;
 preparacion-base reutiliza hexacore-nucleo. El override registro selecciona la
 misma etiqueta para tarea y apps. `--registro <etiqueta>` solo debe usarse tras
-publicar **esta versión** y preparar el corte; no se acredita GHCR/CD remoto aquí.
+publicar **esta versión** y preparar el corte. Las ejecuciones remotas y digests
+realmente comprobados se registran en ESTADO-MIGRACION §24. En arquitectura, CD
+usa arquitectura-<SHA40> y sha-<SHA40>, sin sobrescribir main/develop/latest.
+[Verificación de digests en proyecto exclusivo](../backend/test/publicadas/README.md).
 No se integró a develop/main ni se desplegó el entorno habitual.
 
 Volver de imagen no revierte escrituras: antes de habilitar tráfico, conservar

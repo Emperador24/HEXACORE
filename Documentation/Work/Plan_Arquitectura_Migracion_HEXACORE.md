@@ -394,9 +394,9 @@ Gate: cuentas, compra de alimentos, cambios de turno y asistencia siguen funcion
 - Integrar ventas, catálogo, cola, acceso QR y postventa como módulos internos.
 - Preservar la fila y consumir su turno exactamente una vez, vinculado al usuario y evento correcto.
 - Sustituir llamadas HTTP internas por servicios del módulo.
-- Reunificar los datos críticos de entrada, propiedad, reventa e ingreso sobre una copia migrada.
+- Consolidar físicamente los datos existentes sobre copia. Unificar el estado canónico de entrada/propiedad/ingreso es evolución funcional posterior: conservar en esta migración las autoridades y proyecciones actuales.
 - Resolver reconciliación entre registros antiguos y los datos extraídos de acceso-qr/postventa.
-- Retirar proyecciones que dejen de tener propósito, solo cuando la fuente unificada esté validada.
+- No retirar las proyecciones actuales durante el traslado. Su sustitución futura exige validar antes la fuente canónica y sus garantías, con los responsables funcionales.
 
 Gate de migración: los flujos existentes de compra, cancelación, promoción, consulta, reventa e ingreso conservan contratos y comportamiento, con concurrencia y regresiones probadas. Las ventanas o fallos previos de QR/reventa/ingreso se registran para su responsable; no se exige construir garantías de negocio todavía ausentes. Las pruebas de 50 compradores y las garantías canónicas objetivo se declaran pendientes hasta contar con evidencia.
 
@@ -436,7 +436,7 @@ Gate de migración: cada pendiente está asignado y localizado; el equipo puede 
 - Mantener un perfil local sencillo y otro para replicación y pruebas de fallos.
 - Proteger capacidad de conexión y consultas: compartir PostgreSQL significa que escalar Boletería aún puede afectar a los demás si no se controla.
 - Registrar las mediciones disponibles y las que quedan pendientes para RNF-07/08/09/10/17. No atribuir cumplimiento a funcionalidades todavía ausentes.
-- Actualizar SAD, SRS, diagramas, guía de arranque y reparto.
+- Actualizar SAD, diagramas, guía de arranque y referencias al reparto del SRS. Registrar las concesiones arquitectónicas sin cambiar requisitos de negocio ni umbrales para aparentar cumplimiento.
 - Retirar código y configuración anteriores solamente cuando ya no se ejecuten y exista una reversión probada.
 
 ## 11. Protección de datos y cambio de versión
@@ -469,13 +469,15 @@ La migración está lista cuando:
 
 - Los cuatro programas objetivo tienen responsabilidades claras; los que contienen funcionalidad existente tienen arranque comprobado. Operación y módulos sin implementación quedan definidos como pendientes.
 - Lo que estaba implementado sigue funcionando con contratos estables o cambios de contrato documentados.
-- No hay dos fuentes activas para propietarios, QR o estados de pedidos.
+- Cada dato conserva su autoridad existente; no hay dos implementaciones activas del mismo negocio. Las proyecciones de Entradas se mantienen identificadas y no se presentan como autoridad adicional ni como consistencia inmediata.
 - No quedaron llamadas internas hacia servidores retirados.
 - Las garantías existentes ante reinicio/repetición se conservan y prueban. Los fallos funcionales previos quedan registrados para sus responsables; no se atribuye a la migración recuperación todavía ausente.
 - Operación tiene frontera y dependencias definidas; sus CU ausentes, incluida la activación con Núcleo detenido, no se presentan como implementados ni bloquean la migración.
 - La transferencia de datos tiene verificación y reversión.
 - Arranque, CI, imágenes publicadas y documentación describen el mismo sistema.
 - Los CU pendientes están señalados y ubicados, sin afirmar que una pantalla simulada es un backend terminado.
+
+El cierre técnico aislado no autoriza el corte del entorno habitual. La restauración ensayada, el procedimiento de reversión y sus límites están documentados; la transferencia del sitio y la reversión después de escrituras nuevas requieren su preparación y autorización operativa (CORTE-Y-REVERSION.md).
 
 Las metas de rendimiento, disponibilidad mensual y entrega de alertas se declaran demostradas únicamente con la evidencia correspondiente. El número reducido de programas no las demuestra por sí solo.
 

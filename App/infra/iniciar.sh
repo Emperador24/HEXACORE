@@ -35,7 +35,7 @@ DEMO="no"
 PARAR="no"
 # Las semillas destructivas requieren --datos-demo npm y una base vacía.
 DATOS_DEMO="npm"
-# Etiqueta a desplegar desde el registro (develop, main, latest, sha-XXXXXXX).
+# Etiqueta a desplegar desde el registro (develop, main, latest, sha-<SHA40>).
 # Vacío = compilar aquí, que es lo normal mientras se desarrolla.
 REGISTRO=""
 

@@ -15,14 +15,14 @@
 # levantan. En el computador de la demostración, o en el de un compañero que
 # solo quiere ver el sistema andando, esa diferencia es de minutos a segundos.
 #
-# También es lo que permite **volver atrás**: cada commit deja su propia imagen
-# etiquetada (`sha-a1b2c3d`), así que si algo se rompe se levanta la anterior
-# sin tocar el repositorio.
+# Cada revisión deja su imagen (`sha-<SHA40>`; arquitectura-<SHA40> en la rama).
+# Recuperar código no revierte datos ni efectos externos. Seguir el procedimiento
+# CORTE-Y-REVERSION.md y conservar digests/configuración antes de abrir escrituras.
 #
 # ## Variables
 #
 #   HEXACORE_REGISTRO   dónde están las imágenes (por defecto, el del proyecto)
-#   HEXACORE_ETIQUETA   qué versión levantar: develop, main, latest o sha-XXXXXXX
+#   HEXACORE_ETIQUETA   qué versión levantar: develop, main, latest o sha-<SHA40>
 #
 # El `build:` se anula con `!reset` para que Compose no intente compilar: sin
 # eso, tener el código al lado haría que reconstruyera en vez de usar lo
