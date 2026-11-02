@@ -135,24 +135,33 @@ jobs:
       - name: Tipos
         run: npm run lint
       - name: Unitarias con Redis real
+        id: unitarias
         env:
           REDIS_INVENTARIO_PRUEBAS_URL: redis://127.0.0.1:16384
           REDIS_HOST: 127.0.0.1
           REDIS_PUERTO: "16384"
-        run: npm test -- --runInBand
+        run: |
+          mkdir -p .evidencia-e2e
+          npm test -- --runInBand --json --outputFile=.evidencia-e2e/unitarias.json
+      - name: Seguridad de resúmenes y manifiestos publicados
+        run: node --test test/publicadas/seguridad-ci.test.cjs
       - name: Infraestructura de correo exclusiva
         run: npm run test:trabajador:infra
       - name: Contratos del correo y límites previos (RabbitMQ real)
+        id: correo
         run: npm run test:trabajador
       - name: Identidad a RabbitMQ, Trabajador y proveedor simulado
+        id: correo_identidad
         run: npm run test:trabajador:identidad
       - name: Composición real del módulo financiero sin HTTP
         run: npm run test:pagos:modulo
       - name: Integración del Núcleo dos veces
+        id: nucleo
         run: |
           npm run test:e2e
           npm run test:e2e
       - name: Integración de Boletería dos veces, con Núcleo para los callbacks
+        id: boleteria
         run: |
           npm run test:boleteria
           npm run test:boleteria
@@ -165,27 +174,41 @@ jobs:
       - name: Construir y arrancar ambas imágenes y gateway
         run: npm run test:imagen:infra
       - name: Smoke de Núcleo y Boletería
+        id: imagenes
         run: |
           npm run test:imagen
           npm run test:boleteria:imagen
       - name: Contratos financieros y webhook, dos corridas
+        id: pagos
         run: |
           npm run test:pagos:contratos
           npm run test:pagos:contratos
       - name: Libro común, convivencia y reinicio
+        id: convivencia
         run: npm run test:pagos:convivencia
       - name: Logs si falla
         if: failure()
         run: |
           docker compose -p hexacore-base-unica-e2e -f test/docker-compose.e2e.yml -f test/docker-compose.imagen.yml logs --tail 100
           docker compose -p hexacore-trabajador-e2e -f test/trabajador/docker-compose.yml --profile imagen logs --tail 100
-      - name: Conservar logs de los procesos compilados
+      - name: Resumen público sin datos del ensayo
+        if: always()
+        env:
+          PASOS_JSON: >-
+            {"unitarias":"${{ steps.unitarias.outcome }}","correo":"${{ steps.correo.outcome }}",
+            "correo_identidad":"${{ steps.correo_identidad.outcome }}","nucleo":"${{ steps.nucleo.outcome }}",
+            "boleteria":"${{ steps.boleteria.outcome }}","imagenes":"${{ steps.imagenes.outcome }}",
+            "pagos":"${{ steps.pagos.outcome }}","convivencia":"${{ steps.convivencia.outcome }}"}
+        run: python3 test/resumen-ci.py
+      - name: Conservar solo el resumen permitido
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: backend-e2e-logs
-          path: App/backend/.evidencia-e2e/
+          name: backend-resumen
+          path: App/backend/.informe-ci/backend.json
+          if-no-files-found: error
           include-hidden-files: true
+          retention-days: 14
       - name: Limpiar solo el proyecto exclusivo
         if: always()
         run: |

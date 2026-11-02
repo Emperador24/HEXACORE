@@ -7,3 +7,6 @@
 test/consolidacion/salida/
 *.dump
 *.rdb
+
+# Solo resúmenes permitidos para CI; los artefactos son generados.
+.informe-ci/

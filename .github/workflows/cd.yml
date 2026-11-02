@@ -37,6 +37,7 @@ on:
 
 env:
   REGISTRO: ghcr.io
+  COMPOSE_PARALLEL_LIMIT: '1'
 
 jobs:
   imagenes:
@@ -97,21 +98,31 @@ jobs:
         id: imagen
         run: echo "ruta=${REGISTRO}/$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')/hexacore-${{ matrix.nombre }}" >> "$GITHUB_OUTPUT"
 
-      - name: Etiquetas
+      - name: Etiquetas limitadas a la rama y revisión
+        id: version
+        env:
+          RAMA: ${{ github.ref_name }}
+        run: |
+          if [ "$RAMA" = main ] || [ "$RAMA" = develop ]; then
+            echo "etiqueta=$RAMA" >> "$GITHUB_OUTPUT"
+          else
+            echo "etiqueta=arquitectura-${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Metadatos de la revisión exacta
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ steps.imagen.outputs.ruta }}
-          # Tres etiquetas por imagen:
-          #   develop / main  — la última de cada rama, que es lo que se despliega
-          #   sha-a1b2c3d     — el commit exacto, para poder volver atrás
-          #   latest          — solo desde main
+          flavor: latest=false
           tags: |
-            type=ref,event=branch
-            type=sha,prefix=sha-
+            type=raw,value=${{ steps.version.outputs.etiqueta }}
+            type=raw,value=sha-${{ github.sha }}
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
 
       - name: Construir y publicar
+        id: publicar
         uses: docker/build-push-action@v6
         with:
           context: ${{ matrix.contexto }}
@@ -128,56 +139,61 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.nombre }}
           cache-to: type=gha,mode=max,scope=${{ matrix.nombre }}
 
-  # Comprueba que lo publicado **de verdad levanta**. Publicar una imagen que no
-  # arranca es peor que no publicarla: se descubre en la máquina de destino.
+      - name: Registrar digest sin datos privados
+        env:
+          NOMBRE: ${{ matrix.nombre }}
+          IMAGEN: ${{ steps.imagen.outputs.ruta }}
+          DIGEST: ${{ steps.publicar.outputs.digest }}
+        run: |
+          mkdir -p .informe-ci
+          python3 - <<'PYDIGEST'
+          import json,os,re
+          from pathlib import Path
+          assert re.fullmatch(r'sha256:[0-9a-f]{64}', os.environ['DIGEST'])
+          d={k.lower():os.environ[k] for k in ['NOMBRE','IMAGEN','DIGEST']}
+          d['revision']=os.environ['GITHUB_SHA']
+          Path('.informe-ci/'+d['nombre']+'.json').write_text(json.dumps(d)+'\n')
+          PYDIGEST
+      - uses: actions/upload-artifact@v4
+        with:
+          name: imagen-${{ matrix.nombre }}
+          path: .informe-ci/${{ matrix.nombre }}.json
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+
   comprobacion:
-    name: El sistema publicado arranca
+    name: Digests publicados y arranque exclusivo
     needs: imagenes
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
       packages: read
-
+    defaults:
+      run:
+        working-directory: App/backend
     steps:
       - uses: actions/checkout@v4
-
-      - name: Entrar al registro
-        uses: docker/login-action@v3
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: App/backend/.nvmrc
+          cache: npm
+          cache-dependency-path: App/backend/package-lock.json
+      - run: npm ci && npm run build
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: imagen-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/hexacore-imagenes
+      - uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRO }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Levantar el sistema desde las imágenes publicadas
-        working-directory: App/infra
+      - name: Preparación, gateway, finanzas, correo y cierre desde digests
         env:
-          HEXACORE_REGISTRO: ghcr.io/emperador24
-        run: |
-          # Una rama con barra (`feature/samuel`) no es una etiqueta de imagen
-          # válida: Docker no admite `/` ahí, y la acción de metadatos la
-          # convierte en guion al publicar. Aquí se hace la misma conversión.
-          export HEXACORE_ETIQUETA="$(echo '${{ github.ref_name }}' | tr '/' '-')"
-          echo "Desplegando la etiqueta $HEXACORE_ETIQUETA"
-          docker compose -f docker-compose.yml -f docker-compose.registro.yml \
-            --profile servicios up -d
-
-      - name: Esperar a que el gateway responda
-        run: |
-          for _ in $(seq 1 60); do
-            if curl -sf http://localhost:8080/salud >/dev/null; then
-              echo "El gateway responde."
-              curl -sf http://localhost:8080/api/v1/salud
-              exit 0
-            fi
-            sleep 3
-          done
-          echo "::error::El sistema publicado no llegó a responder."
-          docker compose -f App/infra/docker-compose.yml \
-            -f App/infra/docker-compose.registro.yml --profile servicios logs --tail 40
-          exit 1
-
-      - name: Apagar
-        if: always()
-        working-directory: App/infra
-        run: docker compose -f docker-compose.yml -f docker-compose.registro.yml
-             --profile servicios down -v
+          REVISION_PUBLICADA: ${{ github.sha }}
+        run: node test/publicadas/comprobar.cjs "$RUNNER_TEMP/hexacore-imagenes"
+      # Solo se suben los ocho JSON de nombre/revisión/digest. No .evidencia-e2e,
+      # logs, dumps, RDB, tokens, correos ni manifiestos privados de datos.

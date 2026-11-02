@@ -7,8 +7,9 @@ const ESQUEMAS = { identidad:'identidad', alimentos:'alimentos', logistica:'pers
   'acceso-qr':'entradas_acceso_qr', acceso:'entradas_acceso_qr', pagos:'finanzas_pagos',libro:'finanzas_pagos' };
 for(const esquema of Object.values(ESQUEMAS))ESQUEMAS[esquema]=esquema;
 const base = process.env.POSTGRES_BD_PRUEBAS || 'hexacore_e2e';
-assert.ok(['hexacore_e2e','hexacore_vacia_e2e'].includes(base),'Solo bases exclusivas permitidas');
-const proyecto=base==='hexacore_e2e'?'hexacore-base-unica-e2e':'hexacore-base-vacia-e2e';
+assert.ok(['hexacore_e2e','hexacore_vacia_e2e','hexacore_publicadas_e2e'].includes(base),'Solo bases exclusivas permitidas');
+const proyecto={hexacore_e2e:'hexacore-base-unica-e2e',hexacore_vacia_e2e:'hexacore-base-vacia-e2e',hexacore_publicadas_e2e:'hexacore-publicadas-e2e'}[base];
+if(base==='hexacore_publicadas_e2e')process.env.RABBITMQ_NODO_PRUEBAS='publicadas-e2e';
 if(base==='hexacore_e2e'&&fs.existsSync(metadatos))process.env.RABBITMQ_NODO_PRUEBAS=JSON.parse(fs.readFileSync(metadatos,'utf8')).nodoRabbit;
 if(base==='hexacore_vacia_e2e')process.env.RABBITMQ_NODO_PRUEBAS='base-vacia-e2e';
 const retiradas = ['POSTGRES_BASE','DB_HOST','DB_PORT','DB_USER','DB_PASSWORD','DB_NAME',
