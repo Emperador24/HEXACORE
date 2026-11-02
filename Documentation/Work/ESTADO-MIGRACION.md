@@ -3,8 +3,17 @@
 Fecha de revisión: **2 de noviembre de 2026**, America/Bogota.
 Rama `feature/sebastian-arquitectura`, cierre técnico desde
 **6e2260a31651760f5867e7c3e0f121fbcc0f802f**. HEAD y trabajo local comprobados sin
-reset/stash/descarte. Pedidos se conserva aparte. **§24 es el estado vigente**;
+reset/stash/descarte. Pedidos se conserva aparte. **§25 es el estado vigente**;
 las secciones anteriores conservan evidencia histórica de cada entrega.
+
+**Revisión manual local (§25):** desde HEAD comprobado
+`5183bc3c418702514e3c2b4bc5f2d8a7b3aa9270`, se prepara un entorno persistente
+construido desde fuentes en esta rama. Comando inicial explícito
+`./App/infra/revision.sh iniciar --datos-demo`; siguientes arranques sin esa opción.
+[Guía, URLs, cuentas y límites](../../App/infra/revision/README.md). Pruebas reales
+de Chrome, HTTP, preparación y persistencia registradas abajo. PR #44 permanece
+en borrador, sin auto-merge ni integración. El entorno habitual y las referencias
+A/B se conservan; el nuevo entorno tiene recursos, claves y cookies propios.
 
 **Alcance:** migrar funcionalidad existente y preparar fronteras, sin completar
 CU faltantes, F12 ni Operación. La configuración activa usa **una base PostgreSQL
@@ -3332,3 +3341,168 @@ comprobados. Corte del sitio, SQL/manifiesto con ACL reales, reversión después
 escrituras nuevas, revisión del equipo e integración a develop continúan pendientes.
 F13/F15 no se declaran resueltos por las corridas aprobadas; no se certifican carga,
 disponibilidad mensual, interfaces completas ni proveedor real.
+
+## 25. Entorno local persistente para revisar la propia rama
+
+Base y HEAD inicial comprobados: **5183bc3c418702514e3c2b4bc5f2d8a7b3aa9270**, en
+`feature/sebastian-arquitectura`, sincronizada con origin. Al iniciar solo estaba
+sin seguimiento `App/services/pedidos/`; se conserva su único archivo sin tocar,
+SHA-256 `7a18d9aff7cb03e42f0cf8c311ebbed2d4a6c4278e8c21472349425b13856346`.
+Se inventarían **60 contenedores preexistentes** por ID/nombre/estado: idénticos
+tras las pruebas. El gateway habitual ya estaba reiniciándose antes de esta
+entrega; no se interviene. No se ejecuta corte, preparación, semillas ni limpieza
+sobre sus recursos o las referencias A/B.
+
+### Cambios y aislamiento efectivo
+
+Se reutiliza `App/infra/docker-compose.yml` mediante el override
+`App/infra/revision/docker-compose.yml`, envuelto por `revision.sh` y Python
+estándar. No se duplica la topología ni se añade otra plataforma. Los ocho
+Dockerfiles actuales construyen imágenes locales arm64, secuencialmente, desde
+las fuentes de esta rama. Se excluyen node_modules/dist/.angular del contexto
+administrativo, como ya hacía el portal cliente; no cambian dependencias/lockfiles.
+
+Proyecto **hexacore-revision-arquitectura**, red `...-red`, volúmenes `...-postgres`,
+`...-redis`, `...-rabbitmq` e imágenes `...-<componente>:local`. Doce servicios:
+PostgreSQL, Redis, RabbitMQ, dos simuladores, preparación central, Núcleo,
+Boletería, Trabajador, gateway y dos portales. Once procesos de servicio en marcha;
+la tarea de preparación termina con salida 0. Se retiran únicamente en el override
+los nombres/puertos fijos y el initdb habitual. Todas las publicaciones son
+loopback: 15449, 16394, 15689, 16789, 13128/13129, 13119/13127/13120,
+18090, 14210/14211. No se modifican Compose ni nginx.conf del entorno habitual.
+
+Validación de configuración **resuelta**, no solo YAML: inventario/dependencias,
+red/volúmenes locales, montajes permitidos, puertos y destinos. Entorno heredado y
+.env no pueden sustituir las coordenadas: ambas apps/preparación usan
+`postgres:5432/hexacore_revision`, Redis `redis:6379`, vhost propio
+`amqp://revision_demo:revision_demo@rabbitmq:5672/revision`, pasarela `pasarela:3099`,
+correo `correo:3098`. Las nueve conexiones de negocio observadas en pg_stat_activity
+pertenecen a esa misma base, incluidos los dos pools `finanzas-pagos:*`.
+Trabajador conserva solo AMQP/correo. La configuración propia incluye únicamente
+credenciales públicas demo; las claves RSA exclusivas se generan bajo .estado
+ignorado por Git y se conservan al reiniciar.
+
+Ambos portales cargan configuracion.js antes de Angular; sin override conservan
+los destinos actuales. En revisión apuntan a `http://revision.localhost:18090/api/v1`.
+Solo los orígenes `revision.localhost:14210/14211` reciben CORS con credenciales;
+el origen habitual localhost:4200 se rechaza. El gateway usa una copia generada
+de su configuración actual, sustituyendo únicamente el mapa CORS. La cookie
+host-only `revision.localhost`, HttpOnly/SameSite Strict, evita colisión con
+localhost habitual aunque las cookies no se aíslen por puerto. Los enlaces de
+verificación/recuperación enviados por Trabajador abren el portal `:14210/cuenta`.
+
+### Carga inicial explícita y persistencia
+
+El arranque comprueba requisitos, rama, Docker local, recursos y puertos antes de
+modificar recursos Docker. Solo `iniciar --datos-demo` prepara fixtures: exige
+negocio vacío, procedencia instalacion-vacia, Redis vacío y sin mensajes pendientes,
+y rechaza escritores activos. Registra EN_CURSO/COMPLETA en una tabla técnica
+exclusiva de revisión en migracion_control. Una carga interrumpida se conserva y
+bloquea el arranque de escritores; no se resuelve truncando o resembrando. Si falla
+la carga, se paran solo los escritores de este proyecto. La segunda petición demo
+se rechaza realmente antes de construir o ejecutar semillas.
+
+La tarea central crea los **ocho esquemas y 18 migraciones**, sin synchronize ni
+migrationsRun; en posteriores arranques reconoce sus historiales sin reaplicarlos.
+Se reutilizan las seis semillas compiladas de Identidad/Entradas/Alimentos,
+preparación de inventario de tres establecimientos y la semilla de Personal a
+través del gateway. Sus comprobaciones adicionales exigen cinco empleados y un
+turno, evitando tomar por éxito las omisiones que puede imprimir el guion antiguo.
+Once cuentas demo iniciales, contraseña pública `hexacore2026`; guía con roles.
+No se solicita ni usa proveedor real.
+
+El ensayo de navegador crea su propia cuenta adicional y operaciones demo: estado
+capturado de **12 cuentas, 2 pedidos confirmados, 1 compra, 9 entradas, 9 filas de
+historial de propiedad, 3 movimientos del libro, 5 empleados y 1 turno**. Ambos
+solicitantes aparecen en el único libro: alimentos, 2 aprobados/50000.00 COP;
+entradas, 1 aprobado/180000.00 COP. No se alteran importes, referencias ni QR para
+conciliar. Las dos compras de alimentos corresponden a un primer intento de prueba
+que ya pagó antes de fallar su selector del QR y la repetición correcta.
+
+`persistencia.py guardar → parar → iniciar → comparar` comprueba conteos y huellas
+completas de **13/13 tablas idénticas**, incluyendo productos, pedidos, compras,
+entradas/QR, libro y procedencia. La referencia privada no se sobrescribe. Parar
+conserva contenedores/red/volúmenes; el guion verifica salida 0/143 y ausencia de OOM
+para los tres programas, sin SIGKILL. Esta corrida devuelve 143, SIGTERM reemitido
+por Nest tras sus hooks; los logs confirman cierre de sondeos/cron/outbox/consumos.
+Se conserva el contrato de test/base-unica/cerrar-aplicaciones.cjs; una comprobación
+inicial demasiado restrictiva (solo 0) se corrigió, sin aceptar 137 ni OOM.
+El entorno se deja disponible; los arranques
+posteriores no cargan datos demo nuevamente.
+
+RabbitMQ conserva un consumidor por cada cola existente atendida, incluido
+**cuentas.correos=1**, sin duplicar Trabajador. Se conservan **2 mensajes en
+pedidos.establecimientos, con 0 consumidores**, como comportamiento funcional
+previo: esta entrega no inventa la recepción que falta. El buzón y la memoria del
+simulador de pagos pueden perderse cuando reinician sus procesos; el libro SQL,
+Redis AOF y las colas permanecen. Actualizar ese libro sigue sin finalizar un
+negocio pendiente (F12).
+
+### Comandos y resultados reales
+
+Entorno comprobado: Docker Desktop Server **29.7.2**, Compose **5.3.1**, Python
+**3.14.0**, OpenSSL local, Node host **22.22.3** (PATH existente
+`/private/tmp/hexacore-cu011-node22/node_modules/.bin`; alternativa nvm en guía),
+Chrome instalado **157.0.8103.26** y Puppeteer ya declarado por el portal cliente.
+Los backends conservan Node 22.22.3; los compiladores Angular siguen separados.
+
+| Comando desde raíz | Resultado |
+|---|---|
+| git status --short --branch; git rev-parse HEAD | Rama/base anteriores; solo Pedidos ajeno al inicio |
+| ./App/infra/revision.sh config | Doce servicios, destinos/montajes/dependencias propios; sin referencias habituales/A/B |
+| python3 -m unittest discover -s App/infra/revision -p 'test_*.py' -v | **9/9**, 0 omitidas: puertos, destinos, recursos ajenos, carga repetida/interrumpida, base ocupada y SIGTERM frente a SIGKILL/OOM |
+| ./App/infra/revision.sh iniciar --datos-demo | Ocho imágenes construidas secuencialmente, preparación 18, semillas/inventario/Personal y arranque saludable |
+| python3 App/infra/revision/comprobar_http.py | Final **6/6**, 0 omitidas: tres saludes/gateway, CORS permitido/rechazado, Cliente/perfil/revocación, autorización Admin, Personal propio y catálogos reales |
+| node App/infra/revision/comprobar-navegador.mjs <directorio privado> | Final **4/4 recorridos Chrome real**: login/cookie/recarga, alimentos/QR, cola-compra-pago-entradas y administración/cuentas/recarga; sin llamadas a puertos habituales ni errores JS |
+| HEXACORE_PORTAL=http://revision.localhost:14210 HEXACORE_API=http://127.0.0.1:18090/api/v1 HEXACORE_BUZON=http://127.0.0.1:13128/correos node App/frontend/portal-web-cliente/pruebas/login-portal.mjs <directorio privado> | Guion existente **completo aprobado**: registro→RabbitMQ→Trabajador→correo→enlace, activación, login, perfil, contraseña, revocación desde otro dispositivo, recuperación, logout, rechazos y tema; aserciones conservadas |
+| tsc --noEmit -p App/frontend/portal-web-cliente/tsconfig.app.json; tsc --noEmit -p App/frontend/portal-web-admin/tsconfig.app.json (binario de cada portal, Node 22.22.3) | Ambos tipos aprobados; ambas compilaciones Angular aprobadas dentro de sus imágenes |
+| npm --prefix App/backend run verificar:infra | Mezclas generales/remoto/escalado/registro, fronteras, A/B, Trabajador y ensayo aprobadas; solo configuración |
+| node --test App/backend/test/publicadas/seguridad-ci.test.cjs | **7/7**, 0 omitidas; guardas existentes de publicación preservadas tras añadir el paso CI de revisión |
+| python3 App/infra/revision/persistencia.py guardar; ./App/infra/revision.sh parar; ./App/infra/revision.sh iniciar; python3 App/infra/revision/persistencia.py comparar | **13/13 tablas iguales** después del reinicio; sin semillas, datos y referencias conservados |
+| ./App/infra/revision.sh iniciar --datos-demo (repetido) | Rechazado, salida 1, escritores activos; sin modificar datos ni imágenes |
+| docker inspect de contenedores/imágenes/red/volúmenes y pg_stat_activity | Proyecto exclusivo, ocho imágenes locales arm64, conexión común efectiva y nueve pools de negocio correctos |
+| docker ps -a comparado con inventario inicial; shasum -a 256 Pedidos | **60/60 preexistentes idénticos**; Pedidos conserva su huella y no se selecciona |
+| git diff --check; bash -n App/infra/revision.sh; node --check de guiones nuevos/afectados | Aprobados; selección explícita de archivos |
+
+Primeras comprobaciones propias: HTTP tuvo **5/6**, por aserción errónea de la
+forma de ficha `empleado.credencial`; navegador avanzó login/pago de alimentos y
+falló por buscar SVG cuando el QR implementado es PNG generado localmente. Se
+corrigen las pruebas para verificar el contrato/imagen real y se repiten todas
+sus aserciones. **No eran fallos de negocio ni se omitieron escenarios.** La
+compilación conserva el aviso CommonJS histórico de qrcode; sin cambios de paquetes.
+No se repiten 830 unitarias ni las baterías masivas ya aprobadas en §23–24: no
+cambia código backend, SQL ni contratos de negocio. CI incorpora las nueve guardas
+sin crear recursos Docker; su nueva ejecución remota se distingue de esta evidencia
+local y no implica publicar otras imágenes GHCR.
+
+### Revisión y límites de esta entrega
+
+Guía breve reproducible: **App/infra/revision/README.md**, enlazada desde plan,
+infraestructura y guía del equipo. Incluye actualización de rama sin descartar
+trabajo, primer arranque, siguientes arranques, URLs, credenciales solo demo,
+recorridos, logs/stop, pruebas, SHA OCI/fuentes locales y formato de reporte.
+
+Cliente: Identidad, cartelera/compra/fila, reventa y checkout/pago/QR de alimentos
+usan APIs reales. El comprobante de alimentos no se recupera en la pantalla al
+recargar; la persistencia SQL no implica esa función de interfaz. Parqueaderos
+continúan simulados. Administrativo: cuentas reales; CRUD visual de eventos en
+memoria y placeholders de otros dominios no alteran datos de Boletería ni
+constituyen funciones implementadas. Personal usa API/móvil existente. Los turnos
+son relativos a la primera carga y vencen según sus reglas, sin recrearlos al
+arrancar.
+
+No se construyen Operación, CU ausentes ni recuperación F12. **F12/F13/F14/F15 se
+conservan**; no hubo Query read timeout/deadlock en los logs exclusivos de esta
+corrida, lo que no resuelve F13 ni acredita carga. Se mantienen ventanas de
+proyecciones/QR, deudas de listado logístico y garantías reales de correo. La
+prueba de navegador sí recorre formularios/clics/red reales; un 200 HTML de portal
+solo se usa como salud. No certifica todos los navegadores, móvil, proveedor real,
+RNF completos ni garantías transaccionales nuevas.
+
+Publicación exclusivamente en origin/feature/sebastian-arquitectura; PR #44 sigue
+**en borrador, sin auto-merge ni integración**. Su descripción incorpora el enlace
+y comando de revisión de esta rama. El entorno queda en marcha con sus imágenes
+locales reconstruidas desde el commit de esta entrega (comprobar etiquetas OCI y
+flag de fuentes modificadas), preservando operaciones. La siguiente acción es
+revisión manual y del compañero en la misma rama; no se ejecuta corte habitual,
+consolidación adicional ni integración a develop/main.

@@ -1,5 +1,11 @@
 # Infraestructura de HEXACORE
 
+Para revisar `feature/sebastian-arquitectura` desde fuentes, usar el
+[entorno local de revisión](revision/README.md):
+`./App/infra/revision.sh iniciar --datos-demo` (solo primera carga explícita).
+Tiene recursos/puertos propios, conserva operaciones y permite revisar PR #44
+en borrador sin integrar ni ejecutar el corte del entorno habitual.
+
 Configuración preparada para Núcleo, Boletería y Trabajador desde App/backend,
 con **una base POSTGRES_BD=hexacore y ocho esquemas**. Pagos es reutilizable,
 con libro único y webhook solo en Núcleo. Operación sigue pendiente.

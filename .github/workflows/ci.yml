@@ -45,6 +45,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Guardas del entorno local de revisión (sin crear recursos)
+        run: python3 -m unittest discover -s App/infra/revision -p 'test_*.py' -v
+
       - name: Buscar archivos que no deberían estar versionados
         run: |
           encontrados=$(git ls-files \

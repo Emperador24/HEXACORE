@@ -8,6 +8,11 @@ Estado de este documento: arquitectura acordada y secuencia de migración. No af
 ADR-16 registra la decisión; GUIA-EQUIPO-MIGRACION.md y CORTE-Y-REVERSION.md contienen
 el reparto y el procedimiento operativo, sin ejecutar ese corte.
 
+Revisión manual desde la propia rama, sin integración previa: entorno aislado
+persistente en `App/infra/revision/README.md`, resultados en **ESTADO-MIGRACION §25**.
+Este entorno construye fuentes locales; no cambia los destinos habituales ni
+las referencias A/B. PR #44 sigue en borrador, sin auto-merge ni integración.
+
 ## Alcance de la entrega de migración
 
 Esta entrega migra **exclusivamente funcionalidad ya implementada** y prepara la arquitectura para que cada integrante termine sus casos. Debe conservar reglas, contratos y datos existentes, adaptarlos técnicamente y comprobarlos en la estructura nueva. Se corrigen regresiones del traslado y bloqueos técnicos imprescindibles; los fallos funcionales previos se documentan para sus responsables.

@@ -33,6 +33,12 @@ La migración no reasigna a Sebastián los pendientes del resto.
 
 ## Instalar, preparar y arrancar
 
+Para revisión manual de **esta rama**, sin integrar previamente:
+[guía local para Sebastián y el compañero](../../App/infra/revision/README.md).
+Construye desde fuentes y aísla datos, proveedores, claves, cookies y puertos;
+la primera carga demo es explícita y los siguientes arranques conservan cambios.
+Los comandos generales de desarrollo que siguen no sustituyen ese aislamiento.
+
 Desde App/backend, Node **22.22.3** (`nvm install && nvm use`):
 
 ```bash
