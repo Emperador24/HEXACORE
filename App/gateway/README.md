@@ -1,10 +1,9 @@
 # Gateway
 
-API Gateway + balanceador de carga (SAD §8, ADR-02, ADR-15).
+API Gateway + balanceador de carga (ADR-02/15, revisados por ADR-16).
 
-**Responsabilidad:** punto único de entrada al backend para las cuatro interfaces del sistema.
-Centraliza autenticación, autorización, validación de tokens y enrutamiento hacia el microservicio
-correspondiente; distribuye tráfico entre las réplicas de cada servicio.
+**Responsabilidad:** punto único de entrada al backend para las dos portales y la app móvil unificada del sistema.
+Centraliza autenticación, autorización, validación de tokens y enrutamiento hacia Núcleo o Boletería; distribuye tráfico entre las réplicas de cada servicio.
 
 **ASR relacionados:** ASR-02 (disponibilidad ante caída de una instancia), ASR-03 (protección de
 datos de pago y credenciales).

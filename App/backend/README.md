@@ -129,3 +129,12 @@ No se implementan alertas operativas ni nuevos trabajos.
 Los scripts HTTP históricos pueden sembrar o detener recursos habituales: no se
 usan para esta entrega. No se certifican interfaces, carga, réplicas, RNF-15,
 publicación GHCR o CI/CD remoto mediante pruebas locales.
+
+## Cierre y continuación por el equipo
+
+[ADR-16/guía por integrante](../../Documentation/Work/GUIA-EQUIPO-MIGRACION.md),
+[corte y reversión pendientes](../../Documentation/Work/CORTE-Y-REVERSION.md),
+[imágenes publicadas](test/publicadas/README.md). Las referencias y comandos de
+servidores individuales en README de componentes de Entradas se conservan como
+historia; el arranque vigente es el de este workspace. No ejecutar la limpieza
+histórica de ocho bases: está retirada y no actúa sobre datos.

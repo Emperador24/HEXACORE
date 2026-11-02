@@ -3033,3 +3033,98 @@ inicial. Pedidos queda fuera del commit, SHA-256
 Lockfile y 18 fuentes originales sin diferencias. Commit con selección explícita:
 `refactor(datos): conectar aplicaciones a base unica por esquemas`.
 Publicación solo en origin/feature/sebastian-arquitectura, sin integrar develop/main.
+
+## 24. Cierre técnico, ADR-16 y revisión remota
+
+Base de esta entrega: **6e2260a31651760f5867e7c3e0f121fbcc0f802f**, rama
+feature/sebastian-arquitectura. Solo Pedidos local al comenzar; no se descarta
+trabajo. Se conserva el inventario de 60 contenedores iniciales (incluidas las
+referencias A/B y el ensayo), sin arrancarlos para repetir evidencia ya obtenida.
+No se ejecuta corte habitual ni se integra a develop/main.
+
+### Documentación y revisión de cierre
+
+ADR-16 registra la topología vigente, sus concesiones y qué sustituye de ADR-01,
+06, 12, 14 y 15. Conserva JWT/gateway, turnos, HMAC y proyecciones/outbox reales;
+no atribuye nuevas garantías financieras/QR a compartir proceso/base. SAD, propuesta,
+resumen, C4 y presentación usan fuentes comunes en ArquitecturaVigente.tex y
+Diagrams/Vigente/diagramas.tex. Las fuentes/vistas previas se conservan en Historico;
+ADR anteriores y Archify se identifican como historia. No se modifican SRS, reparto,
+CU generados o umbrales RNF.
+
+GUIA-EQUIPO-MIGRACION.md conserva los ocho CU por integrante y distingue código
+migrado de ubicaciones futuras. CORTE-Y-REVERSION.md fija preflight, pausa global,
+respaldo/restauración, copia/transferencia, preparación/aceptación y reversión antes/
+después de escrituras. Sus comandos son un procedimiento **no ejecutado**. El SQL y
+manifiesto de transferencia habituales deben generarse/revisarse con inventario,
+roles y ACL reales antes de autorizar la ventana; no quitar guardas del ensayo.
+
+Se revisan referencias activas: el fallback a App/services del arranque se elimina;
+la limpieza antigua de ocho bases queda retirada antes de cualquier Docker/SQL;
+README de componentes anteriores, placeholders y diagramas viejos quedan marcados
+como historia. Los servidores retirados no reaparecen. Compilación de documentación
+se hace fuera de Work; solo PDF finales se actualizan en Submission.
+
+Pedidos local inspeccionado, sin cambiar: único archivo no rastreado
+App/services/pedidos/src/pagos/eventos/publicador-pedidos.service.ts. Parser TS 5.9
+informa TS1005 en línea 19 y errores derivados TS1472/1068/1128: llave adicional
+antes del setTimeout. Los dos imports relativos vecinos no existen en ese directorio.
+Requiere revisión posterior de su propietario contra Alimentos; no se copia al workspace
+ni se incluye en Git. SHA-256 conservado:
+7a18d9aff7cb03e42f0cf8c311ebbed2d4a6c4278e8c21472349425b13856346.
+
+### CI/CD preparados y verificaciones adicionales
+
+Se revisan completos CI (integración general, backend, interfaces, gateway y
+histórico→A→B) y CD. CI deja de subir todo .evidencia-e2e: publica solo un JSON
+permitido de revisión, estados de pasos y conteos de Jest, sin nombres/payloads de
+pruebas, logs, respaldos, RDB, tokens o correos. CD publica solo ocho JSON de
+nombre/imagen/digest/revisión. Se agregan **seis pruebas de seguridad**: conjunto
+completo, revisión única, registro/digest válidos, rechazo de campos privados,
+resumen sin datos incluso cuando existen y rechazo de cero pruebas/omisiones como éxito.
+**6/6 locales**, 0 omitidas; YAML/sintaxis y preparación documental comprobados.
+
+workflow_dispatch de CD conserva las ocho imágenes y dos arquitecturas; en la rama
+usa arquitectura-SHA40 y sha-SHA40, sin escribir main/develop/latest. El smoke exige
+los ocho digests y revisión OCI única, sin builds locales; usa proyecto/base nuevos
+hexacore-publicadas-e2e / hexacore_publicadas_e2e. Preserva A/B. Comprueba preparación,
+gateway, portales HTTP, contratos financieros, correo real al simulador y cierre,
+conservando F12/F13/F14/F15. No publica evidencias privadas ni certifica navegador/carga.
+
+Estado inicial de remoto: conector GitHub confirma permiso push y búsqueda sin PR de
+esta rama. GitHub API autenticada confirma acceso; gh no está instalado. Crear el PR
+con el conector devuelve **403 Resource not accessible by integration**. Se crea por
+REST con la credencial existente de origin, mantenida solo en memoria y nunca impresa:
+**[PR #44, borrador hacia develop](https://github.com/Emperador24/HEXACORE/pull/44)**.
+El conector permite consultar CI; workflow_dispatch se realiza también por REST.
+Los enlaces, SHA y digests **realmente ejecutados** se registran a continuación al
+obtener resultados; preparar YAML no acredita ejecución remota.
+
+### Primera ejecución remota y correcciones de preparación
+
+Commit **58b832625e8a52a7798e2c68241a3e155174fdd3**, publicado solo en la rama
+de arquitectura. [CI 41528769945](https://github.com/Emperador24/HEXACORE/actions/runs/41528769945):
+portales Angular, análisis/widgets Flutter, gateway y guardia de artefactos aprobados.
+Dos regresiones de preparación/expectativas quedaron expuestas, sin omitir pruebas:
+
+- Histórico: `tar: This does not look like a tar archive`, construir.cjs:18. El
+  helper heredaba stdin e ignoraba los bytes de git archive. Se canaliza stdin a
+  tar explícitamente; se comprueban tres archivos extraídos contra git show. El
+  modo `node test/consolidacion/historico/construir.cjs --verificar-archivo` ejecuta
+  esas tres aserciones sin Docker y elimina solo su directorio temporal nuevo.
+  **Aprobado localmente con Node v22.22.3**. Transferencia/restauración/A/B de esa
+  corrida remota **no ejecutadas** por la dependencia fallida.
+- Integración general: seis suites funcionales de Identidad aprobadas; disponibilidad
+  falla en cu027-disponibilidad.py:217 con `AssertionError: ('hexacore-redis', 503)`.
+  La expectativa seguía siendo la salud de Identidad sola (200); la salud conjunta
+  ya exige Redis para Alimentos y devuelve 503, mientras login responde 200. Se
+  conserva la aserción del login y se adapta salud al contrato conjunto, comprobando
+  también dependencia caída, cuatro pools SQL y recuperación antes del siguiente
+  caso. No cambia producción ni umbrales. La ejecución real de la prueba adaptada
+  corresponde al siguiente CI; sintaxis Python aprobada localmente.
+
+CD desactiva además el artifact automático de Buildx: solo permite sus ocho JSON.
+Se repiten las seis pruebas de seguridad, **6/6**, cero omitidas. Los cinco documentos
+PDF se recompilan con latexmk fuera de Work; salida 0. El SAD conserva advertencias
+tipográficas/anclas de figuras históricas, sin atribuirles una validación funcional.
+Nueve bloques bash del procedimiento de corte pasan bash -n; **no se ejecutan**.

@@ -1,3 +1,7 @@
+> Directorio histórico, sin servidor activo. El destino del trabajo es
+> `App/backend/modulos/personal-logistica`; consultar GUIA-EQUIPO-MIGRACION.md.
+> Conservar este texto no acredita funcionalidad implementada.
+
 # Personal y logística
 
 La implementación parcial de CU-017/CU-018 que se solapa con CU-007–CU-009

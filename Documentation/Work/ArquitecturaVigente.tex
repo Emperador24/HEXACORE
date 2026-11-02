@@ -1,0 +1,102 @@
+% Sustituye las vistas activas de ADR-14/15. Las originales están en Historico/.
+\section{Vista de contenedores}
+\label{sec:contenedores}
+\textbf{Vigencia: ADR-16, rama de arquitectura.} Tres programas ejecutables:
+Núcleo, Boletería y Trabajador. Operación es el cuarto programa objetivo y sigue
+sin implementar. Los módulos ausentes no se presentan como servidores terminados.
+La configuración y las imágenes se validan en infraestructura aislada; el entorno
+habitual sigue pendiente de corte. Estado y ejecuciones reales en
+\texttt{ESTADO-MIGRACION.md}, apartados 23--24.
+
+Dos portales Angular y una app Flutter unificada para Cliente/Personal consumen el
+gateway. Sus pantallas o datos simulados no demuestran backend. Gateway verifica
+JWT con pública y consume el turno; los módulos autorizan y comprueban revocación.
+Identidad conserva firma/renovación. No existen servidores separados de Pagos,
+Autenticación, Alimentos, Personal ni los cinco componentes de Boletería.
+
+\begin{figure}[H]\centering\HexContenedores
+\caption{Contenedores vigentes. Azul: programas existentes; discontinuo: objetivo pendiente.}
+\label{fig:contenedores}\end{figure}
+
+\section{Vista de componentes}
+\label{sec:componentes}
+Cada programa tiene bootstrap real en \texttt{App/backend/apps}. Las reglas tienen
+una sola fuente en \texttt{modulos}; dependencias y lockfile comunes, Node 22.22.3,
+Nest 11/TypeScript 5.9. Los compiladores Angular están fuera del workspace.
+\begin{figure}[H]\centering\HexComponentes
+\caption{Composición actual. Importar Pagos no publica cobros o reembolsos HTTP.}
+\label{fig:componentes}\end{figure}
+Núcleo reúne cuentas, sesiones, administración, pedidos y logística; Boletería reúne
+cartelera, fila, compras, reventa e ingresos. Se conservan rutas \texttt{/api/v1}, DTO,
+estados, errores, cookies, RS256 y reglas previas. El único webhook financiero es
+\texttt{POST /api/v1/pagos/webhook} en Núcleo, con rawBody/HMAC de bytes originales.
+Boletería no necesita privada JWT ni secreto de webhook. Trabajador consume correo,
+sin SQL/Redis/JWT/Finanzas y sin endpoints de negocio.
+
+\section{Vista de procesos}
+\label{sec:procesos}
+\begin{figure}[H]\centering\HexSecuencia
+\caption{Compra existente; no representa una Saga nueva ni finalización F12.}
+\label{fig:secuencia}\end{figure}
+Alimentos y Entradas llaman a la API pública local de Pagos; solo la pasarela
+mantiene HTTP externo. Postventa usa la API local de Ventas, conservando guardas y
+efectos. Compartir proceso/base no reúne automáticamente sus transacciones.
+Ventas conserva autoridad de propietario/QR/historial; Acceso QR mantiene proyección
+y registro de ingreso. Continúan eventos, compensaciones y dos outbox. La invalidación
+inmediata del QR no se acredita con una espera de convergencia.
+
+\begin{center}\begin{longtable}{p{4cm}p{4cm}p{6cm}}
+\toprule Contrato existente & Dueño / proceso & Alcance comprobado\\\midrule\endhead
+Correo pendiente & Identidad / Núcleo; Comunicaciones / Trabajador & Cinco correos por RabbitMQ;
+intentos/deduplicación en memoria.\\
+Compra, entrada e ingreso & Ventas y Acceso QR / Boletería & Proyecciones y outbox conservados;
+no consistencia inmediata nueva.\\
+Cambio/asignación de turno & Personal-Logística / Núcleo & Notificación persistida; listado global F14.\\
+Resultado financiero & Webhook / Núcleo & Libro y publicación; finalizar pendientes sigue F12.\\
+Pedido confirmado & Alimentos / Núcleo & Publicación existente; recepción final pendiente.\\
+Evacuación y alertas & Operación, pendiente & No hay consumidor o caso terminado que migrar.\\
+\bottomrule\caption{Mensajería vigente; no todo publicador tiene outbox.}\label{tab:eventos}
+\end{longtable}\end{center}
+Cron de reservas/publicaciones, sondeo de alimentos y consumidores de logística/
+Entradas permanecen con sus reglas/repositorios en Núcleo/Boletería. Solo el correo
+se traslada al Trabajador. SIGTERM cierra pools, cron, consumidores y conexiones;
+el correo en vuelo conserva su posible reentrega (F15).
+
+\section{Vista física}
+\begin{figure}[H]\centering\HexDespliegue
+\caption{Despliegue comprobado en pruebas; no representa el entorno habitual migrado.}\label{fig:despliegue}\end{figure}
+\label{sec:fisica}
+Docker Compose ejecuta los tres programas, gateway, PostgreSQL, Redis, RabbitMQ,
+dos proveedores simulados y dos portales. \texttt{preparacion-base} es una tarea
+sin listener: ejecuta las migraciones antes de habilitar ambas apps. No es un cuarto
+servidor. El override remoto separa datos y procesos; escalado replica Boletería;
+registro reutiliza la misma imagen Núcleo en preparación. Configuración válida
+no demuestra arranque en dos máquinas ni capacidad, redundancia o RNF-15.
+No hay Kubernetes, MongoDB, buscador ni réplica SQL desplegados por esta migración.
+Los diagramas de clúster anteriores son históricos, no evidencia de implementación.
+
+\section{Modelo de datos vigente}
+\label{sec:datos}
+Un destino PostgreSQL común \texttt{POSTGRES\_BD=hexacore}; las conexiones TypeORM
+siguen nombradas. Cada pool tiene solo su esquema, pg\_catalog y extensiones en
+search\_path. No se mezclan propietarios por semejanza de tablas.
+\begin{center}\begin{longtable}{p{4cm}p{4.8cm}p{4.5cm}}
+\toprule Conexión & Esquema & Historial / migraciones\\\midrule\endhead
+identidad & identidad & migraciones / 3\\
+alimentos & alimentos & migraciones / 2\\
+personal-logistica & personal\_logistica & migraciones / 2\\
+entradas-ventas & entradas\_ventas & migraciones / 5\\
+entradas-catalogo & entradas\_catalogo & migraciones / 1\\
+entradas-postventa & entradas\_postventa & migrations / 1\\
+entradas-acceso-qr & entradas\_acceso\_qr & migraciones / 3\\
+finanzas-pagos & finanzas\_pagos & migraciones / 1\\
+\bottomrule\caption{Ocho esquemas e historiales; 18 fuentes originales conservadas.}
+\end{longtable}\end{center}
+Ambos programas usan \texttt{finanzas\_pagos.transacciones\_pago}, sin claves por
+proceso ni duplicación del libro. Extensiones compartidas en \texttt{extensiones};
+procedencia/SHA en \texttt{migracion\_control}. synchronize/migrationsRun=false.
+Una preparación serializada reconoce la transferencia sin reaplicar DDL o instala
+las 18 migraciones en vacío. El mapa tabla por tabla está en la guía de consolidación.
+La copia transferida y la base vacía se prueban por separado; no se escribe sobre
+las bases habituales. Respaldos independientes son coherentes entre dominios solo
+tras inmovilizar conjuntamente escritores/callbacks/consumidores, no por ser pg\_dump.

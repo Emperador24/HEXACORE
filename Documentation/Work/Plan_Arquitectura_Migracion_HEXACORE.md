@@ -4,7 +4,9 @@ Fecha de revisión: 2 de noviembre de 2026. Alcance aclarado por el equipo: migr
 
 Base revisada: `Emperador24/HEXACORE`, rama `develop`, commit `2cd4fde22683d370dfe32991d983a0ae373b9908`. Su contenido incluye la integración de Samuel mediante el PR #43.
 
-Estado de este documento: arquitectura acordada y secuencia de migración. No afirma que la migración esté hecha ni que los requisitos de calidad estén demostrados. La revisión inicial fue documental; las implementaciones y comprobaciones aisladas posteriores se registran en ESTADO-MIGRACION.md. No se ha ejecutado aquí el sistema completo.
+Estado de este documento: arquitectura acordada y secuencia de migración. No afirma que la migración esté hecha ni que los requisitos de calidad estén demostrados. La revisión inicial fue documental; las implementaciones y comprobaciones aisladas posteriores se registran en ESTADO-MIGRACION.md. La evidencia local está en §23 y el cierre remoto en §24. El corte habitual sigue pendiente.
+ADR-16 registra la decisión; GUIA-EQUIPO-MIGRACION.md y CORTE-Y-REVERSION.md contienen
+el reparto y el procedimiento operativo, sin ejecutar ese corte.
 
 ## Alcance de la entrega de migración
 

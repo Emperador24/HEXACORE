@@ -1,3 +1,8 @@
+> Guía histórica del componente anterior al traslado. No ejecutar su instalación,
+> arranque independiente o migraciones por separado. La fuente vigente es
+> [App/backend](../../../README.md) y su guía de pruebas A/B.
+> Este componente se carga dentro de Boletería; se conserva el texto como historia.
+
 # fila dentro de Boletería
 
 Fila Redis/Lua y consumo único de turnos; no tiene base PostgreSQL.

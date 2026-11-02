@@ -6,7 +6,7 @@ Repositorio de documentación arquitectónica del **Sistema Integral de Gestión
 
 ```
 HEXACORE/
-├── App/                    Estructura del prototipo (microservicios, frontends, infra) — ver App/README.md
+├── App/                    Workspace backend modular, frontends e infraestructura — ver App/README.md
 ├── Documentation/
 │   ├── Submission/         Entregables finales (PDF y Excel para calificación)
 │   └── Work/               Documentos fuente (LaTeX) de los entregables
@@ -46,6 +46,15 @@ HEXACORE/
 | Gestión de Eventos (CRUD) | CU-026 | Samuel Emperador |
 | Cuentas, roles y recintos | CU-027 – CU-029 | Sebastián Sánchez |
 | Proveedores, pagos y reportes | CU-030 – CU-032 | Diego Coronado |
+
+## Arquitectura vigente y continuación del equipo
+
+[ADR-16 y fuentes actuales](Documentation/Work/README.md),
+[guía por integrante](Documentation/Work/GUIA-EQUIPO-MIGRACION.md),
+[estado y verificaciones](Documentation/Work/ESTADO-MIGRACION.md),
+[corte/reversión pendientes](Documentation/Work/CORTE-Y-REVERSION.md).
+Núcleo, Boletería y Trabajador ejecutan lo existente; Operación y CU ausentes siguen
+pendientes. La consolidación se comprobó en copias; el entorno habitual no se cortó.
 
 ## Flujo de trabajo
 

@@ -257,8 +257,8 @@ preparar_inventario_pedidos() {
 }
 
 sembrar() {
-  local servicio="$1" tarea="${2:-semilla}" carpeta="$RAIZ/App/services/$1"
-  [[ "$servicio" == "nucleo" || "$servicio" == "boleteria" ]] && carpeta="$RAIZ/App/backend"
+  local servicio="$1" tarea="${2:-semilla}" carpeta="$RAIZ/App/backend"
+  [[ "$servicio" == "nucleo" || "$servicio" == "boleteria" ]] || { rojo "Programa retirado: $servicio"; return 1; }
   if [[ ! -d "$carpeta/node_modules" ]]; then
     rojo "  $servicio: falta npm ci en $carpeta"
     return 1

@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+# HISTÓRICO: limpieza anterior de ocho bases. Conservada solo como referencia.
+# No es compatible con la instalación consolidada ni preserva sus pendientes.
+printf '%s\n' "Guion retirado. Usar las pruebas aisladas de App/backend/test; no se ejecuta ninguna limpieza." >&2
+exit 1
+
 #
 # Devuelve las bases de desarrollo al estado de la semilla.
 #

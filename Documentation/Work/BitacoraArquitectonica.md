@@ -9,6 +9,20 @@ semestre** — no reescribir entradas pasadas, solo añadir nuevas.
 Cada entrada nueva va arriba (orden cronológico inverso), con este formato:
 
 ```
+
+## 2026-11-02 — ADR-16 y cierre técnico revisable
+
+Se registra la arquitectura acordada de Núcleo modular, Boletería, Operación
+pendiente y Trabajador, Pagos reutilizable y PostgreSQL único por esquemas. La
+rama migra comportamiento existente; no completa los CU del equipo. Se conservan
+las autoridades/proyecciones de Entradas y F12/F13/F14/F15.
+
+Las vistas activas se actualizan; fuentes anteriores quedan en Historico. Se
+publican guía por integrante y procedimiento de corte/reversión **sin ejecutarlo**.
+CI/CD, digests y bloqueos reales se registran por revisión en ESTADO-MIGRACION §24.
+La revisión hacia develop permanece en borrador, sin autorización de mezcla.
+
+
 ## AAAA-MM-DD — Título breve
 
 **Tipo:** Reunión / Decisión de diseño / Cambio arquitectónico / Análisis / PoC
