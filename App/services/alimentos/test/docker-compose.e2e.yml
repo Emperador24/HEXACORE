@@ -1,0 +1,97 @@
+name: hexacore-cu011-e2e
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: cu011_e2e
+      POSTGRES_PASSWORD: cu011_e2e
+      POSTGRES_DB: alimentos_cu011_e2e
+    ports: ["127.0.0.1:15435:5432"]
+    volumes:
+      - postgres:/var/lib/postgresql/data
+      - ./initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U cu011_e2e -d alimentos_cu011_e2e"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  redis:
+    image: redis:7-alpine
+    ports: ["127.0.0.1:16382:6379"]
+    volumes:
+      - redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: cu011_e2e
+      RABBITMQ_DEFAULT_PASS: cu011_e2e
+      RABBITMQ_DEFAULT_VHOST: cu011
+    ports: ["127.0.0.1:15675:5672"]
+    volumes:
+      - rabbitmq:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
+      interval: 3s
+      timeout: 10s
+      retries: 30
+  pasarela:
+    image: node:22.22.3-alpine
+    user: node
+    working_dir: /app
+    command: ["node", "server.js"]
+    volumes:
+      - ../../../infra/pasarela-pagos-simulada/server.js:/app/server.js:ro
+    environment:
+      WEBHOOK_URL: http://pagos:3008/api/v1/pagos/webhook
+      SECRETO_WEBHOOK: cu011-webhook-pruebas
+    ports: ["127.0.0.1:13101:3099"]
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3099/salud',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  pagos:
+    build:
+      context: ../../pagos
+      dockerfile: ../alimentos/test/Dockerfile.pagos
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+      pasarela: { condition: service_healthy }
+    environment:
+      NODE_ENV: test
+      PUERTO: "3008"
+      PREFIJO_API: api/v1
+      POSTGRES_HOST: postgres
+      POSTGRES_PUERTO: "5432"
+      POSTGRES_USUARIO: cu011_e2e
+      POSTGRES_CONTRASENA: cu011_e2e
+      POSTGRES_BASE: pagos_cu011_e2e
+      REDIS_HOST: redis
+      REDIS_PUERTO: "6379"
+      RABBITMQ_URL: amqp://cu011_e2e:cu011_e2e@rabbitmq:5672/cu011
+      AUTH_JWT_EMISOR: hexacore-administracion
+      AUTH_JWT_CLAVE_PUBLICA_ARCHIVO: /claves/jwt-publica.pem
+      PAGOS_PROVEEDOR_URL: http://pasarela:3099
+      PASARELA_TIMEOUT_MS: "3000"
+      PASARELA_SECRETO_WEBHOOK: cu011-webhook-pruebas
+    ports: ["127.0.0.1:13088:3008"]
+    volumes:
+      - ./claves/jwt-publica.pem:/claves/jwt-publica.pem:ro
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3008/api/v1/salud',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 2s
+      timeout: 3s
+      start_period: 20s
+      retries: 30
+
+volumes:
+  postgres:
+  redis:
+  rabbitmq:

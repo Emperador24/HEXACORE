@@ -1,25 +1,26 @@
 # Estado de migración de HEXACORE
 
 Fecha de revisión: **1 de noviembre de 2026**, America/Bogota.
-Alcance: diagnóstico inicial y **primer cambio de implementación: F05,
-Compose remoto**, sobre la arquitectura actual. No se trasladaron servicios,
-modificaron dependencias npm, aplicaron migraciones ni completaron casos de uso.
+Alcance: diagnóstico inicial, reparación F05 y **recuperación/ejecución aislada
+del CU-011 de Alimentos**, sobre la arquitectura actual. No se trasladaron
+módulos ni modificaron dependencias de negocio. Las únicas migraciones de
+esta etapa se aplicaron a las bases exclusivas de CU-011.
 
 **Resultado actualizado:** se leyó completo
 `Plan_Arquitectura_Migracion_HEXACORE.md` y se contrastó con este estado.
 Docker Desktop responde con ServerVersion **29.7.2**. Los bloqueos anteriores
-de plan ausente y daemon inaccesible quedan retirados. F05 está reparado y
-validado en la configuración resuelta; **no se ejecutó el arranque remoto ni
-la integración real**, que siguen pendientes. La línea base inicial de
-compilaciones y pruebas se conserva como evidencia histórica, sin repetir
-interfaces no afectadas.
+de plan ausente y daemon inaccesible quedan retirados. F05 está validado en
+configuración; su arranque remoto sigue pendiente. **CU-011 sí se ejecutó con
+Alimentos → Pagos → pasarela reales: cinco pruebas aprobadas, dos veces sobre
+la misma infraestructura sin vaciarla** (§14). La integración general, login,
+gateway e interfaces no se validaron en esta etapa. F12 sigue pendiente.
 
 El objetivo confirmado es **Núcleo modular, Boletería, Operación y Trabajador**:
 tres aplicaciones de negocio y un trabajador técnico, con Pagos reutilizable
 sin servidor exclusivo. También incluye **una base PostgreSQL `hexacore`
 organizada por esquemas de módulo y un único registro financiero**. Conservar
 las bases actuales al reunir procesos es una transición; su consolidación
-posterior forma parte de la migración final, no es opcional. Ver §§12–13.
+posterior forma parte de la migración final, no es opcional. Ver §§12–14.
 
 ## 1. Identificación, instrucciones y conservación del trabajo
 
@@ -27,12 +28,12 @@ posterior forma parte de la migración final, no es opcional. Ver §§12–13.
 |---|---|
 | Directorio | `/Users/sebastiansanchez/Documents/HEXACORE` |
 | Rama verificada | `feature/sebastian-arquitectura` |
-| HEAD revisado, sin cambios durante el diagnóstico | `2cd4fde22683d370dfe32991d983a0ae373b9908` |
-| Último commit | Merge PR #43, `Feature/samuel`, 31 oct 2026 |
+| Base del diagnóstico inicial | `2cd4fde22683d370dfe32991d983a0ae373b9908`, merge PR #43 |
+| Base de esta etapa CU-011 | `c6c6e9223a811bf2d3acca999b49436236bd7cef`, `fix(infra): reparar Compose remoto y registrar plan de migración` |
 | Estado inicial | `git status --porcelain=v1 --branch`: solo `## feature/sebastian-arquitectura...origin/feature/sebastian-arquitectura`; sin cambios rastreados ni archivos nuevos visibles |
-| Plan indicado como recién añadido | Ausente durante el diagnóstico inicial; ahora disponible, leído completo y preservado sin modificaciones. Sigue como archivo local no rastreado |
+| Plan | Ya versionado en `c6c6e92`; leído completo. En esta etapa se elimina únicamente la línea vacía adicional al final |
 | Trabajo local aparecido durante la revisión | `App/services/pedidos/src/pagos/eventos/publicador-pedidos.service.ts`, no rastreado; preservado sin modificaciones. No forma parte del commit ni de los paquetes compilados |
-| Archivos modificados por esta tarea | `App/infra/docker-compose.remoto.yml` y este estado. Sin commit, checkout, reset, limpieza de volúmenes ni escrituras en bases |
+| Cambios | F05 está en `c6c6e92`. CU-011 modifica pruebas/configuración/scripts/CI y documentación (§14); conserva aparte el archivo local de Pedidos |
 
 Se buscaron `AGENTS.md` en el repositorio, incluidos archivos ocultos, y en
 los directorios ancestros: no se encontraron. Se leyeron `WORKFLOW.md`,
@@ -42,11 +43,12 @@ Se respetó la rama pedida. El documento de requisitos generado no se editó:
 `RequisitosCasosUso.tex` deriva de `CU_eventos_completo.xlsx`.
 
 Las compilaciones, instalaciones con lockfile y pruebas generaron únicamente
-artefactos locales de herramientas. No se cambiaron `package.json`, lockfiles
-ni fuentes de aplicaciones. La única configuración modificada en el seguimiento
-es el override remoto. Los registros iniciales quedaron en
+artefactos locales de herramientas. En CU-011 solo se ajustaron scripts en
+los `package.json` de Alimentos/Autenticación; dependencias, lockfiles, fuentes
+de negocio y el doble de Autenticación permanecen sin cambios. Los registros iniciales quedaron en
 `/private/tmp/hexacore-diagnostico/`; la configuración resuelta y las
-comprobaciones de F05 están en `/private/tmp/hexacore-compose-remoto/`.
+comprobaciones de F05 están en `/private/tmp/hexacore-compose-remoto/`; la
+evidencia de CU-011 está en `/private/tmp/hexacore-cu011/`.
 Son auxiliares de esta sesión, no un requisito para reproducir los comandos.
 
 ## 2. Arquitectura documentada, implementada y acordada
@@ -389,7 +391,8 @@ de pruebas; no resolverlo mediante actualizaciones masivas durante una mudanza.
 Estos son los resultados del diagnóstico anterior. El seguimiento de §13
 vuelve a comprobar el plan, el daemon y los Compose afectados. Docker ya está
 disponible; las integraciones no ejecutadas siguen pendientes de ejecución,
-no bloqueadas actualmente por un daemon apagado.
+no bloqueadas actualmente por un daemon apagado. La excepción posterior es
+CU-011: sus dos corridas reales y las comprobaciones afectadas están en §14.
 
 ### Entorno y comandos auxiliares
 
@@ -509,19 +512,20 @@ Headless disponible; después `flutter pub get`, `flutter analyze` y
 CI**: el último exit code no resume fallos anteriores; hay que registrar cada
 comando como en las tablas de esta revisión.
 
-Para pruebas reales futuras, levantar servicios desechables con puertos,
-bases, Redis y vhost RabbitMQ exclusivos. Los Compose de pruebas existentes
-reservan `entradas-e2e`/`entradas_e2e` (puertos 15434, 16381, 15674, 13100) y
-`pedidos-e2e`/`pedidos_e2e` (15433, 16380, 15673, 13099), pero el segundo quedó
-en Autenticación y ambos requieren corregir su cableado de Pagos. No usar
+Para pruebas reales, usar servicios desechables con puertos, bases, Redis y
+vhost RabbitMQ exclusivos. Ventas conserva `entradas-e2e`/`entradas_e2e`
+(15434, 16381, 15674, 13100), con su cableado de Pagos pendiente. El Compose
+CU-011 que estaba en Autenticación se recuperó y adaptó en Alimentos bajo el
+proyecto **`hexacore-cu011-e2e`**, con otros puertos y Pagos real (§14). No usar
 `iniciar.sh` para obtener aislamiento: fija nombres de contenedores, puertos y
 semillas del ambiente normal. No trasladar comandos de limpieza de CI al
 ambiente local.
 
 ## 9. Fallos previos y evidencia concreta
 
-Son hallazgos del checkout antes de migrar; no se corrigieron en esta etapa.
-Se distingue fallo reproducido de riesgo observado por lectura.
+Son hallazgos del checkout antes de migrar. F05 fue reparado en la etapa
+anterior; F07/F08 se reparan ahora **solo para CU-011**. Las deudas restantes
+siguen indicadas. Se distingue fallo reproducido de riesgo observado por lectura.
 
 | ID | Evidencia | Consecuencia |
 |---|---|---|
@@ -531,8 +535,8 @@ Se distingue fallo reproducido de riesgo observado por lectura.
 | F04, reproducido | `eventos-emergencias/vitest.config.ts`: `passWithNoTests: true`; `npm test` → `No test files found, exiting with code 0` | No hay unitarias ejecutadas pese al verde; no sumarlas como aprobadas |
 | F05, reproducido y **reparado en configuración** | Antes: Compose remoto referencia `nucleo`, inexistente en base, sin build/image. Después: override para diez backends, sin dependencias a datos locales, con Postventa → Pagos/Ventas y perfil `datos` separado | `config -q` e inspección de configuración resuelta pasan para remoto y remoto+escalado (§13). Arranque real e integración pendientes |
 | F06, inspección de configuración resuelta | Compose registro añade `hexacore-nucleo`, no publicado por la matriz actual; deja build en ocho backends; gateway `volumes: !reset []` elimina también la clave pública que su Dockerfile no incorpora | `--registro` no representa el sistema íntegramente construido por CD; validación sintáctica exitosa no demuestra despliegue ni JWT operativo |
-| F07, reproducido + inspección | E2E de Pedidos repartido entre `autenticacion/test` (configuración/Compose/README, sin specs) y `alimentos/test` (spec, sin script/config/Compose); script de integración de Pagos apunta a archivo inexistente | La caracterización real de pagos/pedidos no es ejecutable con los comandos anunciados |
-| F08, inspección | E2E de Ventas levanta PostgreSQL/Redis/Rabbit/pasarela, pero no Pagos; `entorno-e2e.ts` fija `PASARELA_URL`, mientras el cliente actual usa `PAGOS_URL` con default `localhost:3008`. La configuración de Alimentos tampoco fija un Pagos aislado | Las suites ya no son autocontenidas tras la extracción de Pagos; pueden intentar hablar con un servicio ajeno o quedar con pago incierto. No ejecutarlas así |
+| F07, **CU-011 resuelto y ejecutado** | Configuración/entorno/Compose/instrucciones recuperados en `alimentos/test`; script `test:e2e` disponible. Pruebas/doble propios de Autenticación conservados. Dos corridas: 5/5 aprobadas cada una | El comando independiente `test:integracion` de Pagos que apunta a un script inexistente sigue pendiente; esta suite no depende de él |
+| F08, **CU-011 resuelto; Ventas pendiente** | Alimentos usa `POSTGRES_BD_PEDIDOS`, `PAGOS_URL` y servidor Pagos real aislado, con libro propio y pasarela real de prueba. Ventas conserva su Compose sin Pagos y entorno antiguo | No ejecutar la suite E2E de Ventas como si estuviera corregida. CU-011 sí es autocontenida (§14) |
 | F09, inspección | `infra/iniciar.sh`: `migrar ... || true`, semillas con errores silenciados; rama SQL carga solo cuatro volcados. `autenticacion/src/persistencia/semillas` trunca usuarios. Dockerfiles también migran | Un mensaje final «en marcha» no demuestra esquema/datos completos. Un arranque normal puede reemplazar datos de desarrollo |
 | F10, inspección | Sonda Eventos/Emergencias consulta `/api/v1/turnos`, pero controladores están bajo `/api/v1/logistica`; acepta cualquier 2xx/4xx. Compose declara `DB_SYNCHRONIZE=true`, código fija `false`; bootstrap lee `PORT`, Compose define `PUERTO` | La sonda puede aprobar un 404 y no acredita acceso a BD; la configuración contiene opciones inefectivas. El puerto actual coincide por default, no por esa variable |
 | F11, inspección | Contrato `shared/api/ventas.openapi.json` sigue agregando cartelera, QR y reventa; `contrato-api.spec.ts` solo inspecciona ese JSON. `exportar-openapi.ts` crea únicamente el AppModule actual de Ventas | Las pruebas del JSON pasan sin demostrar paridad con los cuatro servicios. Regenerarlo sin diseñar agregación perdería operaciones externas |
@@ -594,7 +598,10 @@ de diez backends con Redis de CI. Eventos/Emergencias aparece **también** en el
 job `logistica`, duplicando comprobaciones. Alimentos dispone de Redis para
 sus suites en CI; aquí no se usó uno compartido. El job de integración levanta
 `iniciar.sh`, prueba Autenticación/Ventas/Postventa/QR y E2E de Logística;
-**no ejecuta integración de Alimentos ni una suite real del servidor Pagos**.
+El job general no ejecuta integración de Alimentos ni una suite real del
+servidor Pagos. Esta etapa añade el job independiente **`alimentos-e2e`** con
+Node 22.22.3, infraestructura exclusiva y el recorrido real de CU-011; su
+ejecución local pasó, pero no se presenta como una ejecución remota de CI.
 Los portales solo compilan en CI (esta revisión sí ejecutó sus tests). Flutter
 corre análisis y `test/`. Gateway construye imagen para `nginx -t` y valida
 solo Compose base. Los overrides remoto/registro no tienen esa protección.
@@ -620,15 +627,14 @@ programa.
 
 ## 12. Etapas del plan y criterios de terminación
 
-La secuencia siguiente corresponde a §10 del plan ya leído. La solicitud
-actual autoriza únicamente reparar F05 y validar configuración; las demás
-etapas conservan su condición de trabajo futuro. Ninguna consolidación de
-procesos o datos se ejecuta en este cambio.
+La secuencia siguiente corresponde a §10 del plan ya leído. El avance actual
+está en la base comprobable: F05 y CU-011 aislado. Las demás etapas conservan
+su condición de trabajo futuro; no se consolidan procesos ni datos aquí.
 
 | Etapa del plan | Trabajo y situación | Criterio de terminación |
 |---|---|---|
 | 0. Base, inventario y decisión escrita | Rama y HEAD confirmados, inventario realizado y plan contrastado. El nuevo ADR y ajustes de SAD/SRS siguen pendientes | Punto de partida identificado, trabajo local conservado, decisión y límites registrados, inventario verificable sin equiparar pantallas y backend |
-| 1. Base comprobable | **F05 reparado en configuración (§13)**. Pendientes Compose registro/F06, pruebas de Notificaciones, tipos de Logística, helpers y cableado E2E, junto con ejecución real aislada | Build y pruebas seleccionadas coherentes; arranque desde fuente e imágenes verificado; fallos previos y omisiones explícitos. Esta reparación sola no cierra la etapa |
+| 1. Base comprobable | **F05 reparado en configuración (§13) y CU-011 aislado ejecutado dos veces (§14)**. Pendientes Compose registro/F06, pruebas de Notificaciones, tipos de Logística y cableado E2E de Ventas | Build y pruebas seleccionadas coherentes; arranque general desde fuente e imágenes verificado; fallos previos y omisiones explícitos. Estos cambios no cierran por sí solos toda la etapa |
 | 2. Workspace y Núcleo existente | Fijar versiones compatibles y cuatro entradas; integrar identidad, alimentos y personal/turnos/asistencia en módulos del Núcleo. Conservar inicialmente conexiones/bases separadas | Contratos de cuentas, alimentos, cambios de turno y asistencia preservados; sin consumidores o timers duplicados. Sin fingir CU aún inexistentes |
 | 3. Reunir Boletería | Integrar Ventas/Catálogo/Cola/Postventa/QR. Después de reunir procesos, reconciliar sobre copia los datos críticos de entrada/propiedad/reventa/ingreso, sustituir RPC y retirar copias solo tras validación | Flujos de CU-001–006; 50 compradores sobre una publicación, doble escaneo y carrera transferencia/ingreso; QR anterior inválido tras transferencia confirmada |
 | 4. Pagos, trabajador y datos consolidados | Módulo común y único registro financiero, endpoint público único de webhook, resultado/trabajo durable y finalización idempotente. Migración repetible sobre copia a PostgreSQL `hexacore` por esquemas; drenar o migrar mensajes, reservas y pendientes | Identificadores/hashes/sesiones/estados/historiales/importes/QR/referencias conciliados y reversión probada. Reinicio entre pago/confirmación, callback duplicado/adelantado, proveedor lento, RabbitMQ caído y tareas repetidas sin doble cobro ni pérdida |
@@ -646,9 +652,10 @@ alertas no quedan resueltos por esta elección de despliegue.
 
 El primer cambio de implementación es **F05, Compose remoto**, descrito y
 verificado en §13. Su criterio de configuración está aprobado; el de arranque
-real no se ejecutó. El siguiente trabajo permanece en la etapa 1 del plan:
-reparar de forma separada las deudas de base comprobable (incluido Compose de
-registro, F06) y ejecutar integración con datos aislados antes del workspace.
+remoto real no se ejecutó. El segundo cambio recupera y ejecuta CU-011 aislado
+(§14). El siguiente trabajo permanece en la etapa 1 del plan: reparar las
+deudas restantes de base comprobable (incluido Compose de registro, F06) e
+integración antes del workspace.
 
 ## 13. Reparación F05: configuración remota actual
 
@@ -775,3 +782,189 @@ No se invocó `iniciar.sh`, `compose up/build/down`, migraciones, semillas ni
 comandos de limpieza. Los Dockerfiles actuales pueden migrar durante el
 arranque aun usando `--sin-demo`; por eso la validación se limitó a
 configuración y dejó el arranque real para un entorno aislado.
+
+## 14. CU-011: integración aislada recuperada y ejecutada
+
+Etapa del 1 de noviembre de 2026 sobre **`c6c6e9223a811bf2d3acca999b49436236bd7cef`**,
+rama `feature/sebastian-arquitectura`. Se volvieron a leer el plan completo y
+este estado, especialmente F07/F08. No se movieron módulos ni se implementó
+resolución de pagos inciertos. F12 permanece pendiente.
+
+### Cambios de esta etapa
+
+- Configuración Jest, entorno y Compose de CU-011 salen de
+  `autenticacion/test` y quedan adaptados en `alimentos/test`, junto a la
+  suite existente. Se recuperan las instrucciones correctas en ese directorio.
+- Autenticación conserva sus pruebas propias y
+  `test/dobles/nestjs-typeorm.ts` sin cambios. Se retira únicamente su script
+  `test:e2e` sin specs y se documentan los comandos propios en su README de
+  pruebas. Su `npm test` y suites HTTP existentes permanecen disponibles.
+- Alimentos conserva `npm test`; añade `pretest:e2e` (build), `test:e2e`,
+  `test:e2e:infra` y `test:e2e:limpiar`. Los scripts de infraestructura fijan
+  el proyecto y el archivo Compose explícitamente para no heredar el proyecto
+  habitual. No se usa `iniciar.sh`.
+- El entorno fija **`POSTGRES_BD_PEDIDOS`**, que es la variable leída por
+  Alimentos, y **`PAGOS_URL`**, que apunta al Pagos de prueba. El entorno antiguo
+  fijaba `POSTGRES_BASE` y la pasarela directa, incompatibles con el código
+  actual. Se imponen coordenadas, credenciales y clave pública antes de cargar
+  la aplicación/CLI, y se comprueban antes de migrar o escribir fixtures.
+- Se añade `.nvmrc` de Alimentos con **22.22.3**, claves RSA exclusivas de
+  prueba, SQL de creación de la base financiera y Dockerfile de prueba que
+  compila el servidor Pagos actual con su lockfile. No se modifica su código
+  ni se convierte Pagos en biblioteca todavía.
+- La suite conserva las cuatro comprobaciones originales y separa replay
+  en una quinta prueba. Añade consultas al libro real de Pagos para comprobar
+  resultado, solicitante, importe/moneda, referencia e intento único.
+- CI incorpora `alimentos-e2e`, independiente del job de integración general:
+  Node fijado, cinco pruebas reales, logs si falla y limpieza limitada al
+  proyecto de CU-011. Se validó su YAML; no se presenta como una ejecución
+  remota de GitHub Actions en esta sesión.
+- El plan solo pierde **una línea vacía al final**, sin otros cambios de
+  contenido. Se conserva aparte el archivo local no rastreado de Pedidos.
+
+### Infraestructura y recorrido reales
+
+Proyecto nuevo **`hexacore-cu011-e2e`**, sin recursos previos. Cinco contenedores:
+PostgreSQL 16, Redis 7, RabbitMQ 3.13, pasarela HTTP simulada y **Pagos real**.
+Red y tres volúmenes propios, sin volúmenes externos o datos de desarrollo.
+Credenciales PostgreSQL/RabbitMQ `cu011_e2e`, vhost RabbitMQ `cu011`. Las claves
+de `test/claves` son fixtures públicos RSA de pruebas; Pagos monta solo la
+pública. No se usan claves de cuentas reales.
+
+| Recurso | Conexión exclusiva |
+|---|---|
+| PostgreSQL | `127.0.0.1:15435`; bases `alimentos_cu011_e2e` y `pagos_cu011_e2e` |
+| Redis | `127.0.0.1:16382` |
+| RabbitMQ | `127.0.0.1:15675/cu011` con las credenciales de prueba |
+| Pagos | `http://127.0.0.1:13088/api/v1`; dentro de Docker conecta a los datos de esa red y `http://pasarela:3099` |
+| Pasarela | Puerto de host `127.0.0.1:13101`; callbacks firmados a `http://pagos:3008/api/v1/pagos/webhook` |
+| Alimentos | Proceso hijo Node 22 del test, `http://127.0.0.1:13087`, con su `dist/main.js` real y sus destinos exclusivos |
+
+Los puertos de Docker se publican solo en loopback; Alimentos conserva el
+listener de su `main` actual y un puerto propio de la suite. Si el proceso no
+arranca o su puerto está ocupado, la prueba falla. Se espera el arranque real
+y conexión RabbitMQ antes de empezar las peticiones, y se consulta su salud.
+El proceso termina con SIGTERM; un cierre forzado se considera un fallo.
+
+Pagos aplica su migración al arrancar en la base financiera exclusiva. La suite
+aplica las dos migraciones de Alimentos, inserta fixtures con UUID nuevos y
+ejecuta el preparador real de inventario para ese establecimiento con compras
+detenidas. No hay mocks de persistencia, pagos o broker, ni proveedores
+reemplazados. El observador AMQP usa una cola exclusiva autoeliminable; no
+consume ni purga la cola durable de establecimientos.
+
+La prueba atraviesa **HTTP Alimentos → HTTP Pagos → HTTP pasarela**, observa
+la confirmación en ambas bases, Redis y RabbitMQ, y conserva los JWT como
+fixtures. **No prueba login, API Gateway, Angular/Flutter, proveedor bancario
+real ni recuperación de pagos inciertos.** Los callbacks del simulador se
+confirmaron en sus logs, pero no se implementó un consumidor de resultados
+pendientes en Alimentos; **F12 no se cierra**.
+
+### Node y fallo de preparación resuelto
+
+Host: **Node v22.22.3, npm 11.6.3**. Pagos y simulador usan
+`node:22.22.3-alpine`; se comprobó también `node --version` dentro de Pagos.
+Selección reproducible: `nvm use` en Alimentos lee `.nvmrc`. En esta máquina
+se instaló el paquete binario `node@22.22.3` en
+`/private/tmp/hexacore-cu011-node22` y se antepuso su `node_modules/.bin` a PATH,
+sin cambiar el Node global ni añadir dependencias al repositorio. El intento
+de descarga dentro del sandbox falló con ENOTFOUND; fuera de él se completó.
+
+Primer intento E2E: **fallo de carga, cero pruebas ejecutadas**. Evidencia:
+`Must use import to load ES Module: .../@nestjs/typeorm/dist/index.js`, emitido
+por Jest 30/Node 22 al intentar levantar Nest dentro de su runtime CommonJS.
+No fue un fallo del negocio ni se convirtió en una omisión.
+
+Se resolvió sin cambiar dependencias: Jest controla un proceso Node 22 que
+ejecuta el `main.js` compilado de Alimentos, con AppModule y ValidationPipe
+reales. Node carga el adaptador ESM nativamente, como hace el servidor actual
+de Pagos. El preparador de inventario también se ejecuta por su CLI compilado.
+No se usa el doble de TypeORM de las unitarias en ninguna aplicación E2E.
+
+### Comandos y resultados
+
+Instrucciones completas: [`App/services/alimentos/test/README.md`](../../App/services/alimentos/test/README.md).
+Desde la raíz, con el PATH de Node 22 seleccionado:
+
+```bash
+node --version
+npm --version
+# Ejecutados en secuencia, conservando los lockfiles:
+npm --prefix App/services/alimentos ci
+npm --prefix App/services/pagos ci
+npm --prefix App/services/autenticacion ci
+
+docker compose -p hexacore-cu011-e2e -f App/services/alimentos/test/docker-compose.e2e.yml config -q
+npm --prefix App/services/alimentos run test:e2e:infra
+npm --prefix App/services/alimentos run test:e2e
+npm --prefix App/services/alimentos run test:e2e
+
+# Para cada paquete afectado: lint, build y test, secuencialmente.
+npm --prefix App/services/alimentos run lint
+npm --prefix App/services/alimentos run build
+REDIS_INVENTARIO_PRUEBAS_URL=redis://127.0.0.1:16382 npm --prefix App/services/alimentos test -- --runInBand
+npm --prefix App/services/pagos run lint
+npm --prefix App/services/pagos run build
+npm --prefix App/services/pagos test -- --runInBand
+npm --prefix App/services/autenticacion run lint
+npm --prefix App/services/autenticacion run build
+npm --prefix App/services/autenticacion test -- --runInBand
+
+npm --prefix App/services/alimentos run test:e2e:limpiar
+git diff --check
+```
+
+Las instalaciones usaron además caché temporal y opciones `--prefer-offline
+--no-audit --no-fund`, sin cambiar los manifiestos de dependencias ni lockfiles.
+Se conservaron resultados por comando en `/private/tmp/hexacore-cu011/`.
+
+| Comprobación | Resultado realmente ejecutado |
+|---|---|
+| Compose de CU-011 | `config -q` exit 0; cinco contenedores saludables tras build y migración de Pagos |
+| Primer intento de configuración antigua/in-process | Suite fallida al cargar ESM, **0 tests**; resuelto como se detalla arriba |
+| E2E corregido, corrida 1 | **5 aprobadas, 1 suite**, exit 0; 6,233 s de Jest |
+| E2E corregido, corrida 2 sobre los mismos recursos | **5 aprobadas, 1 suite**, exit 0; 3,293 s de Jest; sin reiniciar, sembrar ni vaciar entre corridas |
+| Alimentos: tipos/build | Ambos exit 0 |
+| Alimentos: pruebas de `npm test` | **268 aprobadas, 15 suites**, exit 0; incluye las **33 de Redis real** antes omitidas, con la URL del Redis exclusivo |
+| Pagos: tipos/build/pruebas | Tipos/build exit 0; **27 aprobadas, 2 suites**, exit 0 |
+| Autenticación: tipos/build/pruebas | Tipos/build exit 0; **43 aprobadas, 3 suites**, exit 0; doble propio intacto |
+| Interfaces y servicios no afectados | No se repitieron sus compilaciones ni pruebas |
+| Omisiones de las ejecuciones afectadas | **0**; no se añadieron skip, passWithNoTests ni fallback silencioso |
+
+Conteo: **338 pruebas de los paquetes afectados y 10 ejecuciones E2E**
+(cinco escenarios, dos corridas), **348 aprobadas** en total. El fallo inicial
+de carga no ejecutó pruebas y se informa por separado.
+
+Evidencia adicional antes de limpiar, obtenida solo del PostgreSQL de pruebas:
+
+- Libro de Pagos: **2 APROBADO y 2 RECHAZADO**, importe de cada intento
+  `62000.00 COP`, todos con `intentos=1`. Las dos aprobaciones suman
+  `124000.00`; los dos rechazos registran intentos por `124000.00`, no cobros.
+- Base de Alimentos: **2 migraciones** aplicadas, **0 pedidos y 0
+  establecimientos restantes** tras el teardown de fixtures.
+- Logs de pasarela: un rechazo y una aprobación por corrida y callbacks
+  confirmados. No aparecen nuevos cobros por replay.
+
+### Conservación y cierre de esta etapa
+
+Se ejecutó la limpieza fijada a **`hexacore-cu011-e2e`**: eliminó sus cinco
+contenedores, red y tres volúmenes. Se comprobó que no quedan recursos de ese
+proyecto ni listener en 13087. Los **29 contenedores previos** conservaron
+identificador, nombre y estado. No se invocó infraestructura ni limpieza del
+ambiente habitual. Los datos del libro de pruebas se conservaron para inspección
+hasta esa limpieza.
+
+SHA-256 confirma intactos el archivo local de `App/services/pedidos`, el doble
+de Autenticación y los tres lockfiles. Se compararon las dependencias y la
+configuración unitaria con HEAD: sin cambios. El diff del plan elimina solo
+la línea vacía adicional solicitada. No fue necesaria ninguna corrección de
+código de negocio para que estos cinco escenarios pasaran.
+
+F07/F08 quedan resueltos para **Alimentos**. Siguen pendientes la suite propia
+de integración de Pagos mal referenciada, el cableado E2E de Ventas, F12 y los
+otros fallos previos. No se declara finalizada la etapa global de base
+comprobable ni implementados todos los alternos de CU-011.
+
+El commit de esta etapa selecciona explícitamente los archivos de pruebas,
+scripts, CI y documentación; excluye el archivo local no rastreado de Pedidos.
+Mensaje: `test(alimentos): recuperar integración aislada de CU-011`.

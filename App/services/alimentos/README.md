@@ -40,3 +40,10 @@ npm run start:dev          # http://localhost:3007/api/v1/salud
 
 Necesita PostgreSQL, Redis, el broker y el simulador de pasarela:
 `cd App/infra && ./iniciar.sh --rol datos`.
+
+## Integración de CU-011
+
+La suite con infraestructura exclusiva, servidor Pagos real y pasarela
+simulada se ejecuta con `npm run test:e2e`. Preparación, Node 22.22.3,
+aislamiento y limpieza están en [`test/README.md`](test/README.md).
+`npm test` conserva sus pruebas unitarias y no inicia el ambiente de desarrollo.

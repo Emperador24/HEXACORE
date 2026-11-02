@@ -1,14 +1,12 @@
 import 'reflect-metadata';
+import { ChildProcess, execFileSync, spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { INestApplication } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { Channel, ChannelModel, connect, ConsumeMessage } from 'amqplib';
 import Redis from 'ioredis';
 import { DataSource, In } from 'typeorm';
-import { PedidosModule } from '../src/pedidos.module';
 import { cargarConfiguracion } from '../src/comun/config/configuracion';
 import { opcionesDataSource } from '../src/persistencia/data-source';
 import { EventoReferencia } from '../src/persistencia/entidades/evento-referencia.entity';
@@ -18,25 +16,23 @@ import { Pedido } from '../src/persistencia/entidades/pedido.entity';
 import { DetallePedido } from '../src/persistencia/entidades/detalle-pedido.entity';
 import { ReservaInventario } from '../src/persistencia/entidades/reserva-inventario.entity';
 import { TransaccionPedido } from '../src/persistencia/entidades/transaccion-pedido.entity';
-import { PreparacionInventarioService } from '../src/inventario/preparacion-inventario.service';
 import { clavesReserva } from '../src/inventario/reservas.service';
-import { REDIS_INVENTARIO } from '../src/inventario/redis-inventario.provider';
-import { REDIS } from '../src/comun/redis/redis.module';
-import { ConexionRabbitMq } from '../src/comun/rabbitmq/conexion-rabbitmq.service';
 import { CLAVE_PEDIDO_CONFIRMADO, EVENTO_PEDIDO_CONFIRMADO, EXCHANGE_PEDIDOS } from '../src/pagos/eventos/pedido-confirmado.evento';
 
 const pausa = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
-async function esperar(condicion: () => Promise<boolean> | boolean): Promise<void> {
-  const limite = Date.now() + 5000;
+async function esperar(condicion: () => Promise<boolean> | boolean, timeout = 5000): Promise<void> {
+  const limite = Date.now() + timeout;
   while (!await condicion()) {
     if (Date.now() >= limite) throw new Error('Dependencia/evento E2E no disponible en 5 segundos');
     await pausa(25);
   }
 }
 
-describe('CU-011 HTTP + PostgreSQL + Redis + RabbitMQ reales', () => {
-  let app: INestApplication;
+describe('CU-011 Alimentos → Pagos → pasarela con persistencia y mensajería reales', () => {
+  let servidor: ChildProcess;
+  let salidaServidor = '';
   let datos: DataSource;
+  let libroPagos: DataSource;
   let redis: Redis;
   let amqp: ChannelModel;
   let canal: Channel;
@@ -46,6 +42,27 @@ describe('CU-011 HTTP + PostgreSQL + Redis + RabbitMQ reales', () => {
   const productos = [randomUUID(), randomUUID()];
   const recibidos: ConsumeMessage[] = [];
   let checkout: { id: string; expiraEn: string };
+  let claveAprobada: string;
+  let pagoAprobado: Record<string, unknown>;
+
+  async function detenerServidor(): Promise<void> {
+    if (!servidor || servidor.exitCode !== null || servidor.signalCode !== null) return;
+    const cerrado = new Promise<void>((resolve) => servidor.once('exit', () => resolve()));
+    servidor.kill('SIGTERM');
+    let forzado = false;
+    const timer = setTimeout(() => { forzado = true; servidor.kill('SIGKILL'); }, 5000);
+    try { await cerrado; } finally { clearTimeout(timer); }
+    if (forzado) throw new Error(`Alimentos no terminó tras SIGTERM: ${salidaServidor}`);
+  }
+
+  async function movimiento(clave: string): Promise<Record<string, unknown>> {
+    const filas = await libroPagos.query(
+      'SELECT resultado, solicitante, monto, moneda, referencia, intentos FROM transacciones_pago WHERE clave_idempotencia = $1',
+      [clave],
+    );
+    expect(filas).toHaveLength(1);
+    return filas[0];
+  }
 
   async function post(ruta: string, cuerpo: unknown, clave?: string) {
     const respuesta = await fetch(`${base}/api/v1/pedidos/${ruta}`, {
@@ -59,17 +76,58 @@ describe('CU-011 HTTP + PostgreSQL + Redis + RabbitMQ reales', () => {
 
   beforeAll(async () => {
     const config = cargarConfiguracion();
-    expect(config.postgres.base).toBe('pedidos_e2e');
+    expect(config.postgres).toMatchObject({ host: '127.0.0.1', puerto: 15435,
+      usuario: 'cu011_e2e', base: 'alimentos_cu011_e2e' });
+    expect(config.pagos.url).toBe('http://127.0.0.1:13088/api/v1');
+    expect(config.redis).toEqual({ host: '127.0.0.1', puerto: 16382 });
+    expect(config.rabbitmq.url).toBe('amqp://cu011_e2e:cu011_e2e@127.0.0.1:15675/cu011');
+    const saludPagos = await fetch(`${config.pagos.url}/salud`, { signal: AbortSignal.timeout(3000) });
+    expect(saludPagos.status).toBe(200);
+    libroPagos = new DataSource({ type: 'postgres', host: config.postgres.host, port: config.postgres.puerto,
+      username: config.postgres.usuario, password: config.postgres.contrasena, database: 'pagos_cu011_e2e',
+      synchronize: false });
+    await libroPagos.initialize();
     datos = new DataSource(opcionesDataSource(config));
     await datos.initialize();
     await datos.runMigrations();
-    app = await NestFactory.create(PedidosModule, { logger: false, forceCloseConnections: true });
-    app.setGlobalPrefix('api/v1');
-    await app.listen(0, '127.0.0.1');
-    base = await app.getUrl();
-    redis = app.get<Redis>(REDIS_INVENTARIO);
-    await esperar(() => redis.status === 'ready' && app.get<Redis>(REDIS).status === 'ready' &&
-      app.get(ConexionRabbitMq).obtenerCanal() !== null);
+    redis = new Redis({ host: config.redis.host, port: config.redis.puerto, lazyConnect: true,
+      retryStrategy: () => null, maxRetriesPerRequest: 1 });
+    await redis.connect();
+    token = new JwtService().sign({ sub: cliente, roles: ['Cliente'], jti: randomUUID() }, {
+      algorithm: 'RS256', issuer: config.emisorTokens, expiresIn: '10m',
+      privateKey: readFileSync(resolve(__dirname, 'claves/jwt-privada.pem'), 'utf8'),
+    });
+    await datos.manager.insert(EventoReferencia, { eventoId: evento, nombre: 'Evento E2E', disponible: true });
+    await datos.manager.insert(Establecimiento, { id: local, eventoId: evento, nombre: 'Local E2E',
+      estado: EstadoEstablecimiento.DISPONIBLE, puntoEntrega: 'Módulo E2E' });
+    await datos.manager.insert(Producto, productos.map((id, i) => ({ id, establecimientoId: local,
+      nombre: `Producto E2E ${i}`, precio: i === 0 ? '25000.00' : '6000.00', activo: true, cantidadInventario: 5 })));
+    // Ejecuta el preparador real, sin introducir @nestjs/typeorm ESM en el
+    // runtime CommonJS de Jest 30/Node 22. Node carga los módulos nativamente.
+    const preparado = execFileSync(process.execPath,
+      [resolve(__dirname, '../dist/inventario/preparar-inventario.js'), local, '--compras-detenidas'],
+      { env: process.env, encoding: 'utf8', timeout: 10000 });
+    expect(preparado).toContain(`Inventario preparado: ${local}, 2 productos.`);
+    expect(config.puerto).toBe(13087);
+    base = `http://127.0.0.1:${config.puerto}`;
+    // main.js usa el AppModule/ValidationPipe reales. No hay mocks, mappers ni
+    // providers reemplazados. El proceso hijo hereda solo los destinos fijados.
+    servidor = spawn(process.execPath, [resolve(__dirname, '../dist/main.js')],
+      { env: process.env, stdio: ['ignore', 'pipe', 'pipe'] });
+    let errorArranque: Error | undefined;
+    servidor.once('error', (error) => { errorArranque = error; });
+    servidor.stdout!.on('data', (trozo: Buffer) => { salidaServidor += trozo.toString(); });
+    servidor.stderr!.on('data', (trozo: Buffer) => { salidaServidor += trozo.toString(); });
+    await esperar(() => {
+      if (errorArranque) throw errorArranque;
+      if (servidor.exitCode !== null || servidor.signalCode !== null) {
+        throw new Error(`Alimentos terminó durante el arranque: ${salidaServidor}`);
+      }
+      return salidaServidor.includes('Alimentos escuchando') && salidaServidor.includes('Conectado a RabbitMQ;');
+    }, 15000);
+    const salud = await fetch(`${base}/api/v1/salud`, { signal: AbortSignal.timeout(3000) });
+    expect(salud.status).toBe(200);
+    expect(await salud.json()).toMatchObject({ servicio: 'alimentos', entorno: 'test', estado: 'arriba' });
     amqp = await connect(config.rabbitmq.url);
     canal = await amqp.createChannel();
     const cola = await canal.assertQueue('', { exclusive: true, autoDelete: true });
@@ -77,20 +135,11 @@ describe('CU-011 HTTP + PostgreSQL + Redis + RabbitMQ reales', () => {
     await canal.consume(cola.queue, (mensaje) => {
       if (mensaje) { recibidos.push(mensaje); canal.ack(mensaje); }
     });
-    token = new JwtService().sign({ sub: cliente, roles: ['Cliente'], jti: randomUUID() }, {
-      algorithm: 'RS256', issuer: config.emisorTokens, expiresIn: '10m',
-      privateKey: readFileSync(resolve(__dirname, '../../../infra/claves-desarrollo/jwt-privada.pem'), 'utf8'),
-    });
-    await datos.manager.insert(EventoReferencia, { eventoId: evento, nombre: 'Evento E2E', disponible: true });
-    await datos.manager.insert(Establecimiento, { id: local, eventoId: evento, nombre: 'Local E2E',
-      estado: EstadoEstablecimiento.DISPONIBLE, puntoEntrega: 'Módulo E2E' });
-    await datos.manager.insert(Producto, productos.map((id, i) => ({ id, establecimientoId: local,
-      nombre: `Producto E2E ${i}`, precio: i === 0 ? '25000.00' : '6000.00', activo: true, cantidadInventario: 5 })));
-    await app.get(PreparacionInventarioService).preparar(local);
   });
 
   afterAll(async () => {
     try {
+      await detenerServidor();
       // Solo fixtures propios; sin TRUNCATE, FLUSHDB, purgas o consumidores de colas ajenas.
       if (datos?.isInitialized) {
         const filas = await datos.manager.find(Pedido, { where: { establecimientoId: local } });
@@ -122,8 +171,11 @@ describe('CU-011 HTTP + PostgreSQL + Redis + RabbitMQ reales', () => {
       finally {
         try { await amqp?.close(); }
         finally {
-          try { await app?.close(); }
-          finally { if (datos?.isInitialized) await datos.destroy(); }
+          try { redis?.disconnect(); }
+          finally {
+            try { if (datos?.isInitialized) await datos.destroy(); }
+            finally { if (libroPagos?.isInitialized) await libroPagos.destroy(); }
+          }
         }
       }
     }
@@ -156,10 +208,13 @@ describe('CU-011 HTTP + PostgreSQL + Redis + RabbitMQ reales', () => {
   });
 
   it('rechazo de pasarela conserva la reserva y no publica ni descuenta inventario', async () => {
-    const respuesta = await post(`${checkout.id}/pagos`, { tokenPago: 'tok_rechazo_e2e' }, randomUUID());
+    const clave = randomUUID();
+    const respuesta = await post(`${checkout.id}/pagos`, { tokenPago: 'tok_rechazo_e2e' }, clave);
     expect(respuesta.status).toBe(200);
     expect(respuesta.body.estadoPago).toBe('RECHAZADA');
     expect(respuesta.body.compraConfirmada).toBe(false);
+    expect(await movimiento(clave)).toMatchObject({ resultado: 'RECHAZADO', solicitante: 'alimentos',
+      monto: '62000.00', moneda: 'COP', intentos: 1 });
     expect((await datos.manager.findOneByOrFail(Pedido, { id: checkout.id })).estado).toBe('PENDIENTE_PAGO');
     expect((await datos.manager.findBy(Producto, { establecimientoId: local })).map((p) => p.cantidadInventario)).toEqual([5, 5]);
     await pausa(100);
@@ -167,8 +222,9 @@ describe('CU-011 HTTP + PostgreSQL + Redis + RabbitMQ reales', () => {
   });
 
   it('pago aprobado confirma, descuenta una vez, consume Redis y publica el evento real', async () => {
-    const clave = randomUUID();
-    const respuesta = await post(`${checkout.id}/pagos`, { tokenPago: 'tok_ok_e2e' }, clave);
+    claveAprobada = randomUUID();
+    const respuesta = await post(`${checkout.id}/pagos`, { tokenPago: 'tok_ok_e2e' }, claveAprobada);
+    pagoAprobado = respuesta.body;
     expect(respuesta.status).toBe(200);
     expect(respuesta.body).toMatchObject({ estadoPago: 'APROBADA', estadoPedido: 'CONFIRMADO', compraConfirmada: true });
     expect(respuesta.body.codigoQr).toMatch(/^[0-9a-f]{64}$/);
@@ -177,7 +233,10 @@ describe('CU-011 HTTP + PostgreSQL + Redis + RabbitMQ reales', () => {
     expect(pedido.confirmadoEn).toBeInstanceOf(Date);
     expect(pedido.codigoQr).toBe(respuesta.body.codigoQr);
     expect((await datos.manager.findBy(Producto, { establecimientoId: local })).map((p) => p.cantidadInventario)).toEqual([3, 3]);
-    expect((await datos.manager.findOneByOrFail(TransaccionPedido, { id: clave })).estado).toBe('APROBADA');
+    expect((await datos.manager.findOneByOrFail(TransaccionPedido, { id: claveAprobada })).estado).toBe('APROBADA');
+    expect(respuesta.body.referenciaPasarela).toMatch(/^pas_/);
+    expect(await movimiento(claveAprobada)).toMatchObject({ resultado: 'APROBADO', solicitante: 'alimentos',
+      monto: '62000.00', moneda: 'COP', referencia: respuesta.body.referenciaPasarela, intentos: 1 });
     expect((await datos.manager.findOneByOrFail(ReservaInventario, { pedidoId: checkout.id })).estado).toBe('CONSUMIDA');
     const [stock, reserva, vencimientos] = clavesReserva(local, checkout.id);
     expect(await redis.hget(reserva, 'estado')).toBe('CONSUMIDA');
@@ -192,11 +251,17 @@ describe('CU-011 HTTP + PostgreSQL + Redis + RabbitMQ reales', () => {
       confirmadoEn: pedido.confirmadoEn!.toISOString(), productos: expect.arrayContaining(productos.map((productoId, i) => ({
         productoId, nombreProducto: `Producto E2E ${i}`, cantidad: 2, precioUnitario: i === 0 ? '25000.00' : '6000.00',
       }))) });
-    const replay = await post(`${checkout.id}/pagos`, { tokenPago: 'tok_ok_e2e' }, clave);
-    expect(replay.body).toEqual(respuesta.body);
+  });
+
+  it('repetir el pago devuelve el mismo QR sin otro descuento, evento ni movimiento', async () => {
+    const replay = await post(`${checkout.id}/pagos`, { tokenPago: 'tok_ok_e2e' }, claveAprobada);
+    expect(replay.status).toBe(200);
+    expect(replay.body).toEqual(pagoAprobado);
     await pausa(200);
     expect(recibidos).toHaveLength(1);
     expect((await datos.manager.findBy(Producto, { establecimientoId: local })).map((p) => p.cantidadInventario)).toEqual([3, 3]);
+    expect(await datos.manager.countBy(TransaccionPedido, { pedidoId: checkout.id })).toBe(2);
+    expect(await movimiento(claveAprobada)).toMatchObject({ intentos: 1, referencia: pagoAprobado.referenciaPasarela });
     expect((await post(`${checkout.id}/pagos`, { tokenPago: 'tok_ok_e2e' }, randomUUID())).status).toBe(409);
   });
 });

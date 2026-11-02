@@ -1,0 +1,10 @@
+# Servidor Pagos actual, con las dependencias de su lockfile y sin dobles.
+FROM node:22.22.3-alpine
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY tsconfig.json tsconfig.build.json nest-cli.json ./
+COPY src ./src
+RUN npm run build && npm prune --omit=dev --no-audit --no-fund
+USER node
+CMD ["sh", "-c", "node node_modules/typeorm/cli.js migration:run -d dist/persistencia/data-source.js && exec node dist/main.js"]

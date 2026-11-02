@@ -479,4 +479,3 @@ Referencias técnicas primarias:
 - [Martin Fowler: coste adicional de microservicios](https://martinfowler.com/bliki/MicroservicePremium.html).
 
 Se revisaron los 32 CU, los RNF, restricciones y decisiones, árbol de fuentes, configuraciones de arranque, rutas, manifiestos, código de flujos críticos y ejecuciones de automatización. No se hizo una auditoría línea por línea de cada archivo ni una ejecución local completa. Los estados funcionales de este plan son una base para verificación, no una certificación de terminación.
-

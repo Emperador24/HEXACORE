@@ -225,6 +225,36 @@ jobs:
         run: docker compose -f docker-compose.yml --profile servicios down -v
 
   # --------------------------------------------------------------------------
+  # CU-011 sobre un proyecto exclusivo: Alimentos -> Pagos -> pasarela.
+  # No usa iniciar.sh ni la infraestructura del job de integración general.
+  # --------------------------------------------------------------------------
+  alimentos-e2e:
+    name: Integración aislada CU-011
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: App/services/alimentos
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: App/services/alimentos/.nvmrc
+          cache: npm
+          cache-dependency-path: App/services/alimentos/package-lock.json
+      - run: npm ci
+      - name: Levantar infraestructura exclusiva y Pagos real
+        run: npm run test:e2e:infra
+      - name: Ejecutar las cinco pruebas reales
+        run: npm run test:e2e
+      - name: Registros si falla
+        if: failure()
+        run: docker compose -p hexacore-cu011-e2e -f test/docker-compose.e2e.yml logs --tail 100
+      - name: Limpiar solo recursos de CU-011
+        if: always()
+        run: npm run test:e2e:limpiar
+
+  # --------------------------------------------------------------------------
   # Los dos portales Angular: que compilen en modo producción.
   # --------------------------------------------------------------------------
   portales:
