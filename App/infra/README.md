@@ -1,5 +1,12 @@
 # Infra
 
+Identidad y Alimentos se ejecutan ahora en **Núcleo**, desde `App/backend`.
+Ver [instalación, migraciones y arranque](../backend/README.md) y
+[pruebas exclusivas](../backend/test/README.md). Este README describe el
+ambiente habitual; no usar sus semillas o limpiezas para verificar la migración.
+El modo registro exige las imágenes de esta nueva versión; su publicación en
+GHCR y el arranque en dos máquinas siguen pendientes de ejecución.
+
 Infraestructura de soporte compartida entre microservicios (SAD §8 y §11, vista física).
 
 `docker-compose.yml` levanta el ambiente de **desarrollo local** que describe el SAD §11: una sola
@@ -171,7 +178,7 @@ docker compose -f App/infra/docker-compose.yml --profile servicios stop administ
 - Usan las claves JWT de `claves-desarrollo/` montadas como archivos; la privada solo se monta en
   Administración.
 - Docker Compose reinicia un proceso que muere, pero **no** uno colgado que sigue vivo. Eso queda
-  para Kubernetes en producción. Ver `services/autenticacion/DECISIONES.md` §18.
+  para Kubernetes en producción. Ver `backend/modulos/identidad/DECISIONES.md` §18.
 
 ### El API Gateway (ADR-02)
 

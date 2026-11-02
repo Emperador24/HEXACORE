@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json.schemastore.org/nest-cli",
+  "collection": "@nestjs/schematics",
+  "monorepo": true,
+  "root": ".",
+  "sourceRoot": "apps/nucleo",
+  "compilerOptions": {
+    "deleteOutDir": true,
+    "webpack": false,
+    "tsConfigPath": "tsconfig.build.json",
+    "plugins": [
+      "@nestjs/swagger"
+    ]
+  },
+  "projects": {
+    "nucleo": {
+      "type": "application",
+      "root": "apps/nucleo",
+      "entryFile": "main",
+      "sourceRoot": "apps/nucleo",
+      "compilerOptions": {
+        "tsConfigPath": "tsconfig.build.json"
+      }
+    }
+  }
+}

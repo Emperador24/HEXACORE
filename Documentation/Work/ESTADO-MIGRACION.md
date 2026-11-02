@@ -1,19 +1,25 @@
 # Estado de migración de HEXACORE
 
 Fecha de revisión: **1 de noviembre de 2026**, America/Bogota.
-Alcance: diagnóstico inicial, reparación F05 y **recuperación/ejecución aislada
-del CU-011 de Alimentos**, sobre la arquitectura actual. No se trasladaron
-módulos ni modificaron dependencias de negocio. Las únicas migraciones de
-esta etapa se aplicaron a las bases exclusivas de CU-011.
+Alcance actualizado: diagnóstico, F05, CU-011 aislado y **primer cambio
+estructural: workspace backend con Identidad y Alimentos en Núcleo** (§15).
+Base de esta etapa: `25a4fd3a98e3ba69ae8642d53253720f73e0621a`, rama
+`feature/sebastian-arquitectura`. Se conserva aparte el archivo local de Pedidos.
 
-**Resultado actualizado:** se leyó completo
-`Plan_Arquitectura_Migracion_HEXACORE.md` y se contrastó con este estado.
-Docker Desktop responde con ServerVersion **29.7.2**. Los bloqueos anteriores
-de plan ausente y daemon inaccesible quedan retirados. F05 está validado en
-configuración; su arranque remoto sigue pendiente. **CU-011 sí se ejecutó con
-Alimentos → Pagos → pasarela reales: cinco pruebas aprobadas, dos veces sobre
-la misma infraestructura sin vaciarla** (§14). La integración general, login,
-gateway e interfaces no se validaron en esta etapa. F12 sigue pendiente.
+**Resultado vigente:** un único proceso NestJS atiende cuentas, sesiones,
+administración de cuentas y pedidos en `/api/v1`. Las dos bases actuales y sus
+cinco migraciones permanecen separadas e intactas. **311 pruebas trasladadas
+aprobadas** y **9/9 de integración real, repetidas**, con login auténtico,
+CU-011 completo bajo los cinco escenarios existentes y SIGTERM comprobado.
+Núcleo y gateway se construyeron y arrancaron como imágenes aisladas; el smoke
+por Nginx/njs pasó. Se validaron las ocho combinaciones Compose. La publicación
+de imágenes en GHCR, el arranque remoto y la integración de todo el sistema
+siguen pendientes. **F12 no se implementó**.
+
+Las secciones 1–14 conservan el diagnóstico/evidencia histórica de sus commits;
+las rutas, cantidades y comandos vigentes de este traslado están en §15 y
+`App/backend/README.md`. Un hallazgo previo se actualiza solo si se comprobó
+su reparación; no se presenta la migración global como terminada.
 
 El objetivo confirmado es **Núcleo modular, Boletería, Operación y Trabajador**:
 tres aplicaciones de negocio y un trabajador técnico, con Pagos reutilizable
@@ -59,7 +65,7 @@ Son auxiliares de esta sesión, no un requisito para reproducir los comandos.
 | ADR-12 histórico | Núcleo, Entradas y Eventos/Emergencias. Sigue apareciendo como arquitectura desplegada en párrafos del SAD y scripts; ya no representa las diez aplicaciones presentes |
 | ADR-14 documentado | 7 microservicios + 7 servicios de dominio, Pagos como servidor, base central por esquemas para dominios, escalado y réplica de lectura. No equivale al objetivo acordado de cuatro programas |
 | ADR-15 documentado | JWT local en gateway, turno obligatorio, QR mediante proyección y outbox, webhook HMAC, eventos de publicación/cancelación de eventos. Parte está implementada y parte pendiente |
-| Checkout implementado | **10 aplicaciones NestJS**, gateway Nginx/njs, 2 portales Angular y 1 app Flutter. Compose base: **18 servicios**, contando 5 piezas de datos/simuladores y las interfaces. Hay 8 bases con modelos de aplicaciones y otras 2 reservadas; una instancia PostgreSQL, Redis y RabbitMQ. Sin MongoDB desplegado, réplica de lectura, Kubernetes, CDN ni buscador dedicado |
+| Checkout implementado | **Histórico: 10 aplicaciones NestJS; ahora 9**, al reunir dos en Núcleo (§15), gateway Nginx/njs, 2 portales Angular y 1 app Flutter. Compose base: **18 servicios**, contando 5 piezas de datos/simuladores y las interfaces. Hay 8 bases con modelos de aplicaciones y otras 2 reservadas; una instancia PostgreSQL, Redis y RabbitMQ. Sin MongoDB desplegado, réplica de lectura, Kubernetes, CDN ni buscador dedicado |
 | Interfaz | Existen tanto clientes HTTP reales como pantallas con listas locales, retardos y placeholders. No se contabilizan estas últimas como backend implementado |
 | Destino acordado | Núcleo: identidad, eventos/recintos, alimentos, parqueaderos, personal/logística, proveedores, finanzas e informes. Boletería: cartelera, fila, compra, promociones, cancelación, reventa y acceso QR. Operación: monitoreo, incidentes y evacuaciones. Trabajador: notificaciones y tareas pendientes. Pagos: módulo reutilizable |
 | Datos objetivo confirmados por el plan | Una base lógica `hexacore`, esquemas por módulo, propiedad de reglas y APIs internas; registro financiero común. Las bases separadas del checkout se mantienen solo durante la transición |
@@ -130,8 +136,8 @@ concreto inspeccionado, no certificación de todos los alternos del CU.
 
 | Componente actual | Aplicación/módulos observados y funcionalidad | Destino |
 |---|---|---|
-| `services/autenticacion` :3002 | `AdministracionModule`, cuentas/perfil, sesiones/renovación/revocación, administración de cuentas, publicador de correos, persistencia y seguridad. Roles base y asociaciones; sin CRUD completo de roles/recintos/proveedores/finanzas/reportes | Identidad del Núcleo |
-| `services/alimentos` :3007 | `PedidosModule`: catálogo, menú, checkout, inventario/reservas, pagos del pedido y recepción. Consulta/edición acotada de productos, checkout multi-producto, expiración, cobro, confirmación/QR y listado de pedidos | Alimentos del Núcleo; conservar sus reglas propias de pago |
+| `backend/modulos/identidad`, Núcleo :3002 | `AdministracionModule`, cuentas/perfil, sesiones/renovación/revocación, administración de cuentas, publicador de correos, persistencia y seguridad. Roles base y asociaciones; sin CRUD completo de roles/recintos/proveedores/finanzas/reportes | Identidad del Núcleo |
+| `backend/modulos/alimentos`, mismo Núcleo :3002 | `PedidosModule`: catálogo, menú, checkout, inventario/reservas, pagos del pedido y recepción. Consulta/edición acotada de productos, checkout multi-producto, expiración, cobro, confirmación/QR y listado de pedidos | Alimentos del Núcleo; conservar sus reglas propias de pago |
 | `services/eventos-emergencias` :3016 | `TurnosAsistenciaModule`: empleados, zonas/asignación operativa, turnos, solicitudes de cambio, asistencia y notificaciones persistidas por mensajes. No contiene un motor de evacuaciones ni CRUD de incidentes | Personal/logística al Núcleo; vistas/consulta de notificaciones hacia Trabajador mediante contrato definido. Operación solo recibirá funcionalidad que exista o se construya en otra entrega |
 | `services/ventas` :3001 | `VentaModule`, `ComunModule`: reserva/compra, cupones, cancelación/reembolso, dueño de entradas e historial, API interna, expiración y outbox/consumo de ingresos | Boletería |
 | `services/catalogo` :3004 | `CarteleraModule`: lectura y filtros sobre tablas propias; proyección cargada por semilla, sin consumidor de eventos de publicación/cancelación | Cartelera de Boletería |
@@ -355,7 +361,7 @@ cada mensaje: una misma cola reparte mensajes entre consumidores.
 
 ## 7. Versiones y workspace común
 
-No hay `package.json` de workspace en `App/`: los 10 servicios y los dos
+**Situación histórica previa a §15.** No había `package.json` de workspace en `App/`: los 10 servicios y los dos
 portales tienen sus propios manifiestos/lockfiles v3. Se compararon las
 dependencias raíz de cada lockfile con su `package.json`: **sin diferencias**.
 Instalar esos lockfiles no exigió actualizarlos.
@@ -534,7 +540,7 @@ siguen indicadas. Se distingue fallo reproducido de riesgo observado por lectura
 | F03, inspección + ejecución | `cola-virtual/src/cola/cola.redis.spec.ts`: 10 tests hacen `if (!hayRedis) return`; Jest salió 0 sin Redis | Verde que no acredita Lua, exclusión mutua, TTL ni aforo. Además limpia un evento con UUID fijo si encuentra Redis; siempre aislarlo |
 | F04, reproducido | `eventos-emergencias/vitest.config.ts`: `passWithNoTests: true`; `npm test` → `No test files found, exiting with code 0` | No hay unitarias ejecutadas pese al verde; no sumarlas como aprobadas |
 | F05, reproducido y **reparado en configuración** | Antes: Compose remoto referencia `nucleo`, inexistente en base, sin build/image. Después: override para diez backends, sin dependencias a datos locales, con Postventa → Pagos/Ventas y perfil `datos` separado | `config -q` e inspección de configuración resuelta pasan para remoto y remoto+escalado (§13). Arranque real e integración pendientes |
-| F06, inspección de configuración resuelta | Compose registro añade `hexacore-nucleo`, no publicado por la matriz actual; deja build en ocho backends; gateway `volumes: !reset []` elimina también la clave pública que su Dockerfile no incorpora | `--registro` no representa el sistema íntegramente construido por CD; validación sintáctica exitosa no demuestra despliegue ni JWT operativo |
+| F06, **reparado en configuración en §15; publicación pendiente** | Registro cubre los 14 artefactos de CD actuales, anula todos los builds y conserva la clave del gateway. Núcleo ya existe como fuente/contexto. Las ocho mezclas Compose pasan inspección; imagen Núcleo/gateway y JWT se comprobaron en el entorno aislado | No acredita publicación GHCR ni arranque de las imágenes remotas del sistema entero |
 | F07, **CU-011 resuelto y ejecutado** | Configuración/entorno/Compose/instrucciones recuperados en `alimentos/test`; script `test:e2e` disponible. Pruebas/doble propios de Autenticación conservados. Dos corridas: 5/5 aprobadas cada una | El comando independiente `test:integracion` de Pagos que apunta a un script inexistente sigue pendiente; esta suite no depende de él |
 | F08, **CU-011 resuelto; Ventas pendiente** | Alimentos usa `POSTGRES_BD_PEDIDOS`, `PAGOS_URL` y servidor Pagos real aislado, con libro propio y pasarela real de prueba. Ventas conserva su Compose sin Pagos y entorno antiguo | No ejecutar la suite E2E de Ventas como si estuviera corregida. CU-011 sí es autocontenida (§14) |
 | F09, inspección | `infra/iniciar.sh`: `migrar ... || true`, semillas con errores silenciados; rama SQL carga solo cuatro volcados. `autenticacion/src/persistencia/semillas` trunca usuarios. Dockerfiles también migran | Un mensaje final «en marcha» no demuestra esquema/datos completos. Un arranque normal puede reemplazar datos de desarrollo |
@@ -627,15 +633,15 @@ programa.
 
 ## 12. Etapas del plan y criterios de terminación
 
-La secuencia siguiente corresponde a §10 del plan ya leído. El avance actual
-está en la base comprobable: F05 y CU-011 aislado. Las demás etapas conservan
-su condición de trabajo futuro; no se consolidan procesos ni datos aquí.
+La secuencia corresponde a §10 del plan. F05 y CU-011 establecieron parte de
+la base comprobable; §15 inicia el workspace con dos módulos. Se reúnen esos
+procesos sin consolidar datos ni cerrar todas las deudas de la etapa 1.
 
 | Etapa del plan | Trabajo y situación | Criterio de terminación |
 |---|---|---|
 | 0. Base, inventario y decisión escrita | Rama y HEAD confirmados, inventario realizado y plan contrastado. El nuevo ADR y ajustes de SAD/SRS siguen pendientes | Punto de partida identificado, trabajo local conservado, decisión y límites registrados, inventario verificable sin equiparar pantallas y backend |
 | 1. Base comprobable | **F05 reparado en configuración (§13) y CU-011 aislado ejecutado dos veces (§14)**. Pendientes Compose registro/F06, pruebas de Notificaciones, tipos de Logística y cableado E2E de Ventas | Build y pruebas seleccionadas coherentes; arranque general desde fuente e imágenes verificado; fallos previos y omisiones explícitos. Estos cambios no cierran por sí solos toda la etapa |
-| 2. Workspace y Núcleo existente | Fijar versiones compatibles y cuatro entradas; integrar identidad, alimentos y personal/turnos/asistencia en módulos del Núcleo. Conservar inicialmente conexiones/bases separadas | Contratos de cuentas, alimentos, cambios de turno y asistencia preservados; sin consumidores o timers duplicados. Sin fingir CU aún inexistentes |
+| 2. Workspace y Núcleo existente | **Parcial: Identidad y Alimentos reunidos y verificados (§15)**. Personal/Logística y otras entradas quedan fuera por alcance explícito; se conservan bases separadas | Contratos de cuentas, alimentos, cambios de turno y asistencia preservados; sin consumidores o timers duplicados. Sin fingir CU aún inexistentes |
 | 3. Reunir Boletería | Integrar Ventas/Catálogo/Cola/Postventa/QR. Después de reunir procesos, reconciliar sobre copia los datos críticos de entrada/propiedad/reventa/ingreso, sustituir RPC y retirar copias solo tras validación | Flujos de CU-001–006; 50 compradores sobre una publicación, doble escaneo y carrera transferencia/ingreso; QR anterior inválido tras transferencia confirmada |
 | 4. Pagos, trabajador y datos consolidados | Módulo común y único registro financiero, endpoint público único de webhook, resultado/trabajo durable y finalización idempotente. Migración repetible sobre copia a PostgreSQL `hexacore` por esquemas; drenar o migrar mensajes, reservas y pendientes | Identificadores/hashes/sesiones/estados/historiales/importes/QR/referencias conciliados y reversión probada. Reinicio entre pago/confirmación, callback duplicado/adelantado, proveedor lento, RabbitMQ caído y tareas repetidas sin doble cobro ni pérdida |
 | 5. Operación mínima real | Monitoreo/incidentes/evacuación, contratos de lectura, protocolos, recepción/acuse y prioridad. Requiere alcance funcional posterior; no se implementa aquí | Activación con Núcleo detenido y sesión vigente bajo las dependencias declaradas; pruebas de fallo de instancia/proveedor y medición de tablero y entrega a dispositivos |
@@ -653,9 +659,9 @@ alertas no quedan resueltos por esta elección de despliegue.
 El primer cambio de implementación es **F05, Compose remoto**, descrito y
 verificado en §13. Su criterio de configuración está aprobado; el de arranque
 remoto real no se ejecutó. El segundo cambio recupera y ejecuta CU-011 aislado
-(§14). El siguiente trabajo permanece en la etapa 1 del plan: reparar las
-deudas restantes de base comprobable (incluido Compose de registro, F06) e
-integración antes del workspace.
+(§14). La entrega siguiente, solicitada expresamente, inicia la etapa 2 solo con
+Identidad y Alimentos (§15). F06 queda corregido en configuración; las otras
+deudas independientes de base comprobable conservan su estado pendiente.
 
 ## 13. Reparación F05: configuración remota actual
 
@@ -883,7 +889,7 @@ No se usa el doble de TypeORM de las unitarias en ninguna aplicación E2E.
 
 ### Comandos y resultados
 
-Instrucciones completas: [`App/services/alimentos/test/README.md`](../../App/services/alimentos/test/README.md).
+Comandos históricos de `25a4fd3`; instrucciones vigentes tras el traslado: [`App/backend/test/README.md`](../../App/backend/test/README.md).
 Desde la raíz, con el PATH de Node 22 seleccionado:
 
 ```bash
@@ -968,3 +974,262 @@ comprobable ni implementados todos los alternos de CU-011.
 El commit de esta etapa selecciona explícitamente los archivos de pruebas,
 scripts, CI y documentación; excluye el archivo local no rastreado de Pedidos.
 Mensaje: `test(alimentos): recuperar integración aislada de CU-011`.
+
+## 15. Workspace y Núcleo: Identidad + Alimentos
+
+Etapa del 1 de noviembre de 2026, desde **25a4fd3a98e3ba69ae8642d53253720f73e0621a**,
+rama `feature/sebastian-arquitectura`. Plan completo, estado e instrucciones
+locales releídos. Sin AGENTS.md aplicables ni instrucciones adicionales nuevas.
+El único trabajo local inicial era el archivo no rastreado de Pedidos indicado
+en §1; se comprobó su SHA-256 antes/después y queda fuera del commit.
+
+### Estructura y dependencias
+
+```text
+App/backend/
+  apps/nucleo/       main.ts, nucleo.module.ts, salud.controller.ts
+  modulos/
+    identidad/       antigua implementación de services/autenticacion/src
+    alimentos/       antigua implementación de services/alimentos/src
+  compartido/       configuración de proceso, hilos, Redis, RabbitMQ, validación
+  test/             pruebas y recursos exclusivos, smoke de imágenes y Compose
+  package.json      un manifiesto, un package-lock.json, .nvmrc 22.22.3
+```
+
+Se trasladaron fuentes, unitarias, guiones HTTP y decisiones históricas. Se
+retiran los dos paquetes/bootstraps/Dockerfiles anteriores, sin dejar otra
+fuente activa de reglas. No se reutilizaron los artefactos ignorados de los
+directorios antiguos. No se incorporan Angular, Personal/Logística ni otros
+backends al workspace. Pagos, Ventas, Postventa, QR, Catálogo, Cola,
+Notificaciones y Eventos/Emergencias permanecen separados.
+
+Se tomó el lockfile de Alimentos probado, con **las mismas versiones de todos
+los paquetes resueltos**. Las dependencias declaradas de los dos paquetes
+coincidían; no hubo actualización de librerías. El lockfile común solo cambia
+identidad/engines de la raíz. Las versiones patch de Identidad pasan a las ya
+probadas de Alimentos (Nest core 11.2.8, TypeORM 1.1.2, adaptador 12.0.2,
+amqplib 2.2.0, TS 5.9.3). No se hoistea Nest 12 de Logística ni TS de Angular.
+
+Host **Node v22.22.3, npm 11.6.3**; imágenes de Núcleo, Pagos y pasarela
+`node:22.22.3-alpine` (npm de esa imagen 10.9.8 durante build). `.nvmrc` y
+`engines.node` fijan la versión. Aquí se reutilizó el binario temporal:
+
+```bash
+export PATH="/private/tmp/hexacore-cu011-node22/node_modules/.bin:$PATH"
+node --version
+npm --version
+npm --prefix App/backend ci --cache /private/tmp/hexacore-diagnostico-npm-cache --prefer-offline --no-audit --no-fund --fetch-retries=0 --fetch-timeout=15000
+```
+
+Instalación exit 0; no se cambió Node global. Alternativas reproducibles con
+nvm o instalación temporal se describen en `App/backend/test/README.md`.
+
+### Composición, contratos y disponibilidad
+
+`apps/nucleo/main.ts` crea **una** aplicación Nest con `NucleoModule`; importa
+primero `compartido/hilos` (también se verificó el orden del JS compilado).
+Ambos módulos se importan una sola vez por su API pública. No se crean entradas
+vacías de los programas futuros. El listener es único, puerto 3002 por defecto.
+
+Se conservan las rutas inventariadas en §4: `/api/v1/cuentas`, `/sesiones`,
+`/admin/cuentas`, `/pedidos`. DTO, controladores, cookies web, renovación móvil,
+firma/verificación RS256, roles y reglas no se reimplementan. Los controladores
+reciben la validación correspondiente: Identidad mantiene `stopAtFirstError`,
+Alimentos su validación previa; se mantienen sus pipes por método. El filtro
+`BaseNoDisponibleFilter` se aplica a los controladores de Identidad, conservando
+503/Retry-After sin cambiar el comportamiento de errores de Alimentos.
+
+La ruta duplicada `/api/v1/salud` pasa a **una sonda de Núcleo**: informa por
+separado PostgreSQL Identidad/Alimentos, Redis y RabbitMQ. Devuelve 503 si falta
+alguna base o Redis (necesario para reservas); RabbitMQ degrada el cuerpo y se
+informa sin ser por sí solo causa de 503, como antes. Las consultas tienen
+límite de un segundo. La respuesta cambia explícitamente a `servicio=nucleo`
+y `dependencias.postgres.{identidad,alimentos}`. El puerto directo 3007 se retira;
+las URLs públicas web/móvil del gateway no cambian.
+
+### Conexiones y ciclos de vida
+
+| Recurso | Resolución explícita |
+|---|---|
+| Configuración común | `CONFIGURACION_PROCESO_NUCLEO`, puerto/prefijo/entorno/destinos de proceso; `.env` del workspace |
+| Configuración por dominio | Tokens distintos `CONFIGURACION_IDENTIDAD` y `CONFIGURACION_ALIMENTOS`; conserva políticas/JWT/correo y cliente de Pagos respectivamente |
+| TypeORM | Nombres `identidad` y `alimentos` en `forRootAsync`, opciones devueltas por su fábrica, `forFeature` y todas las inyecciones; sin DataSource por defecto |
+| Datos | `POSTGRES_BD_ADMINISTRACION` y `POSTGRES_BD_PEDIDOS`; las 3+2 migraciones se compararon byte a byte con el commit de partida y permanecen intactas. `synchronize=false`, `migrationsRun=false` |
+| Redis común | Un proveedor del proceso; el servicio de revocaciones deja de cerrar el cliente que comparte. Se preservan el prefijo y TTL del contrato de revocaciones |
+| Redis de inventario | Cliente especializado existente, con opciones de timeout/reenvío propias, cerrado por InventarioModule; no es otra copia accidental del cliente común |
+| RabbitMQ | Una implementación/conexión del Núcleo, dos topologías, conserva confirms/reconexión/cierre. Sin duplicar consumidores |
+| Sondeo | Una instancia de ExpiracionReservasService; se registran inicio/cierre y se espera su ciclo al apagar. La coordinación entre réplicas sigue pendiente |
+
+La CLI de inventario conserva su módulo real y conexión nombrada; deja de
+silenciar errores de cierre. No se ejecutan semillas ni migraciones sobre las
+bases habituales. `application_name=nucleo-identidad/nucleo-alimentos` permite
+observar qué base utiliza cada conexión y que desaparece tras SIGTERM.
+
+### Infraestructura y automatización
+
+- Compose base reemplaza Autenticación/Alimentos por `nucleo`, contexto
+  `App/backend`, bases actuales, claves privada/pública y `PAGOS_URL` al servidor
+  temporal. Núcleo depende de Pagos; gateway depende de Núcleo. **17 servicios**.
+- Remoto mantiene solo la dependencia funcional Núcleo → Pagos, separa los cinco
+  recursos de datos/proveedores locales y conserva Postventa → Pagos/Ventas.
+  Los `HOST_*` y puertos de `iniciar.sh` siguen resolviéndose; **12 servicios**.
+- Escalado quita puertos de Ventas/Núcleo y no añade referencias retiradas.
+  Mantener una réplica de Núcleo hasta verificar sondeo concurrente.
+- Registro cubre los **14 artefactos** publicados por CD (9 backends, gateway,
+  2 portales, 2 simuladores), anula todos los builds y conserva el montaje de
+  clave pública del gateway. Esto corrige F06 en configuración; no acredita
+  existencia/publicación remota de las nuevas imágenes.
+- Gateway enruta cuentas/sesiones/admin/pedidos a `nucleo:3002`, sin alterar
+  reglas JWT/roles/turno ni rutas públicas. Se construyó su imagen con `nginx -t`
+  y se probó njs/RS256 y proxy real en la red aislada.
+- `iniciar.sh`, helper de limpieza y mediciones apuntan al workspace y a los
+  scripts de migraciones/semillas por dominio. Se validó sintaxis y referencias;
+  **no se ejecutaron esos guiones operativos**. F09 y los riesgos de semillas
+  habituales no desaparecen por este ajuste de rutas.
+- CI retira ambos paquetes de la matriz y crea job Núcleo con Node fijado,
+  unitarias/Redis real, dos corridas E2E, comprobación de ocho Compose/fronteras,
+  imágenes/smoke y limpieza exclusiva. CD publica Núcleo y simuladores coherentes
+  con el override. YAML validado; **CI/CD remotos no ejecutados en esta sesión**.
+
+`test/comprobar-configuracion.py` comprueba automáticamente selección,
+dependencias, destinos, ausencia de builds en registro, montaje de clave y
+fronteras de importación entre los dos dominios, sin crear recursos.
+
+### Pruebas realmente ejecutadas y evidencia
+
+Proyecto nuevo **hexacore-nucleo-e2e**, distinto del entorno habitual y de la
+etapa anterior. PostgreSQL/Redis/RabbitMQ/pasarela/Pagos reales, con tres bases
+exclusivas, vhost y claves de prueba. Puertos y credenciales están en el README;
+la suite fija y comprueba destinos antes de escribir. No se ejecutó iniciar.sh,
+TRUNCATE, FLUSHDB ni semillas de desarrollo.
+
+Las cinco pruebas CU-011 se conservan y usan **el token del login real de
+Identidad**, en el mismo listener del proceso compilado. Se añaden cuatro
+pruebas de convivencia: login/perfil/roles/admin/DTO/bases, renovación web por
+cookie, cierre de sesión/revocación en ambos dominios y SIGTERM. No se usa el
+doble de TypeORM de las unitarias en ninguna aplicación real de esta suite.
+
+Evidencia de proceso único: PID del hijo en log de arranque y un único bootstrap;
+una conexión AMQP identificada, dos topologías y un sondeo. SQL observa ambas
+`application_name` en sus bases correctas y ausencia de tablas del otro módulo.
+El último escenario exige que el proceso siga vivo hasta SIGTERM, no fuerce
+SIGKILL, no emita errores de cierre y desaparezcan ambas conexiones TypeORM,
+Redis común/inventario, AMQP y listener. `docker compose top nucleo` mostró un
+único `node dist/apps/nucleo/main.js` persistente; las sondas Docker son comandos
+Node transitorios, no otro servidor Nest.
+
+| Comprobación | Resultado |
+|---|---|
+| Tipos `npm run lint` | Exit 0; incluye las fuentes y tests del workspace |
+| Build `npm run build`, también prehook E2E e imagen | Exit 0; una entrada `dist/apps/nucleo/main.js` |
+| Unitarias trasladadas con Redis exclusivo | **311/311, 18 suites**, exit 0: 43 Identidad + 268 Alimentos, incluidas 33 Redis real; 0 omitidas |
+| Integración de aceptación | **9/9, dos veces**, misma infraestructura sin vaciar/reiniciar; 5 escenarios CU-011 + 4 de convivencia |
+| Infraestructura aislada | Cinco servicios base saludables; imagen Núcleo/gateway añade dos servicios propios |
+| Imágenes Núcleo/gateway | Build exit 0 y arranque saludable; smoke real de login/perfil/checkout/revocación por Nginx/njs exit 0, mismo upstream `:3002` |
+| Ocho Compose base/remoto/escalado/registro | `config -q` e inspección JSON aprobadas, 17 locales/12 remotos; fronteras de módulos aprobadas |
+| Sintaxis | Python de App y Bash afectados analizados; ambos YAML CI/CD cargados correctamente |
+| Git | `git diff --check` aprobado; selección explícita, archivo local de Pedidos excluido |
+| No ejecutado | Interfaces, suites HTTP históricas que controlan datos habituales, Logística, carga/réplicas, publicación GHCR y arranque remoto |
+
+Gate de aceptación: **329 ejecuciones aprobadas** (311 trasladadas + 18 E2E),
+**0 omitidas**. Las corridas exploratorias adicionales se distinguen abajo; no
+se suman para aparentar cobertura adicional ni garantizan todos los CU.
+
+Comandos reproducibles desde raíz, con Node seleccionado, ejecutados en secuencia:
+
+```bash
+npm --prefix App/backend run lint
+npm --prefix App/backend run build
+npm --prefix App/backend run test:e2e:infra
+REDIS_INVENTARIO_PRUEBAS_URL=redis://127.0.0.1:16382 npm --prefix App/backend test -- --runInBand
+npm --prefix App/backend run test:e2e
+npm --prefix App/backend run test:e2e
+npm --prefix App/backend run verificar:infra
+npm --prefix App/backend run test:imagen:infra
+npm --prefix App/backend run test:imagen
+# Antes de volver al E2E por proceso, detener solo imágenes propias:
+docker compose -p hexacore-nucleo-e2e -f App/backend/test/docker-compose.e2e.yml -f App/backend/test/docker-compose.imagen.yml stop gateway nucleo
+npm --prefix App/backend run test:e2e
+npm --prefix App/backend run test:e2e
+npm --prefix App/backend run test:e2e:limpiar
+git diff --check
+```
+
+Se ejecutaron consultas de solo lectura al PostgreSQL de pruebas y capturas
+Docker antes/después. Logs auxiliares por comando en
+`/private/tmp/hexacore-nucleo/`; no son necesarios para reproducir la suite.
+Los scripts del repositorio contienen los Compose/proyectos exactos y sus
+instrucciones de migración/arranque están en `App/backend/README.md`.
+
+### Fallos de preparación resueltos y límites observados
+
+- Primer chequeo de tipos: imports duplicados y token Redis residual durante
+  el traslado; se corrigieron antes de aceptar el build. TypeORM 1 retiró `name`
+  de DataSourceOptions; la función devuelve explícitamente la intersección
+  con `{name: string}`, que Nest necesita también al cerrar. Sin casts a `any`.
+- Primer E2E: beforeAll esperaba inmediatamente las métricas de administración
+  RabbitMQ. Marcó 9 pruebas fallidas sin ejecutar sus cuerpos. Se añadió espera
+  acotada de convergencia, conservando la aserción de una sola conexión.
+- Siguiente E2E: **8 aprobadas/1 fallida**, por esperar `Max-Age=0` al borrar
+  cookie. El contrato existente expira la cookie en 1970; se corrigió la aserción
+  para exigir el valor vacío y esa expiración, sin alterar código de sesión.
+- Después hubo tres corridas exploratorias de **9/9** (la primera antes de
+  añadir consultas positivas de administración y las otras dos con ellas),
+  seguidas de las dos corridas de aceptación con la aserción adicional de
+  proceso vivo hasta SIGTERM. Los cinco escenarios de compra aprobaron en
+  todas las ejecuciones cuyos cuerpos llegaron a ejecutarse.
+- Primer smoke de imagen falló al esperar 401 en GET de catálogo tras logout:
+  esa ruta era pública y conserva su 404 de evento inexistente. Se corrigió
+  para comprobar revocación en **POST checkout**, que sí exige sesión. Smoke
+  corregido aprobado, sin cambiar autorización de producción.
+- **F13, observado durante la imagen dejada en ejecución:** tres avisos
+  `EXPIRACION_RESERVAS_FALLIDA`/`Query read timeout`; PostgreSQL registró
+  `canceling statement due to statement timeout` sobre la consulta del sondeo.
+  Los límites existentes son 3000 ms. No se atribuye sin evidencia a reglas de
+  negocio ni a una causa ambiental concreta. La imagen siguió atendiendo y
+  terminó su sondeo limpiamente; las corridas finales no reprodujeron esos
+  errores. No se aumentaron timeouts ni ocultaron excepciones. Queda pendiente
+  investigar bajo una ejecución prolongada con observación de recursos.
+
+No se certifica carga, disponibilidad mensual ni coordinación del sondeo entre
+réplicas. F01–F04, F08 para Ventas, F09–F12 y la suite independiente de Pagos
+mal referenciada siguen pendientes según su alcance original. F05/F06 tienen
+configuración actual validada; no se afirma arranque remoto/publicación GHCR.
+Personal/Logística y los otros tres programas finales no se incorporan todavía.
+La base única por esquemas sigue perteneciendo a la etapa posterior.
+
+### Limpieza y entrega
+
+`test:e2e:limpiar` terminó con exit 0 y retiró únicamente los siete contenedores,
+la red y los tres volúmenes de `hexacore-nucleo-e2e`. Las consultas por etiqueta
+Compose no devuelven recursos de ese proyecto. Los **29 contenedores previos**
+conservan ID, nombre y estado. El puerto 13087 quedó libre. La comprobación de
+bind fue denegada por el sandbox y aprobó al repetirla con permiso; no fue un
+fallo de la aplicación. No se borraron imágenes, volúmenes o bases habituales.
+
+Antes de esa limpieza: libro exclusivo **6 APROBADO y 6 RECHAZADO**, todos con
+`intentos=1`; importes de intentos aprobados `372000.00 COP` y rechazados
+`372000.00 COP` (estos últimos no son cobros). Son seis corridas que llegaron
+al negocio: una tuvo la aserción de cookie fallida y cinco aprobaron completas.
+Las dos últimas son las de aceptación. Identidad conserva 3 migraciones y
+**0 usuarios/0 sesiones** fixture; Alimentos 2 migraciones y **0 pedidos/0
+establecimientos** fixture. El libro se conservó hasta la limpieza propia.
+
+Conteo de toda la sesión, además del gate 329 indicado arriba: las corridas
+exploratorias ejecutaron 36 cuerpos E2E (35 aprobados y una aserción de cookie
+fallida, después corregida). Con aceptación: **54 cuerpos E2E, 53 aprobados y
+1 fallo de prueba resuelto**; la preparación inicial fallida ejecutó cero cuerpos.
+El smoke tuvo un intento fallido por la expectativa de catálogo público y uno
+corregido aprobado. No se ocultan esos intentos dentro del resultado final.
+
+Cierre de este hito: objetivo de Identidad/Alimentos en un solo proceso
+comprobado; el gate completo de la etapa 2 del plan sigue parcial porque incluye
+otros módulos. Siguiente paso estructural: planificar Personal/Logística,
+resolviendo antes su frontera Nest 12/TS 6 y pruebas pendientes. Investigar F13
+en observación prolongada, sin atribuir al traslado las deudas previas; Pagos
+como módulo, F12, Boletería y consolidación de datos continúan en sus etapas.
+
+Commit principal: `refactor(backend): integrar identidad y alimentos en nucleo modular`.
+Archivos seleccionados explícitamente; trabajo local de Pedidos excluido.
+La publicación del código se realiza en origin/feature/sebastian-arquitectura;
+la publicación de imágenes y ejecución de CI/CD remoto no se incluyen.

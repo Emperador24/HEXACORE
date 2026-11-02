@@ -142,7 +142,7 @@ services:
   # proceso muere, Docker lo levanta de nuevo sin intervención. Lo que Docker
   # Compose NO hace es reiniciar un contenedor que sigue vivo pero `unhealthy`
   # (colgado); eso es trabajo de la sonda de vida de Kubernetes en producción
-  # (SAD §11). Ver services/autenticacion/DECISIONES.md §18.
+  # (SAD §11). Ver backend/modulos/identidad/DECISIONES.md §18.
   #
   # NODE_ENV=development porque usan las claves JWT de desarrollo, que en
   # producción se rechazan a propósito.
@@ -157,7 +157,7 @@ services:
     container_name: hexacore-gateway
     restart: unless-stopped
     depends_on:
-      autenticacion: { condition: service_healthy }
+      nucleo: { condition: service_healthy }
       ventas: { condition: service_healthy }
       cola-virtual: { condition: service_healthy }
       eventos-emergencias: { condition: service_healthy }
@@ -178,11 +178,11 @@ services:
   # Núcleo — servicio de dominio que agrupa Administración y Pedidos (ADR-12).
   # Antes eran dos contenedores; ahora es uno con dos módulos, cada uno contra
   # su propia base. Sin `container_name`: es lo que permitirá replicarlo
-  # (`--scale autenticacion=2`) cuando el temporizador de reservas esté protegido con
+  # (`--scale nucleo=2`) cuando el temporizador de reservas esté protegido con
   # un candado en Redis.
-  autenticacion:
+  nucleo:
     profiles: ["servicios"]
-    build: ../services/autenticacion
+    build: ../backend
     restart: unless-stopped
     # Un init mínimo como PID 1: reenvía las señales a node y recoge procesos
     # huérfanos. Sin él, node es el PID 1 y el kernel le trata las señales de
@@ -192,7 +192,7 @@ services:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }
-      pasarela: { condition: service_healthy }
+      pagos: { condition: service_healthy }
     # Los nombres de la capa de datos son variables para poder repartir el
     # sistema en dos computadores (RNF de desplegabilidad): por defecto son los
     # contenedores locales; `iniciar.sh --datos <IP>` los apunta a otra máquina.
@@ -226,7 +226,8 @@ services:
       POSTGRES_MAX_CONEXIONES: "10"
       POSTGRES_ESPERA_MAXIMA_MS: "3000"
       CORREO_PROVEEDOR_URL: http://${HOST_CORREO:-correo}:${PUERTO_CORREO:-3098}
-      PASARELA_TIMEOUT_MS: "10000"
+      PAGOS_URL: http://pagos:3008/api/v1
+      PAGOS_TIMEOUT_MS: "12000"
     volumes:
       - ./claves-desarrollo/jwt-privada.pem:/claves/jwt-privada.pem:ro
       - ./claves-desarrollo/jwt-publica.pem:/claves/jwt-publica.pem:ro
@@ -401,34 +402,6 @@ services:
     # No se publica puerto al host: es un servicio interno, no lo llama ningún
     # cliente. Se alcanza por la red de compose desde Ventas, Postventa y
     # Alimentos, y la pasarela llega a su webhook a través del gateway.
-
-  # Servicio de dominio de Alimentos — CU-011 a CU-015. Fase A de ADR-14.
-  alimentos:
-    profiles: ["servicios"]
-    build: ../services/alimentos
-    # Sin `container_name`: ADR-14 le pone dos réplicas fijas por
-    # disponibilidad. No escala por carga: su demanda es estable.
-    restart: unless-stopped
-    init: true
-    depends_on:
-      postgres: { condition: service_healthy }
-      redis: { condition: service_healthy }
-      rabbitmq: { condition: service_healthy }
-      pasarela: { condition: service_healthy }
-    environment:
-      <<: *entorno-comun
-      PUERTO: "3007"
-      PAGOS_URL: http://pagos:3008/api/v1
-    volumes:
-      - ./claves-desarrollo/jwt-publica.pem:/claves/jwt-publica.pem:ro
-    healthcheck:
-      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3007/api/v1/salud',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
-      interval: 10s
-      timeout: 5s
-      start_period: 90s
-      retries: 10
-    ports:
-      - "3007:3007"
 
   # Microservicio de Notificaciones — envío asíncrono de correos. Fase A de ADR-14.
   notificaciones:

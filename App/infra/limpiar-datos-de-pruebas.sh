@@ -98,6 +98,7 @@ verde "  eventos_emergencias: sobrantes eliminados"
 
 sembrar() {
   local servicio="$1" tarea="${2:-semilla}" carpeta="$RAIZ/App/services/$1"
+  [[ "$servicio" == "nucleo" ]] && carpeta="$RAIZ/App/backend"
   if [[ ! -d "$carpeta/node_modules" ]]; then
     gris "  $servicio: sin node_modules, se omite"
     return
@@ -113,17 +114,17 @@ sembrar() {
 # es `autenticacion` y `pedidos` es `alimentos`. Las proyecciones de eventos de
 # Catálogo, Acceso QR y Postventa se siembran aparte porque cada una vive en su
 # propia base (ADR-01) y nadie las publica todavía por el broker.
-sembrar autenticacion
+sembrar nucleo semilla:identidad
 sembrar ventas
 sembrar eventos-emergencias seed
-sembrar alimentos
+sembrar nucleo semilla:alimentos
 sembrar catalogo
 sembrar acceso-qr
 sembrar postventa
 
 # --- Inventario de Redis -----------------------------------------------------
 
-carpeta_pedidos="$RAIZ/App/services/alimentos"
+carpeta_pedidos="$RAIZ/App/backend"
 if [[ -d "$carpeta_pedidos/node_modules" ]]; then
   # Las reservas y el stock viejos ya no corresponden a la base recién
   # sembrada: se rehacen desde cero.
@@ -133,7 +134,7 @@ if [[ -d "$carpeta_pedidos/node_modules" ]]; then
   while read -r establecimiento; do
     [[ -n "$establecimiento" ]] || continue
     if (cd "$carpeta_pedidos" && REDIS_HOST=localhost REDIS_PUERTO="${PUERTO_REDIS:-6380}" \
-        npx ts-node src/inventario/preparar-inventario.ts "$establecimiento" \
+        npm run inventario:preparar -- "$establecimiento" \
         --compras-detenidas 2>&1 | grep -q 'Inventario preparado'); then
       preparados=$(( preparados + 1 ))
     fi

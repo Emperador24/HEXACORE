@@ -139,7 +139,7 @@ case "$ROL" in
     gris "  Levantando los servicios de dominio y el API Gateway"
     "${COMPOSE[@]}" --profile servicios up -d $CONSTRUIR \
       --scale ventas="$REPLICAS" \
-      autenticacion ventas postventa catalogo notificaciones alimentos pagos cola-virtual acceso-qr eventos-emergencias \
+      nucleo ventas postventa catalogo notificaciones pagos cola-virtual acceso-qr eventos-emergencias \
       api-gateway portal-web-cliente portal-web-admin
     ;;
   todo)
@@ -176,8 +176,8 @@ contenedor_de() {
 
 if [[ "$ROL" != "datos" ]]; then
   titulo "Esperando a que los servicios respondan"
-  for servicio in autenticacion eventos-emergencias ventas postventa catalogo \
-                  notificaciones alimentos pagos cola-virtual acceso-qr \
+  for servicio in nucleo eventos-emergencias ventas postventa catalogo \
+                  notificaciones pagos cola-virtual acceso-qr \
                   api-gateway portal-web-cliente portal-web-admin; do
     id="$(contenedor_de "$servicio")"
     if [[ -n "$id" ]] && esperar_sano "$id"; then
@@ -203,6 +203,7 @@ fi
 # gateway devolviendo 503.
 migrar() {
   local servicio="$1" tarea="${2:-migracion:correr}" carpeta="$RAIZ/App/services/$1"
+  [[ "$servicio" == "nucleo" ]] && carpeta="$RAIZ/App/backend"
   if [[ ! -d "$carpeta/node_modules" ]]; then
     gris "  $servicio: sin node_modules, se omiten las migraciones"
     return 1
@@ -229,7 +230,7 @@ preparar_inventario_pedidos() {
   # El inventario es de Alimentos desde ADR-14: salió del Núcleo con los CU-011
   # a CU-015. Esta función seguía apuntando a `autenticacion/src/modulos/...`,
   # que ya no existe, así que no preparaba nada y lo decía en gris.
-  local carpeta="$RAIZ/App/services/alimentos"
+  local carpeta="$RAIZ/App/backend"
   [[ -d "$carpeta/node_modules" ]] || return 0
 
   local establecimientos
@@ -247,7 +248,7 @@ preparar_inventario_pedidos() {
     local salida
     salida="$(cd "$carpeta" && REDIS_HOST="${HOST_REDIS:-localhost}" \
       REDIS_PUERTO="${PUERTO_REDIS:-6380}" \
-      npx ts-node src/inventario/preparar-inventario.ts \
+      npm run inventario:preparar -- \
       "$establecimiento" --compras-detenidas 2>&1 || true)"
     if grep -q 'Inventario preparado' <<<"$salida"; then
       preparados=$(( preparados + 1 ))
@@ -309,6 +310,7 @@ preparar_inventario_sin_node() {
 
 sembrar() {
   local servicio="$1" tarea="${2:-semilla}" carpeta="$RAIZ/App/services/$1"
+  [[ "$servicio" == "nucleo" ]] && carpeta="$RAIZ/App/backend"
   if [[ ! -d "$carpeta/node_modules" ]]; then
     gris "  $servicio: sin node_modules, se omite la semilla (npm install para tenerla)"
     return
@@ -355,7 +357,7 @@ if [[ "$DEMO" == "si" && "$ROL" != "datos" ]]; then
   if [[ "$metodo" == "auto" ]]; then
     # Con Node se usan las semillas, que son la fuente de verdad. Sin Node
     # —una máquina que solo tiene Docker— se cargan los volcados.
-    if command -v npm >/dev/null 2>&1 && [[ -d "$RAIZ/App/services/autenticacion/node_modules" ]]; then
+    if command -v npm >/dev/null 2>&1 && [[ -d "$RAIZ/App/backend/node_modules" ]]; then
       metodo="npm"
     else
       metodo="sql"
@@ -367,8 +369,8 @@ if [[ "$DEMO" == "si" && "$ROL" != "datos" ]]; then
     gris "  Aplicando migraciones"
     # El Núcleo tiene una secuencia de migraciones por módulo: cada uno contra
     # su propia base, que es la separación de datos que ADR-12 conserva.
-    migrar autenticacion || true
-    migrar alimentos || true
+    migrar nucleo migracion:identidad:correr || true
+    migrar nucleo migracion:alimentos:correr || true
     migrar pagos || true
     migrar acceso-qr || true
     migrar ventas || true
@@ -380,7 +382,7 @@ if [[ "$DEMO" == "si" && "$ROL" != "datos" ]]; then
     migrar eventos-emergencias || true
 
     gris "  Sembrando datos"
-    sembrar autenticacion
+    sembrar nucleo semilla:identidad
     sembrar ventas
     # La misma proyección de eventos, en la base propia del Catálogo. Mientras
     # no exista Eventos y recintos que la publique por el broker, hay que
@@ -389,7 +391,7 @@ if [[ "$DEMO" == "si" && "$ROL" != "datos" ]]; then
     # La de logística va después de la de administración a propósito: da de alta
     # a cada empleado sobre la cuenta que aquella acaba de crear.
     sembrar eventos-emergencias seed
-    sembrar alimentos
+    sembrar nucleo semilla:alimentos
     # Y el inventario de Redis después de la semilla, que es de donde sale.
     preparar_inventario_pedidos
   else

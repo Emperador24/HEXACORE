@@ -1,0 +1,22 @@
+{
+  "moduleFileExtensions": [
+    "js",
+    "json",
+    "ts"
+  ],
+  "rootDir": ".",
+  "testRegex": ".*\\.spec\\.ts$",
+  "roots": [
+    "<rootDir>/modulos",
+    "<rootDir>/compartido",
+    "<rootDir>/apps"
+  ],
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest"
+  },
+  "coverageDirectory": "coverage",
+  "testEnvironment": "node",
+  "moduleNameMapper": {
+    "^@nestjs/typeorm$": "<rootDir>/test/dobles/nestjs-typeorm.ts"
+  }
+}

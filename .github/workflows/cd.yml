@@ -1,7 +1,7 @@
 # Entrega continua de HEXACORE.
 #
 # Cada vez que algo entra a `develop` o a `main`, este pipeline **construye las
-# imágenes de los siete contenedores desplegables y las publica** en el
+# imágenes desplegables de esta etapa (incluido Núcleo y los simuladores) y las publica** en el
 # registro de paquetes de GitHub (ghcr.io), etiquetadas con la rama y con el
 # identificador exacto del commit.
 #
@@ -52,12 +52,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Los diez microservicios de ADR-14, más el gateway y los portales.
-          # `nucleo` ya no está: se renombró a `autenticacion` cuando Pedidos
-          # salió a `alimentos`, y publicar desde una carpeta inexistente
-          # fallaba.
-          - nombre: autenticacion
-            contexto: App/services/autenticacion
+          # Núcleo modular, backends aún separados, proveedores y portales.
+          - nombre: nucleo
+            contexto: App/backend
           - nombre: ventas
             contexto: App/services/ventas
           - nombre: postventa
@@ -70,12 +67,14 @@ jobs:
             contexto: App/services/pagos
           - nombre: cola-virtual
             contexto: App/services/cola-virtual
-          - nombre: alimentos
-            contexto: App/services/alimentos
           - nombre: notificaciones
             contexto: App/services/notificaciones
           - nombre: eventos-emergencias
             contexto: App/services/eventos-emergencias
+          - nombre: pasarela
+            contexto: App/infra/pasarela-pagos-simulada
+          - nombre: correo
+            contexto: App/infra/correo-simulado
           - nombre: gateway
             contexto: App/gateway
           - nombre: portal-cliente
@@ -176,7 +175,7 @@ jobs:
           for _ in $(seq 1 60); do
             if curl -sf http://localhost:8080/salud >/dev/null; then
               echo "El gateway responde."
-              curl -s http://localhost:8080/api/v1/salud
+              curl -sf http://localhost:8080/api/v1/salud
               exit 0
             fi
             sleep 3

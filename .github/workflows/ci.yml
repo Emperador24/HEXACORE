@@ -77,18 +77,14 @@ jobs:
       # resultados.
       fail-fast: false
       matrix:
-        # Los diez microservicios de ADR-14. `nucleo` ya no está: se renombró a
-        # `autenticacion` cuando Pedidos salió a `alimentos`, y la matriz
-        # apuntaba a una carpeta que no existe — el trabajo fallaba entero.
+        # Backends todavía separados. Núcleo tiene su job con Node fijado.
         servicio:
-          - autenticacion
           - ventas
           - postventa
           - acceso-qr
           - catalogo
           - pagos
           - cola-virtual
-          - alimentos
           - notificaciones
           - eventos-emergencias
     defaults:
@@ -191,8 +187,8 @@ jobs:
         run: ./iniciar.sh
 
       - name: Autenticación (CU-027)
-        working-directory: App/services/autenticacion
-        run: npm ci && npm run test:integracion
+        working-directory: App/backend
+        run: npm ci && npm run test:http:identidad
 
       - name: Ventas (CU-001 a CU-004)
         working-directory: App/services/ventas
@@ -228,28 +224,42 @@ jobs:
   # CU-011 sobre un proyecto exclusivo: Alimentos -> Pagos -> pasarela.
   # No usa iniciar.sh ni la infraestructura del job de integración general.
   # --------------------------------------------------------------------------
-  alimentos-e2e:
-    name: Integración aislada CU-011
+  nucleo:
+    name: Núcleo (tipos, unitarias y convivencia real)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
       run:
-        working-directory: App/services/alimentos
+        working-directory: App/backend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version-file: App/services/alimentos/.nvmrc
+          node-version-file: App/backend/.nvmrc
           cache: npm
-          cache-dependency-path: App/services/alimentos/package-lock.json
+          cache-dependency-path: App/backend/package-lock.json
       - run: npm ci
       - name: Levantar infraestructura exclusiva y Pagos real
         run: npm run test:e2e:infra
-      - name: Ejecutar las cinco pruebas reales
-        run: npm run test:e2e
+      - name: Tipos
+        run: npm run lint
+      - name: Unitarias trasladadas con Redis real
+        env:
+          REDIS_INVENTARIO_PRUEBAS_URL: redis://127.0.0.1:16382
+        run: npm test -- --runInBand
+      - name: Ejecutar CU-011 y convivencia dos veces
+        run: |
+          npm run test:e2e
+          npm run test:e2e
+      - name: Configuración y fronteras
+        run: npm run verificar:infra
+      - name: Construir y arrancar imágenes aisladas
+        run: npm run test:imagen:infra
+      - name: Smoke de gateway y Núcleo
+        run: npm run test:imagen
       - name: Registros si falla
         if: failure()
-        run: docker compose -p hexacore-cu011-e2e -f test/docker-compose.e2e.yml logs --tail 100
+        run: docker compose -p hexacore-nucleo-e2e -f test/docker-compose.e2e.yml -f test/docker-compose.imagen.yml logs --tail 100
       - name: Limpiar solo recursos de CU-011
         if: always()
         run: npm run test:e2e:limpiar

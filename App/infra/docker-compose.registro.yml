@@ -11,7 +11,7 @@
 # ## Para qué sirve
 #
 # Es lo que hace que desplegar en otro computador no exija tener el código, ni
-# Node, ni esperar una compilación: se bajan siete imágenes ya construidas y se
+# Node, ni esperar una compilación: se bajan las imágenes ya construidas y se
 # levantan. En el computador de la demostración, o en el de un compañero que
 # solo quiere ver el sistema andando, esa diferencia es de minutos a segundos.
 #
@@ -37,15 +37,41 @@ services:
     build: !reset null
     image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-ventas:${HEXACORE_ETIQUETA:-develop}
 
+  postventa:
+    build: !reset null
+    image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-postventa:${HEXACORE_ETIQUETA:-develop}
+
+  acceso-qr:
+    build: !reset null
+    image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-acceso-qr:${HEXACORE_ETIQUETA:-develop}
+
+  catalogo:
+    build: !reset null
+    image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-catalogo:${HEXACORE_ETIQUETA:-develop}
+
+  pagos:
+    build: !reset null
+    image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-pagos:${HEXACORE_ETIQUETA:-develop}
+
+  cola-virtual:
+    build: !reset null
+    image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-cola-virtual:${HEXACORE_ETIQUETA:-develop}
+
+  notificaciones:
+    build: !reset null
+    image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-notificaciones:${HEXACORE_ETIQUETA:-develop}
+
   eventos-emergencias:
     build: !reset null
     image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-eventos-emergencias:${HEXACORE_ETIQUETA:-develop}
 
-  api-gateway:
-    # La imagen publicada lleva el `nginx.conf` dentro, así que no se monta
-    # nada: lo que se despliega es una cosa sola.
-    image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-gateway:${HEXACORE_ETIQUETA:-develop}
-    volumes: !reset []
+  pasarela:
+    build: !reset null
+    image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-pasarela:${HEXACORE_ETIQUETA:-develop}
+
+  correo:
+    build: !reset null
+    image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-correo:${HEXACORE_ETIQUETA:-develop}
 
   portal-web-cliente:
     build: !reset null
@@ -54,3 +80,9 @@ services:
   portal-web-admin:
     build: !reset null
     image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-portal-admin:${HEXACORE_ETIQUETA:-develop}
+
+  api-gateway:
+    image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-gateway:${HEXACORE_ETIQUETA:-develop}
+    # Configuración dentro de la imagen; conservar la clave pública montada.
+    volumes: !override
+      - ./claves-desarrollo/jwt-publica.pem:/etc/nginx/claves/jwt-publica.pem:ro
