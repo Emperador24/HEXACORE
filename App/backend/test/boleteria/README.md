@@ -1,55 +1,99 @@
-# Referencia aislada de Boletería, antes del traslado
+# Integración aislada de Boletería
 
-Base: 125fe36d874efc0f30d268a3219635854b807b82. Node **22.22.3**
-(`cd App/backend && nvm install && nvm use`); Docker y Compose. Las cinco
-aplicaciones conservan sus dependencias y reglas. Instalar con npm ci en cada
-paquete y App/backend si faltan sus node_modules. Ninguna semilla es necesaria.
-
-Desde raíz, con esa versión de Node en PATH:
+Node **22.22.3**, npm ci en App/backend y Docker/Compose. Seleccionar Node con
+`cd App/backend && nvm install && nvm use`; alternativa temporal documentada en
+[las pruebas del Núcleo](../README.md). Desde raíz con Node en PATH:
 
 ```bash
+npm --prefix App/backend ci
+npm --prefix App/backend run lint
 npm --prefix App/backend run test:boleteria:infra
-npm --prefix App/backend run test:boleteria:referencia
-# Repetir sobre los mismos datos, sin recompilar artefactos ya comprobados:
-node App/backend/test/boleteria/correr-referencia.cjs
-# Tipos y pruebas existentes; Cola exige el Redis propio, sin retornos silenciosos:
-node App/backend/test/boleteria/comprobar-actuales.cjs
-# Observación F13 opcional en otra terminal:
-python3 App/backend/test/boleteria/observar-recursos.py --segundos 120
-# Solo al terminar; retira exclusivamente contenedores/red/volúmenes del proyecto:
+REDIS_HOST=127.0.0.1 REDIS_PUERTO=16383 REDIS_INVENTARIO_PRUEBAS_URL=redis://127.0.0.1:16383 npm --prefix App/backend test -- --runInBand
+npm --prefix App/backend run test:boleteria
+npm --prefix App/backend run test:boleteria
+npm --prefix App/backend run verificar:infra
+npm --prefix App/backend run test:boleteria:imagen:infra
+npm --prefix App/backend run test:boleteria:imagen
+npm --prefix App/backend run test:boleteria:imagen
+# Para volver a la suite de procesos, parar solo las imágenes de esta prueba:
+docker compose -p hexacore-boleteria-e2e -f App/backend/test/boleteria/docker-compose.yml -f App/backend/test/boleteria/docker-compose.imagen.yml stop gateway boleteria
+# Al terminar toda la inspección:
 npm --prefix App/backend run test:boleteria:limpiar
 ```
 
-Proyecto **hexacore-boleteria-e2e**, sin nombres/volúmenes/redes externos.
-PostgreSQL 15436 (boleteria_e2e), Redis 16383, RabbitMQ 15676/16776 vhost boleteria,
-Pagos 13090 y pasarela 13102, todos en loopback. Los procesos actuales usan
-13091 Ventas, 13092 Catálogo, 13093 Cola, 13094 Postventa y 13095 Acceso QR.
+Proyecto **hexacore-boleteria-e2e**; sin contenedores, volúmenes ni redes externos.
+No ejecutar iniciar.sh, semillas de desarrollo ni guiones que truncan tablas.
+Los JWT usan las claves fixture de test/claves; esta suite no prueba login,
+interfaces ni un proveedor financiero real. Boletería/imagen reciben solo la
+clave pública: las firmas fixture se hacen fuera del proceso del programa.
+
+| Recurso exclusivo | Destino del host |
+|---|---|
+| PostgreSQL, usuario/contraseña boleteria_e2e | 127.0.0.1:15436 |
+| Redis | 127.0.0.1:16383 |
+| RabbitMQ, vhost boleteria | 127.0.0.1:15676; administración 16776 |
+| Pagos actual / pasarela simulada | 127.0.0.1:13090 / 13102 |
+| Proceso compilado controlado por Jest | 13096 |
+| Imagen / gateway | 127.0.0.1:13097 / 18081 |
+
 Bases exclusivas: entradas_e2e, catalogo_boleteria_e2e, postventa_boleteria_e2e,
 acceso_qr_boleteria_e2e y pagos_boleteria_e2e. Cuatro historiales de negocio:
-5+1+1+3 migraciones; Postventa conserva el nombre histórico **migrations**.
-`synchronize=false`; Pagos aplica su migración a su propio libro.
+5+1+1+3 migraciones; Postventa conserva **migrations**, las otras **migraciones**.
+El preparador impone las cuatro POSTGRES_BD_*; nunca synchronize. Pagos conserva
+su servidor y su libro propio; no es una biblioteca del workspace todavía.
 
-`procesos.cjs` impone destinos y Node, aplica las migraciones compiladas y
-levanta cinco procesos reales; al terminar envía SIGTERM y guarda logs en
-`.evidencia-e2e/` (ignorada por Git). Cierre forzado o errores de cierre fallan.
-Los JWT usan las claves fixture de test/claves; esta suite no prueba login,
-gateway, Angular/Flutter ni un proveedor financiero real.
+`pretest:boleteria` compila; procesos.cjs migra e inicia **un Node real** con
+`dist/apps/boleteria/main.js`. Exige un PID, los dos cron, una conexión AMQP y
+cinco consumidores. VENTAS_URL apunta a un puerto inaccesible: publicación,
+transferencia y devolución deben funcionar por la interfaz local. SIGTERM debe
+terminar sin SIGKILL, con cron/outbox/consumos drenados, cuatro conexiones SQL y
+clientes Redis/AMQP desaparecidos. Guarda logs en .evidencia-e2e, ignorada por Git.
 
-Se ejecutan los ocho casos originales de Ventas y doce escenarios HTTP/SQL:
-cartelera, turno de un solo uso, compra/promoción/rechazo/aprobación/repetición,
-outbox y proyección, cancelación con reembolso real, reservas concurrentes,
-checkout de reventa concurrente, transferencia/historial/rotación de QR,
-rechazo de QR anterior y doble ingreso, cron real de vencimiento y revocación.
-El cron de prueba se configura a un segundo mediante la opción existente;
-no se amplían timeouts. Los fixtures usan UUID nuevos y no se truncan tablas ni
-se purgan colas. Los historiales inmutables se conservan hasta limpiar el proyecto.
+La suite ejecuta **23 casos**: los ocho CU-001 originales y los doce escenarios
+de referencia del primer hito, más tres comprobaciones: reconexión AMQP sin
+duplicar consumidores/outbox, cron de publicaciones y reembolso temporal parcial.
+Incluye concurrencia de reservas y de reventa, promoción, rechazo/aprobación,
+repetición de cobro sin otro movimiento, reembolso total o parcial según política,
+transferencia/historial/rotación de QR, doble ingreso concurrente, rutas internas,
+autorización/revocación y persistencia en bases correctas.
 
-La espera de QR se identifica expresamente como **convergencia de proyección**:
-se lee su estado inmediatamente después de transferir y se registra cuánto tarda.
-Rechazar el QR antiguo tras converger no demuestra invalidación inmediata.
-Ingreso→Ventas también sigue siendo eventual; no hay atomicidad entre bases.
-Liquidación al vendedor y notificación de Postventa registran lo que se enviaría;
-no acreditan abono ni recepción real. F12/F13/F14 permanecen pendientes.
+Se reutilizan los mismos datos entre corridas: UUID nuevos, sin TRUNCATE,
+FLUSHDB, purgas ni desactivar auditoría. El historial de propietarios y el libro
+financiero quedan hasta eliminar exclusivamente los recursos del proyecto.
+El observador de compra.confirmada filtra por cliente/evento UUID del fixture:
+un outbox pendiente de otra corrida puede publicar al arrancar y no debe
+confundirse con la compra que se está comprobando. No se purga para evitarlo.
+El cron de prueba usa la configuración existente de un segundo; no sube límites.
+La prueba de reconexión cierra por HTTP de administración **solo la conexión
+hexacore-boleteria**, no reinicia RabbitMQ ni los contenedores habituales.
 
-Los guiones Python históricos se conservan, pero varios fijan contenedores de
-desarrollo, ejecutan semillas o truncan. No se usan para esta referencia aislada.
+**Consistencia:** se observa el QR inmediatamente después de transferir, se
+registra su convergencia y solo después se comprueba el rechazo del QR anterior.
+Esto acredita proyección eventual, sin invalidación inmediata. La prueba de
+expiración observa primero EXPIRADA y después la devolución a VALIDA; no promete
+atomicidad entre bases. Ingreso→Ventas también depende del outbox/evento.
+Liquidación/notificación de reventa aún registran lo que se enviaría, sin abono
+real ni recepción acreditada. F12/F13/F14 permanecen pendientes.
+
+El smoke construye/arranca Boletería y Nginx/njs reales. Comprueba las cinco
+familias en un mismo upstream :3001, el consumo único de turno, compra y pago,
+QR y doble ingreso, rutas internas no publicadas y revocación. No usa login ni
+interfaces. Los guiones Python históricos se conservan con referencias adaptadas;
+varios resiembran datos habituales y no forman parte de esta ejecución.
+
+F13 opcional, en otra terminal mientras está activo este proyecto:
+
+```bash
+python3 App/backend/test/boleteria/observar-recursos.py --segundos 120
+```
+
+Captura SQL, bloqueos, conexiones y recursos propios sin cambiar límites.
+CI verifica ambos programas de forma secuencial: detiene el proyecto propio de
+Boletería antes de levantar Núcleo y finalmente limpia ambos proyectos.
+
+La referencia de **cinco procesos**, anterior al traslado, permanece reproducible
+en el commit **d48befff29244bdd2746ba4686c519c13a28cc4c**. Allí se ejecutan
+`test:boleteria:referencia` y correr-referencia.cjs: 20 casos repetidos, 451 pruebas
+existentes y diez migraciones. Consultar ESTADO-MIGRACION §17 para el resultado
+antes del movimiento; esos comandos se retiraron de la versión actual junto con
+los cinco servidores.

@@ -1,6 +1,8 @@
 # Infra
 
-Identidad, Alimentos y Personal/Logística se ejecutan ahora en **Núcleo**, desde `App/backend`.
+Identidad, Alimentos y Personal/Logística corren en **Núcleo**; los cinco
+componentes de Entradas corren en **Boletería**, desde `App/backend`.
+Pagos y Notificaciones conservan servidores. Se mantienen todas las bases.
 Ver [instalación, migraciones y arranque](../backend/README.md) y
 [pruebas exclusivas](../backend/test/README.md). Este README describe el
 ambiente habitual; no usar sus semillas o limpiezas para verificar la migración.
@@ -22,7 +24,7 @@ a estos puertos, para no perder la recarga en caliente.
 ```bash
 cd App/infra
 ./iniciar.sh                       # sistema completo en este computador
-./iniciar.sh --replicas 2          # con 2 instancias del Servicio de Entradas
+./iniciar.sh --replicas 2          # con 2 instancias de Boletería (configuración; medir antes de afirmar RNF-10)
 ./iniciar.sh --parar               # bajarlo, conservando los datos
 ```
 
@@ -54,9 +56,12 @@ Las interfaces se arrancan aparte, apuntando al gateway del computador B
 
 ## Qué levanta `./iniciar.sh`
 
-Diez contenedores: PostgreSQL, Redis, RabbitMQ, los dos sistemas externos
-simulados (correo y pasarela), los tres microservicios, el API Gateway y el
-**Portal Web de Clientes** en el `4200`.
+La configuración actual define **12 servicios locales**: cinco piezas de datos/
+proveedores, Núcleo, Boletería, Pagos, Notificaciones, gateway y dos portales.
+El override remoto deja **7**, sin arrancar datos locales. Las ocho mezclas
+remoto/escalado/registro se validan con `npm --prefix App/backend run verificar:infra`.
+El perfil de escalado replica Boletería; no acredita rendimiento ni dimensionado
+de conexiones. El modo registro necesita nueve imágenes de esta versión.
 
 Lo único que no levanta —ni puede— es la **app móvil**: se instala en un
 teléfono o un simulador, no se arranca desde un script.

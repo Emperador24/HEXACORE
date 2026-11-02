@@ -79,12 +79,7 @@ jobs:
       matrix:
         # Backends todavía separados. Núcleo tiene su job con Node fijado.
         servicio:
-          - ventas
-          - postventa
-          - acceso-qr
-          - catalogo
           - pagos
-          - cola-virtual
           - notificaciones
     defaults:
       run:
@@ -160,20 +155,6 @@ jobs:
         working-directory: App/backend
         run: npm ci && npm run test:http:identidad
 
-      - name: Ventas (CU-001 a CU-004)
-        working-directory: App/services/ventas
-        run: npm ci && npm run test:integracion
-
-      # Postventa necesita a Ventas levantado: es el dueño de las entradas, y
-      # las dos Sagas del CU-006 le hablan. `iniciar.sh` ya levantó los dos.
-      - name: Postventa (CU-006)
-        working-directory: App/services/postventa
-        run: npm ci && npm run test:integracion
-
-      - name: Acceso QR (CU-002)
-        working-directory: App/services/acceso-qr
-        run: npm ci && npm run test:integracion
-
       # Sin esto, un fallo deja solo "exit 1" y hay que reproducirlo a ciegas.
       - name: Registros de los contenedores si algo falló
         if: failure()
@@ -190,7 +171,7 @@ jobs:
   # No usa iniciar.sh ni la infraestructura del job de integración general.
   # --------------------------------------------------------------------------
   nucleo:
-    name: Núcleo (tipos, unitarias y convivencia real)
+    name: Backend (Núcleo y Boletería reales)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
@@ -204,39 +185,61 @@ jobs:
           cache: npm
           cache-dependency-path: App/backend/package-lock.json
       - run: npm ci
-      - name: Levantar infraestructura exclusiva y Pagos real
-        run: npm run test:e2e:infra
+      - name: Infraestructura exclusiva de Boletería y Pagos
+        run: npm run test:boleteria:infra
       - name: Tipos
         run: npm run lint
-      - name: Unitarias trasladadas con Redis real
+      - name: Unitarias de ambos programas con Redis real
         env:
-          REDIS_INVENTARIO_PRUEBAS_URL: redis://127.0.0.1:16382
+          REDIS_INVENTARIO_PRUEBAS_URL: redis://127.0.0.1:16383
+          REDIS_HOST: 127.0.0.1
+          REDIS_PUERTO: "16383"
         run: npm test -- --runInBand
-      - name: Ejecutar integración de los tres módulos dos veces
+      - name: Integración de Boletería dos veces
         run: |
-          npm run test:e2e
-          npm run test:e2e
+          npm run test:boleteria
+          npm run test:boleteria
       - name: Configuración y fronteras
         run: npm run verificar:infra
-      - name: Construir y arrancar imágenes aisladas
+      - name: Construir y arrancar imagen de Boletería
+        run: npm run test:boleteria:imagen:infra
+      - name: Smoke de Boletería y gateway dos veces
+        run: |
+          npm run test:boleteria:imagen
+          npm run test:boleteria:imagen
+      - name: Detener solo Boletería E2E antes de verificar Núcleo
+        run: docker compose -p hexacore-boleteria-e2e -f test/boleteria/docker-compose.yml -f test/boleteria/docker-compose.imagen.yml stop
+      - name: Infraestructura exclusiva de Núcleo y Pagos
+        run: npm run test:e2e:infra
+      - name: Integración de Núcleo dos veces
+        run: |
+          npm run test:e2e
+          npm run test:e2e
+      - name: Construir y arrancar imágenes de Núcleo
         run: npm run test:imagen:infra
-      - name: Smoke de gateway y Núcleo dos veces
+      - name: Smoke de Núcleo y gateway dos veces
         run: |
           npm run test:imagen
           npm run test:imagen
-      - name: Registros si falla
+      - name: Logs de Boletería si falla
+        if: failure()
+        run: docker compose -p hexacore-boleteria-e2e -f test/boleteria/docker-compose.yml -f test/boleteria/docker-compose.imagen.yml logs --tail 100
+      - name: Logs de Núcleo si falla
         if: failure()
         run: docker compose -p hexacore-nucleo-e2e -f test/docker-compose.e2e.yml -f test/docker-compose.imagen.yml logs --tail 100
-      - name: Conservar logs del Núcleo compilado
+      - name: Conservar logs de los procesos compilados
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: nucleo-e2e-logs
+          name: backend-e2e-logs
           path: App/backend/.evidencia-e2e/
           include-hidden-files: true
       - name: Limpiar solo recursos de Núcleo E2E
         if: always()
         run: npm run test:e2e:limpiar
+      - name: Limpiar solo recursos de Boletería E2E
+        if: always()
+        run: npm run test:boleteria:limpiar
 
   # --------------------------------------------------------------------------
   # Los dos portales Angular: que compilen en modo producción.

@@ -1,4 +1,0 @@
-# Compatibilidad: la única definición de infraestructura está en el workspace.
-name: hexacore-boleteria-e2e
-include:
-  - ../../../backend/test/boleteria/docker-compose.yml

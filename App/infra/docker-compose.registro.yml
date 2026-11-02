@@ -33,29 +33,13 @@ services:
     build: !reset null
     image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-nucleo:${HEXACORE_ETIQUETA:-develop}
 
-  ventas:
+  boleteria:
     build: !reset null
-    image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-ventas:${HEXACORE_ETIQUETA:-develop}
-
-  postventa:
-    build: !reset null
-    image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-postventa:${HEXACORE_ETIQUETA:-develop}
-
-  acceso-qr:
-    build: !reset null
-    image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-acceso-qr:${HEXACORE_ETIQUETA:-develop}
-
-  catalogo:
-    build: !reset null
-    image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-catalogo:${HEXACORE_ETIQUETA:-develop}
+    image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-boleteria:${HEXACORE_ETIQUETA:-develop}
 
   pagos:
     build: !reset null
     image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-pagos:${HEXACORE_ETIQUETA:-develop}
-
-  cola-virtual:
-    build: !reset null
-    image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-cola-virtual:${HEXACORE_ETIQUETA:-develop}
 
   notificaciones:
     build: !reset null
@@ -78,6 +62,7 @@ services:
     image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-portal-admin:${HEXACORE_ETIQUETA:-develop}
 
   api-gateway:
+    build: !reset null
     image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-gateway:${HEXACORE_ETIQUETA:-develop}
     # Configuración dentro de la imagen; conservar la clave pública montada.
     volumes: !override

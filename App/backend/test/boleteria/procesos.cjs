@@ -1,55 +1,217 @@
 const { spawn, spawnSync } = require('node:child_process');
-const { mkdirSync, writeFileSync } = require('node:fs');
+const { mkdirSync, writeFileSync, rmSync } = require('node:fs');
 const { resolve } = require('node:path');
 const assert = require('node:assert/strict');
-const raiz = resolve(__dirname, '../../../..');
-const nombres = ['ventas', 'catalogo', 'cola-virtual', 'postventa', 'acceso-qr'];
-const bases = { ventas:'entradas_e2e', catalogo:'catalogo_boleteria_e2e', postventa:'postventa_boleteria_e2e', 'acceso-qr':'acceso_qr_boleteria_e2e' };
-const puertos = Object.fromEntries(nombres.map((n,i)=>[n,13091+i]));
-const entorno = (nombre='ventas') => ({ ...process.env, NODE_ENV:'test', PUERTO:String(puertos[nombre]), PREFIJO_API:'api/v1',
- POSTGRES_HOST:'127.0.0.1', POSTGRES_PUERTO:'15436', POSTGRES_USUARIO:'boleteria_e2e', POSTGRES_CONTRASENA:'boleteria_e2e', POSTGRES_BASE:bases[nombre],
- REDIS_HOST:'127.0.0.1', REDIS_PUERTO:'16383', RABBITMQ_URL:'amqp://boleteria_e2e:boleteria_e2e@127.0.0.1:15676/boleteria',
- PAGOS_URL:'http://127.0.0.1:13090/api/v1', PAGOS_TIMEOUT_MS:'12000', VENTAS_URL:'http://127.0.0.1:13091/api/v1',
- AUTH_JWT_EMISOR:'hexacore-administracion', AUTH_JWT_CLAVE_PUBLICA_ARCHIVO:resolve(__dirname,'../claves/jwt-publica.pem'),
- TOKEN_SERVICIOS:'boleteria-e2e-servicios', RESERVAS_CRON:'*/1 * * * * *', EXPIRACION_CRON:'*/1 * * * * *', COMPRA_RESERVA_MINUTOS:'2', PGAPPNAME:`referencia-${nombre}` });
-async function esperar(accion, limite=15000) {
- const fin=Date.now()+limite;
- while(!await accion()) { if(Date.now()>fin) throw Error('Condición de integración no alcanzada'); await new Promise(r=>setTimeout(r,50)); }
+const { Client } = require('pg');
+const Redis = require('ioredis');
+const raiz = resolve(__dirname, '../../../..'),
+  cwd = resolve(raiz, 'App/backend');
+const nombres = [
+  'ventas',
+  'catalogo',
+  'cola-virtual',
+  'postventa',
+  'acceso-qr',
+];
+const bases = {
+  ventas: 'entradas_e2e',
+  catalogo: 'catalogo_boleteria_e2e',
+  postventa: 'postventa_boleteria_e2e',
+  'acceso-qr': 'acceso_qr_boleteria_e2e',
+};
+const puertos = Object.fromEntries(nombres.map((n) => [n, 13096]));
+const entorno = () => ({
+  ...process.env,
+  NODE_ENV: 'test',
+  PUERTO: '13096',
+  PREFIJO_API: 'api/v1',
+  POSTGRES_HOST: '127.0.0.1',
+  POSTGRES_PUERTO: '15436',
+  POSTGRES_USUARIO: 'boleteria_e2e',
+  POSTGRES_CONTRASENA: 'boleteria_e2e',
+  POSTGRES_BASE: 'entradas_e2e',
+  POSTGRES_BD_VENTAS: bases.ventas,
+  POSTGRES_BD_CATALOGO: bases.catalogo,
+  POSTGRES_BD_POSTVENTA: bases.postventa,
+  POSTGRES_BD_ACCESO_QR: bases['acceso-qr'],
+  REDIS_HOST: '127.0.0.1',
+  REDIS_PUERTO: '16383',
+  RABBITMQ_URL: 'amqp://boleteria_e2e:boleteria_e2e@127.0.0.1:15676/boleteria',
+  PAGOS_URL: 'http://127.0.0.1:13090/api/v1',
+  PAGOS_TIMEOUT_MS: '12000',
+  VENTAS_URL: 'http://127.0.0.1:9/servidor-retirado',
+  AUTH_JWT_EMISOR: 'hexacore-administracion',
+  AUTH_JWT_CLAVE_PUBLICA_ARCHIVO: resolve(
+    __dirname,
+    '../claves/jwt-publica.pem',
+  ),
+  TOKEN_SERVICIOS: 'boleteria-e2e-servicios',
+  COMPRA_RESERVA_MINUTOS: '2',
+  RESERVAS_CRON: '*/1 * * * * *',
+  EXPIRACION_CRON: '*/1 * * * * *',
+});
+async function esperar(accion, limite = 15000) {
+  const fin = Date.now() + limite;
+  while (!(await accion())) {
+    if (Date.now() > fin) throw Error('Condición de integración no alcanzada');
+    await new Promise((r) => setTimeout(r, 50));
+  }
+}
+async function metricasRabbit() {
+  const headers = {
+    Authorization: `Basic ${Buffer.from('boleteria_e2e:boleteria_e2e').toString('base64')}`,
+  };
+  const leer = async (ruta) => {
+    const r = await fetch('http://127.0.0.1:16776/api/' + ruta, {
+      headers,
+      signal: AbortSignal.timeout(3000),
+    });
+    assert.equal(r.status, 200);
+    return r.json();
+  };
+  const conexiones = (await leer('connections')).filter(
+    (c) => c.client_properties.connection_name === 'hexacore-boleteria',
+  );
+  const consumidores = (await leer('consumers/boleteria')).length;
+  return { conexiones: conexiones.length, consumidores };
 }
 async function iniciar() {
- assert.equal(process.version,'v22.22.3');
- const procesos=[];
- try {
-  for(const nombre of nombres) {
-   const cwd=resolve(raiz,'App/services',nombre), env=entorno(nombre);
-   if(bases[nombre]) {
-    const m=spawnSync(process.execPath,['node_modules/typeorm/cli.js','migration:run','-d','dist/persistencia/data-source.js'],{cwd,env,encoding:'utf8'});
-    assert.equal(m.status,0,`Migración ${nombre}: ${m.stdout}\n${m.stderr}`);
-   }
-   const hijo=spawn(process.execPath,['dist/main.js'],{cwd,env,stdio:['ignore','pipe','pipe']});
-   const p={nombre,hijo,salida:'',url:`http://127.0.0.1:${puertos[nombre]}`};procesos.push(p);
-   hijo.stdout.on('data',d=>p.salida+=d);hijo.stderr.on('data',d=>p.salida+=d);
-   await esperar(async()=>{
-    if(hijo.exitCode!==null||hijo.signalCode!==null)throw Error(p.salida);
-    try{return(await fetch(p.url+'/api/v1/salud',{signal:AbortSignal.timeout(1000)})).ok;}catch{return false;}
-   });
+  assert.equal(process.version, 'v22.22.3');
+  const env = entorno();
+  for (const nombre of Object.keys(bases)) {
+    const r = spawnSync(
+      process.execPath,
+      [
+        'node_modules/typeorm/cli.js',
+        'migration:run',
+        '-d',
+        `dist/modulos/entradas/${nombre}/persistencia/data-source.js`,
+      ],
+      { cwd, env, encoding: 'utf8' },
+    );
+    assert.equal(r.status, 0, `Migración ${nombre}: ${r.stdout}\n${r.stderr}`);
   }
-  return { procesos, urls:Object.fromEntries(procesos.map(p=>[p.nombre,p.url])) };
- } catch(e) { await cerrar({procesos}); throw e; }
-}
-async function cerrar({procesos}) {
- const fallos=[];mkdirSync(resolve(raiz,'App/backend/.evidencia-e2e'),{recursive:true});
- for(const p of [...procesos].reverse()) {
-  if(p.hijo.exitCode===null&&p.hijo.signalCode===null) {
-   let forzado=false;
-   const salida=new Promise(r=>p.hijo.once('exit',r));
-   const timer=setTimeout(()=>{forzado=true;p.hijo.kill('SIGKILL');},5000);
-   p.hijo.kill('SIGTERM');await salida;clearTimeout(timer);
-   if(forzado)fallos.push(`${p.nombre}: SIGKILL necesario`);
+  const hijo = spawn(process.execPath, ['dist/apps/boleteria/main.js'], {
+    cwd,
+    env,
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  const p = {
+    nombre: 'boleteria',
+    hijo,
+    salida: '',
+    url: 'http://127.0.0.1:13096',
+  };
+  hijo.stdout.on('data', (d) => (p.salida += d));
+  hijo.stderr.on('data', (d) => (p.salida += d));
+  mkdirSync(resolve(cwd, '.evidencia-e2e'), { recursive: true });
+  writeFileSync(resolve(cwd, '.evidencia-e2e/boleteria.pid'), String(hijo.pid));
+  const app = {
+    procesos: [p],
+    urls: Object.fromEntries(nombres.map((n) => [n, p.url])),
+  };
+  try {
+    await esperar(async () => {
+      if (hijo.exitCode !== null || hijo.signalCode !== null)
+        throw Error(p.salida);
+      let r;
+      try {
+        r = await fetch(p.url + '/api/v1/salud', {
+          signal: AbortSignal.timeout(1000),
+        });
+      } catch {
+        return false;
+      }
+      if (!r.ok) return false;
+      const h = await r.json();
+      assert.equal(h.servicio, 'boleteria');
+      assert.equal(h.pid, hijo.pid);
+      assert.equal(
+        JSON.stringify(h.trabajos.cron),
+        JSON.stringify(['expirar-publicaciones', 'venta-expirar-reservas']),
+      );
+      return true;
+    });
+    await esperar(async () => {
+      const m = await metricasRabbit();
+      return m.conexiones === 1 && m.consumidores === 5;
+    });
+    return app;
+  } catch (e) {
+    try {
+      await cerrar(app);
+    } catch (cierre) {
+      console.error(cierre.message);
+    }
+    throw e;
   }
-  writeFileSync(resolve(raiz,`App/backend/.evidencia-e2e/referencia-${p.nombre}.log`),p.salida);
-  if(/UnknownElementException|Cierre de RabbitMQ con incidencias/.test(p.salida)) fallos.push(`${p.nombre}: error de cierre, ver log`);
- }
- assert.deepEqual(fallos,[]);
 }
-module.exports={iniciar,cerrar,entorno,bases,puertos,esperar,raiz};
+async function cerrar(app) {
+  if (app.cerrada) return;
+  app.cerrada = true;
+  try {
+    for (const p of app.procesos) {
+      assert.equal(p.hijo.exitCode, null, 'El proceso ya había terminado');
+      assert.equal(p.hijo.signalCode, null);
+      let forzado = false;
+      const salida = new Promise((r) => p.hijo.once('exit', r));
+      const timer = setTimeout(() => {
+        forzado = true;
+        p.hijo.kill('SIGKILL');
+      }, 5000);
+      p.hijo.kill('SIGTERM');
+      await salida;
+      clearTimeout(timer);
+      assert.equal(forzado, false);
+      assert.ok(p.hijo.signalCode === 'SIGTERM' || p.hijo.exitCode === 0);
+      for (const marca of [
+        'Consumos AMQP detenidos; pendientes=0',
+        'Outbox Ventas detenido',
+        'Outbox Acceso QR detenido',
+        'Cron reservas detenido',
+        'Cron publicaciones detenido',
+      ])
+        assert.ok(p.salida.includes(marca), marca);
+      assert.doesNotMatch(
+        p.salida,
+        /UnknownElementException|Cierre de RabbitMQ con incidencias|Query read timeout|EXPIRACION_RESERVAS_FALLIDA/,
+      );
+    }
+    const db = new Client({
+      host: '127.0.0.1',
+      port: 15436,
+      user: 'boleteria_e2e',
+      password: 'boleteria_e2e',
+      database: 'postgres',
+    });
+    try {
+      await db.connect();
+      const r = await db.query(
+        "SELECT application_name,datname FROM pg_stat_activity WHERE application_name LIKE 'boleteria-%'",
+      );
+      assert.equal(r.rowCount, 0);
+    } finally {
+      await db.end();
+    }
+    await esperar(async () => {
+      const m = await metricasRabbit();
+      return m.conexiones === 0 && m.consumidores === 0;
+    });
+    const redis = new Redis({ host: '127.0.0.1', port: 16383 });
+    try {
+      assert.doesNotMatch(await redis.client('LIST'), /name=boleteria /);
+    } finally {
+      redis.disconnect();
+    }
+    await assert.rejects(
+      fetch(app.procesos[0].url + '/api/v1/salud', {
+        signal: AbortSignal.timeout(1000),
+      }),
+    );
+  } finally {
+    for (const p of app.procesos)
+      writeFileSync(resolve(cwd, '.evidencia-e2e/boleteria.log'), p.salida);
+    rmSync(resolve(cwd, '.evidencia-e2e/boleteria.pid'), { force: true });
+  }
+}
+module.exports = { iniciar, cerrar, entorno, bases, puertos, esperar, raiz, metricasRabbit };

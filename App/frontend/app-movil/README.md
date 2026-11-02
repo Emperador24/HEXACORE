@@ -26,7 +26,7 @@ docker compose -f ../../infra/docker-compose.yml --profile servicios up -d --bui
 
 # La primera vez, los datos de ejemplo
 (cd ../../backend && npm ci && npm run semilla:identidad)
-(cd ../../services/ventas && npm install && npm run semilla)
+(cd ../../backend && nvm use && npm ci && npm run semilla:ventas)
 ```
 
 La app encuentra sola los servicios en el simulador de iOS (`localhost`) y en el emulador de

@@ -104,6 +104,18 @@ describe('Referencia real de Boletería: CU-001–006', () => {
     await procesos.esperar(async()=> (await sql('acceso-qr','SELECT count(*)::int n FROM qr_entradas WHERE evento_id=$1',[evento]))[0].n===2);
     expect((await sql('ventas','SELECT count(*)::int n FROM eventos_salientes WHERE publicado_en IS NULL'))[0].n).toBe(0);
   });
+  it('reconecta una sola conexión AMQP y recupera sus cinco consumidores y el outbox', async () => {
+    const headers={Authorization:`Basic ${Buffer.from('boleteria_e2e:boleteria_e2e').toString('base64')}`};
+    const r=await fetch('http://127.0.0.1:16776/api/connections',{headers});expect(r.status).toBe(200);
+    const conexiones=(await r.json() as {name:string;client_properties:{connection_name?:string}}[]).filter(c=>c.client_properties.connection_name==='hexacore-boleteria');
+    expect(conexiones).toHaveLength(1);
+    const cerrada=await fetch('http://127.0.0.1:16776/api/connections/'+encodeURIComponent(conexiones[0].name),{method:'DELETE',headers});expect(cerrada.status).toBe(204);
+    await procesos.esperar(()=> (app.procesos[0].salida.match(/Conectado a RabbitMQ/g)||[]).length===2);
+    await procesos.esperar(async()=>{const m=await procesos.metricasRabbit();return m.conexiones===1&&m.consumidores===5;});
+    const c=await comprar();
+    await procesos.esperar(async()=> (await sql('acceso-qr','SELECT count(*)::int n FROM qr_entradas WHERE entrada_id=$1',[c.entradas[0].id]))[0].n===1);
+    expect((await procesos.metricasRabbit()).consumidores).toBe(5);
+  });
   it('cotiza cancelación parcial de compra y ejecuta un reembolso real', async () => {
     const entrada=compra.entradas[0];
     const q=await pedir('ventas','POST',`/compras/${compra.id}/cancelacion/cotizacion`,vendedor,{entradaIds:[entrada.id]});
@@ -135,6 +147,9 @@ describe('Referencia real de Boletería: CU-001–006', () => {
     const [e]=await sql('ventas','SELECT propietario_id,codigo_qr FROM entradas WHERE id=$1',[transferencia.entradaId]);
     expect(e.propietario_id).toBe(ganador);expect(e.codigo_qr).toBe(transferencia.codigoQr);
     expect((await sql('ventas','SELECT count(*)::int n FROM historial_propietarios WHERE entrada_id=$1',[transferencia.entradaId]))[0].n).toBe(2);
+    const movimientos=(await sql('pagos','SELECT count(*)::int n FROM transacciones_pago'))[0].n;
+    expect((await pedir('postventa','POST',`/reventa/checkout/${checkout.id}/pagar`,ganador,{metodoPago:'TARJETA',token:'tok_ok_boleteria'})).status).toBe(409);
+    expect((await sql('pagos','SELECT count(*)::int n FROM transacciones_pago'))[0].n).toBe(movimientos);
   });
   it('tras converger la proyección rechaza QR anterior y doble ingreso concurrente', async () => {
     const inicio=Date.now();
@@ -154,6 +169,28 @@ describe('Referencia real de Boletería: CU-001–006', () => {
     await procesos.esperar(async()=> (await sql('ventas','SELECT estado FROM compras WHERE id=$1',[r.body.id]))[0].estado==='EXPIRADA');
     expect((await pedir('ventas','GET',`/interno/entradas/de/${vendedor}`)).status).toBe(401);
     expect((await pedir('acceso-qr','POST','/ingresos',vendedor,{eventoId:evento,codigoQr:'inventado'})).status).toBe(403);
+  });
+  it('el scheduler único expira la publicación y devuelve la entrada mediante la API local de servicio', async () => {
+    const c = await comprar();
+    const p = await pedir('postventa','POST','/reventa/publicaciones',vendedor,{entradaId:c.entradas[0].id,precio:100000});
+    expect(p.status).toBe(201);
+    await sql('postventa',"UPDATE publicaciones_reventa SET fecha_expiracion=now()-interval '1 minute' WHERE id=$1",[p.body.id]);
+    await procesos.esperar(async()=> (await sql('postventa','SELECT estado FROM publicaciones_reventa WHERE id=$1',[p.body.id]))[0].estado==='EXPIRADA');
+    const antes = Date.now();
+    console.log('Estado de entrada al observar publicación EXPIRADA:', (await sql('ventas','SELECT estado FROM entradas WHERE id=$1',[c.entradas[0].id]))[0].estado);
+    // Saga entre bases: EXPIRADA se escribe antes de devolver la entrada.
+    await procesos.esperar(async()=> (await sql('ventas','SELECT estado FROM entradas WHERE id=$1',[c.entradas[0].id]))[0].estado==='VALIDA');
+    console.log('Finalización observada de devolución (ms):', Date.now()-antes);
+    expect((await sql('ventas','SELECT estado FROM entradas WHERE id=$1',[c.entradas[0].id]))[0].estado).toBe('VALIDA');
+  });
+  it('aplica el reembolso temporal parcial existente y deja el movimiento real', async () => {
+    const c = await comprar();
+    await sql('ventas',"UPDATE eventos_referencia SET fecha_inicio=now()+interval '4 days' WHERE evento_id=$1",[evento]);
+    const q = await pedir('ventas','POST',`/compras/${c.id}/cancelacion/cotizacion`,vendedor,{});
+    expect(q.status).toBe(200);expect(q.body.parcial).toBe(true);expect(q.body.porcentajeReembolso).toBe(50);expect(q.body.montoReembolso).toBe(50000);
+    const r = await pedir('ventas','POST',`/compras/${c.id}/cancelaciones`,vendedor,{motivo:'Reembolso parcial E2E',montoAceptado:50000});
+    expect(r.status).toBe(200);expect(r.body.estado).toBe('APROBADA');
+    expect((await sql('pagos',"SELECT monto::numeric FROM transacciones_pago WHERE tipo='REEMBOLSO' AND referencia=$1",[r.body.referenciaReembolso]))[0].monto).toBe('50000.00');
   });
   it('revocación compartida bloquea todas las rutas privadas de los componentes', async () => {
     await redis.set(`sesion-revocada:${sesion(vendedor).jti}`,'1','EX',300);

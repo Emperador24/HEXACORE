@@ -55,18 +55,11 @@ jobs:
           # Núcleo modular, backends aún separados, proveedores y portales.
           - nombre: nucleo
             contexto: App/backend
-          - nombre: ventas
-            contexto: App/services/ventas
-          - nombre: postventa
-            contexto: App/services/postventa
-          - nombre: acceso-qr
-            contexto: App/services/acceso-qr
-          - nombre: catalogo
-            contexto: App/services/catalogo
+          - nombre: boleteria
+            contexto: App/backend
+            dockerfile: App/backend/Dockerfile.boleteria
           - nombre: pagos
             contexto: App/services/pagos
-          - nombre: cola-virtual
-            contexto: App/services/cola-virtual
           - nombre: notificaciones
             contexto: App/services/notificaciones
           - nombre: pasarela
@@ -123,6 +116,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ${{ matrix.contexto }}
+          file: ${{ matrix.dockerfile || format('{0}/Dockerfile', matrix.contexto) }}
           push: true
           # Dos arquitecturas, y no es un lujo: los runners de GitHub son
           # amd64, pero los portátiles del equipo son Mac con chip Apple

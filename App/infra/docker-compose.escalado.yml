@@ -1,8 +1,8 @@
-# Quita puertos fijos para acceso por gateway. Ventas conserva su escalado.
+# Quita puertos fijos para acceso por gateway. Boletería conserva su escalado.
 # Núcleo reúne Identidad y Alimentos; no se certifica aquí la ejecución del
 # sondeo de inventario entre réplicas. Mantener una réplica hasta comprobarla.
 services:
-  ventas:
+  boleteria:
     ports: !reset []
   nucleo:
     ports: !reset []

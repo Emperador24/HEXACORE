@@ -1,5 +1,5 @@
-import { Inject, Injectable, Logger, OnApplicationBootstrap, OnApplicationShutdown } from '@nestjs/common';
-import { connect, ChannelModel, ConfirmChannel } from 'amqplib';
+import { Inject, Injectable, Logger, OnApplicationBootstrap, OnApplicationShutdown, OnModuleDestroy } from '@nestjs/common';
+import { connect, ChannelModel, ConfirmChannel, ConsumeMessage } from 'amqplib';
 import { CONFIGURACION_PROCESO, ConfiguracionProceso } from '../config/configuracion';
 
 /** Declaración de exchanges y colas de un módulo. Debe ser idempotente. */
@@ -46,14 +46,17 @@ export type DeclararTopologia = (canal: ConfirmChannel) => Promise<void>;
  * declararía solo las de los módulos que hubieran corrido antes que este.
  */
 @Injectable()
-export class ConexionRabbitMq implements OnApplicationBootstrap, OnApplicationShutdown {
+export class ConexionRabbitMq implements OnApplicationBootstrap, OnApplicationShutdown, OnModuleDestroy {
   private readonly log = new Logger(ConexionRabbitMq.name);
   private readonly url: string;
+  private readonly nombre: string;
 
   private conexion: ChannelModel | null = null;
   private canal: ConfirmChannel | null = null;
   private reintento: NodeJS.Timeout | null = null;
   private cerrando = false;
+  private readonly consumidores = new Map<string, ConfirmChannel>();
+  private readonly trabajos = new Set<Promise<unknown>>();
 
   /** Topologías de los módulos. Se declaran en cada canal nuevo. */
   private readonly topologias: DeclararTopologia[] = [];
@@ -73,6 +76,7 @@ export class ConexionRabbitMq implements OnApplicationBootstrap, OnApplicationSh
 
   constructor(@Inject(CONFIGURACION_PROCESO) config: ConfiguracionProceso) {
     this.url = config.rabbitmq.url;
+    this.nombre = `hexacore-${config.programa || 'nucleo'}`;
   }
 
   /**
@@ -96,6 +100,34 @@ export class ConexionRabbitMq implements OnApplicationBootstrap, OnApplicationSh
     return this.canal;
   }
 
+  /** Suscripciones cuyo trabajo debe terminar antes de cerrar las bases. */
+  async consumir(cola: string, recibir: (mensaje: ConsumeMessage | null) => unknown) {
+    const canal = this.canal;
+    if (!canal || this.cerrando) throw new Error('Canal no disponible para consumir');
+    const resultado = await canal.consume(cola, (mensaje) => {
+      const trabajo = Promise.resolve().then(() => recibir(mensaje));
+      this.trabajos.add(trabajo);
+      void trabajo.finally(() => this.trabajos.delete(trabajo)).catch((error: Error) =>
+        this.log.error(`Fallo de consumo en ${cola}: ${error.message}`));
+    });
+    this.consumidores.set(resultado.consumerTag, canal);
+    return resultado;
+  }
+
+  async cancelarConsumo(etiqueta: string): Promise<void> {
+    const canal = this.consumidores.get(etiqueta);
+    this.consumidores.delete(etiqueta);
+    if (canal) await canal.cancel(etiqueta).catch(() => undefined);
+  }
+
+  async onModuleDestroy(): Promise<void> {
+    this.cerrando = true;
+    if (this.reintento) clearTimeout(this.reintento);
+    for (const etiqueta of [...this.consumidores.keys()]) await this.cancelarConsumo(etiqueta);
+    await Promise.allSettled([...this.trabajos]);
+    this.log.log('Consumos AMQP detenidos; pendientes=0');
+  }
+
   get conectado(): boolean {
     return this.canal !== null;
   }
@@ -107,7 +139,7 @@ export class ConexionRabbitMq implements OnApplicationBootstrap, OnApplicationSh
   private async conectar(): Promise<void> {
     if (this.cerrando) return;
     try {
-      this.conexion = await connect(this.url, { clientProperties: { connection_name: 'hexacore-nucleo' } });
+      this.conexion = await connect(this.url, { clientProperties: { connection_name: this.nombre } });
 
       // Canal *confirm* y no uno normal: es lo que permite saber si el broker
       // guardó realmente el mensaje. Sin confirmaciones, `publish` devuelve
@@ -120,6 +152,7 @@ export class ConexionRabbitMq implements OnApplicationBootstrap, OnApplicationSh
 
       this.conexion.on('error', (error: Error) => this.log.error(`Error de conexión: ${error.message}`));
       this.conexion.on('close', () => {
+        this.consumidores.clear();
         this.canal = null;
         this.conexion = null;
         if (!this.cerrando) {

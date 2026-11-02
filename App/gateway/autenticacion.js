@@ -110,7 +110,7 @@ async function gastarTurno(r, autorizacion) {
 
   let respuesta;
   try {
-    respuesta = await ngx.fetch(`http://${r.variables.cola}/api/v1/interno/cola/turnos/${turno}`, {
+    respuesta = await ngx.fetch(`http://${r.variables.boleteria}/api/v1/interno/cola/turnos/${turno}`, {
       method: 'DELETE',
       headers: { Authorization: autorizacion },
     });

@@ -1,62 +1,25 @@
-# Añadido a `docker-compose.yml` cuando los servicios corren en un computador y
-# la capa de datos en otro (desplegabilidad: el sistema repartido en dos o más
-# máquinas).
-#
-# Se invoca desde `./iniciar.sh --rol servicios --datos <IP>`, que exporta
-# HOST_POSTGRES, HOST_REDIS, HOST_RABBIT, HOST_CORREO y HOST_PASARELA con esa IP,
-# y PUERTO_REDIS=6380 (el puerto publicado por la máquina de datos).
-# El compose base sigue definiendo los destinos y el resto de puertos.
-#
-# Se quitan las dependencias hacia PostgreSQL, Redis, RabbitMQ y los dos
-# proveedores simulados en los ocho backends actuales. Los servicios comprueban
-# las conexiones remotas al arrancar; Compose no puede comprobar su salud.
-# Se conservan las dependencias entre aplicaciones que corren aquí:
-# Postventa -> Pagos/Ventas, gateway -> backends y portales -> gateway.
-#
-# Los datos locales quedan en un perfil separado: incluso un `up` sin lista
-# explícita de servicios, con solo `--profile servicios`, los deja fuera.
-# Esto no cambia `iniciar.sh --rol datos` en la otra máquina, que usa el compose
-# base sin este override.
-
+# Servicios en esta máquina con datos remotos. iniciar.sh exporta HOST_POSTGRES,
+# HOST_REDIS, HOST_RABBIT, HOST_CORREO, HOST_PASARELA y sus puertos.
+# Las cinco piezas de datos locales quedan fuera del perfil servicios.
+# Se conservan Núcleo/Boletería -> Pagos y las dependencias de gateway/portales.
 services:
   postgres:
     profiles: ["datos"]
-
   redis:
     profiles: ["datos"]
-
   rabbitmq:
     profiles: ["datos"]
-
   pasarela:
     profiles: ["datos"]
-
   correo:
     profiles: ["datos"]
-
   nucleo:
     depends_on: !override
       pagos: { condition: service_healthy }
-
-  ventas:
-    depends_on: !reset {}
-
-  acceso-qr:
-    depends_on: !reset {}
-
-  postventa:
+  boleteria:
     depends_on: !override
       pagos: { condition: service_healthy }
-      ventas: { condition: service_healthy }
-
-  cola-virtual:
-    depends_on: !reset {}
-
   pagos:
     depends_on: !reset {}
-
   notificaciones:
-    depends_on: !reset {}
-
-  catalogo:
     depends_on: !reset {}

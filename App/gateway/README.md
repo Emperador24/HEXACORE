@@ -24,24 +24,24 @@ un `location`, y si exige sesión, incluir `autenticar.conf` en él.
 | `nginx-principal.conf` | La configuración principal de Nginx: la de la imagen oficial más `load_module` del njs. |
 | `pruebas/gateway.py` | Comprueba enrutamiento, autenticación previa (RNF-06), roles, turno, *webhook*, CORS, balanceo (RNF-10) y caída de una instancia (RNF-03). |
 
-Se despliega desde `../infra/docker-compose.yml` (servicio `api-gateway`, imagen `nginx:1.27-alpine`)
+Se despliega desde `../infra/docker-compose.yml` (servicio `api-gateway`, build propio con njs)
 y escucha en **8080**. Es la única dirección que conocen la app móvil y los portales.
 
 ## Cómo enruta
 
 | Ruta | Servicio | Exige |
 |---|---|---|
-| `/api/v1/sesiones` (POST), `/sesiones/renovar`, `/cuentas/registro`, `/verificar`, `/recuperacion`, `/restablecer` | Autenticación | nada (son las que *dan* el token) |
-| `/api/v1/cuentas/…`, `/api/v1/sesiones/…` | Autenticación | token |
-| `/api/v1/admin/…` | Autenticación | token con rol `Administrador` |
-| `/api/v1/cartelera` (solo GET) | Catálogo | nada |
-| `/api/v1/cola/…` | Cola virtual | token |
-| `POST /api/v1/compras` | Ventas | token `Cliente` **y turno** en `X-Turno-Cola` |
-| `/api/v1/compras/…`, `GET /api/v1/compras` | Ventas | token `Cliente` |
-| `/api/v1/ingresos…` | Acceso QR | token `Personal` o `Administrador` |
-| `/api/v1/reventa/…` | Postventa | token `Cliente` o `Administrador` |
-| `/api/v1/pedidos/…` | Alimentos | token |
-| `/api/v1/logistica/…` | Eventos / Emergencias | token |
+| `/api/v1/sesiones` (POST), `/sesiones/renovar`, `/cuentas/registro`, `/verificar`, `/recuperacion`, `/restablecer` | Núcleo | nada (son las que *dan* el token) |
+| `/api/v1/cuentas/…`, `/api/v1/sesiones/…` | Núcleo | token |
+| `/api/v1/admin/…` | Núcleo | token con rol `Administrador` |
+| `/api/v1/cartelera` (solo GET) | Boletería | nada |
+| `/api/v1/cola/…` | Boletería | token |
+| `POST /api/v1/compras` | Boletería | token `Cliente` **y turno** en `X-Turno-Cola` |
+| `/api/v1/compras/…`, `GET /api/v1/compras` | Boletería | token `Cliente` |
+| `/api/v1/ingresos…` | Boletería | token `Personal` o `Administrador` |
+| `/api/v1/reventa/…` | Boletería | token `Cliente` o `Administrador` |
+| `/api/v1/pedidos/…` | Núcleo | token |
+| `/api/v1/logistica/…` | Núcleo | token |
 | `POST /api/v1/pagos/webhook` | Pagos | firma HMAC de la pasarela (la valida Pagos) |
 | `/salud` | el propio gateway | nada |
 
@@ -126,3 +126,9 @@ Necesita las cuentas de ejemplo (`cd ../backend && npm run semilla:identidad`).
 
 Identidad, Alimentos y las rutas `/api/v1/logistica` llegan al mismo `nucleo:3002`.
 El servidor separado de Eventos/Emergencias se retiró; esto no implementa Operación.
+
+Boletería conserva las cinco familias en un único upstream `boleteria:3001`.
+La subpetición njs de consumo de turno usa ese mismo destino, conserva dueño y
+consumo único; `/interno/` sigue sin exponerse. El smoke aislado de Boletería
+comprueba compra/pago/QR, repetición de turno, doble ingreso y revocación.
+Las pruebas de réplicas/carga y la invalidación QR inmediata siguen pendientes.

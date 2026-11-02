@@ -102,6 +102,6 @@ puede llamar al servicio directamente y poner la cabecera que quiera. Comprobado
 ## Implementaciones
 
 - Emisión: `backend/modulos/identidad/sesiones/`
-- Verificación: `services/ventas/src/comun/autenticacion/sesion-valida.guard.ts`
-- Prueba entre servicios: `services/ventas/pruebas/rnf06-autenticacion.py`
+- Verificación: `backend/modulos/entradas/compartido/sesion-valida.guard.ts`
+- Prueba entre servicios: `backend/modulos/entradas/ventas/pruebas/rnf06-autenticacion.py`
 - Validación en el borde: `gateway/autenticacion.js` (njs) y `gateway/pruebas/gateway.py`

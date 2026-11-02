@@ -122,9 +122,9 @@ async function misEntradas(email) {
  */
 function resembrar() {
   const servicio = fileURLToPath(
-    new URL('../../../services/ventas', import.meta.url)
+    new URL('../../../backend', import.meta.url)
   );
-  execFileSync('npm', ['run', 'semilla'], { cwd: servicio, stdio: 'ignore', shell: true });
+  execFileSync('npm', ['run', 'semilla:ventas'], { cwd: servicio, stdio: 'ignore', shell: true });
   // Los bloqueos de checkout viven en Redis y sobreviven al resembrado: una
   // publicación nueva con un bloqueo viejo encima no se podría reservar.
   const borrar = `local c=redis.call('scan',0,'match',ARGV[1],'count',1000) for _,k in ipairs(c[2]) do redis.call('del',k) end return 1`;

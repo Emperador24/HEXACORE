@@ -98,7 +98,7 @@ verde "  eventos_emergencias: sobrantes eliminados"
 
 sembrar() {
   local servicio="$1" tarea="${2:-semilla}" carpeta="$RAIZ/App/services/$1"
-  [[ "$servicio" == "nucleo" ]] && carpeta="$RAIZ/App/backend"
+  [[ "$servicio" == "nucleo" || "$servicio" == "boleteria" ]] && carpeta="$RAIZ/App/backend"
   if [[ ! -d "$carpeta/node_modules" ]]; then
     gris "  $servicio: sin node_modules, se omite"
     return
@@ -115,12 +115,12 @@ sembrar() {
 # Catálogo, Acceso QR y Postventa se siembran aparte porque cada una vive en su
 # propia base (ADR-01) y nadie las publica todavía por el broker.
 sembrar nucleo semilla:identidad
-sembrar ventas
+sembrar boleteria semilla:ventas
 sembrar nucleo semilla:logistica
 sembrar nucleo semilla:alimentos
-sembrar catalogo
-sembrar acceso-qr
-sembrar postventa
+sembrar boleteria semilla:catalogo
+sembrar boleteria semilla:acceso-qr
+sembrar boleteria semilla:postventa
 
 # --- Inventario de Redis -----------------------------------------------------
 

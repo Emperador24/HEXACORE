@@ -1,15 +1,18 @@
-# Backend HEXACORE: Núcleo modular
+# Backend HEXACORE: Núcleo y Boletería
 
 Etapa intermedia: Identidad, Alimentos y Personal/Logística corren en **un solo proceso NestJS**.
-Pagos y los otros seis backends actuales conservan paquetes y procesos separados.
+Boletería reúne Ventas, Catálogo, Cola, Postventa y Acceso QR en otro proceso.
+Pagos y Notificaciones conservan paquetes y procesos separados.
 Angular y sus compiladores permanecen fuera de este workspace.
-Boletería, Operación y Trabajador siguen siendo destinos posteriores del plan.
+La consolidación de datos de Boletería, Operación y Trabajador siguen pendientes del plan.
 
 ```text
 backend/
-  apps/nucleo/         main, composición y única sonda de disponibilidad
+  apps/nucleo/         main, composición y disponibilidad del Núcleo
+  apps/boleteria/      main, composición y disponibilidad de Boletería
   modulos/identidad/   cuentas, sesiones, administración, entidades y 3 migraciones
   modulos/alimentos/   catálogo, menú, checkout, inventario, pagos y 2 migraciones
+  modulos/entradas/    ventas, catálogo, fila, postventa y acceso QR; 10 migraciones
   modulos/personal-logistica/ empleados, turnos, asistencia y 2 migraciones
   compartido/         configuración del proceso, Redis, RabbitMQ, hilos y validación
   test/               unitarias, CU-011/convivencia, infraestructura e imágenes
@@ -139,3 +142,53 @@ python3 test/observar-recursos.py --segundos 100
 Ejecutarlo en otra terminal mientras las pruebas o imágenes propias están arriba.
 Captura consultas, bloqueos, conexiones, CPU/memoria y logs solo del proyecto
 hexacore-nucleo-e2e; no incrementa límites ni da F13 por resuelto.
+
+
+## Boletería: instalación, datos y ejecución
+
+Mismo npm ci/Node 22.22.3 del workspace, sin compiladores Angular. Conserva
+Nest 11/TS 5.9 y las versiones resueltas anteriores. Añade @nestjs/schedule
+**12.0.2**, la versión de Ventas/Postventa existente, compatible con ese core.
+AJV 8.18.0 y ajv-formats 3.0.1 se declaran como dev directas para las pruebas de
+contrato; ya estaban resueltas en el workspace y sus aserciones se ejecutaron.
+El lockfile conserva la entrada Webpack requerida por npm 10 de la imagen.
+
+Boletería usa POSTGRES_BD_VENTAS=entradas_mercado_secundario,
+POSTGRES_BD_CATALOGO=catalogo, POSTGRES_BD_POSTVENTA=postventa y
+POSTGRES_BD_ACCESO_QR=acceso_qr. Se ignora POSTGRES_BASE genérico para impedir
+que una configuración antigua mezcle las bases, también en los comandos CLI.
+Coordenadas POSTGRES_*, Redis y Rabbit son comunes al proceso; cada componente
+tiene su configuración y conexión TypeORM nombrada. No se consolidan datos.
+
+Desde App/backend y tras revisar destinos del .env:
+
+```bash
+npm run lint
+npm run build:boleteria
+npm run migracion:ventas:estado
+npm run migracion:catalogo:estado
+npm run migracion:postventa:estado
+npm run migracion:acceso-qr:estado
+npm run migracion:ventas:correr
+npm run migracion:catalogo:correr
+npm run migracion:postventa:correr
+npm run migracion:acceso-qr:correr
+PUERTO=3001 npm run start:boleteria
+# Núcleo se ejecuta aparte con PUERTO=3002 npm run start:prod.
+```
+
+Dockerfile.boleteria aplica los cuatro historiales y ejecuta un solo main;
+Dockerfile conserva el Núcleo. Las migraciones deben ser tarea única al desplegar
+réplicas. La sonda directa `/api/v1/salud` informa cuatro bases, Redis, RabbitMQ,
+PID y los dos cron. Bases/Redis caídos producen 503; RabbitMQ degrada el estado
+sin cambiar por sí solo el HTTP 200. `/api/v1/salud` del gateway sigue en Núcleo.
+
+Las cinco familias públicas llegan a boleteria:3001. El gateway conserva JWT/roles
+y consume el turno mediante el endpoint interno de la fila antes de reservar.
+Postventa usa la API local de Ventas; las rutas internas HTTP conservan sus
+restricciones y no se exponen en el gateway. Firma JWT solo Identidad.
+
+Ver [composición/consistencia](modulos/entradas/README.md) y los
+[comandos de integración e imagen](test/boleteria/README.md). Las esperas de
+proyecciones no prueban invalidación inmediata ni atomicidad entre bases.
+No se certifican réplicas, carga, GHCR ni CI/CD remoto con un smoke local.

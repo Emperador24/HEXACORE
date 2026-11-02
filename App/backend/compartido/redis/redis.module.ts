@@ -20,7 +20,7 @@ export const proveedorRedis: Provider = {
     const log = new Logger('Redis');
     const destino = `${config.redis.host}:${config.redis.puerto}`;
     const cliente = new Redis({
-      connectionName: 'nucleo',
+      connectionName: config.programa || 'nucleo',
       host: config.redis.host,
       port: config.redis.puerto,
       maxRetriesPerRequest: 1,

@@ -17,6 +17,7 @@
   "coverageDirectory": "coverage",
   "testEnvironment": "node",
   "moduleNameMapper": {
-    "^@nestjs/typeorm$": "<rootDir>/test/dobles/nestjs-typeorm.ts"
+    "^@nestjs/typeorm$": "<rootDir>/test/dobles/nestjs-typeorm.ts",
+    "^@nestjs/schedule$": "<rootDir>/test/dobles/nestjs-schedule.ts"
   }
 }

@@ -26,7 +26,19 @@ for remoto, escalado, registro in itertools.product([False, True], repeat=3):
         comando + ['config', '--format', 'json'], env=entorno, text=True))
     servicios = configuracion['services']
     assert 'nucleo' in servicios and 'autenticacion' not in servicios and 'alimentos' not in servicios and 'eventos-emergencias' not in servicios
-    assert len(servicios) == (11 if remoto else 16), (nombre, len(servicios))
+    assert len(servicios) == (7 if remoto else 12), (nombre, len(servicios))
+    assert 'boleteria' in servicios
+    assert not set(servicios).intersection({'ventas','catalogo','cola-virtual','postventa','acceso-qr'})
+    boleteria = servicios['boleteria']
+    bv = boleteria['environment']
+    for key,base in {'VENTAS':'entradas_mercado_secundario','CATALOGO':'catalogo','POSTVENTA':'postventa','ACCESO_QR':'acceso_qr'}.items():
+        assert bv[f'POSTGRES_BD_{key}'] == base
+    assert bv['PAGOS_URL'] == 'http://pagos:3008/api/v1'
+    assert not any(v['target'].endswith('jwt-privada.pem') for v in boleteria['volumes'])
+    assert 'boleteria' in servicios['api-gateway']['depends_on']
+    if remoto:
+        assert bv['POSTGRES_HOST'] == bv['REDIS_HOST'] == '192.0.2.10'
+        assert set(boleteria['depends_on']) == {'pagos'}
     nucleo = servicios['nucleo']
     variables = nucleo['environment']
     assert variables['POSTGRES_BD_ADMINISTRACION'] == 'administracion'
@@ -44,7 +56,7 @@ for remoto, escalado, registro in itertools.product([False, True], repeat=3):
             assert not set(servicio.get('depends_on', {})).intersection(
                 {'postgres', 'redis', 'rabbitmq', 'correo', 'pasarela'})
     if escalado:
-        assert not nucleo.get('ports') and not servicios['ventas'].get('ports')
+        assert not nucleo.get('ports') and not servicios['boleteria'].get('ports')
     if registro:
         assert all('build' not in servicio for servicio in servicios.values())
         assert all(servicio.get('image') for servicio in servicios.values())
@@ -53,7 +65,7 @@ for remoto, escalado, registro in itertools.product([False, True], repeat=3):
     resultados.append({'configuracion': nombre, 'servicios': len(servicios), 'resultado': 'aprobado'})
 
 # Los dominios no importan reglas, repositorios o entidades internas del otro.
-modulos = ['identidad', 'alimentos', 'personal-logistica']
+modulos = ['identidad', 'alimentos', 'personal-logistica', 'entradas']
 for modulo in modulos:
     for archivo in Path(f'App/backend/modulos/{modulo}').rglob('*.ts'):
         for importacion in re.findall(r"from ['\"]([^'\"]+)['\"]", archivo.read_text()):
@@ -63,4 +75,4 @@ for modulo in modulos:
                     assert not destino.is_relative_to(Path(f'App/backend/modulos/{otro}').resolve()), (archivo, importacion)
 
 print(json.dumps(resultados, indent=2))
-print('Configuración resuelta y fronteras entre tres módulos: aprobadas')
+print('Configuración resuelta y fronteras entre cuatro módulos: aprobadas')

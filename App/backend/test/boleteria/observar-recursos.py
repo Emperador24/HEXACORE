@@ -44,7 +44,7 @@ with salida.open('w') as archivo:
         muestra = {'utc': datetime.now(timezone.utc).isoformat()}
         muestra['postgres'] = json.loads(ejecutar(compose + [
             'exec', '-T', 'postgres', 'psql', '-U', 'boleteria_e2e', '-d', 'postgres', '-qAt', '-c', sql]))
-        pidfile = raiz / 'App/backend/.evidencia-e2e/servidor.pid'
+        pidfile = raiz / 'App/backend/.evidencia-e2e/boleteria.pid'
         if pidfile.exists():
             pid = pidfile.read_text().strip()
             if pid.isdigit():

@@ -5,7 +5,7 @@
 // Entradas en 3001, buzón de correo en 3098).
 //
 //   docker compose -f ../../infra/docker-compose.yml --profile servicios up -d
-//   (cd ../../services/ventas && npm run semilla)
+//   (cd ../../backend && npm run semilla:ventas)
 //   flutter test integration_test -d <simulador de iOS>
 import 'dart:convert';
 

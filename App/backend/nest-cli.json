@@ -21,6 +21,15 @@
       "compilerOptions": {
         "tsConfigPath": "tsconfig.build.json"
       }
+    },
+    "boleteria": {
+      "type": "application",
+      "root": "apps/boleteria",
+      "entryFile": "main",
+      "sourceRoot": "apps/boleteria",
+      "compilerOptions": {
+        "tsConfigPath": "tsconfig.build.json"
+      }
     }
   }
 }
