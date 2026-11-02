@@ -3,11 +3,11 @@
 Estado actual de la migración: [plan](../Documentation/Work/Plan_Arquitectura_Migracion_HEXACORE.md)
 y [resultados](../Documentation/Work/ESTADO-MIGRACION.md).
 
-Identidad y Alimentos comparten **un único Núcleo NestJS** en
-[backend](backend/README.md), con Node 22.22.3, manifiesto/lockfile comunes y dos
+Identidad, Alimentos y Personal/Logística comparten **un único Núcleo NestJS** en
+[backend](backend/README.md), con Node 22.22.3, manifiesto/lockfile comunes y tres
 conexiones a sus bases actuales. Las rutas públicas `/api/v1` de cuentas,
-sesiones, administración de cuentas y pedidos se conservan mediante el gateway.
-El servidor directo de Alimentos en 3007 se retira.
+sesiones, administración de cuentas, pedidos y logística se conservan mediante el gateway.
+Los servidores directos antiguos en 3007 y 3016 se retiran.
 
 ```text
 App/
@@ -15,10 +15,11 @@ App/
     apps/nucleo/
     modulos/identidad/
     modulos/alimentos/
+    modulos/personal-logistica/
     compartido/
     test/
   services/       ventas, postventa, acceso-qr, catálogo, cola, pagos,
-                  notificaciones y eventos-emergencias siguen separados
+                  notificaciones siguen separados
   gateway/        Nginx/njs, entrada pública :8080
   frontend/       portales Angular y app Flutter, fuera del workspace backend
   infra/          PostgreSQL, Redis, RabbitMQ y proveedores simulados
@@ -27,7 +28,7 @@ App/
 ```
 
 Este es un paso hacia Núcleo, Boletería, Operación y Trabajador. Pagos conserva
-su servidor temporal; Personal/Logística no se mueve todavía. Los dominios sin
+su servidor temporal; Personal/Logística ya pertenece al Núcleo; Operación sigue pendiente. Los dominios sin
 backend o con pantallas simuladas siguen pendientes. No hay MongoDB desplegado
 ni se consolida aquí la información de las bases de desarrollo.
 

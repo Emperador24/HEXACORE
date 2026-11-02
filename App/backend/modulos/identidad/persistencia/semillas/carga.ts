@@ -51,8 +51,8 @@ const PREFIJO = 'carga-';
 /**
  * Reparto de roles, en porcentaje. Suma 100.
  *
- * `Personal` lleva además su ficha de empleado en el servicio de Logística
- * (CU-018); ver `carga.mjs` de `eventos-emergencias`.
+ * `Personal` lleva además su ficha de empleado en el módulo Personal/Logística
+ * (CU-018); ver `modulos/personal-logistica/scripts/carga.mjs`.
  */
 const REPARTO_ROLES: [NombreRol, number][] = [
   [NombreRol.CLIENTE, 70],
@@ -238,13 +238,13 @@ async function cargar(cuantos: number): Promise<void> {
   }
   console.log(`
   Los correos siguen el patrón ${PREFIJO}0001-cliente@hexacore.com, así que se
-  reconocen de un vistazo y se borran con:  npm run carga -- --limpiar
+  reconocen de un vistazo y se borran con:  npm run carga:identidad -- --limpiar
 
-  Ojo: \`npm run semilla\` borra TODAS las cuentas, y \`iniciar.sh\` la corre al
+  Ojo: \`npm run semilla:identidad\` borra TODAS las cuentas, y \`iniciar.sh\` la corre al
   arrancar. Si vuelves a levantar el sistema, repite esta carga.
 
   Para darles ficha de empleado y turno a las cuentas de Personal:
-    cd ../eventos-emergencias && npm run carga
+    npm run carga:logistica
 `);
 }
 

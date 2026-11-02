@@ -116,7 +116,7 @@ sembrar() {
 # propia base (ADR-01) y nadie las publica todavía por el broker.
 sembrar nucleo semilla:identidad
 sembrar ventas
-sembrar eventos-emergencias seed
+sembrar nucleo semilla:logistica
 sembrar nucleo semilla:alimentos
 sembrar catalogo
 sembrar acceso-qr

@@ -123,3 +123,6 @@ python3 ../gateway/pruebas/gateway.py
 ```
 
 Necesita las cuentas de ejemplo (`cd ../backend && npm run semilla:identidad`).
+
+Identidad, Alimentos y las rutas `/api/v1/logistica` llegan al mismo `nucleo:3002`.
+El servidor separado de Eventos/Emergencias se retiró; esto no implementa Operación.

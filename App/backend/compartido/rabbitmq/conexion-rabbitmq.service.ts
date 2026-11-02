@@ -151,9 +151,8 @@ export class ConexionRabbitMq implements OnApplicationBootstrap, OnApplicationSh
 
       this.log.log(`Conectado a RabbitMQ; ${this.topologias.length} topologías declaradas`);
 
-      // Los consumidores se resuscriben sobre el canal nuevo. En el primer
-      // arranque la lista está vacía y esto no hace nada; en una reconexión es
-      // lo que devuelve la vida a las colas.
+      // Los consumidores se suscriben al primer canal y a cada reconexión,
+      // después de declarar todas las topologías.
       for (const accion of this.alReconectar) {
         try {
           await accion();

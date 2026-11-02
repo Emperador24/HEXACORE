@@ -2,3 +2,5 @@
 CREATE DATABASE pagos_cu011_e2e OWNER cu011_e2e;
 
 CREATE DATABASE identidad_cu011_e2e OWNER cu011_e2e;
+
+CREATE DATABASE eventos_emergencias_nucleo_e2e OWNER cu011_e2e;

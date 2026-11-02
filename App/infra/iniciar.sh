@@ -139,7 +139,7 @@ case "$ROL" in
     gris "  Levantando los servicios de dominio y el API Gateway"
     "${COMPOSE[@]}" --profile servicios up -d $CONSTRUIR \
       --scale ventas="$REPLICAS" \
-      nucleo ventas postventa catalogo notificaciones pagos cola-virtual acceso-qr eventos-emergencias \
+      nucleo ventas postventa catalogo notificaciones pagos cola-virtual acceso-qr \
       api-gateway portal-web-cliente portal-web-admin
     ;;
   todo)
@@ -176,7 +176,7 @@ contenedor_de() {
 
 if [[ "$ROL" != "datos" ]]; then
   titulo "Esperando a que los servicios respondan"
-  for servicio in nucleo eventos-emergencias ventas postventa catalogo \
+  for servicio in nucleo ventas postventa catalogo \
                   notificaciones pagos cola-virtual acceso-qr \
                   api-gateway portal-web-cliente portal-web-admin; do
     id="$(contenedor_de "$servicio")"
@@ -379,7 +379,7 @@ if [[ "$DEMO" == "si" && "$ROL" != "datos" ]]; then
     # Ventas crea las entradas que la reventa publica.
     migrar postventa || true
     migrar catalogo || true
-    migrar eventos-emergencias || true
+    migrar nucleo migracion:logistica:correr || true
 
     gris "  Sembrando datos"
     sembrar nucleo semilla:identidad
@@ -390,7 +390,7 @@ if [[ "$DEMO" == "si" && "$ROL" != "datos" ]]; then
     sembrar catalogo
     # La de logística va después de la de administración a propósito: da de alta
     # a cada empleado sobre la cuenta que aquella acaba de crear.
-    sembrar eventos-emergencias seed
+    sembrar nucleo semilla:logistica
     sembrar nucleo semilla:alimentos
     # Y el inventario de Redis después de la semilla, que es de donde sale.
     preparar_inventario_pedidos

@@ -3,6 +3,8 @@ import { resolve } from 'node:path';
 // Destinos fijos del proyecto hexacore-nucleo-e2e. Sobrescribir antes de importar
 // AppModule/DataSource: dotenv no puede redirigir esta suite al ambiente habitual.
 Object.assign(process.env, {
+  DB_HOST: '127.0.0.1', DB_PORT: '15435', DB_USER: 'cu011_e2e', DB_PASSWORD: 'cu011_e2e',
+  DB_NAME: 'eventos_emergencias_nucleo_e2e', PREFIJO_COLAS: 'nucleo-e2e.',
   NODE_ENV: 'test', PUERTO: '13087', POSTGRES_HOST: '127.0.0.1', POSTGRES_PUERTO: '15435',
   POSTGRES_USUARIO: 'cu011_e2e', POSTGRES_CONTRASENA: 'cu011_e2e',
   POSTGRES_BD_PEDIDOS: 'alimentos_cu011_e2e', POSTGRES_BD_ADMINISTRACION: 'identidad_cu011_e2e',

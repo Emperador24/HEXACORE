@@ -1,5 +1,5 @@
 import { cargarConfiguracionProceso } from '../../../../compartido/config/configuracion';
-import { cargarClavePublica, ClavePublica } from './clave-publica';
+import { cargarClavePublica, ClavePublica } from '../../../../compartido/seguridad/clave-publica';
 
 /** Configuración de alimentos: token propio y base actual; el proceso se configura en compartido/config. */
 

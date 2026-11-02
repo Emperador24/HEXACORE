@@ -2,7 +2,7 @@
   "name": "hexacore-backend",
   "version": "0.1.0",
   "private": true,
-  "description": "Workspace backend: Núcleo modular (Identidad y Alimentos)",
+  "description": "Workspace backend: Núcleo modular (Identidad, Alimentos y Personal/Logística)",
   "scripts": {
     "build": "nest build nucleo",
     "start": "nest start nucleo",
@@ -30,7 +30,12 @@
     "test:imagen:infra": "docker compose -p hexacore-nucleo-e2e -f test/docker-compose.e2e.yml -f test/docker-compose.imagen.yml up -d --build --wait",
     "test:imagen": "node test/comprobar-imagen.cjs",
     "test:cov:e2e": "c8 --all --src=modulos --src=apps --src=compartido --exclude=\"**/*.spec.*\" --exclude=\"**/migraciones/**\" --exclude=\"**/semillas/**\" --reporter=text-summary --reporter=html npm run test:e2e",
-    "verificar:infra": "python3 test/comprobar-configuracion.py"
+    "verificar:infra": "python3 test/comprobar-configuracion.py",
+    "migracion:logistica:correr": "typeorm-ts-node-commonjs migration:run -d modulos/personal-logistica/persistencia/data-source.ts",
+    "migracion:logistica:revertir": "typeorm-ts-node-commonjs migration:revert -d modulos/personal-logistica/persistencia/data-source.ts",
+    "migracion:logistica:estado": "typeorm-ts-node-commonjs migration:show -d modulos/personal-logistica/persistencia/data-source.ts",
+    "semilla:logistica": "node modulos/personal-logistica/scripts/seed.mjs",
+    "carga:logistica": "node modulos/personal-logistica/scripts/carga.mjs"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.6",
@@ -58,8 +63,10 @@
     "@types/express": "^5.0.3",
     "@types/jest": "^30.0.0",
     "@types/node": "^22.18.1",
+    "@types/supertest": "7.2.1",
     "c8": "^12.0.0",
     "jest": "^30.1.3",
+    "supertest": "7.2.2",
     "ts-jest": "^29.4.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.2"

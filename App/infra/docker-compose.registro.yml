@@ -61,10 +61,6 @@ services:
     build: !reset null
     image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-notificaciones:${HEXACORE_ETIQUETA:-develop}
 
-  eventos-emergencias:
-    build: !reset null
-    image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-eventos-emergencias:${HEXACORE_ETIQUETA:-develop}
-
   pasarela:
     build: !reset null
     image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-pasarela:${HEXACORE_ETIQUETA:-develop}

@@ -25,16 +25,17 @@ for remoto, escalado, registro in itertools.product([False, True], repeat=3):
     configuracion = json.loads(subprocess.check_output(
         comando + ['config', '--format', 'json'], env=entorno, text=True))
     servicios = configuracion['services']
-    assert 'nucleo' in servicios and 'autenticacion' not in servicios and 'alimentos' not in servicios
-    assert len(servicios) == (12 if remoto else 17), (nombre, len(servicios))
+    assert 'nucleo' in servicios and 'autenticacion' not in servicios and 'alimentos' not in servicios and 'eventos-emergencias' not in servicios
+    assert len(servicios) == (11 if remoto else 16), (nombre, len(servicios))
     nucleo = servicios['nucleo']
     variables = nucleo['environment']
     assert variables['POSTGRES_BD_ADMINISTRACION'] == 'administracion'
     assert variables['POSTGRES_BD_PEDIDOS'] == 'pedidos'
+    assert variables['DB_NAME'] == 'eventos_emergencias'
     assert variables['PAGOS_URL'] == 'http://pagos:3008/api/v1'
     assert 'nucleo' in servicios['api-gateway']['depends_on']
     if remoto:
-        assert variables['POSTGRES_HOST'] == variables['REDIS_HOST'] == '192.0.2.10'
+        assert variables['POSTGRES_HOST'] == variables['DB_HOST'] == variables['REDIS_HOST'] == '192.0.2.10'
         assert str(variables['REDIS_PUERTO']) == '6380'
         assert '192.0.2.10' in variables['RABBITMQ_URL']
         assert '192.0.2.10' in variables['CORREO_PROVEEDOR_URL']
@@ -52,14 +53,14 @@ for remoto, escalado, registro in itertools.product([False, True], repeat=3):
     resultados.append({'configuracion': nombre, 'servicios': len(servicios), 'resultado': 'aprobado'})
 
 # Los dominios no importan reglas, repositorios o entidades internas del otro.
-for modulo in ['identidad', 'alimentos']:
-    otro = 'alimentos' if modulo == 'identidad' else 'identidad'
-    frontera = Path(f'App/backend/modulos/{otro}').resolve()
+modulos = ['identidad', 'alimentos', 'personal-logistica']
+for modulo in modulos:
     for archivo in Path(f'App/backend/modulos/{modulo}').rglob('*.ts'):
         for importacion in re.findall(r"from ['\"]([^'\"]+)['\"]", archivo.read_text()):
             if importacion.startswith('.'):
                 destino = (archivo.parent / importacion).resolve()
-                assert not destino.is_relative_to(frontera), (archivo, importacion)
+                for otro in set(modulos) - {modulo}:
+                    assert not destino.is_relative_to(Path(f'App/backend/modulos/{otro}').resolve()), (archivo, importacion)
 
 print(json.dumps(resultados, indent=2))
-print('Configuración resuelta y fronteras entre módulos: aprobadas')
+print('Configuración resuelta y fronteras entre tres módulos: aprobadas')

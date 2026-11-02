@@ -86,7 +86,6 @@ jobs:
           - pagos
           - cola-virtual
           - notificaciones
-          - eventos-emergencias
     defaults:
       run:
         working-directory: App/services/${{ matrix.servicio }}
@@ -121,35 +120,6 @@ jobs:
       - name: Pruebas unitarias
         run: npm test
 
-      - name: Compilar
-        run: npm run build
-
-  # --------------------------------------------------------------------------
-  # Servicio de Eventos/Emergencias (CU-018). Sus 20 pruebas son de integración
-  # y necesitan PostgreSQL y RabbitMQ (`npm run test:e2e`), así que aquí solo se
-  # compila y se pasa el lint. `npm test` corre y queda en verde aunque no haya
-  # unitarias, para que el pipeline no dé rojo por una ausencia conocida.
-  # --------------------------------------------------------------------------
-  logistica:
-    name: Servicio eventos-emergencias
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: App/services/eventos-emergencias
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-          cache-dependency-path: App/services/eventos-emergencias/package-lock.json
-
-      - run: npm ci
-      - name: Lint
-        run: npm run lint
-      - name: Pruebas unitarias
-        run: npm test
       - name: Compilar
         run: npm run build
 
@@ -204,11 +174,6 @@ jobs:
         working-directory: App/services/acceso-qr
         run: npm ci && npm run test:integracion
 
-      # Estas son e2e de Vitest contra su propia base, no guiones de Python.
-      - name: Servicio de Eventos y Emergencias (CU-017, CU-018)
-        working-directory: App/services/eventos-emergencias
-        run: npm ci && npm run test:e2e
-
       # Sin esto, un fallo deja solo "exit 1" y hay que reproducirlo a ciegas.
       - name: Registros de los contenedores si algo falló
         if: failure()
@@ -221,7 +186,7 @@ jobs:
         run: docker compose -f docker-compose.yml --profile servicios down -v
 
   # --------------------------------------------------------------------------
-  # CU-011 sobre un proyecto exclusivo: Alimentos -> Pagos -> pasarela.
+  # Núcleo: CU-011, CU-017/CU-018 y convivencia en un proyecto exclusivo.
   # No usa iniciar.sh ni la infraestructura del job de integración general.
   # --------------------------------------------------------------------------
   nucleo:
@@ -247,7 +212,7 @@ jobs:
         env:
           REDIS_INVENTARIO_PRUEBAS_URL: redis://127.0.0.1:16382
         run: npm test -- --runInBand
-      - name: Ejecutar CU-011 y convivencia dos veces
+      - name: Ejecutar integración de los tres módulos dos veces
         run: |
           npm run test:e2e
           npm run test:e2e
@@ -255,12 +220,21 @@ jobs:
         run: npm run verificar:infra
       - name: Construir y arrancar imágenes aisladas
         run: npm run test:imagen:infra
-      - name: Smoke de gateway y Núcleo
-        run: npm run test:imagen
+      - name: Smoke de gateway y Núcleo dos veces
+        run: |
+          npm run test:imagen
+          npm run test:imagen
       - name: Registros si falla
         if: failure()
         run: docker compose -p hexacore-nucleo-e2e -f test/docker-compose.e2e.yml -f test/docker-compose.imagen.yml logs --tail 100
-      - name: Limpiar solo recursos de CU-011
+      - name: Conservar logs del Núcleo compilado
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleo-e2e-logs
+          path: App/backend/.evidencia-e2e/
+          include-hidden-files: true
+      - name: Limpiar solo recursos de Núcleo E2E
         if: always()
         run: npm run test:e2e:limpiar
 

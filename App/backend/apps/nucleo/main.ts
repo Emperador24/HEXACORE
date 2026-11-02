@@ -13,7 +13,7 @@ async function bootstrap(): Promise<void> {
   app.enableShutdownHooks();
   if (config.entorno !== 'production') {
     const documento = SwaggerModule.createDocument(app,
-      new DocumentBuilder().setTitle('Núcleo: Identidad y Alimentos').setVersion('0.1.0').addBearerAuth().build());
+      new DocumentBuilder().setTitle('Núcleo modular').setVersion('0.1.0').addBearerAuth().build());
     SwaggerModule.setup(`${config.prefijoApi}/docs`, app, documento);
   }
   await app.listen(config.puerto);

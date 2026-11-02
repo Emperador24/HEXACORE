@@ -1,25 +1,25 @@
 # Estado de migración de HEXACORE
 
 Fecha de revisión: **1 de noviembre de 2026**, America/Bogota.
-Alcance actualizado: diagnóstico, F05, CU-011 aislado y **primer cambio
-estructural: workspace backend con Identidad y Alimentos en Núcleo** (§15).
-Base de esta etapa: `25a4fd3a98e3ba69ae8642d53253720f73e0621a`, rama
-`feature/sebastian-arquitectura`. Se conserva aparte el archivo local de Pedidos.
+Alcance actualizado: **Núcleo con Identidad, Alimentos y Personal/Logística**
+(§16), sobre `8fff023cf5b5b8ce88e5e279e75165c46dfc8fa9`, rama
+`feature/sebastian-arquitectura`. Se preserva aparte el archivo local de Pedidos.
 
-**Resultado vigente:** un único proceso NestJS atiende cuentas, sesiones,
-administración de cuentas y pedidos en `/api/v1`. Las dos bases actuales y sus
-cinco migraciones permanecen separadas e intactas. **311 pruebas trasladadas
-aprobadas** y **9/9 de integración real, repetidas**, con login auténtico,
-CU-011 completo bajo los cinco escenarios existentes y SIGTERM comprobado.
-Núcleo y gateway se construyeron y arrancaron como imágenes aisladas; el smoke
-por Nginx/njs pasó. Se validaron las ocho combinaciones Compose. La publicación
-de imágenes en GHCR, el arranque remoto y la integración de todo el sistema
-siguen pendientes. **F12 no se implementó**.
+**Resultado vigente:** un solo proceso Nest atiende cuentas/sesiones/admin,
+pedidos y `/api/v1/logistica`. Conserva **tres bases y siete migraciones**, sin
+consolidar datos ni activar synchronize. Se ejecutaron **311 pruebas previas**
+y **73 E2E en cuatro suites, dos veces**, sin omisiones; incluye los 59 casos
+originales CU-017/CU-018 y sus 197 aserciones. Imagen y gateway se construyeron,
+arrancaron y aprobaron cuatro smoke (dos sobre la imagen final) con los tres módulos en el mismo upstream.
+Las ocho mezclas Compose pasan: 16 servicios locales/11 remotos.
 
-Las secciones 1–14 conservan el diagnóstico/evidencia histórica de sus commits;
-las rutas, cantidades y comandos vigentes de este traslado están en §15 y
-`App/backend/README.md`. Un hallazgo previo se actualiza solo si se comprobó
-su reparación; no se presenta la migración global como terminada.
+F13 se observó con consultas/bloqueos/conexiones y recursos propios; no se
+reprodujo y sigue pendiente de diagnóstico prolongado, sin elevar límites.
+**F12 permanece pendiente**. F14 registra el listado global de notificaciones
+existente. No se implementa Operación, planificación completa ni proveedores.
+Publicación GHCR, CI/CD remotos e integración general permanecen pendientes.
+Las secciones 1–15 conservan evidencia histórica; comandos y alcance vigentes
+están en §16 y `App/backend/README.md`.
 
 El objetivo confirmado es **Núcleo modular, Boletería, Operación y Trabajador**:
 tres aplicaciones de negocio y un trabajador técnico, con Pagos reutilizable
@@ -65,7 +65,7 @@ Son auxiliares de esta sesión, no un requisito para reproducir los comandos.
 | ADR-12 histórico | Núcleo, Entradas y Eventos/Emergencias. Sigue apareciendo como arquitectura desplegada en párrafos del SAD y scripts; ya no representa las diez aplicaciones presentes |
 | ADR-14 documentado | 7 microservicios + 7 servicios de dominio, Pagos como servidor, base central por esquemas para dominios, escalado y réplica de lectura. No equivale al objetivo acordado de cuatro programas |
 | ADR-15 documentado | JWT local en gateway, turno obligatorio, QR mediante proyección y outbox, webhook HMAC, eventos de publicación/cancelación de eventos. Parte está implementada y parte pendiente |
-| Checkout implementado | **Histórico: 10 aplicaciones NestJS; ahora 9**, al reunir dos en Núcleo (§15), gateway Nginx/njs, 2 portales Angular y 1 app Flutter. Compose base: **18 servicios**, contando 5 piezas de datos/simuladores y las interfaces. Hay 8 bases con modelos de aplicaciones y otras 2 reservadas; una instancia PostgreSQL, Redis y RabbitMQ. Sin MongoDB desplegado, réplica de lectura, Kubernetes, CDN ni buscador dedicado |
+| Checkout implementado | **Histórico: 10 aplicaciones NestJS; ahora 8**, al reunir Identidad/Alimentos/Personal en Núcleo (§16), gateway Nginx/njs, 2 portales Angular y 1 app Flutter. Compose base: **16 servicios** actuales (18 en el diagnóstico inicial), contando 5 piezas de datos/simuladores y las interfaces. Hay 8 bases con modelos de aplicaciones y otras 2 reservadas; una instancia PostgreSQL, Redis y RabbitMQ. Sin MongoDB desplegado, réplica de lectura, Kubernetes, CDN ni buscador dedicado |
 | Interfaz | Existen tanto clientes HTTP reales como pantallas con listas locales, retardos y placeholders. No se contabilizan estas últimas como backend implementado |
 | Destino acordado | Núcleo: identidad, eventos/recintos, alimentos, parqueaderos, personal/logística, proveedores, finanzas e informes. Boletería: cartelera, fila, compra, promociones, cancelación, reventa y acceso QR. Operación: monitoreo, incidentes y evacuaciones. Trabajador: notificaciones y tareas pendientes. Pagos: módulo reutilizable |
 | Datos objetivo confirmados por el plan | Una base lógica `hexacore`, esquemas por módulo, propiedad de reglas y APIs internas; registro financiero común. Las bases separadas del checkout se mantienen solo durante la transición |
@@ -138,7 +138,7 @@ concreto inspeccionado, no certificación de todos los alternos del CU.
 |---|---|---|
 | `backend/modulos/identidad`, Núcleo :3002 | `AdministracionModule`, cuentas/perfil, sesiones/renovación/revocación, administración de cuentas, publicador de correos, persistencia y seguridad. Roles base y asociaciones; sin CRUD completo de roles/recintos/proveedores/finanzas/reportes | Identidad del Núcleo |
 | `backend/modulos/alimentos`, mismo Núcleo :3002 | `PedidosModule`: catálogo, menú, checkout, inventario/reservas, pagos del pedido y recepción. Consulta/edición acotada de productos, checkout multi-producto, expiración, cobro, confirmación/QR y listado de pedidos | Alimentos del Núcleo; conservar sus reglas propias de pago |
-| `services/eventos-emergencias` :3016 | `TurnosAsistenciaModule`: empleados, zonas/asignación operativa, turnos, solicitudes de cambio, asistencia y notificaciones persistidas por mensajes. No contiene un motor de evacuaciones ni CRUD de incidentes | Personal/logística al Núcleo; vistas/consulta de notificaciones hacia Trabajador mediante contrato definido. Operación solo recibirá funcionalidad que exista o se construya en otra entrega |
+| `backend/modulos/personal-logistica`, mismo Núcleo :3002 | `TurnosAsistenciaModule`: empleados, zonas/asignación operativa, turnos, solicitudes de cambio, asistencia y notificaciones persistidas por mensajes. No contiene un motor de evacuaciones ni CRUD de incidentes | Personal/logística al Núcleo; vistas/consulta de notificaciones hacia Trabajador mediante contrato definido. Operación solo recibirá funcionalidad que exista o se construya en otra entrega |
 | `services/ventas` :3001 | `VentaModule`, `ComunModule`: reserva/compra, cupones, cancelación/reembolso, dueño de entradas e historial, API interna, expiración y outbox/consumo de ingresos | Boletería |
 | `services/catalogo` :3004 | `CarteleraModule`: lectura y filtros sobre tablas propias; proyección cargada por semilla, sin consumidor de eventos de publicación/cancelación | Cartelera de Boletería |
 | `services/cola-virtual` :3009 | `ColaModule`: fila, aforo de compradores, turno con TTL y consumo único mediante Lua/Redis | Fila de Boletería |
@@ -536,15 +536,15 @@ siguen indicadas. Se distingue fallo reproducido de riesgo observado por lectura
 | ID | Evidencia | Consecuencia |
 |---|---|---|
 | F01, reproducido | `notificaciones`: `npm test -- --runInBand` → exit 1, `No tests found`; CI lo incluye en la matriz de backends | La línea base CI ya tiene un gate rojo; no atribuirlo a una futura consolidación |
-| F02, reproducido | `eventos-emergencias`: `tsc --noEmit` → `test/personal-operativo.e2e-spec.ts:8` y `test/turnos-asistencia.e2e-spec.ts:9`, TS2307 `supertest/types`; en este último `:88` y `:1010`, TS2345 string frente a UUID template literal; `vitest.config.e2e.ts:19`, TS2769 opción `all` inexistente en `CoverageOptions` | Lint/build CI no cubren el programa completo de pruebas/configuración. Carga sobre TS 6 y tipos de supertest difiere del resto |
+| F02, **resuelto para el código trasladado (§16)** | `eventos-emergencias`: `tsc --noEmit` → `test/personal-operativo.e2e-spec.ts:8` y `test/turnos-asistencia.e2e-spec.ts:9`, TS2307 `supertest/types`; en este último `:88` y `:1010`, TS2345 string frente a UUID template literal; `vitest.config.e2e.ts:19`, TS2769 opción `all` inexistente en `CoverageOptions` | Lint/build CI no cubren el programa completo de pruebas/configuración. Carga sobre TS 6 y tipos de supertest difiere del resto |
 | F03, inspección + ejecución | `cola-virtual/src/cola/cola.redis.spec.ts`: 10 tests hacen `if (!hayRedis) return`; Jest salió 0 sin Redis | Verde que no acredita Lua, exclusión mutua, TTL ni aforo. Además limpia un evento con UUID fijo si encuentra Redis; siempre aislarlo |
-| F04, reproducido | `eventos-emergencias/vitest.config.ts`: `passWithNoTests: true`; `npm test` → `No test files found, exiting with code 0` | No hay unitarias ejecutadas pese al verde; no sumarlas como aprobadas |
+| F04, **retirado el falso verde de Logística (§16)** | `eventos-emergencias/vitest.config.ts`: `passWithNoTests: true`; `npm test` → `No test files found, exiting with code 0` | No hay unitarias ejecutadas pese al verde; no sumarlas como aprobadas |
 | F05, reproducido y **reparado en configuración** | Antes: Compose remoto referencia `nucleo`, inexistente en base, sin build/image. Después: override para diez backends, sin dependencias a datos locales, con Postventa → Pagos/Ventas y perfil `datos` separado | `config -q` e inspección de configuración resuelta pasan para remoto y remoto+escalado (§13). Arranque real e integración pendientes |
 | F06, **reparado en configuración en §15; publicación pendiente** | Registro cubre los 14 artefactos de CD actuales, anula todos los builds y conserva la clave del gateway. Núcleo ya existe como fuente/contexto. Las ocho mezclas Compose pasan inspección; imagen Núcleo/gateway y JWT se comprobaron en el entorno aislado | No acredita publicación GHCR ni arranque de las imágenes remotas del sistema entero |
 | F07, **CU-011 resuelto y ejecutado** | Configuración/entorno/Compose/instrucciones recuperados en `alimentos/test`; script `test:e2e` disponible. Pruebas/doble propios de Autenticación conservados. Dos corridas: 5/5 aprobadas cada una | El comando independiente `test:integracion` de Pagos que apunta a un script inexistente sigue pendiente; esta suite no depende de él |
 | F08, **CU-011 resuelto; Ventas pendiente** | Alimentos usa `POSTGRES_BD_PEDIDOS`, `PAGOS_URL` y servidor Pagos real aislado, con libro propio y pasarela real de prueba. Ventas conserva su Compose sin Pagos y entorno antiguo | No ejecutar la suite E2E de Ventas como si estuviera corregida. CU-011 sí es autocontenida (§14) |
 | F09, inspección | `infra/iniciar.sh`: `migrar ... || true`, semillas con errores silenciados; rama SQL carga solo cuatro volcados. `autenticacion/src/persistencia/semillas` trunca usuarios. Dockerfiles también migran | Un mensaje final «en marcha» no demuestra esquema/datos completos. Un arranque normal puede reemplazar datos de desarrollo |
-| F10, inspección | Sonda Eventos/Emergencias consulta `/api/v1/turnos`, pero controladores están bajo `/api/v1/logistica`; acepta cualquier 2xx/4xx. Compose declara `DB_SYNCHRONIZE=true`, código fija `false`; bootstrap lee `PORT`, Compose define `PUERTO` | La sonda puede aprobar un 404 y no acredita acceso a BD; la configuración contiene opciones inefectivas. El puerto actual coincide por default, no por esa variable |
+| F10, **servidor/sonda retirados al incorporar Logística (§16)** | Sonda Eventos/Emergencias consulta `/api/v1/turnos`, pero controladores están bajo `/api/v1/logistica`; acepta cualquier 2xx/4xx. Compose declara `DB_SYNCHRONIZE=true`, código fija `false`; bootstrap lee `PORT`, Compose define `PUERTO` | La sonda puede aprobar un 404 y no acredita acceso a BD; la configuración contiene opciones inefectivas. El puerto actual coincide por default, no por esa variable |
 | F11, inspección | Contrato `shared/api/ventas.openapi.json` sigue agregando cartelera, QR y reventa; `contrato-api.spec.ts` solo inspecciona ese JSON. `exportar-openapi.ts` crea únicamente el AppModule actual de Ventas | Las pruebas del JSON pasan sin demostrar paridad con los cuatro servicios. Regenerarlo sin diseñar agregación perdería operaciones externas |
 | F12, inspección | Pagos publica `PAGO_APROBADO/PAGO_RECHAZADO`; no hay consumidor en dominios. Alimentos conserva resultado `FALLIDA` como pago incierto y bloquea nuevo cobro | Un webhook que resuelve el libro de Pagos no finaliza por sí mismo compra/pedido incierto. Pendiente de negocio previo; no implementarlo como parte de la mudanza |
 
@@ -641,7 +641,7 @@ procesos sin consolidar datos ni cerrar todas las deudas de la etapa 1.
 |---|---|---|
 | 0. Base, inventario y decisión escrita | Rama y HEAD confirmados, inventario realizado y plan contrastado. El nuevo ADR y ajustes de SAD/SRS siguen pendientes | Punto de partida identificado, trabajo local conservado, decisión y límites registrados, inventario verificable sin equiparar pantallas y backend |
 | 1. Base comprobable | **F05 reparado en configuración (§13) y CU-011 aislado ejecutado dos veces (§14)**. Pendientes Compose registro/F06, pruebas de Notificaciones, tipos de Logística y cableado E2E de Ventas | Build y pruebas seleccionadas coherentes; arranque general desde fuente e imágenes verificado; fallos previos y omisiones explícitos. Estos cambios no cierran por sí solos toda la etapa |
-| 2. Workspace y Núcleo existente | **Parcial: Identidad y Alimentos reunidos y verificados (§15)**. Personal/Logística y otras entradas quedan fuera por alcance explícito; se conservan bases separadas | Contratos de cuentas, alimentos, cambios de turno y asistencia preservados; sin consumidores o timers duplicados. Sin fingir CU aún inexistentes |
+| 2. Workspace y Núcleo existente | **Identidad, Alimentos y Personal/Logística reunidos y verificados (§§15–16)**. Los otros programas/funciones pendientes no se crean como esqueletos; se conservan bases separadas | Contratos de cuentas, alimentos, cambios de turno y asistencia preservados; sin consumidores o timers duplicados. Sin fingir CU aún inexistentes |
 | 3. Reunir Boletería | Integrar Ventas/Catálogo/Cola/Postventa/QR. Después de reunir procesos, reconciliar sobre copia los datos críticos de entrada/propiedad/reventa/ingreso, sustituir RPC y retirar copias solo tras validación | Flujos de CU-001–006; 50 compradores sobre una publicación, doble escaneo y carrera transferencia/ingreso; QR anterior inválido tras transferencia confirmada |
 | 4. Pagos, trabajador y datos consolidados | Módulo común y único registro financiero, endpoint público único de webhook, resultado/trabajo durable y finalización idempotente. Migración repetible sobre copia a PostgreSQL `hexacore` por esquemas; drenar o migrar mensajes, reservas y pendientes | Identificadores/hashes/sesiones/estados/historiales/importes/QR/referencias conciliados y reversión probada. Reinicio entre pago/confirmación, callback duplicado/adelantado, proveedor lento, RabbitMQ caído y tareas repetidas sin doble cobro ni pérdida |
 | 5. Operación mínima real | Monitoreo/incidentes/evacuación, contratos de lectura, protocolos, recepción/acuse y prioridad. Requiere alcance funcional posterior; no se implementa aquí | Activación con Núcleo detenido y sesión vigente bajo las dependencias declaradas; pruebas de fallo de instancia/proveedor y medición de tablero y entrega a dispositivos |
@@ -1224,8 +1224,8 @@ corregido aprobado. No se ocultan esos intentos dentro del resultado final.
 
 Cierre de este hito: objetivo de Identidad/Alimentos en un solo proceso
 comprobado; el gate completo de la etapa 2 del plan sigue parcial porque incluye
-otros módulos. Siguiente paso estructural: planificar Personal/Logística,
-resolviendo antes su frontera Nest 12/TS 6 y pruebas pendientes. Investigar F13
+otros módulos. Seguimiento: Personal/Logística se incorpora y su frontera Nest/TS se resuelve
+en §16; se conserva este registro del hito anterior. Investigar F13
 en observación prolongada, sin atribuir al traslado las deudas previas; Pagos
 como módulo, F12, Boletería y consolidación de datos continúan en sus etapas.
 
@@ -1233,3 +1233,246 @@ Commit principal: `refactor(backend): integrar identidad y alimentos en nucleo m
 Archivos seleccionados explícitamente; trabajo local de Pedidos excluido.
 La publicación del código se realiza en origin/feature/sebastian-arquitectura;
 la publicación de imágenes y ejecución de CI/CD remoto no se incluyen.
+
+## 16. Personal/Logística dentro del mismo Núcleo
+
+Base: **8fff023cf5b5b8ce88e5e279e75165c46dfc8fa9**, rama
+`feature/sebastian-arquitectura`. Plan e instrucciones aplicables revisados;
+no aparecieron AGENTS.md nuevos. Estado inicial: solo el archivo local no
+rastreado de Pedidos. Se verifican su SHA-256 y el del plan sin cambios.
+
+### Inventario conservado y límites funcionales
+
+La fuente única queda en `App/backend/modulos/personal-logistica`:
+`personal-logistica.module.ts`, `comun` (configuración/guard de sesión),
+`persistencia` (conexión/historial) y `turnos-asistencia` (DTO, entidades,
+controladores, servicios, publicación/consumo). Los scripts seed/carga existentes
+se trasladan como comandos explícitos, sin ejecutarlos.
+
+| Rutas existentes bajo /api/v1/logistica | Reglas existentes preservadas |
+|---|---|
+| POST/GET empleados, GET empleados/yo | Alta/listado supervisado, ficha activa ligada a usuario de Identidad y turno vigente |
+| POST/GET zonas, GET personal-disponible | Zonas, rol requerido, cobertura/déficit; disponibilidad general actual global, sin filtro efectivo por evento/franja |
+| POST zonas/:zonaId/asignaciones, PATCH turnos/:turnoId/reasignar | Rol, solapamientos, reemplazo sugerido, máximo 12 h por turno/14 h diarias; reasignación de turnos de zona |
+| POST/GET turnos | Creación supervisada; empleado consulta los propios, sin ficha devuelve ninguno |
+| POST turnos/:turnoId/solicitudes-cambio, GET solicitudes-cambio | Solicitud propia o de supervisor, reemplazo por rol/horario/horas, filtrado de estado y de dueño |
+| PATCH solicitudes-cambio/:solicitudId/revisar | Aprobación/rechazo/bloqueo por horas, no doble revisión; supervisor sale del token |
+| POST asistencia/entrada, POST asistencia/salida, GET asistencia | Credencial/turno/evento, anomalías, duplicados, horas calculadas y timestamp/idempotencyKey de sincronización; consulta propia o supervisada |
+| GET notificaciones | Notificaciones persistidas tras recepción RabbitMQ; listado global preexistente para sesiones válidas, F14 |
+
+CU-017/CU-018 comparten personal, cambios y asistencia con CU-007–009. Se
+conserva la implementación compartida; no se crean entidades/reglas paralelas.
+Alta/listado no equivalen a administración completa de empleados; sincronizar
+registros con timestamp no acredita un protocolo offline completo. No se
+implementan planificación integral, proveedores, monitoreo, incidentes ni
+evacuaciones. Retirar el nombre Eventos/Emergencias no implementa Operación.
+
+### Compatibilidad y dependencias
+
+Se adapta la implementación al **Nest core/common 11.2.8, Config 4, JWT 11,
+Swagger 11, TypeORM 1.1.2/adaptador Nest 12.0.2 y TS 5.9.3** ya probados en
+el workspace, con **Node 22.22.3**. El número mayor del adaptador TypeORM no
+representa otra familia de core Nest. No se incorporan Nest 12, TS 6, Vitest,
+Vite, oxlint, uuid ni otro runner/compilador al proceso. Imports relativos ESM
+`.js` pasan a los imports CommonJS del workspace; se elimina import.meta de los
+fixtures y de la carga técnica de clave, sin reescribir reglas de negocio.
+
+Únicas dependencias nuevas: **Supertest 7.2.2 y @types/supertest 7.2.1, dev**,
+las versiones del lockfile anterior, necesarias para conservar los tests HTTP.
+Se usan JwtService y las claves E2E existentes para los JWT fixture. Ninguna
+versión de paquete previamente resuelto se actualizó. npm 11 deduplicó una
+entrada anidada de Webpack que npm 10 de la imagen exige; se restauró exactamente
+la entrada/version 5.112.2 del commit base. `npm ci` en host (npm 11.6.3) y
+Docker (npm 10.9.8) quedan comprobados después de esa reparación.
+
+F02 se resuelve adaptando tipos, imports/arranque y UUID string explícito; no se
+excluyen tests del chequeo. La opción de cobertura Vitest `all` incompatible y
+`passWithNoTests` se retiran con el runner antiguo. F04 deja de contar como gate
+verde de Logística: se ejecutan sus **59 pruebas reales**, sin inventar unitarias.
+
+### Tres conexiones y composición
+
+- `NucleoModule` importa una vez `PersonalLogisticaModule`, junto a Identidad y
+  Alimentos. Un único main/listener conserva el pool libuv y sus contratos.
+- Configuración propia `CONFIGURACION_PERSONAL_LOGISTICA`; se mantienen DB_*
+  (DB_NAME=eventos_emergencias). Si faltan las coordenadas, usa POSTGRES_*
+  comunes, sin confundir el nombre de base con Identidad o Alimentos.
+- Conexión TypeORM **personal-logistica** en forRootAsync, opciones de la
+  fábrica, forFeature y todas las inyecciones de repositorios. Las **siete
+  migraciones** (3+2+2) se compararon byte por byte con la base: intactas;
+  synchronize=false y migrationsRun=false también en los tests.
+- Se eliminan los registros duplicados de JWT, Redis y SesionValida del módulo
+  anterior. Redis usa el proveedor del proceso; la carga de clave pública es
+  una implementación técnica compartida con Alimentos. La guarda de Logística
+  conserva su contrato y el contexto local de autorización.
+- Se sustituye el par de conexiones propias de publicación/consumo por la
+  conexión RabbitMQ del Núcleo. Tres topologías; una declaración de cola/DLQ
+  `turnos.cambios` con el mismo PREFIJO_COLAS y argumentos de dead lettering.
+  El publicador usa el canal confirm compartido, con el mismo payload persistente.
+- El consumidor mantiene prefetch=1, ack/nack/reintentos y deduplicación en
+  memoria. Se suscribe al arranque/reconexión; al apagar cancela recepción y
+  espera su trabajo antes de que el propietario cierre el canal/conexión.
+  No se añade outbox ni deduplicación durable como parte del traslado.
+- Salud única: `/api/v1/salud` añade `dependencias.postgres.logistica`. Las tres
+  bases y Redis determinan 200/503; RabbitMQ se informa como antes.
+
+La supervisión conserva las reglas actuales: ficha **activa** con rol local
+`Jefe de personal` aunque la cuenta solo lleve Personal, o rol de cuenta
+Organizador/Administrador. No se sustituye esta política por Administrador
+como permiso genérico. Se comprueba dueño en solicitudes, turnos y asistencia.
+Los puestos de control marcan la credencial escaneada, como antes.
+
+### Infraestructura, retirada y disponibilidad
+
+Se retira el paquete/servidor independiente `services/eventos-emergencias`, su
+Dockerfile/Compose, configuración Vitest y prehook de truncado. No se borran sus
+artefactos ignorados ni se detiene ningún contenedor habitual. Sus scripts/API
+existentes quedan en el módulo, con referencias actualizadas.
+
+Compose base añade DB_* a Núcleo y retira el servicio anterior; gateway enruta
+`/logistica` a `nucleo:3002`. Overrides remoto/registro eliminan las referencias
+retiradas; escalado continúa válido sin ampliar garantías entre réplicas. Scripts
+operativos apuntan a migracion:logistica:correr y semilla:logistica del workspace,
+conservando sus deudas previas (F09); no se ejecutaron esos scripts aquí.
+
+CI retira el job/matriz de Eventos/Emergencias y el E2E antiguo con prehook;
+las pruebas reales se ejecutan en el job Núcleo. CD retira esa imagen. Registro
+queda coherente con **13 artefactos** (8 backends, gateway, 2 portales y 2
+simuladores). Las ocho combinaciones config -q/JSON y fronteras pasan:
+**16 servicios locales, 11 con datos remotos**, sin builds en registro y con
+montaje de clave pública del gateway. Las DB_* remotas apuntan a HOST_POSTGRES.
+
+Se construyeron y arrancaron imágenes locales de Núcleo/gateway; el main aplica
+los tres historiales en las bases exclusivas. Cuatro smoke (dos sobre la imagen final) probaron mediante
+Nginx/njs login real, perfil, validación de checkout, ficha Personal y revocación;
+las tres familias devuelven el mismo X-Servidor :3002. **No se publicaron imágenes
+en GHCR ni se ejecutó CI/CD remoto**; los commits del código sí se publican en
+la rama pedida. F10 pierde su antigua sonda que aceptaba 404 al retirar el servidor;
+no se presenta una nueva aplicación Operación como disponible.
+
+### Pruebas y comandos ejecutados
+
+Proyecto exclusivo **hexacore-nucleo-e2e**, inicialmente sin recursos, con
+PostgreSQL/Redis/RabbitMQ, Pagos actual y pasarela simulada. Se añade solo la
+base **eventos_emergencias_nucleo_e2e**, usuario cu011_e2e, al PostgreSQL de ese
+proyecto. Se mantiene el resto de puertos/bases E2E de §15; vhost propio cu011,
+PREFIJO_COLAS=nucleo-e2e. No se usó PostgreSQL habitual, iniciar.sh, semillas ni
+el prehook anterior. Las limpiezas usan UUID nuevos y orden de FK; no TRUNCATE,
+FLUSHDB, purgas ni recreación de bases entre corridas.
+
+| Comprobación | Resultado realmente ejecutado |
+|---|---|
+| Tipos del workspace, incluyendo las pruebas trasladadas | Aprobados, exit 0 |
+| Build de Núcleo y prehooks E2E | Aprobados, exit 0 |
+| Unitarias previas | **311/311, 18 suites**, incluye 33 Redis real; 0 omitidas |
+| CU-017 original | **13 casos, 47 aserciones** conservados literalmente |
+| CU-018 original | **46 casos, 150 aserciones** conservados literalmente |
+| Convivencia Logística añadida | **5 casos**: Personal/Jefe con login real, asignación/notificación, restricciones ajenas, tres bases/siete migraciones, logout |
+| Identidad/Alimentos previos | **9 casos** conservados, incluidos los cinco CU-011 y cierre de proceso |
+| Integración corrida 1 | **73/73, 4 suites**, exit 0, 23,046 s |
+| Repetición misma infraestructura, sin reiniciar/vaciar | **73/73, 4 suites**, exit 0, 54,801 s; añade observación de un único consumidor y su cierre |
+| Imagen Núcleo/gateway y smoke | Build/arranque saludables; **cuatro smoke aprobados**, dos tras los últimos ajustes de referencias/Swagger, sin vaciar entre ellos |
+| Compose y fronteras | Ocho mezclas e inspección semántica aprobadas; ningún módulo importa internos de otro |
+| Instalación reproducible | npm ci host e imagen aprobados con el lockfile reparado |
+| No ejecutado | Interfaces, carga/réplicas, protocolos offline completos, publicación GHCR, CI/CD remoto y arranque remoto/general |
+
+**457 ejecuciones de pruebas aprobadas** (311 + 2×73), sin skips ni cero pruebas.
+Los smoke se informan por separado como scripts de aserciones HTTP, sin inflar
+ese conteo. No fallaron aserciones de negocio en estas corridas.
+
+El helper de prueba inicia `dist/apps/nucleo/main.js`, no un TestingModule ni
+mocks de proveedores. Para cada proceso comprueba un PID/listener, tres bases,
+una conexión AMQP y un consumidor de Logística. Al recibir SIGTERM exige cierre
+sin SIGKILL, espera del consumidor/sondeo, desaparición de las tres conexiones,
+clientes Redis, conexión/consumidor AMQP y listener; errores de cierre fallan.
+
+Desde raíz con Node 22.22.3 en PATH (nvm use desde App/backend, o el binario
+temporal ya documentado en §15), tareas pesadas ejecutadas en secuencia:
+
+```bash
+npm --prefix App/backend install --save-dev --save-exact supertest@7.2.2 @types/supertest@7.2.1
+npm --prefix App/backend run lint
+npm --prefix App/backend run build
+npm --prefix App/backend run test:e2e:infra
+REDIS_INVENTARIO_PRUEBAS_URL=redis://127.0.0.1:16382 npm --prefix App/backend test -- --runInBand
+npm --prefix App/backend run test:e2e
+npm --prefix App/backend run test:e2e
+npm --prefix App/backend run verificar:infra
+npm --prefix App/backend run test:imagen:infra
+npm --prefix App/backend run test:imagen
+npm --prefix App/backend run test:imagen
+npm --prefix App/backend ci
+# Muestreo en terminal independiente mientras el proyecto está arriba:
+python3 App/backend/test/observar-recursos.py --segundos 100 --salida /private/tmp/hexacore-logistica/recursos-final.jsonl
+# Al terminar observación/inspección:
+npm --prefix App/backend run test:e2e:limpiar
+git diff --check
+```
+
+Las instalaciones usaron caché temporal --prefer-offline --no-audit --no-fund,
+conservando versiones. Para reproducir desde el commit se usa **npm ci**, no se
+repite npm install. README de backend y test incluye arranque y migraciones de
+cada dominio; no es necesario tener la caché o logs temporales de esta sesión.
+
+### Bloqueos corregidos, F13 y deudas conservadas
+
+- La descarga inicial de Supertest dentro del sandbox devolvió ENOTFOUND;
+  repetida con acceso de red terminó correctamente. No fue fallo de negocio.
+- Primeros chequeos durante la mudanza detectaron imports/tipos de bootstrap,
+  supertest/types e import.meta sin adaptar. Se corrigieron manteniendo las
+  aserciones; el chequeo final incluye los tests y no los excluye.
+- Primer build de imagen falló **antes de arrancar** por npm ci EUSAGE,
+  `Missing: webpack@5.112.2 from lock file`. La entrada anidada original fue
+  restituida sin cambiar su versión. Segundo build/arranque y npm ci de host
+  aprobaron; no se ignoró el error ni se cambió Node/Nest para evitarlo.
+- F13: se capturaron consultas/duración/pg_blocking_pids, locks, conexiones,
+  CPU/memoria de contenedores propios y del PID host del Núcleo. Primer tramo:
+  61 muestras/90 s; segundo: 73 muestras/100 s, con 37 muestras del PID host.
+  **Cero muestras con bloqueadores o cancelaciones por statement timeout**,
+  y ningún Query read timeout/EXPIRACION_RESERVAS_FALLIDA en logs reales E2E.
+  La CPU máxima muestreada de PostgreSQL fue 3,81%/2,16% y RabbitMQ 50,06%
+  en ambos tramos; no se infiere por eso la causa del fallo anterior. El tercer
+  tramo, imagen/gateway, reunió **86 muestras/120 s**, sin bloqueadores ni
+  statement timeout: PostgreSQL 3,26% CPU máxima, RabbitMQ 45,29%, Núcleo 6,25%
+  y 2,07% de memoria del límite Docker de 2,844 GiB. Se inspeccionaron también
+  los logs completos de Núcleo/PostgreSQL, sin los errores F13. Los dos errores
+  SQL de credencial duplicada corresponden a los rechazos esperados de la suite.
+  No se subieron los límites de
+  Identidad/Alimentos (3000 ms); Logística conserva los límites del servidor
+  previo, sin añadir un timeout distinto como supuesto arreglo.
+- **F14, previo por inspección:** el controlador original de notificaciones
+  aplica SesionValida y devuelve todo el repositorio, sin filtro por empleado
+  ni ContextoDeLogistica. Se conserva el contrato; privacidad por destinatario
+  queda pendiente. Las comprobaciones de información ajena de esta etapa cubren
+  turnos, solicitudes y fichajes. No se declara privacidad global conseguida.
+
+F12, F13, F14 y las deudas ajenas de Notificaciones, Cola, Ventas E2E, scripts
+operativos y contrato OpenAPI permanecen identificadas. La deduplicación en
+memoria y la ausencia de outbox de Logística no se transforman en garantías
+transaccionales por compartir proceso. Datos consolidados, Pagos biblioteca,
+Boletería, Operación y Trabajador permanecen en sus etapas posteriores.
+
+La inspección de `docker compose ... top nucleo` mostró un solo proceso
+`node dist/apps/nucleo/main.js` bajo docker-init. Salud real informó las tres
+bases arriba y sus historiales 3/2/2; pg_stat_activity mostró cada application_name
+en su base correspondiente. Al detener la imagen con SIGTERM, una comprobación
+auxiliar que exigía exit 0 falló: Docker informó **143 (128+SIGTERM)**, coherente
+con la señal que Nest vuelve a emitir tras sus hooks. Se contrastó el cierre
+con logs de consumidor/sondeo detenido, sin OOM/SIGKILL/errores, cero conexiones
+PostgreSQL del Núcleo, clientes Redis nucleo/nucleo-inventario y consumidores o
+conexiones AMQP del Núcleo. No se modificó código para convertir 143 en cero.
+
+Cierre de la etapa: `test:e2e:limpiar` terminó con exit 0 y retiró únicamente
+los **7 contenedores, 3 volúmenes y 1 red** del proyecto propio. Los 29
+contenedores ajenos conservan IDs, nombres y estados del inventario inicial;
+no queda ningún recurso con la etiqueta Compose del proyecto E2E. SHA-256 de
+Pedidos local y del plan verificados sin cambios. `npm ci`, tipos/build finales,
+YAML CI/CD, sintaxis Bash/Python, ocho mezclas Compose y `git diff --check`
+aprobaron. No hay bloqueo pendiente de esta etapa; las validaciones remotas y
+las deudas señaladas continúan pendientes.
+
+Commit de esta etapa: `refactor(backend): incorporar personal y logistica al nucleo`.
+Selección explícita de archivos de workspace, retirada del paquete anterior,
+infraestructura, CI/CD y documentación; Pedidos local excluido. La siguiente
+etapa debe elegirse del plan conservando estos gates; no se incorpora otro
+dominio ni se consolida información automáticamente al cerrar esta entrega.

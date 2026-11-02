@@ -1,25 +1,16 @@
-# Servicio de dominio de Personal y logística
+# Personal y logística
 
-SAD §9 (vista de componentes), CU-007–CU-009.
+La implementación parcial de CU-017/CU-018 que se solapa con CU-007–CU-009
+vive ahora en [el módulo Personal/Logística del Núcleo](../../backend/modulos/personal-logistica/README.md).
+Este directorio conserva la referencia documental del dominio; no contiene un
+servidor ni otra fuente de reglas de negocio.
 
-> **Parcialmente implementado.** CU-017 y CU-018 viven hoy en
-> `eventos-emergencias/src/logistica/`. Bajo ADR-14 este dominio es un
-> **servicio de dominio**, no un microservicio: no cumple ningún criterio de
-> extracción, así que correrá con dos réplicas fijas sobre la base central.
->
-> Necesita antes su esquema de datos: la base `personal` existe y está vacía
-> (`App/infra/initdb/01-bases.sql`).
+Núcleo atiende `/api/v1/logistica` en el mismo proceso que Identidad y Alimentos.
+Se conserva temporalmente la base `eventos_emergencias`, sus dos migraciones y
+sus datos. La base histórica `personal` no se utiliza para este traslado.
 
-
-
-**Responsabilidad:** administración y asignación de personal operativo, cambios de turno y registro
-de asistencia.
-
-**Componentes internos (SAD §9):** Controlador API, Servicio de Asignación de Personal, Validador de
-Conflictos, Gestor de Turnos, Repositorio de Personal, Publicador de Eventos.
-
-**Responsable:** Samuel Emperador.
-
-**Base de datos:** PostgreSQL (esquema propio, ADR-01).
-
-**Estado:** pendiente de implementación (Entrega 2).
+Están disponibles empleados, zonas/asignación, turnos, cambios de turno,
+asistencia y consulta de notificaciones con los límites registrados en el
+README del módulo y en `Documentation/Work/ESTADO-MIGRACION.md`.
+La planificación completa y las partes restantes de CU-007–CU-009 siguen
+pendientes; esta etapa no implementa Operación.

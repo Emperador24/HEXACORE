@@ -1,8 +1,8 @@
 # Backend HEXACORE: Núcleo modular
 
-Etapa intermedia: Identidad y Alimentos corren en **un solo proceso NestJS**.
-Pagos y los otros siete backends actuales conservan paquetes y procesos separados.
-No se trasladan Personal/Logística, Angular ni sus compiladores a este workspace.
+Etapa intermedia: Identidad, Alimentos y Personal/Logística corren en **un solo proceso NestJS**.
+Pagos y los otros seis backends actuales conservan paquetes y procesos separados.
+Angular y sus compiladores permanecen fuera de este workspace.
 Boletería, Operación y Trabajador siguen siendo destinos posteriores del plan.
 
 ```text
@@ -10,6 +10,7 @@ backend/
   apps/nucleo/         main, composición y única sonda de disponibilidad
   modulos/identidad/   cuentas, sesiones, administración, entidades y 3 migraciones
   modulos/alimentos/   catálogo, menú, checkout, inventario, pagos y 2 migraciones
+  modulos/personal-logistica/ empleados, turnos, asistencia y 2 migraciones
   compartido/         configuración del proceso, Redis, RabbitMQ, hilos y validación
   test/               unitarias, CU-011/convivencia, infraestructura e imágenes
   package.json        manifiesto común; package-lock.json único
@@ -30,56 +31,60 @@ npm run build
 ```
 
 El lockfile procede del Alimentos probado en `25a4fd3`: versiones resueltas
-idénticas, sin upgrades. Se unifica únicamente el nombre raíz y se fija Node.
+idénticas, sin upgrades. La etapa de Personal añade Supertest y sus tipos solo para pruebas; no actualiza
+paquetes previos. Se conserva la entrada anidada original de Webpack necesaria
+para que npm ci funcione tanto con npm 10 del contenedor como con npm 11 del host.
 Nest 11, TypeORM 1 y TypeScript 5.9 permanecen fuera del compilador Angular.
 
-Las bases **administracion** y **pedidos** deben existir. Se conservan tablas,
+Las bases **administracion**, **pedidos** y **eventos_emergencias** deben existir. Se conservan tablas,
 identificadores e historiales `migraciones`. No se consolida ni copia información.
 Aplicar explícitamente sus migraciones, tras revisar el `.env`:
 
 ```bash
 npm run migracion:identidad:estado
 npm run migracion:alimentos:estado
+npm run migracion:logistica:estado
 npm run migracion:identidad:correr
 npm run migracion:alimentos:correr
+npm run migracion:logistica:correr
 npm run start:prod              # node dist/apps/nucleo/main.js, puerto 3002
 # Desarrollo: npm run start:dev
 ```
 
-`synchronize=false` y `migrationsRun=false`. El Dockerfile aplica ambos historiales
+`synchronize=false` y `migrationsRun=false`. El Dockerfile aplica los tres historiales
 antes del único `main`; con réplicas, las migraciones deben ser una tarea única de
 despliegue. No se certifica aquí el sondeo de inventario entre réplicas de Núcleo.
 El override de escalado conserva el escalado independiente de Ventas.
 
-Las semillas son explícitas: `semilla:identidad`, `semilla:alimentos`; pueden
+Las semillas son explícitas: `semilla:identidad`, `semilla:alimentos`, `semilla:logistica`; pueden
 reemplazar datos. **No forman parte de las instrucciones de integración aislada**.
 El inventario se prepara con `npm run inventario:preparar -- <UUID> --compras-detenidas`
 solo después de detener compras y cambios de stock en todas las instancias.
 
 ## Contratos y conexiones
 
-Se conservan `/api/v1/cuentas`, `/sesiones`, `/admin/cuentas` y `/pedidos`, incluidos
+Se conservan `/api/v1/cuentas`, `/sesiones`, `/admin/cuentas`, `/pedidos` y `/logistica`, incluidos
 DTO, respuestas, cookies web HttpOnly, renovación móvil, RS256, roles y revocación
-`sesion-revocada:<jti>`. El gateway enruta las cuatro familias a `nucleo:3002`;
-web y móvil mantienen sus URLs públicas. El puerto directo antiguo 3007 se retira.
-Swagger reúne ambos módulos en `/api/v1/docs` fuera de producción.
+`sesion-revocada:<jti>`. El gateway enruta las cinco familias a `nucleo:3002`;
+web y móvil mantienen sus URLs públicas. Se retiran los puertos directos antiguos 3007 y 3016.
+Swagger reúne los tres módulos en `/api/v1/docs` fuera de producción.
 
 La configuración común tiene token `CONFIGURACION_PROCESO_NUCLEO`; cada dominio
-conserva su token `CONFIGURACION_IDENTIDAD`/`CONFIGURACION_ALIMENTOS`. TypeORM usa
-conexiones **identidad** y **alimentos** tanto en `forRootAsync` como en la fábrica,
+conserva su token `CONFIGURACION_IDENTIDAD`/`CONFIGURACION_ALIMENTOS`/`CONFIGURACION_PERSONAL_LOGISTICA`. TypeORM usa
+conexiones **identidad**, **alimentos** y **personal-logistica** tanto en `forRootAsync` como en la fábrica,
 `forFeature` e inyecciones. No existe conexión por defecto en Núcleo.
 
-Hay un cliente Redis común para revocaciones y una conexión RabbitMQ con las dos
+Hay un cliente Redis común para revocaciones y una conexión RabbitMQ con las tres
 topologías. Inventario conserva su cliente Redis especializado, con sus opciones
 de timeout/reenvío propias. Solo sus propietarios cierran clientes; el servicio
 de revocaciones ya no cierra el Redis compartido. Se conserva un único sondeo de
 reservas y la inicialización del pool libuv antes de cargar Nest/crypto/pg.
 
-**Disponibilidad:** `GET /api/v1/salud` devuelve `servicio=nucleo`, comprueba ambas
+**Disponibilidad:** `GET /api/v1/salud` devuelve `servicio=nucleo`, comprueba las tres
 bases y Redis y responde 503 si falta cualquiera. RabbitMQ se informa como antes:
 su caída degrada el estado, sin impedir por sí sola la disponibilidad. Cada consulta
 tiene límite de un segundo. Esta política reúne la necesidad de Redis de Alimentos
-con la de las dos bases. El login directo sigue teniendo sus errores anteriores.
+con la de las tres bases. El login directo sigue teniendo sus errores anteriores.
 
 ## Verificación
 
@@ -94,6 +99,7 @@ npm run test:e2e
 npm run verificar:infra
 npm run test:imagen:infra
 npm run test:imagen
+npm run test:imagen
 npm run test:e2e:limpiar
 ```
 
@@ -107,3 +113,29 @@ pausan dependencias o controlan contenedores habituales. No se ejecutaron aquí 
 se recomiendan para verificar esta etapa. Usar la integración aislada anterior.
 El helper histórico de cobertura delega ahora a `test:cov:e2e` sin detener servidores;
 no se afirma un porcentaje de cobertura sin ejecutar esa medición.
+
+## Personal/Logística: compatibilidad y alcance
+
+[El módulo](modulos/personal-logistica/README.md) conserva CU-017/CU-018 y sus
+funciones solapadas con CU-007–009. Usa Nest 11/TS 5.9 del workspace; se retiran
+Nest 12/TS 6 y Vitest del servidor anterior. Solo se añaden Supertest 7.2.2 y sus
+tipos 7.2.1 como herramientas de prueba, en las versiones originales. Las 59
+pruebas pasan a Jest y HTTP contra el proceso compilado, conservando sus aserciones.
+No hay nuevos paquetes de negocio ni sincronización automática de esquema.
+
+`DB_NAME` conserva `eventos_emergencias`; DB_HOST/PORT/USER/PASSWORD mantienen
+las variables anteriores y, si faltan, usan las coordenadas comunes POSTGRES_*.
+La cola y DLQ `turnos.cambios` conservan el prefijo opcional PREFIJO_COLAS.
+La conexión compartida declara su topología y resuscribe un consumidor; al cerrar,
+este cancela recepción y espera el trabajo en curso antes de cerrar conexiones.
+
+El traslado no implementa Operación, planificación completa ni proveedores.
+F12 sigue pendiente. F13 se observa con el comando opcional de solo lectura:
+
+```bash
+python3 test/observar-recursos.py --segundos 100
+```
+
+Ejecutarlo en otra terminal mientras las pruebas o imágenes propias están arriba.
+Captura consultas, bloqueos, conexiones, CPU/memoria y logs solo del proyecto
+hexacore-nucleo-e2e; no incrementa límites ni da F13 por resuelto.

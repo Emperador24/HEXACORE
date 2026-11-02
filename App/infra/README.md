@@ -1,6 +1,6 @@
 # Infra
 
-Identidad y Alimentos se ejecutan ahora en **Núcleo**, desde `App/backend`.
+Identidad, Alimentos y Personal/Logística se ejecutan ahora en **Núcleo**, desde `App/backend`.
 Ver [instalación, migraciones y arranque](../backend/README.md) y
 [pruebas exclusivas](../backend/test/README.md). Este README describe el
 ambiente habitual; no usar sus semillas o limpiezas para verificar la migración.

@@ -1,7 +1,8 @@
+import { opcionesDataSource as opcionesLogistica } from '../modulos/personal-logistica/persistencia/data-source';
 import 'reflect-metadata';
 import { ChildProcess, execFileSync, spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { readFileSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { JwtService } from '@nestjs/jwt';
 import { Channel, ChannelModel, connect, ConsumeMessage } from 'amqplib';
@@ -37,6 +38,7 @@ describe('CU-011 Alimentos → Pagos → pasarela con persistencia y mensajería
   let cierreSolicitado = false;
   let datos: DataSource;
   let identidad: DataSource;
+  let logistica: DataSource;
   let renovacion: string;
   const email = `nucleo-${randomUUID()}@example.test`;
   const contrasena = "clave-de-convivencia-cu011";
@@ -68,8 +70,9 @@ describe('CU-011 Alimentos → Pagos → pasarela con persistencia y mensajería
     expect(servidor.signalCode === 'SIGTERM' || servidor.exitCode === 0).toBe(true);
     expect(salidaServidor).not.toMatch(/UnknownElementException|Cierre de RabbitMQ con incidencias|EXPIRACION_RESERVAS_FALLIDA|ERROR/);
     expect(salidaServidor).toContain('Sondeo de reservas detenido');
-    for (const fuente of [datos, identidad]) {
-      const [{ conexiones }] = await fuente.query("SELECT count(*)::int AS conexiones FROM pg_stat_activity WHERE application_name IN ('nucleo-identidad', 'nucleo-alimentos') AND pid <> pg_backend_pid() AND backend_type = 'client backend'");
+    expect(salidaServidor).toContain('Consumidor de logística detenido');
+    for (const fuente of [datos, identidad, logistica]) {
+      const [{ conexiones }] = await fuente.query("SELECT count(*)::int AS conexiones FROM pg_stat_activity WHERE application_name IN ('nucleo-identidad', 'nucleo-alimentos', 'nucleo-personal-logistica') AND pid <> pg_backend_pid() AND backend_type = 'client backend'");
       expect(conexiones).toBe(0);
     }
     await esperar(async () => (await conexionesRabbit()).length === 0, 10000);
@@ -136,6 +139,9 @@ describe('CU-011 Alimentos → Pagos → pasarela con persistencia y mensajería
     identidad = new DataSource({ ...opcionesIdentidad(ci), extra: { application_name: 'observador-identidad' } });
     await identidad.initialize();
     await identidad.runMigrations();
+    logistica = new DataSource({ ...opcionesLogistica(), extra: { application_name: 'observador-logistica' } });
+    expect(logistica.options).toMatchObject({ database: 'eventos_emergencias_nucleo_e2e', synchronize: false });
+    await logistica.initialize(); await logistica.runMigrations();
     await identidad.query(`INSERT INTO usuarios (id,nombre,email,hash_contrasena,estado,verificado_en)
       VALUES ($1,'Cuenta Núcleo E2E',$2,$3,'ACTIVA',now())`, [cliente, email, await cifrarContrasena(contrasena)]);
     await identidad.query(`INSERT INTO usuarios_roles (usuario_id,rol_id) SELECT $1,id FROM roles WHERE nombre='Cliente'`, [cliente]);
@@ -156,6 +162,8 @@ describe('CU-011 Alimentos → Pagos → pasarela con persistencia y mensajería
     // providers reemplazados. El proceso hijo hereda solo los destinos fijados.
     servidor = spawn(process.execPath, [resolve(__dirname, '../dist/apps/nucleo/main.js')],
       { env: process.env, stdio: ['ignore', 'pipe', 'pipe'] });
+    mkdirSync(resolve(__dirname, '../.evidencia-e2e'), { recursive: true });
+    writeFileSync(resolve(__dirname, '../.evidencia-e2e/servidor.pid'), String(servidor.pid));
     let errorArranque: Error | undefined;
     servidor.once('error', (error) => { errorArranque = error; });
     servidor.stdout!.on('data', (trozo: Buffer) => { salidaServidor += trozo.toString(); });
@@ -170,7 +178,7 @@ describe('CU-011 Alimentos → Pagos → pasarela con persistencia y mensajería
     const salud = await fetch(`${base}/api/v1/salud`, { signal: AbortSignal.timeout(3000) });
     expect(salud.status).toBe(200);
     expect(await salud.json()).toMatchObject({ servicio: 'nucleo', entorno: 'test', estado: 'arriba' });
-    expect(salidaServidor.match(/2 topologías declaradas/g)).toHaveLength(1);
+    expect(salidaServidor.match(/3 topologías declaradas/g)).toHaveLength(1);
     expect(salidaServidor.match(/Sondeo de reservas iniciado/g)).toHaveLength(1);
     expect(salidaServidor).toContain(`pid=${servidor.pid}`);
     expect(salidaServidor).toMatch(/hilos=\d+/);
@@ -188,6 +196,7 @@ describe('CU-011 Alimentos → Pagos → pasarela con persistencia y mensajería
   afterAll(async () => {
     try {
       await detenerServidor();
+      if (logistica?.isInitialized) await logistica.destroy();
       if (identidad?.isInitialized) {
         const sesiones: { jti: string }[] = await identidad.query('SELECT jti FROM sesiones WHERE usuario_id=$1', [cliente]);
         for (const { jti } of sesiones) await redis.del(`sesion-revocada:${jti}`);
@@ -220,6 +229,9 @@ describe('CU-011 Alimentos → Pagos → pasarela con persistencia y mensajería
         });
       }
     } finally {
+      mkdirSync(resolve(__dirname, '../.evidencia-e2e'), { recursive: true });
+      writeFileSync(resolve(__dirname, '../.evidencia-e2e/cu011.log'), salidaServidor);
+      rmSync(resolve(__dirname, '../.evidencia-e2e/servidor.pid'), { force: true });
       // Cerrar canal antes de su conexión: cierres AMQP simultáneos pueden dejar una promesa esperando.
       try { await canal?.close(); }
       finally {

@@ -8,7 +8,7 @@
 # El compose base sigue definiendo los destinos y el resto de puertos.
 #
 # Se quitan las dependencias hacia PostgreSQL, Redis, RabbitMQ y los dos
-# proveedores simulados en los nueve backends actuales. Los servicios comprueban
+# proveedores simulados en los ocho backends actuales. Los servicios comprueban
 # las conexiones remotas al arrancar; Compose no puede comprobar su salud.
 # Se conservan las dependencias entre aplicaciones que corren aquí:
 # Postventa -> Pagos/Ventas, gateway -> backends y portales -> gateway.
@@ -59,7 +59,4 @@ services:
     depends_on: !reset {}
 
   catalogo:
-    depends_on: !reset {}
-
-  eventos-emergencias:
     depends_on: !reset {}

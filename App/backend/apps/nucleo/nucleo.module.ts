@@ -1,3 +1,4 @@
+import { PersonalLogisticaModule } from '../../modulos/personal-logistica/personal-logistica.module';
 import { Module } from '@nestjs/common';
 import { ConfiguracionProcesoModule } from '../../compartido/config/config.module';
 import { RedisModule } from '../../compartido/redis/redis.module';
@@ -7,7 +8,7 @@ import { AlimentosModule } from '../../modulos/alimentos/alimentos.module';
 import { SaludController } from './salud.controller';
 
 @Module({
-  imports: [ConfiguracionProcesoModule, RedisModule, RabbitMqModule, IdentidadModule, AlimentosModule],
+  imports: [ConfiguracionProcesoModule, RedisModule, RabbitMqModule, IdentidadModule, AlimentosModule, PersonalLogisticaModule],
   controllers: [SaludController],
 })
 export class NucleoModule {}

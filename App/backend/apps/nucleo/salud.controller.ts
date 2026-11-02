@@ -1,3 +1,4 @@
+import { CONEXION_LOGISTICA } from '../../modulos/personal-logistica/persistencia/conexion';
 import { Controller, Get, Inject, Res } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { Response } from 'express';
@@ -16,25 +17,27 @@ export class SaludController {
     @Inject(CONFIGURACION_PROCESO) private readonly config: ConfiguracionProceso,
     @InjectDataSource(CONEXION_IDENTIDAD) private readonly identidad: DataSource,
     @InjectDataSource(CONEXION_ALIMENTOS) private readonly alimentos: DataSource,
+    @InjectDataSource(CONEXION_LOGISTICA) private readonly logistica: DataSource,
     @Inject(REDIS) private readonly redis: Redis,
     private readonly rabbit: ConexionRabbitMq,
   ) {}
 
   @Get()
   async estado(@Res({ passthrough: true }) respuesta: Response) {
-    const [identidad, alimentos, redis] = await Promise.all([
+    const [identidad, alimentos, logistica, redis] = await Promise.all([
       this.responde(() => this.identidad.query('SELECT 1')),
       this.responde(() => this.alimentos.query('SELECT 1')),
+      this.responde(() => this.logistica.query('SELECT 1')),
       this.responde(() => this.redis.ping()),
     ]);
     // Redis es necesario para aceptar reservas. Rabbit se informa como antes.
-    const listo = identidad && alimentos && redis;
+    const listo = identidad && alimentos && logistica && redis;
     respuesta.status(listo ? 200 : 503);
     return {
       servicio: 'nucleo', entorno: this.config.entorno,
       estado: listo && this.rabbit.conectado ? 'arriba' : 'degradado',
       dependencias: {
-        postgres: { identidad: identidad ? 'arriba' : 'caido', alimentos: alimentos ? 'arriba' : 'caido' },
+        postgres: { identidad: identidad ? 'arriba' : 'caido', alimentos: alimentos ? 'arriba' : 'caido', logistica: logistica ? 'arriba' : 'caido' },
         redis: redis ? 'arriba' : 'caido', rabbitmq: this.rabbit.conectado ? 'arriba' : 'caido',
       },
       tiempoActivoSegundos: Math.floor((Date.now() - this.arranque) / 1000), marcaDeTiempo: new Date().toISOString(),
