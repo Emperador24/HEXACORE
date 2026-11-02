@@ -42,20 +42,18 @@ env:
   DOCKER_BUILD_RECORD_UPLOAD: 'false'
 
 jobs:
-  imagenes:
-    name: Imagen de ${{ matrix.nombre }}
-    runs-on: ubuntu-latest
-
+  compilacion:
+    name: Compilar ${{ matrix.componente.nombre }} (${{ matrix.arquitectura }})
+    runs-on: ${{ matrix.arquitectura == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
+    timeout-minutes: 15
     permissions:
       contents: read
-      # Sin esto, el token no puede escribir en el registro de paquetes.
       packages: write
-
     strategy:
       fail-fast: false
       matrix:
-        include:
-          # Núcleo modular, backends aún separados, proveedores y portales.
+        arquitectura: [amd64, arm64]
+        componente:
           - nombre: nucleo
             contexto: App/backend
           - nombre: boleteria
@@ -74,88 +72,60 @@ jobs:
             contexto: App/frontend/portal-web-cliente
           - nombre: portal-admin
             contexto: App/frontend/portal-web-admin
-
     steps:
       - uses: actions/checkout@v4
-
-      # Permite compilar para arm64 desde un runner amd64, por emulación.
-      - name: Preparar QEMU
-        uses: docker/setup-qemu-action@v3
-
-      # Hace falta para guardar la caché de compilación entre corridas: el
-      # driver que Docker trae por defecto en el runner no sabe exportarla.
-      - name: Preparar Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Entrar al registro
-        uses: docker/login-action@v3
+      - name: Exigir arquitectura nativa
+        env:
+          ESPERADA: ${{ matrix.arquitectura == 'arm64' && 'aarch64' || 'x86_64' }}
+        run: test "$(uname -m)" = "$ESPERADA"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRO }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      # Los nombres de imagen tienen que ir en minúsculas y el del repositorio
-      # no lo está (Emperador24/HEXACORE).
       - name: Nombre de la imagen
         id: imagen
-        run: echo "ruta=${REGISTRO}/$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')/hexacore-${{ matrix.nombre }}" >> "$GITHUB_OUTPUT"
-
-      - name: Etiquetas limitadas a la rama y revisión
-        id: version
-        env:
-          RAMA: ${{ github.ref_name }}
-        run: |
-          if [ "$RAMA" = main ] || [ "$RAMA" = develop ]; then
-            echo "etiqueta=$RAMA" >> "$GITHUB_OUTPUT"
-          else
-            echo "etiqueta=arquitectura-${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
-          fi
-      - name: Metadatos de la revisión exacta
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ steps.imagen.outputs.ruta }}
-          flavor: latest=false
-          tags: |
-            type=raw,value=${{ steps.version.outputs.etiqueta }}
-            type=raw,value=sha-${{ github.sha }}
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-          labels: |
-            org.opencontainers.image.revision=${{ github.sha }}
-
-      - name: Construir y publicar
-        id: publicar
+        run: echo "ruta=${REGISTRO}/$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')/hexacore-${{ matrix.componente.nombre }}" >> "$GITHUB_OUTPUT"
+      - name: Construir y publicar plataforma nativa
         uses: docker/build-push-action@v6
         with:
-          context: ${{ matrix.contexto }}
-          file: ${{ matrix.dockerfile || format('{0}/Dockerfile', matrix.contexto) }}
+          context: ${{ matrix.componente.contexto }}
+          file: ${{ matrix.componente.dockerfile || format('{0}/Dockerfile', matrix.componente.contexto) }}
           push: true
-          # Dos arquitecturas, y no es un lujo: los runners de GitHub son
-          # amd64, pero los portátiles del equipo son Mac con chip Apple
-          # (arm64). Publicando solo amd64, `./iniciar.sh --registro` falla en
-          # la máquina de la demostración con «no matching manifest».
-          platforms: linux/amd64,linux/arm64
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          # La caché de GitHub Actions evita recompilar `npm ci` en cada push.
-          cache-from: type=gha,scope=${{ matrix.nombre }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.nombre }}
+          platforms: linux/${{ matrix.arquitectura }}
+          # Etiqueta interna única por corrida; no modifica etiquetas de otras ramas.
+          tags: ${{ steps.imagen.outputs.ruta }}:construccion-${{ github.sha }}-${{ github.run_id }}-${{ matrix.arquitectura }}
+          labels: org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.componente.nombre }}-${{ matrix.arquitectura }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.componente.nombre }}-${{ matrix.arquitectura }}
 
-      - name: Registrar digest sin datos privados
+  imagenes:
+    name: Manifest de ${{ matrix.nombre }}
+    needs: compilacion
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        nombre: [nucleo, boleteria, trabajador, pasarela, correo, gateway, portal-cliente, portal-admin]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRO }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Verificar plataformas y unir digests del mismo SHA
         env:
-          NOMBRE: ${{ matrix.nombre }}
-          IMAGEN: ${{ steps.imagen.outputs.ruta }}
-          DIGEST: ${{ steps.publicar.outputs.digest }}
-        run: |
-          mkdir -p .informe-ci
-          python3 - <<'PYDIGEST'
-          import json,os,re
-          from pathlib import Path
-          assert re.fullmatch(r'sha256:[0-9a-f]{64}', os.environ['DIGEST'])
-          d={k.lower():os.environ[k] for k in ['NOMBRE','IMAGEN','DIGEST']}
-          d['revision']=os.environ['GITHUB_SHA']
-          Path('.informe-ci/'+d['nombre']+'.json').write_text(json.dumps(d)+'\n')
-          PYDIGEST
+          RAMA: ${{ github.ref_name }}
+        run: >-
+          python3 App/backend/test/publicadas/unir-plataformas.py
+          '${{ matrix.nombre }}' "$GITHUB_SHA" "$GITHUB_RUN_ID" "$RAMA"
+          '.informe-ci/${{ matrix.nombre }}.json'
       - uses: actions/upload-artifact@v4
         with:
           name: imagen-${{ matrix.nombre }}

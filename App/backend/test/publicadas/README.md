@@ -45,3 +45,15 @@ No publica .evidencia-e2e ni logs/raw JSON, respaldos, RDB, tokens o correos. Lo
 artifacts de CD contienen únicamente metadatos de imágenes. El registro de CI/CD
 remoto debe indicar SHA exacto; un commit posterior solo documental no cambia
 retroactivamente la revisión de las imágenes ya publicadas.
+
+CD compila cada plataforma en su runner nativo (ubuntu-24.04 / ubuntu-24.04-arm),
+comprueba uname y no instala QEMU. Une por digest dos compilaciones de la misma
+corrida/SHA tras verificar plataforma y etiqueta OCI; mantiene solo los ocho JSON
+finales como artifacts. Las etiquetas internas construccion-SHA-RUN_ID-arquitectura
+no modifican etiquetas de otras ramas. El smoke completo se ejecuta en amd64;
+compilar arm64 no certifica un recorrido completo de negocio en esa plataforma.
+
+Este ajuste evita ejecutar npm/Node bajo el emulador que produjo SIGILL en las
+primeras publicaciones; no es una recuperación financiera ni una corrección de F13.
+Referencias: [estrategias multiplataforma de Docker](https://docs.docker.com/build/building/multi-platform/)
+y [runners nativos disponibles](https://docs.github.com/en/actions/reference/runners/github-hosted-runners).
