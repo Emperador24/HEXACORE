@@ -7,7 +7,8 @@ const { resolve } = require('node:path');
 const { Client } = require('pg');
 const { cifrarContrasena } = require('../../dist/modulos/identidad/comun/contrasenas');
 const {proyecto} = require('../base-unica/conexiones.cjs');
-const compose = ['compose', '-p', proyecto, '-f', resolve(__dirname, '../docker-compose.e2e.yml'), '-f', resolve(__dirname, '../docker-compose.imagen.yml')];
+// También conserva el override por digest al detener/reiniciar imágenes publicadas.
+const compose = require('../base-unica/compose.cjs').argumentos(true);
 const gateway = 'http://127.0.0.1:18082/api/v1';
 const nucleo = 'http://127.0.0.1:13109/api/v1', boleteria = 'http://127.0.0.1:13117/api/v1';
 const id = randomUUID(), email = `convivencia-${id}@example.test`, contrasena = 'pagos-locales-aislados';
