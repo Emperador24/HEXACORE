@@ -2,13 +2,10 @@ import 'reflect-metadata';
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { Channel, ChannelModel, connect, ConsumeMessage } from 'amqplib';
 import Redis from 'ioredis';
 import { DataSource } from 'typeorm';
-import { AppModule } from '../src/app.module';
 import { cargarConfiguracion } from '../src/config/configuracion';
 import { opcionesDataSource } from '../src/persistencia/data-source';
 import { Compra, EstadoCompra } from '../src/persistencia/entidades/compra.entity';
@@ -16,9 +13,7 @@ import { CodigoPromocional } from '../src/persistencia/entidades/codigo-promocio
 import { Entrada, EstadoEntrada } from '../src/persistencia/entidades/entrada.entity';
 import { EstadoEvento, EventoReferencia } from '../src/persistencia/entidades/evento-referencia.entity';
 import { LocalidadEvento } from '../src/persistencia/entidades/localidad-evento.entity';
-import { REDIS } from '../src/comun/concurrencia/redis.provider';
-import { ConexionRabbitMq } from '../src/comun/eventos/conexion-rabbitmq.service';
-import { EXCHANGE_VENTAS } from '../src/venta/notificaciones-venta.service';
+const EXCHANGE_VENTAS = 'ventas.eventos'; // Contrato AMQP observado, sin cargar Nest en Jest.
 
 const pausa = (ms: number) => new Promise<void>((listo) => setTimeout(listo, ms));
 async function esperar(condicion: () => Promise<boolean> | boolean): Promise<void> {
@@ -41,7 +36,8 @@ const enDias = (dias: number) => new Date(Date.now() + dias * 24 * 60 * 60 * 100
  * que los contadores resistan peticiones concurrentes y que el hecho llegue al broker.
  */
 describe('CU-001 HTTP + PostgreSQL + RabbitMQ reales', () => {
-  let app: INestApplication;
+  const procesos = require('../../../backend/test/boleteria/procesos.cjs');
+  let app: Awaited<ReturnType<typeof procesos.iniciar>>;
   let datos: DataSource;
   let amqp: ChannelModel;
   let canal: Channel;
@@ -86,23 +82,8 @@ describe('CU-001 HTTP + PostgreSQL + RabbitMQ reales', () => {
     await datos.initialize();
     await datos.runMigrations();
 
-    app = await NestFactory.create(AppModule, { logger: false, forceCloseConnections: true });
-    app.setGlobalPrefix('api/v1');
-    // mismo pipe que main.ts
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-        transformOptions: { enableImplicitConversion: false },
-      }),
-    );
-    await app.listen(0, '127.0.0.1');
-    base = await app.getUrl();
-
-    await esperar(
-      () => app.get<Redis>(REDIS).status === 'ready' && app.get(ConexionRabbitMq).obtenerCanal() !== null,
-    );
+    app = await procesos.iniciar();
+    base = app.urls.ventas;
 
     // Cola propia para no se consumir ni purgar la cola real del servicio
     amqp = await connect(config.rabbitmq.url);
@@ -122,7 +103,7 @@ describe('CU-001 HTTP + PostgreSQL + RabbitMQ reales', () => {
         algorithm: 'RS256',
         issuer: config.autenticacion.emisor,
         expiresIn: '10m',
-        privateKey: readFileSync(resolve(__dirname, '../../../infra/claves-desarrollo/jwt-privada.pem'), 'utf8'),
+        privateKey: readFileSync(resolve(__dirname, '../../../backend/test/claves/jwt-privada.pem'), 'utf8'),
       },
     );
 
@@ -171,7 +152,7 @@ describe('CU-001 HTTP + PostgreSQL + RabbitMQ reales', () => {
     // corridas no se ven entre sí y la suite se puede repetir tal cual.
     await canal?.close().catch(() => undefined);
     await amqp?.close().catch(() => undefined);
-    await app?.close();
+    if (app) await procesos.cerrar(app);
     await datos?.destroy();
   });
 

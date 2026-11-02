@@ -1,4 +1,5 @@
 import Redis from 'ioredis';
+import { randomUUID } from 'node:crypto';
 import { ColaService } from './cola.service';
 import { EstadoTurno } from './dto/cola.dto';
 
@@ -6,25 +7,21 @@ import { EstadoTurno } from './dto/cola.dto';
  * La lógica de la fila vive en Lua, así que probarla con un doble de Redis no
  * probaría nada: se ejecuta contra un Redis de verdad.
  *
- * Se salta si no hay uno a mano (`cd App/infra && ./iniciar.sh --rol datos`).
+ * Redis debe estar disponible: un fallo de infraestructura hace fallar la suite.
  */
 const URL = { host: process.env.REDIS_HOST ?? 'localhost', port: Number(process.env.REDIS_PUERTO ?? 6380) };
 
 let redis: Redis;
-let hayRedis = false;
 
 beforeAll(async () => {
   redis = new Redis({ ...URL, lazyConnect: true, maxRetriesPerRequest: 1, retryStrategy: () => null });
-  try {
-    await redis.connect();
-    hayRedis = (await redis.ping()) === 'PONG';
-  } catch {
-    hayRedis = false;
-  }
+  await redis.connect();
+  expect(await redis.ping()).toBe('PONG');
 });
 
 afterAll(async () => {
-  if (redis) redis.disconnect();
+  if (redis?.status === 'ready') await limpiar();
+  redis?.disconnect();
 });
 
 function servicio(aforo: number, turnoTtlSegundos = 300, esperaTtlSegundos = 60) {
@@ -34,7 +31,7 @@ function servicio(aforo: number, turnoTtlSegundos = 300, esperaTtlSegundos = 60)
   return new ColaService(config, redis);
 }
 
-const EVENTO = 'e0000001-0000-4000-8000-000000000001';
+const EVENTO = randomUUID();
 
 async function limpiar() {
   const claves = await redis.keys(`cola:${EVENTO}:*`);
@@ -43,12 +40,10 @@ async function limpiar() {
 
 describe('ColaService contra Redis', () => {
   beforeEach(async () => {
-    if (!hayRedis) return;
     await limpiar();
   });
 
   it('con sitio libre, admite y entrega token', async () => {
-    if (!hayRedis) return;
     const turno = await servicio(2).pedirTurno(EVENTO, 'ana');
 
     expect(turno.estado).toBe(EstadoTurno.ADMITIDO);
@@ -57,7 +52,6 @@ describe('ColaService contra Redis', () => {
   });
 
   it('el aforo se respeta: el que sobra espera, y con su puesto', async () => {
-    if (!hayRedis) return;
     const cola = servicio(2);
 
     expect((await cola.pedirTurno(EVENTO, 'ana')).estado).toBe(EstadoTurno.ADMITIDO);
@@ -70,7 +64,6 @@ describe('ColaService contra Redis', () => {
   });
 
   it('pedir turno dos veces NO da dos sitios', async () => {
-    if (!hayRedis) return;
     const cola = servicio(2);
 
     const primera = await cola.pedirTurno(EVENTO, 'ana');
@@ -83,7 +76,6 @@ describe('ColaService contra Redis', () => {
   });
 
   it('volver a preguntar no manda al final de la fila', async () => {
-    if (!hayRedis) return;
     const cola = servicio(1);
     await cola.pedirTurno(EVENTO, 'ana');
     await cola.pedirTurno(EVENTO, 'bruno');
@@ -95,7 +87,6 @@ describe('ColaService contra Redis', () => {
   });
 
   it('el turno es de un solo uso', async () => {
-    if (!hayRedis) return;
     const cola = servicio(2);
     const turno = await cola.pedirTurno(EVENTO, 'ana');
 
@@ -106,7 +97,6 @@ describe('ColaService contra Redis', () => {
   });
 
   it('gastar un turno libera el sitio para quien esperaba', async () => {
-    if (!hayRedis) return;
     const cola = servicio(1);
     const ana = await cola.pedirTurno(EVENTO, 'ana');
     expect((await cola.pedirTurno(EVENTO, 'bruno')).estado).toBe(EstadoTurno.EN_ESPERA);
@@ -117,7 +107,6 @@ describe('ColaService contra Redis', () => {
   });
 
   it('un turno caducado deja de ocupar sitio', async () => {
-    if (!hayRedis) return;
     // 1 segundo de vida: suficiente para verlo caducar sin alargar la prueba.
     const cola = servicio(1, 1);
     await cola.pedirTurno(EVENTO, 'ana');
@@ -129,7 +118,6 @@ describe('ColaService contra Redis', () => {
   });
 
   it('con solo el token, el turno se gasta una vez y solo su dueño', async () => {
-    if (!hayRedis) return;
     const cola = servicio(2);
     const turno = await cola.pedirTurno(EVENTO, 'ana');
     const token = turno.token as string;
@@ -142,12 +130,10 @@ describe('ColaService contra Redis', () => {
   });
 
   it('un token inventado no sirve', async () => {
-    if (!hayRedis) return;
     expect(await servicio(2).consumirTurno(EVENTO, 'no-existe')).toBe(false);
   });
 
   it('bajo carga, nunca entran más que el aforo', async () => {
-    if (!hayRedis) return;
     const cola = servicio(10);
 
     // 50 a la vez contra un aforo de 10: es el pico que la cola existe para

@@ -2,7 +2,7 @@
   "name": "hexacore-backend",
   "version": "0.1.0",
   "private": true,
-  "description": "Workspace backend: Núcleo modular (Identidad, Alimentos y Personal/Logística)",
+  "description": "Workspace backend: N\u00facleo modular (Identidad, Alimentos y Personal/Log\u00edstica)",
   "scripts": {
     "build": "nest build nucleo",
     "start": "nest start nucleo",
@@ -35,7 +35,11 @@
     "migracion:logistica:revertir": "typeorm-ts-node-commonjs migration:revert -d modulos/personal-logistica/persistencia/data-source.ts",
     "migracion:logistica:estado": "typeorm-ts-node-commonjs migration:show -d modulos/personal-logistica/persistencia/data-source.ts",
     "semilla:logistica": "node modulos/personal-logistica/scripts/seed.mjs",
-    "carga:logistica": "node modulos/personal-logistica/scripts/carga.mjs"
+    "carga:logistica": "node modulos/personal-logistica/scripts/carga.mjs",
+    "pretest:boleteria:referencia": "node test/boleteria/compilar-referencia.cjs",
+    "test:boleteria:referencia": "node test/boleteria/correr-referencia.cjs",
+    "test:boleteria:infra": "docker compose -p hexacore-boleteria-e2e -f test/boleteria/docker-compose.yml up -d --build --wait",
+    "test:boleteria:limpiar": "docker compose -p hexacore-boleteria-e2e -f test/boleteria/docker-compose.yml down --volumes"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.6",

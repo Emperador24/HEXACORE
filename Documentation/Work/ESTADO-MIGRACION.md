@@ -5,7 +5,9 @@ Alcance actualizado: **Núcleo con Identidad, Alimentos y Personal/Logística**
 (§16), sobre `8fff023cf5b5b8ce88e5e279e75165c46dfc8fa9`, rama
 `feature/sebastian-arquitectura`. Se preserva aparte el archivo local de Pedidos.
 
-**Resultado vigente:** un solo proceso Nest atiende cuentas/sesiones/admin,
+**Hito 1 de Boletería comprobado (§17):** referencia aislada de las cinco aplicaciones actuales, 451 pruebas existentes y 20 E2E repetidas dos veces; F08 reparado. El traslado se realiza después de registrar este hito.
+
+**Resultado vigente del Núcleo:** un solo proceso Nest atiende cuentas/sesiones/admin,
 pedidos y `/api/v1/logistica`. Conserva **tres bases y siete migraciones**, sin
 consolidar datos ni activar synchronize. Se ejecutaron **311 pruebas previas**
 y **73 E2E en cuatro suites, dos veces**, sin omisiones; incluye los 59 casos
@@ -542,7 +544,7 @@ siguen indicadas. Se distingue fallo reproducido de riesgo observado por lectura
 | F05, reproducido y **reparado en configuración** | Antes: Compose remoto referencia `nucleo`, inexistente en base, sin build/image. Después: override para diez backends, sin dependencias a datos locales, con Postventa → Pagos/Ventas y perfil `datos` separado | `config -q` e inspección de configuración resuelta pasan para remoto y remoto+escalado (§13). Arranque real e integración pendientes |
 | F06, **reparado en configuración en §15; publicación pendiente** | Registro cubre los 14 artefactos de CD actuales, anula todos los builds y conserva la clave del gateway. Núcleo ya existe como fuente/contexto. Las ocho mezclas Compose pasan inspección; imagen Núcleo/gateway y JWT se comprobaron en el entorno aislado | No acredita publicación GHCR ni arranque de las imágenes remotas del sistema entero |
 | F07, **CU-011 resuelto y ejecutado** | Configuración/entorno/Compose/instrucciones recuperados en `alimentos/test`; script `test:e2e` disponible. Pruebas/doble propios de Autenticación conservados. Dos corridas: 5/5 aprobadas cada una | El comando independiente `test:integracion` de Pagos que apunta a un script inexistente sigue pendiente; esta suite no depende de él |
-| F08, **CU-011 resuelto; Ventas pendiente** | Alimentos usa `POSTGRES_BD_PEDIDOS`, `PAGOS_URL` y servidor Pagos real aislado, con libro propio y pasarela real de prueba. Ventas conserva su Compose sin Pagos y entorno antiguo | No ejecutar la suite E2E de Ventas como si estuviera corregida. CU-011 sí es autocontenida (§14) |
+| F08, **resuelto para CU-011 y referencia de Ventas** | Ventas usa ahora PAGOS_URL, servidor Pagos real y pasarela simulada en el proyecto exclusivo de Boletería (§17); conserva los ocho casos originales | La suite propia de Pagos mal referenciada sigue siendo deuda independiente; F12 no se resuelve con el cableado |
 | F09, inspección | `infra/iniciar.sh`: `migrar ... || true`, semillas con errores silenciados; rama SQL carga solo cuatro volcados. `autenticacion/src/persistencia/semillas` trunca usuarios. Dockerfiles también migran | Un mensaje final «en marcha» no demuestra esquema/datos completos. Un arranque normal puede reemplazar datos de desarrollo |
 | F10, **servidor/sonda retirados al incorporar Logística (§16)** | Sonda Eventos/Emergencias consulta `/api/v1/turnos`, pero controladores están bajo `/api/v1/logistica`; acepta cualquier 2xx/4xx. Compose declara `DB_SYNCHRONIZE=true`, código fija `false`; bootstrap lee `PORT`, Compose define `PUERTO` | La sonda puede aprobar un 404 y no acredita acceso a BD; la configuración contiene opciones inefectivas. El puerto actual coincide por default, no por esa variable |
 | F11, inspección | Contrato `shared/api/ventas.openapi.json` sigue agregando cartelera, QR y reventa; `contrato-api.spec.ts` solo inspecciona ese JSON. `exportar-openapi.ts` crea únicamente el AppModule actual de Ventas | Las pruebas del JSON pasan sin demostrar paridad con los cuatro servicios. Regenerarlo sin diseñar agregación perdería operaciones externas |
@@ -1476,3 +1478,100 @@ Selección explícita de archivos de workspace, retirada del paquete anterior,
 infraestructura, CI/CD y documentación; Pedidos local excluido. La siguiente
 etapa debe elegirse del plan conservando estos gates; no se incorpora otro
 dominio ni se consolida información automáticamente al cerrar esta entrega.
+
+
+## 17. Hito 1 de Boletería: integración de referencia antes del traslado
+
+Base **125fe36d874efc0f30d268a3219635854b807b82**, misma rama
+feature/sebastian-arquitectura. Plan completo, resumen vigente e instrucciones
+locales revisados. Estado inicial: solo Pedidos local no rastreado; SHA-256 del
+archivo y del plan conservados. No se trasladó código de negocio en este hito.
+
+### Inventario y referencia
+
+Cinco aplicaciones Nest 11/TS 5.9 existentes: Ventas (compras, promociones,
+cancelaciones, autoridad de entrada/historial y API interna), Catálogo (cartelera
+y proyecciones de eventos/localidades), Cola (Lua/Redis, turnos de un solo uso),
+Postventa (publicaciones, checkout, transferencia/compensaciones, consumidores)
+y Acceso QR (proyección QR, ingresos, caché/sincronización y outbox).
+Cuatro bases de negocio, diez migraciones **5+1+1+3**, synchronize=false.
+Postventa conserva su historial llamado **migrations**, las otras migraciones.
+Las tablas antiguas de reventa/ingreso conservadas en Ventas no se borran.
+
+F08: se sustituye el entorno antiguo de pasarela directa por **PAGOS_URL** y
+Pagos real, con su base/libro y pasarela simulada. Infraestructura única en
+App/backend/test/boleteria; el Compose antiguo de Ventas la incluye. La prueba
+original conserva sus ocho casos y aserciones; el bootstrap usa los procesos
+compilados para evitar el problema ESM de Jest. No se sustituyen proveedores.
+Cola elimina los diez retornos silenciosos por ausencia de Redis: conecta y
+exige PONG; usa un evento UUID propio y limpia únicamente sus claves.
+
+Proyecto exclusivo **hexacore-boleteria-e2e**. PostgreSQL 15436, Redis 16383,
+RabbitMQ 15676/16776, vhost boleteria, Pagos 13090 y pasarela 13102. Procesos
+compilados 13091–13095. Credenciales boleteria_e2e y claves RSA fixture existentes.
+Bases entradas_e2e, catalogo_boleteria_e2e, postventa_boleteria_e2e,
+acceso_qr_boleteria_e2e y pagos_boleteria_e2e. No se ejecutaron iniciar.sh,
+semillas/prehook de truncado ni operaciones contra contenedores habituales.
+Los UUID nuevos e historiales inmutables se conservan entre corridas. Se dejan
+arriba solo los cinco recursos propios de infraestructura para comparar el
+hito siguiente sobre los mismos datos; los procesos Node terminan con SIGTERM.
+
+### Comandos y resultados antes de mover fuentes
+
+Con Node **v22.22.3**, seleccionado mediante
+PATH=/private/tmp/hexacore-cu011-node22/node_modules/.bin:$PATH, o nvm use en
+App/backend. Instrucciones reproducibles en test/boleteria/README.md.
+
+| Comando/comprobación | Resultado |
+|---|---|
+| node App/backend/test/boleteria/compilar-referencia.cjs | Build de cinco aplicaciones aprobado, secuencial |
+| npm --prefix App/backend run lint | Tipos de pruebas nuevas aprobados |
+| npm --prefix App/backend run test:boleteria:infra | Cinco servicios saludables; Pagos real construido/arrancado |
+| npm --prefix App/services/ventas run test:e2e | 8/8 aprobadas, 7,721 s tras reparar bootstrap |
+| node App/backend/test/boleteria/comprobar-actuales.cjs | Tipos de los cinco paquetes aprobados; 451/451 pruebas en 34 suites |
+| Desglose unitarias | Ventas 189; Catálogo 31; Cola 31 (10 Redis real); Postventa 175; Acceso QR 25; ninguna omitida |
+| npm --prefix App/backend run test:boleteria:referencia | 8+12/20 E2E aprobadas, dos runners reales |
+| node App/backend/test/boleteria/correr-referencia.cjs | Repetición 8+12/20 E2E aprobadas, sin vaciar ni recrear infraestructura |
+| docker compose -f App/services/ventas/test/docker-compose.e2e.yml config -q | Aprobado; incluye definición única con Pagos |
+| python3 App/backend/test/boleteria/observar-recursos.py --segundos 120 | 88 muestras SQL/bloqueos/recursos, cero bloqueadores y statement timeout |
+| git diff --check | Aprobado antes del commit |
+
+Las doce pruebas añadidas cubren cartelera pública, turno propio/único,
+compra/promoción/rechazo/aprobación/replay sin otro movimiento, outbox/proyección,
+cancelación parcial de entradas con reembolso real, reservas simultáneas por
+últimos cupos, ocho compradores por una publicación, transferencia/historial/QR,
+rechazo del QR antiguo tras converger y doble ingreso concurrente, cron real de
+reserva vencida, restricciones internas/roles y revocación. El cron de prueba
+usa la configuración existente de un segundo, sin elevar límites.
+
+Se observaron errores de preparación, sin cambiar negocio para aprobar:
+primer build de Pagos con ruta Dockerfile incorrecta (corregida antes de arrancar);
+Jest bloqueado por import de NotificacionesVenta que cargaba Nest ESM (0 pruebas,
+no se contó como aprobación); dos intentos del nuevo test consultaron migraciones
+en Postventa, que históricamente usa migrations: 11 casos pasaron y 1 falló en
+cada intento. Corregida la consulta de diagnóstico, las dos corridas completas
+pasaron. No se detectó un fallo de negocio en estos escenarios.
+
+### Consistencia y pendientes observados
+
+La lectura inmediatamente posterior a transferir encontró la proyección QR
+anterior: **no hay invalidación inmediata**. En las dos corridas completas se
+observó convergencia en 330 ms y 118 ms; son observaciones, no un SLA. Las esperas
+están nombradas como convergencia eventual; el rechazo posterior no se presenta
+como garantía inmediata. Ingreso→Ventas también depende de su evento y outbox;
+reventa/ingreso aún no compiten sobre una sola transacción/estado canónico.
+Cancelación, publicación y transferencia mantienen coordinación/compensaciones
+entre bases. Reunir procesos no elimina estas ventanas.
+
+Por inspección, Postventa declara @Cron pero su arranque independiente no importa
+ScheduleModule.forRoot. La referencia ejercita el cron de Ventas; el arranque
+único deberá registrar el scheduler una vez y comprobar ambos trabajos.
+Los consumidores de liquidación/notificación de reventa registran el abono/envío
+que harían; no realizan abono al vendedor ni acreditan recepción de dispositivo.
+F12, F13 y F14 continúan pendientes. Los guiones Python históricos que resiembran
+contenedores de desarrollo permanecen conservados y no se ejecutaron aquí.
+No se probaron interfaces, carga reglamentaria, CI/CD remoto ni GHCR.
+
+Commit del hito: test(boleteria): establecer integracion aislada antes del traslado.
+El siguiente hito reunirá estos cinco componentes en apps/boleteria y repetirá
+los gates de referencia; todavía no se declara ese traslado terminado.
