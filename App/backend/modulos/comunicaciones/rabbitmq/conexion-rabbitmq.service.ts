@@ -1,49 +1,15 @@
 import { Inject, Injectable, Logger, OnApplicationBootstrap, OnApplicationShutdown } from '@nestjs/common';
 import { connect, ChannelModel, ConfirmChannel } from 'amqplib';
-import { CONFIGURACION, ConfiguracionServicio } from '../../config/configuracion';
+import { CONFIGURACION, ConfiguracionServicio } from '../config/configuracion';
 
 /** Declaración de exchanges y colas de un módulo. Debe ser idempotente. */
 export type DeclararTopologia = (canal: ConfirmChannel) => Promise<void>;
 
 /**
- * Conexión a RabbitMQ del Núcleo (ADR-10).
- *
- * Antes de ADR-12 esta clase estaba **duplicada** en Administración y en
- * Pedidos: dos conexiones al mismo broker desde dos procesos. En un solo
- * proceso hay una, y cada módulo le registra su propia topología —la de
- * cuentas y la de pedidos siguen siendo independientes, comparten broker y
- * nada más: si la cola de correos se atasca, los eventos de pedido siguen
- * saliendo—.
- *
- * Se conserva el diseño de Administración, que era el completo, **incluidos
- * los dos arreglos que allí costaron un fallo cada uno**: los manejadores de
- * cierre del canal (sin ellos el servicio quedaba "conectado" pero mudo) y la
- * resuscripción de los consumidores al reconectar (un canal nuevo no conserva
- * las suscripciones del anterior).
- *
- * ## Por qué la topología se declara desde el código
- *
- * `assertExchange` y `assertQueue` son idempotentes: si ya existen con la
- * misma configuración, no hacen nada. Declararlas al arrancar significa que
- * levantar el sistema en una máquina nueva no requiere entrar a la consola de
- * RabbitMQ a crear cosas a mano, y que la topología está versionada en git
- * junto al código que la usa.
- *
- * ## Por qué el Núcleo arranca aunque RabbitMQ no esté
- *
- * Si la conexión falla, se registra y se reintenta en segundo plano, pero el
- * proceso sigue en pie. El CU-027 marca la Disponibilidad del login como
- * atributo de calidad, y negarse a arrancar por un broker caído dejaría a
- * **todo el sistema sin poder iniciar sesión** por un fallo en algo que solo
- * manda correos. El coste asumido es que, con el broker caído, los correos de
- * verificación no salen; queda registrado como error (DECISIONES.md §10).
- *
- * ## Por qué conecta en `onApplicationBootstrap` y no en `onModuleInit`
- *
- * Los módulos registran su topología durante su `onModuleInit`, que Nest
- * ejecuta antes. Conectar más tarde garantiza que, cuando se abre el canal, ya
- * están registradas **todas** las topologías; si conectara en `onModuleInit`,
- * declararía solo las de los módulos que hubieran corrido antes que este.
+ * Conexión propia del Trabajador. Conserva reconexión, topologías y cierre del
+ * consumidor previo. No usa la infraestructura de Núcleo: esa infraestructura
+ * requiere configuración de negocio y tiene otra política de drain.
+ * El envío HTTP en vuelo no se espera al cerrar; RabbitMQ puede reentregarlo.
  */
 @Injectable()
 export class ConexionRabbitMq implements OnApplicationBootstrap, OnApplicationShutdown {
@@ -107,7 +73,7 @@ export class ConexionRabbitMq implements OnApplicationBootstrap, OnApplicationSh
   private async conectar(): Promise<void> {
     if (this.cerrando) return;
     try {
-      this.conexion = await connect(this.url);
+      this.conexion = await connect(this.url, { clientProperties: { connection_name: 'hexacore-trabajador' } });
 
       // Canal *confirm* y no uno normal: es lo que permite saber si el broker
       // guardó realmente el mensaje. Sin confirmaciones, `publish` devuelve

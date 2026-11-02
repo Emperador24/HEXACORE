@@ -14,8 +14,8 @@ import {
  * Envío asíncrono de correos (CU-027: *"cola de mensajes para el envío
  * asíncrono de correos de verificación/recuperación"*).
  *
- * Aquí vive **solo el publicador**. El consumidor salió al microservicio
- * `notificaciones` en la fase A de ADR-14: lo que este servicio sabe hacer es
+ * Aquí vive **solo el publicador**. El consumidor vive en apps/trabajador
+ * (modulos/comunicaciones): lo que este servicio sabe hacer es
  * anunciar que hay un correo por enviar, no enviarlo.
  *
  * La topología se sigue declarando desde los dos lados. `assertExchange` y

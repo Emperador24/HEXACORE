@@ -160,7 +160,7 @@ Propuesta de carpetas, como objetivo y no como estructura ya existente:
 - `App/backend/apps/nucleo`: arranque y rutas del núcleo.
 - `App/backend/apps/boleteria`: arranque y rutas de entradas.
 - `App/backend/apps/operacion`: arranque y rutas operativas.
-- `App/backend/apps/tareas`: arranque de consumidores y trabajos.
+- `App/backend/apps/trabajador`: arranque de consumidores y trabajos existentes (nombre de la entrega acordado; antes figuraba `apps/tareas`).
 - `App/backend/modulos/identidad`.
 - `App/backend/modulos/eventos-recintos`.
 - `App/backend/modulos/entradas`, con catálogo, fila, compra, promociones, reventa e ingreso como partes internas.

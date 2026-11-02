@@ -30,6 +30,15 @@
       "compilerOptions": {
         "tsConfigPath": "tsconfig.build.json"
       }
+    },
+    "trabajador": {
+      "type": "application",
+      "root": "apps/trabajador",
+      "entryFile": "main",
+      "sourceRoot": "apps/trabajador",
+      "compilerOptions": {
+        "tsConfigPath": "tsconfig.build.json"
+      }
     }
   }
 }

@@ -21,5 +21,5 @@ services:
       migracion-pagos: { condition: service_completed_successfully }
   migracion-pagos:
     depends_on: !reset {}
-  notificaciones:
+  trabajador:
     depends_on: !reset {}

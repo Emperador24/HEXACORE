@@ -6,3 +6,5 @@ test
 **/pruebas
 .env
 **/*.pem
+.env.trabajador
+.evidencia-e2e

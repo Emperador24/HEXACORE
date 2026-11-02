@@ -60,64 +60,6 @@ jobs:
           echo "Limpio: ningún artefacto de compilación versionado."
 
   # --------------------------------------------------------------------------
-  # Los microservicios con pruebas: compilan, pasan el chequeo de tipos y
-  # corren sus pruebas.
-  #
-  # Redis va como servicio del trabajo porque las pruebas de inventario de
-  # Pedidos (los scripts Lua de reserva) solo corren si se les da uno: sin
-  # `REDIS_INVENTARIO_PRUEBAS_URL` se saltan solas —`describe.skip`— y 24
-  # pruebas quedarían en verde sin haberse ejecutado. Los otros dos servicios
-  # ignoran la variable.
-  # --------------------------------------------------------------------------
-  servicios:
-    name: Servicio ${{ matrix.servicio }}
-    runs-on: ubuntu-latest
-    strategy:
-      # Si uno falla, los demás terminan igual: interesa ver todos los
-      # resultados.
-      fail-fast: false
-      matrix:
-        # Backends todavía separados. Núcleo tiene su job con Node fijado.
-        servicio:
-          - notificaciones
-    defaults:
-      run:
-        working-directory: App/services/${{ matrix.servicio }}
-    services:
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 5s
-          --health-timeout 3s
-          --health-retries 10
-    env:
-      REDIS_INVENTARIO_PRUEBAS_URL: redis://localhost:6379
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-          cache-dependency-path: App/services/${{ matrix.servicio }}/package-lock.json
-
-      # `npm ci` y no `npm install`: instala exactamente lo del package-lock y
-      # falla si los dos no coinciden, que es justo lo que se quiere en CI.
-      - run: npm ci
-
-      - name: Chequeo de tipos
-        run: npm run lint
-
-      - name: Pruebas unitarias
-        run: npm test
-
-      - name: Compilar
-        run: npm run build
-
-  # --------------------------------------------------------------------------
   # Pruebas de INTEGRACIÓN sobre el backend.
   #
   # La entrega pide cobertura de integración sobre el backend, y una prueba de
@@ -170,7 +112,7 @@ jobs:
   # No usa iniciar.sh ni la infraestructura del job de integración general.
   # --------------------------------------------------------------------------
   nucleo:
-    name: Backend (Núcleo y Boletería reales)
+    name: Backend (Núcleo, Boletería y Trabajador reales)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
@@ -194,6 +136,12 @@ jobs:
           REDIS_HOST: 127.0.0.1
           REDIS_PUERTO: "16382"
         run: npm test -- --runInBand
+      - name: Infraestructura de correo exclusiva
+        run: npm run test:trabajador:infra
+      - name: Contratos del correo y límites previos (RabbitMQ real)
+        run: npm run test:trabajador
+      - name: Identidad a RabbitMQ, Trabajador y proveedor simulado
+        run: npm run test:trabajador:identidad
       - name: Composición real del módulo financiero sin HTTP
         run: npm run test:pagos:modulo
       - name: Integración del Núcleo dos veces
@@ -206,6 +154,10 @@ jobs:
           npm run test:boleteria
       - name: Configuración y fronteras
         run: npm run verificar:infra
+      - name: Imagen del Trabajador
+        run: npm run test:trabajador:imagen:infra
+      - name: Salud, envío, pendientes y cierre de la imagen Trabajador
+        run: npm run test:trabajador:imagen
       - name: Construir y arrancar ambas imágenes y gateway
         run: npm run test:imagen:infra
       - name: Smoke de Núcleo y Boletería
@@ -220,7 +172,9 @@ jobs:
         run: npm run test:pagos:convivencia
       - name: Logs si falla
         if: failure()
-        run: docker compose -p hexacore-backend-e2e -f test/docker-compose.e2e.yml -f test/docker-compose.imagen.yml logs --tail 100
+        run: |
+          docker compose -p hexacore-backend-e2e -f test/docker-compose.e2e.yml -f test/docker-compose.imagen.yml logs --tail 100
+          docker compose -p hexacore-trabajador-e2e -f test/trabajador/docker-compose.yml --profile imagen logs --tail 100
       - name: Conservar logs de los procesos compilados
         if: always()
         uses: actions/upload-artifact@v4
@@ -230,7 +184,9 @@ jobs:
           include-hidden-files: true
       - name: Limpiar solo el proyecto exclusivo
         if: always()
-        run: npm run test:limpiar
+        run: |
+          npm run test:trabajador:limpiar
+          npm run test:limpiar
 
   # --------------------------------------------------------------------------
   # Los dos portales Angular: que compilen en modo producción.

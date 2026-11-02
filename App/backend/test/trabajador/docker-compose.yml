@@ -1,0 +1,46 @@
+name: hexacore-trabajador-e2e
+services:
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: trabajador_e2e
+      RABBITMQ_DEFAULT_PASS: trabajador_e2e
+      RABBITMQ_DEFAULT_VHOST: trabajador_e2e
+    ports: ["127.0.0.1:15677:5672", "127.0.0.1:16777:15672"]
+    volumes: ["rabbitmq:/var/lib/rabbitmq"]
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
+      interval: 3s
+      timeout: 10s
+      retries: 30
+  correo:
+    image: node:22.22.3-alpine
+    user: node
+    working_dir: /app
+    command: ["node", "proveedor.cjs"]
+    volumes: ["./proveedor.cjs:/app/proveedor.cjs:ro"]
+    ports: ["127.0.0.1:13103:3098"]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3098/salud').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  trabajador:
+    profiles: ["imagen"]
+    build:
+      context: ../..
+      dockerfile: Dockerfile.trabajador
+    init: true
+    depends_on:
+      rabbitmq: { condition: service_healthy }
+      correo: { condition: service_healthy }
+    environment:
+      NODE_ENV: test
+      PUERTO: "3006"
+      RABBITMQ_URL: amqp://trabajador_e2e:trabajador_e2e@rabbitmq:5672/trabajador_e2e
+      CORREO_PROVEEDOR_URL: http://correo:3098
+      CORREO_URL_BASE_ENLACES: https://portal.example.test/cuenta
+      AUTH_BLOQUEO_MINUTOS: "15"
+    ports: ["127.0.0.1:13100:3006"]
+volumes:
+  rabbitmq:

@@ -1,1 +1,4 @@
 .evidencia-e2e/
+
+# Configuración local exclusiva del Trabajador
+.env.trabajador

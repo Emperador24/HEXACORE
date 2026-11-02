@@ -144,3 +144,17 @@ las limpiezas respectivas delegan a test:limpiar.
 locales, el webhook real, el libro compartido y el reinicio de ambos programas.
 La confirmación financiera no finaliza un pedido incierto: F12 se comprueba como
 limitación conservada. No se prueban interfaces ni un proveedor bancario real.
+
+## Correo existente en el Trabajador
+
+[Suite propia](trabajador/README.md): RabbitMQ real y proveedor simulado en otro
+proyecto exclusivo, sin SQL/Redis/claves en el Trabajador. Los 20 escenarios de
+referencia se ejecutaron antes y después del movimiento. El recorrido de Identidad
+usa las bases propias de este proyecto y el broker exclusivo de correo; crea y
+retira solo su cuenta fixture. No ejecutar suites por proceso con sus imágenes
+activas. Ambas limpiezas se documentan explícitamente, sin limpiar entorno habitual.
+
+La tarea financiera se espera con docker wait sobre su ID, obtenido con compose
+ps -a. Así se verifica salida 0 aunque haya terminado antes de iniciar la espera;
+compose wait podía devolver "no containers" por esa carrera. No se vuelve a
+migrar desde cada proceso ni se omite un fallo del CLI.

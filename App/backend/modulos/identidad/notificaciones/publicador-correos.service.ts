@@ -10,7 +10,7 @@ import {
 } from './topologia';
 
 /**
- * Encola un correo para que lo envíe el proceso de notificaciones.
+ * Encola un correo para que lo envíe el Trabajador.
  *
  * Es el paso 5 del CU-027 (*"envía un correo de verificación de cuenta"*), pero
  * visto desde el lado del registro: aquí solo se deja el encargo. Quién lo

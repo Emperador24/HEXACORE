@@ -304,10 +304,12 @@ services:
       POSTGRES_BD_PAGOS: pagos
     healthcheck: { disable: true }
 
-  # Microservicio de Notificaciones — envío asíncrono de correos. Fase A de ADR-14.
-  notificaciones:
+  # Trabajador: consumidor de correo existente, sin bases, Redis ni claves JWT.
+  trabajador:
     profiles: ["servicios"]
-    build: ../services/notificaciones
+    build:
+      context: ../backend
+      dockerfile: Dockerfile.trabajador
     # Sin `container_name`: ADR-14 lo escala por longitud de cola.
     restart: unless-stopped
     init: true
@@ -317,7 +319,8 @@ services:
       rabbitmq: { condition: service_healthy }
       correo: { condition: service_healthy }
     environment:
-      <<: *entorno-comun
+      NODE_ENV: development
+      RABBITMQ_URL: amqp://hexacore:hexacore@${HOST_RABBIT:-rabbitmq}:${PUERTO_RABBIT:-5672}
       PUERTO: "3006"
       CORREO_PROVEEDOR_URL: http://${HOST_CORREO:-correo}:${PUERTO_CORREO:-3098}
     healthcheck:

@@ -2,7 +2,7 @@
   "name": "hexacore-backend",
   "version": "0.1.0",
   "private": true,
-  "description": "Workspace backend: Núcleo, Boletería y Pagos reutilizable",
+  "description": "Workspace backend: Núcleo, Boletería, Trabajador y Pagos reutilizable",
   "scripts": {
     "build": "nest build nucleo",
     "start": "nest start nucleo",
@@ -69,9 +69,19 @@
     "test:pagos:contratos": "node --test --test-concurrency=1 test/pagos/contratos.test.cjs",
     "test:pagos:modulo": "node test/pagos/comprobar-modulo.cjs",
     "pretest:pagos:modulo": "npm run build",
-    "test:infra": "docker compose -p hexacore-backend-e2e -f test/docker-compose.e2e.yml up -d --build --wait && docker compose -p hexacore-backend-e2e -f test/docker-compose.e2e.yml wait migracion-pagos",
+    "test:infra": "docker compose -p hexacore-backend-e2e -f test/docker-compose.e2e.yml up -d --build --wait && node test/esperar-migracion-pagos.cjs",
     "test:limpiar": "docker compose -p hexacore-backend-e2e -f test/docker-compose.e2e.yml -f test/docker-compose.imagen.yml down --volumes",
-    "test:pagos:convivencia": "node --test --test-concurrency=1 test/pagos/convivencia.test.cjs"
+    "test:pagos:convivencia": "node --test --test-concurrency=1 test/pagos/convivencia.test.cjs",
+    "build:trabajador": "nest build trabajador",
+    "start:trabajador": "node dist/apps/trabajador/main.js",
+    "start:trabajador:dev": "nest start trabajador --watch",
+    "pretest:trabajador": "npm run build:trabajador",
+    "test:trabajador": "node --test --test-concurrency=1 test/trabajador/contratos.test.cjs",
+    "test:trabajador:infra": "docker compose -p hexacore-trabajador-e2e -f test/trabajador/docker-compose.yml up -d --wait",
+    "test:trabajador:imagen:infra": "docker compose -p hexacore-trabajador-e2e -f test/trabajador/docker-compose.yml --profile imagen up -d --build --wait",
+    "test:trabajador:imagen": "node test/trabajador/comprobar-imagen.cjs",
+    "test:trabajador:identidad": "node --test --test-concurrency=1 test/trabajador/identidad.test.cjs",
+    "test:trabajador:limpiar": "docker compose -p hexacore-trabajador-e2e -f test/trabajador/docker-compose.yml --profile imagen down --volumes"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.6",

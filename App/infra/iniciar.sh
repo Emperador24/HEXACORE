@@ -115,6 +115,18 @@ if [[ "$PARAR" == "si" ]]; then
   exit 0
 fi
 
+# Un servicio retirado puede seguir como huérfano del mismo proyecto Compose.
+# No arrancar otro consumidor sobre cuentas.correos hasta detener el anterior.
+if [[ "$ROL" != "datos" ]]; then
+  SERVICIOS_CORREO_ACTIVOS="$("${COMPOSE[@]}" --profile servicios ps --orphans \
+    --status running --status restarting --status paused --format '{{.Service}}')"
+  if grep -qx 'notificaciones' <<< "$SERVICIOS_CORREO_ACTIVOS"; then
+    rojo "Hay un consumidor notificaciones activo de la versión anterior."
+    rojo "Detén ese servicio con su Compose anterior antes de arrancar trabajador; conserva las colas."
+    exit 1
+  fi
+fi
+
 # --- Arranque ---------------------------------------------------------------
 
 # Solo se compila cuando NO se despliega desde el registro.
@@ -139,7 +151,7 @@ case "$ROL" in
     gris "  Levantando los servicios de dominio y el API Gateway"
     "${COMPOSE[@]}" --profile servicios up -d $CONSTRUIR \
       --scale boleteria="$REPLICAS" \
-      nucleo boleteria notificaciones \
+      nucleo boleteria trabajador \
       api-gateway portal-web-cliente portal-web-admin
     ;;
   todo)
@@ -176,7 +188,7 @@ contenedor_de() {
 
 if [[ "$ROL" != "datos" ]]; then
   titulo "Esperando a que los servicios respondan"
-  for servicio in nucleo boleteria notificaciones \
+  for servicio in nucleo boleteria trabajador \
                   api-gateway portal-web-cliente portal-web-admin; do
     id="$(contenedor_de "$servicio")"
     if [[ -n "$id" ]] && esperar_sano "$id"; then

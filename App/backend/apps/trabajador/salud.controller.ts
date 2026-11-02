@@ -1,8 +1,8 @@
 import { Controller, Get, HttpStatus, Inject, Res } from '@nestjs/common';
 import { Response } from 'express';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { CONFIGURACION, ConfiguracionServicio } from '../config/configuracion';
-import { ConexionRabbitMq } from '../comun/rabbitmq/conexion-rabbitmq.service';
+import { CONFIGURACION, ConfiguracionServicio } from '../../modulos/comunicaciones/config/configuracion';
+import { ConexionRabbitMq } from '../../modulos/comunicaciones/rabbitmq/conexion-rabbitmq.service';
 
 /**
  * Sonda de vida de Notificaciones.
@@ -34,6 +34,7 @@ export class SaludController {
     respuesta.status(listo ? HttpStatus.OK : HttpStatus.SERVICE_UNAVAILABLE);
 
     return {
+      // Nombre conservado del contrato técnico anterior.
       servicio: 'notificaciones',
       estado: listo ? 'arriba' : 'degradado',
       entorno: this.config.entorno,

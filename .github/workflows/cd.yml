@@ -58,8 +58,9 @@ jobs:
           - nombre: boleteria
             contexto: App/backend
             dockerfile: App/backend/Dockerfile.boleteria
-          - nombre: notificaciones
-            contexto: App/services/notificaciones
+          - nombre: trabajador
+            contexto: App/backend
+            dockerfile: App/backend/Dockerfile.trabajador
           - nombre: pasarela
             contexto: App/infra/pasarela-pagos-simulada
           - nombre: correo

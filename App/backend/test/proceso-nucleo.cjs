@@ -13,9 +13,12 @@ const entorno = () => ({ ...process.env,
     PAGOS_PROVEEDOR_URL: 'http://127.0.0.1:13101', PASARELA_TIMEOUT_MS: '3000', PASARELA_SECRETO_WEBHOOK: 'backend-webhook-pruebas',
     AUTH_JWT_EMISOR: 'hexacore-administracion', AUTH_JWT_CLAVE_PUBLICA_ARCHIVO: resolve(__dirname, 'claves/jwt-publica.pem'), AUTH_JWT_CLAVE_PRIVADA_ARCHIVO: resolve(__dirname, 'claves/jwt-privada.pem'),
 });
-async function iniciar() {
+async function iniciar({ rabbitmqUrl, gestionUrl = 'http://127.0.0.1:16775' } = {}) {
     const env = entorno();
-    const respuesta = await fetch('http://127.0.0.1:16775/api/connections', { headers: { Authorization: 'Basic ' + Buffer.from('cu011_e2e:cu011_e2e').toString('base64') } });
+    if (rabbitmqUrl) env.RABBITMQ_URL = rabbitmqUrl;
+    const urlRabbit = new URL(env.RABBITMQ_URL);
+    const credenciales = decodeURIComponent(urlRabbit.username) + ':' + decodeURIComponent(urlRabbit.password);
+    const respuesta = await fetch(gestionUrl + '/api/connections', { headers: { Authorization: 'Basic ' + Buffer.from(credenciales).toString('base64') } });
     assert.equal(respuesta.status, 200);
     assert.ok(!(await respuesta.json()).some(c => c.client_properties.connection_name === 'hexacore-nucleo'), 'Detener las imágenes de pruebas antes de ejecutar procesos compilados');
     for (const modulo of ['identidad', 'alimentos', 'personal-logistica']) {

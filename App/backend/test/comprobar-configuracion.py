@@ -40,6 +40,17 @@ for remoto, escalado, registro in itertools.product([False, True], repeat=3):
     if remoto:
         assert migracion['environment']['POSTGRES_HOST'] == '192.0.2.10'
         assert not migracion.get('depends_on')
+    assert 'notificaciones' not in servicios and 'trabajador' in servicios
+    trabajador = servicios['trabajador']
+    assert not trabajador.get('volumes')
+    assert not any(k.startswith(('POSTGRES_', 'DB_', 'REDIS_', 'PAGOS_', 'AUTH_JWT_')) for k in trabajador['environment'])
+    assert set(trabajador.get('depends_on', {})) == (set() if remoto else {'rabbitmq', 'correo'})
+    if not registro:
+        assert trabajador['build']['context'].endswith('/App/backend')
+        assert trabajador['build']['dockerfile'] == 'Dockerfile.trabajador'
+    if remoto:
+        assert '192.0.2.10' in trabajador['environment']['RABBITMQ_URL']
+        assert '192.0.2.10' in trabajador['environment']['CORREO_PROVEEDOR_URL']
     boleteria = servicios['boleteria']
     bv = boleteria['environment']
     for key,base in {'VENTAS':'entradas_mercado_secundario','CATALOGO':'catalogo','POSTVENTA':'postventa','ACCESO_QR':'acceso_qr'}.items():
@@ -91,14 +102,14 @@ for remoto, escalado, registro in itertools.product([False, True], repeat=3):
     resultados.append({'configuracion': nombre, 'servicios': len(servicios), 'resultado': 'aprobado'})
 
 # Los dominios no importan reglas, repositorios o entidades internas del otro.
-modulos = ['identidad', 'alimentos', 'personal-logistica', 'entradas', 'finanzas']
+modulos = ['identidad', 'alimentos', 'personal-logistica', 'entradas', 'finanzas', 'comunicaciones']
 for modulo in modulos:
     for archivo in Path(f'App/backend/modulos/{modulo}').rglob('*.ts'):
         for importacion in re.findall(r"from ['\"]([^'\"]+)['\"]", archivo.read_text()):
             if importacion.startswith('.'):
                 destino = (archivo.parent / importacion).resolve()
                 for otro in set(modulos) - {modulo}:
-                    if otro == 'finanzas' and destino == Path('App/backend/modulos/finanzas/pagos').resolve():
+                    if modulo != 'comunicaciones' and otro == 'finanzas' and destino == Path('App/backend/modulos/finanzas/pagos').resolve():
                         continue  # Única API pública financiera; no importar persistencia ajena.
                     assert not destino.is_relative_to(Path(f'App/backend/modulos/{otro}').resolve()), (archivo, importacion)
 
@@ -108,7 +119,7 @@ for archivo in Path('App/backend/modulos/finanzas/pagos').rglob('*.ts'):
         if importacion.startswith('.'):
             destino = (archivo.parent / importacion).resolve()
             assert not destino.is_relative_to(Path('App/backend/apps').resolve()), (archivo, importacion)
-print('Configuración resuelta y fronteras entre cinco módulos: aprobadas')
+print('Configuración resuelta y fronteras entre seis módulos: aprobadas')
 
 # El entorno exclusivo también debe compartir un libro, sin recuperar un servidor.
 for imagen in [False, True]:
@@ -130,3 +141,18 @@ for imagen in [False, True]:
         assert 'PASARELA_SECRETO_WEBHOOK' not in b and 'AUTH_JWT_CLAVE_PRIVADA_ARCHIVO' not in b
         assert servicios['pasarela']['environment']['WEBHOOK_URL'] == 'http://nucleo:3002/api/v1/pagos/webhook'
 print('Dos configuraciones aisladas (recursos e imágenes/gateway): aprobadas')
+
+for imagen in [False, True]:
+    comando = ['docker', 'compose', '-p', 'hexacore-trabajador-e2e', '-f', 'App/backend/test/trabajador/docker-compose.yml']
+    if imagen:
+        comando += ['--profile', 'imagen']
+    subprocess.run(comando + ['config', '-q'], check=True)
+    cfg = json.loads(subprocess.check_output(comando + ['config', '--format', 'json'], text=True))
+    assert len(cfg['services']) == (3 if imagen else 2)
+    if imagen:
+        t = cfg['services']['trabajador']
+        assert set(t['depends_on']) == {'rabbitmq', 'correo'}
+        assert not any(k.startswith(('POSTGRES_', 'DB_', 'REDIS_', 'PAGOS_', 'AUTH_JWT_')) for k in t['environment'])
+    for t in cfg['services'].values():
+        assert all(puerto['host_ip'] == '127.0.0.1' for puerto in t.get('ports', []))
+print('Dos configuraciones exclusivas de Trabajador: aprobadas')

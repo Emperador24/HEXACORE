@@ -1,16 +1,20 @@
-# Backend HEXACORE: Núcleo y Boletería
+# Backend HEXACORE: Núcleo, Boletería y Trabajador
 
 Etapa intermedia: Identidad, Alimentos y Personal/Logística corren en **un solo proceso NestJS**.
 Boletería reúne Ventas, Catálogo, Cola, Postventa y Acceso QR en otro proceso.
 Pagos se importa desde modulos/finanzas/pagos en ambos procesos, con un único libro financiero.
-El único receptor HTTP financiero es el webhook del Núcleo. Notificaciones conserva su paquete separado.
+El único receptor HTTP financiero es el webhook del Núcleo. El correo existente
+se consume en Trabajador, desde modulos/comunicaciones.
 Angular y sus compiladores permanecen fuera de este workspace.
-La consolidación de datos de Boletería, Operación y Trabajador siguen pendientes del plan.
+La consolidación general de datos y Operación siguen pendientes del plan.
+Otros consumidores/tareas de negocio conservan su proceso actual (inventario en ESTADO-MIGRACION §21).
 
 ```text
 backend/
   apps/nucleo/         main, composición, disponibilidad y webhook financiero
   apps/boleteria/      main, composición y disponibilidad de Boletería
+  apps/trabajador/     arranque de correo y salud técnica, sin dependencias de negocio
+  modulos/comunicaciones/ consumidor de correo, configuración y topología existentes
   modulos/finanzas/pagos/ libro, cobros, reembolsos, pasarela y 1 migración existente
   modulos/identidad/   cuentas, sesiones, administración, entidades y 3 migraciones
   modulos/alimentos/   catálogo, menú, checkout, inventario, pagos y 2 migraciones
@@ -240,5 +244,32 @@ clave privada. Importar PagosModule no publica endpoints ni abre Redis/AMQP.
 **F12 sigue pendiente:** el webhook actualiza el libro y publica, sin finalizar
 pedidos/compras inciertos. Tampoco se añaden reclamaciones entre procesos,
 conciliación administrativa o atomicidad con la pasarela. Se migra comportamiento
-existente; los CU faltantes continúan con sus responsables. Trabajador, Operación
-y consolidación general de datos corresponden a etapas posteriores.
+existente; los CU faltantes continúan con sus responsables. Operación
+y consolidación general de datos corresponden a etapas posteriores. El Trabajador
+ya ejecuta el correo existente; otras tareas conservan su dueño de dominio.
+
+## Trabajador: correo existente
+
+[Módulo y límites](modulos/comunicaciones/README.md), [pruebas](test/trabajador/README.md).
+Mismo Node 22.22.3, Nest 11/TS 5.9 y manifiesto/lockfile, sin dependencias nuevas.
+Solo importa Comunicaciones: ni PostgreSQL, Redis, Identidad, claves JWT ni Pagos.
+Conserva el consumidor de cinco tipos de correo, contratos/topología, plantillas,
+reintentos y estado en memoria; no implementa alertas operativas ni F12.
+
+```bash
+cp apps/trabajador/.env.example .env.trabajador
+npm run build:trabajador
+npm run start:trabajador           # puerto 3006, /api/v1/salud
+# Desarrollo: npm run start:trabajador:dev
+```
+
+La configuración usa CONFIGURACION_COMUNICACIONES y solo .env.trabajador en
+desarrollo; no hereda el archivo .env con puerto/configuración de Núcleo/Boletería.
+En producción se inyecta RabbitMQ/correo y no se lee .env. Sin migraciones/semillas.
+La salud conserva servicio=notificaciones y 503 si falta broker; no implica que
+el proveedor esté disponible. No hay rutas de negocio/gateway al Trabajador.
+Dockerfile.trabajador y servicio trabajador sustituyen al paquete separado.
+Detener el consumidor antiguo con la configuración anterior antes de cambiar una
+instalación evita que quede huérfano consumiendo junto al nuevo; no se ejecutó
+ese cambio sobre el entorno habitual. Deduplicación/intentos solo en memoria;
+SIGTERM puede reencolar un envío en vuelo, incluso si el proveedor ya lo aceptó.

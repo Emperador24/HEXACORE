@@ -134,3 +134,8 @@ La subpetición njs de consumo de turno usa ese mismo destino, conserva dueño y
 consumo único; `/interno/` sigue sin exponerse. El smoke aislado de Boletería
 comprueba compra/pago/QR, repetición de turno, doble ingreso y revocación.
 Las pruebas de réplicas/carga y la invalidación QR inmediata siguen pendientes.
+
+El Trabajador reemplaza al consumidor de Notificaciones dentro del workspace.
+No tiene rutas de negocio en el gateway ni es dependencia de disponibilidad del
+login. Solo expone su salud técnica compatible en el puerto 3006; los correos
+llegan desde Identidad por cuentas.eventos/cuenta.correo.

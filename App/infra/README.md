@@ -3,7 +3,7 @@
 Identidad, Alimentos y Personal/Logística corren en **Núcleo**; los cinco
 componentes de Entradas corren en **Boletería**, desde `App/backend`.
 Pagos se importa en ambos programas y su único webhook está en Núcleo;
-Notificaciones sigue fuera. Se mantienen todas las bases, incluido el libro pagos.
+El correo existente corre en **Trabajador** desde ese workspace. Se mantienen todas las bases, incluido el libro pagos.
 Ver [módulo local y contratos de Pagos](../backend/test/pagos/README.md).
 Ver [instalación, migraciones y arranque](../backend/README.md) y
 [pruebas exclusivas](../backend/test/README.md). Este README describe el
@@ -59,7 +59,7 @@ Las interfaces se arrancan aparte, apuntando al gateway del computador B
 ## Qué levanta `./iniciar.sh`
 
 La configuración actual define **12 servicios locales**: cinco piezas de datos/
-proveedores, Núcleo, Boletería, Notificaciones, gateway, dos portales y la tarea
+proveedores, Núcleo, Boletería, Trabajador, gateway, dos portales y la tarea
 **migracion-pagos** (termina sin servidor). Ambos programas esperan esa única
 aplicación del historial financiero, conservando POSTGRES_BD_PAGOS=pagos.
 El override remoto deja **7**, sin arrancar datos locales. Las ocho mezclas
@@ -220,3 +220,23 @@ dominio lo necesite; todavía no hay nada que guardar ahí.
 
 - **MongoDB** para Reportes/analítica.
 - **Manifiestos de despliegue** para el ambiente de pruebas y producción (Kubernetes).
+
+## Trabajador y sustitución del consumidor anterior
+
+El servicio trabajador usa App/backend/Dockerfile.trabajador (Node 22.22.3);
+solo depende de RabbitMQ y correo, también con datos remotos. No recibe variables
+PostgreSQL/Redis/Pagos ni claves JWT. Mantiene puerto 3006, /api/v1/salud y
+servicio=notificaciones. El gateway no necesita esperarlo para atender cuentas.
+El registro hexacore-trabajador sustituye a hexacore-notificaciones; publicación
+GHCR/arranque remoto todavía no se certifican con pruebas locales.
+
+Antes de actualizar una instalación existente, detener notificaciones **con el
+Compose anterior**; después actualizar y arrancar trabajador. La configuración
+nueva no detiene automáticamente huérfanos con el nombre retirado. No ejecutar
+ambos sobre la misma cola. Esta entrega preservó los contenedores habituales.
+Pruebas: [correo y recorrido Identidad](../backend/test/trabajador/README.md).
+
+El arranque iniciar.sh detecta consumidores notificaciones activos (incluidos
+huérfanos, reiniciando o pausados) del mismo proyecto Compose y se detiene antes
+de arrancar Trabajador. Es una comprobación de lectura; no mata contenedores ni
+borra colas. La parada/transición del entorno habitual no se ejecutó en esta etapa.

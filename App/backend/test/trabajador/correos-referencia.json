@@ -1,0 +1,27 @@
+{
+  "VERIFICACION": {
+    "para": "nora@example.test",
+    "asunto": "Verifica tu cuenta de HEXACORE",
+    "texto": "Hola Nora:\n\nPara activar tu cuenta, abre este enlace:\n\nhttps://portal.example.test/cuenta/verificar?token=fixture-token\n\nSi no te registraste en HEXACORE, puedes ignorar este mensaje."
+  },
+  "RECUPERACION": {
+    "para": "nora@example.test",
+    "asunto": "Restablece tu contraseña de HEXACORE",
+    "texto": "Hola Nora:\n\nPara elegir una contraseña nueva, abre este enlace:\n\nhttps://portal.example.test/cuenta/restablecer?token=fixture-token\n\nEl enlace caduca pronto y solo puede usarse una vez.\nSi no pediste cambiarla, ignora este mensaje: tu contraseña sigue siendo la misma."
+  },
+  "REGISTRO_DUPLICADO": {
+    "para": "nora@example.test",
+    "asunto": "Alguien intentó registrarse con tu correo en HEXACORE",
+    "texto": "Hola Nora:\n\nAlguien intentó crear una cuenta con esta dirección, que ya tiene una.\nNo hemos hecho ningún cambio.\n\nSi fuiste tú, puedes iniciar sesión con tu contraseña de siempre, o pedir restablecerla si no la recuerdas."
+  },
+  "CUENTA_BLOQUEADA": {
+    "para": "nora@example.test",
+    "asunto": "Bloqueamos temporalmente el acceso a tu cuenta de HEXACORE",
+    "texto": "Hola Nora:\n\nHubo varios intentos fallidos de iniciar sesión en tu cuenta, así que bloqueamos el acceso durante 15 minutos.\nMientras dure el bloqueo no se aceptará ninguna contraseña, tampoco la correcta.\n\nSi fuiste tú, espera y vuelve a intentarlo, o restablece tu contraseña si no la recuerdas.\nSi no fuiste tú, alguien está probando contraseñas: te recomendamos cambiar la tuya cuando se levante el bloqueo."
+  },
+  "CONTRASENA_CAMBIADA": {
+    "para": "nora@example.test",
+    "asunto": "Tu contraseña de HEXACORE ha cambiado",
+    "texto": "Hola Nora:\n\nLa contraseña de tu cuenta acaba de cambiar, y cerramos las sesiones que tenías abiertas en otros dispositivos.\n\nSi fuiste tú, no tienes que hacer nada.\nSi no fuiste tú, alguien tiene acceso a tu cuenta: pide restablecer la contraseña desde la pantalla de inicio de sesión y revisa también la seguridad de este correo."
+  }
+}

@@ -9,13 +9,15 @@ conexiones de negocio a sus bases actuales, más la financiera compartida. Las r
 sesiones, administración de cuentas, pedidos y logística se conservan mediante el gateway.
 Boletería reúne las cinco implementaciones de Entradas en otro proceso :3001,
 con cuatro bases y diez migraciones conservadas. Se retiran los servidores
-directos anteriores; Ambos usan el módulo Pagos y el mismo libro; solo Núcleo recibe el webhook. Las rutas de web/móvil en el gateway permanecen iguales.
+directos anteriores. Ambos usan el módulo Pagos y el mismo libro; solo Núcleo recibe el webhook. Las rutas de web/móvil en el gateway permanecen iguales.
 
 ```text
 App/
   backend/
     apps/nucleo/
     apps/boleteria/
+    apps/trabajador/
+    modulos/comunicaciones/
     modulos/identidad/
     modulos/alimentos/
     modulos/personal-logistica/
@@ -23,7 +25,7 @@ App/
     modulos/finanzas/pagos/
     compartido/
     test/
-  services/       notificaciones sigue fuera del workspace; Pedidos local se preserva
+  services/       sin backends activos; Pedidos local se preserva
   gateway/        Nginx/njs, entrada pública :8080
   frontend/       portales Angular y app Flutter, fuera del workspace backend
   infra/          PostgreSQL, Redis, RabbitMQ y proveedores simulados
@@ -31,15 +33,15 @@ App/
   PoCs/           evidencia histórica del stack
 ```
 
-Este es un paso hacia Núcleo, Boletería, Operación y Trabajador. Pagos es reutilizable sin servidor; Personal/Logística ya pertenece al Núcleo; Operación sigue pendiente. Los dominios sin
+Este es un paso hacia Núcleo, Boletería, Operación y Trabajador. Pagos es reutilizable sin servidor; Personal/Logística ya pertenece al Núcleo; Operación sigue pendiente; Trabajador ejecuta solo el correo ya implementado. Los dominios sin
 backend o con pantallas simuladas siguen pendientes. No hay MongoDB desplegado
 ni se consolida aquí la información de las bases de desarrollo.
 
 Seguir [las instrucciones del workspace](backend/README.md) para instalar,
-migrar y arrancar Núcleo/Boletería. Integración exclusiva: [Núcleo](backend/test/README.md)
+migrar y arrancar Núcleo/Boletería y el [Trabajador](backend/modulos/comunicaciones/README.md). Integración exclusiva: [Núcleo](backend/test/README.md)
 y [Boletería](backend/test/boleteria/README.md), sin datos habituales. Compose
-ejecuta esos dos programas y Notificaciones, más una tarea única de migración
-del libro pagos. Notificaciones conserva su instalación propia. Se mantiene el flujo de [WORKFLOW.md](../WORKFLOW.md).
+ejecuta Núcleo, Boletería y Trabajador, más una tarea única de migración
+del libro pagos. Todo backend activo comparte manifiesto/lockfile en App/backend. Se mantiene el flujo de [WORKFLOW.md](../WORKFLOW.md).
 
 Los responsables funcionales se conservan: Identidad y Alimentos, Sebastián;
 Boletería, Daniel y Samuel; Personal/Logística y Operación, Samuel y Diego según

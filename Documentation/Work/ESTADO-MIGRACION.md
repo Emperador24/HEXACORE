@@ -1,43 +1,43 @@
 # Estado de migración de HEXACORE
 
 Fecha de revisión: **2 de noviembre de 2026**, America/Bogota.
-Rama `feature/sebastian-arquitectura`, integración local de Pagos desde
-**f070bc2fe6f691741623ee93b4041765100b1c69**. El trabajo iniciado se conservó y
-completó en esta etapa. Pedidos local queda aparte. Las secciones anteriores
-conservan su evidencia histórica; **§20 describe la configuración vigente**.
+Rama `feature/sebastian-arquitectura`, traslado de Notificaciones desde
+**85419bef9d2c88cd27301923e7e8252fbc75e863**. HEAD y trabajo local comprobados sin
+reset/stash/descarte. Pedidos se conserva aparte. **§21 describe el estado vigente**;
+las secciones anteriores conservan su evidencia histórica.
 
-**Alcance de toda la migración (§19 y plan):** trasladar funcionalidad existente,
-adaptarla técnicamente y preparar fronteras para sus responsables. No completar
-CU faltantes ni F12. Se conservan las decisiones arquitectónicas, reparto de CU
-y consolidación posterior de datos. Operación queda pendiente; Trabajador recibirá
-consumidores/tareas existentes, sin inventar funciones para cerrar la migración.
+**Alcance de toda la migración:** migrar funcionalidad existente y preparar sus
+fronteras, sin completar CU faltantes, F12 ni Operación. La consolidación de datos
+sigue siendo obligatoria y posterior; no se ejecuta en esta entrega.
 
-**Resultado vigente de Pagos (§20):** Alimentos y Entradas llaman localmente a
-la API pública de `modulos/finanzas/pagos`, sin publicar endpoints de cobro o
-reembolso. `apps/pagos-http` se retira. Núcleo y Boletería usan el mismo libro
-**pagos**, conexión **finanzas-pagos**; una tarea única **migracion-pagos** prepara
-su historial antes de ambos programas. Solo Núcleo recibe
-**POST /api/v1/pagos/webhook** con HMAC sobre bytes originales y publica mediante
-su conexión AMQP compartida. Boletería no recibe secreto HMAC ni clave privada.
-Se mantienen las siete bases/diecisiete migraciones de negocio más el libro y
-su migración original; synchronize=false y sin consolidación de datos.
+**Trabajador vigente (§21):** apps/trabajador consume el correo existente desde
+modulos/comunicaciones, con Node 22.22.3 y el único manifiesto/lockfile del backend.
+Solo usa RabbitMQ y proveedor HTTP de correo. No carga PostgreSQL, Redis,
+Identidad/JWT/clave privada ni Finanzas. Se retira el paquete/servidor independiente;
+la salud conserva puerto 3006, GET /api/v1/salud y servicio=notificaciones.
+Los demás consumidores/temporizadores siguen en Núcleo/Boletería con su dueño
+(inventario/razones en §21). Operación y las alertas ausentes siguen pendientes.
 
-Validación de esta etapa: **808/808 unitarias en 56 suites**, **73/73 E2E del
-Núcleo dos veces**, **23/23 de Boletería dos veces**, **13/13 contratos financieros
-dos veces** y **5/5 de convivencia financiera dos veces**. Cero omitidas en las
-corridas aprobadas. Tipos, compilaciones, composición sin HTTP, configuraciones,
-imágenes y gateway comprobados. Los fallos iniciales de pruebas y el timeout
-intermitente del smoke también se registran, sin convertirlos en aprobados (§20).
-Notificaciones continúa fuera del workspace; Trabajador y Operación siguen pendientes.
+**Pagos vigente (§20):** Alimentos y Entradas llaman localmente al módulo común,
+libro pagos único/finanzas-pagos, tarea única de migración y webhook solo en Núcleo.
+Se conservan las siete bases/diecisiete migraciones de negocio más libro financiero
+y migración original, sin synchronize ni consolidación/copias de datos.
 
-**F12 permanece pendiente y se caracteriza con prueba real:** un callback puede
-aprobar el libro mientras el pedido sigue PENDIENTE_PAGO con transacción FALLIDA.
-F13 sigue abierto: hubo un timeout de smoke no reproducido en su repetición; el
-muestreo posterior no capturó bloqueos/statement timeout y no explica el instante
-fallido. Una demora distinta de la suite coincide con suspensión del Mac.
-F14 conserva el listado global de notificaciones. No se implementan CU ausentes.
-Publicación GHCR, CI/CD remotos y arranque general/remoto quedan pendientes.
-Comandos vigentes en §20 y `App/backend/README.md`.
+Referencia de correo: **20/20 antes** del traslado y **20/20 dos veces después**,
+con las mismas aserciones. Recorrido real de los cinco correos desde Identidad:
+**3/3**. Regresiones **808/808 unitarias**, **73/73 Núcleo**, **23/23 Boletería**.
+Imagen Trabajador construida/saludable y smoke de envío, parada, pendientes y reinicio
+aprobado. **13/13 contratos y 5/5 convivencia financieros**, sin omisiones;
+fallos de preparación registrados en §21; no se ocultan intentos fallidos ni se aprueba con cero pruebas.
+
+**Límites de correo previos comprobados (§21, F15):** deduplicación/intentos solo en
+memoria; repetir tras reinicio o desde varias instancias puede enviar dos veces.
+SIGTERM no espera confirmación del envío en vuelo; el broker reentrega sin ack,
+incluso si el proveedor ya aceptó. Validación parcial: null bloquea prefetch sin ack;
+evento/tipo desconocidos conservan fallback. No se añade persistencia ni se promete
+entrega exactamente una vez. F01 se sustituye por pruebas reales en el workspace/CI;
+F12, F13, F14 y alertas operativas siguen pendientes. Publicación GHCR, CI/CD remoto
+y arranque habitual/remoto no se acreditan con los ensayos locales.
 
 El objetivo confirmado es **Núcleo modular, Boletería, Operación y Trabajador**:
 tres aplicaciones de negocio y un trabajador técnico, con Pagos reutilizable
@@ -110,7 +110,7 @@ sin recrearla ni modificar el plan.
   Operación; funcionalidad pendiente; cierre de infraestructura y métricas.
 - Se aclara que son tres aplicaciones de negocio más un trabajador, no cuatro
   dominios de negocio independientes. La carpeta objetivo del trabajador es
-  `App/backend/apps/tareas`; los módulos y aplicaciones del resto de
+  `App/backend/apps/trabajador` (nombre actualizado en §21); los módulos y aplicaciones del resto de
   `App/backend` siguen siendo objetivo, no código ya creado.
 - Las proyecciones y mensajes de QR se preservan durante la transición. El
   destino es un estado canónico transaccional de entrada, QR e ingreso, con
@@ -553,7 +553,7 @@ siguen indicadas. Se distingue fallo reproducido de riesgo observado por lectura
 
 | ID | Evidencia | Consecuencia |
 |---|---|---|
-| F01, reproducido | `notificaciones`: `npm test -- --runInBand` → exit 1, `No tests found`; CI lo incluye en la matriz de backends | La línea base CI ya tiene un gate rojo; no atribuirlo a una futura consolidación |
+| F01, pruebas recuperadas en §21 | Antes: npm test del paquete Notificaciones fallaba No tests found. Ahora: 20 contratos reales aprobados antes/después, paquete trasladado y CI usa el workspace | Sin skip/passWithNoTests; pipeline remoto pendiente, no se declara ejecutado |
 | F02, **resuelto para el código trasladado (§16)** | `eventos-emergencias`: `tsc --noEmit` → `test/personal-operativo.e2e-spec.ts:8` y `test/turnos-asistencia.e2e-spec.ts:9`, TS2307 `supertest/types`; en este último `:88` y `:1010`, TS2345 string frente a UUID template literal; `vitest.config.e2e.ts:19`, TS2769 opción `all` inexistente en `CoverageOptions` | Lint/build CI no cubren el programa completo de pruebas/configuración. Carga sobre TS 6 y tipos de supertest difiere del resto |
 | F03, **resuelto en §§17–18** | Las diez pruebas Redis de Cola ahora exigen conexión/PONG, ejecutan las aserciones y usan un evento UUID propio; trasladadas a entradas/fila | La ausencia de Redis falla; no hay retorno silencioso ni limpieza de claves ajenas. Ejecutadas contra Redis exclusivo |
 | F04, **retirado el falso verde de Logística (§16)** | `eventos-emergencias/vitest.config.ts`: `passWithNoTests: true`; `npm test` → `No test files found, exiting with code 0` | No hay unitarias ejecutadas pese al verde; no sumarlas como aprobadas |
@@ -565,6 +565,7 @@ siguen indicadas. Se distingue fallo reproducido de riesgo observado por lectura
 | F10, **servidor/sonda retirados al incorporar Logística (§16)** | Sonda Eventos/Emergencias consulta `/api/v1/turnos`, pero controladores están bajo `/api/v1/logistica`; acepta cualquier 2xx/4xx. Compose declara `DB_SYNCHRONIZE=true`, código fija `false`; bootstrap lee `PORT`, Compose define `PUERTO` | La sonda puede aprobar un 404 y no acredita acceso a BD; la configuración contiene opciones inefectivas. El puerto actual coincide por default, no por esa variable |
 | F11, inspección | Contrato `shared/api/ventas.openapi.json` sigue agregando cartelera, QR y reventa; `contrato-api.spec.ts` solo inspecciona ese JSON. `exportar-openapi.ts` crea únicamente el AppModule actual de Ventas | Las pruebas del JSON pasan sin demostrar paridad con los cuatro servicios. Regenerarlo sin diseñar agregación perdería operaciones externas |
 | F12, inspección | Pagos publica `PAGO_APROBADO/PAGO_RECHAZADO`; no hay consumidor en dominios. Alimentos conserva resultado `FALLIDA` como pago incierto y bloquea nuevo cobro | Un webhook que resuelve el libro de Pagos no finaliza por sí mismo compra/pedido incierto. Pendiente de negocio previo; no implementarlo como parte de la mudanza |
+| F15, previo caracterizado en §21 | Correo: deduplicación/intentos en memoria, cierre sin drain HTTP y validación parcial de mensajes; null queda sin ack | Conservado y probado antes/después. No se añade persistencia ni exactamente una vez; pendiente del responsable de Comunicaciones/CU-027 |
 
 ## 10. Riesgos al reunir Entradas, Reventa, QR y Pagos
 
@@ -661,7 +662,7 @@ procesos sin consolidar datos ni cerrar todas las deudas de la etapa 1.
 | 1. Base comprobable | **F05/F06 en configuración, CU-011 y Logística reales, F03/F08 reparados (§§13–18)**. Pendientes Notificaciones, arranque general y publicación remota; no repetir como actuales los bloqueos históricos ya corregidos | Build y pruebas seleccionadas coherentes; arranque general desde fuente e imágenes verificado; fallos previos y omisiones explícitos. Estos cambios no cierran por sí solos toda la etapa |
 | 2. Workspace y Núcleo existente | **Identidad, Alimentos y Personal/Logística reunidos y verificados (§§15–16)**. Los otros programas/funciones pendientes no se crean como esqueletos; se conservan bases separadas | Contratos de cuentas, alimentos, cambios de turno y asistencia preservados; sin consumidores o timers duplicados. Sin fingir CU aún inexistentes |
 | 3. Reunir Boletería | **Primera entrega: cinco componentes en un proceso, RPC interno sustituido y referencia repetida (§18)**. Pendiente reconciliar sobre copia entrada/propiedad/reventa/ingreso y retirar proyecciones solo tras validación | Preservar flujos existentes y comprobar regresiones. Las garantías funcionales todavía ausentes (QR inmediato, carreras canónicas y carga de 50 compradores) quedan documentadas para sus responsables; no se construyen para cerrar la migración (§19). La consolidación sobre copia mantiene su criterio técnico de conciliación/reversión |
-| 4. Pagos, trabajador y datos consolidados | Extracción (§19) y llamadas locales/libro único/webhook Núcleo/servidor retirado (§20). Siguiente: trasladar solo tareas/consumidores existentes. Consolidación repetible sobre copia a hexacore por esquemas | API, libro y contratos preservados, regresiones reales; un webhook explícito al retirar envoltura. Datos/identificadores/historiales/importes conciliados y reversión probada; drenar mensajes/reservas. F12 y trabajo durable todavía ausente son deuda funcional, no requisito de migración |
+| 4. Pagos, trabajador y datos consolidados | Extracción (§19), llamadas locales/libro único/webhook Núcleo (§20) y correo existente en Trabajador (§21). Otros consumidores conservan su dominio; inventario explícito, sin nuevos trabajos. Consolidación repetible sobre copia a hexacore por esquemas | API, libro y contratos preservados, regresiones reales; un webhook explícito al retirar envoltura. Datos/identificadores/historiales/importes conciliados y reversión probada; drenar mensajes/reservas. F12 y trabajo durable todavía ausente son deuda funcional, no requisito de migración |
 | 5. Preparar Operación | Definir frontera, dependencias y CU-010/019–020 pendientes; no inventar monitoreo/incidentes/evacuaciones | Responsables, contratos y ubicación explícitos. Sin exigir código ni arranque de funciones ausentes para terminar la migración; sus RNF se verificarán cuando se implementen |
 | 6. Entrega de pendientes al equipo | Registrar por CU responsable, destino, comportamiento real, simulaciones y alternativas faltantes | Cada integrante puede continuar en la estructura definitiva sin duplicar reglas. No exige completar los 32 CU ni reasigna a Sebastián trabajo funcional ajeno |
 | 7. Infraestructura, métricas y documentación | Adaptar gateway, Docker/Compose, scripts, CI/CD y vistas. Mantener perfiles local/replicación y controlar recursos compartidos | Cuatro responsabilidades objetivo (tres de negocio y un trabajador), con arranques de implementación existente y Operación documentada pendiente; sin servidores retirados aún referenciados, sin dos autoridades de propietario/QR/pedido, despliegue y reversión verificados. RNF solo se certifican con su evidencia |
@@ -2277,3 +2278,244 @@ sigue no rastreado y conserva SHA-256
 Selección explícita de archivos de esta etapa, excluyendo Pedidos, compilados y
 evidencia temporal. Commit solicitado:
 `refactor(pagos): integrar llamadas locales y retirar servidor HTTP`.
+
+
+## 21. Notificaciones en Trabajador: migración de correo existente
+
+### Base, referencia y compatibilidad
+
+Base publicada **85419bef9d2c88cd27301923e7e8252fbc75e863**, rama
+feature/sebastian-arquitectura. Solo Pedidos estaba sin rastrear al iniciar;
+se conserva. Leídos plan completo, estado vigente y WORKFLOW.md; sin AGENTS.md
+aplicables. Node **v22.22.3**, npm **11.6.3**, Docker **29.7.2**, Compose **5.3.1**.
+Node en este host: PATH=/private/tmp/hexacore-cu011-node22/node_modules/.bin:$PATH;
+selección reproducible: cd App/backend; nvm install; nvm use; npm ci.
+
+Paquetes instalados de Notificaciones/workspace coinciden: Nest common/core
+**11.2.8**, @nestjs/config **4.0.4**, amqplib **2.2.0**, TypeScript **5.9.3**.
+No se agregan/actualizan dependencias. package-lock.json del workspace y las
+18 migraciones permanecen intactos; se retira el lock/manifiesto del paquete
+anterior. Angular/Flutter permanecen fuera y no se recompilan.
+
+Se estableció referencia antes del movimiento: tipos/build del paquete anterior,
+proveedor HTTP fixture y RabbitMQ exclusivos, y **20 casos reales** contra su
+main compilado con Node 22.22.3. Se congelaron/revisaron los cinco cuerpos de
+correo en correos-referencia.json. La misma suite pasó después del traslado, sin
+eliminar aserciones. Comparación AST del consumidor conserva métodos/reglas
+originales; contratos y topologia.ts siguen byte a byte idénticos a Identidad.
+El Node compilado evita introducir Nest/AMQP ESM dentro del runtime de Jest.
+
+### Implementación y contratos conservados
+
+```text
+App/backend/
+  apps/trabajador/                 bootstrap, composición y única salud técnica
+  apps/trabajador/.env.example     solo broker/correo/puerto/política de bloqueo
+  modulos/comunicaciones/
+    comunicaciones.module.ts      declara topología y registra consumidor existente
+    correos/                      consumidor, contrato y topología originales
+    config/                       CONFIGURACION_COMUNICACIONES
+    rabbitmq/                     conexión propia del proceso y reconexión/cierre previos
+  Dockerfile.trabajador            Node 22.22.3; sin migraciones
+  test/trabajador/                 referencia/contratos, Identidad, imagen y proveedor exclusivo
+```
+
+Se usa apps/trabajador, como pide esta entrega, y se actualiza la etiqueta
+apps/tareas del plan. No cambia la arquitectura acordada ni el mapa/reparto de CU.
+No se implementan nuevos trabajos, casos de uso, F12 ni Operación.
+
+- Tipos: VERIFICACION, RECUPERACION, REGISTRO_DUPLICADO, CUENTA_BLOQUEADA,
+  CONTRASENA_CAMBIADA. Contrato CORREO_PENDIENTE versión 1, ID/fecha/destinatario/token.
+  Identidad conserva el publicador; las dos copias del contrato/topología quedan
+  idénticas, sin duplicar reglas de composición/envío.
+- Exchange **cuentas.eventos** topic durable, clave **cuenta.correo**, cola durable
+  **cuentas.correos**, prefetch=1/ack manual; DLX **cuentas.muertos**, DLQ
+  **cuentas.correos.dlq**, routing key cuentas.correos. Se declaran en ambos lados
+  con los mismos argumentos y se restauran tras reconectar.
+- HTTP externo POST /correos con para/asunto/texto; asuntos/textos/enlaces exactos
+  preservados. CORREO_PROVEEDOR_URL, CORREO_URL_BASE_ENLACES, AUTH_BLOQUEO_MINUTOS,
+  RABBITMQ_URL, PUERTO/PREFIJO_API mantienen significado/defaults. 4xx permanente:
+  DLQ sin reintento; red/timeout/5xx: hasta **3** intentos en memoria, nack/requeue
+  inmediato. Timeout original **10 s**; reconexión **5 s**, sin elevar límites.
+- Configuración propia **CONFIGURACION_COMUNICACIONES**, desarrollo en
+  **.env.trabajador** para no heredar puerto/configuración del .env de otros
+  programas; producción solo variables inyectadas. Archivo local ignorado también
+  en contexto Docker. El listener conserva **GET /api/v1/salud**, puerto 3006 y
+  servicio=notificaciones, 200 con broker/503 sin él. No verifica proveedor ni que
+  un mensaje semánticamente inválido haya bloqueado al consumidor.
+- Trabajador importa solo Comunicaciones. No registra TypeORM, Redis, JWT,
+  Identidad, Finanzas ni scheduler. Prueba real con claves/destinos SQL/Redis
+  inutilizables y captura no invasiva de require.cache: no carga esas dependencias.
+  No intercepta SIGTERM. Una conexión AMQP identificada hexacore-trabajador y un
+  consumidor en los arranques/reconexiones comprobados.
+- Se conserva la conexión propia anterior en Comunicaciones: la infraestructura
+  común del Núcleo tiene configuración de negocio y otra política de drain.
+  No se introduce accidentalmente una garantía de cierre distinta al mover código.
+  No hay endpoints de negocio, rutas al Trabajador ni dependencia nueva en gateway.
+
+### Otros consumidores y temporizadores: dueño actual
+
+| Componente existente | Proceso que lo conserva | Razón/alcance real |
+|---|---|---|
+| Consumidor de cuentas.correos y reintentos/reconexión 5 s | **Trabajador** | Solo entrega a proveedor; desacoplado de cuentas y sin bases. Único consumidor trasladado en esta etapa |
+| PublicadorCorreos, Pedidos y pagos.eventos del webhook | **Núcleo** | Nacen del registro/compra/callback. Son publicadores, no consumidores financieros. F12 no se implementa |
+| turnos.cambios, topología/DLQ y Notificacion persistida | **Núcleo / Personal-Logística** | Aplica el contrato existente y escribe en eventos_emergencias. Evita llevar repositorios/reglas de turnos al proceso de correo. F14 conserva listado global |
+| Sondeo de reservas de alimentos, cada 5 s | **Núcleo / Alimentos** | Coordina inventario Redis y estado del pedido/base. Requiere reglas/recursos del módulo; no se mueve automáticamente |
+| Recuperación de cuenta vía setImmediate y publicación inicial de revocaciones | **Núcleo / Identidad** | Trabajo ligado al flujo/estado de cuenta y sesión; no es tarea durable nueva ni se convierte aquí en una |
+| ventas.notificaciones | **Boletería / Ventas** | Registra el correo que se enviaría, sin proveedor real; no se completa ese envío al migrar correo de cuentas |
+| ventas.ingresos y acceso-qr.entradas | **Boletería / Entradas** | Actualizan estados/proyecciones SQL y autorización de entrada; conservan efectos/deduplicación y ventanas de §18 |
+| reventa.notificaciones | **Boletería / Postventa** | Registra lo que avisaría a comprador/vendedor; no se conecta un proveedor ausente |
+| reventa.liquidaciones | **Boletería / Postventa** | Lee venta aprobada/referencia/importes en SQL y registra abono previsto; no transfiere dinero real |
+| Outbox Ventas y Acceso QR, cada 300 ms | **Boletería** | Selección/publicación desde sus transacciones y bases actuales; mantienen SKIP LOCKED/deduplicación y cierre. No se añaden accesos SQL al Trabajador |
+| Cron de reservas (cada minuto) y publicaciones (cada 10 minutos) | **Boletería** | Vencimiento/compensación con reglas de dominio y APIs locales; se conservan horarios/configuración/cierre |
+| TTL/Lua de turnos/reservas | **Redis y módulos llamantes** | No se inventa otro job/sondeo en Trabajador |
+
+El inventario no declara completas liquidación, recepción de reventa, recuperación
+financiera ni alertas. Su futuro traslado necesita contratos/decisión específica;
+esta etapa termina con el correo existente y sus límites documentados.
+
+### Validación real y comandos reproducibles
+
+Proyecto **hexacore-trabajador-e2e**: RabbitMQ real 15677/16777 (usuario/clave/vhost
+trabajador_e2e), proveedor HTTP fixture **13103**, sin SMTP/credenciales externas.
+Procesos compilados 13098/13099; imagen 13100→3006. Puertos Docker en loopback,
+red/volumen propios, sin datos/recursos habituales. El fixture registra peticiones
+por destinatario UUID, respuestas/errores y aceptación retenida; no es persistencia
+nueva del negocio. El recorrido de Identidad usa PostgreSQL/Redis/pasarela de
+**hexacore-backend-e2e** y el broker exclusivo de correo: ninguna base habitual.
+
+Desde raíz con Node seleccionado (tareas pesadas secuenciales):
+
+| Comando ejecutado | Resultado |
+|---|---|
+| git status --short --branch; git rev-parse HEAD; node --version; docker info | Base 85419be/rama solicitada, solo Pedidos local, Node 22.22.3/Docker disponibles |
+| npm --prefix App/services/notificaciones run lint; npm --prefix App/services/notificaciones run build, antes de mover | Ambos aprobados |
+| docker compose -p hexacore-trabajador-e2e -f App/backend/test/trabajador/docker-compose.yml up -d --wait | RabbitMQ y correo exclusivos saludables |
+| node --test --test-concurrency=1 test/trabajador/contratos.test.cjs, con TRABAJADOR_ENTRADA y TRABAJADOR_CWD del paquete original compilado | **20/20** antes, 60,815 s; cero omitidas/canceladas |
+| npm --prefix App/backend run lint | Aprobado tras traslado |
+| npm --prefix App/backend run test:trabajador (incluye build:trabajador), dos veces | **20/20** cada una, 53,707 s y 59,921 s; suite idéntica a referencia |
+| test:trabajador:identidad | **3/3**, 3,197 s; cinco correos desde Identidad real, sin omisiones |
+| REDIS_HOST=127.0.0.1 REDIS_PUERTO=16382 REDIS_INVENTARIO_PRUEBAS_URL=redis://127.0.0.1:16382 npm --prefix App/backend test -- --runInBand | **808/808 en 56 suites**, 12,486 s; cero omitidas |
+| test:e2e (incluye build Núcleo) | **73/73 en cuatro suites**, 44,588 s; cero omitidas |
+| test:boleteria (incluye build Boletería) | **23/23 en dos suites**, 29,476 s; cero omitidas |
+| test:trabajador:imagen:infra; test:trabajador:imagen | Imagen construida/saludable, un Node/consumidor, salud compatible/404 de negocio, pendientes y SIGTERM/reinicio aprobados |
+| verificar:infra | Ocho mezclas de despliegue y cuatro configuraciones aisladas aprobadas; destinos/fronteras/dependencias inspeccionados |
+| test:pagos:modulo (incluye build Núcleo) | Aprobado: módulo puro, conexión/libro propios correctos, sin HTTP/JWT/Redis/AMQP |
+| test:imagen:infra; test:imagen; test:boleteria:imagen | Ambas imágenes y gateway construidos/arrancados/saludables; dos smokes aprobados |
+| test:pagos:contratos | **13/13**, 32,570 s; cero omitidas/canceladas |
+| test:pagos:convivencia | **5/5**, 33,634 s; libro compartido, reinicio y limitación F12 conservados |
+| lint al cierre, parseo YAML CI/CD y bash -n iniciar.sh | Aprobados |
+
+Los 20 casos incluyen cinco plantillas exactas, salud/topología/bindings/DLQ,
+4xx/5xx/red, timeout **real de 10 s tres veces** (~30 s), inválidos, duplicado
+local, reconexión y consumidor único; persistencia de pendiente con proceso detenido,
+reinicio, deduplicación entre instancias, SIGTERM en vuelo y contador tras reinicio.
+La prueba de null acredita bloqueo y retira solo su propio mensaje con ID conocido,
+sin purgar cola ni corregir silenciosamente el comportamiento del producto.
+
+El recorrido de Identidad registra una cuenta con Trabajador detenido, inspecciona
+el mensaje real persistente (contrato, ID, versión y destinatario), lo reencola y
+arranca el consumidor: verifica entrega, enlace/activación/login. Registro duplicado,
+bloqueo, recuperación y cambio de contraseña ejercitan los otros cuatro tipos,
+enlace de un uso y revocación. Solo elimina su cuenta y mensajes fixture; no usa
+prehook/semillas/truncados. Dos procesos reales, un consumidor de correo; no interfaces.
+
+### F15: límites previos de correo; F01 y fallos de preparación
+
+**F15, caracterizado antes/después, sin corregir negocio:**
+
+- Set de procesados y Map de intentos viven en memoria, sin TTL ni coordinación.
+  Un duplicado en el mismo proceso se descarta; tras reinicio o entre dos instancias
+  se observan dos envíos del mismo evento. El límite de tres no es global: dos
+  peticiones antes de parar (una en vuelo) y tres más tras reiniciar producen cinco
+  solicitudes al proveedor antes de DLQ en la prueba.
+- SIGTERM no espera confirmación del HTTP en vuelo. Se comprobó salida sin SIGKILL
+  y reencolado del mensaje sin ack. Con aceptación previa del proveedor, la vuelta
+  produjo otro envío. No hay persistencia nueva, reclamación durable, deduplicación
+  del proveedor ni entrega exactamente una vez.
+- JSON ilegible/versiones desconocidas van a DLQ; evento/tipo desconocidos con
+  versión 1 conservan fallback a registro duplicado. null genera error no controlado,
+  queda sin ack y bloquea el prefetch; la salud puede continuar 200 por mirar solo
+  el broker. Validación completa y aviso al usuario tras fallo persistente no se
+  implementan ahora. Deuda para el responsable de Comunicaciones/CU-027.
+
+**F01:** el gate anterior no tenía pruebas y fallaba No tests found. Se retira esa
+matriz/paquete; CI usa ahora el workspace y los 20 contratos reales, sin
+passWithNoTests/skip ni falso verde por ausencia. La ejecución remota no se certifica.
+
+Fallos de preparación registrados, separados de regresiones del negocio:
+
+- Primera referencia: **15/20 aprobados, 5 fallidos**. Métricas agregadas de RabbitMQ
+  estaban ausentes/retrasadas; esperar consumidores demoró el fixture retenido hasta
+  el timeout y contaminó casos posteriores. Se corrigió el arnés con consumerCount/
+  messageCount AMQP y señales de envío/deduplicación; se conservó toda aserción y
+  no se alteraron límites/reglas del consumidor. Se recrearon solo los dos recursos
+  iniciales del proyecto propio tras ese intento; referencia final 20/20.
+- Recorrido Identidad en preparación: **2/3**, **0/3**, **2/3** antes del **3/3**.
+  Un campo nuevo de fixture equivocó contrasenaNueva/contrasena del login; después
+  se exigía visibilidad inmediata de un nack/requeue y se leían consumidores desde
+  management muestreado. Se corrigieron DTO de fixture/espera de confirmación del
+  broker y comprobación AMQP real. Se retiraron explícitamente tres mensajes de
+  destinatarios fixture del intento fallido, sin purgar. No se cambia Identidad,
+  respuestas, contenido de correo ni autorización para aprobar.
+- test:infra encontró una carrera previa de su arnés: compose wait dio **no
+  containers for project** aunque migracion-pagos ya había terminado con **0** y
+  aplicado correctamente la migración propia. Se reemplaza por ps -a + docker wait
+  sobre el único ID y aserción del código 0, también para tarea ya terminada.
+  La espera nueva y el comando completo test:infra se repitieron y aprobaron
+  con los mismos datos propios; no se omite fallo ni se remigra por programa.
+
+Evidencia local **/private/tmp/hexacore-trabajador/**: tipos/build antes/después,
+referencia-1/2, traslado-1/2, identidad-1/2/3/4, unitarias, Núcleo/Boletería,
+configuraciones, imágenes/smokes y observador. Procesos/carga de dependencias en
+.evidencia-e2e, ignorados. No se versionan compilados, logs, datos ni secretos.
+
+F13: observador de solo lectura durante Núcleo, **43 muestras**, 18 con conexiones
+de Núcleo; consultas, pg_blocking_pids/locks, conexiones y CPU/memoria/logs propios.
+Cero bloqueadores, locks pendientes o statement timeout capturados. La regresión
+aprobó; no acredita resolución de la intermitencia ni rendimiento prolongado.
+F12 (recuperación financiera), F14 (listado global de logística), alertas ausentes
+y otros CU funcionales siguen pendientes, fuera de esta entrega.
+
+### Infraestructura, sustitución y cierre de alcance
+
+Compose sustituye notificaciones por **trabajador**, contexto App/backend y
+Dockerfile.trabajador; mantiene puerto/sonda, broker y correo, sin variables o
+montajes de SQL/Redis/JWT/Pagos. Remoto/escalado/registro siguen válidos:
+**12 servicios locales/7 remotos** (incluyen tarea financiera sin servidor).
+Registro/CD sustituyen hexacore-notificaciones por **hexacore-trabajador**, ocho
+imágenes en total. iniciar.sh usa el nombre nuevo y comprueba por lectura los consumidores antiguos
+activos/huérfanos del mismo proyecto antes de arrancar; no los detiene ni borra
+colas. **No se ejecutó**. CI comparte
+manifiesto/Node del workspace e incluye contratos, Identidad, imagen y regresiones.
+Gateway no expone rutas nuevas ni espera al Trabajador para iniciar sesión.
+
+La retirada de código/paquete no detiene contenedores habituales. Antes de actualizar
+una instalación se debe parar el consumidor antiguo con el Compose anterior y
+luego activar trabajador; un huérfano anterior sobre la misma cola ejecutaría dos
+consumidores. Este cambio operativo no se ejecutó sobre el entorno habitual.
+Los ensayos usan otro vhost/proyecto y nunca activaron el consumidor anterior y el
+nuevo sobre una misma cola al mismo tiempo; el caso explícito de dos instancias
+usa dos del mismo programa para caracterizar el límite preexistente.
+
+Se distingue configuración válida, imagen local construida y arranque/envío/cierre
+comprobados de publicación GHCR, workflows remotos y despliegue habitual/remoto
+pendientes. No se afirma recepción bancaria/SMTP real ni alertas operativas.
+Esta etapa termina con el correo existente. **Consolidación de datos es la
+entrega posterior**, sobre copia y con respaldo, conciliación de referencias/QR/
+importes/historiales y reversión verificada; no se ejecuta aquí. No se integra a
+develop/main ni se inicia otro hito automáticamente.
+
+Cierre comprobado: SIGTERM final de la imagen Trabajador, salida **143**, sin OOM
+ni SIGKILL; cero consumidores y mensajes pendientes por AMQP. Limpieza ejecutada:
+`npm --prefix App/backend run test:trabajador:limpiar` y `test:limpiar`; solo sus
+11 contenedores, dos redes y cuatro volúmenes. Sin recursos restantes de ambos
+proyectos. Los **29 contenedores habituales conservan IDs/estados**; Pedidos sigue
+sin rastrear y con SHA-256
+7a18d9aff7cb03e42f0cf8c311ebbed2d4a6c4278e8c21472349425b13856346.
+No se ejecutaron iniciar.sh, semillas ni escrituras/migraciones/limpiezas habituales.
+La detección de consumidores huérfanos de iniciar.sh se comprobó con la consulta
+Compose de solo lectura y bash -n; no se invocó el script de arranque.
+Dependencias/lock y 18 migraciones originales sin cambios verificados. git diff
+--check aprobado; selección explícita de esta entrega excluye Pedidos y artefactos.
+Commit: `refactor(backend): trasladar notificaciones al trabajador`.

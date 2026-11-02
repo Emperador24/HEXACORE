@@ -40,7 +40,7 @@ export interface ConfiguracionServicio {
   };
 }
 
-export const CONFIGURACION = 'CONFIGURACION_SERVICIO';
+export const CONFIGURACION = 'CONFIGURACION_COMUNICACIONES';
 
 export function cargarConfiguracion(): ConfiguracionServicio {
   const entorno = texto('NODE_ENV', 'development') as Entorno;

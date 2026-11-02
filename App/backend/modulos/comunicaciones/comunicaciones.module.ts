@@ -1,14 +1,16 @@
 import { Module, OnModuleInit } from '@nestjs/common';
 import { ConfirmChannel } from 'amqplib';
-import { ConexionRabbitMq } from '../comun/rabbitmq/conexion-rabbitmq.service';
-import { ConsumidorCorreos } from './consumidor-correos.service';
+import { ConfigModule } from './config/config.module';
+import { RabbitMqModule } from './rabbitmq/rabbitmq.module';
+import { ConexionRabbitMq } from './rabbitmq/conexion-rabbitmq.service';
+import { ConsumidorCorreos } from './correos/consumidor-correos.service';
 import {
   CLAVE_CORREO_PENDIENTE,
   COLA_CORREOS,
   COLA_CORREOS_DLQ,
   EXCHANGE_CUENTAS,
   EXCHANGE_MUERTOS,
-} from './topologia';
+} from './correos/topologia';
 
 /**
  * Envío asíncrono de correos.
@@ -25,9 +27,10 @@ import {
  * que cada servicio pueda arrancar sin esperar al otro (RNF-18).
  */
 @Module({
+  imports: [ConfigModule, RabbitMqModule],
   providers: [ConsumidorCorreos],
 })
-export class NotificacionesModule implements OnModuleInit {
+export class ComunicacionesModule implements OnModuleInit {
   constructor(private readonly conexion: ConexionRabbitMq) {}
 
   onModuleInit(): void {
