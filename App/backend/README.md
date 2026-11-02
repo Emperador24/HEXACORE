@@ -2,16 +2,15 @@
 
 Etapa intermedia: Identidad, Alimentos y Personal/Logística corren en **un solo proceso NestJS**.
 Boletería reúne Ventas, Catálogo, Cola, Postventa y Acceso QR en otro proceso.
-Pagos está en modulos/finanzas/pagos, con una envoltura HTTP temporal en apps/pagos-http.
-Núcleo y Boletería siguen llamándola por HTTP. Notificaciones conserva su paquete separado.
+Pagos se importa desde modulos/finanzas/pagos en ambos procesos, con un único libro financiero.
+El único receptor HTTP financiero es el webhook del Núcleo. Notificaciones conserva su paquete separado.
 Angular y sus compiladores permanecen fuera de este workspace.
 La consolidación de datos de Boletería, Operación y Trabajador siguen pendientes del plan.
 
 ```text
 backend/
-  apps/nucleo/         main, composición y disponibilidad del Núcleo
+  apps/nucleo/         main, composición, disponibilidad y webhook financiero
   apps/boleteria/      main, composición y disponibilidad de Boletería
-  apps/pagos-http/     compatibilidad HTTP temporal, sin duplicar negocio
   modulos/finanzas/pagos/ libro, cobros, reembolsos, pasarela y 1 migración existente
   modulos/identidad/   cuentas, sesiones, administración, entidades y 3 migraciones
   modulos/alimentos/   catálogo, menú, checkout, inventario, pagos y 2 migraciones
@@ -44,9 +43,13 @@ Nest 11, TypeORM 1 y TypeScript 5.9 permanecen fuera del compilador Angular.
 
 Las bases **administracion**, **pedidos** y **eventos_emergencias** deben existir. Se conservan tablas,
 identificadores e historiales `migraciones`. No se consolida ni copia información.
-Aplicar explícitamente sus migraciones, tras revisar el `.env`:
+La base **pagos** es compartida por Núcleo y Boletería. Aplicar su migración
+**una vez por despliegue, antes de cualquiera de los dos procesos**, tras revisar
+POSTGRES_BD_PAGOS y las coordenadas POSTGRES_* (iguales en ambos):
 
 ```bash
+npm run migracion:pagos:estado
+npm run migracion:pagos:correr   # tarea única, no repetir desde cada arranque
 npm run migracion:identidad:estado
 npm run migracion:alimentos:estado
 npm run migracion:logistica:estado
@@ -60,7 +63,11 @@ npm run start:prod              # node dist/apps/nucleo/main.js, puerto 3002
 `synchronize=false` y `migrationsRun=false`. El Dockerfile aplica los tres historiales
 antes del único `main`; con réplicas, las migraciones deben ser una tarea única de
 despliegue. No se certifica aquí el sondeo de inventario entre réplicas de Núcleo.
-El override de escalado conserva el escalado independiente de Ventas.
+El override de escalado conserva el escalado independiente de Boletería.
+El libro financiero se prepara con migracion-pagos, una tarea Compose sin servidor,
+puertos ni reinicio que reutiliza la imagen Núcleo. Ambos programas esperan su salida
+correcta; ninguno de sus Dockerfiles ejecuta esa migración. Los otros siete
+historiales conservan su preparación anterior, cuya coordinación con réplicas sigue pendiente.
 
 Las semillas son explícitas: `semilla:identidad`, `semilla:alimentos`, `semilla:logistica`; pueden
 reemplazar datos. **No forman parte de las instrucciones de integración aislada**.
@@ -80,17 +87,21 @@ conserva su token `CONFIGURACION_IDENTIDAD`/`CONFIGURACION_ALIMENTOS`/`CONFIGURA
 conexiones **identidad**, **alimentos** y **personal-logistica** tanto en `forRootAsync` como en la fábrica,
 `forFeature` e inyecciones. No existe conexión por defecto en Núcleo.
 
-Hay un cliente Redis común para revocaciones y una conexión RabbitMQ con las tres
-topologías. Inventario conserva su cliente Redis especializado, con sus opciones
+Pagos añade la conexión **finanzas-pagos**, registrada con el mismo nombre en
+fábrica, opciones e inyecciones. Su base se selecciona únicamente con
+POSTGRES_BD_PAGOS (por defecto pagos); ignora POSTGRES_BASE genérico.
+
+Hay un cliente Redis común para revocaciones y una conexión RabbitMQ con cuatro
+topologías, incluida pagos.eventos del webhook. Inventario conserva su cliente Redis especializado, con sus opciones
 de timeout/reenvío propias. Solo sus propietarios cierran clientes; el servicio
 de revocaciones ya no cierra el Redis compartido. Se conserva un único sondeo de
 reservas y la inicialización del pool libuv antes de cargar Nest/crypto/pg.
 
-**Disponibilidad:** `GET /api/v1/salud` devuelve `servicio=nucleo`, comprueba las tres
-bases y Redis y responde 503 si falta cualquiera. RabbitMQ se informa como antes:
+**Disponibilidad:** `GET /api/v1/salud` devuelve `servicio=nucleo`, comprueba las cuatro
+bases (incluido pagos) y Redis y responde 503 si falta cualquiera. RabbitMQ se informa como antes:
 su caída degrada el estado, sin impedir por sí sola la disponibilidad. Cada consulta
 tiene límite de un segundo. Esta política reúne la necesidad de Redis de Alimentos
-con la de las tres bases. El login directo sigue teniendo sus errores anteriores.
+con la de las cuatro bases. El login directo sigue teniendo sus errores anteriores.
 
 ## Verificación
 
@@ -98,18 +109,24 @@ Las instrucciones completas están en [test/README.md](test/README.md).
 Desde aquí:
 
 ```bash
-npm run test:e2e:infra
-REDIS_INVENTARIO_PRUEBAS_URL=redis://127.0.0.1:16382 npm test -- --runInBand
+npm run test:infra
+REDIS_HOST=127.0.0.1 REDIS_PUERTO=16382 REDIS_INVENTARIO_PRUEBAS_URL=redis://127.0.0.1:16382 npm test -- --runInBand
 npm run test:e2e
 npm run test:e2e
+npm run test:boleteria
+npm run test:boleteria
+npm run test:pagos:modulo
 npm run verificar:infra
 npm run test:imagen:infra
 npm run test:imagen
-npm run test:imagen
-npm run test:e2e:limpiar
+npm run test:boleteria:imagen
+npm run test:pagos:contratos
+npm run test:pagos:contratos
+npm run test:pagos:convivencia
+npm run test:limpiar
 ```
 
-No ejecutar el E2E por proceso mientras la imagen Núcleo de pruebas esté arriba:
+No ejecutar las suites por proceso mientras las imágenes de pruebas estén arriba:
 la suite exige una sola conexión de Núcleo al broker y ninguna al terminar. Parar
 solo las imágenes propias con el Compose combinado antes de repetir esa suite.
 CI realiza estos pasos en ese orden y recoge logs de su proyecto si fallan.
@@ -144,7 +161,7 @@ python3 test/observar-recursos.py --segundos 100
 
 Ejecutarlo en otra terminal mientras las pruebas o imágenes propias están arriba.
 Captura consultas, bloqueos, conexiones, CPU/memoria y logs solo del proyecto
-hexacore-nucleo-e2e; no incrementa límites ni da F13 por resuelto.
+hexacore-backend-e2e; no incrementa límites ni da F13 por resuelto.
 
 
 ## Boletería: instalación, datos y ejecución
@@ -182,8 +199,8 @@ PUERTO=3001 npm run start:boleteria
 
 Dockerfile.boleteria aplica los cuatro historiales y ejecuta un solo main;
 Dockerfile conserva el Núcleo. Las migraciones deben ser tarea única al desplegar
-réplicas. La sonda directa `/api/v1/salud` informa cuatro bases, Redis, RabbitMQ,
-PID y los dos cron. Bases/Redis caídos producen 503; RabbitMQ degrada el estado
+réplicas. La sonda directa `/api/v1/salud` informa las cuatro bases de Entradas, Redis, RabbitMQ,
+PID y los dos cron. La salud añade el mismo libro pagos como quinta base. Bases/Redis caídos producen 503; RabbitMQ degrada el estado
 sin cambiar por sí solo el HTTP 200. `/api/v1/salud` del gateway sigue en Núcleo.
 
 Las cinco familias públicas llegan a boleteria:3001. El gateway conserva JWT/roles
@@ -196,18 +213,32 @@ Ver [composición/consistencia](modulos/entradas/README.md) y los
 proyecciones no prueban invalidación inmediata ni atomicidad entre bases.
 No se certifican réplicas, carga, GHCR ni CI/CD remoto con un smoke local.
 
-## Pagos: primer hito de extracción
+## Pagos: llamadas locales y webhook único
 
-Se migró la implementación existente, sin completar casos pendientes. Con Node
-22.22.3 y las mismas dependencias, `npm run build:pagos` y
-`PUERTO=3008 npm run start:pagos` ejecutan la envoltura temporal. Antes de migrar,
-revisar destinos y ejecutar `migracion:pagos:estado`/`migracion:pagos:correr`;
-POSTGRES_BD_PAGOS selecciona la base existente pagos. Dockerfile.pagos usa ese
-mismo código y aplica su historial migraciones. No hay consolidación de datos.
+Los adaptadores de Alimentos y Entradas importan **únicamente la API pública** de
+PagosModule/PagosService. Conservan validación de DTO, traducciones, claves,
+solicitantes, importes, moneda y referencias. La autorización/revocación permanece
+en sus rutas llamantes. PAGOS_ERROR_HTTP se conserva como código de error legado
+para fallos de ejecución; no implica una petición al antiguo servidor.
+No existen endpoints de cobro o reembolso, ni servidor/imagen propios de Pagos.
+El HTTP hacia la pasarela externa se conserva en PasarelaHttp.
 
-La API reutilizable no registra endpoints ni JWT/Redis/AMQP; la envoltura conserva
-esos contratos. [Módulo](modulos/finanzas/pagos/README.md),
-[arranque y retirada posterior](apps/pagos-http/README.md) y
-[comandos de pruebas aisladas](test/pagos/README.md). F12 permanece pendiente: un
-webhook financiero no equivale a finalizar el pedido o compra. Completar CU
-ausentes es responsabilidad funcional de cada integrante, fuera de la migración.
+Ambos programas apuntan a la **misma base pagos**, tabla transacciones_pago e
+historial migraciones original mediante finanzas-pagos. No se copian registros,
+no se prefijan claves por proceso, synchronize/migrationsRun permanecen desactivados.
+Los pools se identifican en pg_stat_activity como finanzas-pagos:nucleo y
+finanzas-pagos:boleteria; esos nombres de observación no alteran las claves.
+
+Solo Núcleo monta **POST /api/v1/pagos/webhook**, con rawBody y validación HMAC
+sobre bytes originales. La publicación usa la conexión RabbitMQ compartida del
+Núcleo; si no confirma publicación responde 503 para reintento, como antes.
+El gateway y el simulador apuntan a nucleo:3002. Solo Núcleo carga
+PASARELA_SECRETO_WEBHOOK; Boletería usa la clave pública JWT, sin secreto HMAC ni
+clave privada. Importar PagosModule no publica endpoints ni abre Redis/AMQP.
+
+[Módulo](modulos/finanzas/pagos/README.md) y [pruebas](test/pagos/README.md).
+**F12 sigue pendiente:** el webhook actualiza el libro y publica, sin finalizar
+pedidos/compras inciertos. Tampoco se añaden reclamaciones entre procesos,
+conciliación administrativa o atomicidad con la pasarela. Se migra comportamiento
+existente; los CU faltantes continúan con sus responsables. Trabajador, Operación
+y consolidación general de datos corresponden a etapas posteriores.

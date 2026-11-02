@@ -1,3 +1,4 @@
+import { PagosModule } from '../../finanzas/pagos';
 import { CierreRedis } from './cierre-redis';
 import { Global, Module, Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
@@ -28,6 +29,7 @@ class TopologiaReventa implements OnModuleInit {
 @Global()
 @Module({
   imports: [
+    PagosModule,
     ConfigModule.forRoot({
       ignoreEnvFile: process.env.NODE_ENV === 'production',
       cache: true,

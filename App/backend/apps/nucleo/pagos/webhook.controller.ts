@@ -10,14 +10,16 @@ import {
   Req,
   ServiceUnavailableException,
   UnauthorizedException,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
 import { ApiNoContentResponse, ApiOperation, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
 import { Request } from 'express';
 import { createHmac, timingSafeEqual } from 'node:crypto';
-import { CONFIGURACION, ConfiguracionServicio } from './comun/config/configuracion';
-import { NotificacionPasarelaDto } from '../../modulos/finanzas/pagos';
-import { PublicadorPagos } from './eventos/publicador-pagos.service';
-import { PagosService } from '../../modulos/finanzas/pagos';
+import { CONFIGURACION, ConfiguracionServicio } from './configuracion-webhook';
+import { NotificacionPasarelaDto } from '../../../modulos/finanzas/pagos';
+import { PublicadorPagos } from './publicador-pagos.service';
+import { PagosService } from '../../../modulos/finanzas/pagos';
 
 /**
  * Webhook de la pasarela (ADR-15). **Es la única ruta de Pagos que el gateway
@@ -27,7 +29,7 @@ import { PagosService } from '../../modulos/finanzas/pagos';
  * ## Cómo se autentica
  *
  * Con la firma `X-Pasarela-Firma`: HMAC-SHA256 del cuerpo, con un secreto que
- * solo conocen la pasarela y Pagos. Es como lo hacen las pasarelas reales.
+ * solo conocen la pasarela y el receptor del Núcleo. Es como lo hacen las pasarelas reales.
  * Se calcula sobre los bytes tal como llegaron (`rawBody`), y se compara en
  * tiempo constante para no filtrar la firma byte a byte por el tiempo de
  * respuesta.
@@ -41,6 +43,7 @@ import { PagosService } from '../../modulos/finanzas/pagos';
  */
 @ApiTags('pagos')
 @Controller('pagos/webhook')
+@UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true, transformOptions: { enableImplicitConversion: false } }))
 export class WebhookController {
   private readonly secreto: Buffer;
 

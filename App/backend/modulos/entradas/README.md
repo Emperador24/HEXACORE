@@ -12,7 +12,7 @@ entradas/
   fila/         turnos Redis/Lua y consumo interno único
   postventa/    publicaciones, checkout, compensaciones y consumidores
   acceso-qr/    proyección de QR, ingresos, sincronización y outbox
-  compartido/  configuración del programa, pagos HTTP, guardas, QR y concurrencia
+  compartido/  configuración del programa, adaptador local de Pagos, guardas, QR y concurrencia
 ```
 
 Cuatro bases conservadas: entradas_mercado_secundario, catalogo, postventa y
@@ -29,7 +29,7 @@ TypeORM usa entradas-ventas, entradas-catalogo, entradas-postventa y
 entradas-acceso-qr en fábrica, registro e inyecciones. Todos mantienen sus pools
 actuales; esta entrega no dimensiona ni certifica réplicas.
 
-Redis, conexión AMQP, JWT, generador QR, cliente HTTP de Pagos y gestor de
+Redis, conexión AMQP, JWT, generador QR, adaptador local de Pagos y gestor de
 concurrencia tienen un registro por proceso. Dos políticas de sesión conservan
 sus diferencias anteriores (Cola/Acceso verifican además iat/exp/jti y cabecera
 estricta); ninguna firma tokens. Identidad conserva la firma. Un scheduler
@@ -60,3 +60,11 @@ Instalación/arranque/migraciones: [workspace](../../README.md).
 Pruebas reales, límites y repetición: [integración aislada](../../test/boleteria/README.md).
 Los guiones históricos de `*/pruebas` conservan aserciones y rutas adaptadas,
 pero algunos resiembran/truncan datos habituales: no forman parte de esa ejecución.
+
+PagosModule se importa por su API pública desde el adaptador de Entradas. Ventas y
+Postventa mantienen solicitante=entradas, claves y referencias originales. La quinta
+conexión finanzas-pagos apunta al mismo libro pagos que Núcleo; no añade endpoints.
+Solo Núcleo recibe el webhook. La migración financiera es una tarea única previa
+a los dos programas. Repetir un pago de compra PAGADA o cancelar una CANCELADA
+mantiene el 409 existente y no duplica cobro/entradas/reembolso; la API financiera
+sí devuelve resultados terminales guardados con repetida=true.

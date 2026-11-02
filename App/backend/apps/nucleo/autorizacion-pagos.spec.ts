@@ -3,14 +3,14 @@ import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { createHmac, generateKeyPairSync, KeyObject, randomUUID } from 'node:crypto';
 import Redis from 'ioredis';
-import { PREFIJO_REVOCADA, RolesPermitidos, SesionValida } from './sesion-valida.guard';
+import { PREFIJO_REVOCADA, RolesPermitidos, SesionValida } from '../../modulos/alimentos/comun/autenticacion/sesion-valida.guard';
 
 /**
  * El guard es la única puerta del servicio (RNF-06). Se prueba con claves RSA
  * reales generadas aquí, no con dobles de `JwtService`: lo que interesa es
  * justamente que la verificación criptográfica rechace lo que debe.
  */
-describe('SesionValida', () => {
+describe('Autorización de pagos en el llamante Alimentos', () => {
   const EMISOR = 'hexacore-administracion';
   const USUARIO = 'a0000001-0000-4000-8000-000000000001';
 

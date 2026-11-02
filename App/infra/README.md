@@ -2,9 +2,9 @@
 
 Identidad, Alimentos y Personal/Logística corren en **Núcleo**; los cinco
 componentes de Entradas corren en **Boletería**, desde `App/backend`.
-Pagos conserva su servidor temporal desde apps/pagos-http del workspace;
+Pagos se importa en ambos programas y su único webhook está en Núcleo;
 Notificaciones sigue fuera. Se mantienen todas las bases, incluido el libro pagos.
-Ver [extracción y contratos de Pagos](../backend/test/pagos/README.md).
+Ver [módulo local y contratos de Pagos](../backend/test/pagos/README.md).
 Ver [instalación, migraciones y arranque](../backend/README.md) y
 [pruebas exclusivas](../backend/test/README.md). Este README describe el
 ambiente habitual; no usar sus semillas o limpiezas para verificar la migración.
@@ -59,11 +59,13 @@ Las interfaces se arrancan aparte, apuntando al gateway del computador B
 ## Qué levanta `./iniciar.sh`
 
 La configuración actual define **12 servicios locales**: cinco piezas de datos/
-proveedores, Núcleo, Boletería, Pagos, Notificaciones, gateway y dos portales.
+proveedores, Núcleo, Boletería, Notificaciones, gateway, dos portales y la tarea
+**migracion-pagos** (termina sin servidor). Ambos programas esperan esa única
+aplicación del historial financiero, conservando POSTGRES_BD_PAGOS=pagos.
 El override remoto deja **7**, sin arrancar datos locales. Las ocho mezclas
 remoto/escalado/registro se validan con `npm --prefix App/backend run verificar:infra`.
 El perfil de escalado replica Boletería; no acredita rendimiento ni dimensionado
-de conexiones. El modo registro necesita nueve imágenes de esta versión.
+de conexiones. El modo registro necesita ocho imágenes (la tarea reutiliza hexacore-nucleo) de esta versión.
 
 Lo único que no levanta —ni puede— es la **app móvil**: se instala en un
 teléfono o un simulador, no se arranca desde un script.

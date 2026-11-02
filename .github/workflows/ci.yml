@@ -184,52 +184,43 @@ jobs:
           cache: npm
           cache-dependency-path: App/backend/package-lock.json
       - run: npm ci
-      - name: Infraestructura exclusiva de Boletería y Pagos
-        run: npm run test:boleteria:infra
-      - name: Contratos de Pagos y módulo sin rutas
-        run: |
-          npm run test:pagos:contratos
-          npm run test:pagos:modulo
+      - name: Infraestructura exclusiva y migración financiera única
+        run: npm run test:infra
       - name: Tipos
         run: npm run lint
-      - name: Unitarias de ambos programas con Redis real
+      - name: Unitarias con Redis real
         env:
-          REDIS_INVENTARIO_PRUEBAS_URL: redis://127.0.0.1:16383
+          REDIS_INVENTARIO_PRUEBAS_URL: redis://127.0.0.1:16382
           REDIS_HOST: 127.0.0.1
-          REDIS_PUERTO: "16383"
+          REDIS_PUERTO: "16382"
         run: npm test -- --runInBand
-      - name: Integración de Boletería dos veces
+      - name: Composición real del módulo financiero sin HTTP
+        run: npm run test:pagos:modulo
+      - name: Integración del Núcleo dos veces
+        run: |
+          npm run test:e2e
+          npm run test:e2e
+      - name: Integración de Boletería dos veces, con Núcleo para los callbacks
         run: |
           npm run test:boleteria
           npm run test:boleteria
       - name: Configuración y fronteras
         run: npm run verificar:infra
-      - name: Construir y arrancar imagen de Boletería
-        run: npm run test:boleteria:imagen:infra
-      - name: Smoke de Boletería y gateway dos veces
-        run: |
-          npm run test:boleteria:imagen
-          npm run test:boleteria:imagen
-      - name: Detener solo Boletería E2E antes de verificar Núcleo
-        run: docker compose -p hexacore-boleteria-e2e -f test/boleteria/docker-compose.yml -f test/boleteria/docker-compose.imagen.yml stop
-      - name: Infraestructura exclusiva de Núcleo y Pagos
-        run: npm run test:e2e:infra
-      - name: Integración de Núcleo dos veces
-        run: |
-          npm run test:e2e
-          npm run test:e2e
-      - name: Construir y arrancar imágenes de Núcleo
+      - name: Construir y arrancar ambas imágenes y gateway
         run: npm run test:imagen:infra
-      - name: Smoke de Núcleo y gateway dos veces
+      - name: Smoke de Núcleo y Boletería
         run: |
           npm run test:imagen
-          npm run test:imagen
-      - name: Logs de Boletería si falla
+          npm run test:boleteria:imagen
+      - name: Contratos financieros y webhook, dos corridas
+        run: |
+          npm run test:pagos:contratos
+          npm run test:pagos:contratos
+      - name: Libro común, convivencia y reinicio
+        run: npm run test:pagos:convivencia
+      - name: Logs si falla
         if: failure()
-        run: docker compose -p hexacore-boleteria-e2e -f test/boleteria/docker-compose.yml -f test/boleteria/docker-compose.imagen.yml logs --tail 100
-      - name: Logs de Núcleo si falla
-        if: failure()
-        run: docker compose -p hexacore-nucleo-e2e -f test/docker-compose.e2e.yml -f test/docker-compose.imagen.yml logs --tail 100
+        run: docker compose -p hexacore-backend-e2e -f test/docker-compose.e2e.yml -f test/docker-compose.imagen.yml logs --tail 100
       - name: Conservar logs de los procesos compilados
         if: always()
         uses: actions/upload-artifact@v4
@@ -237,12 +228,9 @@ jobs:
           name: backend-e2e-logs
           path: App/backend/.evidencia-e2e/
           include-hidden-files: true
-      - name: Limpiar solo recursos de Núcleo E2E
+      - name: Limpiar solo el proyecto exclusivo
         if: always()
-        run: npm run test:e2e:limpiar
-      - name: Limpiar solo recursos de Boletería E2E
-        if: always()
-        run: npm run test:boleteria:limpiar
+        run: npm run test:limpiar
 
   # --------------------------------------------------------------------------
   # Los dos portales Angular: que compilen en modo producción.

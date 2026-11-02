@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { ConexionRabbitMq } from '../comun/rabbitmq/conexion-rabbitmq.service';
+import { ConexionRabbitMq } from '../../../compartido/rabbitmq/conexion-rabbitmq.service';
 
 /** Exchange del resultado financiero. Publicarlo no finaliza pedidos ni compras. */
 export const EXCHANGE_PAGOS = 'pagos.eventos';

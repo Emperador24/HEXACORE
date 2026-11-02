@@ -42,7 +42,7 @@ y escucha en **8080**. Es la única dirección que conocen la app móvil y los p
 | `/api/v1/reventa/…` | Boletería | token `Cliente` o `Administrador` |
 | `/api/v1/pedidos/…` | Núcleo | token |
 | `/api/v1/logistica/…` | Núcleo | token |
-| `POST /api/v1/pagos/webhook` | Pagos | firma HMAC de la pasarela (la valida Pagos) |
+| `POST /api/v1/pagos/webhook` | Núcleo | firma HMAC de la pasarela (la valida Núcleo) |
 | `/salud` | el propio gateway | nada |
 
 Las rutas públicas van con coincidencia **exacta** (`location = …`), que en Nginx gana a cualquier
@@ -88,8 +88,10 @@ Así Ventas solo recibe a cuantos puede atender y no necesita llamar a la Cola.
 ## El *webhook* de la pasarela
 
 `POST /api/v1/pagos/webhook` es la única ruta pública que no es de un usuario. No lleva JWT —la
-pasarela no tiene sesión—; Pagos la autentica con la firma HMAC-SHA256 del cuerpo en
-`X-Pasarela-Firma`. Nada más de Pagos se expone: cobrar y reembolsar siguen siendo internos.
+pasarela no tiene sesión—; Núcleo la autentica con la firma HMAC-SHA256 del cuerpo en
+`X-Pasarela-Firma`. El receptor conserva los bytes originales. Cobrar y reembolsar son llamadas
+locales autorizadas por Alimentos/Entradas; no tienen endpoints HTTP. Boletería
+no monta otro webhook. El simulador también llama a nucleo:3002.
 
 ## Balanceo y caída de una instancia
 
@@ -100,7 +102,7 @@ el gateway empieza a repartir sin reiniciarlo, y al caer una deja de usarla:
 ```bash
 cd ../infra
 docker compose -f docker-compose.yml -f docker-compose.escalado.yml \
-  --profile servicios up -d --scale ventas=2
+  --profile servicios up -d --scale boleteria=2
 python3 ../gateway/pruebas/gateway.py
 ```
 

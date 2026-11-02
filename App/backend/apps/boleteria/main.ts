@@ -7,6 +7,8 @@ import {
   ConfiguracionProceso,
 } from '../../compartido/config/configuracion';
 import { BoleteriaModule } from './boleteria.module';
+process.env.PROGRAMA_BACKEND = 'boleteria';
+
 async function bootstrap() {
   const app = await NestFactory.create(BoleteriaModule);
   const c = app.get<ConfiguracionProceso>(CONFIGURACION_PROCESO);

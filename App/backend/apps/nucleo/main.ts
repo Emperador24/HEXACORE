@@ -6,8 +6,10 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { CONFIGURACION_PROCESO, ConfiguracionProceso } from '../../compartido/config/configuracion';
 import { NucleoModule } from './nucleo.module';
 
+process.env.PROGRAMA_BACKEND = 'nucleo';
+
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(NucleoModule);
+  const app = await NestFactory.create(NucleoModule, { rawBody: true });
   const config = app.get<ConfiguracionProceso>(CONFIGURACION_PROCESO);
   app.setGlobalPrefix(config.prefijoApi);
   app.enableShutdownHooks();

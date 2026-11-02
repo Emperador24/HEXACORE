@@ -13,6 +13,7 @@ export class SaludBoleteriaController {
     @InjectDataSource('entradas-catalogo') private catalogo: DataSource,
     @InjectDataSource('entradas-postventa') private postventa: DataSource,
     @InjectDataSource('entradas-acceso-qr') private acceso: DataSource,
+    @InjectDataSource('finanzas-pagos') private pagos: DataSource,
     @Inject(REDIS) private redis: Redis,
     private rabbit: ConexionRabbitMq,
     private scheduler: SchedulerRegistry,
@@ -35,7 +36,7 @@ export class SaludBoleteriaController {
       }
     };
     const valores = await Promise.all(
-      [this.ventas, this.catalogo, this.postventa, this.acceso].map((d) =>
+      [this.ventas, this.catalogo, this.postventa, this.acceso, this.pagos].map((d) =>
         probar(() => d.query('SELECT 1')),
       ),
     );
@@ -49,7 +50,7 @@ export class SaludBoleteriaController {
       trabajos: { cron: [...this.scheduler.getCronJobs().keys()].sort() },
       dependencias: {
         postgres: Object.fromEntries(
-          ['ventas', 'catalogo', 'postventa', 'acceso-qr'].map((n, i) => [
+          ['ventas', 'catalogo', 'postventa', 'acceso-qr', 'pagos'].map((n, i) => [
             n,
             valores[i] ? 'arriba' : 'caido',
           ]),

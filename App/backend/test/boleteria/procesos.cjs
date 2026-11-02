@@ -26,19 +26,20 @@ const entorno = () => ({
   PUERTO: '13096',
   PREFIJO_API: 'api/v1',
   POSTGRES_HOST: '127.0.0.1',
-  POSTGRES_PUERTO: '15436',
-  POSTGRES_USUARIO: 'boleteria_e2e',
-  POSTGRES_CONTRASENA: 'boleteria_e2e',
+  POSTGRES_PUERTO: '15435',
+  POSTGRES_USUARIO: 'cu011_e2e',
+  POSTGRES_CONTRASENA: 'cu011_e2e',
   POSTGRES_BASE: 'entradas_e2e',
   POSTGRES_BD_VENTAS: bases.ventas,
   POSTGRES_BD_CATALOGO: bases.catalogo,
   POSTGRES_BD_POSTVENTA: bases.postventa,
   POSTGRES_BD_ACCESO_QR: bases['acceso-qr'],
   REDIS_HOST: '127.0.0.1',
-  REDIS_PUERTO: '16383',
-  RABBITMQ_URL: 'amqp://boleteria_e2e:boleteria_e2e@127.0.0.1:15676/boleteria',
-  PAGOS_URL: 'http://127.0.0.1:13090/api/v1',
-  PAGOS_TIMEOUT_MS: '12000',
+  REDIS_PUERTO: '16382',
+  RABBITMQ_URL: 'amqp://cu011_e2e:cu011_e2e@127.0.0.1:15675/cu011',
+  POSTGRES_BD_PAGOS: 'pagos_e2e',
+  PAGOS_PROVEEDOR_URL: 'http://127.0.0.1:13101',
+  PASARELA_TIMEOUT_MS: '3000',
   VENTAS_URL: 'http://127.0.0.1:9/servidor-retirado',
   AUTH_JWT_EMISOR: 'hexacore-administracion',
   AUTH_JWT_CLAVE_PUBLICA_ARCHIVO: resolve(
@@ -59,10 +60,10 @@ async function esperar(accion, limite = 15000) {
 }
 async function metricasRabbit() {
   const headers = {
-    Authorization: `Basic ${Buffer.from('boleteria_e2e:boleteria_e2e').toString('base64')}`,
+    Authorization: `Basic ${Buffer.from('cu011_e2e:cu011_e2e').toString('base64')}`,
   };
   const leer = async (ruta) => {
-    const r = await fetch('http://127.0.0.1:16776/api/' + ruta, {
+    const r = await fetch('http://127.0.0.1:16775/api/' + ruta, {
       headers,
       signal: AbortSignal.timeout(3000),
     });
@@ -72,7 +73,8 @@ async function metricasRabbit() {
   const conexiones = (await leer('connections')).filter(
     (c) => c.client_properties.connection_name === 'hexacore-boleteria',
   );
-  const consumidores = (await leer('consumers/boleteria')).length;
+  const nombres = new Set(conexiones.map(c => c.name));
+  const consumidores = (await leer('consumers/cu011')).filter(c => nombres.has(c.channel_details.connection_name)).length;
   return { conexiones: conexiones.length, consumidores };
 }
 async function iniciar() {
@@ -91,6 +93,7 @@ async function iniciar() {
     );
     assert.equal(r.status, 0, `Migración ${nombre}: ${r.stdout}\n${r.stderr}`);
   }
+  const auxiliar = await require('../proceso-nucleo.cjs').iniciar();
   const hijo = spawn(process.execPath, ['dist/apps/boleteria/main.js'], {
     cwd,
     env,
@@ -107,7 +110,7 @@ async function iniciar() {
   mkdirSync(resolve(cwd, '.evidencia-e2e'), { recursive: true });
   writeFileSync(resolve(cwd, '.evidencia-e2e/boleteria.pid'), String(hijo.pid));
   const app = {
-    procesos: [p],
+    procesos: [p], auxiliar,
     urls: Object.fromEntries(nombres.map((n) => [n, p.url])),
   };
   try {
@@ -179,15 +182,15 @@ async function cerrar(app) {
     }
     const db = new Client({
       host: '127.0.0.1',
-      port: 15436,
-      user: 'boleteria_e2e',
-      password: 'boleteria_e2e',
+      port: 15435,
+      user: 'cu011_e2e',
+      password: 'cu011_e2e',
       database: 'postgres',
     });
     try {
       await db.connect();
       const r = await db.query(
-        "SELECT application_name,datname FROM pg_stat_activity WHERE application_name LIKE 'boleteria-%'",
+        "SELECT application_name,datname FROM pg_stat_activity WHERE application_name LIKE 'boleteria-%' OR application_name='finanzas-pagos:boleteria'",
       );
       assert.equal(r.rowCount, 0);
     } finally {
@@ -197,7 +200,7 @@ async function cerrar(app) {
       const m = await metricasRabbit();
       return m.conexiones === 0 && m.consumidores === 0;
     });
-    const redis = new Redis({ host: '127.0.0.1', port: 16383 });
+    const redis = new Redis({ host: '127.0.0.1', port: 16382 });
     try {
       assert.doesNotMatch(await redis.client('LIST'), /name=boleteria /);
     } finally {
@@ -212,6 +215,7 @@ async function cerrar(app) {
     for (const p of app.procesos)
       writeFileSync(resolve(cwd, '.evidencia-e2e/boleteria.log'), p.salida);
     rmSync(resolve(cwd, '.evidencia-e2e/boleteria.pid'), { force: true });
+    if (app.auxiliar) await require('../proceso-nucleo.cjs').cerrar(app.auxiliar);
   }
 }
 module.exports = { iniciar, cerrar, entorno, bases, puertos, esperar, raiz, metricasRabbit };

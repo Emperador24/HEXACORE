@@ -13,7 +13,7 @@ args = parser.parse_args()
 raiz = Path(__file__).resolve().parents[4]
 salida = Path(args.salida).resolve()
 salida.parent.mkdir(parents=True, exist_ok=True)
-compose = ['docker', 'compose', '-p', 'hexacore-boleteria-e2e', '-f', str(raiz / 'App/backend/test/boleteria/docker-compose.yml')]
+compose = ['docker', 'compose', '-p', 'hexacore-backend-e2e', '-f', str(raiz / 'App/backend/test/docker-compose.e2e.yml')]
 sql = """
 SELECT json_build_object(
  'conexiones', (SELECT coalesce(json_agg(x),'[]') FROM (
@@ -43,7 +43,7 @@ with salida.open('w') as archivo:
     while time.monotonic() < limite:
         muestra = {'utc': datetime.now(timezone.utc).isoformat()}
         muestra['postgres'] = json.loads(ejecutar(compose + [
-            'exec', '-T', 'postgres', 'psql', '-U', 'boleteria_e2e', '-d', 'postgres', '-qAt', '-c', sql]))
+            'exec', '-T', 'postgres', 'psql', '-U', 'cu011_e2e', '-d', 'postgres', '-qAt', '-c', sql]))
         pidfile = raiz / 'App/backend/.evidencia-e2e/boleteria.pid'
         if pidfile.exists():
             pid = pidfile.read_text().strip()

@@ -64,12 +64,11 @@ export interface ConfiguracionServicio {
     url: string;
   };
   /**
-   * Microservicio de Pagos (ADR-14). Este servicio ya no habla con la pasarela:
-   * la conoce solo Pagos, que es lo que quitó la copia duplicada del adaptador.
+   * Presupuesto del módulo reutilizable de Pagos. El dominio no llama a la pasarela:
+   * la conoce el módulo reutilizable de Pagos; el dominio no duplica el adaptador.
    */
   pagos: {
-    url: string;
-    /** Corta la espera ante Pagos lento o caído — camino de excepción CU-006I. */
+    /** Plazo de la pasarela usado para validar presupuesto de reserva/bloqueo. */
     timeoutMs: number;
   };
   reventa: ReglasReventa;
@@ -166,23 +165,18 @@ export function cargarConfiguracion(): ConfiguracionServicio {
   // publicación libre con un cobro en vuelo: exactamente la doble venta que
   // ASR-01 debe impedir.
   //
-  // Desde ADR-14 el cobro va por el microservicio de Pagos, así que el tiempo
-  // que hay que cubrir es el de **esa** llamada, no el de la pasarela. Ponlo
-  // por encima del PASARELA_TIMEOUT_MS de Pagos: si Pagos espera 10 s a la
-  // pasarela, esperar menos que eso aquí cortaría la llamada justo cuando
-  // Pagos todavía puede resolverla.
-  const timeoutPagosMs = entero('PAGOS_TIMEOUT_MS', 12_000);
+  // La operación local de Pagos espera a su pasarela externa. La reserva
+  // debe cubrir PASARELA_TIMEOUT_MS; se retira el antiguo plazo HTTP interno.
+  const timeoutPagosMs = entero('PASARELA_TIMEOUT_MS', 10_000);
   const timeoutVentasMs = entero('VENTAS_TIMEOUT_MS', 8000);
   if (timeoutVentasMs <= 0) throw new Error('VENTAS_TIMEOUT_MS debe ser mayor que 0');
-  // El bloqueo tiene que cubrir **las dos** llamadas remotas del checkout, no
-  // solo el cobro: desde ADR-14 la transferencia también sale a Ventas, y el
-  // bloqueo se mantiene hasta que esa responde. Si caducara en medio, otro
-  // comprador podría tomar la publicación con la transferencia en vuelo.
+  // Se conserva el presupuesto anterior para cobro más transferencia local
+  // de Ventas (VENTAS_TIMEOUT_MS); no se reduce el bloqueo de reventa.
   const esperaMaximaCheckoutMs = timeoutPagosMs + timeoutVentasMs;
   if (reventa.bloqueoTtlSegundos * 1000 <= esperaMaximaCheckoutMs) {
     throw new Error(
       `REVENTA_BLOQUEO_TTL_SEGUNDOS (${reventa.bloqueoTtlSegundos}s) debe superar la espera máxima ` +
-        `del checkout: PAGOS_TIMEOUT_MS (${timeoutPagosMs}ms) + VENTAS_TIMEOUT_MS (${timeoutVentasMs}ms) ` +
+        `del checkout: PASARELA_TIMEOUT_MS (${timeoutPagosMs}ms) + VENTAS_TIMEOUT_MS (${timeoutVentasMs}ms) ` +
         `= ${esperaMaximaCheckoutMs}ms. Si no, el bloqueo caducaría con el cobro o la transferencia en vuelo.`,
     );
   }
@@ -208,7 +202,6 @@ export function cargarConfiguracion(): ConfiguracionServicio {
       url: texto('RABBITMQ_URL', 'amqp://hexacore:hexacore@localhost:5672'),
     },
     pagos: {
-      url: texto('PAGOS_URL', 'http://localhost:3008/api/v1'),
       timeoutMs: timeoutPagosMs,
     },
     reventa,

@@ -1,4 +1,4 @@
-// Smoke de las imágenes reales, exclusivamente en hexacore-nucleo-e2e.
+// Smoke de las imágenes reales, exclusivamente en hexacore-backend-e2e.
 const assert = require('node:assert/strict');
 const { randomUUID } = require('node:crypto');
 const { Client } = require('pg');

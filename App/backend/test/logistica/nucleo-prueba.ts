@@ -67,7 +67,7 @@ export class NucleoPrueba {
     expect(await salud.json()).toMatchObject({ servicio: 'nucleo', dependencias: {
       postgres: { identidad: 'arriba', alimentos: 'arriba', logistica: 'arriba' } } });
     expect(this.salida).toContain(`pid=${this.proceso.pid}`);
-    expect(this.salida.match(/3 topologías declaradas/g)).toHaveLength(1);
+    expect(this.salida.match(/4 topologías declaradas/g)).toHaveLength(1);
     expect(this.salida.match(/Escuchando la cola/g)).toHaveLength(1);
     await esperar(async () => (await this.conexionesRabbit()).length === 1);
     await esperar(async () => await this.consumidores() === 1);
@@ -118,7 +118,7 @@ export class NucleoPrueba {
         expect(this.salida).toContain('Sondeo de reservas detenido');
         expect(this.salida).not.toMatch(/ERROR|UnknownElementException|Cierre de RabbitMQ con incidencias/);
         const [{ total }] = await this.datos.query(`SELECT count(*)::int AS total FROM pg_stat_activity
-          WHERE application_name IN ('nucleo-identidad','nucleo-alimentos','nucleo-personal-logistica')`);
+          WHERE application_name IN ('nucleo-identidad','nucleo-alimentos','nucleo-personal-logistica','finanzas-pagos:nucleo')`);
         expect(total).toBe(0);
         await esperar(async () => (await this.conexionesRabbit()).length === 0);
         await esperar(async () => await this.consumidores() === 0);

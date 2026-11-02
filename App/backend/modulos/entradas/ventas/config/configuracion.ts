@@ -61,12 +61,11 @@ export interface ConfiguracionServicio {
     url: string;
   };
   /**
-   * Microservicio de Pagos (ADR-14). Este servicio ya no habla con la pasarela:
-   * la conoce solo Pagos, que es lo que quitó la copia duplicada del adaptador.
+   * Presupuesto del módulo reutilizable de Pagos. El dominio no llama a la pasarela:
+   * la conoce el módulo reutilizable de Pagos; el dominio no duplica el adaptador.
    */
   pagos: {
-    url: string;
-    /** Corta la espera ante Pagos lento o caído — camino de excepción CU-006I. */
+    /** Plazo de la pasarela usado para validar presupuesto de reserva/bloqueo. */
     timeoutMs: number;
   };
   reventa: ReglasReventa;
@@ -168,16 +167,13 @@ export function cargarConfiguracion(): ConfiguracionServicio {
   // publicación libre con un cobro en vuelo: exactamente la doble venta que
   // ASR-01 debe impedir.
   //
-  // Desde ADR-14 el cobro va por el microservicio de Pagos, así que el tiempo
-  // que hay que cubrir es el de **esa** llamada, no el de la pasarela. Ponlo
-  // por encima del PASARELA_TIMEOUT_MS de Pagos: si Pagos espera 10 s a la
-  // pasarela, esperar menos que eso aquí cortaría la llamada justo cuando
-  // Pagos todavía puede resolverla.
-  const timeoutPagosMs = entero('PAGOS_TIMEOUT_MS', 12_000);
+  // La operación local de Pagos espera a su pasarela externa. La reserva
+  // debe cubrir PASARELA_TIMEOUT_MS; se retira el antiguo plazo HTTP interno.
+  const timeoutPagosMs = entero('PASARELA_TIMEOUT_MS', 10_000);
   if (reventa.bloqueoTtlSegundos * 1000 <= timeoutPagosMs) {
     throw new Error(
       `REVENTA_BLOQUEO_TTL_SEGUNDOS (${reventa.bloqueoTtlSegundos}s) debe superar ` +
-        `PAGOS_TIMEOUT_MS (${timeoutPagosMs}ms), o el bloqueo caducaría con el cobro en vuelo`,
+        `PASARELA_TIMEOUT_MS (${timeoutPagosMs}ms), o el bloqueo caducaría con el cobro en vuelo`,
     );
   }
 
@@ -193,7 +189,7 @@ export function cargarConfiguracion(): ConfiguracionServicio {
   // la reventa, aunque aquí `PAGANDO` ya lo protege del barrido.
   if (venta.reservaMinutos * 60_000 <= timeoutPagosMs) {
     throw new Error(
-      `COMPRA_RESERVA_MINUTOS (${venta.reservaMinutos}) debe superar PAGOS_TIMEOUT_MS (${timeoutPagosMs}ms)`,
+      `COMPRA_RESERVA_MINUTOS (${venta.reservaMinutos}) debe superar PASARELA_TIMEOUT_MS (${timeoutPagosMs}ms)`,
     );
   }
   if (venta.cancelacionParcialHoras < 0 || venta.cancelacionParcialHoras > venta.cancelacionTotalDias * 24) {
@@ -229,7 +225,6 @@ export function cargarConfiguracion(): ConfiguracionServicio {
       url: texto('RABBITMQ_URL', 'amqp://hexacore:hexacore@localhost:5672'),
     },
     pagos: {
-      url: texto('PAGOS_URL', 'http://localhost:3008/api/v1'),
       timeoutMs: timeoutPagosMs,
     },
     reventa,

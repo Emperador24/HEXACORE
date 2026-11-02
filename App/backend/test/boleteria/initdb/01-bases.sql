@@ -1,4 +1,0 @@
-CREATE DATABASE catalogo_boleteria_e2e OWNER boleteria_e2e;
-CREATE DATABASE postventa_boleteria_e2e OWNER boleteria_e2e;
-CREATE DATABASE acceso_qr_boleteria_e2e OWNER boleteria_e2e;
-CREATE DATABASE pagos_boleteria_e2e OWNER boleteria_e2e;

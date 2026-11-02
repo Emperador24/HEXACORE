@@ -190,7 +190,8 @@ services:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }
-      pagos: { condition: service_healthy }
+      migracion-pagos: { condition: service_completed_successfully }
+      pasarela: { condition: service_healthy }
     # Los nombres de la capa de datos son variables para poder repartir el
     # sistema en dos computadores (RNF de desplegabilidad): por defecto son los
     # contenedores locales; `iniciar.sh --datos <IP>` los apunta a otra máquina.
@@ -229,8 +230,10 @@ services:
       POSTGRES_MAX_CONEXIONES: "10"
       POSTGRES_ESPERA_MAXIMA_MS: "3000"
       CORREO_PROVEEDOR_URL: http://${HOST_CORREO:-correo}:${PUERTO_CORREO:-3098}
-      PAGOS_URL: http://pagos:3008/api/v1
-      PAGOS_TIMEOUT_MS: "12000"
+      POSTGRES_BD_PAGOS: pagos
+      PAGOS_PROVEEDOR_URL: http://${HOST_PASARELA:-pasarela}:${PUERTO_PASARELA:-3099}
+      PASARELA_TIMEOUT_MS: "10000"
+      PASARELA_SECRETO_WEBHOOK: secreto-webhook-desarrollo
     volumes:
       - ./claves-desarrollo/jwt-privada.pem:/claves/jwt-privada.pem:ro
       - ./claves-desarrollo/jwt-publica.pem:/claves/jwt-publica.pem:ro
@@ -259,7 +262,8 @@ services:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }
-      pagos: { condition: service_healthy }
+      migracion-pagos: { condition: service_completed_successfully }
+      pasarela: { condition: service_healthy }
     environment:
       <<: *entorno-comun
       PUERTO: "3001"
@@ -269,7 +273,9 @@ services:
       POSTGRES_BD_CATALOGO: catalogo
       POSTGRES_BD_POSTVENTA: postventa
       POSTGRES_BD_ACCESO_QR: acceso_qr
-      PAGOS_URL: http://pagos:3008/api/v1
+      POSTGRES_BD_PAGOS: pagos
+      PAGOS_PROVEEDOR_URL: http://${HOST_PASARELA:-pasarela}:${PUERTO_PASARELA:-3099}
+      PASARELA_TIMEOUT_MS: "10000"
       COLA_AFORO_CONCURRENTE: "25"
     volumes:
       - ./claves-desarrollo/jwt-publica.pem:/claves/jwt-publica.pem:ro
@@ -281,37 +287,22 @@ services:
       retries: 10
     ports: ["3001:3001"]
 
-  # Microservicio de Pagos — el único que habla con la pasarela. Fase A de ADR-14.
-  pagos:
+  # Una ejecución del historial financiero antes de habilitar ambos programas.
+  # Usa la imagen Núcleo como herramienta CLI; no abre HTTP ni corre su main.
+  migracion-pagos:
     profiles: ["servicios"]
-    build:
-      context: ../backend
-      dockerfile: Dockerfile.pagos
-    # Sin `container_name`: ADR-14 le pone tres réplicas con autoescalado.
-    restart: unless-stopped
-    init: true
+    build: ../backend
+    restart: "no"
+    command: ["node", "node_modules/typeorm/cli.js", "migration:run", "-d", "dist/modulos/finanzas/pagos/persistencia/data-source.js"]
     depends_on:
       postgres: { condition: service_healthy }
-      redis: { condition: service_healthy }
-      pasarela: { condition: service_healthy }
     environment:
       <<: *entorno-comun
-      PUERTO: "3008"
+      PROGRAMA_BACKEND: migracion
+      POSTGRES_USUARIO: hexacore
+      POSTGRES_CONTRASENA: hexacore
       POSTGRES_BD_PAGOS: pagos
-      PAGOS_PROVEEDOR_URL: http://${HOST_PASARELA:-pasarela}:${PUERTO_PASARELA:-3099}
-      # El mismo que firma la pasarela. En producción es obligatorio y secreto.
-      PASARELA_SECRETO_WEBHOOK: secreto-webhook-desarrollo
-    volumes:
-      - ./claves-desarrollo/jwt-publica.pem:/claves/jwt-publica.pem:ro
-    healthcheck:
-      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3008/api/v1/salud',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
-      interval: 10s
-      timeout: 5s
-      start_period: 90s
-      retries: 10
-    # No se publica puerto al host: es un servicio interno, no lo llama ningún
-    # cliente. Se alcanza por la red de compose desde Ventas, Postventa y
-    # Alimentos, y la pasarela llega a su webhook a través del gateway.
+    healthcheck: { disable: true }
 
   # Microservicio de Notificaciones — envío asíncrono de correos. Fase A de ADR-14.
   notificaciones:

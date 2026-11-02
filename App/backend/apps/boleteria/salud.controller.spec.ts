@@ -23,10 +23,10 @@ describe('SaludController', () => {
         : jest.fn().mockRejectedValue(new Error('sin conexión')),
     } as unknown as DataSource;
     const redis = { ping: opciones.redis ? jest.fn().mockResolvedValue('PONG') : jest.fn().mockRejectedValue(new Error('Redis caído')) } as unknown as Redis;
-    const bases = [0,1,2,3].map(i => opciones.baseCaida === undefined || opciones.baseCaida === i ? fuente : {query:jest.fn().mockResolvedValue([])} as unknown as DataSource);
+    const bases = [0,1,2,3,4].map(i => opciones.baseCaida === undefined || opciones.baseCaida === i ? fuente : {query:jest.fn().mockResolvedValue([])} as unknown as DataSource);
     const scheduler = {getCronJobs:()=>new Map()} as unknown as SchedulerRegistry;
     const rabbitmq = { conectado: opciones.rabbitmq } as unknown as ConexionRabbitMq;
-    return new SaludController(bases[0], bases[1], bases[2], bases[3], redis, rabbitmq, scheduler);
+    return new SaludController(bases[0], bases[1], bases[2], bases[3], bases[4], redis, rabbitmq, scheduler);
   }
 
   function respuestaFalsa(): Response & { codigo?: number } {
@@ -45,7 +45,7 @@ describe('SaludController', () => {
 
     expect(respuesta.codigo).toBe(HttpStatus.OK);
     expect(cuerpo.estado).toBe('arriba');
-    expect(cuerpo.dependencias).toEqual({ postgres: {ventas:'arriba',catalogo:'arriba',postventa:'arriba','acceso-qr':'arriba'}, redis: 'arriba', rabbitmq: 'arriba' });
+    expect(cuerpo.dependencias).toEqual({ postgres: {ventas:'arriba',catalogo:'arriba',postventa:'arriba','acceso-qr':'arriba',pagos:'arriba'}, redis: 'arriba', rabbitmq: 'arriba' });
   });
 
   it.each([
@@ -53,6 +53,7 @@ describe('SaludController', () => {
     ['PostgreSQL catálogo', { postgres: false, redis: true, rabbitmq: true, baseCaida:1 }],
     ['PostgreSQL postventa', { postgres: false, redis: true, rabbitmq: true, baseCaida:2 }],
     ['PostgreSQL acceso', { postgres: false, redis: true, rabbitmq: true, baseCaida:3 }],
+    ['PostgreSQL pagos', { postgres: false, redis: true, rabbitmq: true, baseCaida:4 }],
     ['Redis', { postgres: true, redis: false, rabbitmq: true }],
   ])('responde 503 si falta %s', async (_dependencia, estado) => {
     // Una instancia sin Redis no puede bloquear un checkout (ADR-03): aceptar

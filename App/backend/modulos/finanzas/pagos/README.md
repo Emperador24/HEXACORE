@@ -18,9 +18,10 @@ pagos/
 
 La API pública es `index.ts`: PagosModule, PagosService y contratos de operación,
 respuesta y confirmación. Importar PagosModule no publica endpoints, no configura
-JWT y no abre clientes Redis/RabbitMQ. Los módulos llamantes futuros deberán
-importar esta API, sin acceder a entidades o repositorios internos. Actualmente
-Núcleo y Boletería siguen usando **HTTP**; no se ha cambiado su autorización.
+JWT y no abre clientes Redis/RabbitMQ. Alimentos y Entradas importan esta API, sin acceder a entidades o repositorios
+internos. Sus adaptadores locales mantienen autorización en los controladores
+llamantes y validación con validarSolicitudPagos, equivalente a la antigua
+frontera HTTP. Los contratos y códigos de error existentes se conservan.
 
 Conexión TypeORM **finanzas-pagos** en registro, opciones devueltas, forFeature e
 inyecciones. Configuración **CONFIGURACION_FINANZAS_PAGOS** y puerto del adaptador
@@ -46,9 +47,21 @@ callback adelantado responde OPERACION_DESCONOCIDA; no hay bandeja de entrada
 nueva. Estas limitaciones se documentan para los responsables, sin corregir
 negocio ajeno durante la extracción.
 
-La envoltura temporal vive en [apps/pagos-http](../../../apps/pagos-http/README.md)
-y conserva rutas, validación, JWT/revocación, HMAC sobre rawBody y publicación
-AMQP. Solo ella carga el secreto del webhook y la configuración de sesión/broker.
-Las pruebas de [test/pagos](../../../test/pagos/README.md) verifican la separación
-con Nest y PostgreSQL reales, además de los contratos HTTP y las 27 unitarias
-originales. No se simula persistencia en esa integración.
+Solo Núcleo registra el receptor en apps/nucleo/pagos. Conserva
+POST /api/v1/pagos/webhook, validación, HMAC sobre rawBody y publicación con la
+conexión AMQP compartida. No se publica ese controlador al importar PagosModule.
+Boletería no carga el secreto HMAC ni una clave privada. La envoltura HTTP y sus
+endpoints de cobro/reembolso se retiraron; sigue el HTTP hacia la pasarela externa.
+
+La migración del libro la ejecuta **una sola tarea de despliegue** antes de los dos
+programas. Compose usa migracion-pagos (imagen Núcleo, comando TypeORM CLI,
+restart=no, sin puertos); sus dos aplicaciones dependen de su terminación correcta.
+Fuera de Compose ejecutar una vez `npm run migracion:pagos:correr`, revisando antes
+el destino con `migracion:pagos:estado`. No incluir esa orden en ambos bootstraps.
+No se cambia la migración 1790380800000 ni se crean libros por aplicación.
+
+Las pruebas de [test/pagos](../../../test/pagos/README.md) usan Nest, PostgreSQL,
+Redis, RabbitMQ, ambos programas y gateway reales, con proveedor simulado. Los
+contratos de operaciones retirados del HTTP se prueban directamente en el módulo;
+el webhook se prueba por HTTP. Las unitarias originales de servicio/guarda se
+conservan, ahora la guarda se verifica en su módulo llamante. F12 sigue pendiente.

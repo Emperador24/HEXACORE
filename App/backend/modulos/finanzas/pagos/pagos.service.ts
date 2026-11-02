@@ -131,7 +131,7 @@ export class PagosService {
    * discrepancia así es para revisar a mano.
    *
    * Devuelve el evento a publicar. Se publica también cuando el resultado ya
-   * se conocía. La envoltura HTTP conserva esa publicación; actualizar el libro
+   * se conocía. El receptor del Núcleo conserva esa publicación; actualizar el libro
    * y emitir el evento no finaliza el pedido o compra del llamante (F12).
    */
   async confirmar(notificacion: NotificacionPasarelaDto): Promise<EventoPago> {

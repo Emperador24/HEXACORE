@@ -72,7 +72,7 @@ describe('CU-011 Alimentos → Pagos → pasarela con persistencia y mensajería
     expect(salidaServidor).toContain('Sondeo de reservas detenido');
     expect(salidaServidor).toContain('Consumidor de logística detenido');
     for (const fuente of [datos, identidad, logistica]) {
-      const [{ conexiones }] = await fuente.query("SELECT count(*)::int AS conexiones FROM pg_stat_activity WHERE application_name IN ('nucleo-identidad', 'nucleo-alimentos', 'nucleo-personal-logistica') AND pid <> pg_backend_pid() AND backend_type = 'client backend'");
+      const [{ conexiones }] = await fuente.query("SELECT count(*)::int AS conexiones FROM pg_stat_activity WHERE application_name IN ('nucleo-identidad', 'nucleo-alimentos', 'nucleo-personal-logistica', 'finanzas-pagos:nucleo') AND pid <> pg_backend_pid() AND backend_type = 'client backend'");
       expect(conexiones).toBe(0);
     }
     await esperar(async () => (await conexionesRabbit()).length === 0, 10000);
@@ -119,13 +119,10 @@ describe('CU-011 Alimentos → Pagos → pasarela con persistencia y mensajería
     const config = cargarConfiguracion();
     expect(config.postgres).toMatchObject({ host: '127.0.0.1', puerto: 15435,
       usuario: 'cu011_e2e', base: 'alimentos_cu011_e2e' });
-    expect(config.pagos.url).toBe('http://127.0.0.1:13088/api/v1');
     expect(config.redis).toEqual({ host: '127.0.0.1', puerto: 16382 });
     expect(config.rabbitmq.url).toBe('amqp://cu011_e2e:cu011_e2e@127.0.0.1:15675/cu011');
-    const saludPagos = await fetch(`${config.pagos.url}/salud`, { signal: AbortSignal.timeout(3000) });
-    expect(saludPagos.status).toBe(200);
     libroPagos = new DataSource({ type: 'postgres', host: config.postgres.host, port: config.postgres.puerto,
-      username: config.postgres.usuario, password: config.postgres.contrasena, database: 'pagos_cu011_e2e',
+      username: config.postgres.usuario, password: config.postgres.contrasena, database: 'pagos_e2e',
       synchronize: false });
     await libroPagos.initialize();
     datos = new DataSource({ ...opcionesDataSource(config), extra: { application_name: 'observador-alimentos' } });
@@ -178,7 +175,7 @@ describe('CU-011 Alimentos → Pagos → pasarela con persistencia y mensajería
     const salud = await fetch(`${base}/api/v1/salud`, { signal: AbortSignal.timeout(3000) });
     expect(salud.status).toBe(200);
     expect(await salud.json()).toMatchObject({ servicio: 'nucleo', entorno: 'test', estado: 'arriba' });
-    expect(salidaServidor.match(/3 topologías declaradas/g)).toHaveLength(1);
+    expect(salidaServidor.match(/4 topologías declaradas/g)).toHaveLength(1);
     expect(salidaServidor.match(/Sondeo de reservas iniciado/g)).toHaveLength(1);
     expect(salidaServidor).toContain(`pid=${servidor.pid}`);
     expect(salidaServidor).toMatch(/hilos=\d+/);

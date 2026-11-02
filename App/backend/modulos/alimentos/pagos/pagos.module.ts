@@ -1,3 +1,4 @@
+import { PagosModule as FinanzasPagosModule } from '../../finanzas/pagos';
 import { Module, OnModuleInit } from '@nestjs/common';
 import { ConfirmChannel } from 'amqplib';
 import { ConexionRabbitMq } from '../../../compartido/rabbitmq/conexion-rabbitmq.service';
@@ -21,7 +22,7 @@ import { ClientePagos } from './cliente-pagos.service';
  * registra **esta** topología, independiente de la de cuentas.
  */
 @Module({
-  imports: [PersistenciaModule, AutenticacionModule, InventarioModule],
+  imports: [FinanzasPagosModule, PersistenciaModule, AutenticacionModule, InventarioModule],
   controllers: [PagosController],
   providers: [PagosService, ClientePagos, PublicadorPedidos],
 })

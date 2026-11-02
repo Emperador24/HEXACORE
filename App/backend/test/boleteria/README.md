@@ -7,8 +7,8 @@ Node **22.22.3**, npm ci en App/backend y Docker/Compose. Seleccionar Node con
 ```bash
 npm --prefix App/backend ci
 npm --prefix App/backend run lint
-npm --prefix App/backend run test:boleteria:infra
-REDIS_HOST=127.0.0.1 REDIS_PUERTO=16383 REDIS_INVENTARIO_PRUEBAS_URL=redis://127.0.0.1:16383 npm --prefix App/backend test -- --runInBand
+npm --prefix App/backend run test:infra
+REDIS_HOST=127.0.0.1 REDIS_PUERTO=16382 REDIS_INVENTARIO_PRUEBAS_URL=redis://127.0.0.1:16382 npm --prefix App/backend test -- --runInBand
 npm --prefix App/backend run test:boleteria
 npm --prefix App/backend run test:boleteria
 npm --prefix App/backend run verificar:infra
@@ -16,12 +16,12 @@ npm --prefix App/backend run test:boleteria:imagen:infra
 npm --prefix App/backend run test:boleteria:imagen
 npm --prefix App/backend run test:boleteria:imagen
 # Para volver a la suite de procesos, parar solo las imágenes de esta prueba:
-docker compose -p hexacore-boleteria-e2e -f App/backend/test/boleteria/docker-compose.yml -f App/backend/test/boleteria/docker-compose.imagen.yml stop gateway boleteria
+docker compose -p hexacore-backend-e2e -f App/backend/test/docker-compose.e2e.yml -f App/backend/test/docker-compose.imagen.yml stop gateway nucleo boleteria
 # Al terminar toda la inspección:
-npm --prefix App/backend run test:boleteria:limpiar
+npm --prefix App/backend run test:limpiar
 ```
 
-Proyecto **hexacore-boleteria-e2e**; sin contenedores, volúmenes ni redes externos.
+Proyecto **hexacore-backend-e2e**; sin contenedores, volúmenes ni redes externos.
 No ejecutar iniciar.sh, semillas de desarrollo ni guiones que truncan tablas.
 Los JWT usan las claves fixture de test/claves; esta suite no prueba login,
 interfaces ni un proveedor financiero real. Boletería/imagen reciben solo la
@@ -29,24 +29,27 @@ clave pública: las firmas fixture se hacen fuera del proceso del programa.
 
 | Recurso exclusivo | Destino del host |
 |---|---|
-| PostgreSQL, usuario/contraseña boleteria_e2e | 127.0.0.1:15436 |
-| Redis | 127.0.0.1:16383 |
-| RabbitMQ, vhost boleteria | 127.0.0.1:15676; administración 16776 |
-| Pagos actual / pasarela simulada | 127.0.0.1:13090 / 13102 |
+| PostgreSQL, usuario/contraseña cu011_e2e | 127.0.0.1:15435 |
+| Redis | 127.0.0.1:16382 |
+| RabbitMQ, vhost cu011 | 127.0.0.1:15675; administración 16775 |
+| Pasarela simulada / Núcleo auxiliar del webhook | 127.0.0.1:13101 / 13087 |
 | Proceso compilado controlado por Jest | 13096 |
-| Imagen / gateway | 127.0.0.1:13097 / 18081 |
+| Imagen / gateway | 127.0.0.1:13097 / 18080 |
 
 Bases exclusivas: entradas_e2e, catalogo_boleteria_e2e, postventa_boleteria_e2e,
-acceso_qr_boleteria_e2e y pagos_boleteria_e2e. Cuatro historiales de negocio:
+acceso_qr_boleteria_e2e y el libro común pagos_e2e. Cuatro historiales de negocio:
 5+1+1+3 migraciones; Postventa conserva **migrations**, las otras **migraciones**.
-El preparador impone las cuatro POSTGRES_BD_*; nunca synchronize. Pagos conserva
-su servidor y su libro propio; no es una biblioteca del workspace todavía.
+El preparador impone las cuatro POSTGRES_BD_*; nunca synchronize. Ambos programas importan PagosModule y usan el mismo libro pagos_e2e, preparado
+por una única tarea migracion-pagos. No existe servidor Pagos. El proyecto conserva
+también las tres bases de Núcleo; no hay consolidación general de datos.
 
 `pretest:boleteria` compila; procesos.cjs migra e inicia **un Node real** con
-`dist/apps/boleteria/main.js`. Exige un PID, los dos cron, una conexión AMQP y
-cinco consumidores. VENTAS_URL apunta a un puerto inaccesible: publicación,
+`dist/apps/boleteria/main.js`. Inicia además un Núcleo compilado en 13087 para
+el webhook del simulador; no simula callbacks ni monta otro receptor en Boletería.
+Exige un PID por programa, los dos cron, una conexión AMQP y
+cinco consumidores de Boletería (se filtran sus canales, sin contar al auxiliar). VENTAS_URL apunta a un puerto inaccesible: publicación,
 transferencia y devolución deben funcionar por la interfaz local. SIGTERM debe
-terminar sin SIGKILL, con cron/outbox/consumos drenados, cuatro conexiones SQL y
+terminar sin SIGKILL, con cron/outbox/consumos drenados, cuatro conexiones SQL de Entradas más finanzas-pagos, y
 clientes Redis/AMQP desaparecidos. Guarda logs en .evidencia-e2e, ignorada por Git.
 
 La suite ejecuta **23 casos**: los ocho CU-001 originales y los doce escenarios
@@ -88,8 +91,10 @@ python3 App/backend/test/boleteria/observar-recursos.py --segundos 120
 ```
 
 Captura SQL, bloqueos, conexiones y recursos propios sin cambiar límites.
-CI verifica ambos programas de forma secuencial: detiene el proyecto propio de
-Boletería antes de levantar Núcleo y finalmente limpia ambos proyectos.
+CI ejecuta las suites por proceso secuencialmente sobre los mismos recursos,
+y después arranca ambas imágenes/gateway. Finalmente limpia solo este proyecto.
+[Contratos de Pagos](../pagos/README.md) incluyen login real de Identidad y compras
+de ambos módulos con su token; esta suite de Boletería conserva sus JWT fixtures.
 
 La referencia de **cinco procesos**, anterior al traslado, permanece reproducible
 en el commit **d48befff29244bdd2746ba4686c519c13a28cc4c**. Allí se ejecutan

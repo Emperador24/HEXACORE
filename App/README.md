@@ -5,18 +5,17 @@ y [resultados](../Documentation/Work/ESTADO-MIGRACION.md).
 
 Identidad, Alimentos y Personal/Logística comparten **un único Núcleo NestJS** en
 [backend](backend/README.md), con Node 22.22.3, manifiesto/lockfile comunes y tres
-conexiones a sus bases actuales. Las rutas públicas `/api/v1` de cuentas,
+conexiones de negocio a sus bases actuales, más la financiera compartida. Las rutas públicas `/api/v1` de cuentas,
 sesiones, administración de cuentas, pedidos y logística se conservan mediante el gateway.
 Boletería reúne las cinco implementaciones de Entradas en otro proceso :3001,
 con cuatro bases y diez migraciones conservadas. Se retiran los servidores
-directos anteriores; Pagos conserva su interfaz HTTP desde el workspace. Las rutas de web/móvil en el gateway permanecen iguales.
+directos anteriores; Ambos usan el módulo Pagos y el mismo libro; solo Núcleo recibe el webhook. Las rutas de web/móvil en el gateway permanecen iguales.
 
 ```text
 App/
   backend/
     apps/nucleo/
     apps/boleteria/
-    apps/pagos-http/      # envoltura temporal; mismo servidor, no otro adicional
     modulos/identidad/
     modulos/alimentos/
     modulos/personal-logistica/
@@ -32,16 +31,15 @@ App/
   PoCs/           evidencia histórica del stack
 ```
 
-Este es un paso hacia Núcleo, Boletería, Operación y Trabajador. Pagos conserva
-su servidor temporal; Personal/Logística ya pertenece al Núcleo; Operación sigue pendiente. Los dominios sin
+Este es un paso hacia Núcleo, Boletería, Operación y Trabajador. Pagos es reutilizable sin servidor; Personal/Logística ya pertenece al Núcleo; Operación sigue pendiente. Los dominios sin
 backend o con pantallas simuladas siguen pendientes. No hay MongoDB desplegado
 ni se consolida aquí la información de las bases de desarrollo.
 
 Seguir [las instrucciones del workspace](backend/README.md) para instalar,
 migrar y arrancar Núcleo/Boletería. Integración exclusiva: [Núcleo](backend/test/README.md)
 y [Boletería](backend/test/boleteria/README.md), sin datos habituales. Compose
-ejecuta esos programas, Pagos y Notificaciones; los dos últimos mantienen su
-instalación propia y el flujo de [WORKFLOW.md](../WORKFLOW.md).
+ejecuta esos dos programas y Notificaciones, más una tarea única de migración
+del libro pagos. Notificaciones conserva su instalación propia. Se mantiene el flujo de [WORKFLOW.md](../WORKFLOW.md).
 
 Los responsables funcionales se conservan: Identidad y Alimentos, Sebastián;
 Boletería, Daniel y Samuel; Personal/Logística y Operación, Samuel y Diego según

@@ -5,7 +5,7 @@ const { resolve } = require('node:path');
 const { Client } = require('pg');
 const Redis = require('ioredis');
 const { JwtService } = require('@nestjs/jwt');
-const gateway = 'http://127.0.0.1:18081/api/v1',
+const gateway = 'http://127.0.0.1:18080/api/v1',
   directo = 'http://127.0.0.1:13097/api/v1';
 const bases = {
   ventas: 'entradas_e2e',
@@ -36,7 +36,7 @@ const token = (sub, roles, jti_) =>
 const cliente = token(usuario, ['Cliente'], jti),
   portero = token(personal, ['Personal'], randomUUID());
 const db = {},
-  redis = new Redis({ host: '127.0.0.1', port: 16383 });
+  redis = new Redis({ host: '127.0.0.1', port: 16382 });
 async function pedir(metodo, ruta, auth, cuerpo, extra = {}, base = gateway) {
   const r = await fetch(base + ruta, {
     method: metodo,
@@ -59,9 +59,9 @@ async function main() {
   for (const [n, database] of Object.entries(bases)) {
     db[n] = new Client({
       host: '127.0.0.1',
-      port: 15436,
-      user: 'boleteria_e2e',
-      password: 'boleteria_e2e',
+      port: 15435,
+      user: 'cu011_e2e',
+      password: 'cu011_e2e',
       database,
     });
     await db[n].connect();

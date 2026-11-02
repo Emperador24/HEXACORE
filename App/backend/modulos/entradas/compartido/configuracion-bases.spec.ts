@@ -23,11 +23,9 @@ describe('Configuración independiente de las bases de Boletería', () => {
   it('cada variable cambia solo la base de su componente', () => {
     claves.forEach((clave, i) => { process.env[`POSTGRES_BD_${clave}`] = `prueba_${i}`; });
     expect(bases()).toEqual(['prueba_0', 'prueba_1', 'prueba_2', 'prueba_3']);
-    process.env.PAGOS_URL = ' http://pagos:3008/api/v1 ';
-    process.env.PAGOS_TIMEOUT_MS = ' ';
     process.env.AUTH_JWT_EMISOR = ' hexacore-administracion ';
     const comun = cargarConfiguracionBoleteria();
-    expect(comun.pagos).toEqual({url:'http://pagos:3008/api/v1',timeoutMs:12000});
+    expect(comun).not.toHaveProperty('pagos');
     expect(comun.emisor).toBe('hexacore-administracion');
   });
 });

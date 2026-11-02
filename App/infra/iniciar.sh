@@ -139,7 +139,7 @@ case "$ROL" in
     gris "  Levantando los servicios de dominio y el API Gateway"
     "${COMPOSE[@]}" --profile servicios up -d $CONSTRUIR \
       --scale boleteria="$REPLICAS" \
-      nucleo boleteria notificaciones pagos \
+      nucleo boleteria notificaciones \
       api-gateway portal-web-cliente portal-web-admin
     ;;
   todo)
@@ -176,7 +176,7 @@ contenedor_de() {
 
 if [[ "$ROL" != "datos" ]]; then
   titulo "Esperando a que los servicios respondan"
-  for servicio in nucleo boleteria notificaciones pagos \
+  for servicio in nucleo boleteria notificaciones \
                   api-gateway portal-web-cliente portal-web-admin; do
     id="$(contenedor_de "$servicio")"
     if [[ -n "$id" ]] && esperar_sano "$id"; then
@@ -202,7 +202,7 @@ fi
 # gateway devolviendo 503.
 migrar() {
   local servicio="$1" tarea="${2:-migracion:correr}" carpeta="$RAIZ/App/services/$1"
-  [[ "$servicio" == "nucleo" || "$servicio" == "boleteria" || "$servicio" == "pagos" ]] && carpeta="$RAIZ/App/backend"
+  [[ "$servicio" == "nucleo" || "$servicio" == "boleteria" ]] && carpeta="$RAIZ/App/backend"
   if [[ ! -d "$carpeta/node_modules" ]]; then
     gris "  $servicio: sin node_modules, se omiten las migraciones"
     return 1
@@ -309,7 +309,7 @@ preparar_inventario_sin_node() {
 
 sembrar() {
   local servicio="$1" tarea="${2:-semilla}" carpeta="$RAIZ/App/services/$1"
-  [[ "$servicio" == "nucleo" || "$servicio" == "boleteria" || "$servicio" == "pagos" ]] && carpeta="$RAIZ/App/backend"
+  [[ "$servicio" == "nucleo" || "$servicio" == "boleteria" ]] && carpeta="$RAIZ/App/backend"
   if [[ ! -d "$carpeta/node_modules" ]]; then
     gris "  $servicio: sin node_modules, se omite la semilla (npm install para tenerla)"
     return
@@ -370,7 +370,6 @@ if [[ "$DEMO" == "si" && "$ROL" != "datos" ]]; then
     # su propia base, que es la separación de datos que ADR-12 conserva.
     migrar nucleo migracion:identidad:correr || true
     migrar nucleo migracion:alimentos:correr || true
-    migrar pagos migracion:pagos:correr || true
     migrar boleteria migracion:acceso-qr:correr || true
     migrar boleteria migracion:ventas:correr || true
     # Postventa después de Ventas: no por el esquema —son bases distintas y no

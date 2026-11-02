@@ -2,7 +2,7 @@
 require('reflect-metadata');
 const assert = require('node:assert/strict');
 // Conexión fija al proyecto exclusivo. No se acepta una base del entorno habitual.
-Object.assign(process.env, { NODE_ENV: 'test', POSTGRES_HOST: '127.0.0.1', POSTGRES_PUERTO: '15436', POSTGRES_USUARIO: 'boleteria_e2e', POSTGRES_CONTRASENA: 'boleteria_e2e', POSTGRES_BD_PAGOS: 'pagos_boleteria_e2e', POSTGRES_BASE: 'base_ajena_no_usar', AUTH_JWT_CLAVE_PUBLICA_ARCHIVO: '/clave-que-no-existe', REDIS_PUERTO: '1', RABBITMQ_URL: 'amqp://127.0.0.1:1' });
+Object.assign(process.env, { NODE_ENV: 'test', POSTGRES_HOST: '127.0.0.1', POSTGRES_PUERTO: '15435', POSTGRES_USUARIO: 'cu011_e2e', POSTGRES_CONTRASENA: 'cu011_e2e', POSTGRES_BD_PAGOS: 'pagos_e2e', POSTGRES_BASE: 'base_ajena_no_usar', AUTH_JWT_CLAVE_PUBLICA_ARCHIVO: '/clave-que-no-existe', REDIS_PUERTO: '1', RABBITMQ_URL: 'amqp://127.0.0.1:1' });
 const { NestFactory, ModulesContainer } = require('@nestjs/core');
 const { getDataSourceToken } = require('@nestjs/typeorm');
 const { PagosModule, PagosService } = require('../../dist/modulos/finanzas/pagos');
@@ -18,7 +18,7 @@ const { PagosModule, PagosService } = require('../../dist/modulos/finanzas/pagos
     assert.equal(datos.options.name, 'finanzas-pagos');
     assert.equal(datos.options.synchronize, false);
     assert.equal(datos.options.migrationsRun, false);
-    assert.equal((await datos.query('SELECT current_database() AS base'))[0].base, 'pagos_boleteria_e2e');
+    assert.equal((await datos.query('SELECT current_database() AS base'))[0].base, 'pagos_e2e');
     console.log('Módulo real: cero controladores, sin JWT/Redis/AMQP, conexión finanzas-pagos y base exclusiva correctas.');
   } finally {
     await app.close();

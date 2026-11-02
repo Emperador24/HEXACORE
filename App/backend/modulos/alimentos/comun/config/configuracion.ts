@@ -54,14 +54,7 @@ export interface ConfiguracionServicio {
   jwt: ClavePublica;
   /** Emisor que se exige en el token; cualquier otro se rechaza. */
   emisorTokens: string;
-  /**
-   * Microservicio de Pagos (ADR-14). Este servicio ya no habla con la
-   * pasarela: la conoce solo Pagos.
-   */
-  pagos: {
-    url: string;
-    timeoutMs: number;
-  };
+
 }
 
 export function cargarConfiguracion(): ConfiguracionServicio {
@@ -77,12 +70,6 @@ export function cargarConfiguracion(): ConfiguracionServicio {
   const maxConexiones = entero('POSTGRES_MAX_CONEXIONES', 10);
   if (maxConexiones < 2) {
     throw new Error('POSTGRES_MAX_CONEXIONES debe ser >= 2');
-  }
-  // Por encima del PASARELA_TIMEOUT_MS de Pagos: si Pagos espera 10 s a la
-  // pasarela, cortar antes aquí dejaría el cobro en vuelo sin respuesta.
-  const timeoutPagosMs = entero('PAGOS_TIMEOUT_MS', 12000);
-  if (timeoutPagosMs <= 0) {
-    throw new Error('PAGOS_TIMEOUT_MS debe ser mayor que 0');
   }
 
   return {
@@ -107,10 +94,6 @@ export function cargarConfiguracion(): ConfiguracionServicio {
     },
     jwt: cargarClavePublica(entorno === 'production'),
     emisorTokens: texto('AUTH_JWT_EMISOR', 'hexacore-administracion'),
-    pagos: {
-      url: texto('PAGOS_URL', 'http://localhost:3008/api/v1'),
-      timeoutMs: timeoutPagosMs,
-    },
   };
 }
 

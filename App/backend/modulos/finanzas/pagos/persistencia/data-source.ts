@@ -21,7 +21,7 @@ export function opcionesDataSource(config: ConfiguracionServicio): DataSourceOpt
     migrations: MIGRACIONES,
     migrationsTableName: 'migraciones',
     extra: {
-      application_name: 'finanzas-pagos',
+      application_name: `finanzas-pagos:${process.env.PROGRAMA_BACKEND || 'modulo'}`,
       max: config.postgres.maxConexiones,
       connectionTimeoutMillis: config.postgres.esperaMaximaMs,
     },

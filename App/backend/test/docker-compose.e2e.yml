@@ -1,4 +1,4 @@
-name: hexacore-nucleo-e2e
+name: hexacore-backend-e2e
 services:
   postgres:
     image: postgres:16-alpine
@@ -18,8 +18,7 @@ services:
   redis:
     image: redis:7-alpine
     ports: ["127.0.0.1:16382:6379"]
-    volumes:
-      - redis:/data
+    volumes: ["redis:/data"]
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 2s
@@ -32,8 +31,7 @@ services:
       RABBITMQ_DEFAULT_PASS: cu011_e2e
       RABBITMQ_DEFAULT_VHOST: cu011
     ports: ["127.0.0.1:15675:5672", "127.0.0.1:16775:15672"]
-    volumes:
-      - rabbitmq:/var/lib/rabbitmq
+    volumes: ["rabbitmq:/var/lib/rabbitmq"]
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
       interval: 3s
@@ -46,51 +44,32 @@ services:
     command: ["node", "server.js"]
     volumes:
       - ../../infra/pasarela-pagos-simulada/server.js:/app/server.js:ro
+    extra_hosts: ["host.docker.internal:host-gateway"]
     environment:
-      WEBHOOK_URL: http://pagos:3008/api/v1/pagos/webhook
-      SECRETO_WEBHOOK: cu011-webhook-pruebas
+      # El override de imágenes usa el DNS nucleo:3002 en la misma red.
+      WEBHOOK_URL: http://host.docker.internal:13087/api/v1/pagos/webhook
+      SECRETO_WEBHOOK: backend-webhook-pruebas
     ports: ["127.0.0.1:13101:3099"]
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:3099/salud',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
       interval: 2s
       timeout: 3s
       retries: 30
-  pagos:
-    build:
-      context: ..
-      dockerfile: Dockerfile.pagos
+  migracion-pagos:
+    build: ..
+    command: ["node", "node_modules/typeorm/cli.js", "migration:run", "-d", "dist/modulos/finanzas/pagos/persistencia/data-source.js"]
     depends_on:
       postgres: { condition: service_healthy }
-      redis: { condition: service_healthy }
-      rabbitmq: { condition: service_healthy }
-      pasarela: { condition: service_healthy }
     environment:
       NODE_ENV: test
-      PUERTO: "3008"
-      PREFIJO_API: api/v1
+      PROGRAMA_BACKEND: migracion
       POSTGRES_HOST: postgres
       POSTGRES_PUERTO: "5432"
       POSTGRES_USUARIO: cu011_e2e
       POSTGRES_CONTRASENA: cu011_e2e
-      POSTGRES_BD_PAGOS: pagos_cu011_e2e
-      REDIS_HOST: redis
-      REDIS_PUERTO: "6379"
-      RABBITMQ_URL: amqp://cu011_e2e:cu011_e2e@rabbitmq:5672/cu011
-      AUTH_JWT_EMISOR: hexacore-administracion
-      AUTH_JWT_CLAVE_PUBLICA_ARCHIVO: /claves/jwt-publica.pem
-      PAGOS_PROVEEDOR_URL: http://pasarela:3099
-      PASARELA_TIMEOUT_MS: "3000"
-      PASARELA_SECRETO_WEBHOOK: cu011-webhook-pruebas
-    ports: ["127.0.0.1:13088:3008"]
-    volumes:
-      - ./claves/jwt-publica.pem:/claves/jwt-publica.pem:ro
-    healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3008/api/v1/salud',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
-      interval: 2s
-      timeout: 3s
-      start_period: 20s
-      retries: 30
-
+      POSTGRES_BD_PAGOS: pagos_e2e
+    healthcheck: { disable: true }
+    restart: "no"
 volumes:
   postgres:
   redis:
