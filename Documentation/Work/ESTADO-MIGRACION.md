@@ -1,14 +1,25 @@
 # Estado de migración de HEXACORE
 
 Fecha de revisión: **2 de noviembre de 2026**, America/Bogota.
-Rama `feature/sebastian-arquitectura`, traslado de Notificaciones desde
-**85419bef9d2c88cd27301923e7e8252fbc75e863**. HEAD y trabajo local comprobados sin
-reset/stash/descarte. Pedidos se conserva aparte. **§21 describe el estado vigente**;
+Rama `feature/sebastian-arquitectura`, ensayo de consolidación desde
+**300a88ebd4337bb4538d9229c84af0361a6afd9f**. HEAD y trabajo local comprobados sin
+reset/stash/descarte. Pedidos se conserva aparte. **§22 describe el estado vigente**;
 las secciones anteriores conservan su evidencia histórica.
 
 **Alcance de toda la migración:** migrar funcionalidad existente y preparar sus
 fronteras, sin completar CU faltantes, F12 ni Operación. La consolidación de datos
-sigue siendo obligatoria y posterior; no se ejecuta en esta entrega.
+sigue siendo obligatoria. Se ha ejecutado únicamente el ensayo sobre datos aislados;
+adaptar aplicaciones y cambiar destinos habituales corresponde a otra entrega.
+
+**Datos vigentes (§22):** ocho respaldos originales restaurados en ocho bases de
+prueba distintas; transferencia a hexacore por ocho esquemas conciliada: **49 tablas,
+247 filas, 18 migraciones**, 16 secuencias y restricciones/índices/funciones/triggers.
+**12/12 pruebas del procedimiento, dos ejecuciones aprobadas** sobre los mismos
+recursos, con fallo SQL e interrupción de conexión controlados, reanudación y repetición
+sin duplicados. Las aplicaciones conservan sus ocho bases originales. Una inconsistencia
+F12 ya existente se conserva igual, sin repararla. Redis y RabbitMQ inventariados;
+mensajes/reservas no se migraron ni purgaron. Ver mapa y comandos en
+App/backend/test/consolidacion/README.md.
 
 **Trabajador vigente (§21):** apps/trabajador consume el correo existente desde
 modulos/comunicaciones, con Node 22.22.3 y el único manifiesto/lockfile del backend.
@@ -21,7 +32,8 @@ Los demás consumidores/temporizadores siguen en Núcleo/Boletería con su dueñ
 **Pagos vigente (§20):** Alimentos y Entradas llaman localmente al módulo común,
 libro pagos único/finanzas-pagos, tarea única de migración y webhook solo en Núcleo.
 Se conservan las siete bases/diecisiete migraciones de negocio más libro financiero
-y migración original, sin synchronize ni consolidación/copias de datos.
+y migración original, sin synchronize. Solo el ensayo de §22 copia los datos de prueba;
+la configuración de ejecución de ambos procesos conserva las ocho bases originales.
 
 Referencia de correo: **20/20 antes** del traslado y **20/20 dos veces después**,
 con las mismas aserciones. Recorrido real de los cinco correos desde Identidad:
@@ -2519,3 +2531,248 @@ Compose de solo lectura y bash -n; no se invocó el script de arranque.
 Dependencias/lock y 18 migraciones originales sin cambios verificados. git diff
 --check aprobado; selección explícita de esta entrega excluye Pedidos y artefactos.
 Commit: `refactor(backend): trasladar notificaciones al trabajador`.
+
+## 22. Ensayo ejecutado de consolidación física por esquemas
+
+### Base, alcance y aislamiento
+
+Base publicada/HEAD inicial **300a88ebd4337bb4538d9229c84af0361a6afd9f**, rama
+feature/sebastian-arquitectura. Sin cambios rastreados al comenzar; únicamente
+Pedidos local sin rastrear. Se leyeron plan completo, resumen vigente, §21 e
+instrucciones locales. No hay AGENTS.md aplicables. Node **22.22.3**, npm **11.6.3**,
+Docker **29.7.2**, Compose **5.3.1**, PostgreSQL **16.15** en ambos servidores.
+Selección de Node en este host:
+PATH=/private/tmp/hexacore-cu011-node22/node_modules/.bin:$PATH; en instalación nueva,
+cd App/backend; nvm install; nvm use; npm ci. Dependencias/lockfile intactos.
+
+Esta entrega automatiza y ejecuta **respaldo, transferencia, conciliación y restauración
+de fixtures aisladas**. No cambia destinos habituales, conexiones TypeORM de las apps,
+reglas de negocio ni migraciones originales. Núcleo/Boletería aún usan ocho bases,
+con synchronize=false. No se inicia otro hito después de este ensayo.
+
+Origen: proyecto **hexacore-backend-e2e**, PostgreSQL 15435, Redis 16382,
+RabbitMQ 15675/16775 y pasarela simulada 13101; imágenes Núcleo 13089,
+Boletería 13097 y gateway 18080. Destino: nuevo proyecto
+**hexacore-consolidacion-e2e**, PostgreSQL **15437**, una red/volumen propios.
+Puertos publicados solo en loopback. Ninguna conexión a PostgreSQL habitual.
+Scripts con proyectos/servicios/puertos/rol/bases permitidos fijos, verificación de
+etiquetas, ID y system_identifier, huellas de manifiesto/dumps/fuentes de migración.
+No leen .env ni aceptan DATABASE_URL. Referencias privadas en
+**/private/tmp/hexacore-consolidacion/ensayo-03/**; directorio 0700, archivos 0600,
+sin datos, respaldos, tokens o evidencias sensibles en Git. CI no sube esos artefactos.
+
+### Inventario y mapa definitivo
+
+El [README del ensayo](../../App/backend/test/consolidacion/README.md) contiene
+**las 49 tablas y su correspondencia exacta**. Todas conservan nombre dentro de
+su esquema; no se fusionan filas ni se descarta una tabla legacy por estar vacía.
+El manifiesto privado inventaría columnas/tipos/defaults, propietarios/permisos,
+restricciones, índices/expresiones, secuencias/vínculos/estado, funciones/triggers,
+vistas y extensiones, además de conteos y huella de contenido por tabla.
+
+| Conexión / base habitual (referencia, no utilizada) | Esquema destino | Tablas | Filas observadas | Migraciones | Secuencias | Restricciones | Índices |
+|---|---|---:|---:|---:|---:|---:|---:|
+| identidad / administracion | identidad | 7 | 76 | 3 | 1 | 26 | 15 |
+| alimentos / pedidos | alimentos | 8 | 60 | 2 | 1 | 25 | 16 |
+| personal-logistica / eventos_emergencias | personal_logistica | 7 | 12 | 2 | 1 | 16 | 10 |
+| entradas-ventas / entradas_mercado_secundario | entradas_ventas | 13 | 46 | 5 | 7 | 58 | 41 |
+| entradas-catalogo / catalogo | entradas_catalogo | 3 | 9 | 1 | 1 | 7 | 9 |
+| entradas-postventa / postventa | entradas_postventa | 4 | 9 | 1 | 2 | 13 | 14 |
+| entradas-acceso-qr / acceso_qr | entradas_acceso_qr | 5 | 16 | 3 | 2 | 9 | 10 |
+| finanzas-pagos / pagos | finanzas_pagos | 2 | 19 | 1 | 1 | 5 | 4 |
+| **Total** | **8 esquemas de datos** | **49** | **247** | **18** | **16** | **159** | **119** |
+
+25 enums, cero vistas/materializadas; dos funciones de negocio y dos triggers:
+auditoria_cuentas_solo_insercion/tr_auditoria_cuentas_solo_insercion en Identidad y
+historial_propietarios_solo_insercion/trg_historial_propietarios_inmutable en Ventas.
+Extensiones: plpgsql 1.0 en pg_catalog; uuid-ossp 1.1 y pgcrypto 1.3 compartidas en
+**extensiones**. Se comparan también sus **49 funciones miembro** (3/10/36),
+firmas/resultados, cuerpos/bibliotecas, permisos y propietarios. SQL del traslado
+sin referencias public residuales; las dos funciones propias solo generan errores
+para proteger los historiales, sin SQL textual sobre otras tablas.
+
+Siete tablas migraciones y una migrations (Postventa) quedan en sus esquemas,
+con sus ID/nombres/timestamps originales. migracion_control.procedencia contiene
+18 registros con origen/conexión/esquema/historial/ruta/SHA-256 de la fuente intacta.
+No se ejecuta TypeORM contra hexacore. Antes de usarla habrá que adaptar esquemas,
+consultas de secuencias e historiales y verificar migration:show, evitando reaplicar
+DDL original de public. Los scripts rechazan extensiones/ACL incompatibles.
+
+Colisiones preservadas por namespace: eventos_referencia/localidades, ingresos,
+publicaciones_reventa/transacciones_reventa, eventos_salientes, enums,
+numero_transaccion_seq e índices/historiales homónimos. Propietario funcional de
+los cuatro esquemas entradas_*: Entradas. Ventas conserva autoridad de propiedad/QR
+e historial; Acceso QR su proyección y registro de ingreso; Postventa publicaciones/
+transacciones; Catálogo sus referencias. **No hay garantía nueva de atomicidad o
+invalidación inmediata del QR**. Los datos legacy de Ventas no se unen a Postventa.
+
+### Referencia representativa y corte coherente
+
+Cinco pruebas financieras existentes, ejecutadas antes del corte, conservan sus
+fixtures. El preparador añade credenciales iniciales cifradas con Identidad y
+referencias de menú/evento/localidad/promoción para las que falta administración.
+No usa iniciar.sh, semillas ni truncado. Ejecuta **46 comprobaciones reales** de
+login/perfil, registro pendiente, auditoría/desactivación, checkout/pago de alimentos
+aprobado/rechazado/incierto, pedido reservado, promoción, compra/cancelación/reembolso,
+reventa/transferencia/ingreso, turno sin consumir, empleados/asignación, solicitud/
+revisión de cambio y entrada/salida de asistencia. También conserva datos de los dos
+intentos fallidos de preparación, todos fixtures propios y sin reparación/borrado.
+
+Se detuvieron únicamente gateway/Núcleo/Boletería/pasarela del proyecto de prueba.
+Cero conexiones de cliente en las ocho bases, cero transacciones preparadas y cero
+conexiones/consumidores AMQP antes del corte. default_transaction_read_only=on
+en las ocho bases aisladas, probado con inserción rechazada SQLSTATE 25006.
+Comparación antes/después de cada dump y otra vuelta sobre las ocho bases.
+**La inmovilización común de escritores aporta coherencia al intervalo**; los
+pg_dump independientes/secuenciales no constituyen por sí solos una instantánea
+MVCC global ni una garantía de migración sin parada. No se afirma corte atómico
+con Redis/proveedor/RabbitMQ ni se habilitan escritores nuevos.
+
+Redis al inventariar: **30 claves**, con tipos/PTTL/huella DUMP y RDB propio;
+familias cola, pedidos (inventario/reservas/vencimientos) y sesion-revocada.
+TTL sigue transcurriendo; no se congelan plazos ni se liberan reservas. RabbitMQ:
+**15 colas, siete mensajes listos** (3 cuentas.correos y 4 pedidos.establecimientos),
+cero consumidores. Conteos por checkQueue, topología/DLQ/bindings persistidos como
+inventario, sin get/purge/reencolado. **No es respaldo restaurable de mensajes**.
+La conservación de volúmenes mantiene los pendientes; su futuro drenaje/cambio de
+tráfico debe coordinarse sin inventar recuperación F12 o deduplicación durable F15.
+
+### Transferencia, conciliación y restauración comprobadas
+
+Ocho dumps custom con SHA-256; restauración completa en restauracion_<esquema>
+con public y datos originales. Otras ocho preparacion_<esquema> restauran los
+mismos dumps y renombrar public allí evita reemplazar SQL/datos por texto. Las
+extensiones relocatables se mueven previamente a extensiones. Carga final de los
+ocho esquemas en una transacción psql con ON_ERROR_STOP. Marcas de base ligadas a
+la huella; destino ajeno/existente/incompleto requiere decisión explícita.
+La carga queda TRANSFERIDO; solo después de conciliar pasa a **CONCILIADO**.
+
+Conciliación: 49 conteos y **SHA-256 de todas las filas completas** generadas en
+PostgreSQL, orden C, incluidos duplicados, sin redondear numeric ni reinterpretar
+fechas/hashes en JavaScript. Se comparan estructura, ACL/propietarios de esquemas
+y objetos, enums, índices/check/FK/unique, funciones/triggers, estado/vínculos de
+secuencias, ocho historiales y 18 fuentes/procedencia. Referencias financieras,
+cuentas de pedidos/propietarios/empleados, QR/hash/estado, ingresos/reventas e
+historiales iguales. **Cero diferencias introducidas** tras corregir el arnés.
+
+Importes COP originales = destino, sumados como numeric en PostgreSQL:
+
+| Solicitante / tipo / resultado | Operaciones | Total |
+|---|---:|---:|
+| alimentos / COBRO / APROBADO | 5 | 5751.25 |
+| alimentos / COBRO / RECHAZADO | 3 | 3450.75 |
+| alimentos / COBRO / INDETERMINADO | 2 | 2300.50 |
+| entradas / COBRO / APROBADO | 5 | 8345.44 |
+| entradas / REEMBOLSO / APROBADO | 3 | 3456.60 |
+
+Los 18 movimientos más la migración financiera explican sus 19 filas. Referencias
+lógicas sin autoridad/cuenta/libro y divergencias QR observadas: **cero**, antes y
+después. **Una transacción de alimentos FALLIDA con cobro del libro APROBADO y
+pedido pendiente**, ya creada por la referencia de webhook, se conserva igual:
+F12, no una discrepancia de transferencia. También se conservan dos financieros
+INDETERMINADO; no se convierten en rechazo ni se finaliza su negocio.
+
+División por cero tras tres esquemas y terminación de la propia conexión en el
+mismo punto: salidas no cero esperadas, cero esquemas/control parciales. Reanudación
+explícita sobre destino vacío identificado; repetición --verificar-existente sin
+duplicar registros. Un destino con marca ajena se rechaza. Sondas en copia
+verificacion_hexacore: **16 nextval** con valor esperado y por encima del máximo
+serial, inserción propia USD, PK/FK/check/unique y ambos triggers inmutables.
+No se toca una secuencia del destino conciliado (nextval no se revierte con rollback).
+Después se repiten conciliación completa y las ocho restauraciones.
+
+### Comandos y resultados ejecutados
+
+Desde raíz, Node seleccionado; comandos npm usan --prefix App/backend. Guía
+completa y alternativas de repetición en test/consolidacion/README.md.
+
+| Comando | Resultado |
+|---|---|
+| git status --short --branch; git rev-parse HEAD; node --version; docker info | Base/rama correctas; solo Pedidos local; entorno disponible |
+| npm run test:imagen:infra | Imágenes Núcleo/Boletería/gateway construidas/arrancadas; siete servicios sanos y tarea financiera con salida 0 |
+| docker compose -p hexacore-consolidacion-e2e -f App/backend/test/consolidacion/docker-compose.yml up -d --wait | PostgreSQL exclusivo sano, volumen/red propios |
+| npm run test:pagos:convivencia | **5/5**, 10,098 s; sin omisiones/cancelaciones; referencia financiera conservada |
+| ensayo:datos -- preparar --salida=/private/tmp/hexacore-consolidacion/ensayo-03 | **46 comprobaciones** completas; dos intentos previos fallidos, descritos abajo |
+| ensayo:datos -- capturar, con la misma salida | Ocho respaldos/18 migraciones, corte SQL inmóvil, inventarios Redis/RabbitMQ |
+| ensayo:datos -- restaurar --reanudar | Restauraciones originales conciliadas tras reparar el arnés, 247 filas |
+| ensayo:datos:verificar, ENSAYO_SALIDA=.../ensayo-03 | **12/12**, 17,671 s; cero omitidas/canceladas |
+| ensayo:datos -- reiniciar-destino-pruebas; ensayo:datos:verificar | **12/12**, 18,857 s; mismos recursos/backups/origen; se reinician explícitamente solo dos copias destino con marca propia |
+| npm run lint; npm run build | Tipos y compilación Núcleo aprobados; sin cambios de dependencias |
+| node --check en los cinco CJS nuevos | Aprobados |
+| npm run verificar:infra | Ocho mezclas de despliegue, cuatro configuraciones previas aisladas y nuevo destino de ensayo aprobados e inspeccionados |
+| docker compose ...consolidacion/docker-compose.yml config -q; parseo YAML CI | Aprobados; CI añade job datos aislado, sin publicar artefactos sensibles |
+
+No se repiten 808 unitarias, 73 de Núcleo, 23 de Boletería, 20 de Trabajador,
+13 contratos financieros ni interfaces: código de ejecución/dependencias/configuración
+de negocio intactos. En esta entrega sí se ejecutan las cinco regresiones financieras,
+46 comprobaciones funcionales del preparador y la batería de datos real. El job CI
+reproducible queda preparado; su ejecución remota no está acreditada por este push.
+
+Fallos del arnés, separados de fallos previos del negocio:
+
+- Preparación 1: esperaba 409 para pago rechazado de Alimentos; el contrato real
+  responde 200/RECHAZADA. Preparación 2: compra pendiente sin turno respondió
+  428/TURNO_REQUERIDO. Se corrigen expectativas/cableado, sin cambiar negocio ni
+  eliminar aserciones; la tercera preparación completa 46 comprobaciones.
+- Batería 1 **3/11**, 8 fallidas: eliminar public antes de pg_restore era incorrecto;
+  el dump presupone el esquema estándar. Restauración atómica abortó; --reanudar
+  recuperó solo la copia identificada vacía. Al recrearla inicialmente se perdió
+  su comentario estándar: repuesto explícitamente solo en restauracion_identidad
+  y preparacion_identidad propias. El procedimiento final conserva public de template0.
+- PostgreSQL distribuye casts varchar[]→text[] en un CHECK al restaurarlo; comparación
+  textual inicial falló. Normalización específica probada conserva la regla completa.
+- Batería 2 **7/11**, 4 fallidas: cualificación pg_catalog.gen_random_uuid al compartir
+  pgcrypto. Se verifica que los DEFAULT no dependan del homónimo de extensión antes
+  de normalizar únicamente esa representación; no se cambia la llamada del dump.
+- Batería 3 **7/11**, 4 fallidas: pg_dump omite la ACL inicial implícita de public
+  incluso después del renombrado. Se añade USAGE explícito con propietario/permisos
+  verificados; ACL distinta obliga a ampliar el procedimiento, no a ignorarla.
+- Batería 4 **10/11**, 1 fallida: el trigger original de Ventas usa SQLSTATE P0001,
+  Identidad 23001. Se conserva y comprueba cada código correcto. Se añade el caso
+  del normalizador y las dos baterías finales pasan **12/12**. Las cuatro primeras
+  ejecuciones no se presentan como aprobadas; los errores provocados de rollback
+  son casos esperados con aserciones, no omisiones.
+- El parseo inicial de CI con Python quedó bloqueado por ModuleNotFoundError: yaml.
+  El primer intento Node usó por error yaml, ausente. No se instalan dependencias:
+  se comprueba con **js-yaml** ya existente en el workspace. Configuración Compose
+  y parseo final aprobados.
+
+Evidencias privadas: infra/destino, referencia-convivencia, preparar-1/2/3,
+capturar-1, restaurar-reanudar, verificar-1…6, tipos/build/configuraciones y manifiesto.
+No se versionan dumps/SQL con filas/RDB/JWT/logs. No se certifica rendimiento/carga
+prolongada ni solución F13; no se observaron timeouts de negocio en este ensayo.
+
+### Siguiente entrega, cambio/reversión y cierre
+
+Siguiente cambio: adaptar **en otra entrega** esquemas de entidades, conexiones
+nombradas/SQL, search_path de extensiones, historiales y ejecución coordinada de
+migraciones para arrancar ambas apps contra la copia hexacore y repetir regresiones.
+No retirar proyecciones ni tablas legacy sin decisión y pruebas del responsable de
+Entradas. Mantener un único libro y webhook, F12/F13/F14/F15 y CU ausentes identificados.
+
+Antes de cambio habitual: copia autorizada, parar escritores y callbacks, resolver
+operativamente el corte/drenaje de outbox/reservas/mensajes con sus dueños, sin purgar
+pendientes ni añadir recuperación inexistente. Respaldos/restauración/conciliación
+deben pasar antes de habilitar escrituras nuevas. No se cumple RNF-15 con la parada.
+Reversión previa a escrituras nuevas: conservar bases originales inmóviles y volver
+coordinadamente a destinos/versiones/configuración anteriores, preservando broker y
+Redis. Después de escrituras nuevas hace falta pausa/copia inversa/conciliación
+autorizada: volver a la imagen vieja no revierte datos. Aquí se verificó restaurar
+los ocho respaldos originales, **no** una migración inversa de datos posteriores.
+
+Las apps no se han conectado a hexacore. Se conserva el entorno aislado detenido
+con sus volúmenes/mensajes para inspección; no se ejecutan semillas ni limpiezas
+habituales. Publicación solo de esta etapa en feature/sebastian-arquitectura,
+sin integrar a develop/main. Commit:
+`feat(datos): preparar y verificar consolidacion aislada por esquemas`.
+
+Cierre verificado: **29 contenedores habituales con los mismos ID/nombres/estados**;
+los nueve contenedores creados por el ensayo quedan detenidos, con sus dos redes y
+cuatro volúmenes conservados (incluidos los siete mensajes pendientes). No se ejecuta
+down -v ni purge/FLUSH. Los TTL de Redis pueden caducar por su funcionamiento normal.
+Pedidos sigue sin rastrear, sin cambios, SHA-256
+7a18d9aff7cb03e42f0cf8c311ebbed2d4a6c4278e8c21472349425b13856346.
+Lockfile y 18 migraciones originales sin diferencias. La verificación final
+transferir --verificar-existente vuelve a conciliar restauraciones/destino,
+incluyendo encoding/collation, y confirma cero registros nuevos. git diff --check
+y selección explícita excluyen Pedidos y artefactos privados.

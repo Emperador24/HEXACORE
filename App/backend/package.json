@@ -81,7 +81,10 @@
     "test:trabajador:imagen:infra": "docker compose -p hexacore-trabajador-e2e -f test/trabajador/docker-compose.yml --profile imagen up -d --build --wait",
     "test:trabajador:imagen": "node test/trabajador/comprobar-imagen.cjs",
     "test:trabajador:identidad": "node --test --test-concurrency=1 test/trabajador/identidad.test.cjs",
-    "test:trabajador:limpiar": "docker compose -p hexacore-trabajador-e2e -f test/trabajador/docker-compose.yml --profile imagen down --volumes"
+    "test:trabajador:limpiar": "docker compose -p hexacore-trabajador-e2e -f test/trabajador/docker-compose.yml --profile imagen down --volumes",
+    "ensayo:datos:infra": "docker compose -p hexacore-consolidacion-e2e -f test/consolidacion/docker-compose.yml up -d --wait",
+    "ensayo:datos": "node test/consolidacion/ensayo.cjs",
+    "ensayo:datos:verificar": "node --test --test-concurrency=1 test/consolidacion/verificar.test.cjs"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.6",

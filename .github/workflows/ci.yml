@@ -261,3 +261,40 @@ jobs:
 
       - name: Validar docker-compose
         run: docker compose -f App/infra/docker-compose.yml --profile servicios config -q
+
+  datos:
+    name: Ensayo de datos aislados por esquemas
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: App/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: App/backend/.nvmrc
+          cache: npm
+          cache-dependency-path: App/backend/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - name: Origen y destino exclusivos
+        run: |
+          npm run test:imagen:infra
+          npm run ensayo:datos:infra
+      - name: Referencia financiera existente
+        run: npm run test:pagos:convivencia
+      - name: Preparar, inmovilizar y respaldar
+        run: |
+          npm run ensayo:datos -- preparar --salida=/tmp/hexacore-consolidacion/ci
+          npm run ensayo:datos -- capturar --salida=/tmp/hexacore-consolidacion/ci
+      - name: Restauración, fallos controlados, transferencia y conciliación
+        env:
+          ENSAYO_SALIDA: /tmp/hexacore-consolidacion/ci
+        run: npm run ensayo:datos:verificar
+      - name: Parar únicamente los proyectos del ensayo
+        if: always()
+        run: |
+          docker compose -p hexacore-consolidacion-e2e -f test/consolidacion/docker-compose.yml stop
+          docker compose -p hexacore-backend-e2e -f test/docker-compose.e2e.yml -f test/docker-compose.imagen.yml stop
+      # No se publican respaldos, registros de filas, RDB ni manifiestos sensibles.

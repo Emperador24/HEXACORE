@@ -156,3 +156,15 @@ for imagen in [False, True]:
     for t in cfg['services'].values():
         assert all(puerto['host_ip'] == '127.0.0.1' for puerto in t.get('ports', []))
 print('Dos configuraciones exclusivas de Trabajador: aprobadas')
+
+comando = ['docker', 'compose', '-p', 'hexacore-consolidacion-e2e', '-f', 'App/backend/test/consolidacion/docker-compose.yml']
+subprocess.run(comando + ['config', '-q'], check=True)
+cfg = json.loads(subprocess.check_output(comando + ['config', '--format', 'json'], text=True))
+assert set(cfg['services']) == {'postgres'}
+pg = cfg['services']['postgres']
+assert pg['labels']['hexacore.uso'] == 'ensayo-consolidacion'
+assert pg['environment']['POSTGRES_DB'] == 'postgres'
+assert pg['ports'][0]['host_ip'] == '127.0.0.1' and str(pg['ports'][0]['published']) == '15437'
+assert cfg['volumes']['postgres']['name'] == 'hexacore-consolidacion-e2e_postgres'
+assert not pg.get('depends_on')
+print('Destino exclusivo de consolidación: PostgreSQL aislado, sin aplicaciones ni destinos habituales')

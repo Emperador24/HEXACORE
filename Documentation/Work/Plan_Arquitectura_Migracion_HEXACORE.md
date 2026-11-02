@@ -193,6 +193,15 @@ La documentación oficial de NestJS admite aplicaciones y bibliotecas en un mism
 
 Objetivo: **una base PostgreSQL `hexacore`, con esquemas por módulo**. Los nombres de esquema definitivos se fijan al escribir las migraciones.
 
+Ensayo físico aislado (§22 de ESTADO-MIGRACION): `identidad`, `alimentos`,
+`personal_logistica`, `entradas_ventas`, `entradas_catalogo`, `entradas_postventa`,
+`entradas_acceso_qr` y `finanzas_pagos`; extensiones compartidas en `extensiones`
+y procedencia en `migracion_control`. El mapa tabla por tabla y sus historiales
+está en App/backend/test/consolidacion/README.md. Los cuatro esquemas de Entradas
+conservan sus autoridades, proyecciones y tablas legacy: reunirlos físicamente
+no implementa la unificación transaccional objetivo. El ensayo no cambia los
+destinos de las aplicaciones; adaptar consultas/conexiones/arranques será otra entrega.
+
 | Datos | Propietario de las reglas |
 | --- | --- |
 | Cuentas, sesiones, roles y permisos | Identidad |

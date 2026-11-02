@@ -2,3 +2,8 @@
 
 # Configuración local exclusiva del Trabajador
 .env.trabajador
+
+# Respaldos y referencias del ensayo: siempre fuera del repositorio.
+test/consolidacion/salida/
+*.dump
+*.rdb

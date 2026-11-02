@@ -6,7 +6,9 @@ Pagos se importa desde modulos/finanzas/pagos en ambos procesos, con un único l
 El único receptor HTTP financiero es el webhook del Núcleo. El correo existente
 se consume en Trabajador, desde modulos/comunicaciones.
 Angular y sus compiladores permanecen fuera de este workspace.
-La consolidación general de datos y Operación siguen pendientes del plan.
+El [ensayo aislado de consolidación por esquemas](test/consolidacion/README.md)
+respalda, transfiere y concilia las ocho bases actuales. Las aplicaciones aún usan
+sus destinos originales; adaptarlas a hexacore y preparar Operación sigue pendiente.
 Otros consumidores/tareas de negocio conservan su proceso actual (inventario en ESTADO-MIGRACION §21).
 
 ```text
@@ -46,7 +48,7 @@ para que npm ci funcione tanto con npm 10 del contenedor como con npm 11 del hos
 Nest 11, TypeORM 1 y TypeScript 5.9 permanecen fuera del compilador Angular.
 
 Las bases **administracion**, **pedidos** y **eventos_emergencias** deben existir. Se conservan tablas,
-identificadores e historiales `migraciones`. No se consolida ni copia información.
+identificadores e historiales `migraciones`. Este arranque habitual no copia ni consolida información.
 La base **pagos** es compartida por Núcleo y Boletería. Aplicar su migración
 **una vez por despliegue, antes de cualquiera de los dos procesos**, tras revisar
 POSTGRES_BD_PAGOS y las coordenadas POSTGRES_* (iguales en ambos):
