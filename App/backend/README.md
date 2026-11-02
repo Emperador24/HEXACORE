@@ -2,7 +2,8 @@
 
 Etapa intermedia: Identidad, Alimentos y Personal/Logística corren en **un solo proceso NestJS**.
 Boletería reúne Ventas, Catálogo, Cola, Postventa y Acceso QR en otro proceso.
-Pagos y Notificaciones conservan paquetes y procesos separados.
+Pagos está en modulos/finanzas/pagos, con una envoltura HTTP temporal en apps/pagos-http.
+Núcleo y Boletería siguen llamándola por HTTP. Notificaciones conserva su paquete separado.
 Angular y sus compiladores permanecen fuera de este workspace.
 La consolidación de datos de Boletería, Operación y Trabajador siguen pendientes del plan.
 
@@ -10,6 +11,8 @@ La consolidación de datos de Boletería, Operación y Trabajador siguen pendien
 backend/
   apps/nucleo/         main, composición y disponibilidad del Núcleo
   apps/boleteria/      main, composición y disponibilidad de Boletería
+  apps/pagos-http/     compatibilidad HTTP temporal, sin duplicar negocio
+  modulos/finanzas/pagos/ libro, cobros, reembolsos, pasarela y 1 migración existente
   modulos/identidad/   cuentas, sesiones, administración, entidades y 3 migraciones
   modulos/alimentos/   catálogo, menú, checkout, inventario, pagos y 2 migraciones
   modulos/entradas/    ventas, catálogo, fila, postventa y acceso QR; 10 migraciones
@@ -192,3 +195,19 @@ Ver [composición/consistencia](modulos/entradas/README.md) y los
 [comandos de integración e imagen](test/boleteria/README.md). Las esperas de
 proyecciones no prueban invalidación inmediata ni atomicidad entre bases.
 No se certifican réplicas, carga, GHCR ni CI/CD remoto con un smoke local.
+
+## Pagos: primer hito de extracción
+
+Se migró la implementación existente, sin completar casos pendientes. Con Node
+22.22.3 y las mismas dependencias, `npm run build:pagos` y
+`PUERTO=3008 npm run start:pagos` ejecutan la envoltura temporal. Antes de migrar,
+revisar destinos y ejecutar `migracion:pagos:estado`/`migracion:pagos:correr`;
+POSTGRES_BD_PAGOS selecciona la base existente pagos. Dockerfile.pagos usa ese
+mismo código y aplica su historial migraciones. No hay consolidación de datos.
+
+La API reutilizable no registra endpoints ni JWT/Redis/AMQP; la envoltura conserva
+esos contratos. [Módulo](modulos/finanzas/pagos/README.md),
+[arranque y retirada posterior](apps/pagos-http/README.md) y
+[comandos de pruebas aisladas](test/pagos/README.md). F12 permanece pendiente: un
+webhook financiero no equivale a finalizar el pedido o compra. Completar CU
+ausentes es responsabilidad funcional de cada integrante, fuera de la migración.

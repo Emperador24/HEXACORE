@@ -1,19 +1,31 @@
 # Estado de migración de HEXACORE
 
 Fecha de revisión: **2 de noviembre de 2026**, America/Bogota.
-Rama `feature/sebastian-arquitectura`, entrega de Boletería desde
-`125fe36d874efc0f30d268a3219635854b807b82`. Se preserva aparte el archivo local
+Rama `feature/sebastian-arquitectura`, extracción de Pagos desde
+`e08daf68e204e8fa43d04ad40ce3a3f11a2060bf`. Se preserva aparte el archivo local
 de Pedidos. Las secciones históricas conservan sus resultados en cada revisión.
 
-**Resultado vigente (§18):** dos aplicaciones del workspace: Núcleo con Identidad,
-Alimentos y Personal/Logística; Boletería con Ventas, Catálogo, Fila, Postventa y
-Acceso QR en un segundo proceso. Se conservan siete bases de negocio y diecisiete
-migraciones, sin consolidar datos ni activar synchronize. Pagos y Notificaciones
-siguen separados; Operación y Trabajador no se declaran implementados.
+**Alcance vigente de toda la migración (§19):** trasladar funcionalidad existente,
+adaptarla técnicamente y preparar sus fronteras. No requiere completar los CU
+faltantes de los compañeros ni implementar F12. Los fallos funcionales previos
+se documentan para sus responsables; se corrigen regresiones del traslado y
+bloqueos técnicos imprescindibles. Esta aclaración sustituye gates históricos
+que exigían crear funciones ausentes. El mapa de CU y las decisiones de datos
+se conservan; Operación queda pendiente y Trabajador recibirá tareas existentes.
+
+**Resultado vigente de Pagos (§19):** implementación en
+`modulos/finanzas/pagos`, con API pública y sin controladores. La envoltura
+`apps/pagos-http` conserva el mismo servidor/rutas, sin otra copia del negocio.
+Núcleo y Boletería siguen llamando por HTTP; Notificaciones sigue fuera del
+workspace. Se conservan las siete bases/diecisiete migraciones de negocio más
+el libro pagos y su migración original, sin consolidación ni synchronize.
+Operación y Trabajador definitivo no se declaran implementados. Se comprobaron
+794 unitarias, 13 contratos financieros dos veces, composición real sin HTTP,
+23 E2E de Boletería y 73 del Núcleo contra el nuevo arranque de Pagos.
 
 **Hito 1 publicado (§17):** `d48befff29244bdd2746ba4686c519c13a28cc4c`, referencia
 de cinco aplicaciones: 451 pruebas existentes y 20 E2E repetidas dos veces; F08
-reparado. **Hito 2:** 767 pruebas del workspace en 53 suites; 23 E2E de Boletería
+reparado. **Hito 2 histórico (§18):** 767 pruebas del workspace en 53 suites; 23 E2E de Boletería
 y 73 del Núcleo repetidas, sin omisiones. Imágenes y gateways construidos,
 arrancados y comprobados. Las ocho mezclas Compose pasan: 12 servicios locales y
 7 remotos. Ver §18 para comandos, resultados, fallos de preparación y límites.
@@ -23,7 +35,7 @@ reprodujo y sigue pendiente de diagnóstico prolongado, sin elevar límites.
 **F12 permanece pendiente**. F14 registra el listado global de notificaciones
 existente. No se implementa Operación, planificación completa ni proveedores.
 Publicación GHCR, CI/CD remotos e integración general permanecen pendientes.
-Los comandos y el alcance vigentes están en §18 y `App/backend/README.md`.
+Los comandos y el alcance vigentes están en §19 y `App/backend/README.md`.
 
 El objetivo confirmado es **Núcleo modular, Boletería, Operación y Trabajador**:
 tres aplicaciones de negocio y un trabajador técnico, con Pagos reutilizable
@@ -546,7 +558,7 @@ siguen indicadas. Se distingue fallo reproducido de riesgo observado por lectura
 | F05, reproducido y **reparado en configuración** | Antes: Compose remoto referencia `nucleo`, inexistente en base, sin build/image. Después: override para diez backends, sin dependencias a datos locales, con Postventa → Pagos/Ventas y perfil `datos` separado | `config -q` e inspección de configuración resuelta pasan para remoto y remoto+escalado (§13). Arranque real e integración pendientes |
 | F06, **reparado en configuración en §15; publicación pendiente** | Registro cubre los 14 artefactos de CD actuales, anula todos los builds y conserva la clave del gateway. Núcleo ya existe como fuente/contexto. Las ocho mezclas Compose pasan inspección; imagen Núcleo/gateway y JWT se comprobaron en el entorno aislado | No acredita publicación GHCR ni arranque de las imágenes remotas del sistema entero |
 | F07, **CU-011 resuelto y ejecutado** | Configuración/entorno/Compose/instrucciones recuperados en `alimentos/test`; script `test:e2e` disponible. Pruebas/doble propios de Autenticación conservados. Dos corridas: 5/5 aprobadas cada una | El comando independiente `test:integracion` de Pagos que apunta a un script inexistente sigue pendiente; esta suite no depende de él |
-| F08, **resuelto para CU-011 y Ventas/Boletería** | PAGOS_URL, servidor Pagos real y pasarela simulada en proyectos exclusivos (§§17–18); conserva los ocho casos originales de Ventas | La suite propia de Pagos mal referenciada sigue siendo deuda independiente; F12 no se resuelve con el cableado |
+| F08, **resuelto para CU-011 y Ventas/Boletería** | PAGOS_URL, servidor Pagos real y pasarela simulada en proyectos exclusivos (§§17–18); conserva los ocho casos originales de Ventas | La suite propia de Pagos queda recuperada en §19: 27 originales y contratos reales. F12 no se resuelve con este cableado/extracción |
 | F09, inspección | `infra/iniciar.sh`: `migrar ... || true`, semillas con errores silenciados; rama SQL carga solo cuatro volcados. `autenticacion/src/persistencia/semillas` trunca usuarios. Dockerfiles también migran | Un mensaje final «en marcha» no demuestra esquema/datos completos. Un arranque normal puede reemplazar datos de desarrollo |
 | F10, **servidor/sonda retirados al incorporar Logística (§16)** | Sonda Eventos/Emergencias consulta `/api/v1/turnos`, pero controladores están bajo `/api/v1/logistica`; acepta cualquier 2xx/4xx. Compose declara `DB_SYNCHRONIZE=true`, código fija `false`; bootstrap lee `PORT`, Compose define `PUERTO` | La sonda puede aprobar un 404 y no acredita acceso a BD; la configuración contiene opciones inefectivas. El puerto actual coincide por default, no por esa variable |
 | F11, inspección | Contrato `shared/api/ventas.openapi.json` sigue agregando cartelera, QR y reventa; `contrato-api.spec.ts` solo inspecciona ese JSON. `exportar-openapi.ts` crea únicamente el AppModule actual de Ventas | Las pruebas del JSON pasan sin demostrar paridad con los cuatro servicios. Regenerarlo sin diseñar agregación perdería operaciones externas |
@@ -646,11 +658,11 @@ procesos sin consolidar datos ni cerrar todas las deudas de la etapa 1.
 | 0. Base, inventario y decisión escrita | Rama y HEAD confirmados, inventario realizado y plan contrastado. El nuevo ADR y ajustes de SAD/SRS siguen pendientes | Punto de partida identificado, trabajo local conservado, decisión y límites registrados, inventario verificable sin equiparar pantallas y backend |
 | 1. Base comprobable | **F05/F06 en configuración, CU-011 y Logística reales, F03/F08 reparados (§§13–18)**. Pendientes Notificaciones, arranque general y publicación remota; no repetir como actuales los bloqueos históricos ya corregidos | Build y pruebas seleccionadas coherentes; arranque general desde fuente e imágenes verificado; fallos previos y omisiones explícitos. Estos cambios no cierran por sí solos toda la etapa |
 | 2. Workspace y Núcleo existente | **Identidad, Alimentos y Personal/Logística reunidos y verificados (§§15–16)**. Los otros programas/funciones pendientes no se crean como esqueletos; se conservan bases separadas | Contratos de cuentas, alimentos, cambios de turno y asistencia preservados; sin consumidores o timers duplicados. Sin fingir CU aún inexistentes |
-| 3. Reunir Boletería | **Primera entrega: cinco componentes en un proceso, RPC interno sustituido y referencia repetida (§18)**. Pendiente reconciliar sobre copia entrada/propiedad/reventa/ingreso y retirar proyecciones solo tras validación | Los flujos existentes conservados están comprobados; el cierre completo requiere 50 compradores sobre una publicación, doble escaneo y carrera transferencia/ingreso sobre estado canónico, QR anterior inválido tras transferencia confirmada. Esta entrega usa ocho compradores y proyecciones eventuales, por lo que no cierra ese criterio final |
-| 4. Pagos, trabajador y datos consolidados | Módulo común y único registro financiero, endpoint público único de webhook, resultado/trabajo durable y finalización idempotente. Migración repetible sobre copia a PostgreSQL `hexacore` por esquemas; drenar o migrar mensajes, reservas y pendientes | Identificadores/hashes/sesiones/estados/historiales/importes/QR/referencias conciliados y reversión probada. Reinicio entre pago/confirmación, callback duplicado/adelantado, proveedor lento, RabbitMQ caído y tareas repetidas sin doble cobro ni pérdida |
-| 5. Operación mínima real | Monitoreo/incidentes/evacuación, contratos de lectura, protocolos, recepción/acuse y prioridad. Requiere alcance funcional posterior; no se implementa aquí | Activación con Núcleo detenido y sesión vigente bajo las dependencias declaradas; pruebas de fallo de instancia/proveedor y medición de tablero y entrega a dispositivos |
-| 6. Funcionalidad pendiente | Completar por dependencias recintos/eventos/permisos, alimentos/entrega, parqueaderos/logística/proveedores y operación/finanzas/informes. No forma parte de esta reparación | Cada CU declarado completo tiene flujo real hasta persistencia y alternativas relevantes. La migración puede conservar y ubicar CU pendientes sin declararlos terminados |
-| 7. Infraestructura, métricas y documentación | Adaptar gateway, Docker/Compose, scripts, CI/CD y vistas. Mantener perfiles local/replicación y controlar recursos compartidos | Cuatro programas de backend (tres de negocio y un trabajador), sin servidores retirados aún referenciados, sin dos autoridades de propietario/QR/pedido, despliegue y reversión verificados. RNF solo se certifican con su evidencia |
+| 3. Reunir Boletería | **Primera entrega: cinco componentes en un proceso, RPC interno sustituido y referencia repetida (§18)**. Pendiente reconciliar sobre copia entrada/propiedad/reventa/ingreso y retirar proyecciones solo tras validación | Preservar flujos existentes y comprobar regresiones. Las garantías funcionales todavía ausentes (QR inmediato, carreras canónicas y carga de 50 compradores) quedan documentadas para sus responsables; no se construyen para cerrar la migración (§19). La consolidación sobre copia mantiene su criterio técnico de conciliación/reversión |
+| 4. Pagos, trabajador y datos consolidados | Primer hito de extracción del módulo con envoltura HTTP (§19). Después sustituir clientes y retirar servidor; trasladar solo tareas/consumidores existentes. Consolidación repetible sobre copia a hexacore por esquemas | API, libro y contratos preservados, regresiones reales; un webhook explícito al retirar envoltura. Datos/identificadores/historiales/importes conciliados y reversión probada; drenar mensajes/reservas. F12 y trabajo durable todavía ausente son deuda funcional, no requisito de migración |
+| 5. Preparar Operación | Definir frontera, dependencias y CU-010/019–020 pendientes; no inventar monitoreo/incidentes/evacuaciones | Responsables, contratos y ubicación explícitos. Sin exigir código ni arranque de funciones ausentes para terminar la migración; sus RNF se verificarán cuando se implementen |
+| 6. Entrega de pendientes al equipo | Registrar por CU responsable, destino, comportamiento real, simulaciones y alternativas faltantes | Cada integrante puede continuar en la estructura definitiva sin duplicar reglas. No exige completar los 32 CU ni reasigna a Sebastián trabajo funcional ajeno |
+| 7. Infraestructura, métricas y documentación | Adaptar gateway, Docker/Compose, scripts, CI/CD y vistas. Mantener perfiles local/replicación y controlar recursos compartidos | Cuatro responsabilidades objetivo (tres de negocio y un trabajador), con arranques de implementación existente y Operación documentada pendiente; sin servidores retirados aún referenciados, sin dos autoridades de propietario/QR/pedido, despliegue y reversión verificados. RNF solo se certifican con su evidencia |
 
 La meta de datos no queda satisfecha por reunir procesos: hace falta la
 transferencia validada a una base por esquemas. La independencia de Operación
@@ -1805,6 +1817,9 @@ bloqueos, conexiones y recursos antes de decidir una corrección.
 
 ### Siguiente entrega y criterios
 
+Secuencia histórica de §18, sustituida por el alcance y la entrega solicitada en
+§19. No exige completar F12 ni otros CU ausentes para terminar la migración.
+
 1. Revisar en copia la autoridad de entrada/propiedad/reventa/QR/ingreso,
    conciliando estados, historial, hashes e identificadores de las cuatro bases.
    Termina con diferencias explicadas, mapeo reversible y ensayo repetible sin
@@ -1833,3 +1848,228 @@ IDs y estados, incluido el gateway que ya estaba reiniciándose al comenzar.
 No quedan recursos etiquetados con esos dos proyectos de prueba. Los logs de
 apagado/limpieza y la comparación antes/después se conservaron en el directorio
 de evidencia local indicado; el archivo de Pedidos se excluye de ambos commits.
+
+## 19. Extraer Pagos reutilizable y conservar la interfaz HTTP temporal
+
+Revisión del **2 de noviembre de 2026**, America/Bogota. Rama
+`feature/sebastian-arquitectura`, base y último publicado al comenzar
+**e08daf68e204e8fa43d04ad40ce3a3f11a2060bf**. Estado inicial: únicamente
+`App/services/pedidos/` no rastreado; no había trabajo local de Pagos en curso.
+WORKFLOW.md y plan completo revisados; no se encontraron AGENTS.md aplicables.
+Solo se migra implementación existente, se adapta su cableado y se comprueba.
+
+### Alcance vigente y responsabilidades
+
+El plan ahora distingue **migración de funcionalidad existente**, **preparación
+arquitectónica** y **desarrollo funcional pendiente**. Completar los 32 CU, F12
+o alternativas todavía ausentes no es requisito para terminar la migración;
+esta aclaración sustituye cualquier instrucción/gate histórico que lo exigiera.
+Se corrigen regresiones del traslado y bloqueos técnicos imprescindibles. Los
+fallos funcionales previos se registran para sus responsables, sin ampliar el
+negocio de otros integrantes. Se mantiene el mapa de CU y las decisiones de
+Núcleo/Boletería/Operación/Trabajador, módulo Pagos y consolidación posterior de
+datos. No se consolida información en este hito.
+
+| Responsable según SRS | Implementación trasladada y pendientes funcionales que conserva |
+|---|---|
+| Daniel, CU-001–005 y 021–023 | Base de compra/consulta/promociones/cancelación/ingreso en Entradas; alternativas y garantías todavía ausentes siguen pendientes. Parqueaderos no tiene backend implementado |
+| Samuel, CU-006–010 y 024–026 | Reventa trasladada con compensaciones/proyecciones y abono al vendedor todavía simulado; personal/turnos comparte la implementación del Núcleo. Evacuación, parqueaderos y administración completa de eventos pendientes |
+| Sebastián, CU-011–015 y 027–029 | Base de Alimentos/Identidad trasladada; gestión completa de menú/establecimientos, preparación/entrega QR, permisos dinámicos y recintos pendientes según el mapa existente |
+| Diego, CU-016–020 y 030–032 | Base de asignación/turnos/asistencia trasladada. Planificación completa, monitoreo/incidentes, proveedores, conciliación administrativa e informes pendientes. El libro financiero existente no completa CU-031 |
+
+Trabajador recibirá consumidores y tareas **existentes**. Operación y módulos
+sin implementación quedan definidos/documentados para sus responsables; no se
+crean evacuaciones, alertas, conciliadores ni casos nuevos para poder declarar
+terminada la migración. Los RNF de funciones ausentes requieren pruebas cuando
+se implementen; no quedan acreditados por carpetas o pantallas de ejemplo.
+
+### Estructura y única implementación
+
+```text
+App/backend/
+  modulos/finanzas/pagos/
+    index.ts                    API pública
+    pagos.module.ts             composición sin controladores
+    pagos.service.ts            cobro, reembolso y confirmación existentes
+    procesador-pagos.ts         puerto de pasarela y estados
+    pasarela-http.service.ts    adaptador HTTP existente
+    dto/ y contratos/           solicitudes, respuestas, tipos y evento financiero
+    config/                    configuración propia de libro/pasarela
+    persistencia/              entidad, conexión nombrada y migración original
+  apps/pagos-http/
+    main.ts / pagos-http.module.ts
+    pagos.controller.ts / webhook.controller.ts / salud.controller.ts
+    comun/                     JWT, revocación Redis, config HTTP y broker
+    eventos/                   publicación del webhook en pagos.eventos
+  test/pagos/
+    contratos.test.cjs         13 contratos reales sobre infraestructura exclusiva
+    comprobar-modulo.cjs       composición Nest sin HTTP ni dobles
+    README.md
+  Dockerfile.pagos             misma implementación, servidor temporal
+```
+
+Se retiró el paquete rastreado App/services/pagos: fuentes, manifests/lock,
+Dockerfile, configuración antigua y doble TypeORM redundante. Los archivos
+ignorados preexistentes de esa carpeta no se borraron. Las 27 pruebas originales
+se trasladaron conservando escenarios y aserciones: seis de política del libro
+y veintiuno de sesión/criptografía. Se usa el doble TypeORM del workspace para
+esas unitarias; composición y HTTP se prueban con TypeORM/PostgreSQL reales.
+No se mantiene otra copia de las reglas financieras.
+
+La API pública `modulos/finanzas/pagos/index.ts` exporta PagosModule,
+PagosService y los contratos existentes; las operaciones siguen siendo cobrar,
+reembolsar y confirmar. No exporta controladores, repositorios o entidades para
+que otros módulos escriban directamente. El módulo no depende de Identidad,
+Alimentos, Entradas ni Personal; no crea JWT, Redis o RabbitMQ. La prueba con
+Nest real exige cero controladores y funciona con clave JWT inexistente y
+destinos Redis/AMQP inválidos. No abre otro servidor HTTP para comprobarlo.
+
+La envoltura importa esa implementación y conserva `/api/v1/pagos` (POST),
+`/pagos/reembolsos` (POST), `/pagos/webhook` (POST), `/salud` (GET), DTO,
+ValidationPipe, estados/respuestas, Swagger de desarrollo, JWT RS256/emisor y
+revocación. Solo verifica con clave pública; Identidad conserva la firma.
+Webhook mantiene rawBody=true y HMAC-SHA256 sobre los bytes recibidos. Una firma
+de JSON reserializado se rechaza si no coincide con los bytes originales.
+El secreto HMAC pertenece a la envoltura, no es requisito del módulo financiero.
+
+La salud conserva su contrato: PostgreSQL decide 200/503, sin añadir pasarela o
+broker al veredicto. El contenedor probado tiene **un Node, PID 1,
+`dist/apps/pagos-http/main.js`**; sustituye el arranque anterior del mismo
+servicio, sin añadir otro en Compose. Núcleo y Boletería siguen llamando al
+mismo PAGOS_URL por HTTP; no importan aún PagosModule ni cambian autorización.
+
+### Configuración, persistencia y compatibilidad
+
+- Configuración financiera **CONFIGURACION_FINANZAS_PAGOS**, adaptador
+  **PROCESADOR_FINANZAS_PAGOS** y conexión **finanzas-pagos**. El nombre coincide
+  en forRootAsync, opciones de fábrica, forFeature e InjectDataSource. La prueba
+  real obtiene ese token, verifica options.name y exige que no haya conexión
+  por defecto registrada.
+- Base **pagos**, tabla transacciones_pago e historial **migraciones** conservados.
+  La migración 1790380800000-EsquemaPagos.ts no se altera. Se mantienen enum,
+  claves/identificadores, referencias, importes numéricos, moneda, solicitante,
+  resultado y contador. synchronize=false y migrationsRun=false, sin copiar datos.
+- **POSTGRES_BD_PAGOS** selecciona la base también en CLI. La librería ignora el
+  POSTGRES_BASE genérico; únicamente el arranque HTTP conserva ese alias antiguo
+  si no hay POSTGRES_BD_PAGOS. Esto impide heredar la base de otro módulo al
+  importarlo posteriormente. Host/credenciales/pool mantienen sus opciones.
+- Configuración HTTP **CONFIGURACION_PAGOS_HTTP** y Redis
+  **CLIENTE_REDIS_PAGOS_HTTP**, pertenecientes al arranque. Nombres observables
+  pagos-http/hexacore-pagos-http; no se introducen consumidores ni tareas nuevas.
+- Node **v22.22.3**, Nest 11/TypeScript 5.9 y dependencias resueltas del workspace
+  sin cambios. package-lock.json permanece intacto. La imagen ejecuta npm ci
+  con su lock; el host reutilizó la instalación existente, ya probada.
+
+Dockerfile.pagos del workspace reemplaza ambos Dockerfiles anteriores de Pagos
+(producción y pruebas). Compose base y los dos E2E usan contexto App/backend y
+ese Dockerfile, conservando servicio/puerto/URLs. Remoto, escalado y registro
+siguen válidos sin cambiar nombres de servicio ni gateway. iniciar.sh apunta la
+migración al workspace; no se ejecutó. CI mueve las unitarias de Pagos al job
+backend y añade contratos/composición; CD construye el nuevo Dockerfile. No se
+modifican Angular/Flutter ni se repiten sus compilaciones/pruebas.
+
+### Comandos ejecutados y resultados
+
+Node seleccionado en esta máquina mediante
+`PATH=/private/tmp/hexacore-cu011-node22/node_modules/.bin:$PATH`:
+**v22.22.3**, npm **11.6.3**. Alternativa reproducible: `cd App/backend && nvm
+install && nvm use`. Docker info: **29.7.2**. README de módulo, envoltura,
+workspace, infraestructura y test/pagos contienen instalación/arranque/migración
+y secuencia reproducible. Los comandos de migración de desarrollo solo se
+documentaron; en esta entrega se aplicó la migración exclusivamente en las
+bases de prueba.
+
+| Comando/comprobación realmente ejecutada | Resultado |
+|---|---|
+| npm --prefix App/services/pagos test -- --runInBand, antes de mover | **27/27**, dos suites, 2,294 s; cero omitidas |
+| npm --prefix App/backend run lint | Aprobado tras extracción y al cierre |
+| npm --prefix App/backend run build:pagos | Aprobado; bootstrap compilado con rawBody y dependencia nombrada |
+| npm --prefix App/backend run test:pagos:unitarias | **27/27**, dos suites, 2,356 s, mismas aserciones |
+| test:boleteria:infra | Imagen Pagos del workspace construida y saludable; PostgreSQL/Redis/RabbitMQ/pasarela propios |
+| test:pagos:modulo (incluye build:pagos) | Aprobado: cero controladores, token/opciones finanzas-pagos, sin conexión por defecto y base exclusiva correcta |
+| test:pagos:contratos | **13/13**, dos corridas finales, 8,457 s y 7,363 s; cero omitidas/canceladas. Incluye SIGTERM/reinicio de ese único Pagos conservando libro |
+| REDIS_HOST=127.0.0.1 REDIS_PUERTO=16383 REDIS_INVENTARIO_PRUEBAS_URL=redis://127.0.0.1:16383 npm --prefix App/backend test -- --runInBand | **794/794 en 55 suites**, 12,112 s: 767 anteriores + 27 trasladadas; cero omitidas |
+| npm --prefix App/backend run test:boleteria (incluye build) | **23/23 en dos suites**, 25,290 s contra el nuevo Pagos |
+| test:e2e:infra y test:e2e (incluye build del Núcleo) | **73/73 en cuatro suites**, 39,028 s contra el nuevo Pagos |
+| npm --prefix App/backend run verificar:infra | Ocho mezclas resueltas aprobadas, 12 servicios locales/7 remotos; bases/destinos/build Pagos y fronteras de cinco módulos inspeccionados |
+| Sintaxis CI/CD/helpers y git diff --check | Aprobadas; métodos originales de servicio, adaptador y controladores comparados por AST sin cambios de negocio; migración exacta y mapa de 32 CU preservados |
+
+Los 13 contratos verifican cobro aprobado/rechazado, COP/USD/decimales,
+solicitante/referencia/clave/estados persistidos, respuesta repetida, conflicto
+409 por monto/moneda/tipo, reembolsos parcial/rechazado/repetido, INDETERMINADO y
+reintento, 401 de JWT/revocación, HMAC original frente a ausente/incorrecto o
+reserializado, 204/publicación de evento, callback repetido, 404 desconocido,
+409 incompatible y 400 del DTO. SIGTERM exige cierre SQL/Redis/AMQP propios,
+sin OOM, y luego devuelve el mismo cobro con repetida=true e intentos=1.
+La prueba del reinicio observó salida normal 0. No se certifica exactamente una
+entrega: el callback duplicado vuelve a publicar con el mismo ID, como antes.
+
+Evidencia local: **/private/tmp/hexacore-pagos/**, con logs antes/después,
+contratos-final/repetidos, modulo-final, unitarias-workspace, boleteria-1,
+nucleo, builds/infra, imagen de Pagos y observador de recursos. Logs de procesos
+compilados en App/backend/.evidencia-e2e (ignorado). No se versionan compilados,
+logs, dependencias instaladas ni secretos externos.
+
+### Fallos previos, preparación y límites conservados
+
+La referencia del módulo falló inicialmente porque la prueba buscaba
+DataSource.name, propiedad que no expone TypeORM 1. El registro correcto ya
+estaba presente: se corrigió el diagnóstico para exigir token nombrado,
+options.name y ausencia del token por defecto. La nueva comprobación real
+aprobó; no se omitió ni se cambió una regla financiera. Los 12 contratos HTTP
+iniciales también habían aprobado antes de añadir el caso de reinicio.
+
+El script antiguo test:integracion apuntaba a pruebas/correr-todas.sh inexistente
+(F08/deuda de arnés): se sustituye por comandos que ejecutan las pruebas
+trasladadas y los contratos reales. No se usa passWithNoTests, skip ni retornos
+silenciosos. Los mensajes de error esperados de las unitarias son escenarios
+explícitos de Redis/pasarela caídos, no fallos encubiertos del arranque real.
+
+**F12 sigue pendiente.** Confirmar un callback modifica el libro y produce el
+evento existente; no añade tarea durable ni finaliza Alimentos/Entradas. Un
+callback adelantado conserva OPERACION_DESCONOCIDA; no se crea bandeja de entrada.
+La política de repetición compara tipo/monto/moneda, sin ampliar las reglas de
+solicitante/referenciaCobro. La operación sigue consultando antes de salir a la
+pasarela y escribiendo después: no se añade reclamación SQL ni transacción
+atómica con el proveedor. El DTO de callback no incorpora monto/moneda nuevos;
+el evento usa los valores guardados. Esas deudas son para los responsables de
+finanzas y de los dominios llamantes, fuera de esta migración técnica.
+
+F13 y F14 permanecen identificados, sin aumentar límites ni modificar su negocio.
+El observador reunió 43 muestras en 60 s, sin bloqueadores, bloqueos pendientes
+ni statement timeout. Se inició al final y no capturó conexiones activas del
+Núcleo (solo su entorno/servidor Pagos): no acredita observación de su carga ni
+resolución de F13. La regresión de 73 casos sí terminó sin timeout.
+Los contratos usan JWT y HMAC fixtures, SQL/Redis/AMQP reales y proveedor simulado:
+no prueban login de Pagos (no existe), interfaces ni una pasarela financiera real.
+Las regresiones preservan las comprobaciones de login, revocación, compras y
+logística existentes del Núcleo y los escenarios de Entradas. La consistencia
+por proyecciones de Boletería continúa con los mismos límites de §18.
+
+Se distingue **configuración válida**, **imagen Pagos construida** y **arranque
+real aislado/contratos aprobados**. No se ejecutaron arranque habitual/remoto,
+workflow CI/CD en GitHub, publicación GHCR, réplicas o smoke de las imágenes de
+Núcleo/Boletería no modificadas. Sí se compilaron y arrancaron sus procesos reales
+en las regresiones contra esta imagen de Pagos. F01 de Notificaciones y las
+otras deudas ajenas no se dan por resueltas.
+
+### Retirada posterior de la envoltura
+
+Este hito termina con extracción única, API sin endpoints, servidor temporal
+compatible y pruebas reales aprobadas. El siguiente hito sustituirá llamadas
+HTTP de Núcleo/Boletería por esta API, preservando validación/autorización y el
+mismo libro, y elegirá un único webhook explícito con HMAC. Solo después se
+retirarán apps/pagos-http y servicio/imagen/host pagos de Compose, gateway,
+scripts y CI/CD. Su gate es repetir los contratos/regresiones sin llamadas a un
+servidor retirado; **no exige implementar F12 ni CU funcionales pendientes**.
+Después se trasladarán tareas existentes al Trabajador y se migrarán datos
+sobre copia con conciliación/reversión, según el plan aclarado. No se inventa
+Operación ni se integran cambios a develop/main en esta entrega.
+
+Cierre: git diff --check aprobado y selección explícita de archivos de esta
+entrega. Pedidos conserva su SHA-256 y queda sin rastrear, fuera del commit.
+Los 29 contenedores habituales conservan sus IDs y estados; se eliminaron solo
+los contenedores/redes/volúmenes de hexacore-boleteria-e2e y hexacore-nucleo-e2e,
+sin recursos restantes de esos proyectos. No se ejecutaron iniciar.sh, semillas,
+limpiezas habituales ni escrituras/migraciones contra las bases de desarrollo.
+Commit de esta etapa: `refactor(pagos): extraer modulo reutilizable conservando interfaz HTTP`.

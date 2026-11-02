@@ -284,7 +284,9 @@ services:
   # Microservicio de Pagos — el único que habla con la pasarela. Fase A de ADR-14.
   pagos:
     profiles: ["servicios"]
-    build: ../services/pagos
+    build:
+      context: ../backend
+      dockerfile: Dockerfile.pagos
     # Sin `container_name`: ADR-14 le pone tres réplicas con autoescalado.
     restart: unless-stopped
     init: true
@@ -295,7 +297,7 @@ services:
     environment:
       <<: *entorno-comun
       PUERTO: "3008"
-      POSTGRES_BASE: pagos
+      POSTGRES_BD_PAGOS: pagos
       PAGOS_PROVEEDOR_URL: http://${HOST_PASARELA:-pasarela}:${PUERTO_PASARELA:-3099}
       # El mismo que firma la pasarela. En producción es obligatorio y secreto.
       PASARELA_SECRETO_WEBHOOK: secreto-webhook-desarrollo

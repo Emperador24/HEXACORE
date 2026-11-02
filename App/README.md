@@ -9,20 +9,22 @@ conexiones a sus bases actuales. Las rutas públicas `/api/v1` de cuentas,
 sesiones, administración de cuentas, pedidos y logística se conservan mediante el gateway.
 Boletería reúne las cinco implementaciones de Entradas en otro proceso :3001,
 con cuatro bases y diez migraciones conservadas. Se retiran los servidores
-directos anteriores; las rutas de web/móvil en el gateway permanecen iguales.
+directos anteriores; Pagos conserva su interfaz HTTP desde el workspace. Las rutas de web/móvil en el gateway permanecen iguales.
 
 ```text
 App/
   backend/
     apps/nucleo/
     apps/boleteria/
+    apps/pagos-http/      # envoltura temporal; mismo servidor, no otro adicional
     modulos/identidad/
     modulos/alimentos/
     modulos/personal-logistica/
     modulos/entradas/
+    modulos/finanzas/pagos/
     compartido/
     test/
-  services/       pagos y notificaciones siguen separados
+  services/       notificaciones sigue fuera del workspace; Pedidos local se preserva
   gateway/        Nginx/njs, entrada pública :8080
   frontend/       portales Angular y app Flutter, fuera del workspace backend
   infra/          PostgreSQL, Redis, RabbitMQ y proveedores simulados

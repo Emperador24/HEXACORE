@@ -2,7 +2,9 @@
 
 Identidad, Alimentos y Personal/Logística corren en **Núcleo**; los cinco
 componentes de Entradas corren en **Boletería**, desde `App/backend`.
-Pagos y Notificaciones conservan servidores. Se mantienen todas las bases.
+Pagos conserva su servidor temporal desde apps/pagos-http del workspace;
+Notificaciones sigue fuera. Se mantienen todas las bases, incluido el libro pagos.
+Ver [extracción y contratos de Pagos](../backend/test/pagos/README.md).
 Ver [instalación, migraciones y arranque](../backend/README.md) y
 [pruebas exclusivas](../backend/test/README.md). Este README describe el
 ambiente habitual; no usar sus semillas o limpiezas para verificar la migración.

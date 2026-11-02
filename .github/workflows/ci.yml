@@ -79,7 +79,6 @@ jobs:
       matrix:
         # Backends todavía separados. Núcleo tiene su job con Node fijado.
         servicio:
-          - pagos
           - notificaciones
     defaults:
       run:
@@ -187,6 +186,10 @@ jobs:
       - run: npm ci
       - name: Infraestructura exclusiva de Boletería y Pagos
         run: npm run test:boleteria:infra
+      - name: Contratos de Pagos y módulo sin rutas
+        run: |
+          npm run test:pagos:contratos
+          npm run test:pagos:modulo
       - name: Tipos
         run: npm run lint
       - name: Unitarias de ambos programas con Redis real

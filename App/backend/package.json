@@ -2,7 +2,7 @@
   "name": "hexacore-backend",
   "version": "0.1.0",
   "private": true,
-  "description": "Workspace backend: N\u00facleo modular y Boleter\u00eda",
+  "description": "Workspace backend: Núcleo, Boletería y Pagos reutilizable",
   "scripts": {
     "build": "nest build nucleo",
     "start": "nest start nucleo",
@@ -61,7 +61,16 @@
     "test:boleteria:imagen:infra": "docker compose -p hexacore-boleteria-e2e -f test/boleteria/docker-compose.yml -f test/boleteria/docker-compose.imagen.yml up -d --build --wait",
     "test:boleteria:imagen": "node test/boleteria/comprobar-imagen.cjs",
     "contrato:api:boleteria": "ts-node modulos/entradas/ventas/herramientas/exportar-openapi.ts",
-    "test:cov:boleteria": "c8 --all --src=modulos/entradas --src=apps/boleteria --exclude=\"**/*.spec.*\" --exclude=\"**/migraciones/**\" --exclude=\"**/semillas/**\" --reporter=text-summary --reporter=html npm run test:boleteria"
+    "test:cov:boleteria": "c8 --all --src=modulos/entradas --src=apps/boleteria --exclude=\"**/*.spec.*\" --exclude=\"**/migraciones/**\" --exclude=\"**/semillas/**\" --reporter=text-summary --reporter=html npm run test:boleteria",
+    "build:pagos": "nest build pagos-http",
+    "start:pagos": "node dist/apps/pagos-http/main.js",
+    "migracion:pagos:correr": "typeorm-ts-node-commonjs migration:run -d modulos/finanzas/pagos/persistencia/data-source.ts",
+    "migracion:pagos:revertir": "typeorm-ts-node-commonjs migration:revert -d modulos/finanzas/pagos/persistencia/data-source.ts",
+    "migracion:pagos:estado": "typeorm-ts-node-commonjs migration:show -d modulos/finanzas/pagos/persistencia/data-source.ts",
+    "test:pagos:unitarias": "npm test -- --runInBand --testPathPatterns=\"finanzas/pagos|apps/pagos-http\"",
+    "test:pagos:contratos": "node --test --test-concurrency=1 test/pagos/contratos.test.cjs",
+    "test:pagos:modulo": "node test/pagos/comprobar-modulo.cjs",
+    "pretest:pagos:modulo": "npm run build:pagos"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.6",

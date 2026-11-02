@@ -1,12 +1,31 @@
 # HEXACORE: arquitectura objetivo y plan de migración
 
-Fecha de revisión: 1 de noviembre de 2026.
+Fecha de revisión: 2 de noviembre de 2026. Alcance aclarado por el equipo: migrar lo existente y preparar sus ubicaciones definitivas.
 
 Base revisada: `Emperador24/HEXACORE`, rama `develop`, commit `2cd4fde22683d370dfe32991d983a0ae373b9908`. Su contenido incluye la integración de Samuel mediante el PR #43.
 
-Estado de este documento: recomendación de arquitectura y secuencia de implementación. No es una afirmación de que la migración esté hecha o de que los requisitos de calidad ya estén demostrados. En esta revisión no se modificó el repositorio ni se ejecutó el sistema completo.
+Estado de este documento: arquitectura acordada y secuencia de migración. No afirma que la migración esté hecha ni que los requisitos de calidad estén demostrados. La revisión inicial fue documental; las implementaciones y comprobaciones aisladas posteriores se registran en ESTADO-MIGRACION.md. No se ha ejecutado aquí el sistema completo.
 
-## 1. Decisión recomendada
+## Alcance de la entrega de migración
+
+Esta entrega migra **exclusivamente funcionalidad ya implementada** y prepara la arquitectura para que cada integrante termine sus casos. Debe conservar reglas, contratos y datos existentes, adaptarlos técnicamente y comprobarlos en la estructura nueva. Se corrigen regresiones del traslado y bloqueos técnicos imprescindibles; los fallos funcionales previos se documentan para sus responsables.
+
+Se distinguen tres resultados:
+
+- **Migración de lo existente:** código único, ejecución y pruebas reales de lo que ya funciona, con sus límites documentados.
+- **Preparación arquitectónica:** fronteras, API, configuración, arranques e infraestructura necesarios. Trabajador recibirá consumidores y tareas existentes; Operación y módulos sin implementación quedan definidos como pendientes, sin inventar funcionalidad ni servidores vacíos para declararlos terminados.
+- **Funcionalidad pendiente:** completar alternativas y CU corresponde a cada integrante. **Completar los 32 CU, F12 u otras funciones nuevas no es requisito para terminar esta migración.** Esta aclaración sustituye cualquier gate anterior que lo exigiera; no cambia la arquitectura acordada, el mapa de CU ni la consolidación posterior de datos.
+
+| Responsable según SRS, tabla de reparto | Casos que continúa en su ubicación definitiva |
+| --- | --- |
+| Daniel Cristancho | CU-001–005 y CU-021–023 |
+| Samuel Emperador | CU-006–010, CU-024–026 |
+| Sebastián Sánchez | CU-011–015 y CU-027–029 |
+| Diego Coronado | CU-016–020 y CU-030–032 |
+
+El mapa de §4 conserva el estado observado y el destino de cada CU. Los solapamientos de personal/turnos se resuelven compartiendo implementación, sin reasignar el reparto. Pantallas y fixtures no acreditan funciones terminadas. Las garantías objetivo descritas más abajo orientan el desarrollo funcional posterior; durante la migración se certifican únicamente las ya implementadas y probadas.
+
+## 1. Decisión arquitectónica acordada
 
 Adoptar **un núcleo modular, dos aplicaciones especializadas y un trabajador de tareas**. Son cuatro tipos de programa de backend, mantenidos en un único espacio de trabajo NestJS:
 
@@ -17,7 +36,7 @@ Adoptar **un núcleo modular, dos aplicaciones especializadas y un trabajador de
 | Operación | Monitoreo del evento, incidentes y evacuación | 3: CU-010, CU-019–020 |
 | Trabajador | Entrega de notificaciones y ejecución de tareas pendientes, con prioridad reservada para alertas operativas | Soporte técnico de los anteriores; no agrega casos de uso |
 
-**Pagos será un módulo reutilizable, sin un servidor HTTP exclusivo.** El núcleo y boletería usarán la misma implementación y el mismo registro financiero. El trabajador usará esa implementación para resolver operaciones pendientes.
+**Pagos será un módulo reutilizable, sin un servidor HTTP exclusivo.** El núcleo y boletería usarán la misma implementación y el mismo registro financiero. El trabajador podrá usar esa implementación; en la migración solo recibirá tareas y consumidores existentes. La recuperación durable todavía ausente (F12) queda como desarrollo funcional pendiente.
 
 Hay tres aplicaciones de negocio, de las cuales una contiene la mayor parte del sistema como monolito modular. El trabajador ejecuta tareas de esas aplicaciones. Un módulo interno no es otro servicio ni necesita otro contenedor.
 
@@ -349,7 +368,7 @@ Gate: compilación y pruebas seleccionadas coherentes, arranque desde fuente e i
 ### Etapa 2: crear workspace y extraer el núcleo existente
 
 - Fijar versiones compatibles: los manifiestos actuales no usan todos la misma versión mayor de NestJS.
-- Crear las cuatro entradas de programa y trasladar configuración común cuidadosamente.
+- Crear los arranques que ejecuten implementación existente y trasladar configuración común cuidadosamente. Documentar Operación y módulos sin código como pendientes; no exigir cuatro servidores activos para cerrar la migración.
 - Mover identidad y alimentos como módulos, conservando rutas, DTO, validadores y reglas existentes.
 - Mover personal, turnos y asistencia desde eventos-emergencias al módulo de personal/logística del núcleo.
 - Conservar temporalmente las bases/conexiones existentes para aislar esta reorganización de la migración de datos.
@@ -366,7 +385,7 @@ Gate: cuentas, compra de alimentos, cambios de turno y asistencia siguen funcion
 - Resolver reconciliación entre registros antiguos y los datos extraídos de acceso-qr/postventa.
 - Retirar proyecciones que dejen de tener propósito, solo cuando la fuente unificada esté validada.
 
-Gate: compra, cancelación, promoción, consulta, reventa e ingreso; 50 compradores sobre una publicación, doble escaneo y carrera transferencia/ingreso; QR viejo rechazado tras transferencia confirmada.
+Gate de migración: los flujos existentes de compra, cancelación, promoción, consulta, reventa e ingreso conservan contratos y comportamiento, con concurrencia y regresiones probadas. Las ventanas o fallos previos de QR/reventa/ingreso se registran para su responsable; no se exige construir garantías de negocio todavía ausentes. Las pruebas de 50 compradores y las garantías canónicas objetivo se declaran pendientes hasta contar con evidencia.
 
 Esta es la parte con mayor riesgo de consistencia; no hacerla mediante un movimiento masivo sin comprobaciones intermedias.
 
@@ -374,37 +393,28 @@ Esta es la parte con mayor riesgo de consistencia; no hacerla mediante un movimi
 
 - Reutilizar el adaptador de pagos, callbacks firmados y registro financiero.
 - Reemplazar clientes HTTP internos por el módulo común; conservar un único endpoint público de webhook.
-- El webhook registra resultado y trabajo pendiente de manera durable; el trabajador resuelve la finalización idempotente en el dominio correspondiente.
+- Conservar el webhook existente, firma HMAC y registro financiero. Separar la actualización del libro de la finalización del pedido/compra: el trabajo durable y recuperación no implementados (F12) quedan documentados, no se construyen en la migración.
 - Migrar sobre copia a una base con esquemas, mediante scripts repetibles y verificaciones.
 - Conservar identificadores, hashes, sesiones que correspondan, estados, historiales, dinero, QR vigentes y referencias entre dominios.
 - Comparar conteos, sumas monetarias, vigencia de QR, pedidos pendientes y referencias. Los conteos por sí solos no bastan.
 - Migrar o drenar explícitamente trabajos, reservas activas y mensajes pendientes antes del cambio de tráfico.
-- Añadir publicación durable y reclamación de trabajos segura entre réplicas.
+- Trasladar consumidores y trabajos ya existentes al Trabajador, conservando topologías, comportamiento y cierre. Registrar las limitaciones previas de publicación/reclamación entre réplicas para sus responsables, sin ampliar el negocio.
 
-Gate: reinicio entre pago y confirmación, callback duplicado o adelantado, proveedor lento, corte de RabbitMQ, tarea repetida y recuperación sin doble cobro ni pérdida silenciosa.
+Gate de migración: módulo financiero reutilizable, único libro, webhook y tareas existentes preservados; pruebas de cobro, rechazo, repetición, reembolso y callback, y regresiones de los llamantes. Retirar el servidor solo tras sustituir sus llamadas. La recuperación nueva entre pago y finalización (F12) no es condición de cierre; sus fallos y escenarios pendientes quedan identificados.
 
-### Etapa 5: Operación con alcance mínimo real
+### Etapa 5: preparación de Operación
 
-- Implementar o conectar monitoreo, incidentes y evacuación en su programa especializado.
-- Usar datos operativos compartidos mediante contratos de lectura y protocolos configurados.
-- Evitar dependencia HTTP del núcleo para activar una evacuación.
-- Integrar recepción y acuse en la app de personal.
-- Probar prioridad y recuperación de alertas con núcleo detenido, una instancia de operación caída y proveedor lento.
+- Definir responsabilidades, dependencias, contratos y ubicación de CU-010 y CU-019–020.
+- Inventariar si hay implementación real al llegar a esta etapa y trasladar solo esa implementación.
+- Si siguen ausentes monitoreo, incidentes o evacuaciones, documentarlos para Samuel/Diego según el reparto; no crearlos para cerrar la migración.
 
-Gate: evidencia del tablero y de entrega a dispositivos según las condiciones declaradas; los mocks deben identificarse.
+Gate: frontera de Operación y funcionalidad pendiente explícitas, sin confundir datos simulados o una carpeta con un programa funcional. Activación sin Núcleo, prioridad, recepción y acuses son requisitos del desarrollo funcional futuro y solo se certificarán cuando exista y se pruebe.
 
-### Etapa 6: completar funcionalidad pendiente en el lugar definitivo
+### Etapa 6: entrega a los responsables de la funcionalidad pendiente
 
-Orden por dependencias:
+Documentar por CU el responsable, ubicación definitiva, comportamiento trasladado, simulaciones y alternativas pendientes. Recintos/eventos/permisos, gestión y entrega de alimentos, parqueaderos, planificación/proveedores, Operación, conciliación e informes conservan el orden por dependencias descrito en §4.
 
-1. Recintos/zonas, eventos y capacidades; roles/permisos y pertenencia.
-2. Gestión completa de alimentos, preparación y entrega QR.
-3. Parqueaderos y planificación de personal/proveedores, aprovechando las bases de turnos ya presentes.
-4. Completar operación, conciliación financiera y exportaciones.
-
-Algunas tareas pueden avanzar en paralelo una vez estables los contratos. La migración puede estar terminada sin que estén terminados los 32 CU, siempre que conserve lo que funcionaba, establezca las ubicaciones definitivas y señale con precisión lo pendiente.
-
-Gate: cada CU completado tiene flujo real de interfaz a persistencia y alternativas relevantes, sin reglas de negocio nuevas en Angular o Flutter.
+Gate de migración: cada pendiente está asignado y localizado; el equipo puede continuar sin recrear servidores ni duplicar reglas. **No requiere implementar esos pendientes**. Cada integrante verificará sus CU posteriormente con persistencia y alternativas reales, sin trasladar reglas de negocio al frontend.
 
 ### Etapa 7: cerrar infraestructura, métricas y documentación
 
@@ -412,7 +422,7 @@ Gate: cada CU completado tiene flujo real de interfaz a persistencia y alternati
 - Actualizar Docker, Compose, arranque, imágenes, CI y CD a la arquitectura nueva.
 - Mantener un perfil local sencillo y otro para replicación y pruebas de fallos.
 - Proteger capacidad de conexión y consultas: compartir PostgreSQL significa que escalar Boletería aún puede afectar a los demás si no se controla.
-- Medir RNF-07/08/09/10/17 con la arquitectura final.
+- Registrar las mediciones disponibles y las que quedan pendientes para RNF-07/08/09/10/17. No atribuir cumplimiento a funcionalidades todavía ausentes.
 - Actualizar SAD, SRS, diagramas, guía de arranque y reparto.
 - Retirar código y configuración anteriores solamente cuando ya no se ejecuten y exista una reversión probada.
 
@@ -444,12 +454,12 @@ No es necesario que Sebastián termine los casos de todos para entregar la migra
 
 La migración está lista cuando:
 
-- Los cuatro programas tienen responsabilidades y arranques claros.
+- Los cuatro programas objetivo tienen responsabilidades claras; los que contienen funcionalidad existente tienen arranque comprobado. Operación y módulos sin implementación quedan definidos como pendientes.
 - Lo que estaba implementado sigue funcionando con contratos estables o cambios de contrato documentados.
 - No hay dos fuentes activas para propietarios, QR o estados de pedidos.
 - No quedaron llamadas internas hacia servidores retirados.
-- Un reinicio o mensaje duplicado no duplica dinero, entrega, cupo ni asistencia.
-- Operación puede activar un protocolo con el núcleo detenido bajo las dependencias y sesiones declaradas.
+- Las garantías existentes ante reinicio/repetición se conservan y prueban. Los fallos funcionales previos quedan registrados para sus responsables; no se atribuye a la migración recuperación todavía ausente.
+- Operación tiene frontera y dependencias definidas; sus CU ausentes, incluida la activación con Núcleo detenido, no se presentan como implementados ni bloquean la migración.
 - La transferencia de datos tiene verificación y reversión.
 - Arranque, CI, imágenes publicadas y documentación describen el mismo sistema.
 - Los CU pendientes están señalados y ubicados, sin afirmar que una pantalla simulada es un backend terminado.

@@ -29,6 +29,15 @@ for remoto, escalado, registro in itertools.product([False, True], repeat=3):
     assert len(servicios) == (7 if remoto else 12), (nombre, len(servicios))
     assert 'boleteria' in servicios
     assert not set(servicios).intersection({'ventas','catalogo','cola-virtual','postventa','acceso-qr'})
+    pagos = servicios['pagos']
+    assert pagos['environment']['POSTGRES_BD_PAGOS'] == 'pagos'
+    assert not any(v['target'].endswith('jwt-privada.pem') for v in pagos['volumes'])
+    if not registro:
+        assert pagos['build']['context'].endswith('/App/backend')
+        assert pagos['build']['dockerfile'] == 'Dockerfile.pagos'
+    if remoto:
+        assert pagos['environment']['POSTGRES_HOST'] == '192.0.2.10'
+        assert not pagos.get('depends_on')
     boleteria = servicios['boleteria']
     bv = boleteria['environment']
     for key,base in {'VENTAS':'entradas_mercado_secundario','CATALOGO':'catalogo','POSTVENTA':'postventa','ACCESO_QR':'acceso_qr'}.items():
@@ -65,14 +74,21 @@ for remoto, escalado, registro in itertools.product([False, True], repeat=3):
     resultados.append({'configuracion': nombre, 'servicios': len(servicios), 'resultado': 'aprobado'})
 
 # Los dominios no importan reglas, repositorios o entidades internas del otro.
-modulos = ['identidad', 'alimentos', 'personal-logistica', 'entradas']
+modulos = ['identidad', 'alimentos', 'personal-logistica', 'entradas', 'finanzas']
 for modulo in modulos:
     for archivo in Path(f'App/backend/modulos/{modulo}').rglob('*.ts'):
         for importacion in re.findall(r"from ['\"]([^'\"]+)['\"]", archivo.read_text()):
             if importacion.startswith('.'):
                 destino = (archivo.parent / importacion).resolve()
                 for otro in set(modulos) - {modulo}:
+                    if otro == 'finanzas' and destino == Path('App/backend/modulos/finanzas/pagos').resolve():
+                        continue  # API pública preparada; en este hito los clientes siguen usando HTTP.
                     assert not destino.is_relative_to(Path(f'App/backend/modulos/{otro}').resolve()), (archivo, importacion)
 
 print(json.dumps(resultados, indent=2))
-print('Configuración resuelta y fronteras entre cuatro módulos: aprobadas')
+for archivo in Path('App/backend/modulos/finanzas/pagos').rglob('*.ts'):
+    for importacion in re.findall(r"from ['\"]([^'\"]+)['\"]", archivo.read_text()):
+        if importacion.startswith('.'):
+            destino = (archivo.parent / importacion).resolve()
+            assert not destino.is_relative_to(Path('App/backend/apps').resolve()), (archivo, importacion)
+print('Configuración resuelta y fronteras entre cinco módulos: aprobadas')

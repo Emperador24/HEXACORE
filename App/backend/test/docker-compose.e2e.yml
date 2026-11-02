@@ -57,8 +57,8 @@ services:
       retries: 30
   pagos:
     build:
-      context: ../../services/pagos
-      dockerfile: ../../backend/test/Dockerfile.pagos
+      context: ..
+      dockerfile: Dockerfile.pagos
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
@@ -72,7 +72,7 @@ services:
       POSTGRES_PUERTO: "5432"
       POSTGRES_USUARIO: cu011_e2e
       POSTGRES_CONTRASENA: cu011_e2e
-      POSTGRES_BASE: pagos_cu011_e2e
+      POSTGRES_BD_PAGOS: pagos_cu011_e2e
       REDIS_HOST: redis
       REDIS_PUERTO: "6379"
       RABBITMQ_URL: amqp://cu011_e2e:cu011_e2e@rabbitmq:5672/cu011

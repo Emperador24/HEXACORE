@@ -202,7 +202,7 @@ fi
 # gateway devolviendo 503.
 migrar() {
   local servicio="$1" tarea="${2:-migracion:correr}" carpeta="$RAIZ/App/services/$1"
-  [[ "$servicio" == "nucleo" || "$servicio" == "boleteria" ]] && carpeta="$RAIZ/App/backend"
+  [[ "$servicio" == "nucleo" || "$servicio" == "boleteria" || "$servicio" == "pagos" ]] && carpeta="$RAIZ/App/backend"
   if [[ ! -d "$carpeta/node_modules" ]]; then
     gris "  $servicio: sin node_modules, se omiten las migraciones"
     return 1
@@ -309,7 +309,7 @@ preparar_inventario_sin_node() {
 
 sembrar() {
   local servicio="$1" tarea="${2:-semilla}" carpeta="$RAIZ/App/services/$1"
-  [[ "$servicio" == "nucleo" || "$servicio" == "boleteria" ]] && carpeta="$RAIZ/App/backend"
+  [[ "$servicio" == "nucleo" || "$servicio" == "boleteria" || "$servicio" == "pagos" ]] && carpeta="$RAIZ/App/backend"
   if [[ ! -d "$carpeta/node_modules" ]]; then
     gris "  $servicio: sin node_modules, se omite la semilla (npm install para tenerla)"
     return
@@ -370,7 +370,7 @@ if [[ "$DEMO" == "si" && "$ROL" != "datos" ]]; then
     # su propia base, que es la separación de datos que ADR-12 conserva.
     migrar nucleo migracion:identidad:correr || true
     migrar nucleo migracion:alimentos:correr || true
-    migrar pagos || true
+    migrar pagos migracion:pagos:correr || true
     migrar boleteria migracion:acceso-qr:correr || true
     migrar boleteria migracion:ventas:correr || true
     # Postventa después de Ventas: no por el esquema —son bases distintas y no

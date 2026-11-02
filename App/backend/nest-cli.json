@@ -30,6 +30,15 @@
       "compilerOptions": {
         "tsConfigPath": "tsconfig.build.json"
       }
+    },
+    "pagos-http": {
+      "type": "application",
+      "root": "apps/pagos-http",
+      "entryFile": "main",
+      "sourceRoot": "apps/pagos-http",
+      "compilerOptions": {
+        "tsConfigPath": "tsconfig.build.json"
+      }
     }
   }
 }
