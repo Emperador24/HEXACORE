@@ -281,7 +281,8 @@ if [[ "$DEMO" == "si" && "$ROL" != "datos" ]]; then
   OCUPADAS="$(docker exec -i hexacore-postgres psql -U hexacore -d "${POSTGRES_BD:-hexacore}" -At -v ON_ERROR_STOP=1 <<'SQL'
 SELECT format('SELECT count(*) FROM %I.%I;',schemaname,tablename)
 FROM pg_tables WHERE schemaname IN ('identidad','alimentos','personal_logistica',
- 'entradas_ventas','entradas_catalogo','entradas_postventa','entradas_acceso_qr','finanzas_pagos')
+ 'entradas_ventas','entradas_catalogo','entradas_postventa','entradas_acceso_qr','finanzas_pagos',
+ 'eventos_recintos')
 AND tablename NOT IN ('migraciones','migrations')
 AND NOT (schemaname='identidad' AND tablename='roles')
 \gexec
@@ -297,6 +298,7 @@ SQL
   sembrar boleteria semilla:catalogo
   sembrar nucleo semilla:logistica
   sembrar nucleo semilla:alimentos
+  sembrar nucleo semilla:eventos
   preparar_inventario_pedidos
 fi
 
