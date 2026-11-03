@@ -74,8 +74,8 @@ MEDICIONES = [
         'atributo': 'Disponibilidad',
         'rnf': 'RNF-03, RNF-04',
         'escenario': 'El login sigue atendiendo con una dependencia caída, y se recupera solo',
-        'carpeta': SERVICIOS / 'autenticacion',
-        'suite': 'pruebas/cu027-disponibilidad.py',
+        'carpeta': SERVICIOS.parent / 'backend',
+        'suite': 'modulos/identidad/pruebas/cu027-disponibilidad.py',
         'cifras': lambda t: [
             ('Recuperación tras kill -9', extraer(t, r'atendiendo logins de nuevo en\s*(.+)'), 'exigido ≤ 30 s'),
             ('Login con Redis caído', extraer(t, r'hexacore-redis\s+login\s+(\d+ en\s+\d+ ms)'), 'debe seguir sirviendo'),

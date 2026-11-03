@@ -1,35 +1,25 @@
-# Añadido a `docker-compose.yml` cuando los servicios corren en un computador y
-# la capa de datos en otro (desplegabilidad: el sistema repartido en dos o más
-# máquinas).
-#
-#   docker compose -f docker-compose.yml -f docker-compose.remoto.yml \
-#     --profile servicios up -d
-#
-# Normalmente se invoca desde `./iniciar.sh --rol servicios --datos <IP>`, que
-# además exporta las variables HOST_* que el compose base ya sabe leer.
-#
-# Lo único que hace es **quitar las dependencias locales**: sin esto, Docker
-# levantaría un PostgreSQL, un Redis, un RabbitMQ y la pasarela simulada en
-# esta máquina para satisfacer el `depends_on`, que es justo lo contrario de lo
-# que se quiere. Quien comprueba que la otra máquina está viva es el propio
-# servicio, que reintenta la conexión al arrancar.
-#
-# **Tienen que estar los cuatro servicios.** Basta con que uno conserve su
-# `depends_on` para que Compose levante aquí la capa de datos entera y el
-# reparto en dos máquinas deje de ser tal: los servicios hablarían con un
-# PostgreSQL local vacío mientras el de verdad está en la otra máquina.
-#
-# El `api-gateway` y el `portal-web-cliente` no aparecen a propósito: sus
-# dependencias (los servicios de dominio y el gateway) viven en **esta** máquina, así
-# que las del compose base son las correctas y redeclararlas aquí solo serviría
-# para que se quedaran desactualizadas cuando se añada un servicio nuevo.
-
+# Servicios en esta máquina con datos remotos. iniciar.sh exporta HOST_POSTGRES,
+# HOST_REDIS, HOST_RABBIT, HOST_CORREO, HOST_PASARELA y sus puertos.
+# Las cinco piezas de datos locales quedan fuera del perfil servicios.
+# Se conservan Núcleo/Boletería -> preparación única de los ocho historiales y las dependencias de gateway/portales.
 services:
+  postgres:
+    profiles: ["datos"]
+  redis:
+    profiles: ["datos"]
+  rabbitmq:
+    profiles: ["datos"]
+  pasarela:
+    profiles: ["datos"]
+  correo:
+    profiles: ["datos"]
   nucleo:
-    depends_on: !reset []
-
-  ventas:
-    depends_on: !reset []
-
-  eventos-emergencias:
-    depends_on: !reset []
+    depends_on: !override
+      preparacion-base: { condition: service_completed_successfully }
+  boleteria:
+    depends_on: !override
+      preparacion-base: { condition: service_completed_successfully }
+  preparacion-base:
+    depends_on: !reset {}
+  trabajador:
+    depends_on: !reset {}

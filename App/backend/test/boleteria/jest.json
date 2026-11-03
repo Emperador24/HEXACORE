@@ -1,0 +1,19 @@
+{
+  "rootDir": "../..",
+  "testEnvironment": "node",
+  "testMatch": [
+    "<rootDir>/test/boleteria/*.e2e-spec.ts"
+  ],
+  "transform": {
+    "^.+\\.ts$": [
+      "ts-jest",
+      {
+        "tsconfig": "tsconfig.json"
+      }
+    ]
+  },
+  "testTimeout": 30000,
+  "setupFiles": [
+    "<rootDir>/test/boleteria/entorno.ts"
+  ]
+}

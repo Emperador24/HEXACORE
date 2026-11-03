@@ -1,0 +1,61 @@
+% Fuente única de las vistas vigentes, reutilizada por SAD, C4 y guías LaTeX.
+\providecommand{\HexContexto}{%
+\resizebox{\textwidth}{!}{\begin{tikzpicture}[>=Stealth,n/.style={draw,rounded corners,align=center,minimum width=3.8cm,minimum height=1cm,font=\small}]
+\node[n] (web) at (0,3) {Dos portales Angular};
+\node[n] (movil) at (6,3) {Una app Flutter\\Cliente y Personal};
+\node[n,fill=blue!8,minimum width=7cm] (sistema) at (3,0) {HEXACORE\\Núcleo, Boletería y Trabajador existentes};
+\node[n] (pago) at (0,-3) {Pasarela externa\\simulada en pruebas};
+\node[n] (correo) at (6,-3) {Proveedor de correo\\simulado en pruebas};
+\draw[->] (web)--node[left]{API}(sistema);
+\draw[->] (movil)--node[right]{API}(sistema);
+\draw[<->] (sistema)--node[left]{HTTP y webhook}(pago);
+\draw[->] (sistema)--node[right]{HTTP correo}(correo);
+\end{tikzpicture}}}
+\providecommand{\HexContenedores}{%
+\resizebox{\textwidth}{!}{\begin{tikzpicture}[>=Stealth,n/.style={draw,rounded corners,align=center,minimum width=3.9cm,minimum height=1cm,font=\small}]
+\node[n] (gw) at (0,5) {Gateway Nginx/njs\\JWT público y turno de compra};
+\node[n,fill=blue!8] (n) at (-3,2.5) {Núcleo NestJS\\Identidad, Alimentos, Personal\\Pagos y único webhook};
+\node[n,fill=blue!8] (b) at (3,2.5) {Boletería NestJS\\Ventas, Catálogo, Fila\\Postventa, Acceso QR y Pagos};
+\node[n] (pg) at (0,0) {PostgreSQL: hexacore\\ocho esquemas, un libro};
+\node[n] (r) at (-5,-2.5) {Redis\\reservas, fila, revocación};
+\node[n] (mq) at (1,-2.5) {RabbitMQ\\contratos/proyecciones existentes};
+\node[n,fill=blue!8] (t) at (6,-2.5) {Trabajador NestJS\\solo correo existente};
+\node[n,dashed] (o) at (6,5) {Operación: PENDIENTE\\sin servidor implementado};
+\draw[->](gw)--(n);\draw[->](gw)--(b);
+\draw[->](n.south east)--(pg.north west);\draw[->](b.south west)--(pg.north east);
+\draw[<->](n.south west)--(r.north);
+\draw[<->](b.west)--(.5,2.5)--(.5,1.3)--(-7.5,1.3)--(-7.5,-2.5)--(r.west);
+\draw[<->](n.south)--(-3,-1.3)--(1,-1.3)--(mq.north);
+\draw[<->](b.south east)--(5,-1.3)--(mq.north east);\draw[->](mq)--(t);
+\end{tikzpicture}}}
+\providecommand{\HexComponentes}{%
+\resizebox{\textwidth}{!}{\begin{tikzpicture}[>=Stealth,n/.style={draw,rounded corners,align=center,minimum width=5.4cm,minimum height=1.6cm,font=\small}]
+\node[n,fill=blue!8] (n) at (-3.5,2) {Núcleo: un main / proceso\\Identidad, Alimentos, Personal-Logística\\configuración, repositorios y guardas propios};
+\node[n,fill=blue!8] (b) at (3.5,2) {Boletería: un main / proceso\\cinco componentes de Entradas\\dos cron, consumidores y dos outbox};
+\node[n] (p) at (0,-1) {Una fuente: modulos/finanzas/pagos\\API pública local, sin controladores automáticos\\dos pools nombrados, mismo libro};
+\node[n] (t) at (0,-4) {Trabajador: Comunicaciones\\consumidor de correo y salud\\sin SQL, Redis, JWT o Pagos};
+\draw[->](n)--node[left]{importa API}(p);\draw[->](b)--node[right]{importa API}(p);
+\end{tikzpicture}}}
+\providecommand{\HexSecuencia}{%
+\resizebox{\textwidth}{!}{\begin{tikzpicture}[>=Stealth,n/.style={draw,align=center,font=\small,minimum height=.8cm}]
+\node[n](a)at(0,1){Cliente};\node[n](g)at(3,1){Gateway};\node[n](b)at(6,1){Boletería};\node[n](p)at(10,1){Pagos local / pasarela};
+\foreach \x in {0,3,6,10}{\draw[dashed](\x,.5)--(\x,-5.5);}
+\draw[->](0,0)--node[above,font=\scriptsize]{1. turno y compra}(3,0);
+\draw[->](3,-1)--node[above,font=\scriptsize]{2. consume turno; autoriza}(6,-1);
+\draw[->](6,-2)--node[above,font=\scriptsize]{3. cobro local; HTTP externo}(10,-2);
+\draw[->](10,-3)--node[above,font=\scriptsize]{4. aprobado / rechazado / incierto}(6,-3);
+\draw[->](6,-4)--node[above,font=\scriptsize]{5. respuesta existente}(0,-4);
+\node[align=center,font=\small]at(5,-6.3){Libro compartido; QR/ingreso convergen por eventos.\\Webhook posterior en Núcleo no finaliza negocio pendiente (F12).};
+\end{tikzpicture}}}
+\providecommand{\HexDespliegue}{%
+\resizebox{\textwidth}{!}{\begin{tikzpicture}[>=Stealth,n/.style={draw,rounded corners,align=center,font=\small,minimum width=5cm,minimum height=1cm}]
+\draw[dashed,rounded corners](-6.5,-4)rectangle(6.5,4);
+\node[font=\small\bfseries]at(0,3.5){Host de pruebas Docker: proyecto exclusivo (A, B o publicadas)};
+\node[n,fill=blue!8](apps)at(-3,1.8){Núcleo, Boletería, Trabajador\\un Node por programa};
+\node[n](gw)at(3,1.8){Gateway Nginx/njs\\dos portales Nginx};
+\node[n](data)at(-3,-.5){PostgreSQL 16: ocho esquemas\\Redis 7 y RabbitMQ 3.13};
+\node[n](ext)at(3,-.5){Pasarela y correo simulados\\sin pagos/correos reales};
+\node[n](prep)at(0,-2.6){preparacion-base: tarea única sin servidor\\misma imagen Núcleo; antes de las apps};
+\draw[->](gw)--(apps);\draw[<->](apps)--(data);\draw[<->](apps)--(ext);
+\draw[->](prep)--(data);
+\end{tikzpicture}}}

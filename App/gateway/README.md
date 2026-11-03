@@ -1,10 +1,9 @@
 # Gateway
 
-API Gateway + balanceador de carga (SAD §8, ADR-02, ADR-15).
+API Gateway + balanceador de carga (ADR-02/15, revisados por ADR-16).
 
-**Responsabilidad:** punto único de entrada al backend para las cuatro interfaces del sistema.
-Centraliza autenticación, autorización, validación de tokens y enrutamiento hacia el microservicio
-correspondiente; distribuye tráfico entre las réplicas de cada servicio.
+**Responsabilidad:** punto único de entrada al backend para las dos portales y la app móvil unificada del sistema.
+Centraliza autenticación, autorización, validación de tokens y enrutamiento hacia Núcleo o Boletería; distribuye tráfico entre las réplicas de cada servicio.
 
 **ASR relacionados:** ASR-02 (disponibilidad ante caída de una instancia), ASR-03 (protección de
 datos de pago y credenciales).
@@ -24,25 +23,25 @@ un `location`, y si exige sesión, incluir `autenticar.conf` en él.
 | `nginx-principal.conf` | La configuración principal de Nginx: la de la imagen oficial más `load_module` del njs. |
 | `pruebas/gateway.py` | Comprueba enrutamiento, autenticación previa (RNF-06), roles, turno, *webhook*, CORS, balanceo (RNF-10) y caída de una instancia (RNF-03). |
 
-Se despliega desde `../infra/docker-compose.yml` (servicio `api-gateway`, imagen `nginx:1.27-alpine`)
+Se despliega desde `../infra/docker-compose.yml` (servicio `api-gateway`, build propio con njs)
 y escucha en **8080**. Es la única dirección que conocen la app móvil y los portales.
 
 ## Cómo enruta
 
 | Ruta | Servicio | Exige |
 |---|---|---|
-| `/api/v1/sesiones` (POST), `/sesiones/renovar`, `/cuentas/registro`, `/verificar`, `/recuperacion`, `/restablecer` | Autenticación | nada (son las que *dan* el token) |
-| `/api/v1/cuentas/…`, `/api/v1/sesiones/…` | Autenticación | token |
-| `/api/v1/admin/…` | Autenticación | token con rol `Administrador` |
-| `/api/v1/cartelera` (solo GET) | Catálogo | nada |
-| `/api/v1/cola/…` | Cola virtual | token |
-| `POST /api/v1/compras` | Ventas | token `Cliente` **y turno** en `X-Turno-Cola` |
-| `/api/v1/compras/…`, `GET /api/v1/compras` | Ventas | token `Cliente` |
-| `/api/v1/ingresos…` | Acceso QR | token `Personal` o `Administrador` |
-| `/api/v1/reventa/…` | Postventa | token `Cliente` o `Administrador` |
-| `/api/v1/pedidos/…` | Alimentos | token |
-| `/api/v1/logistica/…` | Eventos / Emergencias | token |
-| `POST /api/v1/pagos/webhook` | Pagos | firma HMAC de la pasarela (la valida Pagos) |
+| `/api/v1/sesiones` (POST), `/sesiones/renovar`, `/cuentas/registro`, `/verificar`, `/recuperacion`, `/restablecer` | Núcleo | nada (son las que *dan* el token) |
+| `/api/v1/cuentas/…`, `/api/v1/sesiones/…` | Núcleo | token |
+| `/api/v1/admin/…` | Núcleo | token con rol `Administrador` |
+| `/api/v1/cartelera` (solo GET) | Boletería | nada |
+| `/api/v1/cola/…` | Boletería | token |
+| `POST /api/v1/compras` | Boletería | token `Cliente` **y turno** en `X-Turno-Cola` |
+| `/api/v1/compras/…`, `GET /api/v1/compras` | Boletería | token `Cliente` |
+| `/api/v1/ingresos…` | Boletería | token `Personal` o `Administrador` |
+| `/api/v1/reventa/…` | Boletería | token `Cliente` o `Administrador` |
+| `/api/v1/pedidos/…` | Núcleo | token |
+| `/api/v1/logistica/…` | Núcleo | token |
+| `POST /api/v1/pagos/webhook` | Núcleo | firma HMAC de la pasarela (la valida Núcleo) |
 | `/salud` | el propio gateway | nada |
 
 Las rutas públicas van con coincidencia **exacta** (`location = …`), que en Nginx gana a cualquier
@@ -88,8 +87,10 @@ Así Ventas solo recibe a cuantos puede atender y no necesita llamar a la Cola.
 ## El *webhook* de la pasarela
 
 `POST /api/v1/pagos/webhook` es la única ruta pública que no es de un usuario. No lleva JWT —la
-pasarela no tiene sesión—; Pagos la autentica con la firma HMAC-SHA256 del cuerpo en
-`X-Pasarela-Firma`. Nada más de Pagos se expone: cobrar y reembolsar siguen siendo internos.
+pasarela no tiene sesión—; Núcleo la autentica con la firma HMAC-SHA256 del cuerpo en
+`X-Pasarela-Firma`. El receptor conserva los bytes originales. Cobrar y reembolsar son llamadas
+locales autorizadas por Alimentos/Entradas; no tienen endpoints HTTP. Boletería
+no monta otro webhook. El simulador también llama a nucleo:3002.
 
 ## Balanceo y caída de una instancia
 
@@ -100,7 +101,7 @@ el gateway empieza a repartir sin reiniciarlo, y al caer una deja de usarla:
 ```bash
 cd ../infra
 docker compose -f docker-compose.yml -f docker-compose.escalado.yml \
-  --profile servicios up -d --scale ventas=2
+  --profile servicios up -d --scale boleteria=2
 python3 ../gateway/pruebas/gateway.py
 ```
 
@@ -122,4 +123,18 @@ cd ../infra && docker compose --profile servicios up -d
 python3 ../gateway/pruebas/gateway.py
 ```
 
-Necesita las cuentas de ejemplo (`cd ../services/autenticacion && npm run semilla`).
+Necesita las cuentas de ejemplo (`cd ../backend && npm run semilla:identidad`).
+
+Identidad, Alimentos y las rutas `/api/v1/logistica` llegan al mismo `nucleo:3002`.
+El servidor separado de Eventos/Emergencias se retiró; esto no implementa Operación.
+
+Boletería conserva las cinco familias en un único upstream `boleteria:3001`.
+La subpetición njs de consumo de turno usa ese mismo destino, conserva dueño y
+consumo único; `/interno/` sigue sin exponerse. El smoke aislado de Boletería
+comprueba compra/pago/QR, repetición de turno, doble ingreso y revocación.
+Las pruebas de réplicas/carga y la invalidación QR inmediata siguen pendientes.
+
+El Trabajador reemplaza al consumidor de Notificaciones dentro del workspace.
+No tiene rutas de negocio en el gateway ni es dependencia de disponibilidad del
+login. Solo expone su salud técnica compatible en el puerto 3006; los correos
+llegan desde Identidad por cuentas.eventos/cuenta.correo.

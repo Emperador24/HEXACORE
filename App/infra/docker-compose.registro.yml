@@ -11,18 +11,18 @@
 # ## Para qué sirve
 #
 # Es lo que hace que desplegar en otro computador no exija tener el código, ni
-# Node, ni esperar una compilación: se bajan siete imágenes ya construidas y se
+# Node, ni esperar una compilación: se bajan las imágenes ya construidas y se
 # levantan. En el computador de la demostración, o en el de un compañero que
 # solo quiere ver el sistema andando, esa diferencia es de minutos a segundos.
 #
-# También es lo que permite **volver atrás**: cada commit deja su propia imagen
-# etiquetada (`sha-a1b2c3d`), así que si algo se rompe se levanta la anterior
-# sin tocar el repositorio.
+# Cada revisión deja su imagen (`sha-<SHA40>`; arquitectura-<SHA40> en la rama).
+# Recuperar código no revierte datos ni efectos externos. Seguir el procedimiento
+# CORTE-Y-REVERSION.md y conservar digests/configuración antes de abrir escrituras.
 #
 # ## Variables
 #
 #   HEXACORE_REGISTRO   dónde están las imágenes (por defecto, el del proyecto)
-#   HEXACORE_ETIQUETA   qué versión levantar: develop, main, latest o sha-XXXXXXX
+#   HEXACORE_ETIQUETA   qué versión levantar: develop, main, latest o sha-<SHA40>
 #
 # El `build:` se anula con `!reset` para que Compose no intente compilar: sin
 # eso, tener el código al lado haría que reconstruyera en vez de usar lo
@@ -33,19 +33,25 @@ services:
     build: !reset null
     image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-nucleo:${HEXACORE_ETIQUETA:-develop}
 
-  ventas:
+  boleteria:
     build: !reset null
-    image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-ventas:${HEXACORE_ETIQUETA:-develop}
+    image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-boleteria:${HEXACORE_ETIQUETA:-develop}
 
-  eventos-emergencias:
+  preparacion-base:
     build: !reset null
-    image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-eventos-emergencias:${HEXACORE_ETIQUETA:-develop}
+    image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-nucleo:${HEXACORE_ETIQUETA:-develop}
 
-  api-gateway:
-    # La imagen publicada lleva el `nginx.conf` dentro, así que no se monta
-    # nada: lo que se despliega es una cosa sola.
-    image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-gateway:${HEXACORE_ETIQUETA:-develop}
-    volumes: !reset []
+  trabajador:
+    build: !reset null
+    image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-trabajador:${HEXACORE_ETIQUETA:-develop}
+
+  pasarela:
+    build: !reset null
+    image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-pasarela:${HEXACORE_ETIQUETA:-develop}
+
+  correo:
+    build: !reset null
+    image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-correo:${HEXACORE_ETIQUETA:-develop}
 
   portal-web-cliente:
     build: !reset null
@@ -54,3 +60,10 @@ services:
   portal-web-admin:
     build: !reset null
     image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-portal-admin:${HEXACORE_ETIQUETA:-develop}
+
+  api-gateway:
+    build: !reset null
+    image: ${HEXACORE_REGISTRO:-ghcr.io/emperador24}/hexacore-gateway:${HEXACORE_ETIQUETA:-develop}
+    # Configuración dentro de la imagen; conservar la clave pública montada.
+    volumes: !override
+      - ./claves-desarrollo/jwt-publica.pem:/etc/nginx/claves/jwt-publica.pem:ro

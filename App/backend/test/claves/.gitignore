@@ -1,0 +1,2 @@
+# Fixtures RSA públicos de pruebas; nunca claves de otro entorno.
+!*.pem

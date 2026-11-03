@@ -30,6 +30,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  COMPOSE_PARALLEL_LIMIT: '1'
   NODE_VERSION: '22'
   FLUTTER_VERSION: '3.47.4'
 
@@ -43,6 +44,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Guardas del entorno local de revisión (sin crear recursos)
+        run: python3 -m unittest discover -s App/infra/revision -p 'test_*.py' -v
 
       - name: Buscar archivos que no deberían estar versionados
         run: |
@@ -58,104 +62,6 @@ jobs:
             exit 1
           fi
           echo "Limpio: ningún artefacto de compilación versionado."
-
-  # --------------------------------------------------------------------------
-  # Los microservicios con pruebas: compilan, pasan el chequeo de tipos y
-  # corren sus pruebas.
-  #
-  # Redis va como servicio del trabajo porque las pruebas de inventario de
-  # Pedidos (los scripts Lua de reserva) solo corren si se les da uno: sin
-  # `REDIS_INVENTARIO_PRUEBAS_URL` se saltan solas —`describe.skip`— y 24
-  # pruebas quedarían en verde sin haberse ejecutado. Los otros dos servicios
-  # ignoran la variable.
-  # --------------------------------------------------------------------------
-  servicios:
-    name: Servicio ${{ matrix.servicio }}
-    runs-on: ubuntu-latest
-    strategy:
-      # Si uno falla, los demás terminan igual: interesa ver todos los
-      # resultados.
-      fail-fast: false
-      matrix:
-        # Los diez microservicios de ADR-14. `nucleo` ya no está: se renombró a
-        # `autenticacion` cuando Pedidos salió a `alimentos`, y la matriz
-        # apuntaba a una carpeta que no existe — el trabajo fallaba entero.
-        servicio:
-          - autenticacion
-          - ventas
-          - postventa
-          - acceso-qr
-          - catalogo
-          - pagos
-          - cola-virtual
-          - alimentos
-          - notificaciones
-          - eventos-emergencias
-    defaults:
-      run:
-        working-directory: App/services/${{ matrix.servicio }}
-    services:
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 5s
-          --health-timeout 3s
-          --health-retries 10
-    env:
-      REDIS_INVENTARIO_PRUEBAS_URL: redis://localhost:6379
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-          cache-dependency-path: App/services/${{ matrix.servicio }}/package-lock.json
-
-      # `npm ci` y no `npm install`: instala exactamente lo del package-lock y
-      # falla si los dos no coinciden, que es justo lo que se quiere en CI.
-      - run: npm ci
-
-      - name: Chequeo de tipos
-        run: npm run lint
-
-      - name: Pruebas unitarias
-        run: npm test
-
-      - name: Compilar
-        run: npm run build
-
-  # --------------------------------------------------------------------------
-  # Servicio de Eventos/Emergencias (CU-018). Sus 20 pruebas son de integración
-  # y necesitan PostgreSQL y RabbitMQ (`npm run test:e2e`), así que aquí solo se
-  # compila y se pasa el lint. `npm test` corre y queda en verde aunque no haya
-  # unitarias, para que el pipeline no dé rojo por una ausencia conocida.
-  # --------------------------------------------------------------------------
-  logistica:
-    name: Servicio eventos-emergencias
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: App/services/eventos-emergencias
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-          cache-dependency-path: App/services/eventos-emergencias/package-lock.json
-
-      - run: npm ci
-      - name: Lint
-        run: npm run lint
-      - name: Pruebas unitarias
-        run: npm test
-      - name: Compilar
-        run: npm run build
 
   # --------------------------------------------------------------------------
   # Pruebas de INTEGRACIÓN sobre el backend.
@@ -182,36 +88,20 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version-file: App/backend/.nvmrc
 
       # Las suites son guiones de Python que hablan por HTTP; no necesitan
       # dependencias, solo el intérprete, que el runner ya trae.
-      - name: Levantar el sistema completo
+      - name: Preparar herramientas de las semillas explícitas
+        working-directory: App/backend
+        run: npm ci && npm run build
+      - name: Levantar instalación nueva con datos demo explícitos
         working-directory: App/infra
-        run: ./iniciar.sh
+        run: ./iniciar.sh --datos-demo npm
 
       - name: Autenticación (CU-027)
-        working-directory: App/services/autenticacion
-        run: npm ci && npm run test:integracion
-
-      - name: Ventas (CU-001 a CU-004)
-        working-directory: App/services/ventas
-        run: npm ci && npm run test:integracion
-
-      # Postventa necesita a Ventas levantado: es el dueño de las entradas, y
-      # las dos Sagas del CU-006 le hablan. `iniciar.sh` ya levantó los dos.
-      - name: Postventa (CU-006)
-        working-directory: App/services/postventa
-        run: npm ci && npm run test:integracion
-
-      - name: Acceso QR (CU-002)
-        working-directory: App/services/acceso-qr
-        run: npm ci && npm run test:integracion
-
-      # Estas son e2e de Vitest contra su propia base, no guiones de Python.
-      - name: Servicio de Eventos y Emergencias (CU-017, CU-018)
-        working-directory: App/services/eventos-emergencias
-        run: npm ci && npm run test:e2e
+        working-directory: App/backend
+        run: npm ci && npm run test:http:identidad
 
       # Sin esto, un fallo deja solo "exit 1" y hay que reproducirlo a ciegas.
       - name: Registros de los contenedores si algo falló
@@ -223,6 +113,110 @@ jobs:
         if: always()
         working-directory: App/infra
         run: docker compose -f docker-compose.yml --profile servicios down -v
+
+  # --------------------------------------------------------------------------
+  # Núcleo: CU-011, CU-017/CU-018 y convivencia en un proyecto exclusivo.
+  # No usa iniciar.sh ni la infraestructura del job de integración general.
+  # --------------------------------------------------------------------------
+  nucleo:
+    name: Backend (Núcleo, Boletería y Trabajador reales)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: App/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: App/backend/.nvmrc
+          cache: npm
+          cache-dependency-path: App/backend/package-lock.json
+      - run: npm ci
+      - name: Infraestructura exclusiva y preparación única de ocho esquemas
+        run: npm run test:infra
+      - name: Tipos
+        run: npm run lint
+      - name: Unitarias con Redis real
+        id: unitarias
+        env:
+          REDIS_INVENTARIO_PRUEBAS_URL: redis://127.0.0.1:16384
+          REDIS_HOST: 127.0.0.1
+          REDIS_PUERTO: "16384"
+        run: |
+          mkdir -p .evidencia-e2e
+          npm test -- --runInBand --json --outputFile=.evidencia-e2e/unitarias.json
+      - name: Seguridad de resúmenes y manifiestos publicados
+        run: node --test test/publicadas/seguridad-ci.test.cjs
+      - name: Infraestructura de correo exclusiva
+        run: npm run test:trabajador:infra
+      - name: Contratos del correo y límites previos (RabbitMQ real)
+        id: correo
+        run: npm run test:trabajador
+      - name: Identidad a RabbitMQ, Trabajador y proveedor simulado
+        id: correo_identidad
+        run: npm run test:trabajador:identidad
+      - name: Composición real del módulo financiero sin HTTP
+        run: npm run test:pagos:modulo
+      - name: Integración del Núcleo dos veces
+        id: nucleo
+        run: |
+          npm run test:e2e
+          npm run test:e2e
+      - name: Integración de Boletería dos veces, con Núcleo para los callbacks
+        id: boleteria
+        run: |
+          npm run test:boleteria
+          npm run test:boleteria
+      - name: Configuración y fronteras
+        run: npm run verificar:infra
+      - name: Imagen del Trabajador
+        run: npm run test:trabajador:imagen:infra
+      - name: Salud, envío, pendientes y cierre de la imagen Trabajador
+        run: npm run test:trabajador:imagen
+      - name: Construir y arrancar ambas imágenes y gateway
+        run: npm run test:imagen:infra
+      - name: Smoke de Núcleo y Boletería
+        id: imagenes
+        run: |
+          npm run test:imagen
+          npm run test:boleteria:imagen
+      - name: Contratos financieros y webhook, dos corridas
+        id: pagos
+        run: |
+          npm run test:pagos:contratos
+          npm run test:pagos:contratos
+      - name: Libro común, convivencia y reinicio
+        id: convivencia
+        run: npm run test:pagos:convivencia
+      - name: Logs si falla
+        if: failure()
+        run: |
+          docker compose -p hexacore-base-unica-e2e -f test/docker-compose.e2e.yml -f test/docker-compose.imagen.yml logs --tail 100
+          docker compose -p hexacore-trabajador-e2e -f test/trabajador/docker-compose.yml --profile imagen logs --tail 100
+      - name: Resumen público sin datos del ensayo
+        if: always()
+        env:
+          PASOS_JSON: >-
+            {"unitarias":"${{ steps.unitarias.outcome }}","correo":"${{ steps.correo.outcome }}",
+            "correo_identidad":"${{ steps.correo_identidad.outcome }}","nucleo":"${{ steps.nucleo.outcome }}",
+            "boleteria":"${{ steps.boleteria.outcome }}","imagenes":"${{ steps.imagenes.outcome }}",
+            "pagos":"${{ steps.pagos.outcome }}","convivencia":"${{ steps.convivencia.outcome }}"}
+        run: python3 test/resumen-ci.py
+      - name: Conservar solo el resumen permitido
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-resumen
+          path: App/backend/.informe-ci/backend.json
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 14
+      - name: Limpiar solo el proyecto exclusivo
+        if: always()
+        run: |
+          npm run test:trabajador:limpiar
+          npm run test:limpiar
 
   # --------------------------------------------------------------------------
   # Los dos portales Angular: que compilen en modo producción.
@@ -297,3 +291,70 @@ jobs:
 
       - name: Validar docker-compose
         run: docker compose -f App/infra/docker-compose.yml --profile servicios config -q
+
+  datos:
+    name: Transferencia histórica y aplicaciones sobre esquemas
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: App/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: App/backend/.nvmrc
+          cache: npm
+          cache-dependency-path: App/backend/package-lock.json
+      - run: git fetch --no-tags origin be57961472a0802c90a57d247fb67e96e6717b1b
+      - run: npm ci && npm run build
+      - name: Fuente histórica fijada y destino del ensayo
+        run: |
+          npm run ensayo:datos:infra
+          npm run ensayo:historico -- --levantar
+      - name: Respaldar y conciliar ocho bases anteriores
+        run: |
+          npm run ensayo:datos -- preparar --salida=/tmp/hexacore-consolidacion/ci
+          npm run ensayo:datos -- capturar --salida=/tmp/hexacore-consolidacion/ci
+          ENSAYO_SALIDA=/tmp/hexacore-consolidacion/ci npm run ensayo:datos:verificar
+          docker compose -p hexacore-backend-e2e -f test/consolidacion/historico/docker-compose.e2e.yml stop redis rabbitmq
+      - name: Copia identificada, historiales reconocidos y lectura anterior a escrituras
+        run: |
+          npm run datos:clonar-pruebas -- /tmp/hexacore-consolidacion/ci
+          npm run datos:preparar
+        env:
+          NODE_ENV: test
+          POSTGRES_HOST: 127.0.0.1
+          POSTGRES_PUERTO: '15439'
+          POSTGRES_USUARIO: cu011_e2e
+          POSTGRES_CONTRASENA: cu011_e2e
+          POSTGRES_BD: hexacore_e2e
+      - run: npm run datos:lectura-transferida
+      - name: Aplicaciones sobre copia transferida
+        run: |
+          npm run test:imagen:infra
+          npm run datos:verificar-preparacion
+          npm run datos:flujos
+          npm run datos:ejecucion
+          npm run test:pagos:convivencia
+          npm run test:limpiar
+      - name: Instalación nueva aislada
+        env:
+          POSTGRES_BD_PRUEBAS: hexacore_vacia_e2e
+        run: |
+          npm run test:imagen:infra
+          node test/base-unica/lectura-vacia.cjs
+          python3 test/base-unica/comprobar-auxiliares.py
+          npm run datos:verificar-preparacion
+          npm run datos:flujos
+          npm run datos:ejecucion
+          npm run test:pagos:convivencia
+          npm run test:limpiar
+      - name: Parar proyectos propios sin borrar referencias/mensajes
+        if: always()
+        run: |
+          npm run test:limpiar
+          POSTGRES_BD_PRUEBAS=hexacore_vacia_e2e npm run test:limpiar
+          docker compose -p hexacore-consolidacion-e2e -f test/consolidacion/docker-compose.yml stop
+          docker compose -p hexacore-backend-e2e -f test/consolidacion/historico/docker-compose.e2e.yml -f test/consolidacion/historico/docker-compose.imagen.yml stop
+      # No se publican respaldos, registros de filas, RDB ni manifiestos sensibles.

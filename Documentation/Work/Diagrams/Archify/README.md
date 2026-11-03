@@ -1,3 +1,6 @@
+> HISTÓRICO, previo a ADR-16. La fuente vigente es ../Vigente/diagramas.tex.
+> Los diagramas interactivos anteriores no acreditan servidores/funciones actuales.
+
 # Diagramas C4 (Archify)
 
 **Esta es la fuente oficial de los diagramas C4 del proyecto.** Los seis diagramas se generan con

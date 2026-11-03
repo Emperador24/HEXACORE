@@ -1,0 +1,20 @@
+name: hexacore-consolidacion-e2e
+services:
+  postgres:
+    image: postgres:16-alpine
+    labels:
+      hexacore.uso: ensayo-consolidacion
+    environment:
+      # Credenciales públicas de fixtures, iguales al propietario del origen aislado.
+      POSTGRES_USER: cu011_e2e
+      POSTGRES_PASSWORD: cu011_e2e
+      POSTGRES_DB: postgres
+    ports: ["127.0.0.1:15437:5432"]
+    volumes: ["postgres:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cu011_e2e -d postgres"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+volumes:
+  postgres:

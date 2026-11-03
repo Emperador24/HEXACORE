@@ -43,3 +43,19 @@ latexmk -c NombreDelDocumento.tex           # limpia .aux/.log/.out/.toc/.fls/.f
 ```
 
 `latexmk -c` no borra el `.pdf`; bórralo a mano de `Work/` después de copiarlo (`rm NombreDelDocumento.pdf`).
+
+## Vigencia de la entrega técnica de migración (ADR-16)
+
+- Arquitectura implementada: `ArquitecturaVigente.tex`, compartida por SAD,
+  propuesta, resumen y C4; diagramas nativos en `Diagrams/Vigente/diagramas.tex`.
+- Decisión: `ADR-16-nucleo-modular.tex`. Los ADR anteriores conservan su historia,
+  con indicación de qué decisiones sustituye/revisa ADR-16.
+- Equipo y pendientes: [GUIA-EQUIPO-MIGRACION.md](GUIA-EQUIPO-MIGRACION.md).
+- Corte/reversión **no ejecutados**: [CORTE-Y-REVERSION.md](CORTE-Y-REVERSION.md).
+- Evidencia local/remota y límites: ESTADO-MIGRACION §23–24.
+- `Historico/` guarda las fuentes/vistas anteriores; los Drawio/Archify anteriores
+  no describen la topología vigente. No borrar esos antecedentes para aparentar coherencia.
+
+Compilar las cinco fuentes actualizadas con salida en un directorio temporal
+(`latexmk -pdf -outdir=/ruta/temporal Documento.tex`), revisar referencias/figuras y
+copiar únicamente los PDF finales a Submission. No dejar productos en Work.
