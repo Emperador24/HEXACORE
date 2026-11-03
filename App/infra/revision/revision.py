@@ -22,6 +22,7 @@ SERVICIOS = {'postgres', 'redis', 'rabbitmq', 'pasarela', 'correo', 'preparacion
              'nucleo', 'boleteria', 'trabajador', 'api-gateway', 'portal-web-cliente', 'portal-web-admin'}
 COMPILAR = ['nucleo', 'boleteria', 'trabajador', 'api-gateway', 'pasarela', 'correo',
             'portal-web-cliente', 'portal-web-admin']
+EJECUTAR = ['nucleo', 'boleteria', 'trabajador', 'api-gateway', 'portal-web-cliente', 'portal-web-admin']
 PUERTOS = {15449, 16394, 15689, 16789, 13129, 13128, 13119, 13127, 13120, 18090, 14210, 14211}
 ESQUEMAS = "'identidad','alimentos','personal_logistica','entradas_ventas','entradas_catalogo','entradas_postventa','entradas_acceso_qr','finanzas_pagos'"
 CHECKOUT = hashlib.sha256(str(RAIZ).encode()).hexdigest()[:16]
@@ -241,13 +242,17 @@ def iniciar(demo):
     print('Compilación secuencial desde fuentes:', revision(), '(modificada)' if modificada() else '(limpia)', flush=True)
     for servicio in COMPILAR:
         compose('build', servicio)
-    compose('up', '--no-build', '-d', '--wait', '--wait-timeout', '180', 'postgres', 'redis', 'rabbitmq', 'correo', 'pasarela', 'preparacion-base')
+    compose('up', '--no-build', '-d', '--wait', '--wait-timeout', '180', 'postgres', 'redis', 'rabbitmq', 'correo', 'pasarela')
+    # La tarea finita se espera por su código de salida, no por estado running.
+    # --wait sobre ese servicio puede rechazar una finalización correcta rápida.
+    compose('up', '--no-build', '--no-deps', '--exit-code-from', 'preparacion-base', 'preparacion-base')
     try:
         if demo:
             sembrar()
         else:
             exigir(estado_demo() != 'EN_CURSO', 'Carga demo interrumpida. Se conserva el estado; revisar antes de arrancar escritores')
-        compose('up', '--no-build', '-d', '--wait', '--wait-timeout', '240')
+        # Las dependencias ya se comprobaron; no volver a arrancar la tarea SQL.
+        compose('up', '--no-build', '--no-deps', '-d', '--wait', '--wait-timeout', '240', *EJECUTAR)
         if demo:
             compose('exec', '-T', '-e', 'GATEWAY_URL=http://api-gateway:8080/api/v1', 'nucleo', 'node', '/revision/seed-logistica.mjs')
             exigir(sql('SELECT count(*) FROM personal_logistica.empleados;') == '5', 'Semilla logística incompleta')

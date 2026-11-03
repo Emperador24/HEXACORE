@@ -50,6 +50,8 @@ recursos y doce puertos libres antes de construir/modificar recursos Docker.
 Construye ocho imágenes **secuencialmente**, reutilizando los Dockerfiles actuales.
 Ejecuta la preparación central (18 migraciones), semillas existentes sobre base
 vacía, inventario Redis y altas/turno de Personal a través del gateway.
+La preparación SQL se espera por su código de salida antes de iniciar apps;
+`--wait` se utiliza para servicios permanentes, no para esa tarea finita.
 No ejecuta `iniciar.sh`, volcados ni semillas contra destinos habituales.
 
 Los siguientes arranques reconstruyen desde fuentes y **conservan las operaciones**:

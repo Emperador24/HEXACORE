@@ -3450,7 +3450,7 @@ Los backends conservan Node 22.22.3; los compiladores Angular siguen separados.
 |---|---|
 | git status --short --branch; git rev-parse HEAD | Rama/base anteriores; solo Pedidos ajeno al inicio |
 | ./App/infra/revision.sh config | Doce servicios, destinos/montajes/dependencias propios; sin referencias habituales/A/B |
-| python3 -m unittest discover -s App/infra/revision -p 'test_*.py' -v | **9/9**, 0 omitidas: puertos, destinos, recursos ajenos, carga repetida/interrumpida, base ocupada y SIGTERM frente a SIGKILL/OOM |
+| python3 -m unittest discover -s App/infra/revision -p 'test_*.py' -v | **10/10**, 0 omitidas: puertos, destinos, recursos ajenos, carga repetida/interrumpida, base ocupada, SIGTERM frente a SIGKILL/OOM y preparación finita antes de apps |
 | ./App/infra/revision.sh iniciar --datos-demo | Ocho imágenes construidas secuencialmente, preparación 18, semillas/inventario/Personal y arranque saludable |
 | python3 App/infra/revision/comprobar_http.py | Final **6/6**, 0 omitidas: tres saludes/gateway, CORS permitido/rechazado, Cliente/perfil/revocación, autorización Admin, Personal propio y catálogos reales |
 | node App/infra/revision/comprobar-navegador.mjs <directorio privado> | Final **4/4 recorridos Chrome real**: login/cookie/recarga, alimentos/QR, cola-compra-pago-entradas y administración/cuentas/recarga; sin llamadas a puertos habituales ni errores JS |
@@ -3471,9 +3471,18 @@ corrigen las pruebas para verificar el contrato/imagen real y se repiten todas
 sus aserciones. **No eran fallos de negocio ni se omitieron escenarios.** La
 compilación conserva el aviso CommonJS histórico de qrcode; sin cambios de paquetes.
 No se repiten 830 unitarias ni las baterías masivas ya aprobadas en §23–24: no
-cambia código backend, SQL ni contratos de negocio. CI incorpora las nueve guardas
+cambia código backend, SQL ni contratos de negocio. CI incorpora las diez guardas
 sin crear recursos Docker; su nueva ejecución remota se distingue de esta evidencia
 local y no implica publicar otras imágenes GHCR.
+
+Al reconstruir desde el primer commit publicado, `up --wait` sobre la selección
+de infraestructura más preparacion-base rechazó `exited (0)`: la tarea SQL terminó
+antes de la observación de Compose. Se conserva ese intento fallido. La corrección
+espera primero las cinco dependencias permanentes, ejecuta preparacion-base en
+primer plano con **--exit-code-from**, y solo después arranca las seis aplicaciones
+con --no-deps (dependencias ya comprobadas). Así no trata la tarea finita como
+servidor permanente ni la vuelve a ejecutar al arrancar apps. Se añade una prueba
+de este orden y se repite el arranque real con los datos/huellas conservados.
 
 ### Revisión y límites de esta entrega
 

@@ -80,8 +80,22 @@ class SeguridadRevision(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, 'interrumpida'):
                 r.iniciar(False)
             ups = [c.args for c in compose.call_args_list if c.args[0] == 'up']
-            self.assertEqual(len(ups), 1)
+            self.assertEqual(len(ups), 2)
             self.assertNotIn('nucleo', ups[0])
+            self.assertNotIn('--wait', ups[1])
+
+    def test_preparacion_se_espera_por_salida_antes_de_aplicaciones(self):
+        with patch.object(r, 'contenedores_propios', return_value=[]), \
+             patch.object(r, 'comprobar_puertos'), patch.object(r, 'archivos'), \
+             patch.object(r, 'estado_demo', return_value='COMPLETA'), patch.object(r, 'compose') as compose:
+            r.iniciar(False)
+            ups = [c.args for c in compose.call_args_list if c.args[0] == 'up']
+            self.assertEqual(len(ups), 3)
+            self.assertNotIn('preparacion-base', ups[0])
+            self.assertIn('--exit-code-from', ups[1])
+            self.assertNotIn('--wait', ups[1])
+            self.assertIn('--no-deps', ups[2])
+            self.assertEqual(list(ups[2][-6:]), r.EJECUTAR)
 
 
     def test_cierre_sigterm_de_nest_aceptado_y_sigkill_rechazado(self):
