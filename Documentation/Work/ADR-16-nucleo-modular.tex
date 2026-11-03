@@ -1,0 +1,63 @@
+\subsection*{ADR-16 --- Núcleo modular, Boletería, Operación y Trabajador; Pagos y datos compartidos}
+\textbf{Estado:} decisión acordada para la migración, implementada y ensayada en
+\texttt{feature/}\allowbreak\texttt{sebastian-arquitectura}; revisión por el equipo e integración a
+\texttt{develop} pendientes. No equivale a despliegue habitual. Fecha: 2/11/2026.
+
+\textbf{Contexto.} El coste de coordinar programas, versiones, llamadas y datos
+superaba la separación necesaria para migrar lo ya construido. Las diez aplicaciones
+existentes y los catorce servicios propuestos por ADR-14 no coincidían. El objetivo
+es conservar comportamiento y dejar ubicaciones claras para que cada integrante
+termine sus ocho CU; no completar sus pendientes durante esta reorganización.
+
+\textbf{Decisión.} Un workspace backend y cuatro responsabilidades de programa:
+Núcleo modular, Boletería, Operación y Trabajador. Existen los primeros dos y el
+consumidor de correo del Trabajador; Operación no tiene backend terminado. Pagos
+es módulo reutilizable, sin servidor propio; webhook único en Núcleo. Base
+PostgreSQL única por ocho esquemas y libro financiero único, preparación de datos
+coordinada antes de aplicaciones, conexiones nombradas y synchronize=false.
+Se conservan contratos públicos, autorización, migraciones y autoridades de Entradas.
+
+\textbf{Sustituye.} ADR-14 en granularidad/extracción y topología de catorce
+servicios; ADR-12 en la composición de su agregado; ADR-01 en servidor/base por
+dominio; ADR-06 en bases independientes/MongoDB como destino de esta migración.
+Revisa parcialmente ADR-15: llamadas internas a Pagos/Ventas pasan a interfaces
+locales y su webhook llega a Núcleo. Conserva gateway, RS256, roles, turno único,
+HMAC y los outbox/proyecciones existentes; no convierte sus garantías propuestas
+en funciones terminadas. ADR-02/03/05/07--11 conservan sus mecanismos aplicables.
+Los textos y diagramas anteriores quedan identificados como historia.
+
+\textbf{Concesiones y revisión de requisitos arquitectónicos.}
+\begin{itemize}
+\item Se acepta despliegue/versionado/migraciones coordinados y un dominio de fallo
+SQL compartido; no independencia de base por microservicio. Los pools siguen
+separados y requieren dimensionado conjunto. No se afirma aislamiento de capacidad.
+\item RNF-10 conserva escalado independiente de Boletería frente al Núcleo; el
+escalado de cada componente de Entradas deja de ser individual. Requiere nueva
+medición, no reutilizar cifras de ADR-12/14 como cumplimiento.
+\item El aislamiento de proceso de Operación se conserva como objetivo para
+CU-010/019/020. La activación con Núcleo caído y alertas con acuse siguen pendientes.
+\item No se incorpora MongoDB, índice de búsqueda, Kubernetes o réplica de lectura
+para cerrar la migración. Sus propuestas/ASR anteriores requieren revisión del
+equipo; reportes y búsquedas ausentes no se declaran cumplidos con PostgreSQL vacío.
+\item Compartir SQL no aporta atomicidad entre operaciones existentes ni elimina
+ventanas QR/proyecciones. F12/F13/F14/F15 continúan abiertos. No se modifica el SRS,
+los umbrales RNF o el reparto para aparentar cumplimiento.
+\end{itemize}
+
+\textbf{Alternativas.} Conservar todos los servidores mantiene complejidad de red y
+versiones sin evidencia de necesidad. Un único backend reduciría más procesos,
+pero perdería el aislamiento previsto de Boletería/Operación. Una plataforma nueva
+de trabajos o reescribir todos los CU ampliaría el alcance sin preservar primero
+la referencia. Se elige migración incremental y pruebas reales sobre copias.
+
+\textbf{Verificación y límites.} La evidencia local de \texttt{ESTADO-MIGRACION}
+apartado 23 cubre 830 unitarias y recorridos transferido/vacío, 73 Núcleo, 23
+Boletería y contratos financieros/correo, imágenes y gateway. Las ejecuciones
+remotas, digests y bloqueos se registran en el apartado 24 y en la solicitud de
+integración, sin equiparar YAML válido a CI/CD ejecutado. Corte/reversión habitual
+están documentados, no ejecutados. Después de escrituras nuevas volver de imagen
+no revierte datos.
+
+\textbf{Consecuencia para el equipo.} Los responsables del SRS conservan sus CU.
+Guía por integrante: \texttt{GUIA-EQUIPO-MIGRACION.md}. Completar los CU ausentes,
+F12 o evacuaciones no es requisito para terminar la migración del código existente.

@@ -15,9 +15,9 @@
 import puppeteer from 'puppeteer-core';
 import assert from 'node:assert/strict';
 
-const PORTAL = 'http://localhost:4200';
-const API = 'http://localhost:8080/api/v1'; // API Gateway (ADR-02)
-const BUZON = 'http://localhost:3098/correos';
+const PORTAL = process.env.HEXACORE_PORTAL ?? 'http://localhost:4200';
+const API = process.env.HEXACORE_API ?? 'http://localhost:8080/api/v1'; // API Gateway (ADR-02)
+const BUZON = process.env.HEXACORE_BUZON ?? 'http://localhost:3098/correos';
 const CAPTURAS = process.argv[2];
 const DEMO = 'hexacore2026';
 
@@ -140,7 +140,7 @@ try {
   }));
   assert.ok(!/ey[A-Za-z0-9_-]{10,}\./.test(almacen.local + almacen.sesion), 'ningún JWT en el almacenamiento');
   assert.ok(!almacen.cookies.includes('hxc_renovacion'), 'la cookie de renovación no es legible desde JS');
-  const cookies = await pagina.cookies('http://localhost:3002/api/v1/sesiones/renovar');
+  const cookies = await pagina.cookies(new URL('/api/v1/sesiones/renovar', PORTAL).href);
   const cookie = cookies.find((c) => c.name === 'hxc_renovacion');
   assert.ok(cookie && cookie.httpOnly && cookie.sameSite === 'Strict' && cookie.path === '/api/v1/sesiones', JSON.stringify(cookie));
   paso(`localStorage: ${almacen.local} · cookie hxc_renovacion HttpOnly, SameSite=Strict, Path=${cookie.path}`);

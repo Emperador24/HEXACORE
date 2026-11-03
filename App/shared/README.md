@@ -38,8 +38,8 @@ cubren los 13 pasos del CU-006 y sus nueve caminos alternos.
 **Se genera desde el código**, no se escribe a mano:
 
 ```bash
-cd ../services/ventas
-npm run contrato:api
+cd ../backend
+npm run contrato:api:boleteria
 ```
 
 Escrito a mano se quedaría obsoleto en cuanto alguien añadiera un campo a un DTO, y entonces
@@ -69,7 +69,7 @@ versión que no entiende debe mandar el mensaje a la cola de muertos en lugar de
 medias.
 
 La topología de RabbitMQ que lo transporta (exchange, colas y DLQ) la documenta
-`services/ventas/README.md`.
+`backend/modulos/entradas/README.md`.
 
 **Estado:** los dos contratos del CU-006 están publicados. Los demás dominios añadirán los suyos
 cuando los implementen; la convención es la misma — OpenAPI para las API REST en `api/`, JSON Schema

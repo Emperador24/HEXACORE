@@ -1,0 +1,104 @@
+# Integración aislada de Boletería
+
+Node **22.22.3**, npm ci en App/backend y Docker/Compose. Seleccionar Node con
+`cd App/backend && nvm install && nvm use`; alternativa temporal documentada en
+[las pruebas del Núcleo](../README.md). Desde raíz con Node en PATH:
+
+```bash
+npm --prefix App/backend ci
+npm --prefix App/backend run lint
+npm --prefix App/backend run test:infra
+REDIS_HOST=127.0.0.1 REDIS_PUERTO=16384 REDIS_INVENTARIO_PRUEBAS_URL=redis://127.0.0.1:16384 npm --prefix App/backend test -- --runInBand
+npm --prefix App/backend run test:boleteria
+npm --prefix App/backend run test:boleteria
+npm --prefix App/backend run verificar:infra
+npm --prefix App/backend run test:boleteria:imagen:infra
+npm --prefix App/backend run test:boleteria:imagen
+npm --prefix App/backend run test:boleteria:imagen
+# Para volver a la suite de procesos, parar solo las imágenes de esta prueba:
+docker compose -p hexacore-base-unica-e2e -f App/backend/test/docker-compose.e2e.yml -f App/backend/test/docker-compose.imagen.yml stop gateway nucleo boleteria
+# Al terminar toda la inspección:
+npm --prefix App/backend run test:limpiar
+```
+
+Proyecto **hexacore-base-unica-e2e**; sin contenedores, volúmenes ni redes externos.
+No ejecutar iniciar.sh, semillas de desarrollo ni guiones que truncan tablas.
+Los JWT usan las claves fixture de test/claves; esta suite no prueba login,
+interfaces ni un proveedor financiero real. Boletería/imagen reciben solo la
+clave pública: las firmas fixture se hacen fuera del proceso del programa.
+
+| Recurso exclusivo | Destino del host |
+|---|---|
+| PostgreSQL, usuario/contraseña cu011_e2e | 127.0.0.1:15439 |
+| Redis | 127.0.0.1:16384 |
+| RabbitMQ, vhost cu011 | 127.0.0.1:15679; administración 16779 |
+| Pasarela simulada / Núcleo auxiliar del webhook | 127.0.0.1:13105 / 13087 |
+| Proceso compilado controlado por Jest | 13096 |
+| Imagen / gateway | 127.0.0.1:13117 / 18082 |
+
+Base exclusiva **hexacore_e2e**, esquemas entradas_ventas/catalogo/postventa/acceso_qr
+(con prefijo entradas_ en cada uno) y libro finanzas_pagos compartido con Núcleo.
+Los cuatro historiales conservan 5+1+1+3 migraciones; Postventa usa **migrations**.
+La tarea preparacion-base prepara los ocho esquemas/18 historiales antes de apps,
+synchronize/migrationsRun=false. Los helpers usan opcionesPg y el destino común;
+las POSTGRES_BD_* heredadas se rechazan. [Recorridos A y B](../base-unica/README.md).
+
+`pretest:boleteria` compila; procesos.cjs reconoce historiales e inicia **un Node real** con
+`dist/apps/boleteria/main.js`. Inicia además un Núcleo compilado en 13087 para
+el webhook del simulador; no simula callbacks ni monta otro receptor en Boletería.
+Exige un PID por programa, los dos cron, una conexión AMQP y
+cinco consumidores de Boletería (se filtran sus canales, sin contar al auxiliar). VENTAS_URL apunta a un puerto inaccesible: publicación,
+transferencia y devolución deben funcionar por la interfaz local. SIGTERM debe
+terminar sin SIGKILL, con cron/outbox/consumos drenados, cuatro conexiones SQL de Entradas más finanzas-pagos, y
+clientes Redis/AMQP desaparecidos. Guarda logs en .evidencia-e2e, ignorada por Git.
+
+La suite ejecuta **23 casos**: los ocho CU-001 originales y los doce escenarios
+de referencia del primer hito, más tres comprobaciones: reconexión AMQP sin
+duplicar consumidores/outbox, cron de publicaciones y reembolso temporal parcial.
+Incluye concurrencia de reservas y de reventa, promoción, rechazo/aprobación,
+repetición de cobro sin otro movimiento, reembolso total o parcial según política,
+transferencia/historial/rotación de QR, doble ingreso concurrente, rutas internas,
+autorización/revocación y persistencia en esquemas correctos.
+
+Se reutilizan los mismos datos entre corridas: UUID nuevos, sin TRUNCATE,
+FLUSHDB, purgas ni desactivar auditoría. El historial de propietarios y el libro
+financiero quedan hasta eliminar exclusivamente los recursos del proyecto.
+El observador de compra.confirmada filtra por cliente/evento UUID del fixture:
+un outbox pendiente de otra corrida puede publicar al arrancar y no debe
+confundirse con la compra que se está comprobando. No se purga para evitarlo.
+El cron de prueba usa la configuración existente de un segundo; no sube límites.
+La prueba de reconexión cierra por HTTP de administración **solo la conexión
+hexacore-boleteria**, no reinicia RabbitMQ ni los contenedores habituales.
+
+**Consistencia:** se observa el QR inmediatamente después de transferir, se
+registra su convergencia y solo después se comprueba el rechazo del QR anterior.
+Esto acredita proyección eventual, sin invalidación inmediata. La prueba de
+expiración observa primero EXPIRADA y después la devolución a VALIDA; no promete
+atomicidad entre operaciones. Ingreso→Ventas también depende del outbox/evento.
+Liquidación/notificación de reventa aún registran lo que se enviaría, sin abono
+real ni recepción acreditada. F12/F13/F14 permanecen pendientes.
+
+El smoke construye/arranca Boletería y Nginx/njs reales. Comprueba las cinco
+familias en un mismo upstream :3001, el consumo único de turno, compra y pago,
+QR y doble ingreso, rutas internas no publicadas y revocación. No usa login ni
+interfaces. Los guiones Python históricos se conservan con referencias adaptadas;
+varios resiembran datos habituales y no forman parte de esta ejecución.
+
+F13 opcional, en otra terminal mientras está activo este proyecto:
+
+```bash
+python3 App/backend/test/boleteria/observar-recursos.py --segundos 120
+```
+
+Captura SQL, bloqueos, conexiones y recursos propios sin cambiar límites.
+CI ejecuta las suites por proceso secuencialmente sobre los mismos recursos,
+y después arranca ambas imágenes/gateway. Finalmente limpia solo este proyecto.
+[Contratos de Pagos](../pagos/README.md) incluyen login real de Identidad y compras
+de ambos módulos con su token; esta suite de Boletería conserva sus JWT fixtures.
+
+La referencia de **cinco procesos**, anterior al traslado, permanece reproducible
+en el commit **d48befff29244bdd2746ba4686c519c13a28cc4c**. Allí se ejecutan
+`test:boleteria:referencia` y correr-referencia.cjs: 20 casos repetidos, 451 pruebas
+existentes y diez migraciones. Consultar ESTADO-MIGRACION §17 para el resultado
+antes del movimiento; esos comandos se retiraron de la versión actual junto con
+los cinco servidores.

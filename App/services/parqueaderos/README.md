@@ -1,3 +1,7 @@
+> Directorio histórico, sin servidor activo. El destino del trabajo es
+> `App/backend/modulos/parqueaderos`; consultar GUIA-EQUIPO-MIGRACION.md.
+> Conservar este texto no acredita funcionalidad implementada.
+
 # Servicio de dominio de Parqueaderos
 
 SAD §9 (vista de componentes), CU-021–CU-025.

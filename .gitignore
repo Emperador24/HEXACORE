@@ -54,3 +54,7 @@ Documentation/Work/*.fdb_latexmk
 cobertura-integracion/
 cobertura-integracion.log
 .nyc_output/
+
+# Respaldos privados de ensayos/datos; nunca se versionan.
+*.dump
+*.rdb

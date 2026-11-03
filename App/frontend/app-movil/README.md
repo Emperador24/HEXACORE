@@ -25,8 +25,8 @@ Si el proyecto todavía no tiene sus carpetas de plataforma, ejecute una vez `fl
 docker compose -f ../../infra/docker-compose.yml --profile servicios up -d --build
 
 # La primera vez, los datos de ejemplo
-(cd ../../services/autenticacion && npm install && npm run semilla)
-(cd ../../services/ventas && npm install && npm run semilla)
+(cd ../../backend && npm ci && npm run semilla:identidad)
+(cd ../../backend && nvm use && npm ci && npm run semilla:ventas)
 ```
 
 La app encuentra sola los servicios en el simulador de iOS (`localhost`) y en el emulador de

@@ -63,3 +63,14 @@ Va incluida en `App/infra/docker-compose.yml`:
 docker compose -f App/infra/docker-compose.yml up -d pasarela
 curl localhost:3099/salud
 ```
+
+## Destino del callback en la arquitectura actual
+
+Núcleo y Boletería llaman a esta pasarela mediante el mismo módulo reutilizable.
+El único receptor es `POST /api/v1/pagos/webhook` de Núcleo: Compose habitual usa
+el gateway, que lo enruta a nucleo:3002. Solo Núcleo comparte SECRETO_WEBHOOK como
+PASARELA_SECRETO_WEBHOOK; Boletería no necesita ese secreto. Las pruebas exclusivas
+usan su fixture HMAC y callback propio, nunca el gateway habitual.
+No existe otro servidor Pagos. El callback actualiza el libro y publica el resultado;
+no finaliza pedidos/compras pendientes (F12). La memoria de este simulador no
+sustituye la persistencia del libro PostgreSQL ni acredita durabilidad del proveedor.

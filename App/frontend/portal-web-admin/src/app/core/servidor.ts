@@ -15,8 +15,10 @@
  * computador de al lado, sin recompilar.
  */
 const host = typeof window === 'undefined' ? 'localhost' : window.location.hostname;
+const configuracion = typeof window === 'undefined' ? undefined :
+  (window as Window & { HEXACORE_CONFIGURACION?: { api?: string } }).HEXACORE_CONFIGURACION;
 
 export const Servidor = {
   /** API Gateway: el único punto de entrada al backend. */
-  api: `http://${host}:8080/api/v1`
+  api: configuracion?.api ?? `http://${host}:8080/api/v1`
 } as const;

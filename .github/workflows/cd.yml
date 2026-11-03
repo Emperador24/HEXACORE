@@ -1,7 +1,7 @@
 # Entrega continua de HEXACORE.
 #
 # Cada vez que algo entra a `develop` o a `main`, este pipeline **construye las
-# imágenes de los siete contenedores desplegables y las publica** en el
+# imágenes desplegables de esta etapa (incluido Núcleo y los simuladores) y las publica** en el
 # registro de paquetes de GitHub (ghcr.io), etiquetadas con la rama y con el
 # identificador exacto del commit.
 #
@@ -37,157 +37,135 @@ on:
 
 env:
   REGISTRO: ghcr.io
+  COMPOSE_PARALLEL_LIMIT: '1'
+  # El único artifact permitido es el manifiesto público de digest/revisión.
+  DOCKER_BUILD_RECORD_UPLOAD: 'false'
 
 jobs:
-  imagenes:
-    name: Imagen de ${{ matrix.nombre }}
-    runs-on: ubuntu-latest
-
+  compilacion:
+    name: Compilar ${{ matrix.componente.nombre }} (${{ matrix.arquitectura }})
+    runs-on: ${{ matrix.arquitectura == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
+    timeout-minutes: 15
     permissions:
       contents: read
-      # Sin esto, el token no puede escribir en el registro de paquetes.
       packages: write
-
     strategy:
       fail-fast: false
       matrix:
-        include:
-          # Los diez microservicios de ADR-14, más el gateway y los portales.
-          # `nucleo` ya no está: se renombró a `autenticacion` cuando Pedidos
-          # salió a `alimentos`, y publicar desde una carpeta inexistente
-          # fallaba.
-          - nombre: autenticacion
-            contexto: App/services/autenticacion
-          - nombre: ventas
-            contexto: App/services/ventas
-          - nombre: postventa
-            contexto: App/services/postventa
-          - nombre: acceso-qr
-            contexto: App/services/acceso-qr
-          - nombre: catalogo
-            contexto: App/services/catalogo
-          - nombre: pagos
-            contexto: App/services/pagos
-          - nombre: cola-virtual
-            contexto: App/services/cola-virtual
-          - nombre: alimentos
-            contexto: App/services/alimentos
-          - nombre: notificaciones
-            contexto: App/services/notificaciones
-          - nombre: eventos-emergencias
-            contexto: App/services/eventos-emergencias
+        arquitectura: [amd64, arm64]
+        componente:
+          - nombre: nucleo
+            contexto: App/backend
+          - nombre: boleteria
+            contexto: App/backend
+            dockerfile: App/backend/Dockerfile.boleteria
+          - nombre: trabajador
+            contexto: App/backend
+            dockerfile: App/backend/Dockerfile.trabajador
+          - nombre: pasarela
+            contexto: App/infra/pasarela-pagos-simulada
+          - nombre: correo
+            contexto: App/infra/correo-simulado
           - nombre: gateway
             contexto: App/gateway
           - nombre: portal-cliente
             contexto: App/frontend/portal-web-cliente
           - nombre: portal-admin
             contexto: App/frontend/portal-web-admin
-
     steps:
       - uses: actions/checkout@v4
-
-      # Permite compilar para arm64 desde un runner amd64, por emulación.
-      - name: Preparar QEMU
-        uses: docker/setup-qemu-action@v3
-
-      # Hace falta para guardar la caché de compilación entre corridas: el
-      # driver que Docker trae por defecto en el runner no sabe exportarla.
-      - name: Preparar Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Entrar al registro
-        uses: docker/login-action@v3
+      - name: Exigir arquitectura nativa
+        env:
+          ESPERADA: ${{ matrix.arquitectura == 'arm64' && 'aarch64' || 'x86_64' }}
+        run: test "$(uname -m)" = "$ESPERADA"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRO }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      # Los nombres de imagen tienen que ir en minúsculas y el del repositorio
-      # no lo está (Emperador24/HEXACORE).
       - name: Nombre de la imagen
         id: imagen
-        run: echo "ruta=${REGISTRO}/$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')/hexacore-${{ matrix.nombre }}" >> "$GITHUB_OUTPUT"
-
-      - name: Etiquetas
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ steps.imagen.outputs.ruta }}
-          # Tres etiquetas por imagen:
-          #   develop / main  — la última de cada rama, que es lo que se despliega
-          #   sha-a1b2c3d     — el commit exacto, para poder volver atrás
-          #   latest          — solo desde main
-          tags: |
-            type=ref,event=branch
-            type=sha,prefix=sha-
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-
-      - name: Construir y publicar
+        run: echo "ruta=${REGISTRO}/$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')/hexacore-${{ matrix.componente.nombre }}" >> "$GITHUB_OUTPUT"
+      - name: Construir y publicar plataforma nativa
         uses: docker/build-push-action@v6
         with:
-          context: ${{ matrix.contexto }}
+          context: ${{ matrix.componente.contexto }}
+          file: ${{ matrix.componente.dockerfile || format('{0}/Dockerfile', matrix.componente.contexto) }}
           push: true
-          # Dos arquitecturas, y no es un lujo: los runners de GitHub son
-          # amd64, pero los portátiles del equipo son Mac con chip Apple
-          # (arm64). Publicando solo amd64, `./iniciar.sh --registro` falla en
-          # la máquina de la demostración con «no matching manifest».
-          platforms: linux/amd64,linux/arm64
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          # La caché de GitHub Actions evita recompilar `npm ci` en cada push.
-          cache-from: type=gha,scope=${{ matrix.nombre }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.nombre }}
+          platforms: linux/${{ matrix.arquitectura }}
+          # Etiqueta interna única por corrida; no modifica etiquetas de otras ramas.
+          tags: ${{ steps.imagen.outputs.ruta }}:construccion-${{ github.sha }}-${{ github.run_id }}-${{ matrix.arquitectura }}
+          labels: org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.componente.nombre }}-${{ matrix.arquitectura }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.componente.nombre }}-${{ matrix.arquitectura }}
 
-  # Comprueba que lo publicado **de verdad levanta**. Publicar una imagen que no
-  # arranca es peor que no publicarla: se descubre en la máquina de destino.
+  imagenes:
+    name: Manifest de ${{ matrix.nombre }}
+    needs: compilacion
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        nombre: [nucleo, boleteria, trabajador, pasarela, correo, gateway, portal-cliente, portal-admin]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRO }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Verificar plataformas y unir digests del mismo SHA
+        env:
+          RAMA: ${{ github.ref_name }}
+        run: >-
+          python3 App/backend/test/publicadas/unir-plataformas.py
+          '${{ matrix.nombre }}' "$GITHUB_SHA" "$GITHUB_RUN_ID" "$RAMA"
+          '.informe-ci/${{ matrix.nombre }}.json'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: imagen-${{ matrix.nombre }}
+          path: .informe-ci/${{ matrix.nombre }}.json
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+
   comprobacion:
-    name: El sistema publicado arranca
+    name: Digests publicados y arranque exclusivo
     needs: imagenes
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
       packages: read
-
+    defaults:
+      run:
+        working-directory: App/backend
     steps:
       - uses: actions/checkout@v4
-
-      - name: Entrar al registro
-        uses: docker/login-action@v3
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: App/backend/.nvmrc
+          cache: npm
+          cache-dependency-path: App/backend/package-lock.json
+      - run: npm ci && npm run build
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: imagen-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/hexacore-imagenes
+      - uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRO }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Levantar el sistema desde las imágenes publicadas
-        working-directory: App/infra
+      - name: Preparación, gateway, finanzas, correo y cierre desde digests
         env:
-          HEXACORE_REGISTRO: ghcr.io/emperador24
-        run: |
-          # Una rama con barra (`feature/samuel`) no es una etiqueta de imagen
-          # válida: Docker no admite `/` ahí, y la acción de metadatos la
-          # convierte en guion al publicar. Aquí se hace la misma conversión.
-          export HEXACORE_ETIQUETA="$(echo '${{ github.ref_name }}' | tr '/' '-')"
-          echo "Desplegando la etiqueta $HEXACORE_ETIQUETA"
-          docker compose -f docker-compose.yml -f docker-compose.registro.yml \
-            --profile servicios up -d
-
-      - name: Esperar a que el gateway responda
-        run: |
-          for _ in $(seq 1 60); do
-            if curl -sf http://localhost:8080/salud >/dev/null; then
-              echo "El gateway responde."
-              curl -s http://localhost:8080/api/v1/salud
-              exit 0
-            fi
-            sleep 3
-          done
-          echo "::error::El sistema publicado no llegó a responder."
-          docker compose -f App/infra/docker-compose.yml \
-            -f App/infra/docker-compose.registro.yml --profile servicios logs --tail 40
-          exit 1
-
-      - name: Apagar
-        if: always()
-        working-directory: App/infra
-        run: docker compose -f docker-compose.yml -f docker-compose.registro.yml
-             --profile servicios down -v
+          REVISION_PUBLICADA: ${{ github.sha }}
+        run: node test/publicadas/comprobar.cjs "$RUNNER_TEMP/hexacore-imagenes"
+      # Solo se suben los ocho JSON de nombre/revisión/digest. No .evidencia-e2e,
+      # logs, dumps, RDB, tokens, correos ni manifiestos privados de datos.
