@@ -1,0 +1,246 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "HEXACORE — Compra de entradas con turno (CU-001, ADR-16)",
+    "output": "06-secuencia.html",
+    "quality_profile": "standard",
+    "viewBox": [
+      1500,
+      1160
+    ],
+    "column_fit": "spread"
+  },
+  "participants": [
+    {
+      "id": "cliente",
+      "type": "frontend",
+      "label": "Portal Cliente",
+      "sublabel": "comprador"
+    },
+    {
+      "id": "gateway",
+      "type": "security",
+      "label": "API Gateway",
+      "sublabel": "Nginx/njs"
+    },
+    {
+      "id": "fila",
+      "type": "backend",
+      "label": "Fila virtual",
+      "sublabel": "Boletería"
+    },
+    {
+      "id": "ventas",
+      "type": "backend",
+      "label": "Ventas",
+      "sublabel": "Boletería"
+    },
+    {
+      "id": "pagos",
+      "type": "backend",
+      "label": "Módulo Pagos",
+      "sublabel": "local en Boletería"
+    },
+    {
+      "id": "pasarela",
+      "type": "external",
+      "label": "Pasarela",
+      "sublabel": "externa"
+    },
+    {
+      "id": "postgres",
+      "type": "database",
+      "label": "PostgreSQL",
+      "sublabel": "entradas_ventas, finanzas_pagos"
+    },
+    {
+      "id": "rabbitmq",
+      "type": "messagebus",
+      "label": "RabbitMQ",
+      "sublabel": "ventas.eventos"
+    },
+    {
+      "id": "acceso",
+      "type": "backend",
+      "label": "Acceso QR",
+      "sublabel": "Boletería"
+    }
+  ],
+  "segments": [
+    {
+      "from": 170,
+      "to": 300,
+      "label": "Turno"
+    },
+    {
+      "from": 316,
+      "to": 560,
+      "label": "Reserva"
+    },
+    {
+      "from": 576,
+      "to": 940,
+      "label": "Pago"
+    },
+    {
+      "from": 956,
+      "to": 1060,
+      "label": "Después"
+    }
+  ],
+  "messages": [
+    {
+      "from": "cliente",
+      "to": "gateway",
+      "y": 190,
+      "label": "POST /cola/eventos/:id/turnos",
+      "variant": "emphasis"
+    },
+    {
+      "from": "gateway",
+      "to": "fila",
+      "y": 230,
+      "label": "reenvía con JWT verificado"
+    },
+    {
+      "from": "fila",
+      "to": "cliente",
+      "y": 270,
+      "label": "token de turno",
+      "variant": "return"
+    },
+    {
+      "from": "cliente",
+      "to": "gateway",
+      "y": 340,
+      "label": "POST /compras + X-Turno-Cola",
+      "variant": "emphasis"
+    },
+    {
+      "from": "gateway",
+      "to": "fila",
+      "y": 380,
+      "label": "DELETE /interno/cola/turnos/:token",
+      "variant": "security"
+    },
+    {
+      "from": "fila",
+      "to": "gateway",
+      "y": 420,
+      "label": "204 · turno gastado",
+      "variant": "return"
+    },
+    {
+      "from": "gateway",
+      "to": "ventas",
+      "y": 460,
+      "label": "reenvía la reserva"
+    },
+    {
+      "from": "ventas",
+      "to": "postgres",
+      "y": 500,
+      "label": "compra PENDIENTE + cupo"
+    },
+    {
+      "from": "ventas",
+      "to": "cliente",
+      "y": 540,
+      "label": "201 · compra reservada",
+      "variant": "return"
+    },
+    {
+      "from": "cliente",
+      "to": "gateway",
+      "y": 600,
+      "label": "POST /compras/:id/pagar",
+      "variant": "emphasis"
+    },
+    {
+      "from": "gateway",
+      "to": "ventas",
+      "y": 640,
+      "label": "reenvía el pago"
+    },
+    {
+      "from": "ventas",
+      "to": "postgres",
+      "y": 680,
+      "label": "marca PAGANDO"
+    },
+    {
+      "from": "ventas",
+      "to": "pagos",
+      "y": 720,
+      "label": "cobrar(clave idempotente)",
+      "variant": "emphasis"
+    },
+    {
+      "from": "pagos",
+      "to": "pasarela",
+      "y": 760,
+      "label": "HTTP cobro"
+    },
+    {
+      "from": "pasarela",
+      "to": "pagos",
+      "y": 800,
+      "label": "aprobado / rechazado / incierto",
+      "variant": "return"
+    },
+    {
+      "from": "pagos",
+      "to": "postgres",
+      "y": 840,
+      "label": "registra en el libro"
+    },
+    {
+      "from": "ventas",
+      "to": "postgres",
+      "y": 880,
+      "label": "CONFIRMADA + entradas + outbox",
+      "variant": "emphasis"
+    },
+    {
+      "from": "ventas",
+      "to": "cliente",
+      "y": 920,
+      "label": "entradas con QR",
+      "variant": "return"
+    },
+    {
+      "from": "ventas",
+      "to": "rabbitmq",
+      "y": 990,
+      "label": "outbox → compra.confirmada",
+      "variant": "dashed"
+    },
+    {
+      "from": "rabbitmq",
+      "to": "acceso",
+      "y": 1030,
+      "label": "proyecta el QR",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Turno gastado en el gateway",
+      "items": [
+        "Sin turno válido del mismo usuario, la reserva no llega a Ventas",
+        "El cobro es una llamada local al módulo Pagos, no un servicio aparte"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Lo que no garantiza",
+      "items": [
+        "Si la pasarela no responde, la compra queda PAGANDO hasta reintento o conciliación",
+        "El webhook posterior llega al Núcleo y actualiza el libro, pero no finaliza la compra (F12)",
+        "El QR en la puerta converge por eventos, no al instante"
+      ]
+    }
+  ]
+}

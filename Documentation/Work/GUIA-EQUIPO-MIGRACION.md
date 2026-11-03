@@ -1,9 +1,10 @@
 # Continuar el desarrollo después de la migración
 
-La rama feature/sebastian-arquitectura migra **lo existente**. No entrega los 32 CU
-completos. La revisión hacia develop sigue en borrador hasta resolver o identificar
-sus bloqueos; cada integrante conserva el reparto del SRS (§5, tabla reparto).
-ADR-16 sustituye la topología anterior; requisitos de negocio y RNF no cambian.
+La rama feature/sebastian-arquitectura migró **lo existente** y se integró en develop
+mediante el PR #44 (2/11/2026). No entrega los 32 CU completos: cada integrante
+conserva el reparto del SRS (§5, tabla reparto) y continúa en su propia rama
+`feature/<nombre>` a partir de develop. ADR-16 sustituye la topología anterior;
+requisitos de negocio y RNF no cambian. El corte del entorno habitual sigue pendiente.
 
 ## Ubicaciones y responsables
 
@@ -33,8 +34,10 @@ La migración no reasigna a Sebastián los pendientes del resto.
 
 ## Instalar, preparar y arrancar
 
-Para revisión manual de **esta rama**, sin integrar previamente:
-[guía local para Sebastián y el compañero](../../App/infra/revision/README.md).
+Para revisión manual aislada:
+[guía del entorno local de revisión](../../App/infra/revision/README.md).
+Su guion solo arranca desde la rama `feature/sebastian-arquitectura`
+(comprobación de `App/infra/revision/revision.py`); desde otra rama se rechaza.
 Construye desde fuentes y aísla datos, proveedores, claves, cookies y puertos;
 la primera carga demo es explícita y los siguientes arranques conservan cambios.
 Los comandos generales de desarrollo que siguen no sustituyen ese aislamiento.
@@ -111,15 +114,29 @@ Los tests financieros comprueban que webhook no finaliza pedidos inciertos: eso 
 F12 caracterizado, no resuelto. Las esperas QR son convergencia, no garantía inmediata.
 No interpretar la repetición aprobada como solución de F13/F15 intermitentes.
 
-Revisar PR hacia develop sin mezclar automáticamente. Coordinar archivos compartidos
+Integrar hacia develop por PR revisado, sin auto-merge. Coordinar archivos compartidos
 (package.json/lockfile, composición, preparación y contratos), mantener una fuente de
-reglas por dominio y agregar pruebas relevantes sin quitar aserciones anteriores.
-La solicitud de esta migración permanece en borrador; no habilitar auto-merge.
+reglas por dominio y agregar pruebas relevantes. La migración ya está en develop.
+
+## Datos de demostración
+
+Las semillas de Entradas (Ventas, Catálogo, Postventa y Acceso QR) contienen solo
+eventos publicados y vigentes: HEXACORE Fest, Rock Nacional, Gala, Feria Gastronómica,
+Sinfónica, Clásico, Salsa al Parque, Coffee Week y Stand-up. Se retiraron los fixtures
+que la aplicación no podía usar: Jazz al Atardecer (fuera de plazo), Festival de
+Verano (pasado), El Mago de Oz (borrador), Torneo de Voleibol (cancelado), sus
+localidades, las entradas usada/anulada/de evento pasado y los cupones `ULTIMO` y
+`VERANO5`. Los casos de las pruebas Python que dependían de ellos (compra parcial,
+evento no a la venta, cupón vencido o agotado, cancelación fuera de plazo, puerta de
+evento cancelado, borrador/cancelado/pasado en cartelera) se quitaron y deben
+rehacerse con datos propios de cada prueba. Los volcados SQL de las ocho bases
+antiguas (`App/infra/datos-demo/*.sql`) se eliminaron. Detalle en ESTADO-MIGRACION §26.
 
 ## Evidencia y documentos
 
-ADR-16 / ArquitecturaVigente.tex / Diagrams/Vigente son fuentes actuales. Historico,
-ADR anteriores, Archify y PoCs conservan decisiones/mediciones previas, no inventario
+ADR-16 / ArquitecturaVigente.tex y los siete diagramas de Diagrams/Archify (incluidos en
+LaTeX desde Diagrams/ArchifyPDF) son fuentes actuales; §26 de ESTADO-MIGRACION registra
+la integración a develop. Historico, ADR anteriores y PoCs conservan decisiones/mediciones previas, no inventario
 vigente. ESTADO-MIGRACION §23 guarda referencia local; §24 registra CI/CD reales,
 digests y bloqueos. Los PDF solo se actualizan después de compilar las fuentes.
 

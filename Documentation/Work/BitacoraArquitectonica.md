@@ -9,6 +9,35 @@ semestre** — no reescribir entradas pasadas, solo añadir nuevas.
 Cada entrada nueva va arriba (orden cronológico inverso), con este formato:
 
 ```
+## AAAA-MM-DD — Título breve
+
+**Tipo:** Reunión / Decisión de diseño / Cambio arquitectónico / Análisis / PoC
+
+**Contexto:** ...
+**Decisión / resultado:** ...
+**Alternativas consideradas:** ...
+**Ventajas / desventajas:** ...
+**Riesgos técnicos:** ...
+**Participantes:** ...
+```
+
+---
+
+## 2026-11-02 — Integración de ADR-16 en develop y limpieza de datos demo
+
+**Tipo:** Cambio arquitectónico
+
+**Contexto:** la migración a Núcleo, Boletería y Trabajador (ADR-16) estaba revisada en su rama.
+**Decisión / resultado:** el PR #44 se fusionó en develop y develop se llevó a `feature/samuel`.
+La documentación vigente pasa a describir la arquitectura integrada. Se retiran de las semillas
+los eventos, entradas y cupones que la aplicación no puede usar, y los volcados SQL antiguos.
+Se rehacen los siete diagramas C4 con Archify como fuente única; LaTeX incluye sus PDF.
+**Alternativas consideradas:** mantener los fixtures para las pruebas Python históricas; se
+descartó porque mostraban en la cartelera eventos que no se pueden comprar.
+**Ventajas / desventajas:** la demo muestra solo eventos utilizables; varias pruebas Python
+pierden casos y deben rehacerse con datos propios.
+**Riesgos técnicos:** el corte del entorno habitual sigue sin ejecutarse.
+**Participantes:** Samuel Emperador (vía asistente).
 
 ## 2026-11-02 — ADR-16 y cierre técnico revisable
 
@@ -21,19 +50,6 @@ Las vistas activas se actualizan; fuentes anteriores quedan en Historico. Se
 publican guía por integrante y procedimiento de corte/reversión **sin ejecutarlo**.
 CI/CD, digests y bloqueos reales se registran por revisión en ESTADO-MIGRACION §24.
 La revisión hacia develop permanece en borrador, sin autorización de mezcla.
-
-
-## AAAA-MM-DD — Título breve
-
-**Tipo:** Reunión / Decisión de diseño / Cambio arquitectónico / Análisis / PoC
-
-**Contexto:** ...
-**Decisión / resultado:** ...
-**Alternativas consideradas:** ...
-**Ventajas / desventajas:** ...
-**Riesgos técnicos:** ...
-**Participantes:** ...
-```
 
 ---
 

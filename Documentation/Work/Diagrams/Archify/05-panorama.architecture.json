@@ -1,0 +1,164 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "HEXACORE — Panorama de sistemas (ADR-16)",
+    "output": "05-panorama.html",
+    "quality_profile": "standard",
+    "viewBox": [
+      1300,
+      560
+    ]
+  },
+  "components": [
+    {
+      "id": "sistema",
+      "type": "backend",
+      "label": "HEXACORE",
+      "sublabel": "Sistema Integral de Gestión de Eventos",
+      "pos": [
+        20,
+        230
+      ],
+      "size": [
+        300,
+        90
+      ]
+    },
+    {
+      "id": "pasarela",
+      "type": "external",
+      "label": "Pasarela de pagos",
+      "sublabel": "integrada · simulada en pruebas",
+      "pos": [
+        640,
+        40
+      ],
+      "size": [
+        280,
+        64
+      ]
+    },
+    {
+      "id": "correo",
+      "type": "external",
+      "label": "Proveedor de correo",
+      "sublabel": "integrado · simulado en pruebas",
+      "pos": [
+        640,
+        160
+      ],
+      "size": [
+        280,
+        64
+      ]
+    },
+    {
+      "id": "contabilidad",
+      "type": "external",
+      "label": "Contabilidad y facturación",
+      "sublabel": "propuesto · sin integración",
+      "pos": [
+        640,
+        330
+      ],
+      "size": [
+        280,
+        64
+      ]
+    },
+    {
+      "id": "crm",
+      "type": "external",
+      "label": "CRM y marketing",
+      "sublabel": "propuesto · sin integración",
+      "pos": [
+        640,
+        450
+      ],
+      "size": [
+        280,
+        64
+      ]
+    },
+    {
+      "id": "bi",
+      "type": "external",
+      "label": "Analítica (BI)",
+      "sublabel": "propuesto · sin integración",
+      "pos": [
+        1020,
+        390
+      ],
+      "size": [
+        240,
+        64
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "sistema-pasarela",
+      "from": "sistema",
+      "to": "pasarela",
+      "label": "cobros, reembolsos y webhook",
+      "variant": "emphasis",
+      "labelSegment": 2
+    },
+    {
+      "id": "sistema-correo",
+      "from": "sistema",
+      "to": "correo",
+      "label": "verificación y recuperación",
+      "labelSegment": 2
+    },
+    {
+      "id": "sistema-contabilidad",
+      "from": "sistema",
+      "to": "contabilidad",
+      "label": "ventas y reembolsos",
+      "variant": "dashed",
+      "labelSegment": 2
+    },
+    {
+      "id": "sistema-crm",
+      "from": "sistema",
+      "to": "crm",
+      "label": "clientes e historial",
+      "variant": "dashed",
+      "labelSegment": 2
+    },
+    {
+      "id": "crm-bi",
+      "from": "crm",
+      "to": "bi",
+      "label": "segmentos",
+      "variant": "dashed"
+    },
+    {
+      "id": "contabilidad-bi",
+      "from": "contabilidad",
+      "to": "bi",
+      "label": "métricas",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Integrados hoy",
+      "items": [
+        "Pasarela de pagos: cobros y reembolsos desde el módulo Pagos; resultado por webhook HMAC al Núcleo",
+        "Proveedor de correo: el Trabajador envía los correos de cuenta"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Propuestos (línea discontinua)",
+      "items": [
+        "Contabilidad, CRM y analítica vienen del panorama anterior",
+        "No hay integración implementada ni contrato acordado"
+      ]
+    }
+  ]
+}

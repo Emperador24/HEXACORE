@@ -111,7 +111,7 @@ respondiendo 200 (RNF-03).
 
 ## CORS
 
-Vive aquí y no en cada servicio: los microservicios no hablan con navegadores, hablan con el gateway.
+Vive aquí y no en cada programa: Núcleo y Boletería no hablan con navegadores, hablan con el gateway.
 En desarrollo se aceptan los portales en 4200 y 4201 desde cualquier máquina de la red —para poder
 abrirlos desde otro computador— y la comprobación previa (`OPTIONS`) se responde en el gateway sin
 tocar ningún servicio. En producción esa lista se reduce a los dominios reales.

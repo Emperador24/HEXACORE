@@ -28,8 +28,8 @@ import uuid
 
 from venta import (
     API_ACCESO,
-    FEST, FEST_GENERAL, FEST_PALCO, JAZZ_TERRAZA, PORTERO, ROCK_GENERAL,
-    SINFONICA_LUNETA, STANDUP_GENERAL, VOLEIBOL,
+    FEST, FEST_GENERAL, FEST_PALCO, PORTERO, ROCK_GENERAL,
+    SINFONICA_LUNETA, STANDUP_GENERAL,
     comprar, correr, esperar, pedir, resembrar, sql, titulo,
 )
 
@@ -123,23 +123,6 @@ def reembolso_parcial():
     assert estado == 200 and r['montoReembolso'] == 70000, (estado, r)
     assert r['porcentajeReembolso'] == 50
     print(f"  a 4 días: 140000 pagados → {r['montoReembolso']} devueltos (50 %)")
-
-
-def fuera_de_plazo():
-    titulo('Paso 3 — fuera del plazo de cancelación')
-    comprador = alguien()
-    # El Jazz empieza en menos de un día: por debajo de las 48 horas.
-    compra = comprar(comprador, JAZZ_TERRAZA, 1)
-
-    estado, r = cotizar(comprador, compra)
-    assert estado == 409 and r['codigo'] == 'CANCELACION_FUERA_DE_PLAZO', (estado, r)
-    assert '48 horas antes' in r['mensaje'], r['mensaje']
-
-    # Y cancelar directamente tampoco, no solo cotizar.
-    estado, intento = cancelar(comprador, compra, 150000)
-    assert estado == 409 and intento['codigo'] == 'CANCELACION_FUERA_DE_PLAZO', (estado, intento)
-    assert sql(f"SELECT estado FROM entradas WHERE compra_id='{compra['id']}'") == 'VALIDA'
-    print(f"  a menos de 48 h → {r['mensaje']}")
 
 
 def evento_cancelado_devuelve_todo():
@@ -353,7 +336,6 @@ if __name__ == '__main__':
         cotizacion_total,
         camino_feliz,
         reembolso_parcial,
-        fuera_de_plazo,
         evento_cancelado_devuelve_todo,
         cancelacion_parcial_de_entradas,
         ninguna_cancelable,

@@ -1,7 +1,7 @@
 # Documentation/Work
 
-Fuentes editables de la documentación: los `.tex`, el `.md` de la bitácora y `Diagrams/` (los
-`.drawio`/`.png` de draw.io y los diagramas interactivos de Archify). **Nada más va aquí.**
+Fuentes editables de la documentación: los `.tex`, el `.md` de la bitácora y `Diagrams/` (las
+especificaciones JSON de Archify, sus HTML interactivos y los PDF que incluye LaTeX). **Nada más va aquí.**
 
 - Los **PDF compilados** van solo en `../Submission/` — nunca se dejan en `Work/`.
 - Los subproductos de LaTeX (`.aux .log .out .toc .fls .fdb_latexmk`) son basura de compilación
@@ -47,14 +47,16 @@ latexmk -c NombreDelDocumento.tex           # limpia .aux/.log/.out/.toc/.fls/.f
 ## Vigencia de la entrega técnica de migración (ADR-16)
 
 - Arquitectura implementada: `ArquitecturaVigente.tex`, compartida por SAD,
-  propuesta, resumen y C4; diagramas nativos en `Diagrams/Vigente/diagramas.tex`.
+  propuesta, resumen y C4. Diagramas: siete vistas C4 en `Diagrams/Archify/*.json` (fuente),
+  `Diagrams/Archify/*.html` (interactivos) y `Diagrams/ArchifyPDF/*.pdf`, que las macros de
+  `Diagrams/Vigente/diagramas.tex` incluyen en todos los documentos. Ver `Diagrams/Archify/README.md`.
 - Decisión: `ADR-16-nucleo-modular.tex`. Los ADR anteriores conservan su historia,
   con indicación de qué decisiones sustituye/revisa ADR-16.
 - Equipo y pendientes: [GUIA-EQUIPO-MIGRACION.md](GUIA-EQUIPO-MIGRACION.md).
 - Corte/reversión **no ejecutados**: [CORTE-Y-REVERSION.md](CORTE-Y-REVERSION.md).
 - Evidencia local/remota y límites: ESTADO-MIGRACION §23–24.
-- `Historico/` guarda las fuentes/vistas anteriores; los Drawio/Archify anteriores
-  no describen la topología vigente. No borrar esos antecedentes para aparentar coherencia.
+- `Historico/` guarda las fuentes/vistas anteriores, incluidos los diagramas draw.io de agosto
+  (`Historico/Diagramas-drawio/`); no describen la topología vigente. No borrar esos antecedentes para aparentar coherencia.
 
 Compilar las cinco fuentes actualizadas con salida en un directorio temporal
 (`latexmk -pdf -outdir=/ruta/temporal Documento.tex`), revisar referencias/figuras y

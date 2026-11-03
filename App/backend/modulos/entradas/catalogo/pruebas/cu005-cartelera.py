@@ -23,7 +23,7 @@ Resiembra al empezar, así que no depende del estado que dejen otras pruebas.
 import sys
 
 from cartelera import (
-    CAFE, CLASICO, FEST, GALA, JAZZ, MAGO, ROCK, SALSA, STANDUP, VERANO, VOLEIBOL,
+    CAFE, CLASICO, FEST, GALA, ROCK, SALSA, STANDUP,
     correr, pedir, resembrar, titulo,
 )
 
@@ -42,36 +42,6 @@ def listado_por_defecto():
     assert fechas == sorted(fechas), 'CU-005A: el orden por defecto es por fecha'
     assert all(e['pasado'] is False for e in r['eventos']), 'un evento ya celebrado no va en el listado'
     print(f"  {r['total']} eventos, ordenados por fecha · el primero es {r['eventos'][0]['nombre']}")
-
-
-def lo_que_no_debe_verse():
-    titulo('Pasos 1-5 — borrador, cancelado y pasado quedan fuera')
-    _, r = pedir('GET', 'cartelera?limite=100')
-    visibles = ids(r)
-
-    assert MAGO not in visibles, 'un evento en BORRADOR no se anuncia'
-    assert VOLEIBOL not in visibles, 'un evento CANCELADO no se anuncia'
-    assert VERANO not in visibles, 'un evento ya celebrado no va por defecto'
-
-    # Y su detalle responde 404, no un 200 con datos a medias.
-    for evento, que in ((MAGO, 'borrador'), (VOLEIBOL, 'cancelado')):
-        estado, detalle = pedir('GET', f'cartelera/{evento}')
-        assert estado == 404 and detalle['codigo'] == 'EVENTO_NO_ENCONTRADO', (que, estado, detalle)
-    print('  borrador y cancelado: fuera del listado y 404 en el detalle')
-
-
-def incluir_pasados():
-    titulo('Paso 2 — `incluirPasados` sí trae los ya celebrados')
-    _, r = pedir('GET', 'cartelera?incluirPasados=true&limite=100')
-
-    assert VERANO in ids(r), 'con incluirPasados debería aparecer el Festival de Verano'
-    pasado = next(e for e in r['eventos'] if e['id'] == VERANO)
-    assert pasado['pasado'] is True
-    # "false" es texto, y en JavaScript cualquier texto no vacío es verdadero:
-    # el DTO lo convierte a propósito para que esto no cuele.
-    _, sin = pedir('GET', 'cartelera?incluirPasados=false&limite=100')
-    assert VERANO not in ids(sin), '"false" debe entenderse como falso, no como "hay texto"'
-    print('  incluirPasados=true lo trae · =false no · marcado pasado=True')
 
 
 def filtros():
@@ -105,8 +75,7 @@ def filtros():
 
 def filtro_por_rango():
     titulo('Paso 2 — rango de fechas, y el rango imposible')
-    # CAFE está a 9 días y JAZZ a menos de uno: un rango de los próximos 20
-    # días los trae a los dos y deja fuera el FEST, que está a 90.
+    # Un rango hasta el tercer evento más próximo deja fuera el FEST, que está a 90 días.
     _, r = pedir('GET', 'cartelera?limite=100')
     hasta = sorted(e['fechaInicio'] for e in r['eventos'])[2][:10]
     _, rango = pedir('GET', f'cartelera?hasta={hasta}&limite=100')
@@ -164,10 +133,8 @@ def orden_por_relevancia():
 
     assert r['total'] > 0
     # Salsa al Parque tiene sus dos localidades vendidas por completo: es el
-    # de mayor ocupación, y por eso encabeza. El Clásico (19 100 de 20 000)
-    # va detrás del Jazz (97 de 100) por el mismo criterio.
+    # de mayor ocupación, y por eso encabeza.
     assert ids(r)[0] == SALSA, (ids(r)[:3],)
-    assert ids(r).index(JAZZ) < ids(r).index(CLASICO), (ids(r)[:4],)
     _, fecha = pedir('GET', 'cartelera?orden=fecha&limite=100')
     assert ids(r) != ids(fecha), 'relevancia y fecha no deberían dar el mismo orden'
     print(f"  el primero por relevancia es {r['eventos'][0]['nombre']}")
@@ -278,8 +245,6 @@ if __name__ == '__main__':
     resembrar()
     sys.exit(correr([
         listado_por_defecto,
-        lo_que_no_debe_verse,
-        incluir_pasados,
         filtros,
         filtro_por_rango,
         filtros_invalidos,

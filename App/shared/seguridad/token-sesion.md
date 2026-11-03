@@ -1,7 +1,7 @@
 # Contrato: token de sesión
 
-Lo emite el **Servicio de Administración** (CU-027, paso 9) y lo exige todo microservicio con
-endpoints de negocio (RNF-06). Este documento es lo que los servicios tienen que acordar; cambiar
+Lo emite el módulo **Identidad** del Núcleo (CU-027, paso 9) y lo exigen el gateway y todo módulo con
+endpoints de negocio, en Núcleo y Boletería (RNF-06). Este documento es lo que esos programas tienen que acordar; cambiar
 cualquiera de estos puntos en un lado sin cambiarlo en el otro rompe la autenticación o, peor, la
 debilita sin que nadie lo note.
 

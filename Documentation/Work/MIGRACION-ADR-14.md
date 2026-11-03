@@ -1,5 +1,9 @@
 # De ADR-12 a ADR-14 — distancia real y orden de migración
 
+> **Histórico.** ADR-16 sustituyó la topología de ADR-14/15 y su migración ya está
+> integrada en develop. Este documento conserva el plan anterior; la arquitectura
+> vigente está en `ArquitecturaVigente.tex` y el estado en `ESTADO-MIGRACION.md` §26.
+
 Mide lo que separa el sistema desplegado hoy del diseño de ADR-14, y ordena el
 camino. Se escribió el 24 oct 2026, cuando no había nada hecho; las fases A y B
 ya se ejecutaron y lo dicen en su propia sección.

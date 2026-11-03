@@ -35,7 +35,7 @@ from datetime import datetime, timedelta, timezone
 from venta import (
     API_ACCESO,
     CAFE_GENERAL, FEST, FEST_GENERAL, FEST_PALCO, GALA, GALA_PLATEA, PORTERO, ROCK,
-    ROCK_GENERAL, SINFONICA_LUNETA, VOLEIBOL,
+    ROCK_GENERAL, SINFONICA_LUNETA,
     comprar, correr, esperar_en_puerta, pedir, resembrar, sql, titulo,
 )
 
@@ -121,14 +121,12 @@ def qr_invalido():
     estado, bien = validar(compra['entradas'][0]['codigoQr'], evento=ROCK)
     assert estado == 200 and bien['autorizado'] is True, (estado, bien)
 
-    # Un evento que no existe, y uno cancelado.
+    # Un evento que no existe.
     estado, sin_evento = validar('HXC-QR-000001', evento='e0000099-0000-4000-8000-000000000099')
     assert estado == 404 and 'el evento no existe' in sin_evento['mensaje'], sin_evento
-    estado, cancelado = validar('HXC-QR-000001', evento=VOLEIBOL)
-    assert estado == 404 and 'el evento fue cancelado' in cancelado['mensaje'], cancelado
 
     assert asistentes(FEST) == antes, 'ningún rechazo puede tocar el aforo'
-    print('  inexistente · de otro evento · evento inexistente · evento cancelado → CU-002A')
+    print('  inexistente · de otro evento · evento inexistente → CU-002A')
 
 
 def qr_anulado_o_en_reventa():

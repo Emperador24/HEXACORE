@@ -1,0 +1,382 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "HEXACORE — Componentes de Boletería (ADR-16)",
+    "output": "04-componentes-boleteria.html",
+    "quality_profile": "standard",
+    "viewBox": [
+      1600,
+      880
+    ]
+  },
+  "components": [
+    {
+      "id": "redis",
+      "type": "database",
+      "label": "Redis",
+      "sublabel": "fila · candados con testigo · revocación",
+      "pos": [
+        60,
+        10
+      ],
+      "size": [
+        280,
+        64
+      ]
+    },
+    {
+      "id": "gateway",
+      "type": "security",
+      "label": "API Gateway",
+      "sublabel": "JWT RS256 público · exige turno en /compras",
+      "pos": [
+        600,
+        10
+      ],
+      "size": [
+        420,
+        64
+      ]
+    },
+    {
+      "id": "catalogo",
+      "type": "backend",
+      "label": "Catálogo",
+      "sublabel": "/cartelera · eventos y localidades",
+      "pos": [
+        60,
+        200
+      ],
+      "size": [
+        260,
+        72
+      ]
+    },
+    {
+      "id": "fila",
+      "type": "backend",
+      "label": "Fila virtual",
+      "sublabel": "/cola · /interno/cola/turnos",
+      "pos": [
+        350,
+        200
+      ],
+      "size": [
+        260,
+        72
+      ]
+    },
+    {
+      "id": "ventas",
+      "type": "backend",
+      "label": "Ventas",
+      "sublabel": "/compras · promociones · cancelación · QR",
+      "pos": [
+        640,
+        200
+      ],
+      "size": [
+        280,
+        72
+      ]
+    },
+    {
+      "id": "postventa",
+      "type": "backend",
+      "label": "Postventa",
+      "sublabel": "/reventa · publicación y checkout",
+      "pos": [
+        1020,
+        200
+      ],
+      "size": [
+        250,
+        72
+      ]
+    },
+    {
+      "id": "acceso",
+      "type": "backend",
+      "label": "Acceso QR",
+      "sublabel": "/ingresos · validación en puerta",
+      "pos": [
+        1300,
+        200
+      ],
+      "size": [
+        250,
+        72
+      ]
+    },
+    {
+      "id": "pagos",
+      "type": "backend",
+      "label": "Módulo Pagos",
+      "sublabel": "API local · usado por Ventas y Postventa",
+      "pos": [
+        350,
+        420
+      ],
+      "size": [
+        260,
+        72
+      ]
+    },
+    {
+      "id": "ventas_async",
+      "type": "backend",
+      "label": "Ventas · segundo plano",
+      "sublabel": "outbox · cron de reservas · consume ingresos",
+      "pos": [
+        640,
+        420
+      ],
+      "size": [
+        280,
+        72
+      ]
+    },
+    {
+      "id": "postventa_async",
+      "type": "backend",
+      "label": "Postventa · segundo plano",
+      "sublabel": "cron de expiración · liquidaciones",
+      "pos": [
+        1020,
+        420
+      ],
+      "size": [
+        250,
+        72
+      ]
+    },
+    {
+      "id": "acceso_async",
+      "type": "backend",
+      "label": "Acceso QR · segundo plano",
+      "sublabel": "proyección de QR · outbox de ingresos",
+      "pos": [
+        1300,
+        420
+      ],
+      "size": [
+        250,
+        72
+      ]
+    },
+    {
+      "id": "postgres",
+      "type": "database",
+      "label": "PostgreSQL · base hexacore",
+      "sublabel": "entradas_ventas, _catalogo, _postventa, _acceso_qr y finanzas_pagos",
+      "pos": [
+        60,
+        680
+      ],
+      "size": [
+        460,
+        76
+      ]
+    },
+    {
+      "id": "pasarela",
+      "type": "external",
+      "label": "Pasarela de pagos",
+      "sublabel": "externa",
+      "pos": [
+        560,
+        680
+      ],
+      "size": [
+        240,
+        72
+      ]
+    },
+    {
+      "id": "rabbitmq",
+      "type": "messagebus",
+      "label": "RabbitMQ",
+      "sublabel": "ventas.eventos · reventa.eventos · acceso.eventos",
+      "pos": [
+        880,
+        680
+      ],
+      "size": [
+        660,
+        72
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Boletería · NestJS :3001 · un proceso, replicable",
+      "wraps": [
+        "catalogo",
+        "fila",
+        "ventas",
+        "postventa",
+        "acceso",
+        "pagos",
+        "ventas_async",
+        "postventa_async",
+        "acceso_async"
+      ],
+      "pad": 24
+    }
+  ],
+  "connections": [
+    {
+      "id": "gw-catalogo",
+      "from": "gateway",
+      "to": "catalogo",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "gw-fila",
+      "from": "gateway",
+      "to": "fila",
+      "label": "gasta el turno",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "variant": "security"
+    },
+    {
+      "id": "gw-ventas",
+      "from": "gateway",
+      "to": "ventas",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "variant": "emphasis"
+    },
+    {
+      "id": "gw-postventa",
+      "from": "gateway",
+      "to": "postventa",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "gw-acceso",
+      "from": "gateway",
+      "to": "acceso",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "fila-redis",
+      "from": "fila",
+      "to": "redis",
+      "label": "turnos",
+      "fromSide": "left",
+      "toSide": "bottom"
+    },
+    {
+      "id": "postventa-ventas",
+      "from": "postventa",
+      "to": "ventas",
+      "label": "API local",
+      "fromSide": "left",
+      "toSide": "right"
+    },
+    {
+      "id": "ventas-pagos",
+      "from": "ventas",
+      "to": "pagos",
+      "label": "cobro y reembolso",
+      "fromSide": "bottom",
+      "toSide": "right",
+      "variant": "emphasis"
+    },
+    {
+      "id": "ventas-async",
+      "from": "ventas",
+      "to": "ventas_async",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "postventa-async",
+      "from": "postventa",
+      "to": "postventa_async",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "acceso-async",
+      "from": "acceso",
+      "to": "acceso_async",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "catalogo-pg",
+      "from": "catalogo",
+      "to": "postgres",
+      "label": "una conexión por componente",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "pagos-pasarela",
+      "from": "pagos",
+      "to": "pasarela",
+      "label": "HTTP",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "ventas-rabbit",
+      "from": "ventas_async",
+      "to": "rabbitmq",
+      "label": "compra.*, entrada.actualizada",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "postventa-rabbit",
+      "from": "postventa_async",
+      "to": "rabbitmq",
+      "label": "entrada transferida",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "acceso-rabbit",
+      "from": "acceso_async",
+      "to": "rabbitmq",
+      "label": "ingreso.registrado",
+      "fromSide": "bottom",
+      "toSide": "top"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Cinco componentes, un proceso",
+      "items": [
+        "Cada uno conserva su conexión, su esquema y sus reglas",
+        "Ventas es la autoridad de la entrada y su QR; Acceso QR mantiene una proyección"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Consistencia por eventos",
+      "items": [
+        "Dos outbox (Ventas y Acceso QR) publican después de confirmar la transacción",
+        "Acceso QR consume compra.confirmada y entrada.actualizada; Ventas consume ingreso.registrado",
+        "Compartir proceso no vuelve atómicas esas operaciones"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Relaciones no dibujadas",
+      "items": [
+        "Todos los componentes escriben en su propio esquema",
+        "Ventas y Postventa usan candados en Redis; Postventa también cobra por el módulo Pagos"
+      ]
+    }
+  ]
+}

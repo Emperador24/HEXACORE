@@ -3,7 +3,7 @@
 Fecha de revisión: **2 de noviembre de 2026**, America/Bogota.
 Rama `feature/sebastian-arquitectura`, cierre técnico desde
 **6e2260a31651760f5867e7c3e0f121fbcc0f802f**. HEAD y trabajo local comprobados sin
-reset/stash/descarte. Pedidos se conserva aparte. **§25 es el estado vigente**;
+reset/stash/descarte. Pedidos se conserva aparte. **§26 es el estado vigente**;
 las secciones anteriores conservan evidencia histórica de cada entrega.
 
 **Revisión manual local (§25):** desde HEAD comprobado
@@ -11,8 +11,8 @@ las secciones anteriores conservan evidencia histórica de cada entrega.
 construido desde fuentes en esta rama. Comando inicial explícito
 `./App/infra/revision.sh iniciar --datos-demo`; siguientes arranques sin esa opción.
 [Guía, URLs, cuentas y límites](../../App/infra/revision/README.md). Pruebas reales
-de Chrome, HTTP, preparación y persistencia registradas abajo. PR #44 permanece
-en borrador, sin auto-merge ni integración. El entorno habitual y las referencias
+de Chrome, HTTP, preparación y persistencia registradas abajo. PR #44 se integró
+en develop el 2/11/2026 (§26). El entorno habitual y las referencias
 A/B se conservan; el nuevo entorno tiene recursos, claves y cookies propios.
 
 **Alcance:** migrar funcionalidad existente y preparar fronteras, sin completar
@@ -49,9 +49,9 @@ reproducidos en A sin causa determinada), F14 (listado logístico global) y F15
 (correo: memoria/validación parcial/envíos en vuelo y carrera de resuscripción tras
 fallo inicial). No hay entrega exactamente una vez. Configuración e imágenes
 locales probadas; CI/CD remoto e imágenes GHCR comprobados en §24. El corte
-habitual/remoto y la integración a develop/main siguen pendientes.
+habitual/remoto y la integración a main siguen pendientes; develop ya la contiene (§26).
 
-**Cierre remoto (§24):** [PR #44 en borrador](https://github.com/Emperador24/HEXACORE/pull/44),
+**Cierre remoto (§24):** [PR #44, integrado en develop](https://github.com/Emperador24/HEXACORE/pull/44),
 [CI de c36427a aprobado, 8 jobs](https://github.com/Emperador24/HEXACORE/actions/runs/41539992395)
 y [CD nativo aprobado, 25 jobs](https://github.com/Emperador24/HEXACORE/actions/runs/41541166454).
 Ocho imágenes amd64/arm64 del SHA **c36427ac7b217cdb3a37c8a75b545d0fe9aef5d9**;
@@ -3515,3 +3515,55 @@ locales reconstruidas desde el commit de esta entrega (comprobar etiquetas OCI y
 flag de fuentes modificadas), preservando operaciones. La siguiente acción es
 revisión manual y del compañero en la misma rama; no se ejecuta corte habitual,
 consolidación adicional ni integración a develop/main.
+
+## 26. Integración en develop y limpieza de datos de demostración
+
+**Integración.** El PR #44 se marcó listo para revisión y se fusionó en `develop`
+el 2/11/2026 a las 01:10 UTC (merge `274dc19`). El push lanzó el CD de develop
+(run 41557923550, 25 jobs aprobados), que publicó en GHCR las ocho imágenes con la
+etiqueta `develop`. Después se fusionó `develop` en `feature/samuel` (merge
+`6d5108f`, sin conflictos), rama desde la que continúa este trabajo. El corte del
+entorno habitual (CORTE-Y-REVERSION.md) **sigue sin ejecutarse**: quien tenga el
+entorno anterior debe esperar ese corte; `iniciar.sh` lo detecta solo si
+`hexacore-postgres` está en ejecución.
+
+**Revisión independiente previa a la limpieza.** Sobre un clon de
+`feature/sebastian-arquitectura` (`6ce7f8b`) en un proyecto Docker exclusivo:
+guardas 10/10, construcción de ocho imágenes, preparación de 18 migraciones y
+semillas, HTTP 6/6, cuatro recorridos en Chrome, guion completo de registro/correo/
+activación/recuperación, un consumidor por cola tras reiniciar RabbitMQ, 13/13 tablas
+idénticas tras parar/arrancar y rechazo del segundo `--datos-demo`. Sin errores F13
+en esa corrida. Las 830 unitarias se toman de la CI de `6ce7f8b`.
+
+**Datos de demostración.** Se retiran de las semillas de Ventas, Catálogo,
+Postventa y Acceso QR los fixtures que la aplicación no puede usar: los eventos Jazz
+al Atardecer (fuera de plazo), Festival de Verano 2026 (pasado), El Mago de Oz
+(borrador) y Torneo Nacional de Voleibol (cancelado), con sus localidades; las
+entradas `…0005` (usada), `…0006` (anulada) y `…0008` (evento pasado); y los cupones
+`ULTIMO` y `VERANO5`. Quedan 9 eventos, 15 localidades, 5 entradas y 3 cupones,
+coherentes en los cuatro módulos. Se reajustan las referencias `EVENTOS[n]`. La
+imagen Núcleo compila con el cambio y sus semillas compiladas contienen solo esos
+9 eventos. Las bases ya sembradas conservan los datos anteriores hasta resembrar
+una instalación vacía.
+
+**Pruebas.** Se quitan de las pruebas Python históricas los casos que dependían de
+esos fixtures: CU-001A parcial, evento no a la venta (borrador/pasado), CU-004C
+vencido y CU-004D, cancelación fuera de plazo, puerta de evento cancelado y, en
+CU-005, lo que no debe verse, `incluirPasados` y el orden con Jazz. Deben rehacerse
+con datos creados por cada prueba. Las unitarias Jest no dependen de las semillas.
+
+**Diagramas.** Se rehacen las vistas C4 para ADR-16: contexto, contenedores, componentes del
+Núcleo, componentes de Boletería, panorama, secuencia de compra con turno y despliegue. Fuente
+única en `Documentation/Work/Diagrams/Archify/*.json`; `deliver` de Archify aprobado en las siete
+y revisión visual de cada PDF. Las figuras LaTeX incluyen esos PDF (`Diagrams/ArchifyPDF/`), así
+que los documentos y los HTML interactivos muestran el mismo dibujo. `visual-check` del visor
+aprueba contexto y panorama; los otros cinco piden scroll a 1440×900 y quedan con subtítulos bajo
+el mínimo legible al proyectarse en pantalla. Los draw.io de agosto pasan a `Historico/`.
+
+**Volcados.** Se eliminan `App/infra/datos-demo/*.sql` (ocho bases anteriores); nada
+los cargaba.
+
+**Pendiente.** Corte del entorno habitual; integración a main; revisión por el
+equipo de la redacción de los RNF, que todavía habla de «microservicio» (ADR-16 no
+modifica los RNF); las mitigaciones de los hallazgos de la revisión (canal AMQP
+compartido, detección de instalación anterior con el contenedor parado).

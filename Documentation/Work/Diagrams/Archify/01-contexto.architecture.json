@@ -2,33 +2,230 @@
   "schema_version": 1,
   "diagram_type": "architecture",
   "meta": {
-    "title": "HEXACORE — Contexto",
+    "title": "HEXACORE — Contexto (ADR-16)",
     "output": "01-contexto.html",
-    "quality_profile": "standard"
+    "quality_profile": "standard",
+    "viewBox": [
+      1240,
+      560
+    ]
   },
   "components": [
-    { "id": "cliente", "type": "external", "label": "Cliente", "sublabel": "persona", "pos": [20, 0], "size": [190, 56] },
-    { "id": "organizador", "type": "external", "label": "Organizador", "sublabel": "persona", "pos": [20, 110], "size": [190, 56] },
-    { "id": "empleado", "type": "external", "label": "Empleado", "sublabel": "persona", "pos": [20, 220], "size": [190, 56] },
-    { "id": "administrador", "type": "external", "label": "Administrador", "sublabel": "persona", "pos": [20, 330], "size": [190, 56] },
-    { "id": "supervisor", "type": "external", "label": "Supervisor de Emergencia", "sublabel": "persona", "pos": [20, 440], "size": [190, 56] },
-
-    { "id": "sistema", "type": "backend", "label": "Sistema Integral de Gestión de Eventos", "sublabel": "HEXACORE", "pos": [430, 180], "size": [280, 90] },
-
-    { "id": "pagos", "type": "external", "label": "Pasarela de Pagos", "sublabel": "sistema externo", "pos": [940, 90], "size": [200, 60] },
-    { "id": "notif", "type": "external", "label": "Proveedor de Notificaciones", "sublabel": "sistema externo", "pos": [940, 320], "size": [200, 60] }
+    {
+      "id": "cliente",
+      "type": "external",
+      "label": "Cliente",
+      "sublabel": "persona · portal web y app",
+      "pos": [
+        0,
+        0
+      ],
+      "size": [
+        220,
+        60
+      ]
+    },
+    {
+      "id": "personal",
+      "type": "external",
+      "label": "Personal operativo",
+      "sublabel": "persona · app móvil",
+      "pos": [
+        250,
+        0
+      ],
+      "size": [
+        220,
+        60
+      ]
+    },
+    {
+      "id": "administrador",
+      "type": "external",
+      "label": "Administrador",
+      "sublabel": "persona · portal admin",
+      "pos": [
+        500,
+        0
+      ],
+      "size": [
+        220,
+        60
+      ]
+    },
+    {
+      "id": "organizador",
+      "type": "external",
+      "label": "Organizador",
+      "sublabel": "persona · CU-026 pendiente",
+      "pos": [
+        750,
+        0
+      ],
+      "size": [
+        220,
+        60
+      ]
+    },
+    {
+      "id": "supervisor",
+      "type": "external",
+      "label": "Supervisor de emergencia",
+      "sublabel": "persona · Operación pendiente",
+      "pos": [
+        1000,
+        0
+      ],
+      "size": [
+        220,
+        60
+      ]
+    },
+    {
+      "id": "sistema",
+      "type": "backend",
+      "label": "HEXACORE",
+      "sublabel": "Núcleo, Boletería y Trabajador",
+      "pos": [
+        420,
+        230
+      ],
+      "size": [
+        380,
+        90
+      ]
+    },
+    {
+      "id": "pasarela",
+      "type": "external",
+      "label": "Pasarela de pagos",
+      "sublabel": "externa · simulada en pruebas",
+      "pos": [
+        150,
+        470
+      ],
+      "size": [
+        220,
+        60
+      ]
+    },
+    {
+      "id": "correo",
+      "type": "external",
+      "label": "Proveedor de correo",
+      "sublabel": "externo · simulado en pruebas",
+      "pos": [
+        800,
+        470
+      ],
+      "size": [
+        220,
+        60
+      ]
+    }
   ],
   "connections": [
-    { "id": "cliente-sistema", "from": "cliente", "to": "sistema", "label": "eventos, entradas, reventa", "variant": "emphasis" },
-    { "id": "organizador-sistema", "from": "organizador", "to": "sistema", "label": "crea/coordina eventos" },
-    { "id": "empleado-sistema", "from": "empleado", "to": "sistema", "label": "turnos y asistencia" },
-    { "id": "administrador-sistema", "from": "administrador", "to": "sistema", "label": "usuarios y recintos" },
-    { "id": "supervisor-sistema", "from": "supervisor", "to": "sistema", "label": "coordina evacuación" },
-    { "id": "sistema-pagos", "from": "sistema", "to": "pagos", "label": "cobros y reembolsos", "variant": "emphasis" },
-    { "id": "sistema-notif", "from": "sistema", "to": "notif", "label": "push, correo, SMS", "variant": "dashed" }
+    {
+      "id": "cliente-sistema",
+      "from": "cliente",
+      "to": "sistema",
+      "label": "cuenta, entradas, reventa, pedidos",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelSegment": 0
+    },
+    {
+      "id": "personal-sistema",
+      "from": "personal",
+      "to": "sistema",
+      "label": "turnos, asistencia, ingreso QR",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "admin-sistema",
+      "from": "administrador",
+      "to": "sistema",
+      "label": "administración de cuentas",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [
+        610,
+        110
+      ]
+    },
+    {
+      "id": "organizador-sistema",
+      "from": "organizador",
+      "to": "sistema",
+      "label": "gestión de eventos",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "supervisor-sistema",
+      "from": "supervisor",
+      "to": "sistema",
+      "label": "evacuación y alertas",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelSegment": 0
+    },
+    {
+      "id": "sistema-pasarela",
+      "from": "sistema",
+      "to": "pasarela",
+      "label": "cobros y reembolsos",
+      "variant": "emphasis",
+      "fromSide": "left",
+      "toSide": "top"
+    },
+    {
+      "id": "pasarela-sistema",
+      "from": "pasarela",
+      "to": "sistema",
+      "label": "webhook HMAC",
+      "variant": "security",
+      "fromSide": "right",
+      "toSide": "bottom"
+    },
+    {
+      "id": "sistema-correo",
+      "from": "sistema",
+      "to": "correo",
+      "label": "correos de cuenta",
+      "fromSide": "right",
+      "toSide": "top"
+    }
   ],
   "cards": [
-    { "dot": "cyan", "title": "Cinco roles, un solo sistema", "items": ["Cliente y Empleado consultan/operan desde su app o portal", "Organizador, Administrador y Supervisor de Emergencia comparten el Portal Web Admin", "Todos entran por HTTPS a través del API Gateway (ver Nivel 2)"] },
-    { "dot": "amber", "title": "Dependencias externas", "items": ["La Pasarela de Pagos procesa todo cobro/reembolso — el sistema nunca guarda datos de tarjeta", "Las notificaciones siempre se disparan de forma asíncrona"] }
+    {
+      "dot": "cyan",
+      "title": "Roles con funcionalidad migrada",
+      "items": [
+        "Cliente: Identidad, cartelera, compra con turno, reventa y pedidos de alimentos",
+        "Personal: turnos, cambios, asistencia e ingreso por QR",
+        "Administrador: cuentas y roles"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Pendiente (línea discontinua)",
+      "items": [
+        "Organizador: CU-026 sin backend",
+        "Supervisor: evacuación y alertas esperan el programa Operación"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Dependencias externas",
+      "items": [
+        "La pasarela confirma por webhook firmado; HEXACORE no guarda datos de tarjeta",
+        "En pruebas, pasarela y correo son simuladores locales"
+      ]
+    }
   ]
 }

@@ -7,8 +7,8 @@
 
 | Archivo | Quién lo usa | Para qué |
 |---|---|---|
-| `jwt-privada.pem` | **Solo** el Servicio de Administración | Firmar los tokens de sesión (RS256) |
-| `jwt-publica.pem` | Todos los microservicios que exigen sesión | Verificar esos tokens |
+| `jwt-privada.pem` | **Solo** Identidad, en el Núcleo | Firmar los tokens de sesión (RS256) |
+| `jwt-publica.pem` | Gateway, Núcleo y Boletería | Verificar esos tokens |
 
 ## Por qué dos claves y no un secreto compartido
 
