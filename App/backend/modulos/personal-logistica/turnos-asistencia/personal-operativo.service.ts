@@ -12,7 +12,8 @@ import { CrearZonaEventoDto } from './dto/crear-zona-evento.dto';
 import { Empleado } from './entities/empleado.entity';
 import { Turno } from './entities/turno.entity';
 import { ZonaEvento } from './entities/zona-evento.entity';
-import { EstadoTurno } from './enums/estados';
+import { auditar } from './auditoria-personal';
+import { ConfirmacionTurno, EstadoTurno } from './enums/estados';
 import { EventosPublicadorService } from './eventos-publicador.service';
 import { horasAsignadasEseDia } from './horas-del-dia';
 import {
@@ -126,7 +127,12 @@ export class PersonalOperativoService {
    * la cobertura de la zona (paso 6, CU-017B/D si sigue en déficit) y
    * notifica al empleado asignado (paso 9).
    */
-  async asignarPersonal(zonaId: string, dto: AsignarPersonalDto, excluirTurnoId?: string) {
+  async asignarPersonal(
+    zonaId: string,
+    dto: AsignarPersonalDto,
+    realizadoPor: string,
+    excluirTurnoId?: string,
+  ) {
     const zona = await this.zonas.findOneBy({ id: zonaId });
     if (!zona) {
       throw new NotFoundException('Zona de evento no encontrada.');
@@ -134,6 +140,10 @@ export class PersonalOperativoService {
     const empleado = await this.empleados.findOneBy({ id: dto.empleadoId });
     if (!empleado) {
       throw new NotFoundException('Empleado no encontrado.');
+    }
+    // CU-007, precondición 2: solo se asigna a quien está activo.
+    if (!empleado.activo) {
+      throw new BadRequestException(`${empleado.nombre} está desactivado y no puede recibir asignaciones.`);
     }
 
     const horaInicio = new Date(dto.horaInicio);
@@ -185,13 +195,21 @@ export class PersonalOperativoService {
     }
 
     let turno: Turno;
+    let anterior: { empleadoId: string; horaInicio: Date; horaFin: Date } | null = null;
     if (excluirTurnoId) {
-      // CU-017E: reasignación de último momento sobre un turno existente.
+      // CU-017E / CU-007C: reasignación sobre un turno existente.
       turno = (await this.turnos.findOneBy({ id: excluirTurnoId }))!;
+      anterior = { empleadoId: turno.empleadoId, horaInicio: turno.horaInicio, horaFin: turno.horaFin };
       turno.empleado = empleado;
       turno.empleadoId = empleado.id;
       turno.horaInicio = horaInicio;
       turno.horaFin = horaFin;
+      // Otra persona u otro horario es otra propuesta: vuelve a esperar
+      // respuesta. Y si el anterior la había rechazado, el puesto se reabre.
+      turno.confirmacion = ConfirmacionTurno.PENDIENTE;
+      turno.motivoRechazo = null;
+      turno.respondidoEn = null;
+      if (turno.estado === EstadoTurno.CANCELADO) turno.estado = EstadoTurno.ASIGNADO;
     } else {
       turno = this.turnos.create({
         empleadoId: empleado.id,
@@ -203,7 +221,23 @@ export class PersonalOperativoService {
         estado: EstadoTurno.ASIGNADO,
       });
     }
-    const guardado = await this.turnos.save(turno);
+    const guardado = await this.turnos.manager.transaction(async (m) => {
+      const guardado = await m.save(turno);
+      await auditar(m, {
+        accion: anterior ? 'ASIGNACION_MODIFICADA' : 'PERSONAL_ASIGNADO',
+        realizadoPor,
+        empleadoId: empleado.id,
+        turnoId: guardado.id,
+        detalle: {
+          zona: zona.nombre,
+          eventoId: zona.eventoId,
+          horaInicio: horaInicio.toISOString(),
+          horaFin: horaFin.toISOString(),
+          ...(anterior ? { anterior } : {}),
+        },
+      });
+      return guardado;
+    });
 
     // Paso 9: notifica al empleado asignado (misma cola/DLQ de CU-018).
     await this.eventosPublicador.publicarCambioTurno({
@@ -220,7 +254,7 @@ export class PersonalOperativoService {
   }
 
   /** CU-017E: cambio de último momento sobre un turno ya asignado. */
-  async reasignar(turnoId: string, dto: AsignarPersonalDto) {
+  async reasignar(turnoId: string, dto: AsignarPersonalDto, realizadoPor: string) {
     const turno = await this.turnos.findOneBy({ id: turnoId });
     if (!turno) {
       throw new NotFoundException('Turno no encontrado.');
@@ -230,6 +264,6 @@ export class PersonalOperativoService {
         'Este turno no fue creado por asignación de personal operativo (CU-017).',
       );
     }
-    return this.asignarPersonal(turno.zonaEventoId, dto, turnoId);
+    return this.asignarPersonal(turno.zonaEventoId, dto, realizadoPor, turnoId);
   }
 }

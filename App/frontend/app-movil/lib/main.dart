@@ -2379,6 +2379,53 @@ class _ShiftsPageState extends State<ShiftsPage> {
             ));
   }
 
+  // CU-007, paso 13 y CU-007B: responder a una asignación nueva.
+  Future<void> _responder(bool aceptar) async {
+    String? motivo;
+    if (!aceptar) {
+      final controlador = TextEditingController();
+      motivo = await showDialog<String>(
+          context: context,
+          builder: (context) => AlertDialog(
+                title: const Text('Rechazar asignación'),
+                content: TextField(
+                    controller: controlador,
+                    maxLines: 2,
+                    autofocus: true,
+                    decoration: const InputDecoration(labelText: 'Motivo')),
+                actions: [
+                  TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Volver')),
+                  FilledButton(
+                      onPressed: () {
+                        final texto = controlador.text.trim();
+                        if (texto.isNotEmpty) Navigator.pop(context, texto);
+                      },
+                      child: const Text('Rechazar')),
+                ],
+              ));
+      if (motivo == null) return;
+    }
+    if (_turno == null) return;
+    try {
+      await logisticaApiClient.responderAsignacion(
+          turnoId: _turno!['id'] as String, aceptar: aceptar, motivo: motivo);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(aceptar
+              ? 'Asignación confirmada.'
+              : 'Asignación rechazada. El organizador asignará a otra persona.')));
+      await _cargar();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(e is LogisticaApiException
+              ? e.message
+              : 'No se pudo conectar con el backend de logística.')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
@@ -2395,6 +2442,7 @@ class _ShiftsPageState extends State<ShiftsPage> {
           child: Text('No tienes un turno asignado todavía.',
               style: textTheme.bodyMedium));
     }
+    final porConfirmar = _turno!['confirmacion'] == 'PENDIENTE';
     final estado = _solicitud?['estado'] as String?;
     return RefreshIndicator(
       onRefresh: _cargar,
@@ -2410,6 +2458,20 @@ class _ShiftsPageState extends State<ShiftsPage> {
               icon: Icons.event_available,
               color: _kPink),
           const SizedBox(height: 6),
+          if (porConfirmar) ...[
+            Text('Te asignaron este turno. ¿Lo confirmas?',
+                style: textTheme.bodyMedium),
+            const SizedBox(height: 8),
+            Row(children: [
+              FilledButton(
+                  onPressed: () => _responder(true),
+                  child: const Text('Confirmar')),
+              const SizedBox(width: 8),
+              OutlinedButton(
+                  onPressed: () => _responder(false),
+                  child: const Text('Rechazar')),
+            ]),
+          ] else
           Align(
             alignment: Alignment.centerLeft,
             child: estado == null

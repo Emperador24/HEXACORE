@@ -41,6 +41,8 @@ y escucha en **8080**. Es la única dirección que conocen la app móvil y los p
 | `/api/v1/reventa/…` | Boletería | token `Cliente` o `Administrador` |
 | `/api/v1/pedidos/…` | Núcleo | token |
 | `/api/v1/logistica/…` | Núcleo | token |
+| `/api/v1/eventos`, `/api/v1/eventos/…` | Núcleo (CU-026) | token + Organizador o Administrador |
+| `/api/v1/recintos` (solo GET) | Núcleo (CU-026) | token + Organizador o Administrador |
 | `POST /api/v1/pagos/webhook` | Núcleo | firma HMAC de la pasarela (la valida Núcleo) |
 | `/salud` | el propio gateway | nada |
 

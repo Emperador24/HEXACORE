@@ -1,29 +1,67 @@
 <mat-sidenav-container class="contenedor">
-  <mat-sidenav mode="side" opened class="menu-lateral">
-    <div class="usuario">
-      <p class="nombre">{{ usuario()?.nombre }}</p>
-      <p class="correo">{{ usuario()?.correo }}</p>
+  <mat-sidenav
+    class="lateral"
+    [mode]="estrecho() ? 'over' : 'side'"
+    [opened]="!estrecho() || menuAbierto()"
+    (closedStart)="menuAbierto.set(false)"
+  >
+    <div class="marca">
+      <span class="logotipo" aria-hidden="true">HX</span>
+      <div>
+        <p class="nombre-producto">HEXACORE</p>
+        <p class="nombre-portal">Administración</p>
+      </div>
     </div>
 
-    <mat-nav-list>
-      @for (item of itemsMenu(); track item.ruta) {
-        <a mat-list-item [routerLink]="item.ruta" routerLinkActive="activo">
-          <mat-icon matListItemIcon>{{ item.icono }}</mat-icon>
-          <span matListItemTitle>{{ item.etiqueta }}</span>
-        </a>
+    <nav class="navegacion" aria-label="Secciones">
+      @for (grupo of gruposMenu(); track grupo.titulo) {
+        <p class="grupo">{{ grupo.titulo }}</p>
+        @for (item of grupo.items; track item.ruta) {
+          <a
+            class="enlace"
+            [routerLink]="item.ruta"
+            routerLinkActive="activo"
+            (click)="estrecho() && menuAbierto.set(false)"
+          >
+            <mat-icon>{{ item.icono }}</mat-icon>
+            <span>{{ item.etiqueta }}</span>
+            @if (item.pendiente) {
+              <span class="pendiente" title="Sección en construcción">pronto</span>
+            }
+          </a>
+        }
       }
-    </mat-nav-list>
+    </nav>
+
+    <div class="usuario">
+      <span class="iniciales" aria-hidden="true">{{ iniciales() }}</span>
+      <div class="datos">
+        <p class="nombre">{{ usuario()?.nombre }}</p>
+        <p class="rol">{{ rolPrincipal() }}</p>
+      </div>
+      <button mat-icon-button (click)="cerrarSesion()" matTooltip="Cerrar sesión" aria-label="Cerrar sesión">
+        <mat-icon>logout</mat-icon>
+      </button>
+    </div>
   </mat-sidenav>
 
-  <mat-sidenav-content>
-    <mat-toolbar color="primary">
-      <span>HEXACORE — Portal Administrativo</span>
+  <mat-sidenav-content class="principal">
+    <header class="barra-superior">
+      @if (estrecho()) {
+        <button mat-icon-button (click)="menuAbierto.set(true)" aria-label="Abrir menú">
+          <mat-icon>menu</mat-icon>
+        </button>
+      }
+      <div class="miga">
+        <span class="seccion">{{ seccion() }}</span>
+        @if (titulo() && titulo() !== seccion()) {
+          <mat-icon class="separador">chevron_right</mat-icon>
+          <span class="actual">{{ titulo() }}</span>
+        }
+      </div>
       <span class="espaciador"></span>
-      <button mat-button (click)="cerrarSesion()">
-        <mat-icon>logout</mat-icon>
-        Cerrar sesión
-      </button>
-    </mat-toolbar>
+      <span class="correo">{{ usuario()?.correo }}</span>
+    </header>
 
     <main class="contenido">
       <router-outlet />

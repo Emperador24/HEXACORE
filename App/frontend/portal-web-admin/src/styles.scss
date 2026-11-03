@@ -1,4 +1,267 @@
-/* You can add global styles to this file, and also import other style files */
+@use '@angular/material' as mat;
+
+// Diseño del portal administrativo.
+//
+// Criterio: es una herramienta de trabajo, no una vitrina. Superficies claras,
+// un solo color de acento, bordes finos en vez de sombras, tipografía legible
+// en tablas densas y estados que se distinguen por texto además de por color.
+// El color fuerte se reserva para lo que pide atención (errores, acciones
+// irreversibles); nada se anima salvo lo que informa de una espera.
+
+html {
+  color-scheme: light;
+  @include mat.theme((
+    color: (
+      primary: mat.$azure-palette,
+      tertiary: mat.$blue-palette,
+      theme-type: light,
+    ),
+    typography: (
+      plain-family: 'Inter, Roboto, "Helvetica Neue", sans-serif',
+      brand-family: 'Inter, Roboto, "Helvetica Neue", sans-serif',
+    ),
+    density: -1,
+  ));
+
+  // Formularios y tablas más sobrios que el valor por defecto de M3.
+  @include mat.form-field-overrides((
+    outlined-outline-color: #cfd4dc,
+    outlined-hover-outline-color: #98a2b3,
+  ));
+  @include mat.table-overrides((
+    header-headline-weight: 600,
+    header-headline-size: 0.75rem,
+    header-headline-color: #5b6470,
+    row-item-label-text-size: 0.875rem,
+    row-item-outline-color: #eceef2,
+    background-color: transparent,
+  ));
+  @include mat.card-overrides((
+    outlined-container-color: #ffffff,
+    outlined-outline-color: #e2e5ea,
+    outlined-container-shape: 10px,
+  ));
+  @include mat.dialog-overrides((
+    container-shape: 12px,
+    container-color: #ffffff,
+  ));
+  @include mat.button-overrides((
+    filled-container-shape: 8px,
+    outlined-container-shape: 8px,
+    text-container-shape: 8px,
+    protected-container-shape: 8px,
+  ));
+}
+
+:root {
+  --hx-fondo: #f4f5f7;
+  --hx-superficie: #ffffff;
+  --hx-superficie-2: #f8f9fb;
+  --hx-borde: #e2e5ea;
+  --hx-borde-fuerte: #cfd4dc;
+  --hx-texto: #18202b;
+  --hx-texto-2: #5b6470;
+  --hx-texto-3: #8a93a0;
+  --hx-acento: #1d5bbf;
+  --hx-acento-suave: #e8f0fc;
+
+  --hx-lateral: #111a2b;
+  --hx-lateral-texto: #c4cbd6;
+  --hx-lateral-activo: #1e2a40;
+
+  --hx-ok: #18794e;
+  --hx-ok-fondo: #e7f5ee;
+  --hx-aviso: #8a5300;
+  --hx-aviso-fondo: #fdf3e0;
+  --hx-peligro: #b42318;
+  --hx-peligro-fondo: #fdecea;
+  --hx-neutro: #475467;
+  --hx-neutro-fondo: #eef0f3;
+
+  --hx-radio: 10px;
+}
 
 html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+body {
+  margin: 0;
+  background: var(--hx-fondo);
+  color: var(--hx-texto);
+  font-family: Inter, Roboto, 'Helvetica Neue', sans-serif;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.material-icons-outlined { font-feature-settings: 'liga'; }
+
+// --- Encabezado de página ----------------------------------------------------
+
+.pagina-encabezado {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+
+  h1 {
+    margin: 0;
+    font-size: 1.375rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  .descripcion {
+    margin: 4px 0 0;
+    color: var(--hx-texto-2);
+    max-width: 70ch;
+    line-height: 1.45;
+  }
+
+  .acciones { display: flex; gap: 8px; flex-wrap: wrap; }
+}
+
+.referencia-cu {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border: 1px solid var(--hx-borde);
+  border-radius: 999px;
+  color: var(--hx-texto-2);
+  font-size: 0.7rem;
+  font-weight: 500;
+  vertical-align: middle;
+}
+
+// --- Paneles -----------------------------------------------------------------
+
+.panel {
+  background: var(--hx-superficie);
+  border: 1px solid var(--hx-borde);
+  border-radius: var(--hx-radio);
+  margin-bottom: 16px;
+}
+
+.panel-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--hx-borde);
+
+  h2 { margin: 0; font-size: 0.95rem; font-weight: 600; }
+  .detalle { color: var(--hx-texto-2); font-size: 0.8rem; }
+}
+
+.panel-cuerpo { padding: 16px; }
+
+.barra-filtros {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--hx-borde);
+
+  mat-form-field { width: 240px; }
+  .mat-mdc-form-field-subscript-wrapper { display: none; }
+  .espaciador { flex: 1; }
+}
+
+.tabla-contenedor {
+  overflow-x: auto;
+
+  table { width: 100%; }
+  tr.mat-mdc-row:hover { background: var(--hx-superficie-2); }
+  td.acciones, th.acciones { text-align: right; white-space: nowrap; }
+}
+
+.secundario { color: var(--hx-texto-2); font-size: 0.8rem; }
+.mono { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 0.8rem; }
+
+.vacio {
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--hx-texto-2);
+
+  mat-icon { font-size: 32px; width: 32px; height: 32px; color: var(--hx-texto-3); }
+  p { margin: 8px 0 0; }
+}
+
+// --- Estados -----------------------------------------------------------------
+// Siempre con texto: el color ayuda, pero no es la única señal.
+
+.estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+  background: var(--hx-neutro-fondo);
+  color: var(--hx-neutro);
+
+  &::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  &.ok { background: var(--hx-ok-fondo); color: var(--hx-ok); }
+  &.aviso { background: var(--hx-aviso-fondo); color: var(--hx-aviso); }
+  &.peligro { background: var(--hx-peligro-fondo); color: var(--hx-peligro); }
+}
+
+// --- Mensajes ----------------------------------------------------------------
+
+.mensaje {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  line-height: 1.45;
+
+  mat-icon { font-size: 20px; width: 20px; height: 20px; flex: none; }
+  .cerrar { margin-left: auto; cursor: pointer; background: none; border: 0; color: inherit; padding: 0; }
+
+  &.error { background: var(--hx-peligro-fondo); color: var(--hx-peligro); border-color: #f6cfcb; }
+  &.exito { background: var(--hx-ok-fondo); color: var(--hx-ok); border-color: #c4e6d4; }
+  &.info { background: var(--hx-acento-suave); color: #18407f; border-color: #cddcf5; }
+}
+
+// --- Formularios -------------------------------------------------------------
+
+.rejilla-formulario {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  column-gap: 16px;
+}
+
+.pie-formulario {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 8px;
+}
+
+.boton-peligro.mat-mdc-button:not(:disabled),
+.boton-peligro.mat-mdc-outlined-button:not(:disabled) { color: var(--hx-peligro); }
+
+.mat-mdc-dialog-content { line-height: 1.5; }
+
+.barra-filtros mat-form-field.corto { width: 160px; }
+
+a.nombre {
+  color: var(--hx-texto);
+  font-weight: 500;
+  text-decoration: none;
+
+  &:hover { color: var(--hx-acento); text-decoration: underline; }
+}

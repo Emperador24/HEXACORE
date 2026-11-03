@@ -31,7 +31,7 @@ npm --prefix App/backend run test:limpiar
 Ejecutar secuencialmente. Los contratos/convivencia requieren ambas imágenes
 saludables: Núcleo 13109, Boletería 13117 y gateway 18082 (puertos en loopback).
 El webhook del simulador llama a nucleo:3002; no hay servicio Pagos ni endpoints
-de cobro/reembolso. La tarea preparacion-base aplica/reconoce los ocho historiales/18 migraciones originales una
+de cobro/reembolso. La tarea preparacion-base aplica/reconoce los nueve historiales/20 migraciones (18 originales + CU-007 + CU-026) una
 vez por despliegue y sale; ambos programas esperan su terminación. Los tests
 no vuelven a ejecutar la migración financiera al reiniciar aplicaciones.
 

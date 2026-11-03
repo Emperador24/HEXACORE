@@ -17,3 +17,10 @@ export enum TipoRegistroAsistencia {
   ENTRADA = 'ENTRADA',
   SALIDA = 'SALIDA',
 }
+
+/** CU-007: respuesta del empleado a una asignación. */
+export enum ConfirmacionTurno {
+  PENDIENTE = 'PENDIENTE',
+  CONFIRMADA = 'CONFIRMADA',
+  RECHAZADA = 'RECHAZADA',
+}

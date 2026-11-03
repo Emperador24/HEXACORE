@@ -1,14 +1,12 @@
 import { CONEXION_LOGISTICA } from '../persistencia/conexion';
 import {
   BadRequestException,
-  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, LessThan, MoreThan, Not, QueryFailedError, Repository } from 'typeorm';
-import { CrearEmpleadoDto } from './dto/crear-empleado.dto';
+import { In, LessThan, MoreThan, Not, Repository } from 'typeorm';
 import { CrearTurnoDto } from './dto/crear-turno.dto';
 import { RevisarSolicitudDto } from './dto/revisar-solicitud.dto';
 import { SolicitarCambioTurnoDto } from './dto/solicitar-cambio-turno.dto';
@@ -35,23 +33,8 @@ export class TurnosService {
     private readonly eventosPublicador: EventosPublicadorService,
   ) {}
 
-  async crearEmpleado(dto: CrearEmpleadoDto) {
-    const empleado = this.empleados.create(dto);
-    try {
-      return await this.empleados.save(empleado);
-    } catch (error) {
-      // Violación de la restricción unique(credencial) en Postgres.
-      if (error instanceof QueryFailedError && (error.driverError as { code?: string })?.code === '23505') {
-        throw new ConflictException(
-          `Ya existe un empleado con la credencial "${dto.credencial}".`,
-        );
-      }
-      throw error;
-    }
-  }
-
   listarEmpleados() {
-    return this.empleados.find();
+    return this.empleados.find({ order: { nombre: 'ASC' } });
   }
 
   /**

@@ -1,7 +1,8 @@
 import { UsePipes } from '@nestjs/common';
 import { validacionLogistica } from '../../../compartido/validacion';
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { SesionValida } from '../comun/autenticacion/sesion-valida.guard';
+import type { PeticionDeLogistica } from './autorizacion.guard';
 import {
   ContextoDeLogistica,
   SoloQuienSupervisa,
@@ -39,12 +40,20 @@ export class PersonalOperativoController {
   }
 
   @Post('zonas/:zonaId/asignaciones')
-  asignarPersonal(@Param('zonaId') zonaId: string, @Body() dto: AsignarPersonalDto) {
-    return this.personalOperativo.asignarPersonal(zonaId, dto);
+  asignarPersonal(
+    @Param('zonaId') zonaId: string,
+    @Body() dto: AsignarPersonalDto,
+    @Req() peticion: PeticionDeLogistica,
+  ) {
+    return this.personalOperativo.asignarPersonal(zonaId, dto, peticion.sesion!.usuarioId);
   }
 
   @Patch('turnos/:turnoId/reasignar')
-  reasignar(@Param('turnoId') turnoId: string, @Body() dto: AsignarPersonalDto) {
-    return this.personalOperativo.reasignar(turnoId, dto);
+  reasignar(
+    @Param('turnoId') turnoId: string,
+    @Body() dto: AsignarPersonalDto,
+    @Req() peticion: PeticionDeLogistica,
+  ) {
+    return this.personalOperativo.reasignar(turnoId, dto, peticion.sesion!.usuarioId);
   }
 }

@@ -30,7 +30,7 @@ export class NucleoPrueba {
   private salida = '';
   private readonly previos = new Map<string, Set<string>>();
   private readonly cuentas: string[] = [];
-  private readonly tablas = ['notificaciones', 'registros_asistencia', 'solicitudes_cambio_turno', 'turnos', 'zonas_evento', 'empleados'];
+  private readonly tablas = ['auditoria_personal', 'notificaciones', 'registros_asistencia', 'solicitudes_cambio_turno', 'turnos', 'zonas_evento', 'empleados'];
   private readonly redis = new Redis({ host: '127.0.0.1', port: 16384, lazyConnect: true, retryStrategy: () => null });
 
   constructor(private readonly nombre: string) {

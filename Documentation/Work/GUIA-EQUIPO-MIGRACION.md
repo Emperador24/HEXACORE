@@ -16,10 +16,10 @@ requisitos de negocio y RNF no cambian. El corte del entorno habitual sigue pend
 | Samuel, CU-007–009 | modulos/personal-logistica, Núcleo, compartido con CU-017/018 | Empleados, asignación, cambios y asistencia trasladados. No crear otra ficha/turnero. Completar alternativas de sus CU; revisar F14 junto a Diego. |
 | Samuel, CU-010 | apps/operacion y modulos/operacion, **destinos futuros** | Evacuación y alertas/acuses ausentes. No hay proceso Operación vacío que arrancar. |
 | Samuel, CU-024–025 | modulos/parqueaderos, futuro | Cobro y ocupación pendientes; el CU-024 no implica pago electrónico nuevo. |
-| Samuel, CU-026 | modulos/eventos-recintos, futuro en Núcleo | Hay referencias/fixtures en otros módulos, no administración de eventos terminada. Acordar contratos con Entradas. |
+| Samuel, CU-026 | modulos/eventos-recintos, Núcleo (esquema `eventos_recintos`) | Gestión de eventos completa y portal. Publica `eventos.gestion` ([contrato](../../App/backend/modulos/eventos-recintos/CONTRATO-EVENTOS.md)); **Entradas debe consumirlo** para cartelera y devolución masiva (CU-003). |
 | Sebastián Sánchez, CU-011–015 | modulos/alimentos, Núcleo | Checkout/reservas/pago/confirmación/QR existentes. CRUD completo, preparación/entrega y validación única de entrega siguen pendientes. F12 no se implementó. |
 | Sebastián, CU-027–028 | modulos/identidad, Núcleo | Cuentas, sesiones, renovación/revocación, roles/guardas y administración existentes; permisos dinámicos completos pendientes. |
-| Sebastián, CU-029 | modulos/eventos-recintos, futuro | Recintos/zonas administrables pendientes; no confundir con zonas de asignación laboral ya existentes. |
+| Sebastián, CU-029 | modulos/eventos-recintos, Núcleo | Tablas `recintos`/`zonas_recinto` ya existen (solo lectura y semilla, por CU-026); falta administrarlas; no confundir con zonas de asignación laboral ya existentes. |
 | Diego Coronado, CU-016–018 | modulos/personal-logistica, Núcleo | Planificación completa pendiente; base de asignación/turnos/asistencia trasladada. Coordinar solapamiento con Samuel. F14 conserva listado global. |
 | Diego, CU-019–020 | apps/operacion y modulos/operacion, futuros | Monitoreo/incidentes no implementados. No atribuirlos al antiguo nombre eventos-emergencias. |
 | Diego, CU-030 | personal-logistica/proveedores, destino funcional futuro | Proveedores/recursos y su planificación pendientes; sin nuevo servidor. |

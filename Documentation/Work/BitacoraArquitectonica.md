@@ -23,6 +23,32 @@ Cada entrada nueva va arriba (orden cronológico inverso), con este formato:
 
 ---
 
+## 2026-11-03 — Dueño del Evento en el Núcleo (CU-026) y gestión de personal (CU-007)
+
+**Tipo:** Cambio arquitectónico
+
+**Contexto:** el Evento solo existía como copias en Boletería (`eventos_referencia`), llenadas
+por semillas; nadie lo creaba ni lo publicaba. CU-007 tenía asignación (CU-017) pero no ficha
+completa, baja, respuesta del empleado ni auditoría.
+**Decisión / resultado:** módulo `eventos-recintos` en el Núcleo con un **noveno esquema**
+(`eventos_recintos`): recintos y zonas (solo lectura, por CU-026), eventos, localidades,
+historial versionado y bandeja de salida. Publicar, editar lo publicado y cancelar emiten
+`eventos.gestion` (outbox, al menos una vez, con versión del evento); el contrato está en
+`App/backend/modulos/eventos-recintos/CONTRATO-EVENTOS.md`. Aforo y traslape se validan con
+la fila del recinto bloqueada. CU-007 añade migración propia en `personal_logistica`
+(ficha, confirmación del turno, `auditoria_personal`). Portal administrativo rediseñado.
+**Alternativas consideradas:** consumidores en Boletería en la misma entrega (cartelera y
+devolución masiva): se dejó solo el contrato porque esos módulos son de otros integrantes;
+restricción `EXCLUDE` para el traslape: requiere `btree_gist`, fuera de las extensiones que
+prepara `preparacion-base`.
+**Ventajas / desventajas:** un único dueño del evento con historial y concurrencia controlada;
+mientras Entradas no consuma el contrato, publicar no llega a la cartelera ni cancelar
+devuelve dinero. Las pruebas y documentos que contaban 8 esquemas/18 migraciones pasan a
+9/20 (las 18 originales conservan su procedencia).
+**Riesgos técnicos:** coordinación con Entradas para los consumidores; el SAD y los diagramas
+siguen describiendo ocho esquemas hasta su próxima revisión.
+**Participantes:** Samuel Emperador (vía asistente).
+
 ## 2026-11-02 — Integración de ADR-16 en develop y limpieza de datos demo
 
 **Tipo:** Cambio arquitectónico

@@ -4,7 +4,8 @@ const fs=require('node:fs');
 const metadatos=resolve(__dirname,'../../.evidencia-e2e/base-unica.json');
 const ESQUEMAS = { identidad:'identidad', alimentos:'alimentos', logistica:'personal_logistica',
   ventas:'entradas_ventas', catalogo:'entradas_catalogo', postventa:'entradas_postventa',
-  'acceso-qr':'entradas_acceso_qr', acceso:'entradas_acceso_qr', pagos:'finanzas_pagos',libro:'finanzas_pagos' };
+  'acceso-qr':'entradas_acceso_qr', acceso:'entradas_acceso_qr', pagos:'finanzas_pagos',libro:'finanzas_pagos',
+  eventos:'eventos_recintos' };
 for(const esquema of Object.values(ESQUEMAS))ESQUEMAS[esquema]=esquema;
 const base = process.env.POSTGRES_BD_PRUEBAS || 'hexacore_e2e';
 assert.ok(['hexacore_e2e','hexacore_vacia_e2e','hexacore_publicadas_e2e'].includes(base),'Solo bases exclusivas permitidas');

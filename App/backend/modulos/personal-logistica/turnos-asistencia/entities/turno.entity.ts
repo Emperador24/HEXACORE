@@ -6,7 +6,7 @@ import {
   PrimaryGeneratedColumn,
   type Relation,
 } from 'typeorm';
-import { EstadoTurno } from '../enums/estados';
+import { ConfirmacionTurno, EstadoTurno } from '../enums/estados';
 import { Empleado } from './empleado.entity';
 
 @Entity('turnos')
@@ -48,4 +48,18 @@ export class Turno {
    */
   @Column('uuid', { nullable: true })
   zonaEventoId: string | null;
+
+  /**
+   * CU-007 paso 13 y CU-007B: lo que respondió el empleado a la asignación.
+   * Va aparte de `estado`, que es el ciclo del turno en CU-018 (cambios):
+   * mezclarlos obligaría a reescribir cada regla de cambio de turno.
+   */
+  @Column({ type: 'enum', enum: ConfirmacionTurno, default: ConfirmacionTurno.PENDIENTE })
+  confirmacion: ConfirmacionTurno;
+
+  @Column({ type: 'varchar', nullable: true })
+  motivoRechazo: string | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  respondidoEn: Date | null;
 }

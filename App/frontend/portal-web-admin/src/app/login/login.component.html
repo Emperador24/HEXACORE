@@ -1,45 +1,60 @@
-<div class="login-fondo">
-  <mat-card class="login-tarjeta">
-    <mat-card-header>
-      <mat-card-title>HEXACORE — Portal Administrativo</mat-card-title>
-      <mat-card-subtitle>Inicia sesión</mat-card-subtitle>
-    </mat-card-header>
+<div class="pagina">
+  <aside class="presentacion">
+    <div class="marca">
+      <span class="logotipo" aria-hidden="true">HX</span>
+      <span>HEXACORE</span>
+    </div>
+    <div class="texto">
+      <h1>Portal de administración</h1>
+      <p>Planificación de eventos, personal, cuentas y operación del recinto.</p>
+    </div>
+    <p class="nota">Acceso restringido a administradores y organizadores. Cada acción queda registrada.</p>
+  </aside>
 
-    <mat-card-content>
-      <form (ngSubmit)="ingresar()" #formulario="ngForm">
-        <mat-form-field appearance="outline" class="campo">
-          <mat-label>Correo</mat-label>
-          <input matInput name="correo" [(ngModel)]="correo" required autocomplete="username" />
-        </mat-form-field>
+  <main class="formulario">
+    <form (ngSubmit)="ingresar()" #formulario="ngForm" class="tarjeta">
+      <h2>Iniciar sesión</h2>
+      <p class="ayuda">Usa tu cuenta de HEXACORE.</p>
 
-        <mat-form-field appearance="outline" class="campo">
-          <mat-label>Contraseña</mat-label>
-          <input matInput type="password" name="contrasena" [(ngModel)]="contrasena" required autocomplete="current-password" />
-        </mat-form-field>
+      @if (error()) {
+        <div class="mensaje error" role="alert">
+          <mat-icon>error_outline</mat-icon>
+          <span>{{ error() }}</span>
+        </div>
+      }
 
-        @if (error()) {
-          <p class="mensaje-error">{{ error() }}</p>
-        }
+      <mat-form-field appearance="outline">
+        <mat-label>Correo</mat-label>
+        <input matInput name="correo" type="email" [(ngModel)]="correo" required autocomplete="username" />
+      </mat-form-field>
 
-        @if (entrando()) {
-          <mat-progress-bar mode="indeterminate" />
-        }
-
+      <mat-form-field appearance="outline">
+        <mat-label>Contraseña</mat-label>
+        <input
+          matInput
+          [type]="verContrasena ? 'text' : 'password'"
+          name="contrasena"
+          [(ngModel)]="contrasena"
+          required
+          autocomplete="current-password"
+        />
         <button
-          mat-flat-button
-          color="primary"
-          type="submit"
-          class="campo"
-          [disabled]="formulario.invalid || entrando()"
+          mat-icon-button
+          matSuffix
+          type="button"
+          (click)="verContrasena = !verContrasena"
+          [attr.aria-label]="verContrasena ? 'Ocultar contraseña' : 'Mostrar contraseña'"
         >
-          Ingresar
+          <mat-icon>{{ verContrasena ? 'visibility_off' : 'visibility' }}</mat-icon>
         </button>
-      </form>
+      </mat-form-field>
 
-      <p class="ayuda-demo">
-        Cuenta de demostración: admin&#64;hexacore.com — la contraseña es la de la semilla del
-        Servicio de Administración. Este portal es para los roles Administrador y Organizador.
-      </p>
-    </mat-card-content>
-  </mat-card>
+      <button mat-flat-button type="submit" class="entrar" [disabled]="formulario.invalid || entrando()">
+        @if (entrando()) { Verificando… } @else { Ingresar }
+      </button>
+      @if (entrando()) {
+        <mat-progress-bar mode="indeterminate" />
+      }
+    </form>
+  </main>
 </div>

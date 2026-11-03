@@ -32,6 +32,8 @@
     "migracion:logistica:correr": "npm run datos:preparar",
     "migracion:logistica:estado": "typeorm-ts-node-commonjs migration:show -d modulos/personal-logistica/persistencia/data-source.ts",
     "semilla:logistica": "node modulos/personal-logistica/scripts/seed.mjs",
+    "migracion:eventos:estado": "typeorm-ts-node-commonjs migration:show -d modulos/eventos-recintos/persistencia/data-source.ts",
+    "semilla:eventos": "ts-node modulos/eventos-recintos/persistencia/semillas/sembrar.ts",
     "carga:logistica": "node modulos/personal-logistica/scripts/carga.mjs",
     "test:boleteria:infra": "npm run test:infra",
     "test:boleteria:limpiar": "npm run test:limpiar",
