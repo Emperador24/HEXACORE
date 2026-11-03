@@ -6,7 +6,7 @@
   ],
   "rootDir": "..",
   "testEnvironment": "node",
-  "testRegex": "test/(?:cu011|logistica/.*)\\.e2e-spec\\.ts$",
+  "testRegex": "test/(?:cu011|logistica/.*|eventos/.*)\\.e2e-spec\\.ts$",
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },

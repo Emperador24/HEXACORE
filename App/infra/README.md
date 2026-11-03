@@ -1,10 +1,10 @@
 # Infraestructura de HEXACORE
 
-Para revisar `feature/sebastian-arquitectura` desde fuentes, usar el
-[entorno local de revisión](revision/README.md):
-`./App/infra/revision.sh iniciar --datos-demo` (solo primera carga explícita).
-Tiene recursos/puertos propios, conserva operaciones y permite revisar PR #44
-en borrador sin integrar ni ejecutar el corte del entorno habitual.
+La arquitectura vigente (ADR-16) está integrada en develop. Para revisarla en
+aislamiento existe el [entorno local de revisión](revision/README.md):
+`./App/infra/revision.sh iniciar --datos-demo` (solo primera carga explícita, y solo
+desde la rama `feature/sebastian-arquitectura`). Tiene recursos/puertos propios,
+conserva operaciones y no ejecuta el corte del entorno habitual.
 
 Configuración preparada para Núcleo, Boletería y Trabajador desde App/backend,
 con **una base POSTGRES_BD=hexacore y ocho esquemas**. Pagos es reutilizable,
@@ -49,7 +49,6 @@ de negocio contiene filas o la procedencia indica transferencia. No hay carga
 automática de los SQL por bases antiguas ni alternativa sin Node.
 `exportar-datos-demo.sh /ruta/privada/nuevo.dump` genera un respaldo custom de la
 base única, solo lectura y sin sobrescribir archivos; no es conciliación ni corte.
-Los volcados antiguos de datos-demo son históricos y no se importan con este arranque.
 
 Modo dos máquinas, pendiente de ejecución real:
 

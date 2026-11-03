@@ -77,21 +77,23 @@
 \subtitle{Arquitectura de Software · SRS, SAD y prototipo funcional}
 \author{Daniel Cristancho \and Samuel Emperador \and Sebastián Sánchez \and Diego Coronado}
 \institute{Pontificia Universidad Javeriana · HEXACORE}
-\date{Septiembre de 2026}
+\date{Noviembre de 2026}
 
 \input{Diagrams/Vigente/diagramas}
 \begin{document}
 \begin{frame}{HEXACORE: cierre técnico de la migración}
-ADR-16. Rama de arquitectura; corte habitual e integración a develop pendientes.
+ADR-16, integrada en develop (PR \#44); corte del entorno habitual pendiente.
 \begin{itemize}\item Migrar funcionalidad existente, sin completar casos de otros integrantes.
 \item Tres programas ejecutables: Núcleo, Boletería y Trabajador.
 \item Operación conserva su frontera objetivo; no está implementada.
 \item Una base con ocho esquemas, libro financiero compartido y webhook único.
 \end{itemize}\end{frame}
-\begin{frame}{Contexto actual}\centering\begin{minipage}{0.60\textwidth}\HexContexto\end{minipage}\end{frame}
-\begin{frame}{Programas y dependencias}\centering\begin{minipage}{0.60\textwidth}\HexContenedores\end{minipage}\end{frame}
-\begin{frame}{Una fuente de reglas por módulo}\centering\begin{minipage}{0.60\textwidth}\HexComponentes\end{minipage}\end{frame}
-\begin{frame}{Compra existente y sus límites}\centering\begin{minipage}{0.60\textwidth}\HexSecuencia\end{minipage}\end{frame}
+\begin{frame}{Contexto actual}\centering\HexContexto\end{frame}
+\begin{frame}{Programas y dependencias}\centering\HexContenedores\end{frame}
+\begin{frame}{Componentes del Núcleo}\centering\HexComponentesNucleo\end{frame}
+\begin{frame}{Componentes de Boletería}\centering\HexComponentesBoleteria\end{frame}
+\begin{frame}{Compra con turno y sus límites}\centering\HexSecuencia\end{frame}
+\begin{frame}{Despliegue}\centering\HexDespliegue\end{frame}
 \begin{frame}{Datos y ejecución}
 \begin{itemize}\item Copia transferida: reconoce ocho historiales, no reaplica las 18 migraciones.
 \item Instalación vacía: 49 tablas, 18 entradas de historial y cuatro roles iniciales.

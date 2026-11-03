@@ -4,7 +4,7 @@ export const ESQUEMAS = {
   identidad: 'identidad', alimentos: 'alimentos', 'personal-logistica': 'personal_logistica',
   'entradas-ventas': 'entradas_ventas', 'entradas-catalogo': 'entradas_catalogo',
   'entradas-postventa': 'entradas_postventa', 'entradas-acceso-qr': 'entradas_acceso_qr',
-  'finanzas-pagos': 'finanzas_pagos',
+  'finanzas-pagos': 'finanzas_pagos', 'eventos-recintos': 'eventos_recintos',
 } as const;
 export type ConexionNegocio = keyof typeof ESQUEMAS;
 export const opcionesEsquema = (conexion: ConexionNegocio) => ({

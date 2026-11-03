@@ -22,18 +22,23 @@ import { CrearEmpleadoDto } from './dto/crear-empleado.dto';
 import { CrearTurnoDto } from './dto/crear-turno.dto';
 import { RevisarSolicitudDto } from './dto/revisar-solicitud.dto';
 import { SolicitarCambioTurnoDto } from './dto/solicitar-cambio-turno.dto';
+import { GestionPersonalService } from './gestion-personal.service';
 import { TurnosService } from './turnos.service';
 
 @UsePipes(validacionLogistica)
 @Controller('logistica')
 @UseGuards(SesionValida, ContextoDeLogistica)
 export class TurnosController {
-  constructor(private readonly turnosService: TurnosService) {}
+  constructor(
+    private readonly turnosService: TurnosService,
+    private readonly gestionPersonal: GestionPersonalService,
+  ) {}
 
   @Post('empleados')
   @UseGuards(SoloQuienSupervisa)
-  crearEmpleado(@Body() dto: CrearEmpleadoDto) {
-    return this.turnosService.crearEmpleado(dto);
+  crearEmpleado(@Body() dto: CrearEmpleadoDto, @Req() peticion: PeticionDeLogistica) {
+    // CU-007 pasos 3-5: duplicados y auditoría viven en la gestión de personal.
+    return this.gestionPersonal.crear(dto, peticion.sesion!.usuarioId);
   }
 
   // La lista completa del personal incluye la credencial de cada uno (que es

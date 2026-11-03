@@ -3,7 +3,7 @@
 Esta guía es un procedimiento operativo propuesto para una ventana autorizada.
 La entrega actual **no lo ejecuta**. Los scripts ensayo:datos y base-unica tienen
 guardas exclusivas de pruebas: no quitar sus guardas ni apuntarlos al PostgreSQL
-habitual. La rama no se mezcla a develop/main automáticamente.
+habitual. El código ya está integrado en develop (PR #44); integrar no ejecuta este corte.
 
 ## Condiciones para iniciar la ventana
 

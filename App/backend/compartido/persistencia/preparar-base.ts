@@ -60,7 +60,7 @@ export async function prepararBase() {
       }
       await bloqueo.commitTransaction();
     } catch(e) { await bloqueo.rollbackTransaction(); throw e; }
-    console.log(JSON.stringify({ base:p.base, esquemas:resultado, migraciones:18 }));
+    console.log(JSON.stringify({ base:p.base, esquemas:resultado, migraciones:GRUPOS_MIGRACIONES.reduce((n,g)=>n+g.migraciones.length,0) }));
     return resultado;
   } finally {
     await bloqueo.query("SELECT pg_advisory_unlock(hashtextextended('hexacore:preparar-base',0))");

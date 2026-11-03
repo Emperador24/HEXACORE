@@ -53,8 +53,11 @@ async function inventariarTemporales(salida) {
   guardar(salida,'rabbitmq.json',{colas:colas.map(c=>({nombre:c.name,durable:c.durable,arguments:c.arguments,corte:c.corte})),
     exchanges:await obtener('exchanges/cu011'),bindings:await obtener('bindings/cu011'),advertencia:'Solo inventario; sin consumir/purgar mensajes. No equivale a respaldo restaurable de mensajes.'});
 }
+// Migraciones escritas después de la consolidación: no venían de los servicios
+// anteriores, así que no forman parte del corte que este ensayo compara.
+const POSTERIORES=new Set(['1793664000000-Cu007GestionPersonal.ts']);
 function migracionesOriginales() {
-  return mapa.flatMap(m=>fs.readdirSync(join(raiz,m.modulo,'persistencia/migraciones')).filter(f=>f.endsWith('.ts')).sort().map(f=>{
+  return mapa.flatMap(m=>fs.readdirSync(join(raiz,m.modulo,'persistencia/migraciones')).filter(f=>f.endsWith('.ts')&&!POSTERIORES.has(f)).sort().map(f=>{
     const ruta=m.modulo+'/persistencia/migraciones/'+f,contenido=fs.readFileSync(join(raiz,ruta),'utf8');
     const nombre=/export class (\w+)/.exec(contenido)?.[1]; assert.ok(nombre,ruta);
     return {conexion:m.conexion,ruta,nombre,sha256:sha(contenido)};

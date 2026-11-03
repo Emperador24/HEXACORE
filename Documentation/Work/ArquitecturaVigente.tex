@@ -1,7 +1,7 @@
 % Sustituye las vistas activas de ADR-14/15. Las originales están en Historico/.
 \section{Vista de contenedores}
 \label{sec:contenedores}
-\textbf{Vigencia: ADR-16, rama de arquitectura.} Tres programas ejecutables:
+\textbf{Vigencia: ADR-16, integrada en develop.} Tres programas ejecutables:
 Núcleo, Boletería y Trabajador. Operación es el cuarto programa objetivo y sigue
 sin implementar. Los módulos ausentes no se presentan como servidores terminados.
 La configuración y las imágenes se validan en infraestructura aislada; el entorno
@@ -15,7 +15,8 @@ Identidad conserva firma/renovación. No existen servidores separados de Pagos,
 Autenticación, Alimentos, Personal ni los cinco componentes de Boletería.
 
 \begin{figure}[H]\centering\HexContenedores
-\caption{Contenedores vigentes. Azul: programas existentes; discontinuo: objetivo pendiente.}
+\caption{Contenedores vigentes. Operación figura como objetivo pendiente; las relaciones del Núcleo con
+Redis, RabbitMQ y la pasarela se resumen en el texto.}
 \label{fig:contenedores}\end{figure}
 
 \section{Vista de componentes}
@@ -23,9 +24,14 @@ Autenticación, Alimentos, Personal ni los cinco componentes de Boletería.
 Cada programa tiene bootstrap real en \texttt{App/backend/apps}. Las reglas tienen
 una sola fuente en \texttt{modulos}; dependencias y lockfile comunes, Node 22.22.3,
 Nest 11/TypeScript 5.9. Los compiladores Angular están fuera del workspace.
-\begin{figure}[H]\centering\HexComponentes
-\caption{Composición actual. Importar Pagos no publica cobros o reembolsos HTTP.}
+\begin{figure}[H]\centering\HexComponentesNucleo
+\caption{Componentes del Núcleo: controladores, servicios, webhook y módulo Pagos. Importar Pagos no
+publica cobros o reembolsos HTTP.}
 \label{fig:componentes}\end{figure}
+\begin{figure}[H]\centering\HexComponentesBoleteria
+\caption{Componentes de Boletería: cinco componentes de Entradas, sus trabajos en segundo plano
+(cron, outbox, consumidores) y el módulo Pagos.}
+\label{fig:componentes-boleteria}\end{figure}
 Núcleo reúne cuentas, sesiones, administración, pedidos y logística; Boletería reúne
 cartelera, fila, compras, reventa e ingresos. Se conservan rutas \texttt{/api/v1}, DTO,
 estados, errores, cookies, RS256 y reglas previas. El único webhook financiero es
@@ -36,7 +42,8 @@ sin SQL/Redis/JWT/Finanzas y sin endpoints de negocio.
 \section{Vista de procesos}
 \label{sec:procesos}
 \begin{figure}[H]\centering\HexSecuencia
-\caption{Compra existente; no representa una Saga nueva ni finalización F12.}
+\caption{Compra con turno (CU-001): turno gastado en el gateway, cobro local y QR por eventos. No
+representa una Saga nueva ni la finalización F12.}
 \label{fig:secuencia}\end{figure}
 Alimentos y Entradas llaman a la API pública local de Pagos; solo la pasarela
 mantiene HTTP externo. Postventa usa la API local de Ventas, conservando guardas y
@@ -65,7 +72,8 @@ el correo en vuelo conserva su posible reentrega (F15).
 \section{Vista física}
 \label{sec:fisica}
 \begin{figure}[H]\centering\HexDespliegue
-\caption{Despliegue comprobado en pruebas; no representa el entorno habitual migrado.}\label{fig:despliegue}\end{figure}
+\caption{Despliegue con Docker Compose: perfiles servicios y datos, réplicas de Boletería e imágenes
+de GHCR. No representa un entorno habitual ya cortado.}\label{fig:despliegue}\end{figure}
 Docker Compose ejecuta los tres programas, gateway, PostgreSQL, Redis, RabbitMQ,
 dos proveedores simulados y dos portales. \texttt{preparacion-base} es una tarea
 sin listener: ejecuta las migraciones antes de habilitar ambas apps. No es un cuarto

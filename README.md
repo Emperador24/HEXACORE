@@ -17,18 +17,22 @@ HEXACORE/
 
 | Archivo | Descripción |
 |---|---|
-| `Summary.pdf` | Resumen ejecutivo del proyecto |
-| `ArchitecturalProposal.pdf` | Propuesta arquitectónica: atributos de calidad, decisiones y componentes |
-| `C4Diagrams.pdf` | Diagramas del modelo C4: contexto, contenedores, componentes, sistema, dinámico y despliegue |
+| `DescripcionArquitecturaSoftware.pdf` | SAD: arquitectura vigente (ADR-16), ADR y tácticas |
+| `EspecificacionRequisitos.pdf` | SRS: requisitos funcionales y no funcionales |
+| `Summary.pdf` | Resumen técnico de la migración |
+| `ArchitecturalProposal.pdf` | Decisión arquitectónica vigente y concesiones |
+| `C4Diagrams.pdf` | Vistas vigentes: contexto, contenedores, componentes, procesos, despliegue y datos |
+| `Presentacion.pdf` | Presentación del cierre técnico de la migración |
 | `CU_eventos_completo.xlsx` | 32 casos de uso (CU-001..CU-032) con atributos de calidad e infraestructura |
 
 ### Trabajo en curso (`Documentation/Work/`)
 
 | Archivo | Descripción |
 |---|---|
-| `Summary.tex` | Fuente LaTeX del resumen ejecutivo |
-| `ArchitecturalProposal.tex` | Fuente LaTeX de la propuesta arquitectónica |
-| `C4Diagrams.tex` | Fuente LaTeX de los diagramas C4 |
+| `DescripcionArquitecturaSoftware.tex`, `EspecificacionRequisitos.tex` | Fuentes del SAD y del SRS |
+| `ArquitecturaVigente.tex`, `ADR-16-nucleo-modular.tex` | Vistas y decisión vigentes, compartidas por los documentos |
+| `Summary.tex`, `ArchitecturalProposal.tex`, `C4Diagrams.tex`, `Presentacion.tex` | Fuentes de los demás entregables |
+| `Historico/` | Versiones anteriores a ADR-16, conservadas como historia |
 
 ## Casos de uso finales (`CU_eventos_completo.xlsx`)
 
@@ -54,7 +58,8 @@ HEXACORE/
 [estado y verificaciones](Documentation/Work/ESTADO-MIGRACION.md),
 [corte/reversión pendientes](Documentation/Work/CORTE-Y-REVERSION.md).
 Núcleo, Boletería y Trabajador ejecutan lo existente; Operación y CU ausentes siguen
-pendientes. La consolidación se comprobó en copias; el entorno habitual no se cortó.
+pendientes. La migración está integrada en develop (PR #44); el entorno habitual
+todavía no se cortó.
 
 ## Flujo de trabajo
 

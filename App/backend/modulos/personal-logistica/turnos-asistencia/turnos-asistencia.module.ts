@@ -11,6 +11,8 @@ import {
 import { AsistenciaService } from './asistencia.service';
 import { EventosConsumidorService } from './eventos-consumidor.service';
 import { EventosPublicadorService } from './eventos-publicador.service';
+import { GestionPersonalController } from './gestion-personal.controller';
+import { GestionPersonalService } from './gestion-personal.service';
 import { NotificacionesController } from './notificaciones.controller';
 import { PersonalOperativoController } from './personal-operativo.controller';
 import { PersonalOperativoService } from './personal-operativo.service';
@@ -33,6 +35,8 @@ import { TurnosService } from './turnos.service';
     AsistenciaController,
     NotificacionesController,
     PersonalOperativoController,
+    // Tras TurnosController: `empleados/yo` antes que `empleados/:id`.
+    GestionPersonalController,
   ],
   providers: [
     SesionValida,
@@ -44,6 +48,7 @@ import { TurnosService } from './turnos.service';
     TurnosService,
     AsistenciaService,
     PersonalOperativoService,
+    GestionPersonalService,
     EventosPublicadorService,
     EventosConsumidorService,
   ],

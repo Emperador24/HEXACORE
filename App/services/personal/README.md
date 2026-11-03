@@ -10,8 +10,9 @@ Este directorio conserva la referencia documental del dominio; no contiene un
 servidor ni otra fuente de reglas de negocio.
 
 Núcleo atiende `/api/v1/logistica` en el mismo proceso que Identidad y Alimentos.
-Se conserva temporalmente la base `eventos_emergencias`, sus dos migraciones y
-sus datos. La base histórica `personal` no se utiliza para este traslado.
+Sus datos viven en el esquema `personal_logistica` de la base única `hexacore`,
+con sus dos migraciones originales. Las bases históricas `eventos_emergencias` y
+`personal` no se usan en la arquitectura vigente.
 
 Están disponibles empleados, zonas/asignación, turnos, cambios de turno,
 asistencia y consulta de notificaciones con los límites registrados en el

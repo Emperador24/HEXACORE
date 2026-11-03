@@ -1,0 +1,319 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "HEXACORE — Despliegue con Docker Compose (ADR-16)",
+    "output": "07-despliegue.html",
+    "quality_profile": "standard",
+    "viewBox": [
+      1500,
+      920
+    ]
+  },
+  "components": [
+    {
+      "id": "navegador",
+      "type": "external",
+      "label": "Navegador o app móvil",
+      "sublabel": "usuario final",
+      "pos": [
+        60,
+        20
+      ],
+      "size": [
+        260,
+        60
+      ]
+    },
+    {
+      "id": "ghcr",
+      "type": "cloud",
+      "label": "GHCR",
+      "sublabel": "8 imágenes amd64/arm64 por digest · publica el CD",
+      "pos": [
+        1060,
+        20
+      ],
+      "size": [
+        380,
+        60
+      ]
+    },
+    {
+      "id": "portales",
+      "type": "frontend",
+      "label": "Portales Cliente y Admin",
+      "sublabel": "Nginx :4200 / :4201",
+      "pos": [
+        80,
+        200
+      ],
+      "size": [
+        260,
+        64
+      ]
+    },
+    {
+      "id": "gateway",
+      "type": "security",
+      "label": "api-gateway",
+      "sublabel": "Nginx/njs :8080",
+      "pos": [
+        560,
+        200
+      ],
+      "size": [
+        300,
+        64
+      ]
+    },
+    {
+      "id": "preparacion",
+      "type": "backend",
+      "label": "preparacion-base",
+      "sublabel": "tarea única · sale con 0",
+      "pos": [
+        80,
+        380
+      ],
+      "size": [
+        220,
+        70
+      ]
+    },
+    {
+      "id": "nucleo",
+      "type": "backend",
+      "label": "nucleo",
+      "sublabel": "1 réplica · :3002",
+      "pos": [
+        340,
+        380
+      ],
+      "size": [
+        220,
+        70
+      ]
+    },
+    {
+      "id": "boleteria",
+      "type": "backend",
+      "label": "boleteria × N",
+      "sublabel": "iniciar.sh --replicas N · :3001",
+      "pos": [
+        600,
+        380
+      ],
+      "size": [
+        280,
+        70
+      ]
+    },
+    {
+      "id": "trabajador",
+      "type": "backend",
+      "label": "trabajador",
+      "sublabel": "1 réplica · sin puertos",
+      "pos": [
+        920,
+        380
+      ],
+      "size": [
+        240,
+        70
+      ]
+    },
+    {
+      "id": "postgres",
+      "type": "database",
+      "label": "postgres 16",
+      "sublabel": "volumen postgres-datos",
+      "pos": [
+        80,
+        680
+      ],
+      "size": [
+        480,
+        70
+      ]
+    },
+    {
+      "id": "redis",
+      "type": "database",
+      "label": "redis 7",
+      "sublabel": "volumen redis-datos · AOF",
+      "pos": [
+        600,
+        680
+      ],
+      "size": [
+        240,
+        70
+      ]
+    },
+    {
+      "id": "rabbitmq",
+      "type": "messagebus",
+      "label": "rabbitmq 3.13",
+      "sublabel": "volumen rabbitmq-datos",
+      "pos": [
+        880,
+        680
+      ],
+      "size": [
+        240,
+        70
+      ]
+    },
+    {
+      "id": "simuladores",
+      "type": "external",
+      "label": "pasarela y correo",
+      "sublabel": "simuladores :3099 / :3098",
+      "pos": [
+        1180,
+        680
+      ],
+      "size": [
+        260,
+        70
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Host de aplicaciones · perfil servicios",
+      "wraps": [
+        "portales",
+        "gateway",
+        "preparacion",
+        "nucleo",
+        "boleteria",
+        "trabajador"
+      ],
+      "pad": 26
+    },
+    {
+      "kind": "region",
+      "label": "Host de datos · perfil datos (modo remoto; en local, el mismo host)",
+      "wraps": [
+        "postgres",
+        "redis",
+        "rabbitmq",
+        "simuladores"
+      ],
+      "pad": 26
+    }
+  ],
+  "connections": [
+    {
+      "id": "nav-portales",
+      "from": "navegador",
+      "to": "portales",
+      "label": "SPA",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "nav-gw",
+      "from": "navegador",
+      "to": "gateway",
+      "label": "HTTPS /api/v1",
+      "fromSide": "right",
+      "toSide": "top",
+      "variant": "emphasis"
+    },
+    {
+      "id": "ghcr-trabajador",
+      "from": "ghcr",
+      "to": "trabajador",
+      "label": "pull de las 8 imágenes",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "variant": "dashed"
+    },
+    {
+      "id": "gw-nucleo",
+      "from": "gateway",
+      "to": "nucleo",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "gw-boleteria",
+      "from": "gateway",
+      "to": "boleteria",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "variant": "emphasis"
+    },
+    {
+      "id": "prep-pg",
+      "from": "preparacion",
+      "to": "postgres",
+      "label": "18 migraciones",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "variant": "dashed"
+    },
+    {
+      "id": "nucleo-pg",
+      "from": "nucleo",
+      "to": "postgres",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "boleteria-redis",
+      "from": "boleteria",
+      "to": "redis",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "trabajador-rabbit",
+      "from": "trabajador",
+      "to": "rabbitmq",
+      "label": "AMQP",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "trabajador-sim",
+      "from": "trabajador",
+      "to": "simuladores",
+      "label": "HTTP correo",
+      "fromSide": "right",
+      "toSide": "top"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Orden de arranque",
+      "items": [
+        "postgres, redis, rabbitmq y simuladores sanos",
+        "preparacion-base aplica las 18 migraciones y termina con 0",
+        "nucleo y boleteria arrancan después; el gateway espera a ambos"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Variantes de Compose",
+      "items": [
+        "docker-compose.remoto.yml separa el perfil datos en otra máquina",
+        "docker-compose.escalado.yml quita puertos fijos para réplicas de Boletería",
+        "docker-compose.registro.yml usa las imágenes de GHCR en vez de compilar"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Relaciones resumidas",
+      "items": [
+        "Núcleo y Boletería usan postgres, redis, rabbitmq y la pasarela",
+        "No hay Kubernetes, MongoDB ni réplica SQL en esta migración"
+      ]
+    }
+  ]
+}

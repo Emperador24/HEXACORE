@@ -41,6 +41,8 @@ y escucha en **8080**. Es la única dirección que conocen la app móvil y los p
 | `/api/v1/reventa/…` | Boletería | token `Cliente` o `Administrador` |
 | `/api/v1/pedidos/…` | Núcleo | token |
 | `/api/v1/logistica/…` | Núcleo | token |
+| `/api/v1/eventos`, `/api/v1/eventos/…` | Núcleo (CU-026) | token + Organizador o Administrador |
+| `/api/v1/recintos` (solo GET) | Núcleo (CU-026) | token + Organizador o Administrador |
 | `POST /api/v1/pagos/webhook` | Núcleo | firma HMAC de la pasarela (la valida Núcleo) |
 | `/salud` | el propio gateway | nada |
 
@@ -111,7 +113,7 @@ respondiendo 200 (RNF-03).
 
 ## CORS
 
-Vive aquí y no en cada servicio: los microservicios no hablan con navegadores, hablan con el gateway.
+Vive aquí y no en cada programa: Núcleo y Boletería no hablan con navegadores, hablan con el gateway.
 En desarrollo se aceptan los portales en 4200 y 4201 desde cualquier máquina de la red —para poder
 abrirlos desde otro computador— y la comprobación previa (`OPTIONS`) se responde en el gateway sin
 tocar ningún servicio. En producción esa lista se reduce a los dominios reales.

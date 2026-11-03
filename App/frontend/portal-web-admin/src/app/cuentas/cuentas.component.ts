@@ -2,14 +2,15 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
-import { MatChipsModule } from '@angular/material/chips';
+import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTableModule } from '@angular/material/table';
+import { firstValueFrom } from 'rxjs';
+import { DatosConfirmacion, DialogoConfirmacionComponent } from '../compartido/dialogo-confirmacion.component';
 import { ErrorCuenta } from '../core/auth.service';
 import { CuentasApiService } from '../core/cuentas-api.service';
 import { Cuenta, EstadoCuenta } from '../core/models';
@@ -33,8 +34,6 @@ const POR_PAGINA = 20;
     DatePipe,
     FormsModule,
     MatButtonModule,
-    MatCardModule,
-    MatChipsModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
@@ -47,6 +46,7 @@ const POR_PAGINA = 20;
 })
 export class CuentasComponent {
   private readonly api = inject(CuentasApiService);
+  private readonly dialogo = inject(MatDialog);
 
   readonly estados = Object.values(EstadoCuenta);
   readonly columnas = ['nombre', 'estado', 'roles', 'ultimoAcceso', 'acciones'];
@@ -106,8 +106,14 @@ export class CuentasComponent {
   }
 
   async desactivar(cuenta: Cuenta): Promise<void> {
-    const motivo = prompt(`Motivo para desactivar a ${cuenta.email}:`);
-    if (!motivo?.trim()) return;
+    const motivo = await this.confirmar({
+      titulo: `Desactivar ${cuenta.email}`,
+      mensaje: 'Cierra todas sus sesiones abiertas, también en la app y el portal de clientes. Se puede reactivar después.',
+      accion: 'Desactivar',
+      pedirMotivo: true,
+      peligrosa: true
+    });
+    if (motivo === undefined) return;
     await this.accion(
       () => this.api.desactivar(cuenta.id, motivo),
       `${cuenta.email} desactivada; sus sesiones abiertas se cerraron.`
@@ -115,8 +121,14 @@ export class CuentasComponent {
   }
 
   async eliminar(cuenta: Cuenta): Promise<void> {
-    const motivo = prompt(`Eliminar anonimiza la cuenta y no se puede deshacer.\n\nMotivo para ${cuenta.email}:`);
-    if (!motivo?.trim()) return;
+    const motivo = await this.confirmar({
+      titulo: `Eliminar ${cuenta.email}`,
+      mensaje: 'Anonimiza la cuenta y la deja desactivada para siempre. No se puede deshacer.',
+      accion: 'Eliminar cuenta',
+      pedirMotivo: true,
+      peligrosa: true
+    });
+    if (motivo === undefined) return;
     await this.accion(() => this.api.eliminar(cuenta.id, motivo), 'Cuenta anonimizada y desactivada para siempre.');
   }
 
@@ -147,6 +159,14 @@ export class CuentasComponent {
 
   bloqueada(cuenta: Cuenta): boolean {
     return cuenta.bloqueadaHasta !== null && new Date(cuenta.bloqueadaHasta) > new Date();
+  }
+
+  etiquetaEstado(estado: EstadoCuenta): string {
+    return { PENDIENTE_VERIFICACION: 'Sin verificar', ACTIVA: 'Activa', DESACTIVADA: 'Desactivada' }[estado];
+  }
+
+  private confirmar(datos: DatosConfirmacion): Promise<string | undefined> {
+    return firstValueFrom(this.dialogo.open(DialogoConfirmacionComponent, { data: datos, width: '460px' }).afterClosed());
   }
 
   private mensaje(e: unknown): string {

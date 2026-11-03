@@ -3,6 +3,7 @@ import { config as cargarEnv } from 'dotenv';
 import { CONEXION_LOGISTICA } from './conexion';
 import { cargarConfiguracion, ConfiguracionLogistica } from '../comun/config/configuracion';
 import { DataSource, DataSourceOptions } from 'typeorm';
+import { AuditoriaPersonal } from '../turnos-asistencia/entities/auditoria-personal.entity';
 import { Empleado } from '../turnos-asistencia/entities/empleado.entity';
 import { Notificacion } from '../turnos-asistencia/entities/notificacion.entity';
 import { RegistroAsistencia } from '../turnos-asistencia/entities/registro-asistencia.entity';
@@ -11,6 +12,7 @@ import { Turno } from '../turnos-asistencia/entities/turno.entity';
 import { ZonaEvento } from '../turnos-asistencia/entities/zona-evento.entity';
 import { EsquemaInicialCu0181789718400000 } from './migraciones/1789718400000-EsquemaInicialCu018';
 import { Cu017PersonalOperativo1789750000000 } from './migraciones/1789750000000-Cu017PersonalOperativo';
+import { Cu007GestionPersonal1793664000000 } from './migraciones/1793664000000-Cu007GestionPersonal';
 
 cargarEnv();
 
@@ -21,9 +23,14 @@ export const ENTIDADES = [
   RegistroAsistencia,
   Notificacion,
   ZonaEvento,
+  AuditoriaPersonal,
 ];
 
-export const MIGRACIONES = [EsquemaInicialCu0181789718400000, Cu017PersonalOperativo1789750000000];
+export const MIGRACIONES = [
+  EsquemaInicialCu0181789718400000,
+  Cu017PersonalOperativo1789750000000,
+  Cu007GestionPersonal1793664000000,
+];
 
 export function opcionesDataSource(config: ConfiguracionLogistica = cargarConfiguracion()): DataSourceOptions & { name: string } {
   return {

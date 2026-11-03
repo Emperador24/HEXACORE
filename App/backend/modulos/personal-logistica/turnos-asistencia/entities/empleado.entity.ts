@@ -30,6 +30,20 @@ export class Empleado {
   @Column({ unique: true })
   credencial: string;
 
+  /**
+   * CU-007: datos de contacto de la ficha. Únicos (paso 4) y nulos en las
+   * fichas dadas de alta antes de este caso de uso. El correo se guarda en
+   * minúsculas para que la unicidad no dependa de cómo se escribió.
+   */
+  @Column({ type: 'varchar', nullable: true, unique: true })
+  documento: string | null;
+
+  @Column({ type: 'varchar', nullable: true, unique: true })
+  correo: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  telefono: string | null;
+
   @Column({ default: true })
   activo: boolean;
 

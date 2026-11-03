@@ -38,7 +38,7 @@ flutter run --dart-define=HEXACORE_HOST=192.168.18.16
 ```
 
 La app conoce **una sola dirección**: el **API Gateway** en el puerto `8080` (ADR-02). No sabe
-cuántos microservicios hay ni en qué puerto está cada uno; el gateway autentica cada petición y la
+qué programas hay detrás (Núcleo, Boletería) ni en qué puerto está cada uno; el gateway autentica cada petición y la
 enruta. Con `--dart-define=HEXACORE_API=…` se apunta a un gateway desplegado en otro sitio.
 
 | Puerto | Qué es |

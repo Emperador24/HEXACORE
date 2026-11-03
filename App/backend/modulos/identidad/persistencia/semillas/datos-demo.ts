@@ -75,6 +75,14 @@ export const USUARIOS: UsuarioDemo[] = [
     roles: [NombreRol.ADMINISTRADOR, NombreRol.PERSONAL],
     paraQue: 'Administrador con dos roles: prueba que la asignación múltiple funciona',
   },
+  {
+    id: 'a0000012-0000-4000-8000-000000000012',
+    nombre: 'Valentina Ortiz',
+    email: 'organizador@hexacore.com',
+    estado: EstadoCuenta.ACTIVA,
+    roles: [NombreRol.ORGANIZADOR],
+    paraQue: 'Organizador: crea, publica y cancela eventos en el portal administrativo (CU-026)',
+  },
   // Las siguientes son cuentas de Personal, una por área operativa. El área ya
   // no la adivina la app: la asigna un administrador al dar de alta al empleado
   // en el servicio de Logística (CU-018), que guarda la ficha ligada a esta

@@ -30,19 +30,17 @@ export interface EventoDemo {
 const FEST = dias(90);
 const ROCK = dias(45);
 const GALA = dias(30);
-const VERANO = dias(-90);
 const FERIA = dias(16);
 const SINFONICA = dias(50);
 const CLASICO = dias(36);
 const SALSA = dias(63);
 const CAFE = dias(9);
-const MAGO = dias(77);
 
 /**
- * Los cuatro primeros son los del CU-006 y conservan sus ids y sus fechas: las
+ * Los tres primeros son los del CU-006 y conservan sus ids y sus fechas: las
  * entradas de abajo apuntan a ellos. El resto existe para la cartelera
  * (CU-005): varía en ciudad, categoría y artista para que cada filtro tenga
- * algo que filtrar, y los dos últimos no deben verse nunca.
+ * algo que filtrar. Solo hay eventos publicados y vigentes.
  */
 export const EVENTOS: EventoDemo[] = [
   {
@@ -75,17 +73,6 @@ export const EVENTOS: EventoDemo[] = [
     estado: EstadoEvento.PUBLICADO,
     aforoMaximo: 120,
     asistentes: 120,
-  },
-  {
-    // Evento ya celebrado: toda publicación sobre él nace expirada (CU-006D).
-    // En la cartelera solo aparece con `incluirPasados=true`.
-    eventoId: 'e0000004-0000-4000-8000-000000000004',
-    nombre: 'Festival de Verano 2026',
-    fechaInicio: VERANO,
-    fechaFin: mas(VERANO, 8),
-    lugar: 'Parque Simón Bolívar',
-    ciudad: 'Bogotá',
-    estado: EstadoEvento.PUBLICADO,
   },
   {
     eventoId: 'e0000005-0000-4000-8000-000000000005',
@@ -135,17 +122,6 @@ export const EVENTOS: EventoDemo[] = [
     estado: EstadoEvento.PUBLICADO,
   },
   {
-    // Borrador: el organizador aún no lo anuncia. No debe verse en la
-    // cartelera ni en su detalle (404).
-    eventoId: 'e000000a-0000-4000-8000-00000000000a',
-    nombre: 'El Mago de Oz — Musical',
-    fechaInicio: MAGO,
-    fechaFin: mas(MAGO, 2),
-    lugar: 'Teatro Colsubsidio',
-    ciudad: 'Bogotá',
-    estado: EstadoEvento.BORRADOR,
-  },
-  {
     // A 4 días: cancelar sus entradas da reembolso PARCIAL (CU-003A).
     eventoId: 'e000000c-0000-4000-8000-00000000000c',
     nombre: 'Noche de Stand-up',
@@ -154,25 +130,5 @@ export const EVENTOS: EventoDemo[] = [
     lugar: 'Teatro Pablo Tobón Uribe',
     ciudad: 'Medellín',
     estado: EstadoEvento.PUBLICADO,
-  },
-  {
-    // En menos de un día: ya no admite cancelaciones (fuera de plazo).
-    eventoId: 'e000000d-0000-4000-8000-00000000000d',
-    nombre: 'Jazz al Atardecer',
-    fechaInicio: dias(0.8),
-    fechaFin: mas(dias(0.8), 3),
-    lugar: 'Teatro Mayor Julio Mario Santo Domingo',
-    ciudad: 'Bogotá',
-    estado: EstadoEvento.PUBLICADO,
-  },
-  {
-    // Cancelado: tampoco debe verse.
-    eventoId: 'e000000b-0000-4000-8000-00000000000b',
-    nombre: 'Torneo Nacional de Voleibol',
-    fechaInicio: dias(20),
-    fechaFin: null,
-    lugar: 'Coliseo El Pueblo',
-    ciudad: 'Cali',
-    estado: EstadoEvento.CANCELADO,
   },
 ];

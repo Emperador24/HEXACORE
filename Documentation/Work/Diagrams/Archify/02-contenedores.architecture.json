@@ -2,55 +2,54 @@
   "schema_version": 1,
   "diagram_type": "architecture",
   "meta": {
-    "title": "HEXACORE — Contenedores (ADR-14, ADR-15)",
+    "title": "HEXACORE — Contenedores (ADR-16)",
     "output": "02-contenedores.html",
     "quality_profile": "standard",
+    "viewBox": [
+      1480,
+      900
+    ],
     "views": [
       {
-        "id": "camino-de-compra",
-        "label": "Camino de compra (CU-001)",
+        "id": "compra",
+        "label": "Compra de entradas",
         "focus": [
           "portal_cliente",
           "gateway",
-          "cola",
-          "catalogo",
-          "ventas",
-          "pagos",
+          "boleteria",
+          "postgres",
           "redis",
-          "broker"
+          "rabbitmq",
+          "pasarela"
         ],
-        "note": "Los cuatro servicios que escalan juntos en la apertura de venta."
+        "note": "Turno de la fila, compra, cobro por el módulo Pagos y QR por eventos."
       },
       {
-        "id": "transversales",
-        "label": "Servicios transversales",
+        "id": "nucleo",
+        "label": "Núcleo",
         "focus": [
+          "portal_admin",
+          "app_movil",
           "gateway",
-          "auth",
-          "pagos",
-          "notificaciones",
-          "broker"
+          "nucleo",
+          "postgres",
+          "redis",
+          "rabbitmq",
+          "pasarela"
         ],
-        "note": "Los que usa más de un dominio: si uno cae, degrada muchos casos de uso a la vez."
+        "note": "Identidad, Alimentos, Personal/Logística y el único webhook financiero."
       },
       {
-        "id": "dominio",
-        "label": "Servicios de dominio",
+        "id": "correo",
+        "label": "Correo",
         "focus": [
-          "alimentos",
-          "parqueaderos",
-          "personal",
-          "operacion",
-          "finanzas",
-          "bd_central",
-          "replica_lectura"
+          "nucleo",
+          "rabbitmq",
+          "trabajador",
+          "correo"
         ],
-        "note": "Carga estable: comparten base central con un esquema por servicio y no escalan con la demanda."
+        "note": "Identidad publica el correo pendiente; el Trabajador lo envía."
       }
-    ],
-    "viewBox": [
-      1560,
-      960
     ]
   },
   "components": [
@@ -58,781 +57,349 @@
       "id": "portal_cliente",
       "type": "frontend",
       "label": "Portal Web Cliente",
-      "sublabel": "Angular",
+      "sublabel": "Angular · Nginx",
       "pos": [
         40,
-        270
+        20
       ],
       "size": [
-        180,
-        50
-      ]
-    },
-    {
-      "id": "app_cliente",
-      "type": "frontend",
-      "label": "App Móvil Cliente",
-      "sublabel": "Flutter",
-      "pos": [
-        40,
-        374
-      ],
-      "size": [
-        180,
-        50
+        230,
+        64
       ]
     },
     {
       "id": "portal_admin",
       "type": "frontend",
       "label": "Portal Web Admin",
-      "sublabel": "Angular",
+      "sublabel": "Angular · Nginx",
       "pos": [
-        40,
-        478
+        330,
+        20
       ],
       "size": [
-        180,
-        50
+        230,
+        64
       ]
     },
     {
-      "id": "app_personal",
+      "id": "app_movil",
       "type": "frontend",
-      "label": "App Móvil Personal",
-      "sublabel": "Flutter · valida QR sin red",
+      "label": "App móvil",
+      "sublabel": "Flutter · Cliente y Personal",
       "pos": [
-        40,
-        582
+        620,
+        20
       ],
       "size": [
-        180,
-        50
+        240,
+        64
+      ]
+    },
+    {
+      "id": "pasarela",
+      "type": "external",
+      "label": "Pasarela de pagos",
+      "sublabel": "externa · simulada en pruebas",
+      "pos": [
+        1180,
+        20
+      ],
+      "size": [
+        260,
+        64
       ]
     },
     {
       "id": "gateway",
       "type": "security",
       "label": "API Gateway",
-      "sublabel": "JWT local · rol · turno · 2+ réplicas",
+      "sublabel": "Nginx/njs :8080 · JWT RS256 público · gasta el turno",
       "pos": [
-        280,
-        422
+        330,
+        180
       ],
       "size": [
-        168,
-        56
+        530,
+        72
       ]
     },
     {
-      "id": "cola",
+      "id": "nucleo",
       "type": "backend",
-      "label": "Cola virtual",
-      "sublabel": "turno de compra · 3+ réplicas",
+      "label": "Núcleo",
+      "sublabel": "NestJS :3002 · Identidad, Alimentos, Personal/Logística, webhook Pagos",
       "pos": [
-        540,
-        60
+        20,
+        360
       ],
       "size": [
-        180,
-        52
+        440,
+        90
       ]
     },
     {
-      "id": "catalogo",
+      "id": "boleteria",
       "type": "backend",
-      "label": "Catálogo",
-      "sublabel": "CU-005 · 3+ réplicas",
+      "label": "Boletería",
+      "sublabel": "NestJS :3001 · Ventas, Catálogo, Fila, Postventa, Acceso QR · replicable",
       "pos": [
-        540,
-        164
+        600,
+        360
       ],
       "size": [
-        180,
-        52
-      ]
-    },
-    {
-      "id": "ventas",
-      "type": "backend",
-      "label": "Ventas",
-      "sublabel": "CU-001, 004 · orquesta la Saga",
-      "pos": [
-        540,
-        268
-      ],
-      "size": [
-        180,
-        52
-      ]
-    },
-    {
-      "id": "pagos",
-      "type": "backend",
-      "label": "Pagos",
-      "sublabel": "único contacto con la pasarela",
-      "pos": [
-        540,
-        372
-      ],
-      "size": [
-        180,
-        52
-      ]
-    },
-    {
-      "id": "auth",
-      "type": "backend",
-      "label": "Autenticación",
-      "sublabel": "CU-027, 028 · lo usa todo",
-      "pos": [
-        540,
-        476
-      ],
-      "size": [
-        180,
-        52
-      ]
-    },
-    {
-      "id": "qr",
-      "type": "backend",
-      "label": "Acceso QR",
-      "sublabel": "CU-002 · valida sin llamar a Ventas",
-      "pos": [
-        540,
-        580
-      ],
-      "size": [
-        180,
-        52
-      ]
-    },
-    {
-      "id": "notificaciones",
-      "type": "backend",
-      "label": "Notificaciones",
-      "sublabel": "escala por longitud de cola",
-      "pos": [
-        540,
-        684
-      ],
-      "size": [
-        180,
-        52
-      ]
-    },
-    {
-      "id": "eventos",
-      "type": "backend",
-      "label": "Eventos y recintos",
-      "sublabel": "CU-026, 029",
-      "pos": [
-        1270,
-        60
-      ],
-      "size": [
-        180,
-        52
-      ]
-    },
-    {
-      "id": "postventa",
-      "type": "backend",
-      "label": "Postventa",
-      "sublabel": "CU-003, 006",
-      "pos": [
-        1270,
-        164
-      ],
-      "size": [
-        180,
-        52
-      ]
-    },
-    {
-      "id": "alimentos",
-      "type": "backend",
-      "label": "Alimentos",
-      "sublabel": "CU-011..015",
-      "pos": [
-        1270,
-        268
-      ],
-      "size": [
-        180,
-        52
-      ]
-    },
-    {
-      "id": "parqueaderos",
-      "type": "backend",
-      "label": "Parqueaderos",
-      "sublabel": "CU-021..025",
-      "pos": [
-        1270,
-        372
-      ],
-      "size": [
-        180,
-        52
-      ]
-    },
-    {
-      "id": "personal",
-      "type": "backend",
-      "label": "Personal y logística",
-      "sublabel": "CU-007..009, 016..018, 030",
-      "pos": [
-        1270,
-        476
-      ],
-      "size": [
-        180,
-        52
+        420,
+        90
       ]
     },
     {
       "id": "operacion",
       "type": "backend",
-      "label": "Operación del evento",
-      "sublabel": "CU-010, 019, 020 · redundante",
+      "label": "Operación (pendiente)",
+      "sublabel": "CU-010/019/020 · sin implementar",
       "pos": [
-        1270,
-        580
+        1180,
+        360
       ],
       "size": [
-        180,
-        52
+        260,
+        80
       ]
     },
     {
-      "id": "finanzas",
+      "id": "preparacion",
       "type": "backend",
-      "label": "Finanzas y reportes",
-      "sublabel": "CU-031, 032",
+      "label": "preparacion-base",
+      "sublabel": "tarea única · 18 migraciones",
       "pos": [
-        1270,
-        684
+        20,
+        560
       ],
       "size": [
-        180,
-        52
+        170,
+        72
       ]
     },
     {
-      "id": "broker",
-      "type": "messagebus",
-      "label": "Broker de eventos",
-      "sublabel": "tópicos replicados",
+      "id": "trabajador",
+      "type": "backend",
+      "label": "Trabajador",
+      "sublabel": "NestJS · solo correo · sin SQL ni Redis",
       "pos": [
-        950,
-        372
+        1180,
+        560
       ],
       "size": [
-        180,
-        52
+        260,
+        72
+      ]
+    },
+    {
+      "id": "postgres",
+      "type": "database",
+      "label": "PostgreSQL 16",
+      "sublabel": "base hexacore · 8 esquemas · libro único",
+      "pos": [
+        20,
+        760
+      ],
+      "size": [
+        420,
+        80
       ]
     },
     {
       "id": "redis",
       "type": "database",
-      "label": "Clúster Redis",
-      "sublabel": "inventario · fila · sesiones · QR",
+      "label": "Redis 7",
+      "sublabel": "reservas, fila, bloqueos, revocación",
       "pos": [
-        950,
-        60
+        470,
+        760
       ],
       "size": [
-        180,
-        52
+        290,
+        72
       ]
     },
     {
-      "id": "indice",
-      "type": "database",
-      "label": "Índice de búsqueda",
-      "sublabel": "lo alimentan eventos",
+      "id": "rabbitmq",
+      "type": "messagebus",
+      "label": "RabbitMQ 3.13",
+      "sublabel": "eventos de dominio y correo",
       "pos": [
-        950,
-        164
+        840,
+        760
       ],
       "size": [
-        180,
-        52
+        270,
+        72
       ]
     },
     {
-      "id": "bd_micro",
-      "type": "database",
-      "label": "Bases por microservicio",
-      "sublabel": "Ventas · Pagos · Auth · QR",
-      "pos": [
-        950,
-        268
-      ],
-      "size": [
-        180,
-        52
-      ]
-    },
-    {
-      "id": "bd_central",
-      "type": "database",
-      "label": "Base central",
-      "sublabel": "un esquema por servicio de dominio",
-      "pos": [
-        950,
-        476
-      ],
-      "size": [
-        180,
-        52
-      ]
-    },
-    {
-      "id": "replica_lectura",
-      "type": "database",
-      "label": "Réplica de lectura",
-      "sublabel": "solo la leen los reportes",
-      "pos": [
-        950,
-        580
-      ],
-      "size": [
-        180,
-        52
-      ]
-    },
-    {
-      "id": "pasarela",
+      "id": "correo",
       "type": "external",
-      "label": "Pasarela de Pagos",
-      "sublabel": "los datos de tarjeta no salen de aquí",
+      "label": "Proveedor de correo",
+      "sublabel": "externo · simulado en pruebas",
       "pos": [
-        950,
-        684
+        1180,
+        760
       ],
       "size": [
-        180,
-        52
+        260,
+        72
       ]
-    },
-    {
-      "id": "proveedor_notif",
-      "type": "external",
-      "label": "Proveedor de Notificaciones",
-      "sublabel": "correo y push",
-      "pos": [
-        950,
-        788
-      ],
-      "size": [
-        180,
-        52
-      ]
-    }
-  ],
-  "boundaries": [
-    {
-      "kind": "region",
-      "label": "Microservicios — base propia, escalan solas",
-      "wraps": [
-        "cola",
-        "catalogo",
-        "ventas",
-        "pagos",
-        "auth",
-        "qr",
-        "notificaciones"
-      ],
-      "pad": 22
-    },
-    {
-      "kind": "region",
-      "label": "Servicios de dominio — base central, 2 réplicas",
-      "wraps": [
-        "eventos",
-        "postventa",
-        "alimentos",
-        "parqueaderos",
-        "personal",
-        "operacion",
-        "finanzas"
-      ],
-      "pad": 22
     }
   ],
   "connections": [
     {
-      "id": "portal-cliente-gw",
+      "id": "cliente-gw",
       "from": "portal_cliente",
       "to": "gateway",
-      "label": "HTTPS/JSON",
-      "variant": "emphasis"
-    },
-    {
-      "id": "app-cliente-gw",
-      "from": "app_cliente",
-      "to": "gateway",
-      "label": "HTTPS/JSON",
-      "variant": "emphasis"
-    },
-    {
-      "id": "portal-admin-gw",
-      "from": "portal_admin",
-      "to": "gateway"
-    },
-    {
-      "id": "app-personal-gw",
-      "from": "app_personal",
-      "to": "gateway"
-    },
-    {
-      "id": "gw-cola",
-      "from": "gateway",
-      "to": "cola",
-      "label": "pide turno",
-      "labelDy": -14
-    },
-    {
-      "id": "gw-catalogo",
-      "from": "gateway",
-      "to": "catalogo",
-      "label": "consulta",
-      "labelDy": -14
-    },
-    {
-      "id": "gw-ventas",
-      "from": "gateway",
-      "to": "ventas",
-      "label": "compra (con turno)",
-      "variant": "emphasis",
-      "labelDy": -16
-    },
-    {
-      "id": "gw-auth",
-      "from": "gateway",
-      "to": "auth",
-      "label": "login / emite token",
-      "labelDy": 14,
-      "labelAt": [
-        494,
-        542
-      ]
-    },
-    {
-      "id": "ventas-pagos",
-      "from": "ventas",
-      "to": "pagos",
-      "label": "cobra idempotente",
-      "variant": "emphasis",
-      "labelAt": [
-        630,
-        334
-      ]
-    },
-    {
-      "id": "ventas-redis",
-      "from": "ventas",
-      "to": "redis",
-      "label": "reserva atómica",
-      "variant": "emphasis",
-      "labelAt": [
-        835,
-        138
-      ]
-    },
-    {
-      "id": "ventas-bd",
-      "from": "ventas",
-      "to": "bd_micro",
-      "label": "SQL",
-      "labelAt": [
-        835,
-        294
-      ]
-    },
-    {
-      "id": "catalogo-indice",
-      "from": "catalogo",
-      "to": "indice",
-      "label": "busca",
-      "labelAt": [
-        835,
-        190
-      ]
-    },
-    {
-      "id": "ventas-broker",
-      "from": "ventas",
-      "to": "broker",
-      "label": "CompraConfirmada · EntradaActualizada",
-      "variant": "dashed",
-      "labelAt": [
-        890,
-        346
-      ]
-    },
-    {
-      "id": "broker-notif",
-      "from": "broker",
-      "to": "notificaciones",
-      "label": "envía QR",
-      "variant": "dashed",
-      "labelAt": [
-        835,
-        710
-      ]
-    },
-    {
-      "id": "broker-qr",
-      "from": "broker",
-      "to": "qr",
-      "label": "activa / invalida el QR",
-      "variant": "dashed",
-      "labelAt": [
-        835,
-        554
-      ]
-    },
-    {
-      "id": "broker-finanzas",
-      "from": "broker",
-      "to": "finanzas",
-      "label": "registra",
-      "variant": "dashed"
-    },
-    {
-      "id": "eventos-broker",
-      "from": "eventos",
-      "to": "broker",
-      "label": "EventoPublicado / EventoCancelado",
-      "variant": "dashed"
-    },
-    {
-      "id": "dominio-bd",
-      "from": "alimentos",
-      "to": "bd_central",
-      "label": "SQL (esquema propio)"
-    },
-    {
-      "id": "finanzas-replica",
-      "from": "finanzas",
-      "to": "replica_lectura",
-      "label": "solo lectura"
-    },
-    {
-      "id": "pagos-pasarela",
-      "from": "pagos",
-      "to": "pasarela",
-      "label": "cobros y reembolsos",
-      "variant": "emphasis",
-      "labelAt": [
-        835,
-        502
-      ]
-    },
-    {
-      "id": "notif-proveedor",
-      "from": "notificaciones",
-      "to": "proveedor_notif",
-      "label": "correo y push",
-      "variant": "dashed"
-    },
-    {
-      "id": "gw-dominio",
-      "from": "gateway",
-      "to": "finanzas",
-      "label": "y a los 7 de dominio",
+      "label": "HTTPS /api/v1",
       "fromSide": "bottom",
-      "toSide": "bottom",
-      "via": [
-        [
-          364,
-          890
-        ],
-        [
-          1360,
-          890
-        ]
-      ]
+      "toSide": "top"
     },
     {
-      "id": "gw-qr",
+      "id": "admin-gw",
+      "from": "portal_admin",
+      "to": "gateway",
+      "label": "HTTPS",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "movil-gw",
+      "from": "app_movil",
+      "to": "gateway",
+      "label": "HTTPS",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "gw-nucleo",
       "from": "gateway",
-      "to": "qr",
-      "label": "valida QR"
+      "to": "nucleo",
+      "label": "cuentas, sesiones, pedidos, logística",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "variant": "emphasis"
     },
     {
-      "id": "pagos-broker",
-      "from": "pagos",
-      "to": "broker",
-      "label": "PagoAprobado / PagoRechazado",
-      "variant": "dashed",
-      "labelAt": [
-        835,
-        398
-      ]
+      "id": "gw-boleteria",
+      "from": "gateway",
+      "to": "boleteria",
+      "label": "cartelera, cola, compras, reventa, ingresos",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "variant": "emphasis"
     },
     {
       "id": "pasarela-gw",
       "from": "pasarela",
       "to": "gateway",
-      "label": "webhook firmado",
-      "variant": "dashed"
+      "label": "webhook HMAC → Núcleo",
+      "fromSide": "bottom",
+      "toSide": "right",
+      "variant": "security"
     },
     {
-      "id": "broker-catalogo",
-      "from": "broker",
-      "to": "catalogo",
-      "label": "EventoPublicado",
-      "variant": "dashed",
-      "labelAt": [
-        770,
-        242
-      ]
+      "id": "boleteria-pasarela",
+      "from": "boleteria",
+      "to": "pasarela",
+      "label": "cobros (módulo Pagos)",
+      "fromSide": "right",
+      "toSide": "bottom"
     },
     {
-      "id": "broker-ventas",
-      "from": "broker",
-      "to": "ventas",
-      "variant": "dashed"
-    },
-    {
-      "id": "operacion-broker",
-      "from": "operacion",
-      "to": "broker",
-      "label": "AlertaEvacuación",
-      "variant": "dashed"
-    },
-    {
-      "id": "broker-notif-evac",
-      "from": "broker",
-      "to": "notificaciones",
-      "label": "AlertaEvacuación",
-      "variant": "dashed",
-      "labelAt": [
-        835,
-        658
-      ]
-    },
-    {
-      "id": "postventa-pagos",
-      "from": "postventa",
-      "to": "pagos",
-      "label": "cobro de reventa",
-      "fromSide": "left",
-      "toSide": "bottom",
-      "via": [
-        [
-          1230,
-          190
-        ],
-        [
-          1230,
-          450
-        ],
-        [
-          630,
-          450
-        ]
-      ],
-      "labelAt": [
-        1230,
-        334
-      ]
-    },
-    {
-      "id": "postventa-ventas",
-      "from": "postventa",
-      "to": "ventas",
-      "label": "cambia el dueño",
-      "fromSide": "left",
+      "id": "nucleo-postgres",
+      "from": "nucleo",
+      "to": "postgres",
+      "label": "4 pools",
+      "fromSide": "bottom",
       "toSide": "top",
-      "via": [
-        [
-          1200,
-          190
-        ],
-        [
-          1200,
-          242
-        ],
-        [
-          630,
-          242
-        ]
-      ]
-    },
-    {
-      "id": "bd-replica",
-      "from": "bd_central",
-      "to": "replica_lectura",
-      "label": "replica",
-      "variant": "dashed",
       "labelAt": [
-        1040,
-        542
+        290,
+        520
       ]
     },
     {
-      "id": "cola-redis",
-      "from": "cola",
+      "id": "prep-postgres",
+      "from": "preparacion",
+      "to": "postgres",
+      "label": "DDL antes de las apps",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "variant": "dashed"
+    },
+    {
+      "id": "boleteria-postgres",
+      "from": "boleteria",
+      "to": "postgres",
+      "label": "5 pools",
+      "fromSide": "bottom",
+      "toSide": "right"
+    },
+    {
+      "id": "boleteria-redis",
+      "from": "boleteria",
       "to": "redis",
-      "label": "fila"
+      "label": "candados y fila",
+      "fromSide": "bottom",
+      "toSide": "top"
     },
     {
-      "id": "gw-pagos",
-      "from": "gateway",
-      "to": "pagos",
-      "label": "webhook",
-      "variant": "dashed",
-      "labelDy": 14
+      "id": "boleteria-rabbit",
+      "from": "boleteria",
+      "to": "rabbitmq",
+      "label": "outbox y consumidores",
+      "fromSide": "bottom",
+      "toSide": "top"
     },
     {
-      "id": "qr-broker",
-      "from": "qr",
-      "to": "broker",
-      "label": "IngresoRegistrado",
-      "variant": "dashed",
+      "id": "rabbit-trabajador",
+      "from": "rabbitmq",
+      "to": "trabajador",
+      "label": "cuentas.correos",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "trabajador-correo",
+      "from": "trabajador",
+      "to": "correo",
+      "label": "HTTP",
+      "fromSide": "bottom",
+      "toSide": "top",
       "labelAt": [
-        835,
-        438
+        1312,
+        696
       ]
     }
   ],
   "cards": [
     {
-      "dot": "emerald",
-      "title": "Por qué estos siete son microservicios (ADR-14)",
-      "items": [
-        "Un servicio se extrae si cumple al menos dos de cuatro criterios: picos de carga muy por encima del resto, lo usan varios dominios, su estado cabe en un almacén propio, o su falla debe quedar aislada",
-        "Cola virtual, Catálogo y Ventas se separan por carga: en la apertura de venta la mayor parte del tráfico es de consulta, y si compite con las compras en el mismo servicio ambas se degradan",
-        "Pagos, Autenticación y Notificaciones se separan por ser transversales: si uno cae no degrada un dominio, degrada muchos a la vez",
-        "Acceso QR se separa porque su pico es en la puerta del evento, en otro momento que el de la venta, y necesita caché propia para validar sin red"
-      ]
-    },
-    {
       "dot": "cyan",
-      "title": "Por qué los otros siete no",
+      "title": "Tres programas en marcha",
       "items": [
-        "Alimentos, Parqueaderos, Personal, Postventa, Eventos y Finanzas tienen carga estable: convertirlos en microservicios multiplicaría bases y despliegues sin beneficio",
-        "Corren con dos instancias para disponibilidad, pero con número fijo: no escalan con la demanda",
-        "Operación del evento es la excepción interesante: atiende la evacuación (CU-010), así que es crítico para la disponibilidad aunque su carga sea baja. Necesita redundancia, no réplicas elásticas",
-        "Finanzas lee de la réplica, no de la base principal: así sus consultas pesadas no degradan la operación durante el evento"
+        "Núcleo y Boletería reciben todo el tráfico por el gateway",
+        "Boletería escala por réplicas; el Núcleo se mantiene en una",
+        "Trabajador solo consume la cola de correo"
       ]
     },
     {
       "dot": "amber",
-      "title": "Qué cambió con ADR-15 y qué no se dibuja",
+      "title": "Relaciones resumidas",
       "items": [
-        "Acceso QR no llama a Ventas: valida contra su propia copia de los QR, que mantiene con CompraConfirmada y EntradaActualizada. La puerta sigue abierta aunque Ventas esté saturada",
-        "El gateway valida el JWT con la clave pública (no llama a Autenticación en cada petición), autoriza por rol y gasta el turno de la Cola virtual antes de dejar pasar una compra",
-        "El webhook de la pasarela entra por la ruta pública del gateway, firmado con HMAC; Pagos publica PagoAprobado / PagoRechazado",
-        "Los eventos que un servicio publica tras escribir salen por una bandeja de salida (Transactional Outbox): no se pierden si el broker cae",
-        "El gateway enruta a los catorce servicios; se dibujan solo las flechas del camino de compra, Autenticación, Acceso QR y el webhook. El broker reparte EventoPublicado también a Ventas",
-        "27 contenedores: 4 interfaces, gateway, 7 microservicios, 7 de dominio, 5 almacenes, broker y 2 externos"
+        "El Núcleo también usa Redis (revocación, inventario), RabbitMQ (correo, pedidos, turnos, pagos) y la pasarela (cobros de alimentos)",
+        "Operación es el programa objetivo de evacuación, monitoreo e incidentes"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Datos",
+      "items": [
+        "Una base con un esquema por conexión; finanzas_pagos es el libro compartido",
+        "Compartir base no da atomicidad entre módulos"
       ]
     }
   ]

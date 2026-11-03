@@ -4,7 +4,7 @@ Contratos y tipos compartidos entre servicios y frontends, si se necesitan (p. e
 eventos publicados en la cola de mensajes — `ENTRADA_TRANSFERIDA` y similares — o DTOs comunes de
 autenticación validados por el API Gateway).
 
-Cada microservicio mantiene su propio modelo de datos (ADR-01); esta carpeta es solo para lo que
+Cada módulo de dominio mantiene su propio modelo de datos y esquema (ADR-16); esta carpeta es solo para lo que
 varios componentes necesiten acordar explícitamente, no para lógica de negocio compartida.
 
 Como el frontend web (Angular/TypeScript) y el móvil (Kotlin nativo) no comparten lenguaje, estos
@@ -64,7 +64,7 @@ comprueba que lo que emite valida contra este esquema — dos definiciones del m
 desincronizan solas si nadie las ata.
 
 **Está versionado** (`version: 1`). Un cambio incompatible exige una versión nueva, no editar esta:
-hay consumidores en otros microservicios que dependen de su forma. Un consumidor que reciba una
+hay consumidores en otros módulos y programas que dependen de su forma. Un consumidor que reciba una
 versión que no entiende debe mandar el mensaje a la cola de muertos en lugar de interpretarlo a
 medias.
 

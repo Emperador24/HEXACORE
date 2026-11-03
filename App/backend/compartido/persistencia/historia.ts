@@ -5,6 +5,7 @@ import { EsquemaInicialCu0111789902006180 } from '../../modulos/alimentos/persis
 import { ReservasInventarioCu0111790000000000 } from '../../modulos/alimentos/persistencia/migraciones/1790000000000-ReservasInventarioCu011';
 import { EsquemaInicialCu0181789718400000 } from '../../modulos/personal-logistica/persistencia/migraciones/1789718400000-EsquemaInicialCu018';
 import { Cu017PersonalOperativo1789750000000 } from '../../modulos/personal-logistica/persistencia/migraciones/1789750000000-Cu017PersonalOperativo';
+import { Cu007GestionPersonal1793664000000 } from '../../modulos/personal-logistica/persistencia/migraciones/1793664000000-Cu007GestionPersonal';
 import { EsquemaInicialCu0061789257600000 } from '../../modulos/entradas/ventas/persistencia/migraciones/1789257600000-EsquemaInicialCu006';
 import { SecuenciaNumeroTransaccion1789344000000 } from '../../modulos/entradas/ventas/persistencia/migraciones/1789344000000-SecuenciaNumeroTransaccion';
 import { CarteleraCu0051789776000000 } from '../../modulos/entradas/ventas/persistencia/migraciones/1789776000000-CarteleraCu005';
@@ -15,19 +16,25 @@ import { EsquemaPostventa1790035200000 } from '../../modulos/entradas/postventa/
 import { EsquemaAccesoQr1790467200000 } from '../../modulos/entradas/acceso-qr/persistencia/migraciones/1790467200000-EsquemaAccesoQr';
 import { QrEntradas1790553600000 } from '../../modulos/entradas/acceso-qr/persistencia/migraciones/1790553600000-QrEntradas';
 import { BandejaSalida1790553600001 } from '../../modulos/entradas/acceso-qr/persistencia/migraciones/1790553600001-BandejaSalida';
+import { EsquemaEventosRecintos1793700000000 } from '../../modulos/eventos-recintos/persistencia/migraciones/1793700000000-EsquemaEventosRecintos';
 import { EsquemaPagos1790380800000 } from '../../modulos/finanzas/pagos/persistencia/migraciones/1790380800000-EsquemaPagos';
 
 export const GRUPOS_MIGRACIONES = [
   { conexion: 'identidad' as const, esquema: 'identidad', historial: 'migraciones', migraciones: [EsquemaInicialCu0271789430400000, AdministracionCuentasCu027b1789516800000, RenovacionSesiones1789603200000] },
   { conexion: 'alimentos' as const, esquema: 'alimentos', historial: 'migraciones', migraciones: [EsquemaInicialCu0111789902006180, ReservasInventarioCu0111790000000000] },
-  { conexion: 'personal-logistica' as const, esquema: 'personal_logistica', historial: 'migraciones', migraciones: [EsquemaInicialCu0181789718400000, Cu017PersonalOperativo1789750000000] },
+  { conexion: 'personal-logistica' as const, esquema: 'personal_logistica', historial: 'migraciones', migraciones: [EsquemaInicialCu0181789718400000, Cu017PersonalOperativo1789750000000, Cu007GestionPersonal1793664000000] },
   { conexion: 'entradas-ventas' as const, esquema: 'entradas_ventas', historial: 'migraciones', migraciones: [EsquemaInicialCu0061789257600000, SecuenciaNumeroTransaccion1789344000000, CarteleraCu0051789776000000, VentaPrimariaCu001a0041789862400000, BandejaSalida1790553600000] },
   { conexion: 'entradas-catalogo' as const, esquema: 'entradas_catalogo', historial: 'migraciones', migraciones: [EsquemaCatalogo1790208000000] },
   { conexion: 'entradas-postventa' as const, esquema: 'entradas_postventa', historial: 'migrations', migraciones: [EsquemaPostventa1790035200000] },
   { conexion: 'entradas-acceso-qr' as const, esquema: 'entradas_acceso_qr', historial: 'migraciones', migraciones: [EsquemaAccesoQr1790467200000, QrEntradas1790553600000, BandejaSalida1790553600001] },
-  { conexion: 'finanzas-pagos' as const, esquema: 'finanzas_pagos', historial: 'migraciones', migraciones: [EsquemaPagos1790380800000] }
+  { conexion: 'finanzas-pagos' as const, esquema: 'finanzas_pagos', historial: 'migraciones', migraciones: [EsquemaPagos1790380800000] },
+  // CU-026, posterior a la consolidación: noveno esquema, sin procedencia histórica.
+  { conexion: 'eventos-recintos' as const, esquema: 'eventos_recintos', historial: 'migraciones', migraciones: [EsquemaEventosRecintos1793700000000] }
 ];
 
+// Procedencia de las 18 fuentes que venían de los servicios anteriores. Las
+// migraciones posteriores a la consolidación (CU-007 y el esquema de CU-026) no tienen
+// procedencia que conservar y solo figuran en GRUPOS_MIGRACIONES.
 export const PROCEDENCIA_ORIGINAL = [
   {
     "conexion": "identidad",

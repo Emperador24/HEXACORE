@@ -147,6 +147,16 @@ tecnologías, réplicas mínimas, Transactional Outbox, el evento \texttt{Entrad
 invalida el QR anterior en una reventa y \texttt{EventoCancelado}. El conteo de contenedores queda
 en 27. & Equipo Hexacore (vía asistente) \\
 \hline
+02/11/2026 & Versión 1.8: se registra \textbf{ADR-16}, que sustituye la topología de ADR-14/15:
+un único workspace backend con \textbf{Núcleo} (Identidad, Alimentos, Personal/Logística y el
+\textit{webhook} de Pagos), \textbf{Boletería} (Ventas, Catálogo, Fila, Postventa y Acceso QR) y
+\textbf{Trabajador} (correo); \textbf{Operación} queda como programa objetivo pendiente. Pagos pasa
+a ser un módulo reutilizable sin servidor propio y los datos a \textbf{una base PostgreSQL con ocho
+esquemas}. Las vistas vigentes pasan a \texttt{ArquitecturaVigente.tex}; las anteriores quedan en
+\texttt{Historico/}. Los ADR-01, 06, 12, 14 y 15 se marcan con su vigencia actual. La migración se
+integró en \texttt{develop} (PR \#44); el corte del entorno habitual sigue pendiente.
+& Equipo Hexacore (vía asistente) \\
+\hline
 \end{longtable}
 \end{center}
 
@@ -520,9 +530,9 @@ emergencia & CU-010 & RNF-17 & El supervisor activa el protocolo de evacuación;
 en campo recibe su instrucción específica en segundos, incluso si el proveedor de notificaciones
 responde con lentitud o una instancia del servicio falla. & Alta & Alta\\
 \hline
-ASR-14 & Prueba aislada de cada microservicio & Comproba-bilidad & Aislamiento de dependencias &
-Todos los CU (por micro-servicio) & RNF-18 & Un integrante prueba la lógica de su dominio sin
-levantar los otros cinco microservicios ni depender de la pasarela de pagos real, sustituyéndolos
+ASR-14 & Prueba aislada de cada módulo de dominio & Comproba-bilidad & Aislamiento de dependencias &
+Todos los CU (por módulo) & RNF-18 & Un integrante prueba la lógica de su módulo sin
+levantar los demás módulos ni depender de la pasarela de pagos real, sustituyéndolos
 por dobles de prueba. & Media & Baja\\
 \end{longtable}
 \end{center}
@@ -538,9 +548,10 @@ por dobles de prueba. & Media & Baja\\
 \textbf{Restricción} & \textbf{Categoría} & \textbf{Descripción} \\
 \hline
 \endhead
-Arquitectura de microservicios con base de datos independiente por dominio & Técnica & Decisión
-fundacional ya tomada por el equipo (ver ADR-01); cualquier solución a un ASR debe respetar esta
-separación por dominio.\\
+Separación por dominio en módulos con esquema propio & Técnica & Decisión vigente (ADR-16, que
+revisa ADR-01, ADR-12 y ADR-14): cada dominio es un módulo del workspace backend con su propio
+esquema PostgreSQL y conexión nombrada; ninguna solución a un ASR debe mezclar los datos de dos
+dominios.\\
 \hline
 Soporte de picos de miles de usuarios concurrentes & Técnica & El sistema debe soportar la
 concurrencia propia de la apertura de venta y el ingreso masivo al recinto sin degradar el
@@ -562,7 +573,7 @@ SAD v2) deben respetar las fechas y reglas de entrega definidas por el curso.\\
 % ==================== Contexto y alcance ====================
 \section{Contexto y alcance vigente}
 \label{sec:contexto}
-\textbf{Código migrado y probado en rama de arquitectura; corte habitual pendiente.}
+\textbf{Código migrado, probado e integrado en develop; corte del entorno habitual pendiente.}
 Se conservan los 32 CU y su reparto del SRS, sin afirmar que todos estén implementados.
 El estado funcional del plan distingue base existente, simulación de interfaz y pendientes.
 \begin{figure}[H]\centering\HexContexto
@@ -575,6 +586,7 @@ El estado funcional del plan distingue base existente, simulación de interfaz y
 \label{sec:adr}
 
 \subsection*{ADR-01 --- Arquitectura de microservicios por dominio}
+\textbf{Vigencia actual:} registro histórico. ADR-16 sustituye el servidor y la base por dominio; se conserva la separación por dominio en módulos y esquemas.\\
 \textbf{Estado:} \textit{superado por ADR-12} --- el criterio de separar por dominio sigue vigente;
 la granularidad de un microservicio por dominio se revisó en ADR-12 a la vista de lo medido sobre el
 prototipo desplegado, y el backend queda en tres servicios de dominio en lugar de seis.\\
@@ -659,6 +671,7 @@ pruebas distintos (TypeScript/npm y Kotlin/Gradle) y de no compartir código de 
 — los contratos comunes quedan limitados a la especificación de la API (ver \texttt{App/shared/}).
 
 \subsection*{ADR-06 --- Motor de base de datos por dominio (\textit{polyglot persistence})}
+\textbf{Vigencia actual:} registro histórico. ADR-16 sustituye las bases independientes por una base PostgreSQL con un esquema por módulo y no incorpora MongoDB en la migración.\\
 \textbf{ASR relacionados:} ASR-01, ASR-07.\\
 \textbf{Problema:} ADR-01 estableció una base de datos propia por microservicio, pero dejó abierto
 el motor concreto; los esquemas transaccionales (Entradas, Personal, Eventos/Emergencias,
@@ -938,6 +951,7 @@ ADR, y se ejerció: ahora valida la firma por su cuenta, y la revocación la sig
 Redis los servicios.
 
 \subsection*{ADR-12 --- Arquitectura basada en servicios: un servicio de dominio agregado y dos replicables}
+\textbf{Vigencia actual:} registro histórico. ADR-16 sustituye la composición de su agregado: Núcleo reúne Identidad, Alimentos y Personal/Logística, y Boletería los cinco componentes de Entradas.\\
 
 \textbf{Estado:} \textit{superado por ADR-14} --- el estilo basado en servicios sigue vigente; lo que
 se revisó es el criterio de extracción, que aquí tenía dos condiciones y en ADR-14 pasa a cuatro. Con
@@ -1556,8 +1570,8 @@ Indisponibilidad de la pasarela de pagos externa & Media & Alto & Alta & \textit
 reintentos y cola de reconciliación de pagos. & Marcar la transacción como pendiente y permitir
 reintento manual del usuario.\\
 \hline
-Picos de tráfico en apertura de venta / ingreso masivo & Alta & Medio & Alta & Autoescalado del
-servicio de Entradas + caché en Redis. & Sala de espera virtual (cola de acceso) para limitar la
+Picos de tráfico en apertura de venta / ingreso masivo & Alta & Medio & Alta & Réplicas de
+Boletería, que escala sin el Núcleo (RNF-10), + caché en Redis. & Sala de espera virtual (cola de acceso) para limitar la
 concurrencia admitida.\\
 \hline
 Fallo del proveedor de notificaciones durante una emergencia & Baja & Alto & Media & Reintentos
@@ -1588,7 +1602,12 @@ Significant Requirement}).
 \item \textbf{API Gateway:} componente que centraliza el enrutamiento, la autenticación y la
 autorización de las solicitudes al backend.
 \item \textbf{Microservicio:} servicio backend independiente, responsable de un dominio de
-negocio, con su propia base de datos.
+negocio, con su propia base de datos. Estilo de ADR-01/14, sustituido por ADR-16.
+\item \textbf{Núcleo, Boletería, Trabajador, Operación:} programas del backend vigente (ADR-16).
+Núcleo y Boletería agrupan módulos de dominio; Trabajador ejecuta trabajos técnicos (correo);
+Operación es el programa objetivo de CU-010/019/020, aún sin implementar.
+\item \textbf{Módulo de dominio:} carpeta de \texttt{App/backend/modulos} con las reglas de un
+dominio, su conexión nombrada y su esquema PostgreSQL.
 \item \textbf{Redis:} base de datos en memoria usada como caché y para bloqueos distribuidos.
 \item \textbf{RabbitMQ / Kafka:} sistemas de colas de mensajes usados para procesamiento
 asíncrono entre servicios.

@@ -1,9 +1,11 @@
-# Revisar esta rama sin integrarla
+# Entorno local de revisión de la migración
 
-Este entorno construye las fuentes de `feature/sebastian-arquitectura`. Reúne
+La migración (ADR-16) ya está integrada en develop mediante el PR #44. Este
+entorno se conserva para revisar en aislamiento: construye las fuentes de
+`feature/sebastian-arquitectura` (el guion rechaza otras ramas). Reúne
 Núcleo, Boletería, Trabajador, gateway y los dos portales; correo y pasarela son
 simuladores locales. No cambia el entorno habitual ni las referencias A/B.
-PR #44 permanece en borrador. No requiere integrar a develop/main.
+No ejecuta el corte del entorno habitual.
 
 ## Obtener la revisión
 
@@ -186,4 +188,4 @@ docker image inspect hexacore-revision-arquitectura-nucleo:local \
 
 El SHA OCI registra la revisión construida y `hexacore.fuente.modificada` indica
 cambios locales en las fuentes. Anotar ambos; no confundir fuente limpia con
-aprobar todos los casos. Publicar hallazgos en PR #44 manteniéndolo en borrador.
+aprobar todos los casos. Reportar hallazgos como issue o en el PR de la rama que los corrija.

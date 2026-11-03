@@ -29,13 +29,11 @@ export interface EventoDemo {
 const FEST = dias(90);
 const ROCK = dias(45);
 const GALA = dias(30);
-const VERANO = dias(-90);
 const FERIA = dias(16);
 const SINFONICA = dias(50);
 const CLASICO = dias(36);
 const SALSA = dias(63);
 const CAFE = dias(9);
-const MAGO = dias(77);
 
 export const EVENTOS: EventoDemo[] = [
   {
@@ -61,14 +59,6 @@ export const EVENTOS: EventoDemo[] = [
     lugar: 'Teatro Colón',
     ciudad: 'Bogotá',
     permiteReventa: false,
-  },
-  {
-    eventoId: 'e0000004-0000-4000-8000-000000000004',
-    nombre: 'Festival de Verano 2026',
-    fechaInicio: VERANO,
-    lugar: 'Parque Simón Bolívar',
-    ciudad: 'Bogotá',
-    permiteReventa: true,
   },
   {
     eventoId: 'e0000005-0000-4000-8000-000000000005',
@@ -111,35 +101,11 @@ export const EVENTOS: EventoDemo[] = [
     permiteReventa: false,
   },
   {
-    eventoId: 'e000000a-0000-4000-8000-00000000000a',
-    nombre: 'El Mago de Oz — Musical',
-    fechaInicio: MAGO,
-    lugar: 'Teatro Colsubsidio',
-    ciudad: 'Bogotá',
-    permiteReventa: true,
-  },
-  {
     eventoId: 'e000000c-0000-4000-8000-00000000000c',
     nombre: 'Noche de Stand-up',
     fechaInicio: dias(4),
     lugar: 'Teatro Pablo Tobón Uribe',
     ciudad: 'Medellín',
-    permiteReventa: true,
-  },
-  {
-    eventoId: 'e000000d-0000-4000-8000-00000000000d',
-    nombre: 'Jazz al Atardecer',
-    fechaInicio: dias(0.8),
-    lugar: 'Teatro Mayor Julio Mario Santo Domingo',
-    ciudad: 'Bogotá',
-    permiteReventa: true,
-  },
-  {
-    eventoId: 'e000000b-0000-4000-8000-00000000000b',
-    nombre: 'Torneo Nacional de Voleibol',
-    fechaInicio: dias(20),
-    lugar: 'Coliseo El Pueblo',
-    ciudad: 'Cali',
     permiteReventa: true,
   },
 ];

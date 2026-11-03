@@ -11,7 +11,8 @@ describe('Propiedad de esquemas e historia conservada',()=>{
     expect(PROCEDENCIA_ORIGINAL).toHaveLength(18);
     for(const h of PROCEDENCIA_ORIGINAL)expect(createHash('sha256').update(readFileSync(resolve(__dirname,'../..',h.ruta))).digest('hex')).toBe(h.sha256);
     expect(GRUPOS_MIGRACIONES.find(g=>g.conexion==='entradas-postventa')!.historial).toBe('migrations');
-    expect(GRUPOS_MIGRACIONES.reduce((n,g)=>n+g.migraciones.length,0)).toBe(18);
+    // 18 consolidadas + Cu007GestionPersonal + EsquemaEventosRecintos, posteriores.
+    expect(GRUPOS_MIGRACIONES.reduce((n,g)=>n+g.migraciones.length,0)).toBe(20);
   });
   it('adapta la cualificación histórica sin cambiar nombres ni parámetros/filas',async()=>{
     class Original { name='Ejemplo1700000000000';async up(q:QueryRunner){await q.query('CREATE TYPE "public"."estado" AS ENUM (\'A\')');await q.query('SELECT $1',[ '"public"."dato"' ]);}async down(q:QueryRunner){await q.query('DROP TYPE "public"."estado"');} }

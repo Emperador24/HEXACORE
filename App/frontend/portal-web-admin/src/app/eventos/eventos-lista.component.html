@@ -1,55 +1,111 @@
-<div class="encabezado">
-  <h1>Eventos</h1>
-  <button mat-flat-button color="primary" routerLink="nuevo">
-    <mat-icon>add</mat-icon>
-    Nuevo evento
-  </button>
+<div class="pagina-encabezado">
+  <div>
+    <h1>Eventos <span class="referencia-cu">CU-026</span></h1>
+    <p class="descripcion">
+      Crear, editar, publicar y cancelar eventos. Un borrador solo lo ve el equipo organizador; al publicarlo pasa a la
+      cartelera.
+    </p>
+  </div>
+  <div class="acciones">
+    <span [matTooltip]="esOrganizador() ? '' : 'Crear y editar eventos es del rol Organizador.'">
+      <button mat-flat-button routerLink="nuevo" [disabled]="!esOrganizador()">
+        <mat-icon>add</mat-icon>
+        Nuevo evento
+      </button>
+    </span>
+  </div>
 </div>
 
-<table mat-table [dataSource]="eventos()" class="tabla">
-  <ng-container matColumnDef="nombre">
-    <th mat-header-cell *matHeaderCellDef>Nombre</th>
-    <td mat-cell *matCellDef="let evento">{{ evento.nombre }}</td>
-  </ng-container>
-
-  <ng-container matColumnDef="fecha">
-    <th mat-header-cell *matHeaderCellDef>Fecha</th>
-    <td mat-cell *matCellDef="let evento">{{ evento.fecha }}</td>
-  </ng-container>
-
-  <ng-container matColumnDef="recinto">
-    <th mat-header-cell *matHeaderCellDef>Recinto</th>
-    <td mat-cell *matCellDef="let evento">{{ evento.recinto }}</td>
-  </ng-container>
-
-  <ng-container matColumnDef="aforo">
-    <th mat-header-cell *matHeaderCellDef>Aforo</th>
-    <td mat-cell *matCellDef="let evento">{{ evento.aforo }}</td>
-  </ng-container>
-
-  <ng-container matColumnDef="estado">
-    <th mat-header-cell *matHeaderCellDef>Estado</th>
-    <td mat-cell *matCellDef="let evento">
-      <mat-chip>{{ etiquetaEstado(evento.estado) }}</mat-chip>
-    </td>
-  </ng-container>
-
-  <ng-container matColumnDef="acciones">
-    <th mat-header-cell *matHeaderCellDef></th>
-    <td mat-cell *matCellDef="let evento">
-      <button mat-icon-button [routerLink]="[evento.id]" aria-label="Editar">
-        <mat-icon>edit</mat-icon>
-      </button>
-      <button mat-icon-button (click)="eliminar(evento.id)" aria-label="Eliminar">
-        <mat-icon>delete</mat-icon>
-      </button>
-    </td>
-  </ng-container>
-
-  <tr mat-header-row *matHeaderRowDef="columnas"></tr>
-  <tr mat-row *matRowDef="let row; columns: columnas"></tr>
-</table>
-
-@if (eventos().length === 0) {
-  <p class="vacio">Todavía no hay eventos registrados.</p>
+@if (!esOrganizador()) {
+  <div class="mensaje info">
+    <mat-icon>visibility</mat-icon>
+    <span>Consulta de solo lectura: los cambios los hace una cuenta con rol Organizador.</span>
+  </div>
 }
+
+@if (error()) {
+  <div class="mensaje error" role="alert">
+    <mat-icon>error_outline</mat-icon><span>{{ error() }}</span>
+    <button mat-button (click)="cargar()">Reintentar</button>
+  </div>
+}
+
+<section class="panel">
+  <div class="barra-filtros">
+    <mat-form-field>
+      <mat-icon matPrefix>search</mat-icon>
+      <mat-label>Buscar</mat-label>
+      <input matInput [ngModel]="busqueda()" (ngModelChange)="busqueda.set($event)" placeholder="Nombre, artista, categoría o recinto" />
+    </mat-form-field>
+    <mat-form-field class="corto">
+      <mat-label>Estado</mat-label>
+      <mat-select [ngModel]="estado()" (ngModelChange)="estado.set($event)">
+        <mat-option value="">Todos</mat-option>
+        @for (e of estados; track e) {
+          <mat-option [value]="e">{{ estadoEvento(e).texto }} ({{ conteo()[e] }})</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    <span class="espaciador"></span>
+    <button mat-icon-button (click)="cargar()" matTooltip="Actualizar" aria-label="Actualizar"><mat-icon>refresh</mat-icon></button>
+  </div>
+
+  @if (cargando()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  <div class="tabla-contenedor">
+    <table mat-table [dataSource]="visibles()">
+      <ng-container matColumnDef="nombre">
+        <th mat-header-cell *matHeaderCellDef>Evento</th>
+        <td mat-cell *matCellDef="let e">
+          <a class="nombre" [routerLink]="e.id">{{ e.nombre }}</a><br />
+          <span class="secundario">{{ e.categoria }}{{ e.artista ? ' · ' + e.artista : '' }}</span>
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="fecha">
+        <th mat-header-cell *matHeaderCellDef>Fecha</th>
+        <td mat-cell *matCellDef="let e">
+          {{ e.fechaInicio | date: 'EEE d MMM y' }}<br />
+          <span class="secundario">{{ e.fechaInicio | date: 'HH:mm' }} – {{ e.fechaFin | date: 'HH:mm' }}</span>
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="recinto">
+        <th mat-header-cell *matHeaderCellDef>Recinto</th>
+        <td mat-cell *matCellDef="let e">
+          {{ e.recinto?.nombre ?? '—' }}<br />
+          <span class="secundario">{{ e.recinto?.ciudad }}</span>
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="cupos">
+        <th mat-header-cell *matHeaderCellDef>Cupos</th>
+        <td mat-cell *matCellDef="let e">
+          {{ e.cupos | number }}<br />
+          <span class="secundario">{{ e.tiposDeEntrada }} tipo(s) · aforo {{ e.aforoMaximo | number }}</span>
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="estado">
+        <th mat-header-cell *matHeaderCellDef>Estado</th>
+        <td mat-cell *matCellDef="let e">
+          @let est = estadoEvento(e.estado);
+          <span class="estado" [class]="est.tono">{{ est.texto }}</span>
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="acciones">
+        <th mat-header-cell *matHeaderCellDef class="acciones"></th>
+        <td mat-cell *matCellDef="let e" class="acciones">
+          <a mat-button [routerLink]="e.id">{{ esOrganizador() && e.estado !== 'CANCELADO' ? 'Abrir' : 'Ver' }}</a>
+        </td>
+      </ng-container>
+      <tr mat-header-row *matHeaderRowDef="columnas"></tr>
+      <tr mat-row *matRowDef="let fila; columns: columnas"></tr>
+    </table>
+  </div>
+
+  @if (!cargando() && visibles().length === 0) {
+    <div class="vacio">
+      <mat-icon>event</mat-icon>
+      <p>{{ eventos().length ? 'Ningún evento coincide con los filtros.' : 'Todavía no hay eventos.' }}</p>
+    </div>
+  }
+</section>

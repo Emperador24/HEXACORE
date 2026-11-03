@@ -20,16 +20,12 @@ API = 'http://localhost:3001/api/v1'
 FEST = 'e0000001-0000-4000-8000-000000000001'        # a 90 días
 ROCK = 'e0000002-0000-4000-8000-000000000002'        # a 45 días
 GALA = 'e0000003-0000-4000-8000-000000000003'        # a 30 días · aforo lleno (CU-002B)
-VERANO = 'e0000004-0000-4000-8000-000000000004'      # ya se celebró
 FERIA = 'e0000005-0000-4000-8000-000000000005'       # a 16 días
 SINFONICA = 'e0000006-0000-4000-8000-000000000006'   # a 50 días
 CLASICO = 'e0000007-0000-4000-8000-000000000007'     # a 36 días
 SALSA = 'e0000008-0000-4000-8000-000000000008'       # a 63 días · agotado
 CAFE = 'e0000009-0000-4000-8000-000000000009'        # a 9 días
-MAGO = 'e000000a-0000-4000-8000-00000000000a'        # BORRADOR: no debe verse
-VOLEIBOL = 'e000000b-0000-4000-8000-00000000000b'    # CANCELADO: no debe verse
 STANDUP = 'e000000c-0000-4000-8000-00000000000c'     # a 4 días: cancelación PARCIAL
-JAZZ = 'e000000d-0000-4000-8000-00000000000d'        # a 0,8 días: fuera de plazo
 
 
 def pedir(metodo, ruta, usuario=None, cuerpo=None, espera=60, roles=('Cliente',)):

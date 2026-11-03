@@ -11,7 +11,8 @@ el reparto y el procedimiento operativo, sin ejecutar ese corte.
 Revisión manual desde la propia rama, sin integración previa: entorno aislado
 persistente en `App/infra/revision/README.md`, resultados en **ESTADO-MIGRACION §25**.
 Este entorno construye fuentes locales; no cambia los destinos habituales ni
-las referencias A/B. PR #44 sigue en borrador, sin auto-merge ni integración.
+las referencias A/B. La migración se integró en develop mediante el PR #44
+(2/11/2026); ver ESTADO-MIGRACION §26.
 
 ## Alcance de la entrega de migración
 

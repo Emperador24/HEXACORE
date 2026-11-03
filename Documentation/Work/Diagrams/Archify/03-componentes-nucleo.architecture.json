@@ -1,0 +1,357 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "HEXACORE — Componentes del Núcleo (ADR-16)",
+    "output": "03-componentes-nucleo.html",
+    "quality_profile": "standard",
+    "viewBox": [
+      1580,
+      860
+    ]
+  },
+  "components": [
+    {
+      "id": "gateway",
+      "type": "security",
+      "label": "API Gateway",
+      "sublabel": "JWT RS256 público",
+      "pos": [
+        580,
+        10
+      ],
+      "size": [
+        360,
+        60
+      ]
+    },
+    {
+      "id": "identidad_api",
+      "type": "backend",
+      "label": "Identidad · controladores",
+      "sublabel": "/cuentas, /cuentas/perfil, /sesiones, /admin/cuentas",
+      "pos": [
+        60,
+        180
+      ],
+      "size": [
+        320,
+        72
+      ]
+    },
+    {
+      "id": "logistica_api",
+      "type": "backend",
+      "label": "Personal/Logística · controladores",
+      "sublabel": "/logistica: personal, turnos, asistencia, notificaciones",
+      "pos": [
+        410,
+        180
+      ],
+      "size": [
+        320,
+        72
+      ]
+    },
+    {
+      "id": "alimentos_api",
+      "type": "backend",
+      "label": "Alimentos · controladores",
+      "sublabel": "/pedidos: establecimientos, menú, checkout, pagos, recepción",
+      "pos": [
+        760,
+        180
+      ],
+      "size": [
+        330,
+        72
+      ]
+    },
+    {
+      "id": "webhook",
+      "type": "security",
+      "label": "Webhook de pagos",
+      "sublabel": "POST /pagos/webhook · rawBody + HMAC",
+      "pos": [
+        1180,
+        180
+      ],
+      "size": [
+        330,
+        72
+      ]
+    },
+    {
+      "id": "identidad_svc",
+      "type": "backend",
+      "label": "Cuentas, sesiones y autenticación",
+      "sublabel": "firma RS256 · renovación · revocación · correo pendiente",
+      "pos": [
+        60,
+        400
+      ],
+      "size": [
+        320,
+        72
+      ]
+    },
+    {
+      "id": "logistica_svc",
+      "type": "backend",
+      "label": "Turnos y asistencia",
+      "sublabel": "asignación · cambios · publicador y consumidor turnos.cambios",
+      "pos": [
+        410,
+        400
+      ],
+      "size": [
+        320,
+        72
+      ]
+    },
+    {
+      "id": "alimentos_svc",
+      "type": "backend",
+      "label": "Checkout, reservas e inventario",
+      "sublabel": "reserva en Redis · cron de expiración · publica pedido confirmado",
+      "pos": [
+        760,
+        400
+      ],
+      "size": [
+        330,
+        72
+      ]
+    },
+    {
+      "id": "pagos",
+      "type": "backend",
+      "label": "Módulo Pagos",
+      "sublabel": "PagosService · idempotencia · adaptador de pasarela",
+      "pos": [
+        1180,
+        400
+      ],
+      "size": [
+        330,
+        72
+      ]
+    },
+    {
+      "id": "postgres",
+      "type": "database",
+      "label": "PostgreSQL · base hexacore",
+      "sublabel": "esquemas identidad, personal_logistica, alimentos, finanzas_pagos",
+      "pos": [
+        60,
+        640
+      ],
+      "size": [
+        500,
+        76
+      ]
+    },
+    {
+      "id": "redis",
+      "type": "database",
+      "label": "Redis",
+      "sublabel": "revocación · inventario",
+      "pos": [
+        600,
+        640
+      ],
+      "size": [
+        230,
+        72
+      ]
+    },
+    {
+      "id": "rabbitmq",
+      "type": "messagebus",
+      "label": "RabbitMQ",
+      "sublabel": "cuentas · pedidos · turnos · pagos",
+      "pos": [
+        870,
+        640
+      ],
+      "size": [
+        250,
+        72
+      ]
+    },
+    {
+      "id": "pasarela",
+      "type": "external",
+      "label": "Pasarela de pagos",
+      "sublabel": "externa",
+      "pos": [
+        1180,
+        640
+      ],
+      "size": [
+        330,
+        72
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Núcleo · NestJS :3002 · un proceso",
+      "wraps": [
+        "identidad_api",
+        "logistica_api",
+        "alimentos_api",
+        "webhook",
+        "identidad_svc",
+        "logistica_svc",
+        "alimentos_svc",
+        "pagos"
+      ],
+      "pad": 24
+    }
+  ],
+  "connections": [
+    {
+      "id": "gw-identidad",
+      "from": "gateway",
+      "to": "identidad_api",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "gw-logistica",
+      "from": "gateway",
+      "to": "logistica_api",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "gw-alimentos",
+      "from": "gateway",
+      "to": "alimentos_api",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "gw-webhook",
+      "from": "gateway",
+      "to": "webhook",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "variant": "security"
+    },
+    {
+      "id": "identidad-svc",
+      "from": "identidad_api",
+      "to": "identidad_svc",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "logistica-svc",
+      "from": "logistica_api",
+      "to": "logistica_svc",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "alimentos-svc",
+      "from": "alimentos_api",
+      "to": "alimentos_svc",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "webhook-pagos",
+      "from": "webhook",
+      "to": "pagos",
+      "label": "actualiza el libro",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [
+        1345,
+        326
+      ]
+    },
+    {
+      "id": "alimentos-pagos",
+      "from": "alimentos_svc",
+      "to": "pagos",
+      "label": "cobro local",
+      "fromSide": "right",
+      "toSide": "left",
+      "variant": "emphasis"
+    },
+    {
+      "id": "identidad-pg",
+      "from": "identidad_svc",
+      "to": "postgres",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "logistica-pg",
+      "from": "logistica_svc",
+      "to": "postgres",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "alimentos-redis",
+      "from": "alimentos_svc",
+      "to": "redis",
+      "label": "reservas",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "alimentos-rabbit",
+      "from": "alimentos_svc",
+      "to": "rabbitmq",
+      "label": "pedidos.eventos",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "pagos-pasarela",
+      "from": "pagos",
+      "to": "pasarela",
+      "label": "HTTP cobros",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "variant": "emphasis",
+      "labelAt": [
+        1345,
+        560
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Un proceso, tres dominios",
+      "items": [
+        "Cada dominio tiene su conexión nombrada y su esquema; no comparten repositorios",
+        "Identidad es el único que firma tokens; los demás solo verifican y consultan la revocación en Redis"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Mensajería",
+      "items": [
+        "Identidad publica el correo pendiente (lo envía el Trabajador)",
+        "Logística publica y consume turnos.cambios",
+        "El webhook publica pagos.eventos; nadie lo consume aún (F12)"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Relaciones no dibujadas",
+      "items": [
+        "Alimentos y Pagos también escriben en sus esquemas",
+        "Identidad usa Redis (revocación) y RabbitMQ (correo)"
+      ]
+    }
+  ]
+}

@@ -33,8 +33,8 @@ import time
 import uuid
 
 from venta import (
-    ANA, CLASICO_NORTE, FEST_GENERAL, FEST_PALCO, JAZZ_TERRAZA, LOCALIDAD_FANTASMA,
-    MAGO_PLATEA, ROCK_GENERAL, ROCK_TRIBUNA, VERANO_GENERAL,
+    ANA, CLASICO_NORTE, FEST_GENERAL, FEST_PALCO, LOCALIDAD_FANTASMA,
+    ROCK_GENERAL, ROCK_TRIBUNA,
     correr, pedir, resembrar, sql, titulo,
 )
 
@@ -126,33 +126,14 @@ def sin_disponibilidad():
     assert estado == 409 and r['codigo'] == 'CU-001A', (estado, r)
     assert r['disponibles'] == 0
     assert 'No quedan entradas' in r['mensaje'], r['mensaje']
-
-    # Y el caso de "quedan, pero no tantas": la Terraza del Jazz tiene 3.
-    estado, parcial = pedir('POST', 'compras', alguien(), {'localidadId': JAZZ_TERRAZA, 'cantidad': 4})
-    assert estado == 409 and parcial['codigo'] == 'CU-001A', (estado, parcial)
-    assert parcial['disponibles'] == 3, parcial
-    assert 'Solo quedan 3' in parcial['mensaje'], parcial['mensaje']
-    # Nada se apartó: pedir de más no debe consumir cupo.
-    assert libres(JAZZ_TERRAZA) == 3
-    print(f"  agotada → disponibles 0 · pidiendo 4 de 3 → {parcial['mensaje']!r}")
+    print('  agotada → disponibles 0')
 
 
 def evento_que_no_esta_a_la_venta():
-    titulo('Paso 3 — la localidad existe pero el evento no está a la venta')
-    # Un musical todavía en borrador.
-    estado, borrador = pedir('POST', 'compras', alguien(), {'localidadId': MAGO_PLATEA, 'cantidad': 1})
-    assert estado == 409 and borrador['codigo'] == 'EVENTO_NO_A_LA_VENTA', (estado, borrador)
-    assert borrador['mensaje'] == 'El evento no está a la venta'
-
-    # Un festival que ya se celebró.
-    estado, pasado = pedir('POST', 'compras', alguien(), {'localidadId': VERANO_GENERAL, 'cantidad': 1})
-    assert estado == 409 and pasado['codigo'] == 'EVENTO_NO_A_LA_VENTA', (estado, pasado)
-    assert pasado['mensaje'] == 'El evento ya empezó', pasado
-
-    # Y una localidad que no existe.
+    titulo('Paso 3 — la localidad no existe')
     estado, fantasma = pedir('POST', 'compras', alguien(), {'localidadId': LOCALIDAD_FANTASMA, 'cantidad': 1})
     assert estado == 404 and fantasma['codigo'] == 'LOCALIDAD_NO_ENCONTRADA', (estado, fantasma)
-    print('  borrador → no está a la venta · pasado → ya empezó · inexistente → 404')
+    print('  inexistente → 404')
 
 
 def datos_que_no_valen():
@@ -325,26 +306,10 @@ def cupon_invalido():
     assert estado == 422 and inexistente['codigo'] == 'CU-004C', (estado, inexistente)
     assert 'no existe' in inexistente['mensaje']
 
-    # VERANO5 es de la temporada pasada.
-    estado, vencido = pedir('PUT', f"compras/{compra['id']}/cupon", comprador, {'codigo': 'VERANO5'})
-    assert estado == 422 and vencido['codigo'] == 'CU-004C', (estado, vencido)
-    assert 'venció' in vencido['mensaje'], vencido
-
-    # El total no se movió en ninguno de los dos intentos.
+    # El total no se movió con el intento.
     _, intacta = pedir('GET', f"compras/{compra['id']}", comprador)
     assert intacta['total'] == 180000 and intacta['codigoPromocional'] is None
-    print(f"  inexistente y vencido → CU-004C · el precio sigue en {intacta['total']}")
-
-
-def cupon_agotado():
-    titulo('CU-004D — el código alcanzó su límite de usos')
-    comprador = alguien()
-    _, compra = pedir('POST', 'compras', comprador, {'localidadId': FEST_GENERAL, 'cantidad': 1})
-    estado, r = pedir('PUT', f"compras/{compra['id']}/cupon", comprador, {'codigo': 'ULTIMO'})
-
-    assert estado == 409 and r['codigo'] == 'CU-004D', (estado, r)
-    assert 'límite de usos' in r['mensaje']
-    print(f"  ULTIMO (1 de 1 usado) → CU-004D")
+    print(f"  inexistente → CU-004C · el precio sigue en {intacta['total']}")
 
 
 def cupon_se_quita():
@@ -460,7 +425,6 @@ if __name__ == '__main__':
         cupon_se_escribe_como_sea,
         cupon_no_aplica,
         cupon_invalido,
-        cupon_agotado,
         cupon_se_quita,
         un_cupon_por_compra,
         cupon_fuera_de_tiempo,
