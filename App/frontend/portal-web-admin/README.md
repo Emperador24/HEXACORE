@@ -7,16 +7,21 @@ Consume el backend únicamente a través del API Gateway (`../../gateway`).
 
 ## Diseño
 
-Es una herramienta de trabajo, no una vitrina: superficies claras, un solo color de
-acento, bordes finos en vez de sombras, tablas densas y estados que se leen por texto
-además de por color. El rojo se reserva para errores y acciones irreversibles, que
-siempre pasan por un diálogo de confirmación (y piden motivo cuando el servidor lo
-audita). Menú lateral agrupado (General, Operación, Administración) y filtrado por rol;
-las secciones sin construir aparecen marcadas «pronto». Por debajo de 960 px el menú
-se abre encima del contenido. Fechas en `es-CO`.
+Mismo lenguaje visual que el portal de clientes y la app móvil ("Liquid Glass"): fondo con
+manchas de color difuminadas (`compartido/fondo-atmosfera.component.ts`), superficies de vidrio
+translúcido, Space Grotesk para títulos y Manrope para el cuerpo, botones en píldora con el
+degradado azul-violeta de la marca e insignias tintadas para estados, fechas y avatares
+(acentos que rotan por fila, `compartido/acentos.ts`). Tema oscuro por defecto y claro con el
+botón de la barra superior (`core/tema.service.ts`, se recuerda en el navegador).
 
-Piezas comunes: tokens `--hx-*` y clases `.pagina-encabezado`, `.panel`, `.estado`,
-`.mensaje` en `styles.scss`; `compartido/dialogo-confirmacion.component.ts`.
+El menú lateral flota como una tarjeta de vidrio, agrupado (General, Operación,
+Administración) y filtrado por rol; las secciones sin construir aparecen marcadas «pronto».
+Por debajo de 960 px se abre encima del contenido. Las acciones irreversibles pasan por un
+diálogo de confirmación que pide motivo cuando el servidor lo audita.
+
+Los colores salen de los tokens `--hx-*` de `styles.scss`, que cambian con la clase
+`tema-oscuro`; las clases `.panel`, `.estado`, `.mensaje`, `.badge-icono` y `.badge-fecha`
+son las piezas comunes.
 
 ## Estado
 
@@ -27,7 +32,9 @@ Piezas comunes: tokens `--hx-*` y clases `.pagina-encabezado`, `.panel`, `.estad
 | Personal › Asignación a eventos | CU-007 (pasos 6-12, CU-007C) | Personal/Logística + cartelera |
 | Cuentas | CU-027B | Identidad (Núcleo) |
 | Eventos | CU-026 (completo) | eventos-recintos (Núcleo) |
-| Resto del menú | CU-010, 019, 020, 028-032 | Pendiente |
+| Recintos y zonas | CU-029 | eventos-recintos (Núcleo) |
+| Monitoreo | CU-019 | operacion (Núcleo), en vivo por SSE |
+| Resto del menú | CU-010, 020, 028, 030-032 | Pendiente |
 
 ### CU-026 en el portal
 
@@ -85,5 +92,7 @@ src/app/
 ├── personal/      CU-007: empleados, ficha, asignación a eventos, diálogo de reasignación
 ├── cuentas/       CU-027B
 ├── eventos/       CU-026: listado y formulario de eventos
+├── recintos/      CU-029: listado, formulario y editor visual del mapa de zonas
+├── monitoreo/     CU-019: panel en vivo, alertas y diálogo de decisiones
 └── placeholder/   Secciones pendientes
 ```

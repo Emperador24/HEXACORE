@@ -1,9 +1,9 @@
 import { UsePipes } from '@nestjs/common';
 import { validacionLogistica } from '../../../compartido/validacion';
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, NotFoundException, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { SesionValida } from '../comun/autenticacion/sesion-valida.guard';
 import type { PeticionDeLogistica } from './autorizacion.guard';
-import { ContextoDeLogistica } from './autorizacion.guard';
+import { ContextoDeLogistica, SoloQuienSupervisa } from './autorizacion.guard';
 import { AsistenciaService } from './asistencia.service';
 import { RegistrarAsistenciaDto } from './dto/registrar-asistencia.dto';
 
@@ -40,5 +40,28 @@ export class AsistenciaController {
     return this.asistenciaService.registrosDeEmpleado(
       peticion.empleado?.id ?? null,
     );
+  }
+
+  /**
+   * CU-009, pasos 12-13: horas trabajadas, puntualidad y estado de cada
+   * empleado de un evento (`eventoId`) o de un rango (`desde`, `hasta`).
+   */
+  @Get('reporte')
+  @UseGuards(SoloQuienSupervisa)
+  reporte(
+    @Query('eventoId') eventoId?: string,
+    @Query('desde') desde?: string,
+    @Query('hasta') hasta?: string,
+  ) {
+    return this.asistenciaService.reporte({ eventoId, desde, hasta });
+  }
+
+  /** CU-009, post-condición 2: si quien pregunta está "En turno" o "Fuera de turno". */
+  @Get('estado')
+  async miEstado(@Req() peticion: PeticionDeLogistica) {
+    if (!peticion.empleado) {
+      throw new NotFoundException({ codigo: 'SIN_FICHA_DE_EMPLEADO', mensaje: 'Tu cuenta no está dada de alta como empleado.' });
+    }
+    return { empleadoId: peticion.empleado.id, estado: await this.asistenciaService.estadoDe(peticion.empleado.id) };
   }
 }

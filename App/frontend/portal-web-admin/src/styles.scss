@@ -1,84 +1,105 @@
 @use '@angular/material' as mat;
 
-// Diseño del portal administrativo.
+// Diseño del portal administrativo: el mismo lenguaje "Liquid Glass" del
+// portal de clientes y la app móvil (ver portal-web-cliente/src/styles.scss):
+// fondo con manchas de color difuminadas, superficies de vidrio translúcido,
+// Space Grotesk para títulos y Manrope para el cuerpo, botones en píldora e
+// insignias tintadas. Oscuro por defecto y claro opcional (TemaService).
 //
-// Criterio: es una herramienta de trabajo, no una vitrina. Superficies claras,
-// un solo color de acento, bordes finos en vez de sombras, tipografía legible
-// en tablas densas y estados que se distinguen por texto además de por color.
-// El color fuerte se reserva para lo que pide atención (errores, acciones
-// irreversibles); nada se anima salvo lo que informa de una espera.
+// Las pantallas no usan colores fijos: usan los tokens `--hx-*` de abajo, que
+// cambian con la clase `tema-oscuro` en <html>.
+
+@include mat.core();
 
 html {
   color-scheme: light;
   @include mat.theme((
     color: (
+      theme-type: color-scheme,
       primary: mat.$azure-palette,
-      tertiary: mat.$blue-palette,
-      theme-type: light,
+      tertiary: mat.$violet-palette,
     ),
     typography: (
-      plain-family: 'Inter, Roboto, "Helvetica Neue", sans-serif',
-      brand-family: 'Inter, Roboto, "Helvetica Neue", sans-serif',
+      plain-family: 'Manrope, system-ui, sans-serif',
+      brand-family: '"Space Grotesk", Manrope, system-ui, sans-serif',
     ),
     density: -1,
   ));
-
-  // Formularios y tablas más sobrios que el valor por defecto de M3.
   @include mat.form-field-overrides((
-    outlined-outline-color: #cfd4dc,
-    outlined-hover-outline-color: #98a2b3,
+    outlined-container-shape: 14px,
   ));
   @include mat.table-overrides((
-    header-headline-weight: 600,
-    header-headline-size: 0.75rem,
-    header-headline-color: #5b6470,
-    row-item-label-text-size: 0.875rem,
-    row-item-outline-color: #eceef2,
+    header-headline-weight: 700,
+    header-headline-size: 0.72rem,
     background-color: transparent,
-  ));
-  @include mat.card-overrides((
-    outlined-container-color: #ffffff,
-    outlined-outline-color: #e2e5ea,
-    outlined-container-shape: 10px,
-  ));
-  @include mat.dialog-overrides((
-    container-shape: 12px,
-    container-color: #ffffff,
-  ));
-  @include mat.button-overrides((
-    filled-container-shape: 8px,
-    outlined-container-shape: 8px,
-    text-container-shape: 8px,
-    protected-container-shape: 8px,
   ));
 }
 
+html.tema-oscuro { color-scheme: dark; }
+
 :root {
-  --hx-fondo: #f4f5f7;
-  --hx-superficie: #ffffff;
-  --hx-superficie-2: #f8f9fb;
-  --hx-borde: #e2e5ea;
-  --hx-borde-fuerte: #cfd4dc;
-  --hx-texto: #18202b;
-  --hx-texto-2: #5b6470;
-  --hx-texto-3: #8a93a0;
-  --hx-acento: #1d5bbf;
-  --hx-acento-suave: #e8f0fc;
+  // Constantes de la marca (app_theme.dart).
+  --hx-primario: #2f6bff;
+  --hx-violeta: #7c5cff;
+  --hx-rosa: #ff3d7f;
+  --hx-cian: #22d3ee;
+  --hx-ambar: #ffb020;
+  --hx-verde: #34d399;
+  --hx-rojo: #ff5a5f;
+  --hx-degradado: linear-gradient(135deg, #2f6bff 0%, #7c5cff 100%);
 
-  --hx-lateral: #111a2b;
-  --hx-lateral-texto: #c4cbd6;
-  --hx-lateral-activo: #1e2a40;
+  --hx-radio: 22px;
+  --hx-radio-campo: 14px;
+  --hx-blur: 24px;
 
-  --hx-ok: #18794e;
-  --hx-ok-fondo: #e7f5ee;
-  --hx-aviso: #8a5300;
-  --hx-aviso-fondo: #fdf3e0;
-  --hx-peligro: #b42318;
-  --hx-peligro-fondo: #fdecea;
-  --hx-neutro: #475467;
-  --hx-neutro-fondo: #eef0f3;
+  // --- Tema claro ---
+  --hx-fondo: #f3f4f8;
+  --hx-texto-rgb: 11 15 26;
+  --hx-texto: rgb(var(--hx-texto-rgb));
+  --hx-texto-2: rgb(var(--hx-texto-rgb) / 0.62);
+  --hx-texto-3: rgb(var(--hx-texto-rgb) / 0.42);
+  --hx-superficie: rgb(255 255 255 / 0.62);
+  --hx-superficie-2: rgb(255 255 255 / 0.5);
+  --hx-hover: rgb(var(--hx-texto-rgb) / 0.04);
+  --hx-borde: rgb(255 255 255 / 0.75);
+  --hx-linea: rgb(var(--hx-texto-rgb) / 0.08);
+  --hx-borde-fuerte: rgb(var(--hx-texto-rgb) / 0.18);
+  --hx-sombra: 0 12px 32px rgb(15 23 42 / 0.08);
+  --hx-campo: rgb(255 255 255 / 0.7);
+  --hx-mezcla: #000;
+  --hx-acento: #2f6bff;
+  --hx-acento-suave: color-mix(in srgb, #2f6bff 12%, transparent);
 
-  --hx-radio: 10px;
+  --hx-mancha-1: rgb(255 92 150 / 0.42);
+  --hx-mancha-2: rgb(47 209 236 / 0.36);
+  --hx-mancha-3: rgb(92 127 255 / 0.45);
+  --hx-mancha-4: rgb(255 170 51 / 0.32);
+
+  --hx-ok: var(--hx-verde);
+  --hx-aviso: var(--hx-ambar);
+  --hx-peligro: var(--hx-rojo);
+  --hx-neutro: #8a93a6;
+}
+
+html.tema-oscuro {
+  --hx-fondo: #0b0f1a;
+  --hx-texto-rgb: 245 243 239;
+  --hx-superficie: rgb(17 19 24 / 0.5);
+  --hx-superficie-2: rgb(17 19 24 / 0.35);
+  --hx-hover: rgb(255 255 255 / 0.04);
+  --hx-borde: rgb(255 255 255 / 0.1);
+  --hx-linea: rgb(255 255 255 / 0.08);
+  --hx-borde-fuerte: rgb(255 255 255 / 0.2);
+  --hx-sombra: 0 12px 32px rgb(0 0 0 / 0.35);
+  --hx-campo: rgb(17 19 24 / 0.45);
+  --hx-mezcla: #fff;
+  --hx-acento: #8fb0ff;
+  --hx-acento-suave: color-mix(in srgb, #2f6bff 22%, transparent);
+
+  --hx-mancha-1: rgb(255 61 127 / 0.42);
+  --hx-mancha-2: rgb(34 211 238 / 0.3);
+  --hx-mancha-3: rgb(59 91 255 / 0.42);
+  --hx-mancha-4: rgb(255 176 32 / 0.22);
 }
 
 html, body { height: 100%; }
@@ -86,35 +107,55 @@ body {
   margin: 0;
   background: var(--hx-fondo);
   color: var(--hx-texto);
-  font-family: Inter, Roboto, 'Helvetica Neue', sans-serif;
+  font-family: Manrope, system-ui, sans-serif;
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
+h1, h2, h3, h4 {
+  font-family: 'Space Grotesk', Manrope, system-ui, sans-serif;
+  letter-spacing: -0.4px;
+}
+
+a { color: var(--hx-acento); }
+
 .material-icons-outlined { font-feature-settings: 'liga'; }
+
+// --- Vidrio ------------------------------------------------------------------
+
+@mixin vidrio {
+  background: var(--hx-superficie);
+  border: 1px solid var(--hx-borde);
+  box-shadow: var(--hx-sombra);
+  backdrop-filter: blur(var(--hx-blur)) saturate(1.2);
+  -webkit-backdrop-filter: blur(var(--hx-blur)) saturate(1.2);
+}
+
+.vidrio { @include vidrio; border-radius: var(--hx-radio); }
 
 // --- Encabezado de página ----------------------------------------------------
 
 .pagina-encabezado {
   display: flex;
-  align-items: flex-start;
+  align-items: flex-end;
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
-  margin-bottom: 20px;
+  margin-bottom: 22px;
 
   h1 {
     margin: 0;
-    font-size: 1.375rem;
-    font-weight: 600;
-    letter-spacing: -0.01em;
+    font-size: 1.85rem;
+    font-weight: 700;
+    letter-spacing: -0.8px;
   }
 
   .descripcion {
-    margin: 4px 0 0;
+    margin: 6px 0 0;
     color: var(--hx-texto-2);
-    max-width: 70ch;
-    line-height: 1.45;
+    max-width: 72ch;
+    line-height: 1.5;
   }
 
   .acciones { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -122,23 +163,25 @@ body {
 
 .referencia-cu {
   display: inline-block;
-  margin-left: 8px;
-  padding: 1px 8px;
-  border: 1px solid var(--hx-borde);
+  margin-left: 10px;
+  padding: 3px 10px;
   border-radius: 999px;
-  color: var(--hx-texto-2);
+  background: var(--hx-acento-suave);
+  color: var(--hx-acento);
+  font-family: Manrope, sans-serif;
   font-size: 0.7rem;
-  font-weight: 500;
+  font-weight: 700;
+  letter-spacing: 0.3px;
   vertical-align: middle;
 }
 
 // --- Paneles -----------------------------------------------------------------
 
 .panel {
-  background: var(--hx-superficie);
-  border: 1px solid var(--hx-borde);
+  @include vidrio;
   border-radius: var(--hx-radio);
-  margin-bottom: 16px;
+  margin-bottom: 18px;
+  overflow: hidden;
 }
 
 .panel-cabecera {
@@ -146,24 +189,25 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--hx-borde);
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--hx-linea);
 
-  h2 { margin: 0; font-size: 0.95rem; font-weight: 600; }
-  .detalle { color: var(--hx-texto-2); font-size: 0.8rem; }
+  h2 { margin: 0; font-size: 1.02rem; font-weight: 700; }
+  .detalle { color: var(--hx-texto-2); font-size: 0.8rem; font-weight: 600; }
 }
 
-.panel-cuerpo { padding: 16px; }
+.panel-cuerpo { padding: 18px 20px; }
 
 .barra-filtros {
   display: flex;
   gap: 12px;
   align-items: center;
   flex-wrap: wrap;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--hx-borde);
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--hx-linea);
 
-  mat-form-field { width: 240px; }
+  mat-form-field { width: 260px; }
+  mat-form-field.corto { width: 170px; }
   .mat-mdc-form-field-subscript-wrapper { display: none; }
   .espaciador { flex: 1; }
 }
@@ -171,69 +215,136 @@ body {
 .tabla-contenedor {
   overflow-x: auto;
 
-  table { width: 100%; }
-  tr.mat-mdc-row:hover { background: var(--hx-superficie-2); }
+  table { width: 100%; background: transparent; }
+  th.mat-mdc-header-cell {
+    color: var(--hx-texto-3);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom-color: var(--hx-linea);
+  }
+  td.mat-mdc-cell { border-bottom-color: var(--hx-linea); color: var(--hx-texto); }
+  tr.mat-mdc-row { transition: background-color 0.15s ease; }
+  tr.mat-mdc-row:hover { background: var(--hx-hover); }
   td.acciones, th.acciones { text-align: right; white-space: nowrap; }
 }
 
 .secundario { color: var(--hx-texto-2); font-size: 0.8rem; }
 .mono { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 0.8rem; }
 
+a.nombre {
+  color: var(--hx-texto);
+  font-weight: 700;
+  text-decoration: none;
+  &:hover { color: var(--hx-acento); }
+}
+
 .vacio {
-  padding: 32px 16px;
+  padding: 40px 16px;
   text-align: center;
   color: var(--hx-texto-2);
 
-  mat-icon { font-size: 32px; width: 32px; height: 32px; color: var(--hx-texto-3); }
-  p { margin: 8px 0 0; }
+  mat-icon {
+    font-size: 28px;
+    width: 56px;
+    height: 56px;
+    line-height: 56px;
+    border-radius: 18px;
+    background: var(--hx-acento-suave);
+    color: var(--hx-acento);
+  }
+  p { margin: 12px 0 0; }
 }
 
-// --- Estados -----------------------------------------------------------------
-// Siempre con texto: el color ayuda, pero no es la única señal.
+// --- Insignias tintadas (TintedBadge) -----------------------------------------
+// Fondo al 16 % del color y borde al 40 %; el texto siempre dice el estado.
 
 .estado {
+  --tinte: var(--hx-neutro);
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 2px 10px;
+  padding: 4px 11px;
   border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 500;
+  font-size: 0.74rem;
+  font-weight: 700;
+  line-height: 1.2;
   white-space: nowrap;
-  background: var(--hx-neutro-fondo);
-  color: var(--hx-neutro);
+  background: color-mix(in srgb, var(--tinte) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tinte) 40%, transparent);
+  color: color-mix(in srgb, var(--tinte) 70%, var(--hx-mezcla));
 
   &::before {
     content: '';
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: currentColor;
+    background: var(--tinte);
   }
 
-  &.ok { background: var(--hx-ok-fondo); color: var(--hx-ok); }
-  &.aviso { background: var(--hx-aviso-fondo); color: var(--hx-aviso); }
-  &.peligro { background: var(--hx-peligro-fondo); color: var(--hx-peligro); }
+  &.ok { --tinte: var(--hx-verde); }
+  &.aviso { --tinte: var(--hx-ambar); }
+  &.peligro { --tinte: var(--hx-rojo); }
+  &.neutro { --tinte: var(--hx-neutro); }
+}
+
+.badge-icono {
+  // Sin `--tinte` propio: toma el que le ponga quien la usa (primario si nadie).
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--tinte, var(--hx-primario)) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tinte, var(--hx-primario)) 35%, transparent);
+  color: color-mix(in srgb, var(--tinte, var(--hx-primario)) 75%, var(--hx-mezcla));
+}
+
+.badge-fecha {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  flex: none;
+  border-radius: 14px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.15;
+  text-transform: capitalize;
+  background: color-mix(in srgb, var(--tinte, var(--hx-primario)) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tinte, var(--hx-primario)) 35%, transparent);
+  color: color-mix(in srgb, var(--tinte, var(--hx-primario)) 70%, var(--hx-mezcla));
+
+  .dia { font-size: 16px; }
 }
 
 // --- Mensajes ----------------------------------------------------------------
 
 .mensaje {
+  --tinte: var(--hx-primario);
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  padding: 10px 14px;
+  padding: 12px 16px;
   margin-bottom: 16px;
-  border-radius: 8px;
-  border: 1px solid transparent;
+  border-radius: 16px;
   line-height: 1.45;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--tinte) 13%, var(--hx-superficie));
+  border: 1px solid color-mix(in srgb, var(--tinte) 35%, transparent);
+  color: color-mix(in srgb, var(--tinte) 60%, var(--hx-mezcla));
+  backdrop-filter: blur(var(--hx-blur));
+  -webkit-backdrop-filter: blur(var(--hx-blur));
 
-  mat-icon { font-size: 20px; width: 20px; height: 20px; flex: none; }
+  mat-icon { font-size: 20px; width: 20px; height: 20px; flex: none; color: var(--tinte); }
   .cerrar { margin-left: auto; cursor: pointer; background: none; border: 0; color: inherit; padding: 0; }
 
-  &.error { background: var(--hx-peligro-fondo); color: var(--hx-peligro); border-color: #f6cfcb; }
-  &.exito { background: var(--hx-ok-fondo); color: var(--hx-ok); border-color: #c4e6d4; }
-  &.info { background: var(--hx-acento-suave); color: #18407f; border-color: #cddcf5; }
+  &.error { --tinte: var(--hx-rojo); }
+  &.exito { --tinte: var(--hx-verde); }
+  &.info { --tinte: var(--hx-primario); }
 }
 
 // --- Formularios -------------------------------------------------------------
@@ -251,17 +362,67 @@ body {
   padding-top: 8px;
 }
 
-.boton-peligro.mat-mdc-button:not(:disabled),
-.boton-peligro.mat-mdc-outlined-button:not(:disabled) { color: var(--hx-peligro); }
+// --- Ajustes a Angular Material ----------------------------------------------
+// Material pinta superficies opacas; aquí se vuelven vidrio y píldoras.
 
-.mat-mdc-dialog-content { line-height: 1.5; }
-
-.barra-filtros mat-form-field.corto { width: 160px; }
-
-a.nombre {
-  color: var(--hx-texto);
-  font-weight: 500;
-  text-decoration: none;
-
-  &:hover { color: var(--hx-acento); text-decoration: underline; }
+.mat-mdc-button, .mat-mdc-unelevated-button, .mat-mdc-outlined-button, .mat-mdc-raised-button {
+  border-radius: 999px !important;
+  font-family: Manrope, sans-serif !important;
+  font-weight: 700 !important;
+  letter-spacing: 0 !important;
 }
+
+.mat-mdc-unelevated-button:not(:disabled) {
+  background: var(--hx-degradado) !important;
+  color: #fff !important;
+  box-shadow: 0 6px 18px color-mix(in srgb, #2f6bff 35%, transparent);
+}
+.mat-mdc-unelevated-button:disabled {
+  background: var(--hx-hover) !important;
+  color: var(--hx-texto-3) !important;
+}
+
+.mat-mdc-outlined-button:not(:disabled) {
+  border-color: var(--hx-borde-fuerte) !important;
+  color: var(--hx-texto) !important;
+  background: var(--hx-superficie-2) !important;
+}
+
+.mat-mdc-button:not(:disabled) { color: var(--hx-acento) !important; }
+.mat-mdc-icon-button:not(:disabled) { color: var(--hx-texto-2) !important; }
+
+.boton-peligro.mat-mdc-button:not(:disabled),
+.boton-peligro.mat-mdc-outlined-button:not(:disabled) {
+  color: var(--hx-rojo) !important;
+  border-color: color-mix(in srgb, var(--hx-rojo) 45%, transparent) !important;
+}
+
+.mat-mdc-text-field-wrapper {
+  border-radius: var(--hx-radio-campo) !important;
+  background: var(--hx-campo) !important;
+}
+.mat-mdc-form-field:not(.mat-focused) .mdc-notched-outline > * { border-color: var(--hx-borde-fuerte) !important; }
+
+.mat-mdc-select-panel, .mat-mdc-autocomplete-panel, .mat-mdc-menu-panel {
+  @include vidrio;
+  border-radius: 16px !important;
+  background: color-mix(in srgb, var(--hx-fondo) 82%, transparent) !important;
+}
+
+.mat-mdc-dialog-surface {
+  @include vidrio;
+  border-radius: 24px !important;
+  background: color-mix(in srgb, var(--hx-fondo) 86%, transparent) !important;
+}
+.mat-mdc-dialog-content { line-height: 1.5; }
+.mat-mdc-dialog-title { font-family: 'Space Grotesk', sans-serif !important; font-weight: 700 !important; }
+
+.mat-mdc-tab-nav-bar, .mat-mdc-tab-header { --mat-tab-header-divider-color: transparent; }
+
+// El contenedor del menú lateral es transparente: deja ver el fondo de color.
+.mat-drawer-container, .mat-drawer-content { background: transparent !important; }
+.mat-drawer { background: var(--hx-superficie) !important; }
+.mat-drawer-side { border-right: 0 !important; }
+
+.celda-con-badge { display: flex; align-items: center; gap: 12px; padding: 6px 0; }
+.badge-icono.avatar { width: 40px; height: 40px; border-radius: 50%; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.85rem; }

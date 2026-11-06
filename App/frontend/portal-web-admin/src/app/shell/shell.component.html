@@ -9,7 +9,7 @@
       <span class="logotipo" aria-hidden="true">HX</span>
       <div>
         <p class="nombre-producto">HEXACORE</p>
-        <p class="nombre-portal">Administración</p>
+        <p class="nombre-portal">Panel de administración</p>
       </div>
     </div>
 
@@ -23,7 +23,7 @@
             routerLinkActive="activo"
             (click)="estrecho() && menuAbierto.set(false)"
           >
-            <mat-icon>{{ item.icono }}</mat-icon>
+            <span class="icono"><mat-icon>{{ item.icono }}</mat-icon></span>
             <span>{{ item.etiqueta }}</span>
             @if (item.pendiente) {
               <span class="pendiente" title="Sección en construcción">pronto</span>
@@ -61,6 +61,11 @@
       </div>
       <span class="espaciador"></span>
       <span class="correo">{{ usuario()?.correo }}</span>
+      <button mat-icon-button class="boton-tema" (click)="tema.alternar()"
+              [attr.aria-label]="tema.oscuro() ? 'Usar tema claro' : 'Usar tema oscuro'"
+              [matTooltip]="tema.oscuro() ? 'Tema claro' : 'Tema oscuro'">
+        <mat-icon>{{ tema.oscuro() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+      </button>
     </header>
 
     <main class="contenido">

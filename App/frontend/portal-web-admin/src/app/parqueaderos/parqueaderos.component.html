@@ -1,0 +1,192 @@
+<div class="pagina-encabezado">
+  <div>
+    <h1>Parqueaderos <span class="referencia-cu">CU-024 · CU-025</span></h1>
+    <p class="descripcion">Ocupación por zona en tiempo real, redirección de ingresos y cobro a la salida según la tarifa vigente.</p>
+  </div>
+  @if (panel()) {
+    <div class="acciones">
+      <span class="vivo" [class.activo]="enVivo()" [matTooltip]="enVivo() ? 'Recibiendo cada 3 s' : 'Reconectando el flujo en vivo'">
+        <span class="punto"></span>{{ enVivo() ? 'En vivo' : 'Reconectando' }} · {{ panel()!.actualizadoEn | date: 'HH:mm:ss' }}
+      </span>
+    </div>
+  }
+</div>
+
+@if (error()) {
+  <div class="mensaje error" role="alert">
+    <mat-icon>error_outline</mat-icon><span>{{ error() }}</span>
+    <button class="cerrar" (click)="error.set(null)" aria-label="Cerrar"><mat-icon>close</mat-icon></button>
+  </div>
+}
+@if (aviso()) {
+  <div class="mensaje exito" role="status">
+    <mat-icon>check_circle</mat-icon><span>{{ aviso() }}</span>
+    <button class="cerrar" (click)="aviso.set(null)" aria-label="Cerrar"><mat-icon>close</mat-icon></button>
+  </div>
+}
+
+<section class="panel barra-evento">
+  <mat-form-field class="evento">
+    <mat-label>Evento</mat-label>
+    <mat-select [value]="eventoId()" (selectionChange)="elegirEvento($event.value)">
+      @for (e of eventos(); track e.id) {
+        <mat-option [value]="e.id">{{ e.enCurso ? '● ' : '' }}{{ e.nombre }} — {{ e.fechaInicio | date: 'd MMM, HH:mm' }} · {{ e.recinto }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+</section>
+
+@if (trabajando()) { <mat-progress-bar mode="indeterminate" /> }
+
+@if (panel(); as p) {
+  @if (!p.evento.enCurso) {
+    <div class="mensaje info"><mat-icon>schedule</mat-icon><span>El evento no está en curso: el panel refleja los vehículos registrados hasta ahora.</span></div>
+  }
+
+  <div class="kpis">
+    <section class="panel kpi" [style.--tinte]="p.total.porcentaje >= 100 ? 'var(--hx-rojo)' : p.total.porcentaje >= 85 ? 'var(--hx-ambar)' : 'var(--hx-verde)'">
+      <p class="etiqueta">Ocupación total</p>
+      <p class="valor">{{ p.total.porcentaje | number: '1.0-1' }} %</p>
+      <p class="secundario">{{ p.total.ocupados }} de {{ p.total.capacidad }} · {{ p.total.disponibles }} libres</p>
+      <div class="medidor"><span [style.width.%]="p.total.porcentaje > 100 ? 100 : p.total.porcentaje"></span></div>
+    </section>
+    <section class="panel kpi" style="--tinte: var(--hx-cian)">
+      <p class="etiqueta">Zona recomendada al ingreso</p>
+      <p class="valor pequeno">{{ p.recomendacion.zona?.nombre ?? (p.zonas.length ? 'Sin espacio' : 'Sin zonas') }}</p>
+      <p class="secundario">{{ p.recomendacion.motivo === 'REDIRECCION' ? 'Por redirección del supervisor' : p.recomendacion.motivo === 'MENOS_OCUPADA' ? 'La menos ocupada' : p.zonas.length ? 'Todas las zonas están llenas' : 'Agrega las zonas del evento abajo' }}
+        @if (p.recomendacion.zona) { · {{ p.recomendacion.zona.disponibles }} libres }</p>
+    </section>
+    <section class="panel kpi" style="--tinte: var(--hx-violeta)">
+      <p class="etiqueta">Tarifa por hora</p>
+      <p class="valor pequeno">{{ tarifa() ? (tarifa()!.valorHora | currency: 'COP' : 'symbol-narrow' : '1.0-0') : 'Sin definir' }}</p>
+      @if (esAdministrador()) {
+        <div class="en-linea">
+          <mat-form-field class="corto"><mat-label>Nueva tarifa</mat-label><input matInput type="number" min="1" [ngModel]="nuevaTarifa()" (ngModelChange)="nuevaTarifa.set($event ? +$event : null)" /></mat-form-field>
+          <button mat-stroked-button (click)="definirTarifa()" [disabled]="trabajando() || !nuevaTarifa()">Aplicar</button>
+        </div>
+      } @else {
+        <p class="secundario">La define el Administrador</p>
+      }
+    </section>
+  </div>
+
+  <section class="panel">
+    <div class="panel-cabecera"><h2>Alertas</h2><span class="detalle">Zona casi llena ≥ 85 %, llena, o que se llena en menos de 15 min</span></div>
+    <ul class="alertas">
+      @for (a of p.alertas; track a.tipo + a.zonaId) {
+        <li [class]="a.severidad">
+          <mat-icon>{{ a.severidad === 'critica' ? 'block' : 'warning' }}</mat-icon>
+          <div class="texto"><strong>{{ a.mensaje }}</strong>
+            @if (a.sugerencia) { <span class="sugerencia"><mat-icon>lightbulb</mat-icon> {{ a.sugerencia.texto }}</span> }</div>
+          @if (a.sugerencia) { <button mat-stroked-button (click)="redirigirDesde(a)" [disabled]="trabajando()">Redirigir</button> }
+        </li>
+      } @empty {
+        <li class="sin-alertas"><mat-icon>verified</mat-icon> Hay espacio en todas las zonas.</li>
+      }
+    </ul>
+  </section>
+
+  <div class="columnas">
+    <section class="panel">
+      <div class="panel-cabecera"><h2>Zonas</h2><span class="detalle">Tendencia de los últimos 15 min</span></div>
+      <ul class="zonas">
+        @for (z of p.zonas; track z.id) {
+          <li [style.--tinte]="tono(z)">
+            <div class="fila">
+              <strong>{{ z.nombre }}</strong>
+              <span class="estado-zona">{{ z.estado === 'LLENA' ? 'Llena · bloqueada' : z.estado === 'CASI_LLENA' ? 'Casi llena' : 'Disponible' }}</span>
+            </div>
+            <div class="medidor"><span [style.width.%]="z.porcentaje > 100 ? 100 : z.porcentaje"></span></div>
+            <div class="fila secundario">
+              <span>{{ z.ocupados }}/{{ z.capacidad }} ({{ z.porcentaje | number: '1.0-1' }} %) · {{ z.disponibles }} libres</span>
+              <span>{{ z.tendencia.netoPorMinuto > 0 ? '+' : '' }}{{ z.tendencia.netoPorMinuto | number: '1.0-1' }}/min
+                @if (z.tendencia.minutosParaLlenarse !== null) { · se llena en ~{{ z.tendencia.minutosParaLlenarse }} min }</span>
+            </div>
+            <div class="en-linea">
+              <mat-form-field class="corto"><mat-label>Capacidad</mat-label>
+                <input matInput type="number" [min]="z.ocupados" [ngModel]="capacidades()[z.id] ?? z.capacidad" (ngModelChange)="fijarCapacidad(z.id, +$event)" /></mat-form-field>
+              <button mat-button (click)="guardarCapacidad(z)" [disabled]="trabajando() || capacidades()[z.id] === undefined">Guardar</button>
+            </div>
+          </li>
+        } @empty {
+          <li class="secundario">Este evento no tiene zonas de parqueadero todavía.</li>
+        }
+      </ul>
+      <div class="panel-cuerpo en-linea nueva-zona">
+        <mat-form-field><mat-label>Nueva zona</mat-label><input matInput [ngModel]="nuevaZona().nombre" (ngModelChange)="editarNuevaZona({ nombre: $event })" maxlength="120" /></mat-form-field>
+        <mat-form-field class="corto"><mat-label>Capacidad</mat-label><input matInput type="number" min="1" [ngModel]="nuevaZona().capacidad" (ngModelChange)="editarNuevaZona({ capacidad: +$event })" /></mat-form-field>
+        <button mat-stroked-button (click)="crearZona()" [disabled]="trabajando() || !nuevaZona().nombre.trim()"><mat-icon>add</mat-icon> Agregar</button>
+      </div>
+    </section>
+
+    <div class="lateral">
+      <section class="panel">
+        <div class="panel-cabecera"><h2>Caja de salida</h2><span class="detalle">CU-024</span></div>
+        <div class="panel-cuerpo">
+          <div class="en-linea">
+            <mat-form-field><mat-label>Placa</mat-label><input matInput [ngModel]="placaSalida()" (ngModelChange)="placaSalida.set($event)" (keyup.enter)="registrarSalida()" maxlength="10" /></mat-form-field>
+            <button mat-flat-button (click)="registrarSalida()" [disabled]="trabajando() || !placaSalida().trim()"><mat-icon>logout</mat-icon> Registrar salida</button>
+          </div>
+          @if (ultimaSalida(); as s) {
+            <div class="cobro" [class.pagado]="s.cobro.prepagada" [class.pendiente]="s.cobro.pendiente">
+              <span class="placa">{{ s.estancia.placa }}</span>
+              <span class="monto">{{ s.cobro.monto !== null ? (s.cobro.monto | currency: 'COP' : 'symbol-narrow' : '1.0-0') : s.cobro.prepagada ? 'Pagado' : 'Pendiente' }}</span>
+              <span>{{ s.cobro.mensaje }}</span>
+              <span class="secundario">{{ s.estancia.zona }} · {{ s.estancia.ingresoEn | date: 'HH:mm' }} – {{ s.estancia.salidaEn | date: 'HH:mm' }}{{ s.repetida ? ' · salida ya registrada' : '' }}</span>
+            </div>
+          }
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-cabecera"><h2>Ingreso</h2><span class="detalle">Sin zona, va a la recomendada</span></div>
+        <div class="panel-cuerpo">
+          <div class="en-linea">
+            <mat-form-field class="corto"><mat-label>Placa</mat-label><input matInput [ngModel]="ingreso().placa" (ngModelChange)="editarIngreso({ placa: $event })" maxlength="10" /></mat-form-field>
+            <mat-form-field><mat-label>Zona</mat-label>
+              <mat-select [value]="ingreso().zonaId" (selectionChange)="editarIngreso({ zonaId: $event.value })">
+                <mat-option value="">Recomendada</mat-option>
+                @for (z of p.zonas; track z.id) { <mat-option [value]="z.id" [disabled]="z.estado === 'LLENA'">{{ z.nombre }}</mat-option> }
+              </mat-select></mat-form-field>
+          </div>
+          <mat-checkbox [ngModel]="ingreso().prepagada" (ngModelChange)="editarIngreso({ prepagada: $event })">Reserva prepagada</mat-checkbox>
+          <div class="pie-formulario"><button mat-stroked-button (click)="registrarIngreso()" [disabled]="trabajando() || !ingreso().placa.trim()"><mat-icon>login</mat-icon> Registrar ingreso</button></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-cabecera"><h2>Redirección</h2><span class="detalle">Pasos 6-8</span></div>
+        <div class="panel-cuerpo">
+          @if (vigente(); as v) {
+            <p class="vigente"><mat-icon>alt_route</mat-icon> Vigente: {{ v.zonaOrigen ?? 'todos' }} → <strong>{{ v.zonaDestino }}</strong> · {{ v.ingresosAlDestino }} vehículo(s)</p>
+          }
+          <div class="en-linea">
+            <mat-form-field><mat-label>Desde</mat-label>
+              <mat-select [value]="redireccion().zonaOrigenId" (selectionChange)="editarRedireccion({ zonaOrigenId: $event.value })">
+                <mat-option value="">Todos los ingresos</mat-option>
+                @for (z of p.zonas; track z.id) { <mat-option [value]="z.id">{{ z.nombre }}</mat-option> }
+              </mat-select></mat-form-field>
+            <mat-form-field><mat-label>Hacia</mat-label>
+              <mat-select [value]="redireccion().zonaDestinoId" (selectionChange)="editarRedireccion({ zonaDestinoId: $event.value })">
+                @for (z of zonasDestino(); track z.id) { <mat-option [value]="z.id">{{ z.nombre }} ({{ z.disponibles }} libres)</mat-option> }
+              </mat-select></mat-form-field>
+          </div>
+          <mat-form-field class="ancho"><mat-label>Motivo</mat-label><input matInput [ngModel]="redireccion().motivo" (ngModelChange)="editarRedireccion({ motivo: $event })" maxlength="500" /></mat-form-field>
+          <div class="pie-formulario"><button mat-stroked-button (click)="redirigirManual()" [disabled]="trabajando() || !redireccion().zonaDestinoId || !redireccion().motivo.trim()">Redirigir</button></div>
+          <ol class="historial">
+            @for (r of p.redirecciones; track r.id) {
+              <li><span class="punto-tl" [class.activo]="r.vigente"></span><div class="texto">
+                <strong>{{ r.zonaOrigen ?? 'Todos' }} → {{ r.zonaDestino }}</strong>
+                <span class="secundario">{{ r.fecha | date: 'HH:mm' }} · {{ r.motivo }} · {{ r.ingresosAlDestino }} vehículo(s)</span>
+                @if (r.resultado) { <span class="resultado"><mat-icon>check</mat-icon> {{ r.resultado }}</span> }
+                @else if (r.vigente) { <button mat-button (click)="anotarResultado(r)">Anotar resultado</button> }
+              </div></li>
+            }
+          </ol>
+        </div>
+      </section>
+    </div>
+  </div>
+} @else if (!eventos().length) {
+  <section class="panel"><div class="vacio"><mat-icon>local_parking</mat-icon><p>No hay eventos publicados.</p></div></section>
+}

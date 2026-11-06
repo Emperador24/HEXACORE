@@ -9,6 +9,7 @@ import {
   SoloQuienSupervisa,
 } from './autorizacion.guard';
 import { AsistenciaService } from './asistencia.service';
+import { CoberturaPersonalService } from './cobertura-personal.service';
 import { EventosConsumidorService } from './eventos-consumidor.service';
 import { EventosPublicadorService } from './eventos-publicador.service';
 import { GestionPersonalController } from './gestion-personal.controller';
@@ -49,8 +50,11 @@ import { TurnosService } from './turnos.service';
     AsistenciaService,
     PersonalOperativoService,
     GestionPersonalService,
+    CoberturaPersonalService,
     EventosPublicadorService,
     EventosConsumidorService,
   ],
+  // Lectura de cobertura para el monitoreo (CU-019); el resto queda interno.
+  exports: [CoberturaPersonalService],
 })
 export class TurnosAsistenciaModule {}

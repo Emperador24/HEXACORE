@@ -243,7 +243,9 @@ describe('CU-018 · Gestionar turno y asistencia del personal (e2e)', () => {
         .get(`${RUTA}/notificaciones`)
         .set('Authorization', auth)
         .expect(200);
-      notificacion = res.body.find((n: any) => n.turnoId === turno.id);
+      // CU-008 avisa también al supervisor y al empleado original: se busca
+      // el aviso al reemplazo.
+      notificacion = res.body.find((n: any) => n.turnoId === turno.id && n.tipo === 'TURNO_CAMBIADO');
       if (!notificacion) {
         await new Promise((resolve) => setTimeout(resolve, 200));
       }

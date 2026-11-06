@@ -1,0 +1,318 @@
+<div class="pagina-encabezado">
+  <div>
+    <h1>Emergencias <span class="referencia-cu">CU-010</span></h1>
+    <p class="descripcion">Activa, coordina y finaliza la evacuación del evento con el aforo, las salidas y las rutas del recinto en tiempo real.</p>
+  </div>
+  <div class="acciones">
+    @if (abierta()) {
+      <span class="vivo" [class.activo]="enVivo()" [matTooltip]="enVivo() ? 'Recibiendo cada 2 s' : 'Reconectando el flujo en vivo'">
+        <span class="punto"></span>{{ enVivo() ? 'En vivo' : 'Reconectando' }} · {{ detalle()!.actualizadoEn | date: 'HH:mm:ss' }}
+      </span>
+    }
+    <mat-button-toggle-group [value]="vista()" (change)="vista.set($event.value)" aria-label="Vista">
+      <mat-button-toggle value="evacuacion"><mat-icon>emergency</mat-icon> Evacuación</mat-button-toggle>
+      <mat-button-toggle value="plan"><mat-icon>alt_route</mat-icon> Plan del recinto</mat-button-toggle>
+    </mat-button-toggle-group>
+  </div>
+</div>
+
+@if (error()) {
+  <div class="mensaje error" role="alert">
+    <mat-icon>error_outline</mat-icon><span>{{ error() }}</span>
+    <button class="cerrar" (click)="error.set(null)" aria-label="Cerrar"><mat-icon>close</mat-icon></button>
+  </div>
+}
+@if (aviso()) {
+  <div class="mensaje exito" role="status">
+    <mat-icon>check_circle</mat-icon><span>{{ aviso() }}</span>
+    <button class="cerrar" (click)="aviso.set(null)" aria-label="Cerrar"><mat-icon>close</mat-icon></button>
+  </div>
+}
+
+<section class="panel barra-evento">
+  <mat-form-field class="evento">
+    <mat-label>Evento</mat-label>
+    <mat-select [value]="eventoId()" (selectionChange)="elegirEvento($event.value)">
+      @for (e of eventos(); track e.id) {
+        <mat-option [value]="e.id">{{ e.evacuacion ? '⚠ ' : e.enCurso ? '● ' : '' }}{{ e.nombre }} — {{ e.fechaInicio | date: 'd MMM, HH:mm' }} · {{ e.recinto }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+  @if (plan(); as p) {
+    <span class="estado-plan" [class.completo]="p.completo">
+      <mat-icon>{{ p.completo ? 'verified' : 'warning' }}</mat-icon>
+      {{ p.completo ? 'Plan de evacuación completo' : 'Plan incompleto' }} · {{ p.salidas.length }} salida(s), {{ p.zonas.length }} zona(s)
+    </span>
+  }
+</section>
+
+@if (cargando() || trabajando()) { <mat-progress-bar mode="indeterminate" /> }
+
+@if (!eventos().length && !cargando()) {
+  <section class="panel"><div class="vacio"><mat-icon>emergency</mat-icon><p>No hay eventos publicados.</p></div></section>
+}
+
+@if (vista() === 'evacuacion' && evento()) {
+  @if (!abierta() && detalle()?.evacuacion?.estado !== 'FINALIZADA') {
+    <!-- Paso 1 -->
+    <section class="panel">
+      <div class="panel-cabecera"><h2>Registrar emergencia</h2><span class="detalle">El sistema propone zonas y rutas antes de avisar a nadie</span></div>
+      <div class="panel-cuerpo">
+        @if (plan() && !plan()!.completo) {
+          <div class="mensaje info"><mat-icon>alt_route</mat-icon>
+            <span>Sin plan completo no se puede activar.
+              @if (plan()!.zonasSinRuta.length) { Faltan rutas para {{ plan()!.zonasSinRuta.join(', ') }}. }
+              <button mat-button (click)="vista.set('plan')">Configurar plan</button></span>
+          </div>
+        }
+        <div class="rejilla-formulario">
+          <mat-form-field>
+            <mat-label>Tipo de emergencia</mat-label>
+            <mat-select [value]="formulario().tipo" (selectionChange)="actualizarFormulario({ tipo: $event.value })">
+              @for (t of tipos; track t[0]) { <mat-option [value]="t[0]">{{ t[1] }}</mat-option> }
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Ubicación</mat-label>
+            <input matInput [ngModel]="formulario().ubicacion" (ngModelChange)="actualizarFormulario({ ubicacion: $event })" maxlength="300" placeholder="Dónde se originó" />
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Alcance</mat-label>
+            <mat-select [value]="formulario().alcance" (selectionChange)="actualizarFormulario({ alcance: $event.value })">
+              <mat-option value="PARCIAL">Parcial: la zona afectada (CU-010C)</mat-option>
+              <mat-option value="TOTAL">Total: todo el recinto</mat-option>
+            </mat-select>
+          </mat-form-field>
+          @if (formulario().alcance === 'PARCIAL') {
+            <mat-form-field>
+              <mat-label>Zona afectada</mat-label>
+              <mat-select [value]="formulario().zonaOrigenId" (selectionChange)="actualizarFormulario({ zonaOrigenId: $event.value })">
+                @for (z of plan()?.zonas ?? []; track z.id) { <mat-option [value]="z.id">{{ z.nombre }}</mat-option> }
+              </mat-select>
+            </mat-form-field>
+          }
+          <mat-form-field>
+            <mat-label>Nivel</mat-label>
+            <mat-select [value]="formulario().nivel" (selectionChange)="actualizarFormulario({ nivel: $event.value })">
+              <mat-option [value]="1">1 · Solo la zona</mat-option>
+              <mat-option [value]="2">2 · La zona y sus vecinas</mat-option>
+              <mat-option [value]="3">3 · Todo el recinto, con altavoces</mat-option>
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field class="ancho">
+            <mat-label>Descripción (opcional)</mat-label>
+            <textarea matInput rows="2" maxlength="1000" [ngModel]="formulario().descripcion ?? ''" (ngModelChange)="actualizarFormulario({ descripcion: $event })"></textarea>
+          </mat-form-field>
+        </div>
+        <div class="pie-formulario">
+          <button mat-flat-button class="boton-alerta" (click)="proponer()"
+                  [disabled]="trabajando() || !plan()?.completo || !formulario().ubicacion.trim() || (formulario().alcance === 'PARCIAL' && !formulario().zonaOrigenId)">
+            <mat-icon>calculate</mat-icon> Calcular propuesta
+          </button>
+        </div>
+      </div>
+    </section>
+  }
+
+  @if (detalle(); as d) {
+    <section class="panel encabezado-evacuacion" [attr.data-estado]="d.evacuacion.estado">
+      <div>
+        <p class="estado-ev">{{ d.evacuacion.estado === 'PROPUESTA' ? 'Propuesta sin confirmar' : d.evacuacion.estado === 'ACTIVA' ? 'Evacuación activa' : d.evacuacion.estado === 'FINALIZADA' ? 'Finalizada' : 'Descartada' }}</p>
+        <h2>{{ etiquetaTipo(d.evacuacion.tipo) }} · nivel {{ d.evacuacion.nivel }} · {{ d.evacuacion.alcance === 'TOTAL' ? 'evacuación total' : 'evacuación parcial' }}</h2>
+        <p class="secundario">{{ d.evacuacion.ubicacion }} · {{ (d.evacuacion.activadaEn ?? d.evacuacion.creadaEn) | date: 'd MMM, HH:mm:ss' }}
+          @if (d.evacuacion.finalizadaEn) { – {{ d.evacuacion.finalizadaEn | date: 'HH:mm:ss' }} }</p>
+      </div>
+      <div class="acciones">
+        @if (d.evacuacion.estado === 'PROPUESTA') {
+          <button mat-stroked-button (click)="descartar()" [disabled]="trabajando()">Descartar</button>
+          <button mat-flat-button class="boton-alerta" (click)="confirmar()" [disabled]="trabajando()"><mat-icon>campaign</mat-icon> Confirmar y avisar</button>
+        }
+        @if (abierta() && d.evacuacion.nivel < 3) {
+          <button mat-stroked-button (click)="escalar()" [disabled]="trabajando()"><mat-icon>trending_up</mat-icon> Escalar a nivel {{ d.evacuacion.nivel + 1 }}</button>
+        }
+      </div>
+    </section>
+
+    <div class="kpis">
+      <section class="panel kpi"><p class="etiqueta">Zonas evacuadas</p><p class="valor">{{ d.resumen.evacuadas }}<small>/{{ d.resumen.zonas }}</small></p>
+        <div class="medidor"><span [style.width.%]="avance()"></span></div></section>
+      <section class="panel kpi"><p class="etiqueta">Personas por evacuar</p><p class="valor">{{ d.resumen.personasRestantes | number }}</p>
+        <p class="secundario">Estimadas al inicio: {{ d.resumen.ocupacionEstimadaInicial | number }}</p></section>
+      <section class="panel kpi"><p class="etiqueta">Personal presente</p><p class="valor">{{ d.personal.presentes }}<small>/{{ d.personal.asignados }}</small></p></section>
+      <section class="panel kpi"><p class="etiqueta">Avisos entregados</p><p class="valor">{{ d.avisos.entregados }}<small>/{{ d.avisos.total }}</small></p>
+        @if (d.avisos.pendientes) { <p class="secundario">{{ d.avisos.pendientes }} pendiente(s) de publicar</p> }</section>
+    </div>
+
+    @if (d.alertas.length) {
+      <section class="panel">
+        <div class="panel-cabecera"><h2>Alertas</h2><span class="detalle">Calculadas con los reportes del personal</span></div>
+        <ul class="alertas">
+          @for (a of d.alertas; track a.tipo + (a.zonaId ?? a.salidaId)) {
+            <li [class]="a.severidad">
+              <mat-icon>{{ a.severidad === 'critica' ? 'error' : 'warning' }}</mat-icon>
+              <div class="texto"><strong>{{ a.mensaje }}</strong>
+                @if (a.sugerencia) { <span class="sugerencia"><mat-icon>lightbulb</mat-icon> {{ a.sugerencia.texto }}</span> }</div>
+              @if (a.sugerencia && d.evacuacion.estado === 'ACTIVA') {
+                <button mat-stroked-button (click)="aplicarSugerencia(a)" [disabled]="trabajando()">Confirmar ruta</button>
+              }
+            </li>
+          }
+        </ul>
+      </section>
+    }
+
+    <div class="columnas">
+      <section class="panel">
+        <div class="panel-cabecera"><h2>Zonas</h2><span class="detalle">Paso 10: el personal reporta cuántos quedan</span></div>
+        <ul class="zonas">
+          @for (z of d.zonas; track z.zonaId) {
+            <li [attr.data-estado]="z.estado">
+              <div class="fila">
+                <div>
+                  <strong>{{ z.nombre }}</strong>
+                  @if (z.incorporadaEnNivel > nivelInicial()) { <span class="etiqueta-nivel">nivel {{ z.incorporadaEnNivel }}</span> }
+                  <div class="secundario">{{ z.instruccion }}</div>
+                </div>
+                <span class="estado-zona">{{ z.estado === 'EVACUADA' ? 'Evacuada' : z.estado === 'EN_CURSO' ? 'En curso' : 'Pendiente' }}</span>
+              </div>
+              <div class="medidor" [class.sobrecupo]="z.personasRestantes > z.capacidad"><span [style.width.%]="z.capacidad ? (z.personasRestantes / z.capacidad > 1 ? 100 : (z.personasRestantes / z.capacidad) * 100) : 0"></span></div>
+              <div class="secundario">{{ z.personasRestantes | number }} por evacuar · capacidad {{ z.capacidad | number }} · estimadas al inicio {{ z.ocupacionEstimada | number }}</div>
+              @if (d.evacuacion.estado === 'ACTIVA' && z.estado !== 'EVACUADA') {
+                <div class="controles">
+                  <mat-form-field class="corto">
+                    <mat-label>Personas</mat-label>
+                    <input matInput type="number" min="0" [ngModel]="personas()[z.zonaId] ?? z.personasRestantes"
+                           (ngModelChange)="fijarPersonas(z.zonaId, +$event)" />
+                  </mat-form-field>
+                  <button mat-stroked-button (click)="guardarPersonas(z)" [disabled]="trabajando() || personas()[z.zonaId] === undefined">Reportar</button>
+                  <mat-form-field class="ruta">
+                    <mat-label>Ruta</mat-label>
+                    <mat-select [value]="z.salidaId" (selectionChange)="cambiarRuta(z, $event.value)">
+                      @for (r of z.rutas; track r.id) {
+                        <mat-option [value]="r.salidaId" [disabled]="!r.habilitada">{{ r.prioridad }}. {{ r.salida }}{{ r.habilitada ? '' : ' (bloqueada)' }}</mat-option>
+                      }
+                    </mat-select>
+                  </mat-form-field>
+                  <button mat-flat-button (click)="marcarEvacuada(z)" [disabled]="trabajando()"><mat-icon>done_all</mat-icon> Evacuada</button>
+                </div>
+              }
+            </li>
+          }
+        </ul>
+      </section>
+
+      <div class="lateral">
+        <section class="panel">
+          <div class="panel-cabecera"><h2>Salidas</h2><span class="detalle">CU-010A</span></div>
+          <ul class="salidas">
+            @for (s of d.salidas; track s.id) {
+              <li [class.bloqueada]="!s.habilitada">
+                <mat-icon>{{ s.habilitada ? 'exit_to_app' : 'block' }}</mat-icon>
+                <div class="texto"><strong>{{ s.nombre }}</strong>
+                  <span class="secundario">{{ s.habilitada ? (s.capacidadPorMinuto ? s.capacidadPorMinuto + ' personas/min' : 'Habilitada') : s.motivoBloqueo }}</span></div>
+                @if (abierta()) {
+                  <button mat-button [class.boton-peligro]="s.habilitada" (click)="alternarSalida(s)" [disabled]="trabajando()">{{ s.habilitada ? 'Bloquear' : 'Habilitar' }}</button>
+                }
+              </li>
+            }
+          </ul>
+        </section>
+
+        @if (d.evacuacion.estado === 'ACTIVA') {
+          <section class="panel">
+            <div class="panel-cabecera"><h2>Finalizar</h2><span class="detalle">Paso 12</span></div>
+            <div class="panel-cuerpo">
+              <mat-form-field class="ancho">
+                <mat-label>Observaciones</mat-label>
+                <textarea matInput rows="2" maxlength="2000" [ngModel]="observaciones()" (ngModelChange)="observaciones.set($event)"></textarea>
+              </mat-form-field>
+              <button mat-flat-button (click)="finalizar()" [disabled]="trabajando() || d.resumen.evacuadas < d.resumen.zonas"
+                      [matTooltip]="d.resumen.evacuadas < d.resumen.zonas ? 'Todas las zonas deben estar evacuadas' : ''">
+                <mat-icon>flag</mat-icon> Finalizar y generar reporte
+              </button>
+            </div>
+          </section>
+        }
+
+        <section class="panel">
+          <div class="panel-cabecera"><h2>Avisos</h2><span class="detalle">Cola de alta prioridad</span></div>
+          <ul class="avisos">
+            @for (a of d.avisos.lista.slice(0, 12); track a.id) {
+              <li><span class="canal" [attr.data-canal]="a.canal">{{ a.canal }}</span>
+                <div class="texto"><span>{{ a.mensaje }}</span>
+                  <span class="secundario">{{ a.creadaEn | date: 'HH:mm:ss' }} · {{ a.entregadaEn ? 'entregado' : 'pendiente' }} · prioridad {{ a.prioridad }}</span></div></li>
+            } @empty { <li class="secundario">Los avisos salen al confirmar la evacuación.</li> }
+          </ul>
+        </section>
+      </div>
+    </div>
+
+    <section class="panel">
+      <div class="panel-cabecera"><h2>Bitácora</h2><span class="detalle">Queda en el reporte de auditoría</span></div>
+      <ol class="historial">
+        @for (b of d.bitacora; track b.id) {
+          <li><span class="punto-tl"></span><div class="texto"><strong>{{ etiquetaBitacora(b.tipo) }}</strong>
+            <span class="secundario">{{ b.fecha | date: 'HH:mm:ss' }}
+              @if (b.detalle['zona']) { · {{ b.detalle['zona'] }} }
+              @if (b.detalle['salida']) { · {{ b.detalle['salida'] }} }
+              @if (b.detalle['despues'] && b.tipo !== 'ZONA_ACTUALIZADA') { → {{ b.detalle['despues'] }} }
+              @if (b.detalle['motivo']) { · «{{ b.detalle['motivo'] }}» }</span></div></li>
+        }
+      </ol>
+    </section>
+  }
+
+  @if (historial().length) {
+    <section class="panel">
+      <div class="panel-cabecera"><h2>Evacuaciones del evento</h2></div>
+      <ul class="anteriores">
+        @for (h of historial(); track h.id) {
+          <li><button type="button" (click)="abrir(h.id)" [class.actual]="h.id === detalle()?.evacuacion?.id">
+            <strong>{{ etiquetaTipo(h.tipo) }}</strong> · nivel {{ h.nivel }} · {{ h.estado.toLowerCase() }}
+            <span class="secundario">{{ h.creadaEn | date: 'd MMM, HH:mm' }}</span></button></li>
+        }
+      </ul>
+    </section>
+  }
+}
+
+@if (vista() === 'plan' && plan(); as p) {
+  <section class="panel">
+    <div class="panel-cabecera"><h2>Salidas de emergencia · {{ p.recinto.nombre }}</h2><span class="detalle">Precondición del CU-010</span></div>
+    <div class="panel-cuerpo">
+      @for (s of salidasPlan(); track $index; let i = $index) {
+        <div class="fila-plan">
+          <mat-form-field><mat-label>Nombre</mat-label><input matInput [ngModel]="s.nombre" (ngModelChange)="editarSalida(i, { nombre: $event })" maxlength="120" /></mat-form-field>
+          <mat-form-field class="corto"><mat-label>Personas/min</mat-label><input matInput type="number" min="1" [ngModel]="s.capacidadPorMinuto" (ngModelChange)="editarSalida(i, { capacidadPorMinuto: $event ? +$event : null })" /></mat-form-field>
+          <button mat-icon-button (click)="quitarSalida(i)" aria-label="Quitar salida"><mat-icon>delete</mat-icon></button>
+        </div>
+      }
+      <button mat-stroked-button (click)="agregarSalida()"><mat-icon>add</mat-icon> Agregar salida</button>
+    </div>
+  </section>
+  <section class="panel">
+    <div class="panel-cabecera"><h2>Rutas por zona</h2><span class="detalle">La de prioridad 1 es la principal; las demás, alternativas (CU-010A/B)</span></div>
+    <div class="panel-cuerpo">
+      @for (z of p.zonas; track z.id) {
+        <div class="zona-plan">
+          <h3>{{ z.nombre }} <span class="secundario">· capacidad {{ z.capacidad | number }}</span></h3>
+          @for (r of rutasDe(z.id); track $index) {
+            <div class="fila-plan">
+              <mat-form-field class="corto"><mat-label>Prioridad</mat-label><input matInput type="number" min="1" [ngModel]="r.prioridad" (ngModelChange)="editarRuta(r, { prioridad: +$event })" /></mat-form-field>
+              <mat-form-field><mat-label>Salida</mat-label>
+                <mat-select [value]="r.salida" (selectionChange)="editarRuta(r, { salida: $event.value })">
+                  @for (n of nombresSalidas(); track n) { <mat-option [value]="n">{{ n }}</mat-option> }
+                </mat-select></mat-form-field>
+              <mat-form-field class="ancho"><mat-label>Indicaciones</mat-label><input matInput [ngModel]="r.descripcion" (ngModelChange)="editarRuta(r, { descripcion: $event })" maxlength="500" /></mat-form-field>
+              <button mat-icon-button (click)="quitarRuta(r)" aria-label="Quitar ruta"><mat-icon>delete</mat-icon></button>
+            </div>
+          } @empty { <p class="secundario">Sin rutas: esta zona no se puede evacuar.</p> }
+          <button mat-button (click)="agregarRuta(z.id)" [disabled]="!nombresSalidas().length"><mat-icon>add</mat-icon> Agregar ruta</button>
+        </div>
+      } @empty { <p class="secundario">El recinto no tiene zonas. Se crean en Recintos y zonas (CU-029).</p> }
+      <div class="pie-formulario">
+        <button mat-flat-button (click)="guardarPlan()" [disabled]="trabajando()"><mat-icon>save</mat-icon> Guardar plan</button>
+      </div>
+    </div>
+  </section>
+}

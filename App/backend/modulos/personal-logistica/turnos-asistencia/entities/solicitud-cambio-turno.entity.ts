@@ -6,7 +6,7 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { EstadoSolicitudCambio } from '../enums/estados';
+import { EstadoSolicitudCambio, RespuestaReemplazo } from '../enums/estados';
 import { Empleado } from './empleado.entity';
 import { Turno } from './turno.entity';
 
@@ -50,4 +50,19 @@ export class SolicitudCambioTurno {
 
   @Column({ type: 'timestamptz', nullable: true })
   fechaRevision: Date | null;
+
+  /**
+   * CU-008: quién pidió el cambio. Al aprobarlo el turno pasa al reemplazo, y
+   * esto es lo que permite devolvérselo si el reemplazo lo rechaza (CU-008C).
+   * Nulo en las solicitudes anteriores a este caso de uso.
+   */
+  @Column('uuid', { nullable: true })
+  empleadoSolicitanteId: string | null;
+
+  @Column({ type: 'varchar', length: 10, nullable: true })
+  respuestaReemplazo: RespuestaReemplazo | null;
+
+  /** Quienes ya rechazaron cubrir este turno: no se les vuelve a proponer. */
+  @Column('uuid', { array: true, default: () => "'{}'" })
+  reemplazosDescartados: string[];
 }

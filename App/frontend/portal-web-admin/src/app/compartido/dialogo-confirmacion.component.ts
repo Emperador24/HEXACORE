@@ -54,7 +54,7 @@ export interface DatosConfirmacion {
   styles: `
     .motivo { width: 100%; margin-top: 8px; }
     p { margin-top: 0; color: var(--hx-texto-2); }
-    .peligro:not(:disabled) { background: var(--hx-peligro); color: #fff; }
+    .peligro:not(:disabled) { background: var(--hx-rojo) !important; color: #fff !important; box-shadow: 0 6px 18px color-mix(in srgb, var(--hx-rojo) 35%, transparent) !important; }
   `
 })
 export class DialogoConfirmacionComponent {

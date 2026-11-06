@@ -1,13 +1,15 @@
 # Eventos y recintos (Núcleo)
 
-Dueño del **Evento** (CU-026). Hasta ahora solo existían sus copias en Boletería
+Dueño del **Evento** (CU-026) y de los **recintos y zonas** (CU-029). Hasta ahora solo existían sus copias en Boletería
 (`eventos_referencia` de Ventas, Catálogo, Postventa y Acceso QR), llenadas por semillas.
 Esquema propio `eventos_recintos`, el noveno de la base `hexacore`; migración
 `1793700000000-EsquemaEventosRecintos`, posterior a la consolidación (sin procedencia histórica).
 
 | Ruta `/api/v1` | Quién | Qué |
 |---|---|---|
-| GET `recintos` | Organizador, Administrador | Recintos activos con zonas y capacidad (solo lectura; administrarlos es el CU-029) |
+| GET `recintos` (`?todos=true` con inactivos y uso) | Organizador, Administrador | Recintos con zonas y capacidad |
+| GET/POST `recintos`, GET/PUT/DELETE `recintos/:id` | Organizador, Administrador | CU-029: registrar, editar, eliminar (solo sin eventos) |
+| GET/PUT/DELETE `recintos/:id/plano` | Organizador, Administrador | CU-029 paso 5: plano PNG/JPG/WebP ≤ 1,5 MB |
 | GET `eventos`, GET `eventos/:id` | Organizador, Administrador | Listado y detalle con localidades e historial |
 | GET `eventos/disponibilidad` | Organizador, Administrador | Paso 5: conflictos en el recinto y horarios sugeridos |
 | POST `eventos`, PUT `eventos/:id` | Organizador | Crear (borrador) y editar, con `version` para no pisar cambios ajenos |
@@ -36,12 +38,31 @@ Esquema propio `eventos_recintos`, el noveno de la base `hexacore`; migración
   un mensaje en `eventos_salientes` dentro de la misma transacción; `BandejaEventos` lo publica
   después en el exchange `eventos.gestion`. Ver [CONTRATO-EVENTOS.md](CONTRATO-EVENTOS.md).
 
+## CU-029 · Recintos y zonas
+
+- **Capacidad (paso 4, CU-029A):** la suma de las zonas no supera la capacidad total; el
+  error trae `suma` y `capacidad`.
+- **Eventos activos (CU-029B):** con eventos publicados que no han terminado, cambiar
+  capacidad, zonas o el estado activo responde 409 `CONFIRMAR_IMPACTO` con la lista de eventos;
+  se reenvía con `confirmarImpacto: true`. Se rechaza aunque se confirme lo que dejaría
+  vendido más de lo físico: capacidad menor que el aforo de un evento activo
+  (`CAPACIDAD_COMPROMETIDA`) o una zona menor que los cupos puestos a la venta en ella
+  (`ZONA_COMPROMETIDA`). Una zona con tipos de entrada no se quita (`ZONA_EN_USO`).
+- **Mapa (paso 5):** cada zona guarda su rectángulo en % del plano (`x`, `y`, `ancho`, `alto`)
+  y su color. El plano es una imagen guardada en la base (`planos_recinto`, bytea): la
+  arquitectura no tiene almacenamiento de objetos. Se comprueba la firma del archivo, no solo
+  el tipo declarado; SVG no se acepta.
+- **Concurrencia:** se edita con la fila del recinto bloqueada, el mismo bloqueo de la
+  publicación de eventos.
+- Un recinto con eventos no se elimina: se desactiva y deja de ofrecerse en eventos nuevos.
+
+Migración `1793800000000-Cu029RecintosZonas`. `test/eventos/recintos.e2e-spec.ts`: 5 escenarios.
+
 ## Lo que queda fuera (decidido)
 
 - **Boletería no consume todavía el contrato.** Publicar no aparece en la cartelera, y
   cancelar no devuelve el dinero, hasta que Entradas implemente los consumidores descritos en
   el contrato (CU-005, CU-003 de Daniel). El portal lo dice al publicar y al cancelar.
-- **Recintos de solo lectura.** Se crean con la semilla; administrarlos es el CU-029.
 - **Paso 10 por correo.** La confirmación al organizador es la respuesta y el aviso del
   portal; el Trabajador no tiene plantillas de correo para eventos.
 

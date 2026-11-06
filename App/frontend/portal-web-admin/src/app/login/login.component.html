@@ -1,15 +1,21 @@
 <div class="pagina">
-  <aside class="presentacion">
+  <section class="presentacion">
     <div class="marca">
       <span class="logotipo" aria-hidden="true">HX</span>
       <span>HEXACORE</span>
     </div>
     <div class="texto">
-      <h1>Portal de administración</h1>
-      <p>Planificación de eventos, personal, cuentas y operación del recinto.</p>
+      <span class="etiqueta">Panel de administración</span>
+      <h1>Todo el evento,<br /><span class="degradado">en un solo lugar.</span></h1>
+      <p>Planifica eventos, organiza a tu personal y administra las cuentas del sistema.</p>
+      <div class="chips">
+        <span class="chip" style="--tinte: var(--hx-rosa)"><mat-icon>event</mat-icon> Eventos</span>
+        <span class="chip" style="--tinte: var(--hx-cian)"><mat-icon>badge</mat-icon> Personal</span>
+        <span class="chip" style="--tinte: var(--hx-ambar)"><mat-icon>manage_accounts</mat-icon> Cuentas</span>
+      </div>
     </div>
-    <p class="nota">Acceso restringido a administradores y organizadores. Cada acción queda registrada.</p>
-  </aside>
+    <p class="nota">Acceso para administradores y organizadores. Cada acción queda registrada.</p>
+  </section>
 
   <main class="formulario">
     <form (ngSubmit)="ingresar()" #formulario="ngForm" class="tarjeta">
@@ -25,11 +31,13 @@
 
       <mat-form-field appearance="outline">
         <mat-label>Correo</mat-label>
+        <mat-icon matPrefix>mail</mat-icon>
         <input matInput name="correo" type="email" [(ngModel)]="correo" required autocomplete="username" />
       </mat-form-field>
 
       <mat-form-field appearance="outline">
         <mat-label>Contraseña</mat-label>
+        <mat-icon matPrefix>lock</mat-icon>
         <input
           matInput
           [type]="verContrasena ? 'text' : 'password'"
@@ -50,7 +58,8 @@
       </mat-form-field>
 
       <button mat-flat-button type="submit" class="entrar" [disabled]="formulario.invalid || entrando()">
-        @if (entrando()) { Verificando… } @else { Ingresar }
+        {{ entrando() ? 'Verificando…' : 'Ingresar' }}
+        <mat-icon iconPositionEnd>arrow_forward</mat-icon>
       </button>
       @if (entrando()) {
         <mat-progress-bar mode="indeterminate" />

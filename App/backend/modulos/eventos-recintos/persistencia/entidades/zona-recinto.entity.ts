@@ -19,4 +19,13 @@ export class ZonaRecinto {
 
   @Column({ type: 'integer' })
   capacidad: number;
+
+  /** CU-029 paso 5: rectángulo de la zona en el plano, en % del ancho y alto. Nulo si no se dibujó. */
+  @Column({ type: 'real', nullable: true }) x: number | null;
+  @Column({ type: 'real', nullable: true }) y: number | null;
+  @Column({ type: 'real', nullable: true }) ancho: number | null;
+  @Column({ type: 'real', nullable: true }) alto: number | null;
+
+  @Column({ type: 'varchar', length: 9, nullable: true })
+  color: string | null;
 }

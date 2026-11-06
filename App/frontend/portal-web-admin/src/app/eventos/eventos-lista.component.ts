@@ -14,6 +14,7 @@ import { AuthService, ErrorCuenta } from '../core/auth.service';
 import { EventosApiService } from '../core/eventos-api.service';
 import { EstadoEvento, EventoResumen, Rol } from '../core/models';
 import { estadoEvento } from './formato-eventos';
+import { acento } from '../compartido/acentos';
 
 /** CU-026, paso 1: los eventos con su estado, para crear uno nuevo o abrir uno existente. */
 @Component({
@@ -37,6 +38,7 @@ export class EventosListaComponent {
   readonly estado = signal<EstadoEvento | ''>('');
   readonly estados = Object.values(EstadoEvento);
   readonly estadoEvento = estadoEvento;
+  readonly acento = acento;
 
   /** Precondición 1: crear y editar es del Organizador; el Administrador solo consulta. */
   readonly esOrganizador = computed(() => this.auth.roles().includes(Rol.ORGANIZADOR));

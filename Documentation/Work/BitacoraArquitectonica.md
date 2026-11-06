@@ -23,6 +23,30 @@ Cada entrada nueva va arriba (orden cronológico inverso), con este formato:
 
 ---
 
+## 2026-11-03 — Recintos (CU-029) y monitoreo del evento (CU-019); portal con el diseño del de clientes
+
+**Tipo:** Cambio arquitectónico
+
+**Contexto:** CU-026 dejó las tablas de recintos en solo lectura, y el monitoreo no existía.
+Ninguno de los dos es de Samuel (CU-029 de Sebastián, CU-019 de Diego); se implementan por su
+pedido y quedan señalados en la guía del equipo para revisión de sus dueños.
+**Decisión / resultado:** CU-029 en eventos-recintos (zonas con posición en el plano, plano en
+la base como bytea por falta de almacenamiento de objetos, avisos y bloqueos con eventos
+activos). CU-019 en un módulo `operacion` con **décimo esquema**, dentro del Núcleo hasta que
+exista el programa Operación: cola propia sobre `acceso.eventos` (ingresos de Acceso QR),
+interfaces locales de lectura con eventos-recintos y Personal/Logística, alertas persistidas y
+deduplicadas, decisiones con resultado y panel por Server-Sent Events cada 3 s. El portal
+administrativo adopta el lenguaje visual del portal de clientes (Liquid Glass, tema oscuro).
+**Alternativas consideradas:** WebSockets (más infraestructura que SSE para un flujo de un
+solo sentido); proceso Operación separado ahora (ADR-16 lo prevé, pero no hay programa vacío
+que arrancar); leer la base de Acceso QR (rompe la propiedad de esquemas).
+**Ventajas / desventajas:** panel casi en tiempo real sin tocar Boletería; los ingresos
+anteriores a la cola no se cuentan; cerrar un acceso es estado del panel y Acceso QR no lo
+aplica todavía; parqueaderos e incidentes aparecen sin fuente.
+**Riesgos técnicos:** el aislamiento de Operación sigue pendiente (si cae el Núcleo, cae el
+monitoreo); el SAD y los diagramas siguen en ocho esquemas.
+**Participantes:** Samuel Emperador (vía asistente).
+
 ## 2026-11-03 — Dueño del Evento en el Núcleo (CU-026) y gestión de personal (CU-007)
 
 **Tipo:** Cambio arquitectónico

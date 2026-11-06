@@ -177,7 +177,7 @@ describe('CU-011 Alimentos → Pagos → pasarela con persistencia y mensajería
     const salud = await fetch(`${base}/api/v1/salud`, { signal: AbortSignal.timeout(3000) });
     expect(salud.status).toBe(200);
     expect(await salud.json()).toMatchObject({ servicio: 'nucleo', entorno: 'test', estado: 'arriba' });
-    expect(salidaServidor.match(/4 topologías declaradas/g)).toHaveLength(1);
+    expect(salidaServidor.match(/6 topologías declaradas/g)).toHaveLength(1);
     expect(salidaServidor.match(/Sondeo de reservas iniciado/g)).toHaveLength(1);
     expect(salidaServidor).toContain(`pid=${servidor.pid}`);
     expect(salidaServidor).toMatch(/hilos=\d+/);

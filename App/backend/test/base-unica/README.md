@@ -107,7 +107,7 @@ npm run test:trabajador:identidad
 npm run test:limpiar
 ```
 
-test:infra prepara recursos y nueve historiales/20 migraciones antes de los procesos. No migran los
+test:infra prepara recursos y diez historiales/22 migraciones antes de los procesos. No migran los
 bootstraps. Las suites conservan aserciones de cierre SIGTERM/pools/cron/outbox y
 sin SIGKILL. Los contratos financieros reinician las dos imágenes, conservando
 libro/referencias y fecha de terminación de la tarea de preparación.
@@ -138,7 +138,7 @@ npm run test:limpiar
 unset POSTGRES_BD_PRUEBAS
 ```
 
-Primera preparación: **20 aplicadas** (18 consolidadas + CU-007 + CU-026); lectura inicial: 57 tablas, 20 filas de
+Primera preparación: **22 aplicadas** (18 consolidadas + CU-007, CU-026, CU-029 y CU-019); lectura inicial: 63 tablas, 22 filas de
 historial + cuatro roles, ninguna otra fila de negocio ni tabla public. Sin semillas.
 Repetición concurrente: cero reaplicadas. Entidades, extensiones, enums, secuencias,
 restricciones, funciones y triggers se crean con las fuentes originales adaptadas

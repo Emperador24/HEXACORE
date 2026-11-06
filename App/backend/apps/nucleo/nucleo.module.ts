@@ -7,10 +7,12 @@ import { RabbitMqModule } from '../../compartido/rabbitmq/rabbitmq.module';
 import { IdentidadModule } from '../../modulos/identidad/identidad.module';
 import { AlimentosModule } from '../../modulos/alimentos/alimentos.module';
 import { EventosRecintosModule } from '../../modulos/eventos-recintos/eventos-recintos.module';
+import { OperacionModule } from '../../modulos/operacion/operacion.module';
+import { ParqueaderosModule } from '../../modulos/parqueaderos/parqueaderos.module';
 import { SaludController } from './salud.controller';
 
 @Module({
-  imports: [WebhookPagosModule, ConfiguracionProcesoModule, RedisModule, RabbitMqModule, IdentidadModule, AlimentosModule, PersonalLogisticaModule, EventosRecintosModule],
+  imports: [WebhookPagosModule, ConfiguracionProcesoModule, RedisModule, RabbitMqModule, IdentidadModule, AlimentosModule, PersonalLogisticaModule, EventosRecintosModule, OperacionModule, ParqueaderosModule],
   controllers: [SaludController],
 })
 export class NucleoModule {}

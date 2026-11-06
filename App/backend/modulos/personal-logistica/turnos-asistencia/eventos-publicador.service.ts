@@ -16,7 +16,18 @@ export interface CambioTurnoEvento {
   // TURNO_CAMBIADO: CU-018, cambio de turno aprobado.
   // PERSONAL_ASIGNADO: CU-017, asignación de personal a una zona (paso 9).
   // ASIGNACION_CANCELADA / ASIGNACION_RECHAZADA: CU-007C y CU-007B.
-  tipo: 'TURNO_CAMBIADO' | 'PERSONAL_ASIGNADO' | 'ASIGNACION_CANCELADA' | 'ASIGNACION_RECHAZADA';
+  // El resto, CU-008: aviso al supervisor (paso 4), al empleado original
+  // (paso 11, CU-008A) y al reemplazo (paso 12, CU-008C).
+  tipo:
+    | 'TURNO_CAMBIADO'
+    | 'PERSONAL_ASIGNADO'
+    | 'ASIGNACION_CANCELADA'
+    | 'ASIGNACION_RECHAZADA'
+    | 'CAMBIO_SOLICITADO'
+    | 'CAMBIO_APROBADO'
+    | 'CAMBIO_RECHAZADO'
+    | 'CAMBIO_CANCELADO'
+    | 'REEMPLAZO_RECHAZO';
   turnoId: string;
   empleadoAnteriorId?: string;
   empleadoNuevoId: string;

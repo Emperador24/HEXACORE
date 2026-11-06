@@ -75,7 +75,7 @@ describe('Convivencia de Personal/Logística con Identidad y Alimentos en Núcle
     expect(asistencia.body.map((a: { empleadoId: string }) => a.empleadoId)).not.toContain(empleadoAjeno.id);
   });
 
-  it('usa las tres bases correctas y conserva ocho migraciones (tres de logística con CU-007), sin synchronize', async () => {
+  it('usa las tres bases correctas y conserva nueve migraciones (cuatro de logística con CU-007 y CU-008/009), sin synchronize', async () => {
     const conexiones = await nucleo.datos.query(`SELECT DISTINCT application_name,datname FROM pg_stat_activity WHERE application_name LIKE 'nucleo-%'`);
     expect(conexiones).toEqual(expect.arrayContaining([
       { application_name: 'nucleo-identidad', datname: basePruebas },
@@ -87,7 +87,7 @@ describe('Convivencia de Personal/Logística con Identidad y Alimentos en Núcle
       expect(fuente.options.synchronize).toBe(false);
       cantidades.push((await fuente.query('SELECT count(*)::int AS n FROM migraciones'))[0].n as number);
     }
-    expect(cantidades).toEqual([3, 2, 3]);
+    expect(cantidades).toEqual([3, 2, 4]);
     expect((await nucleo.identidad.query("SELECT to_regclass('identidad.empleados') AS tabla"))[0].tabla).toBeNull();
     expect((await nucleo.alimentos.query("SELECT to_regclass('alimentos.empleados') AS tabla"))[0].tabla).toBeNull();
   });

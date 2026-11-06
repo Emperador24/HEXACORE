@@ -1,0 +1,215 @@
+<div class="pagina-encabezado">
+  <div>
+    <h1>Monitoreo <span class="referencia-cu">CU-019</span></h1>
+    <p class="descripcion">Aforo, accesos y personal del evento en tiempo real, con alertas automáticas y el historial de decisiones.</p>
+  </div>
+  @if (panel()) {
+    <div class="acciones">
+      <span class="vivo" [class.activo]="enVivo()" [matTooltip]="enVivo() ? 'Recibiendo cada 3 s' : 'Sin flujo en vivo: consultando cada 10 s'">
+        <span class="punto"></span>{{ enVivo() ? 'En vivo' : 'Reconectando' }} · {{ panel()!.actualizadoEn | date: 'HH:mm:ss' }}
+      </span>
+      <button mat-flat-button (click)="decidir()"><mat-icon>gavel</mat-icon> Registrar decisión</button>
+    </div>
+  }
+</div>
+
+@if (error()) {
+  <div class="mensaje error" role="alert">
+    <mat-icon>error_outline</mat-icon><span>{{ error() }}</span>
+    <button class="cerrar" (click)="error.set(null)" aria-label="Cerrar"><mat-icon>close</mat-icon></button>
+  </div>
+}
+@if (aviso()) {
+  <div class="mensaje exito" role="status">
+    <mat-icon>check_circle</mat-icon><span>{{ aviso() }}</span>
+    <button class="cerrar" (click)="aviso.set(null)" aria-label="Cerrar"><mat-icon>close</mat-icon></button>
+  </div>
+}
+
+<section class="panel barra-evento">
+  <mat-form-field class="evento">
+    <mat-label>Evento</mat-label>
+    <mat-select [value]="eventoId()" (selectionChange)="elegirEvento($event.value)">
+      @for (e of eventos(); track e.id) {
+        <mat-option [value]="e.id">{{ e.enCurso ? '● ' : '' }}{{ e.nombre }} — {{ e.fechaInicio | date: 'd MMM, HH:mm' }} · {{ e.recinto }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+  <mat-form-field class="lugar">
+    <mat-label>Zona o acceso</mat-label>
+    <mat-select [value]="filtroLugar()" (selectionChange)="filtroLugar.set($event.value)">
+      <mat-option value="">Todos</mat-option>
+      @for (l of lugares(); track l) { <mat-option [value]="l">{{ l }}</mat-option> }
+    </mat-select>
+  </mat-form-field>
+  <div class="chips" role="group" aria-label="Indicadores visibles">
+    @for (s of ['alertas', 'accesos', 'personal', 'decisiones']; track s) {
+      <button type="button" class="chip" [class.activo]="secciones().has($any(s))" (click)="alternarSeccion($any(s))">{{ s }}</button>
+    }
+  </div>
+</section>
+
+@if (cargando()) { <mat-progress-bar mode="indeterminate" /> }
+
+@if (!eventos().length && !cargando()) {
+  <section class="panel"><div class="vacio"><mat-icon>monitor_heart</mat-icon><p>No hay eventos publicados para monitorear.</p></div></section>
+}
+
+@if (panel(); as p) {
+  @if (!p.evento.enCurso) {
+    <div class="mensaje info"><mat-icon>schedule</mat-icon><span>El evento no está en curso ({{ p.evento.fechaInicio | date: 'd MMM, HH:mm' }} – {{ p.evento.fechaFin | date: 'HH:mm' }}). Las alertas de personal y de accesos se activan cuando empiece.</span></div>
+  }
+
+  <div class="kpis">
+    <section class="panel kpi" [style.--tinte]="tonoAforo() === 'peligro' ? 'var(--hx-rojo)' : tonoAforo() === 'aviso' ? 'var(--hx-ambar)' : 'var(--hx-verde)'">
+      <span class="badge-icono"><mat-icon>groups</mat-icon></span>
+      <div class="cuerpo">
+        <p class="etiqueta">Aforo</p>
+        <p class="valor">{{ p.aforo.porcentaje | number: '1.0-1' }} %</p>
+        <p class="secundario">{{ p.aforo.asistentes | number }} de {{ p.aforo.aforoMaximo | number }} · quedan {{ p.aforo.disponibles | number }}</p>
+        <div class="medidor" role="progressbar" [attr.aria-valuenow]="p.aforo.porcentaje" aria-valuemin="0" aria-valuemax="100"><span [style.width.%]="p.aforo.porcentaje > 100 ? 100 : p.aforo.porcentaje"></span></div>
+      </div>
+    </section>
+    <section class="panel kpi" style="--tinte: var(--hx-cian)">
+      <span class="badge-icono"><mat-icon>login</mat-icon></span>
+      <div class="cuerpo">
+        <p class="etiqueta">Flujo de ingreso</p>
+        <p class="valor">{{ p.accesos.flujoPorMinuto | number: '1.0-1' }}<small>/min</small></p>
+        <p class="secundario">{{ p.accesos.ultimos5min }} en los últimos 5 min</p>
+      </div>
+    </section>
+    <section class="panel kpi" style="--tinte: var(--hx-violeta)">
+      <span class="badge-icono"><mat-icon>badge</mat-icon></span>
+      <div class="cuerpo">
+        <p class="etiqueta">Personal presente</p>
+        <p class="valor">{{ p.personal.presentes }}<small>/{{ p.personal.requeridos }}</small></p>
+        <p class="secundario">{{ p.personal.asignados }} asignados en {{ p.personal.zonas.length }} zona(s)</p>
+      </div>
+    </section>
+    <section class="panel kpi" [style.--tinte]="p.alertas.length ? 'var(--hx-rosa)' : 'var(--hx-verde)'">
+      <span class="badge-icono"><mat-icon>{{ p.alertas.length ? 'notifications_active' : 'verified' }}</mat-icon></span>
+      <div class="cuerpo">
+        <p class="etiqueta">Alertas activas</p>
+        <p class="valor">{{ p.alertas.length }}</p>
+        <p class="secundario">{{ p.decisiones.length }} decisión(es) registradas</p>
+      </div>
+    </section>
+  </div>
+
+  @if (secciones().has('alertas')) {
+    <section class="panel">
+      <div class="panel-cabecera"><h2>Alertas</h2><span class="detalle">Se resuelven solas cuando la situación desaparece</span></div>
+      <ul class="alertas">
+        @for (a of alertas(); track a.id) {
+          <li [class]="a.severidad">
+            <mat-icon>{{ a.severidad === 'critica' ? 'error' : 'warning' }}</mat-icon>
+            <div class="texto">
+              <strong>{{ a.mensaje }}</strong>
+              @if (a.sugerencia?.texto) { <span class="sugerencia"><mat-icon>lightbulb</mat-icon> {{ a.sugerencia!.texto }}</span> }
+              <span class="secundario">Desde las {{ a.creadaEn | date: 'HH:mm' }}</span>
+            </div>
+            <button mat-stroked-button (click)="actuar(a)">Actuar</button>
+          </li>
+        } @empty {
+          <li class="sin-alertas"><mat-icon>verified</mat-icon> Todo en orden: no hay alertas activas.</li>
+        }
+      </ul>
+    </section>
+  }
+
+  <div class="columnas">
+    @if (secciones().has('accesos')) {
+      <section class="panel">
+        <div class="panel-cabecera"><h2>Accesos</h2><span class="detalle">Ingresos por minuto, últimos 30 min</span></div>
+        <div class="grafica" role="img" [attr.aria-label]="'Ingresos por minuto: máximo ' + barras().maximo + ', últimos 5 minutos ' + p.accesos.ultimos5min">
+          <div class="eje"><span>{{ barras().maximo }}</span><span>0</span></div>
+          <div class="barras">
+            @for (b of barras().serie; track b.minuto) {
+              <div class="columna" [matTooltip]="minuto(b.minuto) + ' · ' + b.ingresos + ' ingreso(s)'">
+                <span class="barra" [style.height.%]="(b.ingresos / barras().maximo) * 100" [class.cero]="!b.ingresos"></span>
+              </div>
+            }
+          </div>
+        </div>
+        <div class="tabla-contenedor">
+          <table class="puntos">
+            <thead><tr><th>Punto</th><th>Estado</th><th>5 min</th><th>Total</th><th>Último</th><th></th></tr></thead>
+            <tbody>
+              @for (pt of puntos(); track pt.nombre) {
+                <tr>
+                  <td><strong>{{ pt.nombre }}</strong>@if (pt.alternativa) {<div class="secundario">Desviado a {{ pt.alternativa }}</div>}</td>
+                  <td><span class="estado" [class.ok]="pt.estado === 'HABILITADO'" [class.peligro]="pt.estado === 'CERRADO'">{{ pt.estado === 'HABILITADO' ? 'Habilitado' : 'Cerrado' }}</span></td>
+                  <td>{{ pt.ultimos5 }}</td>
+                  <td>{{ pt.total | number }}</td>
+                  <td class="secundario">{{ pt.ultimoIngreso ? (pt.ultimoIngreso | date: 'HH:mm') : '—' }}</td>
+                  <td class="acciones">
+                    @if (pt.estado === 'HABILITADO') { <button mat-button class="boton-peligro" (click)="cerrarPunto(pt)">Cerrar</button> }
+                    @else { <button mat-button (click)="habilitarPunto(pt)">Habilitar</button> }
+                  </td>
+                </tr>
+              } @empty {
+                <tr><td colspan="6" class="secundario vacio-fila">Todavía no hay ingresos registrados.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    }
+
+    @if (secciones().has('personal')) {
+      <section class="panel">
+        <div class="panel-cabecera"><h2>Personal por zona</h2><span class="detalle">Presentes = con entrada y sin salida</span></div>
+        <ul class="zonas">
+          @for (z of zonas(); track z.zonaId) {
+            <li>
+              <div class="fila">
+                <strong>{{ z.nombre }}</strong>
+                <span class="estado" [class.ok]="!z.deficit" [class.aviso]="z.deficit">{{ z.deficit ? 'Faltan ' + z.deficit : 'Cubierta' }}</span>
+              </div>
+              <div class="secundario">Rol {{ z.rolRequerido }} · {{ z.presentes }} presentes · {{ z.confirmados }} confirmados · {{ z.asignados }} asignados de {{ z.requeridos }}</div>
+              <div class="medidor"><span [style.width.%]="z.requeridos ? (z.presentes / z.requeridos > 1 ? 100 : (z.presentes / z.requeridos) * 100) : 0"></span></div>
+            </li>
+          } @empty {
+            <li class="secundario">Sin zonas de personal para este evento (se crean en Personal › Asignación).</li>
+          }
+        </ul>
+        <div class="sin-fuente">
+          @if (p.parqueaderos.disponible) {
+            <div><mat-icon>local_parking</mat-icon><span>Parqueadero al {{ p.parqueaderos.porcentaje | number: '1.0-1' }} % ({{ p.parqueaderos.ocupados }}/{{ p.parqueaderos.capacidad }})
+              @if (p.parqueaderos.alertas?.length) { · {{ p.parqueaderos.alertas!.length }} alerta(s) } — <a routerLink="/admin/parqueaderos" [queryParams]="{ evento: p.evento.id }">ver ocupación</a></span></div>
+          } @else {
+            <div><mat-icon>local_parking</mat-icon><span>{{ p.parqueaderos.motivo }}</span></div>
+          }
+          <div><mat-icon>report</mat-icon><span>{{ p.incidencias.motivo }}</span></div>
+        </div>
+      </section>
+    }
+  </div>
+
+  @if (secciones().has('decisiones')) {
+    <section class="panel">
+      <div class="panel-cabecera"><h2>Historial de decisiones</h2><span class="detalle">Últimas 50</span></div>
+      <ol class="historial">
+        @for (d of p.decisiones; track d.id) {
+          <li>
+            <span class="punto-tl" aria-hidden="true"></span>
+            <div class="texto">
+              <strong>{{ etiquetaDecision(d.tipo) }}</strong>
+              @if (d.puntoAcceso) { <span class="secundario"> · {{ d.puntoAcceso }}{{ d.alternativa ? ' → ' + d.alternativa : '' }}</span> }
+              @if (d.zona) { <span class="secundario"> · desde {{ d.zona }}</span> }
+              <div>{{ d.descripcion }}</div>
+              <div class="secundario">{{ d.fecha | date: 'HH:mm, d MMM' }}</div>
+              @if (d.resultado) {
+                <div class="resultado"><mat-icon>task_alt</mat-icon> {{ d.resultado }}</div>
+              } @else {
+                <button mat-button (click)="anotarResultado(d)">Anotar resultado</button>
+              }
+            </div>
+          </li>
+        } @empty {
+          <li class="secundario">Todavía no se ha registrado ninguna decisión.</li>
+        }
+      </ol>
+    </section>
+  }
+}
