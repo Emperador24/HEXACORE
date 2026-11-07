@@ -57,7 +57,7 @@ describe('Preparación separada del pago', () => {
     await expect(servicio.operar('l', 'p', 'otro', 'uno', { accion: 'INICIAR', version: 0, minutos: 10 })).rejects.toMatchObject({ status: 409 });
     expect(historial.size).toBe(1);
   });
-  it.each([{ minutos: 0 }, { minutos: 241 }, { minutos: 1.5 }, { version: -1 }, { accion: 'ENTREGAR' }, { motivo: ' ' }])('valida límites %j', async cambio => {
+  it.each([{ minutos: null }, { minutos: 0 }, { minutos: 241 }, { minutos: 1.5 }, { version: -1 }, { accion: 'ENTREGAR' }, { motivo: ' ' }])('valida límites %j', async cambio => {
     const errores = await validate(plainToInstance(OperacionPreparacionDto, { accion: 'INICIAR', version: 0, minutos: 10, ...cambio }));
     expect(errores.length).toBeGreaterThan(0);
   });

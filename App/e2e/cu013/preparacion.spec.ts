@@ -110,7 +110,7 @@ test('CU-013 API: concurrencia, pagos repetidos, cancelados, alcance y reinicio 
  }
  expect((await request.get(`${gateway}/pedidos/mis-pedidos/${p.id}`,{headers:h(bruno.token)})).status()).toBe(404);
  expect((await request.get(`${gateway}/pedidos/mis-pedidos/${p.id}`,{headers:h(e.personal.token)})).status()).toBe(403);
- for(const datos of [{accion:'INICIAR',version:0,minutos:0},{accion:'INICIAR',version:0,minutos:241},{accion:'INICIAR',version:-1,minutos:10},{accion:'ENTREGAR',version:0},{accion:'INICIAR',version:0,minutos:10,pagoVerificado:true}])expect((await operar(datos)).status()).toBe(400);
+ for(const datos of [{accion:'INICIAR',version:0,minutos:null},{accion:'INICIAR',version:0,minutos:0},{accion:'INICIAR',version:0,minutos:241},{accion:'INICIAR',version:-1,minutos:10},{accion:'ENTREGAR',version:0},{accion:'INICIAR',version:0,minutos:10,pagoVerificado:true}])expect((await operar(datos)).status()).toBe(400);
  const iniciar={accion:'INICIAR',version:0,minutos:10},id=randomUUID();
  const dos=await Promise.all([operar(iniciar,id),operar(iniciar,id)]);expect(dos.map(r=>r.status())).toEqual([200,200]);const inicio=await dos[0].json();expect(await dos[1].json()).toEqual(inicio);
  expect(sql(`SELECT count(*) FROM alimentos.historial_preparacion WHERE pedido_id='${p.id}';`)).toBe('1');

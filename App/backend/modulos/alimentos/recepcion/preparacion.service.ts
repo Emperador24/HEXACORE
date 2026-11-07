@@ -49,7 +49,7 @@ export class PreparacionService {
         for (const campo of ['minutos', 'motivo', 'productoId', 'incidenciaId'] as const) {
           if (d[campo] !== undefined && !campos[d.accion].includes(campo)) throw new BadRequestException('La acción contiene datos que no le corresponden.');
         }
-        if (['INICIAR', 'RETRASAR'].includes(d.accion) && d.minutos === undefined) throw new BadRequestException('Indica minutos entre 1 y 240.');
+        if (['INICIAR', 'RETRASAR'].includes(d.accion) && d.minutos == null) throw new BadRequestException('Indica minutos entre 1 y 240.');
         if (['RETRASAR', 'INCIDENCIA', 'RESOLVER_INCIDENCIA'].includes(d.accion) && !d.motivo) throw new BadRequestException('Indica el motivo.');
         if (d.accion === 'INICIAR') {
           if (avance.estado !== 'RECIBIDO') throw conflicto('TRANSICION_PREPARACION_INVALIDA');
