@@ -140,8 +140,8 @@ test('CU-013 API: concurrencia, pagos repetidos, cancelados, alcance y reinicio 
  expect(sql(`SELECT cantidad_inventario FROM alimentos.productos WHERE id='${e.producto.id}';`)).toBe('19');expect(snapshots(p.id)).toEqual(anteriores);
  // Más de una página no debe ocultar un confirmado histórico ni exponer pedidos ajenos.
  // Filas propias de lectura: no simulan cobros ni consumos de inventario.
- sql(`INSERT INTO alimentos.pedidos (id,cliente_id,evento_id,establecimiento_id,metodo_entrega,estado,total,moneda,expira_en,confirmado_en,codigo_qr)
- SELECT gen_random_uuid(),'${e.cliente.usuario.id}','${e.evento.id}','${e.local.id}','RECOGER','CONFIRMADO',1000.25,'COP',now()+interval '10 minutes',now(),'fixture-pagina-'||gen_random_uuid() FROM generate_series(1,100);`);
+ sql(`INSERT INTO alimentos.pedidos (id,cliente_id,establecimiento_id,metodo_entrega,estado,total,moneda,expira_en,confirmado_en,codigo_qr)
+ SELECT gen_random_uuid(),'${e.cliente.usuario.id}','${e.local.id}','RECOGER','CONFIRMADO',1000.25,'COP',now()+interval '10 minutes',now(),'fixture-pagina-'||gen_random_uuid() FROM generate_series(1,100);`);
  for(const [ruta,token] of [[base,e.personal.token],[`${gateway}/pedidos/mis-pedidos`,e.cliente.token]]){
   const primera=await request.get(ruta,{headers:h(token)});expect(primera.status()).toBe(200);const ultimos=await primera.json();expect(ultimos).toHaveLength(100);expect(ultimos.some((x:{id:string})=>x.id===p.id)).toBe(false);
   const siguiente=await request.get(`${ruta}?pagina=1`,{headers:h(token)});expect(siguiente.status()).toBe(200);expect((await siguiente.json()).some((x:{id:string})=>x.id===p.id)).toBe(true);
