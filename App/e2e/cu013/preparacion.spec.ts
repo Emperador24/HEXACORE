@@ -31,6 +31,7 @@ test('CU-013 por interfaces: compra, preparación, retraso, incidencia, listo y 
  await expect(page.getByRole('heading',{name:'¡Tu pedido está confirmado!'})).toBeVisible();
  const anterior=snapshots(pedido.id);
  await page.getByRole('link',{name:'Ver seguimiento y avisos',exact:true}).click();
+ await expect(page).toHaveURL(`${clienteURL}/mis-pedidos/${pedido.id}`);
  await expect(page.getByAltText('Código QR del pedido confirmado')).toBeVisible();
  const qrImagen=await page.getByAltText('Código QR del pedido confirmado').getAttribute('src');
  await page.reload();await expect(page.getByAltText('Código QR del pedido confirmado')).toHaveAttribute('src',qrImagen!);
@@ -118,6 +119,7 @@ test('CU-013 API: concurrencia, pagos repetidos, cancelados, alcance y reinicio 
  expect((await request.post(`${gateway}/pedidos/establecimientos/${otroLocal.id}/pedidos/${p.id}/preparacion`,{headers:h(e.personal.token,randomUUID()),data:{accion:'LISTO',version:2}})).status()).toBe(403);
  expect((await request.put(`${gateway}/pedidos/admin/establecimientos/${otroLocal.id}/personal/${e.personal.usuario.id}`,{headers:h(e.organizador.token)})).status()).toBe(200);
  expect((await request.get(`${gateway}/pedidos/establecimientos/${otroLocal.id}/pedidos/${p.id}`,{headers:h(e.personal.token)})).status()).toBe(404);
+ expect((await operar({accion:'INCIDENCIA',version:2,motivo:'Producto fuera del detalle',productoId:randomUUID()})).status()).toBe(400);
  const incidencia=randomUUID();expect((await operar({accion:'INCIDENCIA',version:2,motivo:'Falta un ingrediente acordado',productoId:e.producto.id},incidencia)).status()).toBe(200);
  expect((await operar({accion:'LISTO',version:3})).status()).toBe(409);
  expect((await operar({accion:'RESOLVER_INCIDENCIA',version:3,motivo:'Los productos acordados están completos',incidenciaId:incidencia})).status()).toBe(200);
