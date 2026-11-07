@@ -166,6 +166,17 @@ export class AuthService {
   }
 
   /**
+   * Token vigente para una petición que no pasa por HttpClient —el flujo en
+   * tiempo real del monitoreo (CU-019) usa `fetch` para leer Server-Sent
+   * Events con cabecera de autorización—. Renueva antes si está por caducar.
+   */
+  async tokenVigente(): Promise<string> {
+    if (!this.token || this.expiraEn - Date.now() < MARGEN_RENOVACION_MS) await this.renovar();
+    if (!this.token) throw new ErrorCuenta('SIN_SESION', SESION_TERMINADA, 401);
+    return this.token;
+  }
+
+  /**
    * Renueva el token de acceso con la cookie. Comparte la renovación en curso:
    * si varias peticiones renovaran a la vez, la segunda usaría un token ya
    * gastado y el servidor cerraría la sesión por posible robo.

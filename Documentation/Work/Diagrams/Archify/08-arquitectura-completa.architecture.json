@@ -1,0 +1,376 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "HEXACORE — Arquitectura completa (C4)",
+    "output": "08-arquitectura-completa.html",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1460,
+      1140
+    ]
+  },
+  "components": [
+    {
+      "id": "cliente",
+      "type": "external",
+      "label": "Cliente",
+      "sublabel": "persona · portal web y app móvil",
+      "pos": [0, 40],
+      "size": [190, 54]
+    },
+    {
+      "id": "personal",
+      "type": "external",
+      "label": "Personal operativo",
+      "sublabel": "persona · app móvil",
+      "pos": [230, 40],
+      "size": [190, 54]
+    },
+    {
+      "id": "administrador",
+      "type": "external",
+      "label": "Administrador",
+      "sublabel": "persona · portal web admin",
+      "pos": [460, 40],
+      "size": [190, 54]
+    },
+    {
+      "id": "organizador",
+      "type": "external",
+      "label": "Organizador",
+      "sublabel": "persona · gestión de eventos",
+      "pos": [690, 40],
+      "size": [190, 54]
+    },
+    {
+      "id": "supervisor",
+      "type": "external",
+      "label": "Supervisor de emergencia",
+      "sublabel": "persona · Operación",
+      "pos": [920, 40],
+      "size": [190, 54]
+    },
+    {
+      "id": "pasarela",
+      "type": "external",
+      "label": "Pasarela de pagos",
+      "sublabel": "externa · simulada en pruebas",
+      "pos": [1210, 40],
+      "size": [200, 54]
+    },
+    {
+      "id": "portal_web_cliente",
+      "type": "frontend",
+      "label": "Portal Web Cliente",
+      "sublabel": "Angular · Nginx",
+      "pos": [20, 130],
+      "size": [210, 54]
+    },
+    {
+      "id": "portal_web_admin",
+      "type": "frontend",
+      "label": "Portal Web Admin",
+      "sublabel": "Angular · Nginx",
+      "pos": [280, 130],
+      "size": [210, 54]
+    },
+    {
+      "id": "app_movil",
+      "type": "frontend",
+      "label": "App móvil",
+      "sublabel": "Flutter · cliente y personal",
+      "pos": [540, 130],
+      "size": [210, 54]
+    },
+    {
+      "id": "preparacion",
+      "type": "backend",
+      "label": "preparacion-base",
+      "sublabel": "tarea única · 18 migraciones",
+      "pos": [20, 480],
+      "size": [170, 72]
+    },
+    {
+      "id": "gateway",
+      "type": "security",
+      "label": "API Gateway",
+      "sublabel": "Nginx/njs :8080 · JWT RS256 · gasta el turno",
+      "pos": [280, 250],
+      "size": [520, 64]
+    },
+    {
+      "id": "nucleo",
+      "type": "backend",
+      "label": "Núcleo",
+      "sublabel": "NestJS :3002 · Identidad, Alimentos, Personal/Logística, webhook Pagos",
+      "pos": [20, 370],
+      "size": [420, 90]
+    },
+    {
+      "id": "boleteria",
+      "type": "backend",
+      "label": "Boletería",
+      "sublabel": "NestJS :3001 · Ventas, Catálogo, Fila, Postventa, Acceso QR · replicable",
+      "pos": [540, 370],
+      "size": [420, 90]
+    },
+    {
+      "id": "trabajador",
+      "type": "backend",
+      "label": "Trabajador",
+      "sublabel": "NestJS · correo · sin SQL ni Redis",
+      "pos": [1080, 370],
+      "size": [220, 90]
+    },
+    {
+      "id": "correo",
+      "type": "external",
+      "label": "Proveedor de correo",
+      "sublabel": "externo · simulado en pruebas",
+      "pos": [1080, 280],
+      "size": [220, 54]
+    },
+    {
+      "id": "postgres",
+      "type": "database",
+      "label": "PostgreSQL 16",
+      "sublabel": "base hexacore · 8 esquemas · libro único",
+      "pos": [20, 580],
+      "size": [420, 80]
+    },
+    {
+      "id": "redis",
+      "type": "database",
+      "label": "Redis 7",
+      "sublabel": "bloqueos, reservas, revocación",
+      "pos": [490, 580],
+      "size": [280, 80]
+    },
+    {
+      "id": "rabbitmq",
+      "type": "messagebus",
+      "label": "RabbitMQ 3.13",
+      "sublabel": "eventos de dominio y correo",
+      "pos": [800, 580],
+      "size": [280, 80]
+    }
+  ],
+  "connections": [
+    {
+      "id": "cliente-pwc",
+      "from": "cliente",
+      "to": "portal_web_cliente",
+      "label": "cuenta, entradas, reventa, pedidos",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "administrador-pwa",
+      "from": "administrador",
+      "to": "portal_web_admin",
+      "label": "cuentas, roles, operación",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "straight"
+    },
+    {
+      "id": "organizador-pwa",
+      "from": "organizador",
+      "to": "portal_web_admin",
+      "label": "gestión de eventos",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "straight"
+    },
+    {
+      "id": "supervisor-gw",
+      "from": "supervisor",
+      "to": "gateway",
+      "label": "evacuación y alertas",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [1015, 150]
+    },
+    {
+      "id": "personal-movil",
+      "from": "personal",
+      "to": "app_movil",
+      "label": "turnos, asistencia, ingreso QR",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "straight"
+    },
+    {
+      "id": "pwc-gw",
+      "from": "portal_web_cliente",
+      "to": "gateway",
+      "label": "HTTPS /api/v1",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "pwa-gw",
+      "from": "portal_web_admin",
+      "to": "gateway",
+      "label": "HTTPS",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "mov-gw",
+      "from": "app_movil",
+      "to": "gateway",
+      "label": "HTTPS",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "gw-nucleo",
+      "from": "gateway",
+      "to": "nucleo",
+      "label": "cuentas, sesiones, pedidos, logística",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "gw-boleteria",
+      "from": "gateway",
+      "to": "boleteria",
+      "label": "cartelera, cola, compras, reventa, ingresos",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "variant": "emphasis"
+    },
+    {
+      "id": "pasarela-gw",
+      "from": "pasarela",
+      "to": "gateway",
+      "label": "webhook HMAC → Núcleo",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "right"
+    },
+    {
+      "id": "boleteria-pasarela",
+      "from": "boleteria",
+      "to": "pasarela",
+      "label": "cobros (módulo Pagos)",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "labelDy": 12
+    },
+    {
+      "id": "preparacion-postgres",
+      "from": "preparacion",
+      "to": "postgres",
+      "label": "DDL antes de las apps",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": -80
+    },
+    {
+      "id": "nucleo-postgres",
+      "from": "nucleo",
+      "to": "postgres",
+      "label": "pools por módulo",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [150, 566]
+    },
+    {
+      "id": "nucleo-redis",
+      "from": "nucleo",
+      "to": "redis",
+      "label": "bloqueos, revocación, inventario",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "straight"
+    },
+    {
+      "id": "nucleo-rabbitmq",
+      "from": "nucleo",
+      "to": "rabbitmq",
+      "label": "eventos, correos, pedidos",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "straight"
+    },
+    {
+      "id": "boleteria-postgres",
+      "from": "boleteria",
+      "to": "postgres",
+      "label": "5 pools",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "straight"
+    },
+    {
+      "id": "boleteria-redis",
+      "from": "boleteria",
+      "to": "redis",
+      "label": "candados y fila",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "straight"
+    },
+    {
+      "id": "boleteria-rabbitmq",
+      "from": "boleteria",
+      "to": "rabbitmq",
+      "label": "outbox y consumidores",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "rabbitmq-trabajador",
+      "from": "rabbitmq",
+      "to": "trabajador",
+      "label": "cuentas.correos",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "trabajador-correo",
+      "from": "trabajador",
+      "to": "correo",
+      "label": "HTTP",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [1200, 352]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Tres programas en marcha",
+      "items": [
+        "Núcleo y Boletería reciben todo el tráfico por el gateway",
+        "Boletería escala por réplicas; el Núcleo se mantiene en una instancia",
+        "Trabajador solo consume la cola de correo"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Pendientes (línea discontinua)",
+      "items": [
+        "Organizador: CU-026 sin backend",
+        "Supervisor de emergencia: evacuación y alertas"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Dependencias externas",
+      "items": [
+        "Pasarela de pagos: webhook firmado HMAC; no se guardan datos de tarjeta",
+        "Proveedor de correo: simulado en pruebas"
+      ]
+    }
+  ]
+}

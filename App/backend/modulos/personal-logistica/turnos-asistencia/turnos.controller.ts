@@ -6,6 +6,7 @@ import {
   Get,
   NotFoundException,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Query,
@@ -18,8 +19,10 @@ import {
   ContextoDeLogistica,
   SoloQuienSupervisa,
 } from './autorizacion.guard';
+import { CancelarSolicitudDto } from './dto/cancelar-solicitud.dto';
 import { CrearEmpleadoDto } from './dto/crear-empleado.dto';
 import { CrearTurnoDto } from './dto/crear-turno.dto';
+import { ResponderAsignacionDto } from './dto/responder-asignacion.dto';
 import { RevisarSolicitudDto } from './dto/revisar-solicitud.dto';
 import { SolicitarCambioTurnoDto } from './dto/solicitar-cambio-turno.dto';
 import { GestionPersonalService } from './gestion-personal.service';
@@ -104,6 +107,7 @@ export class TurnosController {
     return this.turnosService.solicitarCambio(turnoId, dto, {
       empleadoId: peticion.empleado?.id ?? null,
       supervisa: peticion.supervisa ?? false,
+      usuarioId: peticion.sesion!.usuarioId,
     });
   }
 
@@ -132,6 +136,50 @@ export class TurnosController {
     return this.turnosService.revisarSolicitud(solicitudId, {
       ...dto,
       supervisorId: peticion.sesion!.usuarioId,
+    });
+  }
+
+  /** CU-008, paso 6: posibles reemplazos, con su disponibilidad. */
+  @Get('solicitudes-cambio/:solicitudId/reemplazos')
+  @UseGuards(SoloQuienSupervisa)
+  reemplazos(@Param('solicitudId', ParseUUIDPipe) solicitudId: string) {
+    return this.turnosService.reemplazosPosibles(solicitudId);
+  }
+
+  /** CU-008, paso 13: el historial auditable del cambio. */
+  @Get('solicitudes-cambio/:solicitudId/historial')
+  @UseGuards(SoloQuienSupervisa)
+  historial(@Param('solicitudId', ParseUUIDPipe) solicitudId: string) {
+    return this.turnosService.historialSolicitud(solicitudId);
+  }
+
+  /** CU-008B: el empleado retira su solicitud antes de que la revisen. */
+  @Post('solicitudes-cambio/:solicitudId/cancelar')
+  cancelarSolicitud(
+    @Param('solicitudId', ParseUUIDPipe) solicitudId: string,
+    @Body() dto: CancelarSolicitudDto,
+    @Req() peticion: PeticionDeLogistica,
+  ) {
+    return this.turnosService.cancelarSolicitud(solicitudId, dto.motivo, {
+      empleadoId: peticion.empleado?.id ?? null,
+      supervisa: peticion.supervisa ?? false,
+      usuarioId: peticion.sesion!.usuarioId,
+    });
+  }
+
+  /**
+   * CU-008, paso 12 y CU-008C: el reemplazo confirma o rechaza el turno que
+   * recibió. Solo él, según su sesión: ni el jefe responde por él.
+   */
+  @Post('solicitudes-cambio/:solicitudId/respuesta-reemplazo')
+  responderReemplazo(
+    @Param('solicitudId', ParseUUIDPipe) solicitudId: string,
+    @Body() dto: ResponderAsignacionDto,
+    @Req() peticion: PeticionDeLogistica,
+  ) {
+    return this.turnosService.responderReemplazo(solicitudId, dto, {
+      empleadoId: peticion.empleado?.id ?? null,
+      usuarioId: peticion.sesion!.usuarioId,
     });
   }
 }

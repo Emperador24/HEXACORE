@@ -16,9 +16,9 @@ h1 .estado { margin-left: 8px; vertical-align: middle; }
 .traslape {
   margin: 0 16px 16px;
   padding: 12px 14px;
-  border: 1px solid #f3d9a5;
+  border: 1px solid color-mix(in srgb, var(--hx-ambar) 40%, transparent);
   border-radius: 8px;
-  background: var(--hx-aviso-fondo);
+  background: color-mix(in srgb, var(--hx-ambar) 12%, var(--hx-superficie));
   color: var(--hx-aviso);
 
   .titulo { display: flex; align-items: center; gap: 8px; font-weight: 600; }

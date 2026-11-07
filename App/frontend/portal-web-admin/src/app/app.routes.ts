@@ -50,6 +50,17 @@ export const routes: Routes = [
         loadComponent: () => import('./personal/asignaciones.component').then((m) => m.AsignacionesComponent),
         data: { titulo: 'Asignación a eventos' }
       },
+      // CU-008 y CU-009: van antes de `personal/:id`, que si no se las queda.
+      {
+        path: 'personal/cambios',
+        loadComponent: () => import('./personal/cambios-turno.component').then((m) => m.CambiosTurnoComponent),
+        data: { titulo: 'Cambios de turno' }
+      },
+      {
+        path: 'personal/asistencia',
+        loadComponent: () => import('./personal/asistencia.component').then((m) => m.AsistenciaComponent),
+        data: { titulo: 'Asistencia' }
+      },
       {
         path: 'personal/nuevo',
         loadComponent: () => import('./personal/empleado-ficha.component').then((m) => m.EmpleadoFichaComponent),
@@ -60,20 +71,28 @@ export const routes: Routes = [
         loadComponent: () => import('./personal/empleado-ficha.component').then((m) => m.EmpleadoFichaComponent),
         data: { titulo: 'Ficha del empleado' }
       },
+      // CU-019: panel de monitoreo en tiempo real.
       {
         path: 'monitoreo',
-        loadComponent: () => import('./placeholder/placeholder.component').then((m) => m.PlaceholderComponent),
-        data: { titulo: 'Monitoreo del evento', casoDeUso: 'CU-019' }
+        loadComponent: () => import('./monitoreo/monitoreo.component').then((m) => m.MonitoreoComponent),
+        data: { titulo: 'Panel del evento' }
       },
       {
         path: 'incidentes',
         loadComponent: () => import('./placeholder/placeholder.component').then((m) => m.PlaceholderComponent),
         data: { titulo: 'Incidentes', casoDeUso: 'CU-020' }
       },
+      // CU-010: evacuación ante emergencias.
       {
         path: 'emergencias',
-        loadComponent: () => import('./placeholder/placeholder.component').then((m) => m.PlaceholderComponent),
-        data: { titulo: 'Gestión de evacuación ante emergencias', casoDeUso: 'CU-010' }
+        loadComponent: () => import('./emergencias/emergencias.component').then((m) => m.EmergenciasComponent),
+        data: { titulo: 'Evacuación ante emergencias' }
+      },
+      // CU-024 y CU-025: cobro y ocupación del parqueadero.
+      {
+        path: 'parqueaderos',
+        loadComponent: () => import('./parqueaderos/parqueaderos.component').then((m) => m.ParqueaderosComponent),
+        data: { titulo: 'Parqueaderos' }
       },
       // CU-027B: la primera sección conectada al backend de verdad.
       {
@@ -86,10 +105,21 @@ export const routes: Routes = [
         loadComponent: () => import('./placeholder/placeholder.component').then((m) => m.PlaceholderComponent),
         data: { titulo: 'Roles y permisos', casoDeUso: 'CU-028' }
       },
+      // CU-029: recintos, zonas y plano.
       {
         path: 'recintos',
-        loadComponent: () => import('./placeholder/placeholder.component').then((m) => m.PlaceholderComponent),
-        data: { titulo: 'Recintos y zonas', casoDeUso: 'CU-029' }
+        loadComponent: () => import('./recintos/recintos-lista.component').then((m) => m.RecintosListaComponent),
+        data: { titulo: 'Recintos' }
+      },
+      {
+        path: 'recintos/nuevo',
+        loadComponent: () => import('./recintos/recinto-formulario.component').then((m) => m.RecintoFormularioComponent),
+        data: { titulo: 'Nuevo recinto' }
+      },
+      {
+        path: 'recintos/:id',
+        loadComponent: () => import('./recintos/recinto-formulario.component').then((m) => m.RecintoFormularioComponent),
+        data: { titulo: 'Editar recinto' }
       },
       {
         path: 'proveedores',

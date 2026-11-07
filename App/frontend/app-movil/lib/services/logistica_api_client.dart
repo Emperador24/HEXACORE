@@ -196,6 +196,35 @@ class LogisticaApiClient {
     return _decodeObject(res);
   }
 
+  /// CU-008: las solicitudes que pidió quien tiene la sesión y las aprobadas
+  /// en que lo nombraron reemplazo. El servidor decide cuáles le tocan.
+  Future<List<dynamic>> misSolicitudes() async {
+    final res = await _conSesion((c) => _cliente.get(_uri('/solicitudes-cambio'), headers: c).timeout(_espera));
+    return _decodeList(res);
+  }
+
+  /// CU-008B: retirar una solicitud que todavía no se revisó.
+  Future<Map<String, dynamic>> cancelarSolicitud(String solicitudId, {String? motivo}) async {
+    final res = await _conSesion((c) => _cliente.post(_uri('/solicitudes-cambio/$solicitudId/cancelar'), headers: c, body: jsonEncode({
+        if (motivo != null && motivo.isNotEmpty) 'motivo': motivo,
+      })).timeout(_espera));
+    return _decodeObject(res);
+  }
+
+  /// CU-008, paso 12 y CU-008C: el reemplazo confirma o rechaza (con motivo)
+  /// el turno que recibió por un cambio aprobado.
+  Future<Map<String, dynamic>> responderReemplazo({
+    required String solicitudId,
+    required bool aceptar,
+    String? motivo,
+  }) async {
+    final res = await _conSesion((c) => _cliente.post(_uri('/solicitudes-cambio/$solicitudId/respuesta-reemplazo'), headers: c, body: jsonEncode({
+        'aceptar': aceptar,
+        if (motivo != null) 'motivo': motivo,
+      })).timeout(_espera));
+    return _decodeObject(res);
+  }
+
   Future<List<dynamic>> solicitudesPendientes() async {
     final res = await _conSesion((c) => _cliente.get(_uri('/solicitudes-cambio', {'estado': 'PENDIENTE'}), headers: c).timeout(_espera));
     return _decodeList(res);

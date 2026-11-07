@@ -7,15 +7,17 @@ import { Evento } from './entidades/evento.entity';
 import { EventoSaliente } from './entidades/evento-saliente.entity';
 import { HistorialEvento } from './entidades/historial-evento.entity';
 import { Localidad } from './entidades/localidad.entity';
+import { PlanoRecinto } from './entidades/plano-recinto.entity';
 import { Recinto } from './entidades/recinto.entity';
 import { ZonaRecinto } from './entidades/zona-recinto.entity';
 import { EsquemaEventosRecintos1793700000000 } from './migraciones/1793700000000-EsquemaEventosRecintos';
+import { Cu029RecintosZonas1793800000000 } from './migraciones/1793800000000-Cu029RecintosZonas';
 
 cargarEnv();
 
-export const ENTIDADES = [Recinto, ZonaRecinto, Evento, Localidad, HistorialEvento, EventoSaliente];
+export const ENTIDADES = [Recinto, ZonaRecinto, PlanoRecinto, Evento, Localidad, HistorialEvento, EventoSaliente];
 
-export const MIGRACIONES = [EsquemaEventosRecintos1793700000000];
+export const MIGRACIONES = [EsquemaEventosRecintos1793700000000, Cu029RecintosZonas1793800000000];
 
 export function opcionesDataSource(config: ConfiguracionEventos = cargarConfiguracion()): DataSourceOptions & { name: string } {
   return {

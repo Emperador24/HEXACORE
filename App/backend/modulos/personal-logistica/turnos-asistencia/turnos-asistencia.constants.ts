@@ -24,3 +24,16 @@ export const ROLES_DE_CUENTA_QUE_SUPERVISAN: readonly string[] = [
   'Organizador',
   'Administrador',
 ];
+
+/**
+ * CU-009: ventana de la asistencia respecto al horario del turno, en minutos.
+ *
+ * - Se acepta una entrada hasta `ENTRADA_ANTICIPADA_MAX` antes del inicio
+ *   (CU-009A); más temprano no hay turno contra el que registrarla.
+ * - Dentro de `TOLERANCIA_PUNTUALIDAD` del inicio o del fin se considera a
+ *   tiempo; fuera, anticipada, tardía (CU-009B) o posterior (CU-009C).
+ * - Una salida se acepta hasta `SALIDA_POSTERIOR_MAX` después del fin.
+ */
+export const ENTRADA_ANTICIPADA_MAX = 60;
+export const TOLERANCIA_PUNTUALIDAD = 10;
+export const SALIDA_POSTERIOR_MAX = 4 * 60;

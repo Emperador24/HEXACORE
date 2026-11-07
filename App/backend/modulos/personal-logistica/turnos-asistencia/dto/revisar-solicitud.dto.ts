@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
 
 export class RevisarSolicitudDto {
   /**
@@ -17,4 +17,22 @@ export class RevisarSolicitudDto {
   @ApiProperty()
   @IsBoolean()
   aprobar: boolean;
+
+  /**
+   * CU-008, paso 7: el reemplazo que eligió el supervisor entre los posibles
+   * (`GET solicitudes-cambio/:id/reemplazos`). Sin él se usa el que el
+   * sistema propuso al registrar la solicitud.
+   */
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID('all', { message: 'reemplazoId debe ser el id de un empleado.' })
+  reemplazoId?: string;
+
+  /** CU-008A: por qué se rechaza; se le cuenta al empleado. */
+  @ApiPropertyOptional({ example: 'No hay cobertura suficiente ese día' })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(300)
+  motivo?: string;
 }

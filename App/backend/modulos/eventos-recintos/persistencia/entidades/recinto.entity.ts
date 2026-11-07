@@ -3,9 +3,7 @@ import { ZonaRecinto } from './zona-recinto.entity';
 
 /**
  * Recinto con su capacidad física (precondición 2 y paso 4 del CU-026).
- *
- * Solo lo mínimo que la gestión de eventos necesita: administrar recintos y
- * zonas es el CU-029. Aquí se leen; se crean con la semilla.
+ * Lo administra el CU-029 (`recintos/recintos.service.ts`).
  */
 @Entity({ name: 'recintos' })
 export class Recinto {
@@ -26,6 +24,12 @@ export class Recinto {
 
   @Column({ type: 'boolean', default: true })
   activo: boolean;
+
+  @Column({ name: 'actualizado_por', type: 'uuid', nullable: true })
+  actualizadoPor: string | null;
+
+  @Column({ name: 'actualizado_en', type: 'timestamptz', default: () => 'now()' })
+  actualizadoEn: Date;
 
   @OneToMany(() => ZonaRecinto, (zona) => zona.recinto, { eager: true })
   zonas: Relation<ZonaRecinto>[];

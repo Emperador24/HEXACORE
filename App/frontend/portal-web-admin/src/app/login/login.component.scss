@@ -1,65 +1,112 @@
 .pagina {
   display: grid;
-  grid-template-columns: minmax(320px, 440px) 1fr;
+  grid-template-columns: 1.1fr 1fr;
   min-height: 100vh;
-  background: var(--hx-fondo);
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 32px;
+  box-sizing: border-box;
+  gap: 40px;
 }
 
 .presentacion {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 40px;
-  background: var(--hx-lateral);
-  color: var(--hx-lateral-texto);
+  padding: 44px 0;
 
   .marca {
     display: flex;
     align-items: center;
-    gap: 10px;
-    color: #fff;
-    font-weight: 600;
-    letter-spacing: 0.06em;
+    gap: 12px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 700;
   }
 
   .logotipo {
     display: grid;
     place-items: center;
-    width: 34px;
-    height: 34px;
-    border-radius: 8px;
-    background: #2a3a57;
-    font-size: 0.8rem;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: var(--hx-degradado);
+    color: #fff;
+    font-size: 0.85rem;
+    box-shadow: 0 8px 20px color-mix(in srgb, #2f6bff 40%, transparent);
   }
 
-  h1 { margin: 0 0 8px; color: #fff; font-size: 1.6rem; font-weight: 600; letter-spacing: -0.01em; }
-  p { margin: 0; line-height: 1.5; }
-  .nota { font-size: 0.8rem; color: #8d99ab; }
+  .etiqueta {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: var(--hx-acento-suave);
+    color: var(--hx-acento);
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  h1 {
+    margin: 18px 0 14px;
+    font-size: clamp(2.2rem, 4vw, 3.4rem);
+    line-height: 1.05;
+    letter-spacing: -1.4px;
+  }
+
+  .degradado {
+    background: linear-gradient(90deg, var(--hx-primario), var(--hx-violeta), var(--hx-rosa));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  p { margin: 0; color: var(--hx-texto-2); font-size: 1.02rem; line-height: 1.55; max-width: 44ch; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 13px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.82rem;
+    background: color-mix(in srgb, var(--tinte) 16%, transparent);
+    border: 1px solid color-mix(in srgb, var(--tinte) 40%, transparent);
+    color: color-mix(in srgb, var(--tinte) 70%, var(--hx-mezcla));
+    mat-icon { font-size: 17px; width: 17px; height: 17px; }
+  }
+
+  .nota { font-size: 0.8rem; color: var(--hx-texto-3); }
 }
 
 .formulario {
   display: grid;
   place-items: center;
-  padding: 24px;
 }
 
 .tarjeta {
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 380px;
-  padding: 32px;
-  background: var(--hx-superficie);
+  max-width: 400px;
+  padding: 34px;
+  border-radius: 28px;
   border: 1px solid var(--hx-borde);
-  border-radius: 12px;
+  background: var(--hx-superficie);
+  box-shadow: var(--hx-sombra);
+  backdrop-filter: blur(var(--hx-blur)) saturate(1.2);
+  -webkit-backdrop-filter: blur(var(--hx-blur)) saturate(1.2);
 
-  h2 { margin: 0; font-size: 1.25rem; font-weight: 600; }
-  .ayuda { margin: 4px 0 20px; color: var(--hx-texto-2); }
-  .entrar { height: 44px; margin-top: 4px; }
+  h2 { margin: 0; font-size: 1.5rem; font-weight: 700; }
+  .ayuda { margin: 6px 0 22px; color: var(--hx-texto-2); }
+  mat-icon[matPrefix] { margin: 0 6px 0 10px; color: var(--hx-texto-3); }
+  .entrar { height: 48px; margin-top: 6px; font-size: 0.95rem; }
   mat-progress-bar { margin-top: 12px; }
 }
 
-@media (max-width: 760px) {
-  .pagina { grid-template-columns: 1fr; }
-  .presentacion { padding: 24px; gap: 24px; .nota { display: none; } }
+@media (max-width: 860px) {
+  .pagina { grid-template-columns: 1fr; padding: 0 18px; gap: 0; }
+  .presentacion { padding: 28px 0 10px; gap: 20px; .nota { display: none; } }
+  .formulario { padding-bottom: 28px; }
 }

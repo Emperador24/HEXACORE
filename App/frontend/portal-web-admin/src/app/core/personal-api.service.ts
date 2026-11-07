@@ -1,11 +1,13 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { AuthService } from './auth.service';
-import { Candidato, DatosEmpleado, DetalleEmpleado, Empleado, Turno, ZonaEvento } from './models';
+import {
+  Candidato, DatosEmpleado, DetalleEmpleado, Empleado, EntradaAuditoriaPersonal, ReemplazosSolicitud, ReporteAsistencia, SolicitudCambio, Turno, ZonaEvento
+} from './models';
 import { Servidor } from './servidor';
 
 /**
- * CU-007 contra `/api/v1/logistica` (Personal/Logística, en el Núcleo).
+ * CU-007, CU-008 y CU-009 contra `/api/v1/logistica` (Personal/Logística, en el Núcleo).
  *
  * Igual que [CuentasApiService]: todas las peticiones pasan por
  * `AuthService.conAcceso`, y el servidor vuelve a comprobar en cada una quién
@@ -100,5 +102,35 @@ export class PersonalApiService {
 
   cancelar(turnoId: string, motivo: string): Promise<Turno> {
     return this.auth.conAcceso((h) => this.http.post<Turno>(this.url(`turnos/${turnoId}/cancelar`), { motivo }, { headers: h }));
+  }
+
+  // --- CU-008: cambios de turno ------------------------------------------------
+
+  solicitudes(estado?: string): Promise<SolicitudCambio[]> {
+    return this.auth.conAcceso((h) =>
+      this.http.get<SolicitudCambio[]>(this.url('solicitudes-cambio'), { headers: h, params: estado ? { estado } : {} })
+    );
+  }
+
+  /** Paso 6. */
+  reemplazos(solicitudId: string): Promise<ReemplazosSolicitud> {
+    return this.auth.conAcceso((h) => this.http.get<ReemplazosSolicitud>(this.url(`solicitudes-cambio/${solicitudId}/reemplazos`), { headers: h }));
+  }
+
+  /** Pasos 7-10 y CU-008A. */
+  revisar(solicitudId: string, datos: { aprobar: boolean; reemplazoId?: string; motivo?: string }): Promise<SolicitudCambio> {
+    return this.auth.conAcceso((h) => this.http.patch<SolicitudCambio>(this.url(`solicitudes-cambio/${solicitudId}/revisar`), datos, { headers: h }));
+  }
+
+  historialSolicitud(solicitudId: string): Promise<{ solicitud: SolicitudCambio; eventos: EntradaAuditoriaPersonal[] }> {
+    return this.auth.conAcceso((h) =>
+      this.http.get<{ solicitud: SolicitudCambio; eventos: EntradaAuditoriaPersonal[] }>(this.url(`solicitudes-cambio/${solicitudId}/historial`), { headers: h })
+    );
+  }
+
+  // --- CU-009: reporte de asistencia ------------------------------------------------
+
+  reporteAsistencia(eventoId: string): Promise<ReporteAsistencia> {
+    return this.auth.conAcceso((h) => this.http.get<ReporteAsistencia>(this.url('asistencia/reporte'), { headers: h, params: { eventoId } }));
   }
 }

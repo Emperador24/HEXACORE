@@ -13,6 +13,7 @@ import { AuthService, ErrorCuenta } from '../core/auth.service';
 import { Empleado, Rol } from '../core/models';
 import { PersonalApiService } from '../core/personal-api.service';
 import { PestanasPersonalComponent } from './pestanas-personal.component';
+import { acento, iniciales } from '../compartido/acentos';
 
 type FiltroEstado = 'activos' | 'inactivos' | 'todos';
 
@@ -46,6 +47,8 @@ export class EmpleadosComponent {
 
   readonly columnas = ['nombre', 'documento', 'rol', 'credencial', 'telefono', 'estado', 'acciones'];
   readonly empleados = signal<Empleado[]>([]);
+  readonly acento = acento;
+  readonly iniciales = iniciales;
   readonly cargando = signal(true);
   readonly error = signal<string | null>(null);
 

@@ -5,7 +5,7 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { TipoRegistroAsistencia } from '../enums/estados';
+import { Puntualidad, TipoRegistroAsistencia } from '../enums/estados';
 import { Empleado } from './empleado.entity';
 import { Turno } from './turno.entity';
 
@@ -42,6 +42,17 @@ export class RegistroAsistencia {
 
   @Column('float', { nullable: true })
   horasCalculadas: number | null;
+
+  /**
+   * CU-009A/B/C: entrada anticipada, a tiempo o tardía; salida anticipada, a
+   * tiempo o posterior. Nulo si no hay turno contra el que comparar.
+   */
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  puntualidad: Puntualidad | null;
+
+  /** Minutos respecto a la hora del turno: negativo antes, positivo después. */
+  @Column('int', { nullable: true })
+  minutosDesviacion: number | null;
 
   /**
    * Momento real del evento. Si el dispositivo de control lo registró sin

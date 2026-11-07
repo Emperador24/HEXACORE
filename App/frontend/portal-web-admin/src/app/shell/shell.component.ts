@@ -8,6 +8,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { filter, map, startWith } from 'rxjs';
 import { AuthService } from '../core/auth.service';
+import { TemaService } from '../core/tema.service';
 import { Rol } from '../core/models';
 import { NAV_GRUPOS, NAV_ITEMS } from '../core/nav-items';
 
@@ -33,6 +34,7 @@ export class ShellComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
 
+  readonly tema = inject(TemaService);
   readonly usuario = this.auth.usuarioActual;
   readonly menuAbierto = signal(false);
   readonly estrecho = toSignal(

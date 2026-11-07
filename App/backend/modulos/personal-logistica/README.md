@@ -16,6 +16,8 @@ planificación logística completa ni proveedores.
 | GET notificaciones | Evidencia persistida de mensajes de asignación/cambio recibidos por RabbitMQ |
 | GET/PATCH empleados/:id, POST empleados/:id/desactivar y /reactivar | CU-007: ficha con documento/correo/teléfono únicos, edición auditada, baja que cancela turnos futuros |
 | GET zonas/:zonaId/candidatos, GET asignaciones | CU-007 paso 7: activos del rol con disponibilidad y motivo; asignaciones de un evento |
+| GET solicitudes-cambio/:id/reemplazos y /historial, POST /cancelar y /respuesta-reemplazo | CU-008: reemplazos posibles, historial, CU-008B y CU-008C |
+| GET asistencia/reporte, GET asistencia/estado | CU-009: reporte de horas y puntualidad; «En turno»/«Fuera de turno» |
 | POST turnos/:turnoId/cancelar, POST turnos/:turnoId/respuesta | CU-007C (cancelar con motivo) y paso 13/CU-007B (el propio empleado confirma o rechaza) |
 
 ## CU-007 · Gestión de personal para eventos
@@ -49,6 +51,40 @@ ambas la comprobación de choque (no hay restricción de exclusión en la base;
 deuda previa de CU-017). El `eventoId` no se valida contra Catálogo porque el
 Núcleo no lee la base de Boletería (ADR-16); el portal solo ofrece eventos de la
 cartelera.
+
+## CU-008 · Gestionar cambios de turno
+
+Sobre la solicitud de CU-018 (migración `1794000000000-Cu008Cu009CambiosAsistencia`, aditiva):
+
+- **Paso 4:** solicitar avisa al supervisor (`CAMBIO_SOLICITADO` por `turnos.cambios`).
+- **Pasos 6-8:** `GET …/reemplazos` lista los del mismo rol con su disponibilidad (sin choque con
+  ningún turno no cancelado y sin pasar 14 h ese día). El supervisor aprueba con `reemplazoId`
+  (o el propuesto) y se **vuelve a comprobar** al aprobar: un ocupado responde 409.
+- **Pasos 10-12:** el turno pasa al reemplazo con `confirmacion` PENDIENTE; se avisa al original
+  (`CAMBIO_APROBADO`) y al reemplazo (`TURNO_CAMBIADO`).
+- **CU-008A:** rechazar acepta motivo y se le avisa al empleado.
+- **CU-008B:** `POST …/cancelar` por quien la pidió (o un supervisor) mientras está pendiente.
+- **CU-008C:** el reemplazo confirma o rechaza (con motivo) desde su sesión. Si rechaza, el turno
+  vuelve al titular y la solicitud regresa a PENDIENTE con otro reemplazo propuesto, sin repetir a
+  quien dijo que no (`reemplazosDescartados`); sin nadie más queda SIN_REEMPLAZO.
+- **Paso 13:** cada paso queda en `auditoria_personal` (`detalle.solicitudId`), en la misma
+  transacción; `GET …/historial` lo devuelve en orden.
+- Un empleado ve las solicitudes que pidió y las **aprobadas** en que lo nombraron reemplazo.
+
+## CU-009 · Registrar ingreso y salida del personal
+
+- **CU-009A/B:** la entrada se acepta desde 60 min antes del inicio y queda `ANTICIPADA`,
+  `A_TIEMPO` (±10 min) o `TARDIA`, con `minutosDesviacion`. Llegar antes o tarde no es anomalía.
+- **CU-009C:** la salida (hasta 4 h después del fin) queda `ANTICIPADA`, `A_TIEMPO` o `POSTERIOR`.
+- Los turnos cancelados ya no cuentan como vigentes; las entradas marcadas como anomalía no abren
+  turno. Cada registro devuelve `estadoEmpleado` (`EN_TURNO` / `FUERA_DE_TURNO`).
+- **Pasos 12-13:** `GET asistencia/reporte?eventoId=` (o `desde`/`hasta`), solo para quien
+  supervisa: turnos, horas programadas y trabajadas, tardías, anticipadas, salidas fuera de
+  horario, anomalías y estado actual por empleado.
+- Ventanas en `turnos-asistencia.constants.ts`. El offline-first (hora del cliente e
+  `idempotencyKey`) se conserva.
+
+`test/logistica/cambios-asistencia.e2e-spec.ts`: 7 escenarios.
 
 CU-017/CU-018 comparten empleados, turnos, cambios y asistencia con CU-007–009:
 se reutilizan las mismas reglas y tablas, sin crear otro sistema paralelo. Esta

@@ -11,7 +11,15 @@ export type AccionPersonal =
   | 'ASIGNACION_MODIFICADA'
   | 'ASIGNACION_CANCELADA'
   | 'ASIGNACION_CONFIRMADA'
-  | 'ASIGNACION_RECHAZADA';
+  | 'ASIGNACION_RECHAZADA'
+  // CU-008: el ciclo de una solicitud de cambio de turno (paso 13).
+  | 'CAMBIO_SOLICITADO'
+  | 'CAMBIO_APROBADO'
+  | 'CAMBIO_RECHAZADO'
+  | 'CAMBIO_BLOQUEADO'
+  | 'CAMBIO_CANCELADO'
+  | 'REEMPLAZO_ACEPTO'
+  | 'REEMPLAZO_RECHAZO';
 
 /**
  * Escribe una entrada con el mismo `manager` de la operación auditada: si la

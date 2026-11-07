@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { MatTabsModule } from '@angular/material/tabs';
 
-/** Las dos mitades del CU-007: gestionar fichas y asignarlas a eventos. */
+/** CU-007 (fichas y asignación), CU-008 (cambios de turno) y CU-009 (asistencia). */
 @Component({
   selector: 'app-pestanas-personal',
   standalone: true,
@@ -14,6 +14,8 @@ import { MatTabsModule } from '@angular/material/tabs';
       <a mat-tab-link routerLink="/admin/personal/asignaciones" routerLinkActive #b="routerLinkActive" [active]="b.isActive">
         Asignación a eventos
       </a>
+      <a mat-tab-link routerLink="/admin/personal/cambios" routerLinkActive #c="routerLinkActive" [active]="c.isActive">Cambios de turno</a>
+      <a mat-tab-link routerLink="/admin/personal/asistencia" routerLinkActive #d="routerLinkActive" [active]="d.isActive">Asistencia</a>
     </nav>
     <mat-tab-nav-panel #panel />
   `,

@@ -34,9 +34,11 @@ export const NAV_GRUPOS: NavGrupo[] = [
       { ruta: 'eventos', etiqueta: 'Eventos', icono: 'event', roles: [ORGANIZADOR, ADMINISTRADOR] }, // CU-026
       // CU-007: el administrador gestiona las fichas y el organizador asigna.
       { ruta: 'personal', etiqueta: 'Personal', icono: 'badge', roles: [ORGANIZADOR, ADMINISTRADOR] },
-      { ruta: 'monitoreo', etiqueta: 'Monitoreo', icono: 'monitor_heart', roles: [ORGANIZADOR, ADMINISTRADOR], pendiente: true }, // CU-019
+      { ruta: 'monitoreo', etiqueta: 'Monitoreo', icono: 'monitor_heart', roles: [ORGANIZADOR, ADMINISTRADOR] }, // CU-019
       { ruta: 'incidentes', etiqueta: 'Incidentes', icono: 'report', roles: [ORGANIZADOR, ADMINISTRADOR], pendiente: true }, // CU-020
-      { ruta: 'emergencias', etiqueta: 'Emergencias', icono: 'emergency', roles: [ADMINISTRADOR], pendiente: true } // CU-010
+      { ruta: 'parqueaderos', etiqueta: 'Parqueaderos', icono: 'local_parking', roles: [ORGANIZADOR, ADMINISTRADOR] }, // CU-024/025
+      // CU-010: el supervisor de emergencia lo ejercen Organizador y Administrador (no hay rol propio, CU-027).
+      { ruta: 'emergencias', etiqueta: 'Emergencias', icono: 'emergency', roles: [ORGANIZADOR, ADMINISTRADOR] } // CU-010
     ]
   },
   {
@@ -44,7 +46,7 @@ export const NAV_GRUPOS: NavGrupo[] = [
     items: [
       { ruta: 'cuentas', etiqueta: 'Cuentas', icono: 'manage_accounts', roles: [ADMINISTRADOR] }, // CU-027B
       { ruta: 'roles', etiqueta: 'Roles y permisos', icono: 'admin_panel_settings', roles: [ADMINISTRADOR], pendiente: true }, // CU-028
-      { ruta: 'recintos', etiqueta: 'Recintos y zonas', icono: 'location_city', roles: [ADMINISTRADOR], pendiente: true }, // CU-029
+      { ruta: 'recintos', etiqueta: 'Recintos y zonas', icono: 'location_city', roles: [ADMINISTRADOR, ORGANIZADOR] }, // CU-029
       { ruta: 'proveedores', etiqueta: 'Proveedores', icono: 'local_shipping', roles: [ADMINISTRADOR, ORGANIZADOR], pendiente: true }, // CU-030
       { ruta: 'pagos', etiqueta: 'Pagos y conciliación', icono: 'payments', roles: [ADMINISTRADOR], pendiente: true }, // CU-031
       { ruta: 'reportes', etiqueta: 'Reportes', icono: 'bar_chart', roles: [ADMINISTRADOR, ORGANIZADOR], pendiente: true } // CU-032

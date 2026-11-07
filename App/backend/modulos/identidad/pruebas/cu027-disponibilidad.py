@@ -220,8 +220,10 @@ def dependencias():
         assert datos['servicio'] == 'nucleo', datos
         assert datos['estado'] == 'degradado', datos
         if dependencia == 'postgres':
-            assert datos['dependencias']['postgres'] == dict.fromkeys(
-                ['identidad', 'alimentos', 'logistica', 'pagos'], 'caido'), datos
+            # Una conexión por módulo del Núcleo; crece al sumar módulos.
+            conexiones = datos['dependencias']['postgres']
+            assert {'identidad', 'alimentos', 'logistica', 'pagos'} <= conexiones.keys(), datos
+            assert set(conexiones.values()) == {'caido'}, datos
         else:
             assert datos['dependencias'][dependencia] == 'caido', datos
         assert t < 5, f'con {contenedor} caído el login tardó {t:.1f} s'

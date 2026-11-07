@@ -5,10 +5,11 @@ import { CONFIGURACION_EVENTOS, ConfiguracionEventos } from './comun/config/conf
 import { BandejaEventos } from './eventos/bandeja-eventos.service';
 import { EventosController } from './eventos/eventos.controller';
 import { EventosService } from './eventos/eventos.service';
-import { RecintosController } from './eventos/recintos.controller';
+import { RecintosController } from './recintos/recintos.controller';
+import { RecintosService } from './recintos/recintos.service';
 import { PersistenciaEventosModule } from './persistencia/persistencia.module';
 
-/** CU-026 (Gestión de eventos) y los recintos que necesita, dentro del Núcleo. */
+/** CU-026 (Gestión de eventos) y CU-029 (Gestión de recintos y zonas), dentro del Núcleo. */
 @Module({
   imports: [
     PersistenciaEventosModule,
@@ -21,6 +22,8 @@ import { PersistenciaEventosModule } from './persistencia/persistencia.module';
     }),
   ],
   controllers: [EventosController, RecintosController],
-  providers: [SesionValida, EventosService, BandejaEventos],
+  providers: [SesionValida, EventosService, BandejaEventos, RecintosService],
+  // Lectura de eventos y recintos para Operación (CU-019, CU-010), por interfaz local.
+  exports: [EventosService, RecintosService],
 })
 export class EventosRecintosModule {}

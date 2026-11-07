@@ -88,6 +88,12 @@ export interface ZonaRecinto {
   recintoId: string;
   nombre: string;
   capacidad: number;
+  /** CU-029: posición en el plano (en %) y color; nulos si no se dibujó. */
+  x?: number | null;
+  y?: number | null;
+  ancho?: number | null;
+  alto?: number | null;
+  color?: string | null;
 }
 
 export interface Recinto {
@@ -280,4 +286,323 @@ export interface EventoCartelera {
   fechaFin: string | null;
   lugar: string;
   ciudad: string;
+}
+
+// --- CU-029: Gestión de recintos y zonas -------------------------------------------
+
+export interface ZonaEditable {
+  id?: string;
+  nombre: string;
+  capacidad: number;
+  /** Rectángulo en el plano, en % del ancho y alto. */
+  x?: number | null;
+  y?: number | null;
+  ancho?: number | null;
+  alto?: number | null;
+  color?: string | null;
+}
+
+export interface RecintoResumen extends Recinto {
+  eventosActivos: number;
+  eventosTotales: number;
+  tienePlano: boolean;
+}
+
+export interface DetalleRecinto {
+  recinto: Recinto;
+  eventos: { id: string; nombre: string; estado: EstadoEvento; fechaInicio: string; fechaFin: string; aforoMaximo: number }[];
+  plano: { tipo: string; tamano: number; actualizadoEn: string } | null;
+  mensaje?: string;
+}
+
+export interface DatosRecinto {
+  nombre: string;
+  ciudad: string;
+  direccion?: string;
+  capacidad: number;
+  activo: boolean;
+  zonas: ZonaEditable[];
+  confirmarImpacto?: boolean;
+}
+
+// --- CU-019: Monitorear el evento ---------------------------------------------------
+
+export interface EventoMonitoreable {
+  id: string;
+  nombre: string;
+  recinto: string | null;
+  ciudad: string | null;
+  fechaInicio: string;
+  fechaFin: string;
+  aforoMaximo: number;
+  enCurso: boolean;
+}
+
+export interface PuntoAccesoPanel {
+  nombre: string;
+  estado: 'HABILITADO' | 'CERRADO';
+  alternativa: string | null;
+  total: number;
+  ultimos5: number;
+  ultimos10: number;
+  ultimaHora: number;
+  ultimoIngreso: string | null;
+}
+
+export interface AlertaPanel {
+  id: string;
+  tipo: string;
+  clave: string;
+  severidad: 'info' | 'aviso' | 'critica';
+  mensaje: string;
+  sugerencia: { accion?: string; texto?: string; punto?: string; alternativa?: string | null; hacia?: string } | null;
+  creadaEn: string;
+  resueltaEn: string | null;
+}
+
+export type TipoDecision = 'REDISTRIBUIR_PERSONAL' | 'CERRAR_ACCESO' | 'HABILITAR_ACCESO' | 'ESCALAR_INCIDENTE' | 'OTRA';
+
+export interface DecisionPanel {
+  id: string;
+  tipo: TipoDecision;
+  descripcion: string;
+  zona: string | null;
+  puntoAcceso: string | null;
+  alternativa: string | null;
+  alertaId: string | null;
+  resultado: string | null;
+  fecha: string;
+  resultadoEn: string | null;
+}
+
+export interface PanelMonitoreo {
+  evento: { id: string; nombre: string; fechaInicio: string; fechaFin: string; recinto: string | null; ciudad: string | null; enCurso: boolean };
+  aforo: { asistentes: number; aforoMaximo: number; porcentaje: number; disponibles: number };
+  accesos: { ultimos5min: number; flujoPorMinuto: number; porMinuto: { minuto: string; ingresos: number }[]; puntos: PuntoAccesoPanel[] };
+  personal: {
+    zonas: { zonaId: string; nombre: string; rolRequerido: string; requeridos: number; asignados: number; confirmados: number; presentes: number; deficit: number }[];
+    requeridos: number;
+    asignados: number;
+    presentes: number;
+  };
+  /** CU-025: la ocupación del parqueadero cuando el evento tiene zonas configuradas. */
+  parqueaderos: { disponible: boolean; motivo?: string; capacidad?: number; ocupados?: number; porcentaje?: number; alertas?: AlertaParqueadero[] };
+  incidencias: { disponible: boolean; motivo: string };
+  alertas: AlertaPanel[];
+  decisiones: DecisionPanel[];
+  actualizadoEn: string;
+}
+
+// --- CU-008: cambios de turno --------------------------------------------------
+
+export type EstadoSolicitudCambio = 'PENDIENTE' | 'SIN_REEMPLAZO' | 'APROBADA' | 'RECHAZADA' | 'BLOQUEADA_POR_HORAS' | 'CANCELADA';
+
+export interface SolicitudCambio {
+  id: string;
+  turnoId: string;
+  turno: Turno;
+  motivo: string;
+  estado: EstadoSolicitudCambio;
+  empleadoReemplazoId: string | null;
+  empleadoReemplazo: Empleado | null;
+  empleadoSolicitanteId: string | null;
+  respuestaReemplazo: 'PENDIENTE' | 'ACEPTADA' | 'RECHAZADA' | null;
+  reemplazosDescartados: string[];
+  revisadoPorId: string | null;
+  motivoRechazoOBloqueo: string | null;
+  fechaSolicitud: string;
+  fechaRevision: string | null;
+}
+
+export interface ReemplazosSolicitud {
+  solicitudId: string;
+  propuestoId: string | null;
+  candidatos: Candidato[];
+}
+
+// --- CU-009: reporte de asistencia --------------------------------------------
+
+export interface FilaReporteAsistencia {
+  empleadoId: string;
+  nombre: string;
+  rol: string;
+  turnos: number;
+  horasProgramadas: number;
+  horasTrabajadas: number;
+  entradas: number;
+  tardias: number;
+  anticipadas: number;
+  salidasAnticipadas: number;
+  salidasPosteriores: number;
+  anomalias: number;
+  estado: 'EN_TURNO' | 'FUERA_DE_TURNO';
+}
+
+export interface ReporteAsistencia {
+  totales: { empleados: number; enTurno: number; horasProgramadas: number; horasTrabajadas: number; tardias: number; anomalias: number };
+  empleados: FilaReporteAsistencia[];
+}
+
+// --- CU-010: evacuación ante emergencias ----------------------------------------
+
+export const TIPOS_EMERGENCIA = [
+  ['INCENDIO', 'Incendio'],
+  ['AMENAZA_SEGURIDAD', 'Amenaza de seguridad'],
+  ['EMERGENCIA_MEDICA', 'Emergencia médica masiva'],
+  ['FALLA_ESTRUCTURAL', 'Falla estructural'],
+  ['INUNDACION', 'Inundación'],
+  ['PREVENTIVA', 'Evacuación preventiva'],
+  ['OTRA', 'Otra']
+] as const;
+
+export interface SalidaEmergencia {
+  id: string;
+  nombre: string;
+  capacidadPorMinuto: number | null;
+  habilitada: boolean;
+  motivoBloqueo: string | null;
+}
+
+export interface RutaEvacuacion {
+  id: string;
+  zonaId: string;
+  salidaId: string;
+  salida: string;
+  prioridad: number;
+  descripcion: string | null;
+  habilitada?: boolean;
+}
+
+export interface PlanEvacuacion {
+  recinto: { id: string; nombre: string; ciudad: string };
+  salidas: SalidaEmergencia[];
+  zonas: { id: string; nombre: string; capacidad: number; rutas: RutaEvacuacion[] }[];
+  completo: boolean;
+  zonasSinRuta: string[];
+}
+
+export interface EventoEmergencia {
+  id: string;
+  nombre: string;
+  recinto: string | null;
+  recintoId: string;
+  fechaInicio: string;
+  fechaFin: string;
+  enCurso: boolean;
+  evacuacion: { id: string; estado: string; nivel: number } | null;
+}
+
+export interface ZonaEvacuacion {
+  zonaId: string;
+  nombre: string;
+  capacidad: number;
+  ocupacionEstimada: number;
+  personasRestantes: number;
+  estado: 'PENDIENTE' | 'EN_CURSO' | 'EVACUADA';
+  salidaId: string | null;
+  salidaNombre: string | null;
+  instruccion: string | null;
+  incorporadaEnNivel: number;
+  rutas: RutaEvacuacion[];
+}
+
+export interface AlertaEvacuacion {
+  tipo: 'SIN_RUTA' | 'ZONA_CONGESTIONADA' | 'SALIDA_SATURADA';
+  severidad: 'aviso' | 'critica';
+  zonaId?: string;
+  salidaId?: string;
+  mensaje: string;
+  sugerencia?: { zonaId: string; salidaId: string; salida: string; texto: string };
+}
+
+export interface Evacuacion {
+  id: string;
+  eventoId: string;
+  recintoId: string;
+  tipo: string;
+  ubicacion: string;
+  nivel: number;
+  alcance: 'PARCIAL' | 'TOTAL';
+  estado: 'PROPUESTA' | 'ACTIVA' | 'FINALIZADA' | 'DESCARTADA';
+  creadaEn: string;
+  activadaEn: string | null;
+  finalizadaEn: string | null;
+  observaciones: string | null;
+}
+
+export interface DetalleEvacuacion {
+  evacuacion: Evacuacion;
+  zonas: ZonaEvacuacion[];
+  salidas: SalidaEmergencia[];
+  alertas: AlertaEvacuacion[];
+  resumen: { zonas: number; evacuadas: number; personasRestantes: number; ocupacionEstimadaInicial: number };
+  personal: { asignados: number; presentes: number };
+  avisos: {
+    total: number;
+    pendientes: number;
+    entregados: number;
+    lista: { id: string; canal: string; mensaje: string; prioridad: number; creadaEn: string; entregadaEn: string | null }[];
+  };
+  bitacora: { id: string; tipo: string; detalle: Record<string, unknown>; fecha: string }[];
+  actualizadoEn: string;
+}
+
+// --- CU-024 y CU-025: parqueaderos -------------------------------------------------
+
+export interface Tarifa {
+  id: string;
+  valorHora: number;
+  vigenteDesde: string;
+  definidaPor: string;
+  motivo: string | null;
+}
+
+export interface ZonaParqueadero {
+  id: string;
+  nombre: string;
+  capacidad: number;
+  orden: number;
+  ocupados: number;
+  disponibles: number;
+  porcentaje: number;
+  estado: 'DISPONIBLE' | 'CASI_LLENA' | 'LLENA';
+  tendencia: { ingresos: number; salidas: number; netoPorMinuto: number; minutosParaLlenarse: number | null };
+}
+
+export interface AlertaParqueadero {
+  tipo: 'ZONA_LLENA' | 'ZONA_CASI_LLENA' | 'LLENADO_RAPIDO';
+  severidad: 'aviso' | 'critica';
+  zonaId: string;
+  mensaje: string;
+  sugerencia?: { zonaDestinoId: string; zona: string; texto: string };
+}
+
+export interface Redireccion {
+  id: string;
+  zonaOrigenId: string | null;
+  zonaOrigen: string | null;
+  zonaDestinoId: string;
+  zonaDestino: string;
+  motivo: string;
+  vigente: boolean;
+  resultado: string | null;
+  fecha: string;
+  terminadaEn: string | null;
+  ingresosAlDestino: number;
+}
+
+export interface PanelParqueadero {
+  evento: { id: string; nombre: string; fechaInicio: string; fechaFin: string; enCurso: boolean };
+  total: { capacidad: number; ocupados: number; disponibles: number; porcentaje: number };
+  zonas: ZonaParqueadero[];
+  alertas: AlertaParqueadero[];
+  recomendacion: { zona: { id: string; nombre: string; disponibles: number; porcentaje: number } | null; motivo: 'REDIRECCION' | 'MENOS_OCUPADA' | 'SIN_ESPACIO' };
+  redirecciones: Redireccion[];
+  actualizadoEn: string;
+}
+
+export interface SalidaVehiculo {
+  estancia: { id: string; placa: string; zona: string; ingresoEn: string; salidaEn: string; prepagada: boolean };
+  cobro: { prepagada: boolean; pendiente: boolean; horas: number | null; valorHora: number | null; monto: number | null; mensaje: string };
+  repetida: boolean;
 }

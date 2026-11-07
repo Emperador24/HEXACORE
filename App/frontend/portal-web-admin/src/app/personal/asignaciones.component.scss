@@ -62,7 +62,7 @@
 
   &:hover { background: var(--hx-superficie-2); }
   &:focus-visible { outline: 2px solid var(--hx-acento); outline-offset: -2px; }
-  &.elegida { background: var(--hx-acento-suave); border-color: #cddcf5; }
+  &.elegida { background: var(--hx-acento-suave); border-color: color-mix(in srgb, var(--hx-primario) 45%, transparent); }
 
   .fila { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
   strong { font-weight: 500; }
@@ -72,10 +72,10 @@
   height: 4px;
   margin-top: 8px;
   border-radius: 2px;
-  background: var(--hx-neutro-fondo);
+  background: var(--hx-hover);
   overflow: hidden;
 
-  span { display: block; height: 100%; background: var(--hx-acento); }
+  span { display: block; height: 100%; background: var(--hx-degradado); border-radius: 4px; }
 }
 
 .horario {

@@ -9,6 +9,8 @@ import { Empleado, EventoCartelera, Rol } from '../core/models';
 import { PersonalApiService } from '../core/personal-api.service';
 import { NAV_ITEMS } from '../core/nav-items';
 
+import { acento } from '../compartido/acentos';
+
 /**
  * Inicio: cifras reales y accesos a lo que ya funciona. Cada cifra se pide por
  * separado: si un servicio no responde, su tarjeta lo dice y el resto se ve.
@@ -26,6 +28,8 @@ export class DashboardComponent {
   private readonly cartelera = inject(CarteleraApiService);
 
   readonly usuario = this.auth.usuarioActual;
+  readonly primerNombre = computed(() => this.usuario()?.nombre.split(' ')[0] ?? '');
+  readonly acento = acento;
   readonly esAdministrador = computed(() => this.auth.roles().includes(Rol.ADMINISTRADOR));
 
   readonly eventos = signal<EventoCartelera[] | null>(null);
