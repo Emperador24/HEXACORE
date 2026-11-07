@@ -1,5 +1,5 @@
 import { PersonalDelEstablecimiento } from '../establecimientos/personal-establecimiento.module';
-import { DefaultValuePipe, ParseIntPipe, Query, UsePipes } from '@nestjs/common';
+import { ParseIntPipe, Query, UsePipes } from '@nestjs/common';
 import { validacionAlimentos } from '../../../compartido/validacion';
 import { BadRequestException, Body, Controller, Get, Headers, HttpCode, Param, ParseUUIDPipe, Post, Req, UseGuards } from '@nestjs/common';
 import { isUUID } from 'class-validator';
@@ -22,7 +22,7 @@ export class RecepcionController {
   @Get(':establecimientoId/pedidos')
   @ApiOperation({ summary: 'Consultar avance persistido de pedidos del establecimiento' })
   listar(@Param('establecimientoId', ParseUUIDPipe) establecimientoId: string,
-    @Query('pagina', new DefaultValuePipe(0), ParseIntPipe) pagina: number): Promise<PedidoRecibidoDto[]> {
+    @Query('pagina', new ParseIntPipe({ optional: true })) pagina?: number): Promise<PedidoRecibidoDto[]> {
     return this.recepcion.listar(establecimientoId, pagina);
   }
   @Get(':establecimientoId/pedidos/:pedidoId')
@@ -46,7 +46,7 @@ export class RecepcionController {
 export class SeguimientoClienteController {
   constructor(private readonly recepcion: RecepcionService) {}
   @Get()
-  listar(@Req() r: PeticionConSesion, @Query('pagina', new DefaultValuePipe(0), ParseIntPipe) pagina: number) { return this.recepcion.listarCliente(r.sesion!.usuarioId, pagina); }
+  listar(@Req() r: PeticionConSesion, @Query('pagina', new ParseIntPipe({ optional: true })) pagina?: number) { return this.recepcion.listarCliente(r.sesion!.usuarioId, pagina); }
   @Get(':pedidoId')
   detalle(@Param('pedidoId', ParseUUIDPipe) pedido: string, @Req() r: PeticionConSesion) {
     return this.recepcion.detalleCliente(r.sesion!.usuarioId, pedido);

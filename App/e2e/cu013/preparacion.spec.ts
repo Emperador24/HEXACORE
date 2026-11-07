@@ -52,6 +52,8 @@ test('CU-013 por interfaces: compra, preparación, retraso, incidencia, listo y 
   await detalle.getByRole('button',{name:'Iniciar preparación',exact:true}).click();
   await operador.getByLabel('Minutos estimados',{exact:true}).fill('10');
   const avisoAutomatico=page.waitForResponse(async r=>{
+   // Si falla el listado previo, la pantalla pausa su sondeo y no habrá detalle.
+   if(r.url().endsWith('/pedidos/mis-pedidos') && r.status()>=400)return true;
    if(!r.url().endsWith(`/pedidos/mis-pedidos/${pedido.id}`))return false;
    if(r.status()!==200)return true;
    return (await r.json()).preparacion.estado==='EN_PREPARACION';
