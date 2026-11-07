@@ -118,3 +118,52 @@ AOF local confirmado y cierra físico/resultado en la misma transacción SQL.
 Los fallos dejan intención durable y bloquean admisión hasta recuperarla. La
 [decisión CU-012](inventario/DECISION-CU012.md) detalla estados técnicos, bloqueos,
 consumo/liberación pendientes y límites de recuperación. No implementa F12.
+
+
+## Preparación CU-013, entrega pendiente
+
+El hito previo obtuvo el conjunto CU-012/015 4/4, recuperación y CU-011 9/9;
+SQL/DNS/499 siguen abiertos. [Decisión de preparación](recepcion/DECISION-CU013.md)
+y [plan/mediciones](../../../../Documentation/Work/PLAN-CIERRE-SEBASTIAN.md).
+La ficha completa incluye entrega: esta etapa solo llega a LISTO_PARA_ENTREGAR;
+CU-014, cancelación CU-011F y F12 conservan sus pendientes.
+
+`pedidos.estado` sigue CONFIRMADO durante preparación. El nuevo avance separado
+es RECIBIDO (versión 0 histórica) → EN_PREPARACION → LISTO_PARA_ENTREGAR.
+Se comprueba una aprobación persistida, importe y moneda; no se acepta el estado
+financiero del cliente. El replay de pago mantiene cobro, descuento y QR.
+
+Personal activo/vinculado, incluso con establecimiento cerrado:
+
+- `GET /pedidos/establecimientos/:establecimientoId/pedidos`: últimos 100 confirmados/cancelados,
+  sin cliente ni QR. Incluye avance, versión, pago acreditado y cantidades históricas.
+- `GET .../pedidos/:pedidoId`: detalle operativo, incidencias e historial (últimos 100 cambios).
+- `POST .../pedidos/:pedidoId/preparacion`, UUID `Idempotency-Key`, cuerpo
+  `{accion,version,minutos?,motivo?,productoId?,incidenciaId?}`. HTTP 200 con
+  `{id,pedidoId,accion,creadoEn,preparacion}`. Acciones: INICIAR, RETRASAR, LISTO,
+  INCIDENCIA y RESOLVER_INCIDENCIA. Datos ajenos a la acción se rechazan.
+
+INICIAR recibe 1–240 minutos desde el reloj PostgreSQL. RETRASAR añade 1–240
+minutos a `max(estimación anterior, ahora)` y exige motivo. La versión desactualizada
+se rechaza 409; repetir UUID/petición retorna el resultado original sin nuevos
+avisos ni tiempos. Otra petición con ese UUID se rechaza. Historial y aviso
+se confirman en la misma transacción; no hay HTTP, Redis ni broker dentro.
+
+INCIDENCIA solo durante preparación; un producto opcional debe pertenecer al
+detalle. No se deduce un faltante porque disponible sea cero. Una incidencia
+abierta bloquea LISTO y requiere resolución motivada. No sustituye, cambia
+importes, cancela o reembolsa. Un cancelado/expirado/no pagado no avanza.
+
+Cliente autenticado:
+
+- `GET /pedidos/mis-pedidos`: últimos 100 de su cuenta.
+- `GET /pedidos/mis-pedidos/:pedidoId`: detalle, misma estimación/QR y avisos
+  persistidos. El QR solo se proyecta a su dueño cuando el pedido está confirmado
+  y su pago acreditado; otra cuenta recibe 404. No incluye actor en los avisos.
+
+El canal es dentro de web/app, sin promesa de correo/push. Las consultas derivan
+retraso del reloj, sin emitir avisos en cada refresco. La bandeja lee SQL y conserva
+los pedidos aunque falle la publicación RabbitMQ. Los confirmados históricos sin
+fila nueva se proyectan RECIBIDO; si no tienen pago acreditado no se habilita avance.
+Los cierres al público no impiden gestionar pedidos existentes. Ninguna operación
+de preparación modifica pedidos, snapshots, importes, stock o pagos.

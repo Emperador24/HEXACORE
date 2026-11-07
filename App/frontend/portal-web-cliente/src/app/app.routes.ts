@@ -79,6 +79,8 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./parqueadero/parqueadero.component').then((m) => m.ParqueaderoComponent)
       },
+      { path: 'mis-pedidos', canActivate: [authGuard], loadComponent: () => import('./pedidos/mis-pedidos.component').then(m => m.MisPedidosComponent) },
+      { path: 'mis-pedidos/:pedidoId', canActivate: [authGuard], loadComponent: () => import('./pedidos/mis-pedidos.component').then(m => m.MisPedidosComponent) },
       // CU-011..CU-015: restaurantes, menú y pedidos.
       {
         path: 'pedidos',

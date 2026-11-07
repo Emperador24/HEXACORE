@@ -111,6 +111,53 @@ class PedidosApi {
           as List)
       .cast<DatosPedido>();
 
+  Future<List<DatosPedido>> misPedidos() async =>
+      (await _enviar('mis-pedidos') as List).cast<DatosPedido>();
+  Future<DatosPedido> seguimiento(String pedido) async =>
+      await _enviar('mis-pedidos/${Uri.encodeComponent(pedido)}')
+          as DatosPedido;
+  Future<DatosPedido> detalleRecibido(String local, String pedido) async =>
+      await _enviar(
+              'establecimientos/${Uri.encodeComponent(local)}/pedidos/${Uri.encodeComponent(pedido)}')
+          as DatosPedido;
+  String get _clavePreparacion =>
+      'hexacore.cu013.intencion.${_sesion.usuario?.id ?? "sin-sesion"}';
+  Future<DatosPedido?> pendientePreparacion() async {
+    final valor =
+        (await SharedPreferences.getInstance()).getString(_clavePreparacion);
+    return valor == null ? null : jsonDecode(valor) as DatosPedido;
+  }
+
+  Future<DatosPedido> operarPreparacion(
+      String local, String pedido, DatosPedido datos,
+      {String? clave}) async {
+    final id = clave ?? nuevaClavePago();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+        _clavePreparacion,
+        jsonEncode(
+            {'id': id, 'local': local, 'pedido': pedido, 'datos': datos}));
+    try {
+      final respuesta = await _enviar(
+          'establecimientos/${Uri.encodeComponent(local)}/pedidos/${Uri.encodeComponent(pedido)}/preparacion',
+          clave: id,
+          cuerpo: datos) as DatosPedido;
+      await prefs.remove(_clavePreparacion);
+      return respuesta;
+    } on PedidosException catch (e) {
+      if (e.estado == 400 || e.estado == 409) {
+        await prefs.remove(_clavePreparacion);
+      }
+      rethrow;
+    }
+  }
+
+  Future<DatosPedido> repetirPreparacion(DatosPedido i) => operarPreparacion(
+      i['local'] as String,
+      i['pedido'] as String,
+      Map<String, dynamic>.from(i['datos'] as Map),
+      clave: i['id'] as String);
+
   Future<List<DatosPedido>> establecimientos(String evento) async =>
       (await _enviar('eventos/${Uri.encodeComponent(evento)}/establecimientos')
               as List)

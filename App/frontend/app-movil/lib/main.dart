@@ -13,6 +13,7 @@ import 'pages/register_page.dart';
 import 'pages/activity_page.dart';
 import 'pages/resale_page.dart';
 import 'pages/pedidos_page.dart';
+import 'pages/seguimiento_pedidos_page.dart';
 import 'pages/restaurant_orders_page.dart';
 import 'pages/restaurant_menu_page.dart';
 import 'pages/change_password_page.dart';
@@ -530,8 +531,9 @@ class _ClientShellState extends State<ClientShell> {
       const ParkingPage(),
       const PedidosPage(),
       const ResaleMarketplacePage(),
+      const MisPedidosPage(),
     ];
-    final titles = ['Eventos', 'Parqueadero', 'Pedidos', 'Reventa'];
+    final titles = ['Eventos', 'Parqueadero', 'Pedidos', 'Reventa', 'Mis pedidos'];
     final topInset = MediaQuery.of(context).padding.top;
     return GlassScaffold(
       appBar: GlassAppBar(
@@ -570,6 +572,7 @@ class _ClientShellState extends State<ClientShell> {
                 icon: Icon(Icons.sell_outlined),
                 selectedIcon: Icon(Icons.sell),
                 label: 'Reventa'),
+            NavigationDestination(icon: Icon(Icons.receipt_long_outlined), label: 'Mis pedidos'),
           ]),
     );
   }
@@ -1907,6 +1910,7 @@ List<StaffDestination> _staffPages(User user) {
       const StaffDestination(
           'Promociones', Icons.local_offer_outlined, PromotionsPage()),
       const StaffDestination('Menú', Icons.menu_book_outlined, RestaurantMenuPage()),
+      const StaffDestination('Pedidos', Icons.receipt_long_outlined, RestaurantOrdersPage()),
     ];
   }
   final operational = switch (position) {
@@ -1927,6 +1931,8 @@ List<StaffDestination> _staffPages(User user) {
     StaffDestination('Asistencia', Icons.how_to_reg_outlined,
         AttendancePage(credencial: user.credencial ?? user.email)),
     operational,
+    if (position == 'Entrada' || position == 'Parqueadero')
+      const StaffDestination('Pedidos', Icons.receipt_long_outlined, RestaurantOrdersPage()),
     const StaffDestination('Menú', Icons.menu_book_outlined, RestaurantMenuPage()),
     const StaffDestination(
         'Incidentes', Icons.report_outlined, IncidentsPage()),

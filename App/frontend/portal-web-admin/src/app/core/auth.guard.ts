@@ -17,10 +17,10 @@ export const authGuard: CanActivateFn = async () => {
   return auth.usuarioActual() ? true : router.parseUrl('/login');
 };
 
-/** Personal accede exclusivamente al menú operativo, también por URL directa. */
+/** Personal accede solo a sus pantallas operativas, también por URL directa. */
 export const destinoGuard: CanActivateChildFn = (ruta) => {
   const auth = inject(AuthService), router = inject(Router);
   const roles = auth.roles();
-  if (ruta.routeConfig?.path === 'menu') return roles.includes('Personal') || router.parseUrl('/admin/inicio');
+  if (['menu', 'preparacion'].includes(ruta.routeConfig?.path ?? '')) return roles.includes('Personal') || router.parseUrl('/admin/inicio');
   return roles.some(r => r === 'Organizador' || r === 'Administrador') || router.parseUrl('/admin/menu');
 };

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'seguimiento_pedidos_page.dart';
 import '../services/pedidos_api.dart';
 import '../widgets/liquid_glass.dart';
 
@@ -29,6 +30,11 @@ class _PedidosPageState extends State<PedidosPage> {
         future: catalogo,
         builder: (context, snapshot) =>
             ListView(padding: const EdgeInsets.all(16), children: [
+          TextButton(
+              onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                      builder: (_) => MisPedidosPage(api: api))),
+              child: const Text('Mis pedidos y avisos')),
           Text('¿Qué se te antoja?',
               style: Theme.of(context).textTheme.headlineSmall),
           const Padding(
@@ -157,7 +163,14 @@ class _MenuPedidosPageState extends State<MenuPedidosPage> {
                               padding: const EdgeInsets.all(16),
                               backgroundColor: Colors.white))),
                 const Text(
-                    'Conserva este QR para recoger tu pedido. Guarda una captura antes de salir.'),
+                    'Puedes recuperar el mismo QR desde Mis pedidos después de volver a entrar.'),
+                TextButton(
+                    onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                            builder: (_) => MisPedidosPage(
+                                api: compra.api,
+                                pedidoId: pedido!['id'] as String))),
+                    child: const Text('Ver seguimiento y avisos')),
               ])
             else if (pedido != null)
               _panel([

@@ -33,7 +33,8 @@ const pausa = ms => new Promise(r => setTimeout(r, ms));
   const original = resolve(raiz, 'App/e2e/.evidencia/resultados');
   if (existsSync(original)) cpSync(original, resolve(salida, 'resultados-anteriores'), { recursive: true });
   let activo = true;
-  const hijo = spawn('npm', ['--prefix', resolve(raiz, 'App/e2e'), 'run', 'test:alimentos', '--', `--output=${resolve(salida, 'resultados')}`], {
+  const guion = process.argv.includes('--todos') ? 'test:alimentos' : 'test:referencia';
+  const hijo = spawn('npm', ['--prefix', resolve(raiz, 'App/e2e'), 'run', guion, '--', `--output=${resolve(salida, 'resultados')}`], {
     cwd: raiz, env: { ...process.env, PLAYWRIGHT_HTML_OUTPUT_DIR: resolve(salida, 'informe') }, stdio: ['ignore', 'pipe', 'pipe'] });
   for (const canal of [hijo.stdout, hijo.stderr]) canal.on('data', d => appendFileSync(resolve(salida, 'playwright.log'), d));
   const terminado = new Promise(ok => { hijo.once('exit', codigo => { activo = false; ok(codigo); }); hijo.once('error', e => { activo = false; escribir('errores-observador', { error: e.message }); ok(1); }); });

@@ -7,7 +7,9 @@ class BandejaApi extends PedidosApi {
   bool fallar = false;
   final consultados = <String>[];
   @override
-  Future<List<DatosPedido>> establecimientos(String evento) async => [
+  Future<DatosPedido?> pendientePreparacion() async => null;
+  @override
+  Future<List<DatosPedido>> misEstablecimientos() async => [
         {'id': 'local-1', 'nombre': 'Restaurante uno'},
         {'id': 'local-2', 'nombre': 'Restaurante dos'}
       ];
@@ -34,7 +36,7 @@ class BandejaApi extends PedidosApi {
 
 void main() {
   testWidgets(
-      'muestra pedidos reales y cambia de establecimiento sin acciones de otros CU',
+      'muestra la bandeja privada y cambia de establecimiento sin exponer QR',
       (tester) async {
     final api = BandejaApi();
     await tester.pumpWidget(

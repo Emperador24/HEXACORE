@@ -1,0 +1,32 @@
+<div class="pagina-encabezado"><div><h1>Preparación de pedidos <span class="referencia-cu">CU-013</span></h1><p>Gestiona pedidos pagados, también durante el cierre del establecimiento.</p></div></div>
+<section class="panel"><label for="localPreparacion">Establecimiento vinculado</label><select id="localPreparacion" [(ngModel)]="local" (ngModelChange)="cambiarLocal()" [disabled]="ocupado() || !!pendiente()">@for(e of locales(); track e.id){<option [value]="e.id">{{e.nombre}} · {{e.estado}}</option>}</select>
+<button mat-button (click)="actualizar()" [disabled]="ocupado() || !local">Actualizar pedidos</button></section>
+@if(error()){<p role="alert" class="mensaje error">{{error()}}</p>}
+@if(aviso()){<p role="status" class="mensaje">{{aviso()}}</p>}
+@if(pausa()){<p>Actualización automática pausada. Usa Actualizar pedidos.</p>}
+@if(pendiente()){<section class="panel"><p>Operación sin confirmar. Conservamos su identificador y los datos originales.</p><button mat-flat-button (click)="repetir()" [disabled]="ocupado()">Repetir operación pendiente</button></section>}
+@if(!locales().length && !ocupado()){<p>No tienes establecimientos vinculados.</p>}
+<div class="bandeja"><section class="panel"><h2>Pedidos recibidos</h2>
+@for(p of pedidos(); track p.id){<article [attr.data-pedido]="p.id"><h3>{{etiqueta(p.preparacion.estado)}} · {{p.total}} {{p.moneda}}</h3><p>{{p.estado}} · {{p.confirmadoEn | date:'short'}}</p>
+@for(d of p.productos; track $index){<p>{{d.cantidad}} × {{d.nombreProducto}}</p>}
+<button mat-button (click)="seleccionar(p)" [disabled]="ocupado() || !!pendiente()">Gestionar pedido</button></article>}
+@empty{<p>Aún no hay pedidos confirmados en este establecimiento.</p>}
+</section>
+@if(seleccionado(); as p){<section class="panel" aria-label="Detalle de preparación"><h2>{{etiqueta(p.preparacion.estado)}}</h2><p>Pedido {{p.id}} · versión {{p.preparacion.version}}</p>
+@if(p.preparacion.estimadoListoEn){<p>Estimado listo: <time data-estimacion>{{p.preparacion.estimadoListoEn | date:'short'}}</time></p>}
+@if(p.preparacion.retrasado){<p>La estimación se ha superado. Actualiza el tiempo con un motivo.</p>}
+@if(p.estado !== 'CONFIRMADO' || !p.pagoVerificado){<p>Este pedido no permite preparación: requiere confirmación y un pago aprobado persistido.</p>}
+@else if(!pendiente()){
+@if(p.preparacion.estado === 'RECIBIDO'){<button mat-flat-button (click)="abrir('INICIAR')" [disabled]="ocupado()">Iniciar preparación</button>}
+@if(p.preparacion.estado === 'EN_PREPARACION'){<div class="acciones"><button mat-button (click)="abrir('RETRASAR')" [disabled]="ocupado()">Registrar retraso</button><button mat-button (click)="abrir('INCIDENCIA')" [disabled]="ocupado()">Reportar incidencia</button><button mat-flat-button (click)="listo()" [disabled]="ocupado() || p.preparacion.incidenciasAbiertas > 0">Marcar listo</button></div>}
+}
+@if(p.preparacion.estado === 'LISTO_PARA_ENTREGAR'){<p>Preparación finalizada. El registro de entrega todavía no está habilitado.</p>}
+@if(accion){<form #f="ngForm" (ngSubmit)="f.valid && guardar()"><h3>{{accion === 'INICIAR' ? 'Tiempo de preparación' : accion === 'RETRASAR' ? 'Ampliar estimación' : accion === 'INCIDENCIA' ? 'Incidencia durante la preparación' : 'Resolver incidencia'}}</h3>
+@if(accion === 'INICIAR' || accion === 'RETRASAR'){<mat-form-field><mat-label>{{accion === 'INICIAR' ? 'Minutos estimados' : 'Minutos adicionales'}}</mat-label><input matInput type="number" name="minutos" [(ngModel)]="minutos" required min="1" max="240" step="1" /></mat-form-field>}
+@if(accion !== 'INICIAR'){<mat-form-field><mat-label>Motivo o resolución</mat-label><textarea matInput name="motivo" [(ngModel)]="motivo" required minlength="3" maxlength="1000"></textarea></mat-form-field>}
+<button mat-flat-button type="submit" [disabled]="!f.valid || ocupado() || !!pendiente()">Guardar avance</button><button mat-button type="button" (click)="accion=undefined">Cancelar avance</button></form>}
+<h3>Incidencias</h3>@for(i of p.incidencias; track i.id){<p>{{i.descripcion}} · {{i.resueltaEn ? 'Resuelta: ' + i.resolucion : 'Pendiente de resolver'}}</p>@if(!i.resueltaEn){<button mat-button (click)="abrir('RESOLVER_INCIDENCIA',i.id)" [disabled]="ocupado() || !!pendiente() || p.estado !== 'CONFIRMADO'">Resolver incidencia</button>}}
+<p>Una incidencia no cancela el pedido ni cambia lo acordado. No hay sustituciones ni reembolsos automáticos.</p>
+<h3>Historial y avisos</h3>@for(h of p.historial; track h.id){<p>{{h.accion}} · versión {{h.versionNueva}} · {{h.creadoEn | date:'short'}} · actor {{h.actorId}}</p>}
+@for(a of p.avisos; track a.id){<p>{{a.mensaje}}</p>}
+</section>}</div>

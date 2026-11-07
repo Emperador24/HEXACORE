@@ -15,6 +15,7 @@ export const routes: Routes = [
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'inicio' },
       { path: 'menu', loadComponent: () => import('./menu/menu.component').then(m => m.MenuComponent), data: { titulo: 'Menú e inventario' } },
+      { path: 'preparacion', loadComponent: () => import('./preparacion/preparacion.component').then(m => m.PreparacionComponent), data: { titulo: 'Preparación de pedidos' } },
       {
         path: 'inicio',
         loadComponent: () => import('./dashboard/dashboard.component').then((m) => m.DashboardComponent),

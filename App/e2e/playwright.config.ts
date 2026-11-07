@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
-  testDir: '.', testMatch: /cu01[25]\/.*\.spec\.ts$/, workers: 1, fullyParallel: false, forbidOnly: true, retries: 0,
+  testDir: '.', testMatch: /cu01[235]\/.*\.spec\.ts$/, workers: 1, fullyParallel: false, forbidOnly: true, retries: 0,
   timeout: 120_000, expect: { timeout: 15_000 },
   outputDir: '.evidencia/resultados',
   reporter: [['list'], ['html', { outputFolder: '.evidencia/informe', open: 'never' }]],

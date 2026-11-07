@@ -20,7 +20,7 @@
       <div class="total"><span>Total pagado</span><strong>${{ pago()!.monto | number: '1.2-2' }} <small>{{ pago()!.moneda }}</small></strong></div>
       <p class="ubicacion"><mat-icon>storefront</mat-icon>{{ establecimiento.nombre }}</p>
       <p class="hxc-suave">{{ establecimiento.puntoEntrega }}</p>
-      <p class="nota">Guarda una captura antes de salir. El comprobante no estará disponible si recargas esta página.</p>
+      <a mat-button [routerLink]="['/mis-pedidos',checkout()!.id]">Ver seguimiento y avisos</a><p class="nota">Puedes recuperar tu comprobante y el mismo QR desde Mis pedidos después de recargar o volver a entrar.</p>
     </section>
   } @else if (checkout()) {
     @let pedido = checkout()!;

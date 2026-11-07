@@ -9,7 +9,10 @@
     "test:cu012:visible": "playwright test cu012 --headed",
     "test:alimentos": "playwright test",
     "informe": "playwright show-report .evidencia/informe",
-    "tipos": "tsc --noEmit"
+    "tipos": "tsc --noEmit",
+    "test:cu013": "playwright test cu013",
+    "test:cu013:visible": "playwright test cu013 --headed",
+    "test:referencia": "playwright test cu012 cu015"
   },
   "devDependencies": {
     "@playwright/test": "1.65.0",

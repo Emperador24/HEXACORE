@@ -2,8 +2,9 @@ import { PersonalEstablecimientoModule } from '../establecimientos/personal-esta
 import { Module } from '@nestjs/common';
 import { AutenticacionModule } from '../comun/autenticacion/autenticacion.module';
 import { PersistenciaModule } from '../persistencia/persistencia.module';
-import { RecepcionController } from './recepcion.controller';
+import { RecepcionController, SeguimientoClienteController } from './recepcion.controller';
 import { RecepcionService } from './recepcion.service';
+import { PreparacionService } from './preparacion.service';
 
-@Module({ imports: [PersonalEstablecimientoModule, PersistenciaModule, AutenticacionModule], controllers: [RecepcionController], providers: [RecepcionService] })
+@Module({ imports: [PersonalEstablecimientoModule, PersistenciaModule, AutenticacionModule], controllers: [RecepcionController, SeguimientoClienteController], providers: [RecepcionService, PreparacionService] })
 export class RecepcionModule {}

@@ -1,5 +1,21 @@
 # Cierre de Alimentos — Sebastián
 
+## CU-013: hito 2, preparación en validación
+
+Se implementa solo preparación hasta listo, manteniendo CONFIRMADO y el QR de
+CU-011. [Decisión y alcance de alternativos](../../App/backend/modulos/alimentos/recepcion/DECISION-CU013.md).
+Acciones versionadas/idempotentes, historial y avisos SQL en la misma transacción;
+incidencias con resolución conservadora y permisos por vínculo. Cliente recupera
+sus pedidos y QR; las pantallas web/Flutter usan sondeos de 15 s, acotados a la
+pantalla activa, sin solapamiento y pausados ante errores.
+
+Comprobado hasta ahora: backend tipos/build y 16 pruebas de recepción; Angular
+admin 4/4 y cliente 18/18; Flutter analyze sin incidencias y 56/56. Migración
+aditiva registrada como número 28, con 18 procedencias congeladas. Falta comprobar
+vacía/actualización, suite completa y recorridos integrados sobre imágenes nuevas.
+No se declara CU-013 completo: entrega/validación única siguen en CU-014;
+cancelación CU-011F y F12 no se implementan.
+
 ## CU-013: hito 1, referencia previa — 7 de noviembre de 2026
 
 Inicio en `89881094cf92c5c4cf7e9d86b1a06b564a05ce4b`, `feature/sebastian`
