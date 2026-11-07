@@ -89,7 +89,12 @@ test('CU-012 por interfaces: asignar Personal, crear, reservar, ajustar, pagar y
     await expect(fila.locator('[data-cantidad="disponible"]')).toHaveText('9');
     await operador.getByRole('button',{name:'Nuevo producto',exact:true}).click();
     await llenarProducto(operador,`${nombre} Adicional`,4);
+    const adicional=operador.waitForResponse(r=>r.url().endsWith(`/establecimientos/${local.id}/productos`) && r.request().method()==='POST');
     await operador.getByRole('button',{name:'Guardar producto',exact:true}).click();
+    const respuestaAdicional=await adicional;expect(respuestaAdicional.status()).toBe(201);
+    const altaAdicional=await respuestaAdicional.json();
+    expect(altaAdicional.operacion.estado).toBe('APLICADA');
+    expect(altaAdicional.producto.id).not.toBe(producto.id);
     await expect(fila.locator('[data-cantidad="disponible"]')).toHaveText('9');
     await fila.getByRole('button',{name:'Editar',exact:true}).click();
     await llenarProducto(operador,`${nombre} Nueva receta`);
@@ -156,7 +161,32 @@ test('CU-012 API real: límites, alcance, replay y concurrencia con compra, pago
   const ajusteUrl=`${url}/${producto.id}/ajustes`;
   const ajustar=(delta:number, clave=randomUUID())=>request.post(ajusteUrl,{headers:headers(personal.token,clave),data:{delta,motivo:'Ajuste de concurrencia CU012'}});
   const simultaneos=await Promise.all([ajustar(-15),ajustar(-15)]);
-  expect(simultaneos.map(x=>x.status()).sort()).toEqual([200,409]);
+  const estados: number[]=[];
+  for (const respuesta of simultaneos) {
+    expect([200,202,409]).toContain(respuesta.status());
+    let op=await respuesta.json();
+    if (respuesta.status()===202) {
+      expect(op.estado).toBe('PENDIENTE');
+      const id=op.id;let fallo: unknown;
+      // Consultar la intención durable, sin reenviar POST ni generar otra clave.
+      // Un error HTTP/transporte termina el sondeo y falla; nunca se oculta un 503.
+      await expect.poll(async()=>{
+        try {
+          const consulta=await request.get(`${gateway}/pedidos/establecimientos/${local.id}/operaciones/${id}`,{headers:headers(personal.token)});
+          if(consulta.status()!==200){fallo=`HTTP ${consulta.status()}`;return 'ERROR';}
+          op=await consulta.json();expect(op.id).toBe(id);return op.estado;
+        } catch(e){fallo=e;return 'ERROR';}
+      }).not.toBe('PENDIENTE');
+      expect(fallo).toBeUndefined();
+    } else expect(op.estado).toBe(respuesta.status()===200?'APLICADA':'RECHAZADA');
+    expect(['APLICADA','RECHAZADA']).toContain(op.estado);
+    expect(op.productoId).toBe(producto.id);expect(op.delta).toBe(-15);
+    estados.push(op.estado==='APLICADA'?200:409);
+  }
+  expect(estados.sort()).toEqual([200,409]);
+  const trasConcurrentes=await request.get(`${gateway}/pedidos/establecimientos/${local.id}/menu`,{headers:headers(personal.token)});
+  expect(trasConcurrentes.status()).toBe(200);
+  expect((await trasConcurrentes.json())[0]).toMatchObject({cantidadFisica:5,cantidadReservada:0,cantidadDisponible:5});
   const entrada={eventoId:evento.id,establecimientoId:local.id,metodoEntrega:'RECOGER',productos:[{productoId:producto.id,cantidad:2}]};
   const [compra,aumento]=await Promise.all([request.post(`${gateway}/pedidos/checkout`,{headers:headers(cliente.token),data:entrada}),ajustar(3)]);
   // Una intención administrativa en curso puede bloquear admisión, sin crear un pedido parcial.
