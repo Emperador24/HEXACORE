@@ -1,3 +1,4 @@
+import { EstablecimientosModule } from './establecimientos/establecimientos.module';
 import { ConfigModule } from './comun/config/config.module';
 import { Module } from '@nestjs/common';
 import { CatalogoModule } from './catalogo/catalogo.module';
@@ -16,6 +17,7 @@ import { RecepcionModule } from './recepcion/recepcion.module';
     ConfigModule,
     PersistenciaModule,
     AutenticacionModule,
+    EstablecimientosModule,
     CatalogoModule,
     MenuModule,
     CheckoutModule,

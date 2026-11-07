@@ -85,7 +85,9 @@
     "datos:verificar-preparacion": "node test/base-unica/comprobar-preparacion.cjs",
     "datos:flujos": "node test/base-unica/preparar-flujos.cjs",
     "datos:ejecucion": "node --test --test-concurrency=1 test/base-unica/ejecucion.test.cjs",
-    "ensayo:historico": "node test/consolidacion/historico/construir.cjs"
+    "ensayo:historico": "node test/consolidacion/historico/construir.cjs",
+    "test:cu015:migracion": "node test/cu015/migraciones.cjs",
+    "test:cu015:regresion": "node test/cu015/regresion.cjs"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.6",

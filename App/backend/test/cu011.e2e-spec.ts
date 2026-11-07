@@ -50,7 +50,7 @@ describe('CU-011 Alimentos → Pagos → pasarela con persistencia y mensajería
   let canal: Channel;
   let base: string;
   let token: string;
-  const evento = randomUUID(), local = randomUUID(), cliente = randomUUID();
+  const evento = randomUUID(), local = randomUUID(), cliente = randomUUID(), recinto = randomUUID();
   const productos = [randomUUID(), randomUUID()];
   const recibidos: ConsumeMessage[] = [];
   let checkout: { id: string; expiraEn: string };
@@ -144,6 +144,11 @@ describe('CU-011 Alimentos → Pagos → pasarela con persistencia y mensajería
     await identidad.query(`INSERT INTO usuarios (id,nombre,email,hash_contrasena,estado,verificado_en)
       VALUES ($1,'Cuenta Núcleo E2E',$2,$3,'ACTIVA',now())`, [cliente, email, await cifrarContrasena(contrasena)]);
     await identidad.query(`INSERT INTO usuarios_roles (usuario_id,rol_id) SELECT $1,id FROM roles WHERE nombre='Cliente'`, [cliente]);
+    // CU-015 consulta al dueño vigente, también en la regresión de CU-011.
+    await datos.query(`INSERT INTO eventos_recintos.recintos(id,nombre,ciudad,capacidad)
+      VALUES($1,'Recinto CU011 E2E','Bogotá',100)`, [recinto]);
+    await datos.query(`INSERT INTO eventos_recintos.eventos(id,nombre,categoria,recinto_id,fecha_inicio,fecha_fin,aforo_maximo,estado,creado_por)
+      VALUES($1,'Evento CU011 E2E','Pruebas',$2,now()+interval '1 day',now()+interval '2 days',100,'PUBLICADO',$3)`, [evento,recinto,cliente]);
     await datos.manager.insert(EventoReferencia, { eventoId: evento, nombre: 'Evento E2E', disponible: true });
     await datos.manager.insert(Establecimiento, { id: local, eventoId: evento, nombre: 'Local E2E',
       estado: EstadoEstablecimiento.DISPONIBLE, puntoEntrega: 'Módulo E2E' });
@@ -225,6 +230,8 @@ describe('CU-011 Alimentos → Pagos → pasarela con persistencia y mensajería
           await gestor.delete(Producto, { establecimientoId: local });
           await gestor.delete(Establecimiento, { id: local });
           await gestor.delete(EventoReferencia, { eventoId: evento });
+          await gestor.query('DELETE FROM eventos_recintos.eventos WHERE id=$1', [evento]);
+          await gestor.query('DELETE FROM eventos_recintos.recintos WHERE id=$1', [recinto]);
         });
       }
     } finally {

@@ -106,7 +106,11 @@ for modulo in modulos:
         for importacion in re.findall(r"from ['\"]([^'\"]+)['\"]", archivo.read_text()):
             if importacion.startswith('.'):
                 destino = (archivo.parent / importacion).resolve()
+                if modulo == 'alimentos' and destino.is_relative_to(Path('App/backend/modulos/eventos-recintos').resolve()):
+                    assert destino == Path('App/backend/modulos/eventos-recintos/consulta-eventos.module').resolve(), (archivo, importacion)
                 for otro in set(modulos) - {modulo}:
+                    if modulo == 'alimentos' and otro == 'identidad' and destino == Path('App/backend/modulos/identidad/consulta-personal.module').resolve():
+                        continue  # API mínima de cuentas existentes para el vínculo local CU-015.
                     if modulo != 'comunicaciones' and otro == 'finanzas' and destino == Path('App/backend/modulos/finanzas/pagos').resolve():
                         continue  # Única API pública financiera; no importar persistencia ajena.
                     assert not destino.is_relative_to(Path(f'App/backend/modulos/{otro}').resolve()), (archivo, importacion)

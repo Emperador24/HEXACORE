@@ -1,8 +1,9 @@
+import { ConsultaEventos } from '../../eventos-recintos/consulta-eventos.module';
+import { recibePedidos } from '../establecimientos/horario';
 import { CONEXION_ALIMENTOS } from '../persistencia/conexion';
 import { BadRequestException, ConflictException, HttpException, Injectable, Logger, NotFoundException, ServiceUnavailableException, UnprocessableEntityException } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource, In } from 'typeorm';
-import { EventoReferencia } from '../persistencia/entidades/evento-referencia.entity';
 import { Establecimiento, EstadoEstablecimiento } from '../persistencia/entidades/establecimiento.entity';
 import { Producto } from '../persistencia/entidades/producto.entity';
 import { Pedido, EstadoPedido } from '../persistencia/entidades/pedido.entity';
@@ -30,6 +31,7 @@ export class CheckoutService {
   constructor(
     @InjectDataSource(CONEXION_ALIMENTOS) private readonly fuenteDatos: DataSource,
     private readonly reservas: ReservasService,
+    private readonly eventos: ConsultaEventos,
   ) {}
 
   async crear(clienteId: string, datos: CrearCheckoutDto): Promise<CheckoutDto> {
@@ -47,15 +49,14 @@ export class CheckoutService {
       await transaccion.connect();
       await transaccion.startTransaction();
       const gestor = transaccion.manager;
-      const evento = await gestor.findOne(EventoReferencia, { where: { eventoId: datos.eventoId } });
-      if (!evento) throw new NotFoundException('No existe el evento');
+      const evento = await this.eventos.paraAlimentos(datos.eventoId);
       if (!evento.disponible) throw new ConflictException('El evento no está disponible');
 
-      const establecimiento = await gestor.findOne(Establecimiento, { where: { id: datos.establecimientoId } });
+      const establecimiento = await gestor.findOne(Establecimiento, { where: { id: datos.establecimientoId }, lock: { mode: 'pessimistic_read' } });
       if (!establecimiento) throw new NotFoundException('No existe el establecimiento');
       if (establecimiento.eventoId !== datos.eventoId) throw new UnprocessableEntityException('El establecimiento no pertenece al evento');
-      if (establecimiento.estado !== EstadoEstablecimiento.DISPONIBLE) {
-        throw new ConflictException({ codigo: 'ESTABLECIMIENTO_NO_DISPONIBLE', estado: establecimiento.estado });
+      if (!recibePedidos(establecimiento)) {
+        throw new ConflictException({ codigo: 'ESTABLECIMIENTO_NO_DISPONIBLE', estado: establecimiento.estado, mensaje: 'El establecimiento está cerrado o no disponible para nuevos pedidos.' });
       }
 
       const productos = await gestor.find(Producto, { where: { id: In(ids) } });

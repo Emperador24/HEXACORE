@@ -1,3 +1,4 @@
+import { ConsultaEventos } from '../../eventos-recintos/consulta-eventos.module';
 import 'reflect-metadata';
 import { ParseUUIDPipe, ValidationPipe } from '@nestjs/common';
 import { DataSource } from 'typeorm';
@@ -81,8 +82,8 @@ describe('Administración del menú CU-012', () => {
   });
 
   it('el catálogo cliente conserva el filtro activo=true', async () => {
-    const repo = { findOne: jest.fn().mockResolvedValue({ id: 'local' }), find: jest.fn().mockResolvedValue([]) };
-    const catalogo = new CatalogoService({ getRepository: () => repo } as unknown as DataSource);
+    const repo = { findOne: jest.fn().mockResolvedValue({ id: 'local', estado: 'DISPONIBLE', horaApertura: '00:00', horaCierre: '00:00', zonaHoraria: 'America/Bogota' }), find: jest.fn().mockResolvedValue([]) };
+    const catalogo = new CatalogoService({ getRepository: () => repo } as unknown as DataSource, { paraAlimentos: async () => ({ disponible: true }) } as unknown as ConsultaEventos);
     expect(await catalogo.listarProductos('local')).toEqual([]);
     expect(repo.find).toHaveBeenCalledWith({ where: { establecimientoId: 'local', activo: true },
       order: { nombre: 'ASC', id: 'ASC' } });

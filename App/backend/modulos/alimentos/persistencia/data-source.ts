@@ -1,3 +1,5 @@
+import { GestionEstablecimientosCu0151794300000000 } from './migraciones/1794300000000-GestionEstablecimientosCu015';
+import { PersonalEstablecimiento } from './entidades/personal-establecimiento.entity';
 import { opcionesEsquema, opcionesSesion, migracionesEnEsquema } from '../../../compartido/persistencia/esquemas';
 import { config as cargarEnv } from 'dotenv';
 import { CONEXION_ALIMENTOS } from './conexion';
@@ -14,6 +16,7 @@ import { TransaccionPedido } from './entidades/transaccion-pedido.entity';
 import { EsquemaInicialCu0111789902006180 } from './migraciones/1789902006180-EsquemaInicialCu011';
 
 export const ENTIDADES: (Function | EntitySchema)[] = [
+  PersonalEstablecimiento,
   EventoReferencia,
   Establecimiento,
   Producto,
@@ -26,6 +29,7 @@ export const ENTIDADES: (Function | EntitySchema)[] = [
 export const MIGRACIONES = [
   EsquemaInicialCu0111789902006180,
   ReservasInventarioCu0111790000000000,
+  GestionEstablecimientosCu0151794300000000,
 ];
 
 export function opcionesDataSource(config: ConfiguracionServicio): DataSourceOptions & { name: string } {

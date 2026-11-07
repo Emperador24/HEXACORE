@@ -1,3 +1,5 @@
+import { ConsultaEventos } from '../../eventos-recintos/consulta-eventos.module';
+import { NotFoundException } from '@nestjs/common';
 import { ConflictException, Logger, ServiceUnavailableException, ValidationPipe } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { CheckoutService, CHECKOUT_DURACION_SEGUNDOS } from './checkout.service';
@@ -52,7 +54,7 @@ describe('CheckoutService', () => {
   let service: CheckoutService;
   beforeEach(() => {
     evento = { eventoId, disponible: true };
-    establecimiento = { id: establecimientoId, eventoId, estado: EstadoEstablecimiento.DISPONIBLE };
+    establecimiento = { id: establecimientoId, eventoId, estado: EstadoEstablecimiento.DISPONIBLE, horaApertura: '00:00:00', horaCierre: '00:00:00', zonaHoraria: 'America/Bogota' };
     productos = [{ id: productoId, establecimientoId, nombre: 'Producto original', precio: '0.10', activo: true, cantidadInventario: 20 }];
     pendientes = [];
     persistidas = [];
@@ -82,7 +84,7 @@ describe('CheckoutService', () => {
       reservar: jest.fn(async (datos) => ({ estado: 'ACTIVA', expiraEn: datos.expiraEn, repetida: false })),
       liberar: jest.fn().mockResolvedValue({ estado: 'LIBERADA', repetida: false }),
     };
-    service = new CheckoutService({ createQueryRunner: crearTransaccion } as unknown as DataSource, reservas as unknown as ReservasService);
+    service = new CheckoutService({ createQueryRunner: crearTransaccion } as unknown as DataSource, reservas as unknown as ReservasService, { paraAlimentos: async () => { if (!evento) throw new NotFoundException(); return evento; } } as unknown as ConsultaEventos);
   });
   afterEach(() => jest.restoreAllMocks());
   it('calcula centavos exactos, guarda snapshots y reserva sin descontar stock físico', async () => {

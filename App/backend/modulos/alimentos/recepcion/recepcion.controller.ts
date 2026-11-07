@@ -1,3 +1,4 @@
+import { PersonalDelEstablecimiento } from '../establecimientos/personal-establecimiento.module';
 import { UsePipes } from '@nestjs/common';
 import { validacionAlimentos } from '../../../compartido/validacion';
 import { Controller, Get, Param, ParseUUIDPipe, UseGuards } from '@nestjs/common';
@@ -7,7 +8,7 @@ import { PedidoRecibidoDto, RecepcionService } from './recepcion.service';
 
 @ApiTags('recepción de pedidos')
 @ApiBearerAuth()
-@UseGuards(SesionValida)
+@UseGuards(SesionValida, PersonalDelEstablecimiento)
 @RolesPermitidos('Personal')
 @UsePipes(validacionAlimentos)
 @Controller('pedidos/establecimientos')

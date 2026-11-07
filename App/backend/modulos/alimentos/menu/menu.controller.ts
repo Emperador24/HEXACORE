@@ -1,3 +1,4 @@
+import { PersonalDelEstablecimiento } from '../establecimientos/personal-establecimiento.module';
 import { validacionAlimentos } from '../../../compartido/validacion';
 import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
@@ -8,7 +9,7 @@ import { MenuService } from './menu.service';
 
 @ApiTags('administración del menú')
 @ApiBearerAuth()
-@UseGuards(SesionValida)
+@UseGuards(SesionValida, PersonalDelEstablecimiento)
 @RolesPermitidos('Personal')
 @UsePipes(validacionAlimentos)
 @Controller('pedidos/establecimientos')
