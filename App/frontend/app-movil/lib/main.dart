@@ -12,6 +12,7 @@ import 'pages/onboarding_page.dart';
 import 'pages/register_page.dart';
 import 'pages/activity_page.dart';
 import 'pages/resale_page.dart';
+import 'pages/parking_page.dart';
 import 'pages/pedidos_page.dart';
 import 'pages/restaurant_orders_page.dart';
 import 'pages/restaurant_menu_page.dart';
@@ -26,6 +27,7 @@ import 'services/api_client.dart';
 import 'services/cuentas_api.dart';
 import 'services/logistica_api_client.dart';
 import 'services/operacion_api.dart';
+import 'services/punto_control_local.dart';
 import 'services/sesion.dart';
 
 void main() {
@@ -1354,231 +1356,6 @@ class _TicketsPageState extends State<TicketsPage> {
         ],
       ),
     );
-  }
-}
-
-class ParkingPage extends StatefulWidget {
-  const ParkingPage({super.key});
-  @override
-  State<ParkingPage> createState() => _ParkingPageState();
-}
-
-const _kParkingZones = {
-  'Zona A': 25000,
-  'Zona B': 18000,
-  'Zona VIP': 40000,
-};
-
-class _ParkingPageState extends State<ParkingPage> {
-  bool _validated = false;
-  bool _directions = false;
-  final _rand = Random();
-
-  // Reserva precargada de demo (evento/zona/espacio/código), igual que las
-  // entradas demo de TicketsPage — así la pantalla no arranca vacía.
-  Event? _event = _events.first;
-  String? _zone = 'Zona B';
-  String? _space = 'B-04';
-  String? _code = 'HXC-PARK-000045';
-
-  String _code6() => (100000 + _rand.nextInt(899999)).toString();
-
-  void _openCheckout() {
-    var method = 'Tarjeta de crédito o débito';
-    final price = _kParkingZones[_zone]!;
-    showModalBottomSheet(
-        context: context,
-        builder: (context) => StatefulBuilder(
-            builder: (context, setSheetState) => Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const Text('Resumen de la reserva',
-                          style: TextStyle(
-                              fontSize: 20, fontWeight: FontWeight.w600)),
-                      const SizedBox(height: 12),
-                      Text('${_event!.name} · $_zone · \$$price'),
-                      const Divider(),
-                      Text('Total: \$$price',
-                          style: const TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold)),
-                      DropdownButtonFormField<String>(
-                          initialValue: method,
-                          decoration: const InputDecoration(
-                              labelText: 'Método de pago'),
-                          items: const [
-                            DropdownMenuItem(
-                                value: 'Tarjeta de crédito o débito',
-                                child: Text('Tarjeta de crédito o débito')),
-                            DropdownMenuItem(value: 'PSE', child: Text('PSE'))
-                          ],
-                          onChanged: (value) =>
-                              setSheetState(() => method = value!)),
-                      const SizedBox(height: 8),
-                      LoadingFilledButton(
-                          label: 'Confirmar pago',
-                          onPressed: () async {
-                            await Future.delayed(
-                                const Duration(milliseconds: 800));
-                            if (!context.mounted) return;
-                            Navigator.pop(context);
-                            _confirmReservation();
-                          })
-                    ]))));
-  }
-
-  void _confirmReservation() {
-    const letters = 'ABCD';
-    final space =
-        '${letters[_rand.nextInt(letters.length)]}-${(1 + _rand.nextInt(20)).toString().padLeft(2, '0')}';
-    final price = _kParkingZones[_zone]!;
-    setState(() {
-      _space = space;
-      _code = 'HXC-PARK-${_code6()}';
-      _validated = false;
-      _directions = false;
-    });
-    activityLog.add(ActivityEntry(
-        type: ActivityType.parking,
-        title: _event!.name,
-        subtitle: '$_zone · Espacio $space',
-        amount: price));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final scheme = Theme.of(context).colorScheme;
-    return ListView(padding: const EdgeInsets.all(16), children: [
-      Text('Tu reserva', style: textTheme.titleLarge),
-      const SizedBox(height: 12),
-      if (_code == null)
-        LiquidGlassCard(
-          borderRadius: BorderRadius.circular(28),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text('Reserva tu parqueadero', style: textTheme.titleMedium),
-              const SizedBox(height: 10),
-              Material(
-                  type: MaterialType.transparency,
-                  child: RadioGroup<Event>(
-                    groupValue: _event,
-                    onChanged: (value) => setState(() => _event = value),
-                    child: Column(children: [
-                      for (final event in _events.where((e) => !e.past))
-                        RadioListTile<Event>(
-                          contentPadding: EdgeInsets.zero,
-                          value: event,
-                          title: Text(event.name),
-                          subtitle: Text(event.place),
-                        ),
-                    ]),
-                  )),
-              const SizedBox(height: 8),
-              Text('Elige zona', style: textTheme.bodyMedium),
-              Material(
-                  type: MaterialType.transparency,
-                  child: RadioGroup<String>(
-                    groupValue: _zone,
-                    onChanged: (value) => setState(() => _zone = value),
-                    child: Column(children: [
-                      for (final zone in _kParkingZones.keys)
-                        RadioListTile<String>(
-                          contentPadding: EdgeInsets.zero,
-                          value: zone,
-                          title: Text(zone),
-                          subtitle: Text('\$${_kParkingZones[zone]}'),
-                        ),
-                    ]),
-                  )),
-              const SizedBox(height: 8),
-              FilledButton.icon(
-                  onPressed:
-                      _event == null || _zone == null ? null : _openCheckout,
-                  icon: const Icon(Icons.local_parking_outlined),
-                  label: const Text('Reservar parqueadero')),
-            ],
-          ),
-        )
-      else
-        LiquidGlassCard(
-          borderRadius: BorderRadius.circular(32),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(children: [
-                const TintedIconBadge(
-                    icon: Icons.local_parking, color: _kIndigo),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(_event!.name, style: textTheme.titleSmall),
-                      Text(_event!.place,
-                          style: textTheme.bodySmall?.copyWith(
-                              color: scheme.onSurface.withValues(alpha: 0.6))),
-                    ],
-                  ),
-                ),
-              ]),
-              const SizedBox(height: 18),
-              const DashedDivider(),
-              const SizedBox(height: 18),
-              Align(
-                  alignment: Alignment.centerLeft,
-                  child: TintedBadge(
-                      color: _kIndigo,
-                      child:
-                          Text('${_zone!.toUpperCase()} · ESPACIO $_space'))),
-              const SizedBox(height: 20),
-              Center(
-                child: Container(
-                  width: 150,
-                  height: 150,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                      color: _kPaper, borderRadius: BorderRadius.circular(20)),
-                  child: const Icon(Icons.qr_code_2, size: 110, color: _kInk),
-                ),
-              ),
-              const SizedBox(height: 10),
-              Center(
-                  child: Text(_code!,
-                      style: const TextStyle(
-                          fontFamily: 'monospace',
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1.2))),
-              const SizedBox(height: 20),
-              OutlinedButton.icon(
-                  onPressed: () => setState(() => _directions = true),
-                  icon: const Icon(Icons.directions),
-                  label: const Text('Cómo llegar')),
-              if (_directions)
-                Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text('Abriendo ruta a ${_event!.place}.',
-                        style: textTheme.bodySmall)),
-              const SizedBox(height: 12),
-              if (!_validated)
-                FilledButton(
-                    onPressed: () => setState(() => _validated = true),
-                    child: const Text('Simular validación de ingreso'))
-              else
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: StatusChip(
-                      label: 'Ingreso validado · 0 h 0 min',
-                      color: _kGreen,
-                      icon: Icons.timer_outlined),
-                ),
-            ],
-          ),
-        ),
-    ]);
   }
 }
 
@@ -3285,6 +3062,11 @@ class _EntryValidationPageState extends State<EntryValidationPage> {
 /// la zona recomendada para quien llega (CU-025, paso 7); registra ingresos
 /// (CU-025A: una zona llena los rechaza) y salidas con el cobro calculado por
 /// el servidor (CU-024): "ya pagado" si la reserva era prepagada.
+/// CU-022 a CU-025 desde la app del personal de parqueadero: el punto de
+/// control. Lee el QR de la reserva o la placa; el servidor asigna el espacio
+/// (CU-023) y decide si viene prepagada. Si se cae la red, valida contra la
+/// caché guardada, deja los registros en cola y los sincroniza al volver
+/// (offline-first de CU-022).
 class ParkingOperationsPage extends StatefulWidget {
   const ParkingOperationsPage({super.key, required this.credencial});
   final String credencial;
@@ -3296,12 +3078,17 @@ class _ParkingOperationsPageState extends State<ParkingOperationsPage> {
   String? _eventoId;
   String? _error;
   bool _cargando = true;
+  bool _sinRed = false;
+  bool _sincronizando = false;
   List<Map<String, dynamic>> _zonas = [];
   List<Map<String, dynamic>> _vehiculos = [];
   Map<String, dynamic>? _recomendada;
+  PuntoControlLocal? _local;
   Timer? _sondeo;
   final _placa = TextEditingController();
-  bool _prepagada = false;
+  String _tipo = 'AUTOMOVIL';
+
+  static const _tipos = {'AUTOMOVIL': 'Automóvil', 'MOTO': 'Moto', 'DISCAPACIDAD': 'Movilidad reducida'};
 
   @override
   void initState() {
@@ -3327,6 +3114,8 @@ class _ParkingOperationsPageState extends State<ParkingOperationsPage> {
         });
         return;
       }
+      _local = PuntoControlLocal(_eventoId!);
+      await _local!.cargar();
       await _actualizar();
       _sondeo = Timer.periodic(const Duration(seconds: 5), (_) => _actualizar());
     } catch (e) {
@@ -3338,25 +3127,56 @@ class _ParkingOperationsPageState extends State<ParkingOperationsPage> {
     }
   }
 
+  /// Sin red: el servidor no respondió (no es un rechazo con su código).
+  bool _esFallaDeRed(Object e) => e is! OperacionApiException || e.codigo == 'SIN_CONEXION' || e.estado == 0 || e.estado >= 502;
+
   Future<void> _actualizar() async {
     final id = _eventoId;
     if (id == null) return;
     try {
-      final r = await Future.wait([operacionApi.zonasParqueadero(id), operacionApi.vehiculosEnLote(id), operacionApi.recomendacion(id)]);
+      // Primero lo pendiente, para que la caché nueva ya lo incluya.
+      if (_local!.pendientes.isNotEmpty) await _sincronizar(silencioso: true);
+      final r = await Future.wait([
+        operacionApi.zonasParqueadero(id),
+        operacionApi.vehiculosEnLote(id),
+        operacionApi.recomendacion(id),
+        operacionApi.cacheParqueadero(id),
+      ]);
+      await _local!.guardarCache(r[3] as Map<String, dynamic>);
       if (!mounted) return;
       setState(() {
         _zonas = (r[0] as List).cast<Map<String, dynamic>>();
         _vehiculos = (r[1] as List).cast<Map<String, dynamic>>();
         _recomendada = (r[2] as Map<String, dynamic>)['zona'] as Map<String, dynamic>?;
         _cargando = false;
+        _sinRed = false;
         _error = null;
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _cargando = false;
+        _sinRed = _esFallaDeRed(e);
         _error = e.toString();
       });
+    }
+  }
+
+  Future<void> _sincronizar({bool silencioso = false}) async {
+    final local = _local;
+    if (local == null || local.pendientes.isEmpty || _sincronizando) return;
+    _sincronizando = true;
+    try {
+      final respuesta = await operacionApi.sincronizarParqueadero(_eventoId!, local.pendientes);
+      final rechazados = await local.confirmarSincronizacion(respuesta);
+      if (mounted) setState(() {});
+      if (rechazados.isNotEmpty) {
+        _avisar('Al sincronizar se rechazaron ${rechazados.length}: ${rechazados.map((r) => r['mensaje']).join(' · ')}');
+      } else if (!silencioso) {
+        _avisar('Sincronizado: ${respuesta['aplicados']} registros.');
+      }
+    } finally {
+      _sincronizando = false;
     }
   }
 
@@ -3365,25 +3185,54 @@ class _ParkingOperationsPageState extends State<ParkingOperationsPage> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(texto)));
   }
 
-  Future<void> _ingreso() async {
+  Future<void> _escanear() async {
+    final codigo = await showQrScannerSheet(context, title: 'Escanear reserva de parqueadero');
+    if (codigo != null) await _ingreso(codigoQr: codigo);
+  }
+
+  /// Pasos 1-4: por QR o por placa; el servidor asigna el espacio.
+  Future<void> _ingreso({String? codigoQr}) async {
     final placa = _placa.text.trim();
-    if (placa.isEmpty || _eventoId == null) return;
+    if ((codigoQr == null && placa.isEmpty) || _eventoId == null) return;
     try {
-      final r = await operacionApi.registrarIngreso(_eventoId!, placa, prepagada: _prepagada);
+      final r = await operacionApi.registrarIngreso(_eventoId!,
+          codigoQr: codigoQr, placa: codigoQr == null ? placa : null, tipoVehiculo: _tipo);
+      final a = r['asignacion'] as Map<String, dynamic>;
       final estancia = r['estancia'] as Map<String, dynamic>;
       _placa.clear();
-      setState(() => _prepagada = false);
-      _avisar('${estancia['placa']} → ${estancia['zona']}');
+      if (!mounted) return;
+      await showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+                title: Text('${estancia['placa']} puede entrar'),
+                content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('${a['zona']} · ${a['espacio']}',
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 8),
+                  Text(a['conReserva'] == true ? 'Con reserva pagada: no paga al salir.' : 'Sin reserva: paga al salir.'),
+                  if (a['detalle'] != null && a['reasignado'] == true) Text(a['detalle'] as String),
+                ]),
+                actions: [FilledButton(onPressed: () => Navigator.pop(context), child: const Text('Listo'))],
+              ));
       await _actualizar();
-    } on OperacionApiException catch (e) {
-      _avisar(e.message);
+    } catch (e) {
+      if (!_esFallaDeRed(e)) {
+        _avisar(e.toString());
+        return;
+      }
+      // Sin red: se decide con la caché y queda en cola.
+      final decision = await _local!.ingreso(placa: codigoQr == null ? placa : null, codigoQr: codigoQr, tipoVehiculo: _tipo);
+      if (decision.aceptado) _placa.clear();
+      setState(() => _sinRed = true);
+      _avisar(decision.mensaje);
     }
   }
 
+  /// Pasos 5-9 y CU-024: registra la salida, libera el espacio y muestra el cobro.
   Future<void> _salida(String placa) async {
     if (_eventoId == null) return;
     try {
-      final r = await operacionApi.registrarSalida(_eventoId!, placa);
+      final r = await operacionApi.registrarSalida(_eventoId!, placa: placa);
       final cobro = r['cobro'] as Map<String, dynamic>;
       if (!mounted) return;
       await showDialog(
@@ -3400,12 +3249,22 @@ class _ParkingOperationsPageState extends State<ParkingOperationsPage> {
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w700)),
                   const SizedBox(height: 8),
                   Text(cobro['mensaje'] as String),
+                  if (r['permanenciaMinutos'] != null) Text('Permanencia: ${r['permanenciaMinutos']} min'),
                 ]),
                 actions: [FilledButton(onPressed: () => Navigator.pop(context), child: const Text('Listo'))],
               ));
       await _actualizar();
-    } on OperacionApiException catch (e) {
-      _avisar(e.message);
+    } catch (e) {
+      if (!_esFallaDeRed(e)) {
+        _avisar(e.toString());
+        return;
+      }
+      final decision = await _local!.salida(placa);
+      setState(() {
+        _sinRed = true;
+        _vehiculos = _vehiculos.where((v) => v['placa'] != placa).toList();
+      });
+      _avisar(decision.mensaje);
     }
   }
 
@@ -3414,7 +3273,8 @@ class _ParkingOperationsPageState extends State<ParkingOperationsPage> {
     final textTheme = Theme.of(context).textTheme;
     final scheme = Theme.of(context).colorScheme;
     if (_cargando) return const Center(child: CircularProgressIndicator());
-    if (_error != null && _zonas.isEmpty) {
+    final pendientes = _local?.pendientes.length ?? 0;
+    if (_error != null && _zonas.isEmpty && !_sinRed) {
       return ListView(padding: const EdgeInsets.all(16), children: [
         LiquidGlassCard(child: Text(_error!, style: textTheme.bodyMedium?.copyWith(color: _kRed))),
       ]);
@@ -3422,6 +3282,24 @@ class _ParkingOperationsPageState extends State<ParkingOperationsPage> {
     return RefreshIndicator(
       onRefresh: _actualizar,
       child: ListView(padding: const EdgeInsets.all(16), children: [
+        if (_sinRed || pendientes > 0)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: LiquidGlassCard(
+              child: Row(children: [
+                Icon(_sinRed ? Icons.cloud_off : Icons.cloud_upload_outlined, color: _sinRed ? _kAmber : _kIndigo),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                      _sinRed
+                          ? 'Sin conexión: se valida con los datos guardados${_local?.cacheGeneradaEn != null ? ' a las ${TimeOfDay.fromDateTime(_local!.cacheGeneradaEn!.toLocal()).format(context)}' : ''}. $pendientes por sincronizar.'
+                          : '$pendientes registros por sincronizar.',
+                      style: textTheme.bodySmall),
+                ),
+                if (pendientes > 0) TextButton(onPressed: _sincronizar, child: const Text('Sincronizar')),
+              ]),
+            ),
+          ),
         LiquidGlassCard(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('Zona recomendada', style: textTheme.titleSmall),
@@ -3432,18 +3310,19 @@ class _ParkingOperationsPageState extends State<ParkingOperationsPage> {
             for (final z in _zonas) ...[
               Row(children: [
                 Expanded(child: Text(z['nombre'] as String)),
-                Text('${z['ocupados']}/${z['capacidad']}', style: textTheme.bodySmall),
+                Text('${z['ocupados']}/${z['capacidad']}${(z['reservados'] as num? ?? 0) > 0 ? ' · ${z['reservados']} reservados' : ''}',
+                    style: textTheme.bodySmall),
               ]),
               const SizedBox(height: 4),
               ClipRRect(
                 borderRadius: BorderRadius.circular(6),
                 child: LinearProgressIndicator(
-                  value: ((z['ocupados'] as num) / (z['capacidad'] as num)).clamp(0, 1).toDouble(),
+                  value: (((z['ocupados'] as num) + (z['reservados'] as num? ?? 0)) / (z['capacidad'] as num)).clamp(0, 1).toDouble(),
                   minHeight: 8,
                   backgroundColor: scheme.outlineVariant.withValues(alpha: 0.3),
                   color: (z['disponibles'] as num) == 0
                       ? _kRed
-                      : (z['ocupados'] as num) / (z['capacidad'] as num) >= 0.85
+                      : (z['disponibles'] as num) / (z['capacidad'] as num) <= 0.15
                           ? _kAmber
                           : _kIndigo,
                 ),
@@ -3455,20 +3334,22 @@ class _ParkingOperationsPageState extends State<ParkingOperationsPage> {
         const SizedBox(height: 16),
         Text('Ingreso', style: textTheme.titleMedium),
         const SizedBox(height: 8),
+        FilledButton.icon(onPressed: _escanear, icon: const Icon(Icons.qr_code_scanner), label: const Text('Escanear QR de la reserva')),
+        const SizedBox(height: 8),
         Row(children: [
           Expanded(
               child: TextField(
                   controller: _placa,
                   textCapitalization: TextCapitalization.characters,
-                  decoration: const InputDecoration(labelText: 'Placa'))),
+                  decoration: const InputDecoration(labelText: 'Placa (con o sin reserva)'))),
           const SizedBox(width: 8),
           FilledButton(onPressed: _ingreso, child: const Text('Registrar')),
         ]),
-        SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Reserva prepagada'),
-            value: _prepagada,
-            onChanged: (v) => setState(() => _prepagada = v)),
+        const SizedBox(height: 8),
+        Wrap(spacing: 8, children: [
+          for (final t in _tipos.entries)
+            ChoiceChip(label: Text(t.value), selected: _tipo == t.key, onSelected: (_) => setState(() => _tipo = t.key)),
+        ]),
         const Divider(height: 24),
         Text('En el lote (${_vehiculos.length})', style: textTheme.titleMedium),
         const SizedBox(height: 8),
@@ -3476,7 +3357,9 @@ class _ParkingOperationsPageState extends State<ParkingOperationsPage> {
           Card(
               child: ListTile(
                   leading: TintedIconBadge(
-                      icon: Icons.directions_car, color: v['prepagada'] == true ? _kGreen : _kIndigo, size: 40),
+                      icon: v['tipoVehiculo'] == 'MOTO' ? Icons.two_wheeler : v['tipoVehiculo'] == 'DISCAPACIDAD' ? Icons.accessible : Icons.directions_car,
+                      color: v['prepagada'] == true ? _kGreen : _kIndigo,
+                      size: 40),
                   title: Text('${v['placa']}${v['espacio'] != null ? ' · ${v['espacio']}' : ''}'),
                   subtitle: StatusChip(
                       label: '${v['zona']} · ${v['prepagada'] == true ? 'Prepago' : 'Pago a la salida'}',

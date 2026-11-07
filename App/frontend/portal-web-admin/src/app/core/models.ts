@@ -563,6 +563,8 @@ export interface ZonaParqueadero {
   capacidad: number;
   orden: number;
   ocupados: number;
+  /** Espacios retenidos por reservas vigentes (CU-021). */
+  reservados: number;
   disponibles: number;
   porcentaje: number;
   estado: 'DISPONIBLE' | 'CASI_LLENA' | 'LLENA';
@@ -593,7 +595,7 @@ export interface Redireccion {
 
 export interface PanelParqueadero {
   evento: { id: string; nombre: string; fechaInicio: string; fechaFin: string; enCurso: boolean };
-  total: { capacidad: number; ocupados: number; disponibles: number; porcentaje: number };
+  total: { capacidad: number; ocupados: number; reservados: number; disponibles: number; porcentaje: number };
   zonas: ZonaParqueadero[];
   alertas: AlertaParqueadero[];
   recomendacion: { zona: { id: string; nombre: string; disponibles: number; porcentaje: number } | null; motivo: 'REDIRECCION' | 'MENOS_OCUPADA' | 'SIN_ESPACIO' };
@@ -602,7 +604,55 @@ export interface PanelParqueadero {
 }
 
 export interface SalidaVehiculo {
-  estancia: { id: string; placa: string; zona: string; ingresoEn: string; salidaEn: string; prepagada: boolean };
+  estancia: { id: string; placa: string; zona: string; espacio: string | null; ingresoEn: string; salidaEn: string; prepagada: boolean };
   cobro: { prepagada: boolean; pendiente: boolean; horas: number | null; valorHora: number | null; monto: number | null; mensaje: string };
+  permanenciaMinutos: number | null;
   repetida: boolean;
+}
+
+export type TipoVehiculo = 'AUTOMOVIL' | 'MOTO' | 'DISCAPACIDAD';
+
+/** CU-022, paso 4: lo que el operador le indica al conductor. */
+export interface IngresoVehiculo {
+  estancia: { id: string; placa: string; zona: string; espacio: string | null; prepagada: boolean; tipoVehiculo: TipoVehiculo };
+  asignacion: { zona: string; espacio: string | null; conReserva: boolean; reasignado: boolean; detalle: string | null };
+}
+
+/** CU-023: un espacio de una zona y lo que lo ocupa. */
+export interface EspacioParqueadero {
+  id: string;
+  zonaId: string;
+  zona: string;
+  numero: number;
+  codigo: string;
+  tipo: TipoVehiculo;
+  prioridad: number;
+  activo: boolean;
+  estado: 'LIBRE' | 'RESERVADO' | 'OCUPADO' | 'INACTIVO';
+  placa: string | null;
+}
+
+/** CU-023, paso 8: historial de asignaciones y liberaciones. */
+export interface AsignacionEspacio {
+  id: string;
+  zona: string;
+  espacio: string;
+  origen: 'RESERVA' | 'INGRESO' | 'REASIGNACION' | 'LIBERACION';
+  placa: string;
+  tipoVehiculo: TipoVehiculo;
+  detalle: string | null;
+  fecha: string;
+}
+
+/** CU-021: una reserva del evento, vista por el organizador (sin el QR). */
+export interface ReservaParqueaderoEvento {
+  id: string;
+  zona: string;
+  espacio: string;
+  placa: string;
+  tipoVehiculo: TipoVehiculo;
+  estado: 'PENDIENTE_PAGO' | 'PAGANDO' | 'CONFIRMADA' | 'USADA' | 'EXPIRADA';
+  monto: number;
+  creadaEn: string;
+  expiraEn: string;
 }

@@ -4,12 +4,13 @@ import { DataSource, DataSourceOptions } from 'typeorm';
 import { cargarConfiguracion, ConfiguracionParqueaderos } from '../comun/config/configuracion';
 import { CONEXION_PARQUEADEROS } from './conexion';
 import { EsquemaParqueaderos1794200000000 } from './migraciones/1794200000000-EsquemaParqueaderos';
+import { Cu021Cu023ReservasEspacios1794300000000 } from './migraciones/1794300000000-Cu021Cu023ReservasEspacios';
 
 cargarEnv();
 
 /** Sin entidades: el módulo consulta con SQL explícito, como la evacuación (CU-010). */
 export const ENTIDADES = [];
-export const MIGRACIONES = [EsquemaParqueaderos1794200000000];
+export const MIGRACIONES = [EsquemaParqueaderos1794200000000, Cu021Cu023ReservasEspacios1794300000000];
 
 export function opcionesDataSource(config: ConfiguracionParqueaderos = cargarConfiguracion()): DataSourceOptions & { name: string } {
   return {
