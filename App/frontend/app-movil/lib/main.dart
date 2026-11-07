@@ -1906,6 +1906,7 @@ List<StaffDestination> _staffPages(User user) {
           'Validar personal', Icons.badge_outlined, PersonnelValidationPage()),
       const StaffDestination(
           'Promociones', Icons.local_offer_outlined, PromotionsPage()),
+      const StaffDestination('Menú', Icons.menu_book_outlined, RestaurantMenuPage()),
     ];
   }
   final operational = switch (position) {
@@ -1926,8 +1927,7 @@ List<StaffDestination> _staffPages(User user) {
     StaffDestination('Asistencia', Icons.how_to_reg_outlined,
         AttendancePage(credencial: user.credencial ?? user.email)),
     operational,
-    if (position == 'Restaurante')
-      const StaffDestination('Menú', Icons.menu_book_outlined, RestaurantMenuPage()),
+    const StaffDestination('Menú', Icons.menu_book_outlined, RestaurantMenuPage()),
     const StaffDestination(
         'Incidentes', Icons.report_outlined, IncidentsPage()),
     StaffDestination('Emergencia', Icons.warning_amber_outlined,

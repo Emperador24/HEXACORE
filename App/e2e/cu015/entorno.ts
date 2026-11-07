@@ -57,16 +57,21 @@ export async function crearEvento(api: APIRequestContext, token: string, nombre:
   return (await publicado.json()).evento as { id: string; version: number };
 }
 
-/** Solo fixtures CU-012, aún sin CRUD: inserción inicial propia, sin resembrar. */
-export function productoPropio(establecimientoId: string): string {
+/** Fixture por las API reales CU-015/012; sin SQL de stock ni preparación manual. */
+export async function productoPropio(api: APIRequestContext, establecimientoId: string, organizadorToken: string): Promise<string> {
   comprobarAislamiento();
-  expect(establecimientoId).toMatch(/^[0-9a-f-]{36}$/);
-  const id = randomUUID();
-  sql(`INSERT INTO alimentos.productos(id,establecimiento_id,nombre,precio,activo,cantidad_inventario)
-    VALUES('${id}','${establecimientoId}','Producto CU015',1000,true,5);`);
-  execFileSync('docker', ['exec', `${proyecto}-nucleo-1`, 'node',
-    'dist/modulos/alimentos/inventario/preparar-inventario.js', establecimientoId, '--compras-detenidas'], { stdio: 'pipe' });
-  return id;
+  const personal = await loginAPI(api, 'restaurante@hexacore.com');
+  const vinculo = await api.put(`${gateway}/pedidos/admin/establecimientos/${establecimientoId}/personal/${personal.usuario.id}`,
+    { headers: { Authorization: `Bearer ${organizadorToken}` } });
+  expect(vinculo.status()).toBe(200);
+  const r = await api.post(`${gateway}/pedidos/establecimientos/${establecimientoId}/productos`, {
+    headers: { Authorization: `Bearer ${personal.token}`, 'Idempotency-Key': randomUUID() },
+    data: { nombre: 'Producto CU015', descripcion: 'Fixture propio por CU-012', precio: '1000.00',
+      restriccionesAlimentarias: [], activo: true, cantidadInicial: 5 },
+  });
+  expect(r.status()).toBe(201);
+  const creado = await r.json(); expect(creado.operacion.estado).toBe('APLICADA');
+  return creado.producto.id;
 }
 
 export function sql(consulta: string): string {

@@ -254,7 +254,7 @@ def sembrar():
                 f'30000000-0000-4000-8000-{i:012}', '--compras-detenidas')
 
 
-def iniciar(demo):
+def iniciar(demo, compilar=None):
     contenedores = contenedores_propios()
     comprobar_puertos(contenedores)
     if demo:
@@ -265,7 +265,7 @@ def iniciar(demo):
             exigir(estado_demo() == 'SIN_CARGAR', 'Carga demo ya iniciada/completa: usar iniciar sin --datos-demo')
     archivos()
     print('Compilación secuencial desde fuentes:', revision(), '(modificada)' if modificada() else '(limpia)', flush=True)
-    for servicio in COMPILAR:
+    for servicio in (COMPILAR if compilar is None else compilar):
         compose('build', servicio)
     compose('up', '--no-build', '-d', '--wait', '--wait-timeout', '180', 'postgres', 'redis', 'rabbitmq', 'correo', 'pasarela')
     # La tarea finita se espera por su código de salida, no por estado running.
@@ -298,10 +298,12 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--perfil', choices=['arquitectura', 'cu015'], default='arquitectura')
     p.add_argument('accion', choices=['iniciar', 'estado', 'logs', 'parar', 'config'])
+    p.add_argument('--compilar', nargs='+', choices=COMPILAR, help='Construir solo los componentes indicados')
     p.add_argument('--datos-demo', action='store_true', help='Solo primera carga explícita sobre recursos vacíos')
     p.add_argument('servicios', nargs='*')
     a = p.parse_args()
     seleccionar_perfil(a.perfil)
+    exigir(a.compilar is None or a.accion == 'iniciar', '--compilar solo con iniciar')
     exigir(not a.datos_demo or a.accion == 'iniciar', '--datos-demo solo con iniciar')
     exigir(not a.servicios or (a.accion == 'logs' and set(a.servicios) <= SERVICIOS), 'Servicios solo para logs y del proyecto propio')
     rama = 'feature/sebastian' if PERFIL == 'cu015' else 'feature/sebastian-arquitectura'
@@ -330,7 +332,7 @@ def main():
     with (ESTADO / 'operacion.lock').open('w') as bloqueo:
         fcntl.flock(bloqueo, fcntl.LOCK_EX | fcntl.LOCK_NB)
         if a.accion == 'iniciar':
-            iniciar(a.datos_demo)
+            iniciar(a.datos_demo, a.compilar)
         else:
             compose('stop', '--timeout', '30')  # conserva contenedores, red y volúmenes.
             comprobar_cierre(contenedores_propios())

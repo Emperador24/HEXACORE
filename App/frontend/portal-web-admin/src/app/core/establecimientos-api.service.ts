@@ -26,4 +26,16 @@ export class EstablecimientosApiService {
   estado(id: string, estado: EstadoEstablecimiento): Promise<Establecimiento> {
     return this.auth.conAcceso(h => this.http.patch<Establecimiento>(`${this.url}/${id}/estado`, { estado }, { headers: h }));
   }
+  candidatos(busqueda = ''): Promise<{ id: string; nombre: string; email: string }[]> {
+    return this.auth.conAcceso(h => this.http.get<{ id: string; nombre: string; email: string }[]>(`${this.url}/cuentas-personal`, { headers: h, params: { busqueda } }));
+  }
+  personal(id: string): Promise<{ usuarioId: string; nombre: string; email: string; activo: boolean }[]> {
+    return this.auth.conAcceso(h => this.http.get<{ usuarioId: string; nombre: string; email: string; activo: boolean }[]>(`${this.url}/${id}/personal`, { headers: h }));
+  }
+  asignar(id: string, usuario: string): Promise<unknown> {
+    return this.auth.conAcceso(h => this.http.put(`${this.url}/${id}/personal/${usuario}`, {}, { headers: h }));
+  }
+  revocar(id: string, usuario: string): Promise<unknown> {
+    return this.auth.conAcceso(h => this.http.delete(`${this.url}/${id}/personal/${usuario}`, { headers: h }));
+  }
 }

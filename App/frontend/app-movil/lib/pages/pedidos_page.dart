@@ -212,9 +212,20 @@ class _MenuPedidosPageState extends State<MenuPedidosPage> {
                               if (producto['descripcion'] != null)
                                 Text(producto['descripcion'] as String),
                               Text(importePedido(producto['precio'])),
+                              if ((producto['restriccionesAlimentarias']
+                                          as List? ??
+                                      [])
+                                  .isNotEmpty)
+                                Text((producto['restriccionesAlimentarias']
+                                        as List)
+                                    .join(', ')),
                               if (producto['activo'] != true ||
-                                  producto['cantidadInventario'] == 0)
-                                const Text('Agotado')
+                                  (producto['cantidadDisponible'] as num? ??
+                                          0) ==
+                                      0)
+                                Text(producto['cantidadDisponible'] == null
+                                    ? 'Disponibilidad por confirmar'
+                                    : 'Agotado')
                               else
                                 Row(
                                     mainAxisAlignment: MainAxisAlignment.end,

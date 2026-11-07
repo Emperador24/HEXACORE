@@ -1,3 +1,4 @@
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
@@ -26,7 +27,10 @@ class PedidosApi {
   static final instance = PedidosApi();
 
   Future<dynamic> _enviar(String ruta,
-      {DatosPedido? cuerpo, String? clave, bool patch = false}) async {
+      {DatosPedido? cuerpo,
+      String? clave,
+      bool patch = false,
+      bool put = false}) async {
     try {
       final uri =
           Uri.parse('${Servidor.api}/${Servidor.prefijo}/pedidos/$ruta');
@@ -36,12 +40,15 @@ class PedidosApi {
           'Authorization': 'Bearer $token',
           if (clave != null) 'Idempotency-Key': clave
         };
-        return (patch
-                ? _cliente.patch(uri, headers: headers, body: jsonEncode(cuerpo))
-                : cuerpo == null
-                ? _cliente.get(uri, headers: headers)
-                : _cliente.post(uri,
-                    headers: headers, body: jsonEncode(cuerpo)))
+        return (put
+                ? _cliente.put(uri, headers: headers, body: jsonEncode(cuerpo))
+                : patch
+                    ? _cliente.patch(uri,
+                        headers: headers, body: jsonEncode(cuerpo))
+                    : cuerpo == null
+                        ? _cliente.get(uri, headers: headers)
+                        : _cliente.post(uri,
+                            headers: headers, body: jsonEncode(cuerpo)))
             .timeout(const Duration(seconds: 20));
       },
           estado: (r) => r.statusCode,
@@ -49,6 +56,12 @@ class PedidosApi {
               'Inicia sesión para hacer tu pedido.', 401));
       final datos = jsonDecode(utf8.decode(respuesta.bodyBytes));
       if (respuesta.statusCode >= 200 && respuesta.statusCode < 300) {
+        return datos;
+      }
+      if (respuesta.statusCode == 409 &&
+          datos is Map &&
+          datos['id'] == clave &&
+          datos['estado'] == 'RECHAZADA') {
         return datos;
       }
       // Una respuesta incierta de pago también contiene un resultado; no perderlo.
@@ -61,6 +74,8 @@ class PedidosApi {
       }
       final codigo = datos is Map ? datos['codigo'] : null;
       const mensajes = {
+        'AJUSTE_INVENTARIO_PENDIENTE':
+            'El establecimiento está confirmando inventario. Actualiza el menú antes de intentar de nuevo.',
         'INVENTARIO_INSUFICIENTE':
             'No quedan suficientes unidades. Ajusta tu selección.',
         'PRODUCTO_AGOTADO': 'Uno de los productos se agotó.',
@@ -71,8 +86,15 @@ class PedidosApi {
         'ESTABLECIMIENTO_NO_DISPONIBLE':
             'El establecimiento no está disponible.',
       };
+      final mensajeServidor =
+          datos is Map ? (datos['mensaje'] ?? datos['message']) : null;
       throw PedidosException(
           mensajes[codigo] ??
+              (mensajeServidor is List
+                  ? mensajeServidor.join('\n')
+                  : mensajeServidor is String
+                      ? mensajeServidor
+                      : null) ??
               'No se pudo completar la solicitud. Vuelve a intentar.',
           respuesta.statusCode);
     } on PedidosException {
@@ -99,12 +121,71 @@ class PedidosApi {
               'establecimientos/${Uri.encodeComponent(establecimiento)}/productos')
           as List)
       .cast<DatosPedido>();
-  Future<List<DatosPedido>> menu(String establecimiento) async =>
-      (await _enviar('establecimientos/${Uri.encodeComponent(establecimiento)}/menu') as List).cast<DatosPedido>();
+  Future<
+      List<DatosPedido>> menu(String establecimiento) async => (await _enviar(
+              'establecimientos/${Uri.encodeComponent(establecimiento)}/menu')
+          as List)
+      .cast<DatosPedido>();
 
-  Future<DatosPedido> actualizarDisponibilidad(String establecimiento, String producto, bool activo) async =>
-      await _enviar('establecimientos/${Uri.encodeComponent(establecimiento)}/productos/${Uri.encodeComponent(producto)}',
-          patch: true, cuerpo: {'activo': activo}) as DatosPedido;
+  Future<List<DatosPedido>> misEstablecimientos() async =>
+      (await _enviar('mis-establecimientos') as List).cast<DatosPedido>();
+  Future<List<DatosPedido>> historialInventario(String local) async =>
+      (await _enviar('establecimientos/${Uri.encodeComponent(local)}/ajustes')
+              as List)
+          .cast<DatosPedido>();
+  Future<DatosPedido> editarProducto(
+          String local, String producto, DatosPedido datos) async =>
+      await _enviar(
+          'establecimientos/${Uri.encodeComponent(local)}/productos/${Uri.encodeComponent(producto)}',
+          put: true,
+          cuerpo: datos) as DatosPedido;
+  String get _claveIntencion =>
+      'hexacore.cu012.intencion.${_sesion.usuario?.id ?? "sin-sesion"}';
+  Future<DatosPedido?> pendienteMenu() async {
+    final valor =
+        (await SharedPreferences.getInstance()).getString(_claveIntencion);
+    return valor == null ? null : jsonDecode(valor) as DatosPedido;
+  }
+
+  Future<DatosPedido> operarMenu(String local, DatosPedido datos,
+      {String? producto, String? clave}) async {
+    final id = clave ?? nuevaClavePago();
+    final intencion = {
+      'id': id,
+      'establecimientoId': local,
+      'productoId': producto,
+      'datos': datos
+    };
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_claveIntencion, jsonEncode(intencion));
+    final ruta =
+        'establecimientos/${Uri.encodeComponent(local)}/productos${producto == null ? "" : "/${Uri.encodeComponent(producto)}/ajustes"}';
+    DatosPedido respuesta;
+    try {
+      respuesta = await _enviar(ruta, clave: id, cuerpo: datos) as DatosPedido;
+    } on PedidosException catch (e) {
+      if (e.estado == 400 || e.estado == 409) {
+        await prefs.remove(_claveIntencion);
+      }
+      rethrow;
+    }
+    final op = (respuesta['operacion'] ?? respuesta) as DatosPedido;
+    if (op['estado'] != 'PENDIENTE') await prefs.remove(_claveIntencion);
+    return op;
+  }
+
+  Future<DatosPedido> repetirMenu(DatosPedido i) => operarMenu(
+      i['establecimientoId'] as String,
+      Map<String, dynamic>.from(i['datos'] as Map),
+      producto: i['productoId'] as String?,
+      clave: i['id'] as String);
+
+  Future<DatosPedido> actualizarDisponibilidad(
+          String establecimiento, String producto, bool activo) async =>
+      await _enviar(
+          'establecimientos/${Uri.encodeComponent(establecimiento)}/productos/${Uri.encodeComponent(producto)}',
+          patch: true,
+          cuerpo: {'activo': activo}) as DatosPedido;
 
   Future<DatosPedido> checkout(String evento, String establecimiento,
           Map<String, int> cantidades) async =>

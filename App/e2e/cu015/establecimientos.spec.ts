@@ -60,7 +60,7 @@ test('CU-015 por portales: registrar, persistir, editar, validar y operar; regre
     await expect(page.getByRole('row').filter({ hasText: editado })).toContainText('Puerta actualizada CU015');
   });
 
-  const productoId = productoPropio(localId);
+  const productoId = await productoPropio(request, localId, organizador.token);
   const cliente = await browser.newContext();
   const comprador = await cliente.newPage();
   try {

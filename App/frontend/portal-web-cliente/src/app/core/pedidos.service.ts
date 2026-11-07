@@ -18,7 +18,12 @@ export interface ProductoPedido {
   descripcion: string | null;
   precio: string;
   activo: boolean;
-  cantidadInventario: number;
+  cantidadInventario: number; // físico, compatibilidad
+  cantidadFisica?: number;
+  cantidadDisponible?: number | null;
+  cantidadReservada?: number | null;
+  restriccionesAlimentarias?: string[];
+  inventarioEstado?: string;
 }
 export interface CrearCheckout {
   eventoId: string;
@@ -108,6 +113,7 @@ export class PedidosService {
 export function mensajePedidos(error: unknown): string {
   if (!(error instanceof ErrorCuenta)) return 'No se pudo completar la solicitud. Intenta nuevamente.';
   const mensajes: Record<string, string> = {
+    AJUSTE_INVENTARIO_PENDIENTE: 'El establecimiento está confirmando un ajuste de inventario. Actualiza el menú antes de intentar de nuevo.',
     INVENTARIO_NO_PREPARADO: 'El establecimiento todavía no está listo para recibir pedidos.',
     INVENTARIO_INSUFICIENTE: 'No hay suficientes unidades disponibles. Revisa las cantidades.',
     PRODUCTO_NO_ENCONTRADO: 'Uno de los productos ya no está disponible.',

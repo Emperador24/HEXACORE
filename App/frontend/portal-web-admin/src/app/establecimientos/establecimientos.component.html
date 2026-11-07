@@ -51,8 +51,32 @@
           <td>{{ e.puntoEntrega }}</td><td>{{ e.horaApertura }} – {{ e.horaCierre }}<br /><span class="secundario">{{ e.zonaHoraria }}</span></td>
           <td>{{ e.estado }}<br /><span [class.abierto]="e.recibePedidos">{{ e.recibePedidos ? 'Recibe pedidos' : 'No recibe pedidos' }}</span></td>
           <td><button mat-button (click)="editar(e)" [disabled]="cargando()">Editar</button>
+            <button mat-button (click)="abrirPersonal(e)" [disabled]="cargando()">Personal</button>
             <button mat-button (click)="alternar(e)" [disabled]="cargando()">{{ e.estado === 'DESHABILITADO' ? 'Habilitar' : 'Deshabilitar' }}</button></td></tr>
       } @empty { <tr><td colspan="5">No hay establecimientos registrados para este evento.</td></tr> }</tbody>
     </table></div>
+  </section>
+}
+
+@if (gestionPersonal(); as local) {
+  <section class="panel ficha" aria-label="Personal autorizado">
+    <h2>Personal de {{ local.nombre }}</h2>
+    <p>Vincula cuentas existentes. El rol Personal por sí solo no concede acceso a este establecimiento.</p>
+    <form (ngSubmit)="buscarPersonal()">
+      <mat-form-field><mat-label>Buscar personal por nombre o correo</mat-label><input matInput name="busquedaPersonal" [(ngModel)]="busquedaPersonal" maxlength="100" /></mat-form-field>
+      <button mat-button type="submit" [disabled]="cargando()">Buscar personal</button>
+    </form>
+    <p class="ayuda">Se muestran hasta 50 coincidencias de cuentas activas. Usa la búsqueda para acotar la lista.</p>
+    <label for="cuentaPersonal">Cuenta Personal activa</label>
+    <select id="cuentaPersonal" [(ngModel)]="cuentaId">
+      <option value="">Selecciona una cuenta</option>
+      @for (c of candidatos(); track c.id) { <option [value]="c.id">{{ c.nombre }} · {{ c.email }}</option> }
+    </select>
+    <button mat-flat-button (click)="cambiarVinculo(cuentaId, true)" [disabled]="!cuentaId || cargando()">Asignar personal</button>
+    <ul>@for (c of vinculados(); track c.usuarioId) {
+      <li>{{ c.nombre }} · {{ c.email }} · {{ c.activo ? 'Cuenta activa' : 'Cuenta sin permiso vigente' }}
+        <button mat-button (click)="cambiarVinculo(c.usuarioId, false)" [disabled]="cargando()">Revocar {{ c.email || c.usuarioId }}</button></li>
+    } @empty { <li>No hay personal vinculado.</li> }</ul>
+    <button mat-button (click)="gestionPersonal.set(null)">Cerrar personal</button>
   </section>
 }

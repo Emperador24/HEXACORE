@@ -29,6 +29,11 @@ export class EstablecimientosComponent {
   eventoId = this.ruta.snapshot.queryParamMap.get('eventoId') ?? '';
   editando?: string;
   datos = this.nuevosDatos();
+  readonly gestionPersonal = signal<Establecimiento | null>(null);
+  readonly candidatos = signal<{ id: string; nombre: string; email: string }[]>([]);
+  readonly vinculados = signal<{ usuarioId: string; nombre: string; email: string; activo: boolean }[]>([]);
+  cuentaId = '';
+  busquedaPersonal = '';
 
   constructor() { void this.iniciar(); }
   private nuevosDatos(): DatosEstablecimiento {
@@ -80,6 +85,31 @@ export class EstablecimientosComponent {
       await this.api.estado(e.id, estado);
       this.locales.set(await this.api.listar(this.eventoId));
       this.mensaje.set(estado === 'DISPONIBLE' ? 'Establecimiento habilitado. Se aplica su horario.' : 'Establecimiento deshabilitado. Los pedidos existentes se conservan.');
+    } catch (e) { this.fallo(e); }
+    finally { this.cargando.set(false); }
+  }
+  async abrirPersonal(e: Establecimiento): Promise<void> {
+    this.cargando.set(true); this.error.set(''); this.gestionPersonal.set(e);
+    this.busquedaPersonal = ''; this.cuentaId = ''; this.candidatos.set([]); this.vinculados.set([]);
+    try {
+      this.candidatos.set(await this.api.candidatos());
+      this.vinculados.set(await this.api.personal(e.id));
+    } catch (error) { this.fallo(error); }
+    finally { this.cargando.set(false); }
+  }
+  async buscarPersonal(): Promise<void> {
+    this.cargando.set(true); this.error.set(''); this.cuentaId = '';
+    try { this.candidatos.set(await this.api.candidatos(this.busquedaPersonal)); }
+    catch (e) { this.fallo(e); }
+    finally { this.cargando.set(false); }
+  }
+  async cambiarVinculo(usuario: string, asignar: boolean): Promise<void> {
+    const local = this.gestionPersonal(); if (!local || !usuario) return;
+    this.cargando.set(true); this.error.set('');
+    try {
+      if (asignar) await this.api.asignar(local.id, usuario); else await this.api.revocar(local.id, usuario);
+      this.vinculados.set(await this.api.personal(local.id));
+      this.mensaje.set(asignar ? 'Personal asignado al establecimiento.' : 'Acceso al establecimiento revocado.');
     } catch (e) { this.fallo(e); }
     finally { this.cargando.set(false); }
   }

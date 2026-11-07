@@ -50,10 +50,10 @@
     <div class="distribucion">
       <section aria-label="Menú"><h2 class="titulo-menu">Elige tus productos</h2><div class="grilla">
         @for (producto of productos(); track producto.id) {
-          <article class="producto hxc-vidrio" [class.agotado]="!producto.activo || producto.cantidadInventario === 0">
-            <div><h3>{{ producto.nombre }}</h3>@if (producto.descripcion) { <p class="descripcion">{{ producto.descripcion }}</p> }<p class="precio">${{ producto.precio | number: '1.2-2' }} <small>COP</small></p></div>
-            @if (!producto.activo || producto.cantidadInventario === 0) {
-              <span class="hxc-badge" style="--tinte: var(--hxc-ambar)">Agotado</span>
+          <article class="producto hxc-vidrio" [class.agotado]="!producto.activo || (producto.cantidadDisponible ?? 0) === 0">
+            <div><h3>{{ producto.nombre }}</h3>@if (producto.descripcion) { <p class="descripcion">{{ producto.descripcion }}</p> }<p class="descripcion">{{ producto.restriccionesAlimentarias?.join(', ') }}</p><p class="precio">${{ producto.precio | number: '1.2-2' }} <small>COP</small></p></div>
+            @if (!producto.activo || (producto.cantidadDisponible ?? 0) === 0) {
+              <span class="hxc-badge" style="--tinte: var(--hxc-ambar)">{{ producto.cantidadDisponible === null ? 'Disponibilidad por confirmar' : 'Agotado' }}</span>
             } @else {
               <div class="contador">
                 <button mat-icon-button (click)="cambiar(producto, -1)" [disabled]="!cantidadDe(producto) || enviando() || resultadoIncierto()" [attr.aria-label]="'Quitar ' + producto.nombre"><mat-icon>remove</mat-icon></button>

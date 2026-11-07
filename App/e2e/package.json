@@ -3,8 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "test:cu015": "playwright test",
-    "test:cu015:visible": "playwright test --headed",
+    "test:cu015": "playwright test cu015",
+    "test:cu015:visible": "playwright test cu015 --headed",
+    "test:cu012": "playwright test cu012",
+    "test:cu012:visible": "playwright test cu012 --headed",
+    "test:alimentos": "playwright test",
     "informe": "playwright show-report .evidencia/informe",
     "tipos": "tsc --noEmit"
   },
