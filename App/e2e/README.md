@@ -1,5 +1,27 @@
 # Demostración integrada de Alimentos: CU-012 y CU-015
 
+## Referencia previa a preparación CU-013
+
+Desde la raíz, con Node 22.22.3, el entorno CU-015 existente iniciado y
+`CU015_CLAVE_DEMO` definido localmente como se indica debajo:
+
+```bash
+node App/backend/test/cu013/referencia.cjs
+```
+
+Ejecuta los cuatro casos existentes sin cambiar reintentos, trabajadores ni
+timeouts. Un observador de solo lectura toma muestras acotadas de actividad y
+bloqueos PostgreSQL, plan/duración del sondeo de ajustes, presión de la VM,
+recursos Docker y memoria del host. Finaliza al terminar Playwright y conserva
+informe, muestras y logs propios en `.evidencia/cu013-referencia-FECHA/`.
+No mide el waitingCount interno del pool de Núcleo ni certifica ausencia de picos
+entre muestras. No inicia, detiene ni modifica otros proyectos.
+
+La referencia del 7/11/2026 **pasó como conjunto 4/4**; recuperación CU-012 volvió
+a recuperar cinco intenciones tras reinicio. SQL, DNS y 499 anteriores conservan
+sus evidencias y causas sin cerrar: un conjunto aprobado no prueba que se hayan
+resuelto. Mediciones y decisión del hito: [plan](../../Documentation/Work/PLAN-CIERRE-SEBASTIAN.md).
+
 ## CU-012: menú e inventario, sobre el mismo entorno
 
 No crear otro sistema ni repetir semillas. Desde la raíz de `feature/sebastian`,

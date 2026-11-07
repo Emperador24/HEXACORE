@@ -1,5 +1,57 @@
 # Cierre de Alimentos — Sebastián
 
+## CU-013: hito 1, referencia previa — 7 de noviembre de 2026
+
+Inicio en `89881094cf92c5c4cf7e9d86b1a06b564a05ce4b`, `feature/sebastian`
+limpia y coincidente con origin. Todavía no se amplía preparación.
+
+Se contrastaron las imágenes activas: Núcleo `5277fba` (imagen
+`428ec444d0ca`), portales `64735e7` y gateway `09b0199`. SHA-256 del JavaScript
+de ajustes, lecturas, checkout y pagos dentro de Núcleo coincide exactamente con
+el dist local. Desde `5277fba` solo cambió documentación del backend: no se
+atribuye la referencia a un binario distinto del código publicado.
+
+La reproducción conjunta **CU-012/CU-015 pasó 4/4**, con un trabajador, cero
+reintentos y los límites originales 120 s / 15 s. Es un conjunto aprobado real,
+no una suma de ejecuciones individuales. Evidencia privada:
+`.evidencia/cu013-referencia-2026-11-07T18-42-04-320Z/`.
+
+El observador de solo lectura registra actividad PostgreSQL, bloqueantes,
+duraciones, plan del sondeo, presión Linux de la VM, Docker y memoria del host;
+conserva los logs propios correlacionados por tiempo. En esta reproducción:
+
+- 24 muestras SQL: ida/vuelta mediana 17,78 ms y máxima 84,72 ms.
+- Plan del sondeo de ajustes: ejecución PostgreSQL inferior a 0,4 ms;
+  ida/vuelta mediana 7,62 ms y máxima 73,67 ms.
+- Máximo 19 conexiones de todas las aplicaciones observadas; Alimentos 4 de su
+  límite configurado 10. La observación de servidor **no mide waitingCount del
+  pool Node**, ni permite descartar picos entre muestras.
+- Una muestra con espera `Lock/transactionid`, 618 ms, y transacción máxima
+  observada 685 ms. No hay evidencia aquí de un interbloqueo o espera de 3 s.
+- Presión global de memoria de la VM: `full avg10` entre 6,85 % y 55,44 %;
+  presión de E/S `full avg10` entre 7,82 % y 20,42 %. Son mediciones de espera,
+  no una demostración de la causa de los fallos anteriores.
+
+El sondeo de ajustes evita solapar sus propios ciclos, consulta como máximo
+50 intenciones y no procesa una cola vacía. Las solicitudes y consultas de
+operación también pueden procesar un establecimiento, serializadas por su bloqueo.
+La carrera real con compra/pago, las lecturas y la expiración pasó en el conjunto.
+El ensayo PostgreSQL/Redis de incertidumbre volvió a recuperar **cinco intenciones
+tras reiniciar Núcleo**, incluidas reconexión/AOF, consumo/liberación pendientes
+y SIGKILL, sin duplicar stock. No se reinició ni reconstruyó Redis.
+
+CU-011 original pasó **9/9**, deteniendo antes únicamente el proyecto propio
+y conservando sus volúmenes. Su proyecto de regresión quedó detenido al terminar. Los contenedores ajenos y referencias A/B no cambian.
+
+Estado de incidentes: el timeout SQL anterior, el 503 DNS confirmado y el 499
+siguen siendo tres observaciones distintas. En esta reproducción no se repitieron;
+no se declara resuelta ninguna causa. No se identifica un defecto funcional nuevo
+que autorice cambiar código por conjetura, ni se aumentan esperas/reintentos.
+Con conjunto 4/4, recuperación y CU-011 9/9 existe una referencia comprobable
+para iniciar el segundo hito. No hubo indisponibilidad persistente que obligue
+a actuar sobre recursos ajenos. Las causas anteriores permanecen abiertas y se
+vuelven a medir si reaparecen, sin interpretar este resultado como solución.
+
 ## Entrega CU-012 — 7 de noviembre de 2026
 
 Se partió de `6c9772e866da268ce91e919f2a9c8972d0091903`, rama
