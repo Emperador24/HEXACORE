@@ -18,6 +18,7 @@ class RestaurantOrdersPage extends StatefulWidget {
 
 class _RestaurantOrdersPageState extends State<RestaurantOrdersPage> {
   late final api = widget.api ?? PedidosApi.instance;
+  final desplazamiento = ScrollController();
   late final SondeoPedidos sondeo;
   List<DatosPedido> locales = [], pedidos = [];
   DatosPedido? detalle, pendiente;
@@ -40,6 +41,7 @@ class _RestaurantOrdersPageState extends State<RestaurantOrdersPage> {
   @override
   void dispose() {
     sondeo.dispose();
+    desplazamiento.dispose();
     super.dispose();
   }
 
@@ -122,6 +124,9 @@ class _RestaurantOrdersPageState extends State<RestaurantOrdersPage> {
     });
     try {
       detalle = await api.detalleRecibido(seleccionado!, p['id'] as String);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && desplazamiento.hasClients) desplazamiento.jumpTo(0);
+      });
     } catch (e) {
       error = e.toString();
       sondeo.pausado = true;
@@ -253,6 +258,7 @@ class _RestaurantOrdersPageState extends State<RestaurantOrdersPage> {
   Widget build(BuildContext context) => RefreshIndicator(
       onRefresh: seleccionado == null ? cargarCatalogo : actualizar,
       child: ListView(
+          controller: desplazamiento,
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16),
           children: [
@@ -306,6 +312,7 @@ class _RestaurantOrdersPageState extends State<RestaurantOrdersPage> {
             if (!cargando && locales.isNotEmpty && pedidos.isEmpty)
               const Text(
                   'Aún no hay pedidos confirmados en este establecimiento.'),
+            if (detalle != null) ...detalleWidgets(detalle!),
             for (final p in pedidos)
               panel([
                 Text(p['estado'] == 'CONFIRMADO'
@@ -322,7 +329,6 @@ class _RestaurantOrdersPageState extends State<RestaurantOrdersPage> {
                         : () => seleccionar(p),
                     child: const Text('Gestionar pedido')),
               ]),
-            if (detalle != null) ...detalleWidgets(detalle!),
           ]));
   List<Widget> detalleWidgets(DatosPedido p) {
     final a = p['preparacion'] as Map;
@@ -330,6 +336,9 @@ class _RestaurantOrdersPageState extends State<RestaurantOrdersPage> {
         p['estado'] == 'CONFIRMADO' && p['pagoVerificado'] == true;
     return [
       panel([
+        Text('Pedido ${p['id']}'),
+        for (final d in p['productos'] as List)
+          Text('${d['cantidad']} × ${d['nombreProducto']}'),
         Text(avancePedido(a['estado'] as String?),
             style: Theme.of(context).textTheme.titleLarge),
         if (a['estimadoListoEn'] != null)
@@ -365,7 +374,8 @@ class _RestaurantOrdersPageState extends State<RestaurantOrdersPage> {
               child: const Text('Marcar listo')),
         ],
         if (a['estado'] == 'LISTO_PARA_ENTREGAR')
-          const Text('Listo. El registro de entrega todavía no está habilitado.'),
+          const Text(
+              'Listo. El registro de entrega todavía no está habilitado.'),
         for (final i in p['incidencias'] as List? ?? []) ...[
           Text(
               '${i['descripcion']} · ${i['resueltaEn'] == null ? 'Pendiente de resolver' : 'Resuelta: ${i['resolucion']}'}'),

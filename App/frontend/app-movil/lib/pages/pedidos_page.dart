@@ -33,7 +33,8 @@ class _PedidosPageState extends State<PedidosPage> {
           TextButton(
               onPressed: () => Navigator.of(context).push(
                   MaterialPageRoute<void>(
-                      builder: (_) => MisPedidosPage(api: api))),
+                      builder: (_) =>
+                          MisPedidosPage(api: api, paginaCompleta: true))),
               child: const Text('Mis pedidos y avisos')),
           Text('¿Qué se te antoja?',
               style: Theme.of(context).textTheme.headlineSmall),
@@ -169,6 +170,7 @@ class _MenuPedidosPageState extends State<MenuPedidosPage> {
                         MaterialPageRoute<void>(
                             builder: (_) => MisPedidosPage(
                                 api: compra.api,
+                                paginaCompleta: true,
                                 pedidoId: pedido!['id'] as String))),
                     child: const Text('Ver seguimiento y avisos')),
               ])

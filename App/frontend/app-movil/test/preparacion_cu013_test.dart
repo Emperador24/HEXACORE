@@ -91,6 +91,12 @@ class ApiPreparacion extends PedidosApi {
   }
 }
 
+class ApiBandejaLarga extends ApiPreparacion {
+  @override
+  Future<List<DatosPedido>> misPedidos() async => List.generate(
+      100, (i) => {...pedido, 'id': i == 0 ? 'pedido-propio' : 'anterior-$i'});
+}
+
 Finder campo(String etiqueta) => find.ancestor(
     of: find.text(etiqueta), matching: find.byType(TextFormField));
 void main() {
@@ -155,6 +161,18 @@ void main() {
     await tester.pump(const Duration(seconds: 45));
     expect(api.lecturas, pausadas);
   });
+  testWidgets(
+      'el enlace a un pedido muestra su QR antes de una bandeja de cien pedidos',
+      (tester) async {
+    await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+            body: MisPedidosPage(
+                api: ApiBandejaLarga(), pedidoId: 'pedido-propio'))));
+    await tester.pumpAndSettle();
+    expect(find.byType(QrImageView).hitTestable(), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   test(
       'respuesta perdida conserva UUID y versión, replay no guarda credenciales y 409 permite actualizar',
       () async {
