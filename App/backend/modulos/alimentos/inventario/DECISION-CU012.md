@@ -41,6 +41,8 @@ No se crea otro servicio, broker ni plataforma de almacenes.
    como APLICADA, o guardar RECHAZADA. Se requiere Redis >= 7.2 con AOF activo;
    se verificó ese soporte en el entorno existente. El replay vuelve a escribir
    su marca (sin repetir delta) para que WAITAOF cubra el offset de esta conexión.
+   Si la conexión se cierra entre Lua y su confirmación, no se acepta el offset
+   de la nueva sesión: se conserva la intención pendiente para repetirla completa.
 3. Si Lua/commit no pueden confirmarse, dejar la intención durable PENDIENTE.
    Un sondeo acotado dentro de Núcleo, el replay y la consulta de operación la
    recuperan. Lua devuelve su resultado previo: un commit SQL perdido se distingue

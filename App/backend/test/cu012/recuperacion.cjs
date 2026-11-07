@@ -49,6 +49,16 @@ function proxyRedis(redis,evalNuevo) { return new Proxy(redis,{get(t,p){if(p==='
     pendientes.push({local:ea.id,producto:pa,id:aof.id,fisico:12});
     console.log('AOF no confirmado: no confirma físico pese al resultado Lua; conserva intención para recuperación.');
 
+    const er=await local(),pr=await producto(er);
+    const reconectado=new Proxy(redis,{get(t,k){if(k==='call')return async(...args)=>{
+      const cierre=once(t,'end');t.disconnect();await cierre;await t.connect();
+      return t.call(...args);
+    };const v=t[k];return typeof v==='function'?v.bind(t):v;}});
+    const reconexion=await new c.AjustesInventarioService(ds,reconectado).solicitar(er.id,actor,randomUUID(),{productoId:pr,delta:2,motivo:'Reconexión entre Lua y WAITAOF'});
+    assert.equal(reconexion.estado,'PENDIENTE');assert.deepEqual(await cantidades(er.id,pr),[10,12]);
+    pendientes.push({local:er.id,producto:pr,id:reconexion.id,fisico:12});
+    console.log('Reconexión real entre Lua y WAITAOF: no usa el offset de otra sesión; conserva intención pendiente.');
+
     const e2=await local(),p2=await producto(e2);
     const commitPerdido=new Proxy(ds,{get(t,k){if(k==='transaction')return async(f)=>{
       const r=await t.transaction(f);if(r===true)throw new Error('Confirmación de commit perdida');return r;
@@ -115,7 +125,7 @@ function proxyRedis(redis,evalNuevo) { return new Proxy(redis,{get(t,p){if(p==='
     console.log('Proceso SIGKILL: intención confirmada antes de Lua, sin cambios parciales del físico.');
 
     nucleo('iniciar');detenido=false;
-    // El sondeo de la aplicación real recupera ambas intenciones tras reiniciar.
+    // El sondeo de la aplicación real recupera todas las intenciones tras reiniciar.
     const limite=Date.now()+15000;
     for(const o of pendientes) {
       while((await ds.query('SELECT estado FROM alimentos.operaciones_inventario WHERE id=$1',[o.id]))[0].estado!=='APLICADA') {
@@ -125,6 +135,6 @@ function proxyRedis(redis,evalNuevo) { return new Proxy(redis,{get(t,p){if(p==='
       assert.deepEqual(await cantidades(o.local,o.producto),[o.fisico,o.fisico]);
       await servicio.recuperarEstablecimiento(o.local);assert.deepEqual(await cantidades(o.local,o.producto),[o.fisico,o.fisico]);
     }
-    console.log('Reinicio real de Núcleo: cuatro operaciones inciertas recuperadas, sin doble ajuste ni reinicializar Redis.');
+    console.log('Reinicio real de Núcleo: cinco operaciones inciertas recuperadas, sin doble ajuste ni reinicializar Redis.');
   } finally { if(detenido)nucleo('iniciar');await c.cerrar(); }
-})().catch(e=>{console.error(e.message);process.exitCode=1;});
+})().catch(e=>{console.error(e.stack ?? e.message);process.exitCode=1;});

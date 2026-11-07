@@ -19,15 +19,22 @@ export class AjustesInventarioService implements OnModuleInit, OnModuleDestroy {
   private readonly log = new Logger(AjustesInventarioService.name);
   private temporizador?: ReturnType<typeof setInterval>;
   private ciclo?: Promise<void>;
+  private generacionRedis = 0;
+  private readonly conexionCerrada = () => { this.generacionRedis++; };
   constructor(@InjectDataSource(CONEXION_ALIMENTOS) private readonly datos: DataSource,
-    @Inject(REDIS_INVENTARIO) private readonly redis: Redis) {}
+    @Inject(REDIS_INVENTARIO) private readonly redis: Redis) {
+    this.redis.on('close', this.conexionCerrada);
+  }
 
   onModuleInit() {
     this.temporizador = setInterval(() => { void this.recuperarPendientes(); }, 5000);
     this.temporizador.unref();
     void this.recuperarPendientes();
   }
-  async onModuleDestroy() { clearInterval(this.temporizador); await this.ciclo; }
+  async onModuleDestroy() {
+    clearInterval(this.temporizador); await this.ciclo;
+    this.redis.removeListener('close', this.conexionCerrada);
+  }
 
   async solicitar(establecimientoId: string, actorId: string, id: string,
     datos: { productoId: string; delta: number; motivo: string } | { registro: RegistrarProductoDto }) {
@@ -114,6 +121,7 @@ export class AjustesInventarioService implements OnModuleInit, OnModuleDestroy {
             await m.save(OperacionInventario, op); return true;
           }
           const [stock, , , marca] = clavesReserva(establecimientoId, '');
+          const generacion = this.generacionRedis;
           const respuesta = JSON.parse(String(await this.redis.eval(AJUSTAR_LUA, 3, stock, marca,
             `pedidos:inv:{inventario}:ajuste:${op.id}`, op.huella, op.productoId, String(op.delta), op.tipo, op.inicializa ? '1' : '0')));
           if (respuesta.huella !== op.huella || !['APLICADA', 'RECHAZADA'].includes(respuesta.estado) ||
@@ -121,7 +129,8 @@ export class AjustesInventarioService implements OnModuleInit, OnModuleDestroy {
           // Lua no acredita fsync. Exigir AOF local antes de confirmar físico en SQL.
           // El replay también escribe su marca en esta conexión para cubrir su offset.
           const persistencia = await this.redis.call('WAITAOF', '1', '0', '1500');
-          if (!Array.isArray(persistencia) || Number(persistencia[0]) !== 1) throw new Error('AJUSTE_AOF_PENDIENTE');
+          // WAITAOF solo cubre las escrituras de su conexión, no las de una sesión anterior.
+          if (generacion !== this.generacionRedis || !Array.isArray(persistencia) || Number(persistencia[0]) !== 1) throw new Error('AJUSTE_AOF_PENDIENTE');
           const antes = producto.cantidadInventario;
           if (respuesta.estado === 'APLICADA') {
             await m.increment(Producto, { id: producto.id, establecimientoId }, 'cantidadInventario', op.delta);
