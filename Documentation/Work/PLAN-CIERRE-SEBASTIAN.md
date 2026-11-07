@@ -1,5 +1,16 @@
 # Cierre de Alimentos — Sebastián
 
+## Entrega en curso: CU-012
+
+Inicio 7/11/2026 desde `6c9772e866da268ce91e919f2a9c8972d0091903`, rama
+`feature/sebastian` limpia y sincronizada antes de editar. Objetivo: productos,
+menú, ajustes durables PostgreSQL/Redis, autorización por vínculo, interfaces
+web/móvil y demostración integrada, conservando CU-011/015.
+Diseño previo a modificar inventario:
+[DECISION-CU012](../../App/backend/modulos/alimentos/inventario/DECISION-CU012.md).
+Pruebas y resultados CU-012 pendientes de ejecución; las evidencias siguientes
+pertenecen a CU-015. No se completan CU-013/014 ni CU-028.
+
 Revisión inicial: 7 de noviembre de 2026 (America/Bogota). Rama
 `feature/sebastian`, limpia en `a2e85d5517b8cee02a83df508dd9784fbff9de28`,
 coincidente con origin antes de editar. ADR-16 conserva módulos y preparación
