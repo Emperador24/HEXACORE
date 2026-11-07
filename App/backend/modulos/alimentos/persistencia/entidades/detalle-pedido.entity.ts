@@ -30,6 +30,12 @@ export class DetallePedido {
   @Column({ name: 'nombre_producto', type: 'varchar', length: 200 })
   nombreProducto: string;
 
+  @Column({ name: 'descripcion_producto', type: 'text', nullable: true })
+  descripcionProducto: string | null;
+
+  @Column({ name: 'restricciones_alimentarias', type: 'jsonb', default: () => "'[]'::jsonb" })
+  restriccionesAlimentarias: string[];
+
   /** Precio acordado por unidad, expresado en la moneda del pedido. */
   @Column({ name: 'precio_unitario', type: 'numeric', precision: 12, scale: 2 })
   precioUnitario: string;

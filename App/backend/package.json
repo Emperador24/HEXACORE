@@ -87,7 +87,9 @@
     "datos:ejecucion": "node --test --test-concurrency=1 test/base-unica/ejecucion.test.cjs",
     "ensayo:historico": "node test/consolidacion/historico/construir.cjs",
     "test:cu015:migracion": "node test/cu015/migraciones.cjs",
-    "test:cu015:regresion": "node test/cu015/regresion.cjs"
+    "test:cu015:regresion": "node test/cu015/regresion.cjs",
+    "test:cu012:migracion": "node test/cu012/migraciones.cjs",
+    "test:cu012:recuperacion": "node test/cu012/recuperacion.cjs"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.6",

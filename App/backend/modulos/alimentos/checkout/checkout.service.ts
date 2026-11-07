@@ -1,3 +1,4 @@
+import { OperacionInventario } from '../persistencia/entidades/operacion-inventario.entity';
 import { ConsultaEventos } from '../../eventos-recintos/consulta-eventos.module';
 import { recibePedidos } from '../establecimientos/horario';
 import { CONEXION_ALIMENTOS } from '../persistencia/conexion';
@@ -59,6 +60,10 @@ export class CheckoutService {
         throw new ConflictException({ codigo: 'ESTABLECIMIENTO_NO_DISPONIBLE', estado: establecimiento.estado, mensaje: 'El establecimiento está cerrado o no disponible para nuevos pedidos.' });
       }
 
+      if (await gestor.exists(OperacionInventario, { where: { establecimientoId: establecimiento.id, estado: 'PENDIENTE' } })) {
+        throw new ConflictException({ codigo: 'AJUSTE_INVENTARIO_PENDIENTE', mensaje: 'El inventario tiene un ajuste pendiente de confirmar. Consulta su estado antes de comprar.' });
+      }
+
       const productos = await gestor.find(Producto, { where: { id: In(ids) } });
       const porId = new Map(productos.map((producto) => [producto.id, producto]));
       let totalCentavos = 0n;
@@ -74,7 +79,7 @@ export class CheckoutService {
           });
         }
         totalCentavos += centavos(producto.precio) * BigInt(item.cantidad);
-        return { productoId: producto.id, nombreProducto: producto.nombre, precioUnitario: producto.precio, cantidad: item.cantidad };
+        return { productoId: producto.id, nombreProducto: producto.nombre, descripcionProducto: producto.descripcion, restriccionesAlimentarias: producto.restriccionesAlimentarias ?? [], precioUnitario: producto.precio, cantidad: item.cantidad };
       });
       if (totalCentavos > MAX_CENTAVOS) throw new UnprocessableEntityException('El total supera el máximo permitido');
       const total = `${totalCentavos / 100n}.${(totalCentavos % 100n).toString().padStart(2, '0')}`;

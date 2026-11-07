@@ -2,14 +2,15 @@
 
 Fuente única trasladada desde `App/services/alimentos`. Conserva catálogo,
 menú, checkout, inventario/reservas, adaptador local de Pagos y confirmación
-con QR/evento. CU-015 incorpora gestión administrativa de establecimientos;
-CU-012 completo, preparación/entrega y F12 siguen pendientes.
+con QR/evento. CU-015 incorpora establecimientos y CU-012 productos, menú y
+ajustes durables. Preparación/entrega y F12 siguen pendientes.
 
 Instalar, compilar, migrar y arrancar desde [el workspace](../../README.md).
 Usa la conexión TypeORM `alimentos`, esquema `alimentos` y POSTGRES_BD común.
-Se conservan las dos migraciones históricas y se añade
-`GestionEstablecimientosCu0151794300000000` a la preparación central. POSTGRES_BD_PEDIDOS
-se rechaza. La preparación se ejecuta una vez para los ocho esquemas.
+Se conservan las dos migraciones históricas y se añaden
+`GestionEstablecimientosCu0151794300000000` y `MenuInventarioCu0121794400000000`
+a la preparación central. POSTGRES_BD_PEDIDOS se rechaza. La preparación se
+ejecuta una vez para los once esquemas (27 migraciones; 18 procedencias intactas).
 El cliente Redis de inventario conserva sus opciones específicas.
 Ver [inventario](inventario/README.md) y [pruebas aisladas](../../test/README.md).
 
@@ -68,11 +69,52 @@ existente y autor de asignación. Las rutas actuales de menú y recepción exige
 sesión Personal, cuenta activa según Identidad y vínculo al establecimiento
 solicitado. Revocarlo corta la siguiente petición; Administrador con rol Personal
 tampoco obtiene acceso operativo global. No cambia la gestión global de roles ni
-implementa los permisos dinámicos pendientes de Samuel (CU-028). CU-012 debe
-incorporar la selección/asignación de cuentas en su interfaz; aquí existe la API
-acotada para preparar esa integración.
+implementa los permisos dinámicos pendientes de Samuel (CU-028). CU-015 incorpora
+la consulta, asignación y revocación de cuentas existentes en su interfaz.
+`GET pedidos/mis-establecimientos` devuelve únicamente los vinculados al Personal
+activo, incluidos los cerrados. La autorización de gestión es el vínculo; estado
+operativo y horario determinan la recepción pública, no revocan ese vínculo.
 
 **Actualización**: migración aditiva, synchronize/migrationsRun=false. Un duplicado
 histórico ambiguo aborta transaccionalmente la nueva migración, conservando datos;
 debe resolverse con su dueño antes de reintentar. No se renombran ni borran filas.
 [Demostración, pruebas y comandos](../../../e2e/README.md).
+
+## CU-012: productos y ajustes
+
+Rutas bajo `/api/v1/pedidos/establecimientos/:establecimientoId`, todas con
+sesión Personal activa y `PersonalDelEstablecimiento`, también por acceso directo.
+Producto y operación se buscan por su ID **y** el establecimiento autorizado.
+
+| Método / sufijo | Contrato |
+|---|---|
+| GET `/menu` | Activos e inactivos, restricciones, físico, reservado, disponible y estado de lectura |
+| POST `/productos` | nombre, descripción opcional, precio textual, restriccionesAlimentarias[], activo, cantidadInicial física; exige `Idempotency-Key` UUID |
+| PUT `/productos/:productoId` | Metadatos y estado completos; nunca escribe cantidades |
+| PATCH `/productos/:productoId` | Compatibilidad: únicamente `{activo:boolean}` |
+| POST `/productos/:productoId/ajustes` | `{delta:entero,motivo:texto}` y `Idempotency-Key`; 200 aplicada, 202 pendiente o 409 rechazada |
+| GET `/ajustes` | Últimas 50 operaciones del establecimiento, actor, motivo, cantidades, resultado y fechas |
+| GET `/operaciones/:operacionId` | Recuperar/consultar la misma intención, sin duplicar delta |
+
+Nombres únicos por establecimiento, ignorando mayúsculas y espacios repetidos.
+Precio positivo como texto decimal (máximo 9999999999.99), nunca float; cantidades
+enteras 0–2147483647 y deltas no nulos dentro del rango firmado. Restricciones:
+hasta 20 textos únicos de 1–100 caracteres. Cambios de precio, descripción,
+restricciones, nombre o activación no modifican snapshots ni total de un checkout
+existente. Este puede pagarse tras la desactivación usando lo acordado.
+
+`cantidadInventario` conserva el físico por compatibilidad. Los clientes nuevos
+usan `cantidadFisica`, `cantidadReservada` y `cantidadDisponible`; los dos últimos
+son null si hay intención pendiente, Redis no responde o la lectura no es fiable.
+No sustituyen disponibilidad desconocida por físico. El catálogo agrega
+restricciones y disponibilidad real y solo incluye activos. Una intención pendiente
+rechaza checkout **antes de insertar pedido/reserva**, con 409
+`AJUSTE_INVENTARIO_PENDIENTE`; no es un resultado incierto de compra.
+
+El primer producto queda preparado por la operación normal, incluso con cantidad
+cero. Incorporar otro producto no reinicializa los demás. El ajuste registra
+intención antes de Lua, modifica un solo contador con resultado idempotente, exige
+AOF local confirmado y cierra físico/resultado en la misma transacción SQL.
+Los fallos dejan intención durable y bloquean admisión hasta recuperarla. La
+[decisión CU-012](inventario/DECISION-CU012.md) detalla estados técnicos, bloqueos,
+consumo/liberación pendientes y límites de recuperación. No implementa F12.

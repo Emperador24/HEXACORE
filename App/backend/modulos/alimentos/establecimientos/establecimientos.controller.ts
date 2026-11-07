@@ -15,6 +15,10 @@ export class EstablecimientosController {
   constructor(private readonly locales: EstablecimientosService) {}
   @Get()
   listar(@Query('eventoId', ParseUUIDPipe) eventoId: string) { return this.locales.listar(eventoId); }
+  @Get('cuentas-personal')
+  cuentasPersonal(@Query('busqueda') busqueda = '') { return this.locales.cuentasPersonal(busqueda); }
+  @Get(':id/personal')
+  personalAsignado(@Param('id', ParseUUIDPipe) id: string) { return this.locales.personalAsignado(id); }
   @Get(':id')
   detalle(@Param('id', ParseUUIDPipe) id: string) { return this.locales.detalle(id); }
   @Post()
@@ -32,4 +36,13 @@ export class EstablecimientosController {
   desvincular(@Param('id', ParseUUIDPipe) id: string, @Param('usuarioId', ParseUUIDPipe) usuarioId: string) {
     return this.locales.desvincular(id, usuarioId);
   }
+}
+
+@Controller('pedidos/mis-establecimientos')
+@UseGuards(SesionValida)
+@RolesPermitidos('Personal')
+export class MisEstablecimientosController {
+  constructor(private readonly locales: EstablecimientosService) {}
+  @Get()
+  listar(@Req() r: PeticionConSesion) { return this.locales.misEstablecimientos(r.sesion!.usuarioId); }
 }

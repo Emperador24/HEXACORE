@@ -25,6 +25,7 @@ async function sembrar(): Promise<void> {
       // RESTRICT evita extender la limpieza a otras tablas mediante cascada.
       await gestor.query(`
         TRUNCATE TABLE
+          "operaciones_inventario",
           "personal_establecimiento",
           "reservas_inventario",
           "transacciones_pedido",

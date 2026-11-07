@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource, QueryFailedError } from 'typeorm';
 import { ConsultaEventos } from '../../eventos-recintos/consulta-eventos.module';
@@ -84,6 +84,25 @@ export class EstablecimientosService {
     if (!await this.personal.esPersonalActivo(usuarioId)) throw new BadRequestException('Selecciona una cuenta activa con rol Personal.');
     await this.datos.getRepository(PersonalEstablecimiento).upsert({ establecimientoId: id, usuarioId, asignadoPor }, ['establecimientoId', 'usuarioId']);
     return { establecimientoId: id, usuarioId };
+  }
+
+  async cuentasPersonal(busqueda: string) {
+    if (typeof busqueda !== 'string' || busqueda.length > 100) throw new BadRequestException('La búsqueda debe ser texto de hasta 100 caracteres.');
+    return this.personal.buscarActivos(busqueda.trim());
+  }
+  async personalAsignado(id: string) {
+    await this.exigir(id);
+    const vinculos = await this.datos.getRepository(PersonalEstablecimiento).find({ where: { establecimientoId: id } });
+    const cuentas: { id: string; nombre: string; email: string; activo: boolean }[] = await this.personal.resumen(vinculos.map(v => v.usuarioId));
+    return vinculos.map(v => ({ usuarioId: v.usuarioId, asignadoPor: v.asignadoPor,
+      ...(cuentas.find(c => c.id === v.usuarioId) ?? { nombre: 'Cuenta no disponible', email: '', activo: false }) }));
+  }
+  async misEstablecimientos(usuarioId: string) {
+    if (!await this.personal.esPersonalActivo(usuarioId)) throw new ForbiddenException('Necesitas una cuenta Personal activa.');
+    const vinculos = await this.datos.getRepository(PersonalEstablecimiento).find({ where: { usuarioId } });
+    if (!vinculos.length) return [];
+    const locales = await this.datos.getRepository(Establecimiento).find({ where: vinculos.map(v => ({ id: v.establecimientoId })), order: { nombre: 'ASC', id: 'ASC' } });
+    return locales.map(e => ({ id: e.id, eventoId: e.eventoId, nombre: e.nombre, estado: e.estado, puntoEntrega: e.puntoEntrega }));
   }
 
   async desvincular(id: string, usuarioId: string) {

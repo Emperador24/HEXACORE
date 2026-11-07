@@ -1,3 +1,4 @@
+import { LecturaInventarioService } from '../inventario/lectura-inventario.service';
 import { ConsultaEventos } from '../../eventos-recintos/consulta-eventos.module';
 import { recibePedidos } from '../establecimientos/horario';
 import { CONEXION_ALIMENTOS } from '../persistencia/conexion';
@@ -12,7 +13,7 @@ import { aProductoDto, ProductoDto } from './dto/producto.dto';
 /** Consultas del catálogo necesarias para iniciar CU-011. */
 @Injectable()
 export class CatalogoService {
-  constructor(@InjectDataSource(CONEXION_ALIMENTOS) private readonly fuenteDatos: DataSource, private readonly eventos: ConsultaEventos) {}
+  constructor(@InjectDataSource(CONEXION_ALIMENTOS) private readonly fuenteDatos: DataSource, private readonly eventos: ConsultaEventos, private readonly inventario: LecturaInventarioService) {}
 
   async listarProductos(establecimientoId: string): Promise<ProductoDto[]> {
     const establecimiento = await this.fuenteDatos.getRepository(Establecimiento).findOne({
@@ -25,11 +26,7 @@ export class CatalogoService {
     const evento = await this.eventos.paraAlimentos(establecimiento.eventoId);
     if (!evento.disponible || !recibePedidos(establecimiento)) return [];
 
-    const productos = await this.fuenteDatos.getRepository(Producto).find({
-      where: { establecimientoId, activo: true },
-      order: { nombre: 'ASC', id: 'ASC' },
-    });
-    return productos.map(aProductoDto);
+    return this.inventario.listar(establecimientoId, true);
   }
 
   async listarEstablecimientos(eventoId: string): Promise<EstablecimientoDto[]> {

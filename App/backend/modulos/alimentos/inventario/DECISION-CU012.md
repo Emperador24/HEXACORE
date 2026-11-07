@@ -37,7 +37,10 @@ No se crea otro servicio, broker ni plataforma de almacenes.
    campo** Redis: incremento/decremento, comprobando que disponible no quede
    negativo ni desborde. Guardar en Redis el resultado de esa clave, incluso un
    rechazo definitivo; jamás reconstruir el hash. En la misma transacción SQL,
-   aplicar el delta físico y cerrar el registro como APLICADA, o guardar RECHAZADA.
+   exigir `WAITAOF 1 0 1500` y luego aplicar el delta físico y cerrar el registro
+   como APLICADA, o guardar RECHAZADA. Se requiere Redis >= 7.2 con AOF activo;
+   se verificó ese soporte en el entorno existente. El replay vuelve a escribir
+   su marca (sin repetir delta) para que WAITAOF cubra el offset de esta conexión.
 3. Si Lua/commit no pueden confirmarse, dejar la intención durable PENDIENTE.
    Un sondeo acotado dentro de Núcleo, el replay y la consulta de operación la
    recuperan. Lua devuelve su resultado previo: un commit SQL perdido se distingue
@@ -56,6 +59,13 @@ No se afirma atomicidad PostgreSQL/Redis. La intención y el bloqueo de admisió
 hacen visible y recuperable la ventana entre ambos. Un fallo puede reducir
 temporalmente disponibilidad, pero no debe habilitar ventas inseguras. El sistema
 no resuelve cobros financieros inciertos F12 en esta entrega.
+
+WAITAOF confirma persistencia local de las escrituras precedentes de la conexión,
+no un consenso distribuido ni recuperación de un disco perdido. Si AOF no está
+disponible o no confirma a tiempo, la operación queda pendiente y no se confirma
+el físico. No se elevan los timeouts existentes. Fuentes técnicas:
+[WAITAOF](https://redis.io/docs/latest/commands/waitaof/) y
+[Lua en Redis](https://redis.io/docs/latest/develop/programmability/eval-intro/).
 
 ## Alta y fallos
 

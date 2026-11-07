@@ -3,9 +3,9 @@ import { ConsultaEventosModule } from '../../eventos-recintos/consulta-eventos.m
 import { ConsultaPersonalModule } from '../../identidad/consulta-personal.module';
 import { AutenticacionModule } from '../comun/autenticacion/autenticacion.module';
 import { PersistenciaModule } from '../persistencia/persistencia.module';
-import { EstablecimientosController } from './establecimientos.controller';
+import { EstablecimientosController, MisEstablecimientosController } from './establecimientos.controller';
 import { EstablecimientosService } from './establecimientos.service';
 
 @Module({ imports: [PersistenciaModule, AutenticacionModule, ConsultaEventosModule, ConsultaPersonalModule],
-  controllers: [EstablecimientosController], providers: [EstablecimientosService] })
+  controllers: [EstablecimientosController, MisEstablecimientosController], providers: [EstablecimientosService] })
 export class EstablecimientosModule {}
