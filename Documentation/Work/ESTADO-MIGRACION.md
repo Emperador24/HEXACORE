@@ -1,5 +1,11 @@
 # Estado de migración de HEXACORE
 
+**Etapa CU-013, preparación (7/11/2026):** avance separado del pago hasta listo,
+estimación, retrasos, incidencias e historial/avisos SQL durables, con interfaces
+web y Flutter. El inventario vigente suma **28 migraciones**, once esquemas y
+las mismas 18 procedencias originales. Entrega única CU-014 y cancelación
+CU-011F/F12 siguen pendientes. [Pruebas e incidentes](PLAN-CIERRE-SEBASTIAN.md).
+
 **Entrega posterior CU-012 (7/11/2026):** menú/productos y ajustes durables PostgreSQL/Redis,
 con autorización por establecimiento, web/móvil y recuperación de intenciones.
 El inventario suma 27 migraciones y conserva 18 procedencias; se reutiliza el

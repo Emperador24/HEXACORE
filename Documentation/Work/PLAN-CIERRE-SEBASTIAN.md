@@ -1,6 +1,6 @@
 # Cierre de Alimentos — Sebastián
 
-## CU-013: hito 2, preparación en validación
+## CU-013: hito 2, preparación y comprobaciones — 7 de noviembre de 2026
 
 Se implementa solo preparación hasta listo, manteniendo CONFIRMADO y el QR de
 CU-011. [Decisión y alcance de alternativos](../../App/backend/modulos/alimentos/recepcion/DECISION-CU013.md).
@@ -9,12 +9,193 @@ incidencias con resolución conservadora y permisos por vínculo. Cliente recupe
 sus pedidos y QR; las pantallas web/Flutter usan sondeos de 15 s, acotados a la
 pantalla activa, sin solapamiento y pausados ante errores.
 
-Comprobado hasta ahora: backend tipos/build y 16 pruebas de recepción; Angular
-admin 4/4 y cliente 18/18; Flutter analyze sin incidencias y 56/56. Migración
-aditiva registrada como número 28, con 18 procedencias congeladas. Falta comprobar
-vacía/actualización, suite completa y recorridos integrados sobre imágenes nuevas.
+| Comprobación ejecutada CU-013 | Resultado |
+|---|---|
+| Backend tipos/build y pruebas completas con Redis real | **904/904, 63 suites**, sin omisiones; aplicaciones propias detenidas y PostgreSQL/Redis activos durante la suite; tipos/build aprobados |
+| Recepción/preparación | **17/17**, incluidas transiciones, pago persistido, versiones, tiempos e idempotencia |
+| Angular administrativo y cliente | **5/5** y **19/19**, compilaciones Docker de ambos aprobadas |
+| Flutter analyze y tests nativos | Sin incidencias; **59/59**, concurrencia 1; versiones, respuesta perdida/replay, sondeo y detalle visible con 100 pedidos |
+| Migración CU-013 vacía y actualización desde 27 | **2/2**, 28 migraciones, las 18 procedencias intactas y repetición sin DDL |
+| Regresión migraciones CU-012 desde 26 y CU-015 desde 25 | **2/2 + 2/2**, aplicando hasta 28 sin modificar filas previas |
+| Tipos Playwright, fronteras/configuración y guardas del entorno | Aprobados; guardas **11/11** |
+| Regresión original CU-011 tras la navegación por páginas | **9/9**, repetida tras paginar: 6,01 s; proyecto de regresión detenido y volúmenes conservados |
+| Playwright conjunto final, todos los procesos propios activos | **5/6**; falla login de API CU-013 por 503 SQL; pasan CU-013 visual y ambos CU-012/015 |
+| API CU-013 individual posterior sobre la misma imagen final | **1/1**, 19,2 s; no equivale a conjunto 6/6 |
+
+Las bases auxiliares conservadas incluyen `cu013_3bfbb78cf2b7_vacia/actualizacion`
+y la repetición final `cu013_e83ced5abc59_vacia/actualizacion`,
+`cu012_8af2ee48db3e_vacia/actualizacion` y `cu015_1c5fdc0e5d9b_vacia/actualizacion`.
+El ensayo CU-013 conserva productos, reservas activas/consumidas, pedidos pendientes
+y confirmados, pagos y detalles; el confirmado histórico se lee RECIBIDO/versión 0
+y conserva su QR. Se comparan las filas completas anteriores; synchronize=false.
+
+Fallos de unitarias conservados: con las aplicaciones propias activas, la primera
+suite obtuvo 884/901 por timeouts Redis (17 fallos, dos suites). Al detener solo
+Núcleo, la misma suite pasó 901/901. Tras añadir dos pruebas de diagnóstico SQL,
+otra ejecución obtuvo 899/903 por cuatro timeouts Redis. Finalmente, con solo los
+recursos propios PostgreSQL/Redis activos, pasó 903/903 en 16,07 s; tras la navegación por páginas volvió a pasar en 13,16 s. No se cambiaron
+límites, reintentos ni aserciones. En el primer fallo se midió presión global de
+memoria `full avg10=28,03 %`; Redis no registró conexiones rechazadas. Las diferencias
+de carga se documentan sin atribuir por ellas una causa a cada timeout.
+
+Primera ejecución conjunta ampliada: **3/6**, evidencia privada
+`.evidencia/cu013-referencia-2026-11-07T19-35-54-386Z/`. Pasaron API CU-013 (incluido
+reinicio real) y ambos CU-015. Los dos CU-012 recibieron HTTP 500 con `Query read
+timeout` en consultas de productos/establecimientos/operaciones; no fueron 503 DNS.
+El observador midió ida/vuelta SQL máxima 1963 ms y una espera de bloqueo de 269 ms,
+sin evidencia suficiente para afirmar agotamiento del pool o consulta lenta.
+La UI CU-013 falló por sincronización del test: recargó todavía en Menú antes de
+completar la navegación. Se añadió la aserción de URL antes de recargar, conservando
+las comprobaciones de QR y los plazos. Se añadió también recuperación mediante
+un nuevo contexto y un nuevo inicio de sesión del cliente.
+
+Para medir la recurrencia SQL, el filtro de Núcleo registra `FALLO_SQL` con los
+contadores reales de sus siete pools, histograma del bucle Node y memoria al
+manejar un QueryFailedError HTTP. No agrega SQL, no reintenta ni cambia el 500.
+No registra parámetros ni sentencias en ese registro; los logs TypeORM y trazas
+siguen privados. La instantánea del pool se toma al capturar el error y el
+histograma cubre desde el arranque/fallo anterior: no demuestra por sí solo la
+causa de una petición. Las muestras periódicas también pueden omitir picos.
+
+La segunda conjunta obtuvo **4/6**, evidencia privada
+`.evidencia/cu013-referencia-2026-11-07T19-54-14-999Z/`. Pasaron CU-012 API,
+CU-013 visual (31,5 s, incluida sesión nueva) y ambos CU-015. La API CU-013 falló
+por el fixture que reutilizaba `codigo_qr='fixture-sin-pago'`, incompatible con
+la restricción única tras repetir el ensayo sobre datos conservados. Se corrigió
+añadiendo el UUID del pedido; no se borran datos ni restricciones.
+
+La UI CU-012 terminó con el PATCH de reactivación pendiente durante 15 s y 499 al
+cerrar el contexto, sin error DNS que permita atribuirlo al 503 histórico. El test
+ahora exige además la respuesta 200 de activación y la fila activa antes de recargar
+el cliente; conserva todas las aserciones y plazos. Hubo también un timeout SQL
+HTTP al cargar Menú a las 19:55:33 UTC: los siete pools registraron cero solicitudes
+esperando y Alimentos tenía dos conexiones libres de dos abiertas (máximo 10).
+El bucle Node registró máximo 18.236,83 ms desde el arranque. Las 34 muestras SQL
+tuvieron RTT máximo 2572,23 ms, sin espera de bloqueo capturada. Memoria global
+de VM `full avg10` entre 8,87 % y 50,45 %. Es evidencia de pausas del proceso y
+presión observada; no basta para demostrar su origen ni descartar picos del pool.
+El 503 DNS confirmado y el 499 histórico de Eventos conservan causas separadas.
+
+Imágenes del diagnóstico verificadas: Núcleo `bc7c2b4` (`61fb5b987b0b`), ambos portales
+`9dd3224` y gateway conservado `09b0199`. SHA-256 del JavaScript ejecutado de
+preparación, recepción, ajustes, pagos y diagnóstico coincide con el dist local.
+La mejora nativa de navegación está en `6a4b289`; la navegación por páginas
+posterior está en `c196e1d` y se recompila en los tres componentes. No se resembró
+ningún recurso.
+
+La tercera conjunta obtuvo **4/6**, evidencia privada
+`.evidencia/cu013-referencia-2026-11-07T19-59-20-430Z/`: pasaron ambas API y ambos
+CU-015. CU-012 visual quedó esperando un ajuste, con POST sin respuesta en 15 s
+antes de cerrar el contexto. CU-013 visual seleccionó el establecimiento todavía
+en Menú, antes de finalizar la ruta a Preparación: la traza muestra las solicitudes
+al menú nuevo y luego los sondeos al establecimiento inicial en la pantalla nueva.
+Se añadió una aserción de URL al navegar a Preparación; no era evidencia de caída
+SQL de esa bandeja. Por separado, a las 20:00:01 UTC hubo Query read timeout con
+cero solicitudes esperando en los siete pools y pausa máxima Node de 13.371,44 ms.
+No se atribuye el 499 a DNS sin resolución fallida registrada.
+
+La revisión añadió páginas de 100 en las listas de Personal/Cliente, con botones
+en ambos portales y Flutter. Un límite fijo sin navegación podía ocultar pedidos
+históricos. El sondeo sigue acotado a la página activa; el detalle por ID se mantiene.
+Angular comprueba navegación y reinicio de página al cambiar establecimiento;
+Flutter comprueba avanzar/volver y el parámetro del contrato. El caso API real
+comprueba recuperar el pedido original tras 100 filas propias de lectura (fixtures,
+no nuevos cobros ni consumos) y rechaza páginas inválidas. No se resembró inventario.
+
+Las imágenes nuevas de Núcleo (`7364a6f14b4f`), portal administrativo
+(`31201b4c7210`) y cliente (`7e9ea421bfcd`) corresponden a `c196e1d`.
+Los seis módulos JS revisados (controlador/recepción/preparación, ajustes, pagos y
+diagnóstico) coinciden por SHA-256 con el dist local. Gateway conserva `09b0199`.
+El arranque selectivo comprobó 28 migraciones sin reaplicar ninguna; demo COMPLETA.
+Una guarda de arranque rechazó inicialmente 15459 ocupado: no se omitió, no se
+actuó sobre otro proyecto; tras inspeccionar sin listener ni contenedor activo en
+ese puerto, el mismo guion pasó sus comprobaciones y construyó en serie.
+
+La cuarta conjunta sobre las imágenes de `c196e1d` obtuvo **4/6**, evidencia
+`.evidencia/cu013-referencia-2026-11-07T20-13-20-876Z/`. Pasaron ambos CU-012 y
+ambos CU-015. La UI CU-013 recorrió compra, pago y las cinco operaciones de
+preparación con 200; falló después al volver a iniciar sesión en el contexto
+nuevo: POST `/sesiones` pendiente durante 15 s, sin respuesta antes del cierre.
+No se presenta esa prueba como aprobada ni se atribuye la falta de respuesta a DNS.
+La API llegó a su fixture nuevo de 100 filas y falló por incluir `evento_id` en
+Pedidos (pertenece al establecimiento). Se corrigió el fixture en `9cd1bff`, tras
+consultar las columnas reales, sin cambiar tablas ni borrar datos.
+
+La comparación con Boletería y Trabajador propios pausados también obtuvo
+**4/6**, evidencia `.evidencia/cu013-referencia-2026-11-07T20-17-33-613Z/`.
+Pasaron ambos CU-012 y ambos CU-015. La UI CU-013 inició preparación, pero el
+sondeo del listado propio recibió **503 DNS confirmado**, `nucleo could not be
+resolved (110: Operation timed out)` a las 20:18:45 UTC. La pantalla pausó
+correctamente el sondeo; el test esperaba un detalle que ya no se consultaría.
+Se amplió la detección del test para fallar de inmediato ante un error HTTP de
+ese listado previo, sin reenviar solicitudes ni reducir aserciones.
+
+La API recuperó el histórico tras las 100 filas, pero detectó `pagina=texto` con
+200 en vez de 400. La conversión primitiva de ValidationPipe producía NaN y
+DefaultValuePipe lo cambiaba a cero. `01d9d9e` retira ese valor por defecto del
+pipe: solo ausencia es opcional, un texto inválido se rechaza; el servicio conserva
+cero como página inicial. Tipos/build y 16/16 afectados pasaron después del cambio.
+Los tres parámetros inválidos siguen exigidos en la integración.
+
+Se restauraron Boletería y Trabajador saludables, sin reconstruir ni sembrar.
+Los errores de resolución de Boletería del dashboard durante esa pausa eran
+esperados y se distinguen del fallo de resolución de **Núcleo**, que seguía activo.
+La comparación no demuestra la causa ni resuelve SQL/DNS/499. No se actúa sobre
+recursos ajenos ni referencias A/B. Los resultados del ajuste posterior se
+registran debajo.
+
+La revisión de límites añadió `minutos:null`: la prueba nueva reprodujo que
+IsOptional lo omitía (16 aprobadas, una fallida) y podía convertirse en cero
+minutos al calcular la estimación. Se corrige el DTO para omitir solo undefined
+y el servicio rechaza null/undefined cuando la acción exige minutos. El mismo
+caso se exige como 400 en la integración real, conservando 1–240 como intervalo.
+La imagen de Núcleo posterior es `b255758` (`3ecf3257c1d9`): controlador, DTO y
+servicio corregidos coinciden por SHA-256 con el dist local. Los portales conservan
+`c196e1d`. La suite completa posterior pasó **904/904**, 63 suites, en 15,6 s, con tipos,
+build y tipos Playwright aprobados. La evidencia previa al arreglo queda en
+`cu013-validaciones/` junto a las suites.
+
+El conjunto más reciente sobre Núcleo `b255758`, ambos portales `c196e1d` y
+**todos los procesos propios activos** terminó **5/6**; evidencia privada
+`.evidencia/cu013-referencia-2026-11-07T20-28-26-099Z/`. Pasaron ambos CU-012,
+CU-013 visual completo (35,2 s, cinco cambios, recarga y nuevo inicio de sesión
+con el mismo QR/avisos) y ambos CU-015. La API CU-013 falló en el primer login,
+antes de preparar: POST `/sesiones` 503. Núcleo registró a las 20:29:56 UTC
+`PostgreSQL no disponible: canceling statement due to statement timeout`.
+**Ese 503 es SQL; no hay fallo DNS registrado en esa ejecución.** No se declara
+el conjunto verde. Las 29 muestras PostgreSQL tuvieron RTT mediano 11,84 ms y
+máximo 2082,50 ms. Dos muestras de Alimentos con Lock/transactionid, de 896,91 y
+712,12 ms, fueron anteriores al fallo de login; no prueban su causa. El plan del
+sondeo tuvo ejecución máxima 247,886 ms y la presión de memoria de VM
+`full avg10` osciló entre 5,25 % y 44,32 %. La capa Disponibilidad convierte el
+fallo SQL del login a 503 antes del filtro QueryFailedError: en ese fallo no hay
+instantánea del pool Node, y los datos de servidor no la sustituyen.
+
+La API CU-013 posterior, **individual**, pasó **1/1** en 19,2 s sobre la misma
+imagen final; evidencia privada
+`.evidencia/cu013-api-cierre-2026-11-07T20-31-42-073146+00-00/`.
+Comprueba páginas inválidas (incluido texto), minutos null, los 100 registros de
+lectura, pago repetido preparando/listo con mismo libro/QR/stock, concurrencia,
+historial/avisos sin duplicados, alcance y revocación, negativos financieros,
+snapshots completos y estado/avisos/QR idénticos tras reiniciar Núcleo. No se
+equipara esta prueba al conjunto: **el último conjunto permanece 5/6**.
+
+Se cierra la preparación implementada con esa limitación de disponibilidad
+conservada. SQL reproducido, DNS confirmado y 499 histórico sin causa determinada
+siguen abiertos por separado; ni una repetición aprobada ni pausar procesos
+propios acreditan que estén resueltos. No se elevaron timeouts, no se añadieron
+reintentos generales ni se actuó sobre contenedores ajenos/A/B. El entorno propio
+queda activo y saludable; datos, claves y volúmenes conservados, evidencias privadas.
+
 No se declara CU-013 completo: entrega/validación única siguen en CU-014;
 cancelación CU-011F y F12 no se implementan.
+
+Commits de la etapa: `252bb8c` (referencia previa), `9dd3224` (preparación),
+`6a4b289` (navegación nativa), `bc7c2b4` (diagnóstico SQL), `c196e1d` (históricos
+por páginas), `9cd1bff` (fixture de lectura), `01d9d9e` (validación de página y
+fallo del sondeo) y `b255758` (rechazo de minutos null). El cierre documental
+posterior reúne esta evidencia. Destino exclusivo: `origin/feature/sebastian`;
+sin integración a develop/main ni cambios al reparto CU-028/030–032.
 
 ## CU-013: hito 1, referencia previa — 7 de noviembre de 2026
 

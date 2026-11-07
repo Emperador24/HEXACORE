@@ -1,4 +1,73 @@
-# Demostración integrada de Alimentos: CU-012 y CU-015
+# Demostración integrada de Alimentos: CU-012, CU-013 parcial y CU-015
+
+## Preparación CU-013 en el entorno existente
+
+Se reutiliza `hexacore-cu015-sebastian`, sin semillas ni reconstrucción de inventario.
+Con Node 22.22.3 y `CU015_CLAVE_DEMO` definido localmente, desde la raíz:
+
+```bash
+./App/infra/cu015.sh iniciar --compilar nucleo portal-web-admin portal-web-cliente
+npm --prefix App/e2e run tipos
+npm --prefix App/e2e run test:cu013
+npm --prefix App/e2e run test:cu013:visible
+node App/backend/test/cu013/referencia.cjs --todos
+```
+
+El último comando ejecuta **los seis casos juntos**, con un trabajador, cero
+reintentos, 120 s por caso y 15 s para aserciones. Sin `--todos`, el observador
+ejecuta solo los cuatro CU-012/015 originales. No ejecutar suites pesadas en paralelo.
+`test:referencia` conserva ese conjunto original; `test:alimentos` incluye ahora CU-013.
+
+Recorrido manual: Cliente compra y paga en el portal cliente, abre «Ver seguimiento
+y avisos» o «Mis pedidos». En otra sesión, Personal abre «Preparación de pedidos»,
+elige su establecimiento y el pedido recibido; inicia con minutos estimados,
+registra retraso con motivo, reporta/resuelve una incidencia y marca listo.
+El cliente recibe avisos dentro de la página y recupera el mismo QR al recargar.
+Cerrar el establecimiento no impide gestionar sus pedidos. En Flutter: «Pedidos»
+para Personal y «Mis pedidos» para Cliente; abrir un pedido muestra detalle, QR y
+avisos antes de la lista. Las listas muestran páginas de 100 con navegación a
+pedidos anteriores y recientes; el detalle propio también se recupera por su
+identificador en la ruta web. El detalle proyecta los últimos 100 cambios/avisos;
+el historial completo permanece en SQL.
+
+Los dos casos CU-013 usan contextos independientes, gateway/portales reales y
+PostgreSQL del entorno propio. Comprueban compra/pago, avance visible, cinco avisos
+sin duplicados, estimación, faltante explícito, cierre del establecimiento,
+revocación, concurrencia, replay del pago durante preparación y listo, snapshots
+íntegros, navegación a un histórico tras 100 filas y recuperación tras reiniciar
+Núcleo. Los estados negativos se preparan como fixtures SQL propios:
+**no implementan una política de cancelación**.
+
+El canal de avisos es web/app, durable en SQL; no son correos ni push. Sondeo de
+15 s solo en pantalla activa, sin solapar y pausado ante errores. La preparación
+no cambia estado financiero, QR, importes ni inventario. Alcance y alternativos:
+[DECISION-CU013](../backend/modulos/alimentos/recepcion/DECISION-CU013.md).
+Entrega/validación única siguen en CU-014; cancelación CU-011F y F12, pendientes.
+
+El diagnóstico de fallos SQL registra en el log propio de Núcleo `FALLO_SQL` con
+contadores reales del pool (`total`, `libres`, `esperando`, `maximo`), demoras del
+bucle de Node y memoria. No añade consultas, reintentos ni cambios de HTTP. El
+histograma cubre desde el arranque o fallo anterior, no una duración exclusiva de
+la petición; los contadores son una instantánea al manejar el fallo. El observador
+conserva logs y muestras privadas en `.evidencia/cu013-referencia-FECHA/`.
+Resultados, fallos conservados y límites: [plan](../../Documentation/Work/PLAN-CIERRE-SEBASTIAN.md).
+
+Resultado final del 7/11/2026: backend **904/904**, Angular **5/5 + 19/19**,
+Flutter analyze sin incidencias y **59/59**, CU-011 original **9/9**, migraciones
+CU-013 **2/2** y regresiones CU-012/CU-015 **2/2 + 2/2**. El último conjunto real
+terminó **5/6**: pasó CU-013 visual completo y ambos CU-012/CU-015; falló el login
+de la API CU-013 con 503 por statement timeout SQL (sin error DNS registrado en
+esa ejecución). La API se comprobó después individualmente **1/1**:
+
+```bash
+npm --prefix App/e2e run test:cu013 -- --grep 'CU-013 API:'
+```
+
+Ese resultado individual no convierte el conjunto en 6/6. SQL, el 503 DNS
+confirmado en otra ejecución y el 499 histórico siguen abiertos por separado.
+No se aumentaron plazos/reintentos ni se redujeron aserciones. La comparación
+con Boletería/Trabajador propios pausados tampoco resolvió el DNS; ambos quedaron
+restaurados y saludables. Las evidencias permanecen en `.evidencia/`, fuera de Git.
 
 ## Referencia previa a preparación CU-013
 
@@ -14,8 +83,9 @@ timeouts. Un observador de solo lectura toma muestras acotadas de actividad y
 bloqueos PostgreSQL, plan/duración del sondeo de ajustes, presión de la VM,
 recursos Docker y memoria del host. Finaliza al terminar Playwright y conserva
 informe, muestras y logs propios en `.evidencia/cu013-referencia-FECHA/`.
-No mide el waitingCount interno del pool de Núcleo ni certifica ausencia de picos
-entre muestras. No inicia, detiene ni modifica otros proyectos.
+Las muestras PostgreSQL no miden el waitingCount interno del pool de Núcleo ni
+certifican ausencia de picos entre muestras. El filtro descrito arriba lo registra
+al manejar un fallo SQL HTTP. El observador no inicia, detiene ni modifica proyectos.
 
 La referencia del 7/11/2026 **pasó como conjunto 4/4**; recuperación CU-012 volvió
 a recuperar cinco intenciones tras reinicio. SQL, DNS y 499 anteriores conservan
@@ -44,12 +114,12 @@ npm run tipos
 npm run test:cu012
 npm run test:cu012:visible
 npm run test:cu015
-npm run test:alimentos       # ambos CU, un trabajador y cero reintentos
+npm run test:referencia      # CU-012/015, un trabajador y cero reintentos
 npm run informe
 ```
 
 Recorrido real: Organizador → Establecimientos → Personal → cuenta existente →
-buscar por nombre/correo y asignar. Personal entra al portal y accede solo a `/admin/menu`; cuentas, roles,
+buscar por nombre/correo y asignar. Personal entra al portal y accede a `/admin/menu` y `/admin/preparacion`; cuentas, roles,
 eventos y las otras secciones se rechazan también por URL directa. Consulta sus
 establecimientos vinculados, incluidos cerrados, crea el primer producto con
 existencias y restricciones, edita y activa/desactiva. Cliente ve el catálogo,
@@ -77,6 +147,7 @@ Desde `App/backend`, en serie:
 ```bash
 npm run lint
 npm run build
+npm run test:cu013:migracion
 npm run test:cu012:migracion
 npm run test:cu012:recuperacion
 REDIS_HOST=127.0.0.1 REDIS_PUERTO=16404 REDIS_INVENTARIO_PRUEBAS_URL=redis://127.0.0.1:16404 npm test -- --runInBand
@@ -88,6 +159,11 @@ anteriores, con producto, reserva ACTIVA, pedido, detalle y establecimiento prop
 Compara todos los campos previos, nuevos defaults, repetición sin DDL y las 18
 procedencias. Solo crea bases auxiliares en el PostgreSQL existente de CU-015;
 no crea otra copia del sistema ni usa las referencias A/B.
+CU-013 comprueba también vacía/actualización desde 27 hasta 28, preservando
+reservas activas/consumidas, pedidos pendientes/confirmados, pagos y detalles;
+el confirmado histórico se proyecta recibido y conserva el QR. Para las unitarias
+en el equipo de 8 GB se pausaron las aplicaciones propias con las guardas del
+perfil, manteniendo PostgreSQL/Redis activos; luego se restauró el entorno.
 
 Recuperación detiene **solo el Núcleo propio**, conserva Redis y sus datos y
 prueba: respuesta Lua perdida después de aplicar, AOF local no confirmado, confirmación SQL perdida,
@@ -140,7 +216,7 @@ conocido al crear el producto adicional: gateway 503 y `nucleo could not be reso
 (110: Operation timed out)`, 7/11 05:37:48 America/Bogota. Evidencia privada en
 `.evidencia/cu012-dns-503/`. La interfaz conservó su intención. El test ahora
 comprueba explícitamente la respuesta del alta adicional antes de seguir editando.
-Para ejecutar los cuatro recorridos con navegador visible: `npm run test:alimentos -- --headed`.
+Para ejecutar los cuatro recorridos originales con navegador visible: `npm run test:referencia -- --headed`.
 Resultados CU-012 ejecutados: backend **889/889 (61 suites)**, Angular **16/16 y
 1/1**, Flutter analyze sin incidencias y **53/53**, migración CU-012 **2/2** más
 regresión migración CU-015 **2/2**, recuperación de cinco intenciones tras reinicio,
@@ -264,7 +340,7 @@ cd App/backend
 npm run build
 npm run test:cu015:regresion
 cd ../..
-./App/infra/cu015.sh iniciar
+./App/infra/cu015.sh iniciar --compilar nucleo
 ```
 
 `hexacore-cu015-regresion` usa su propia red, volúmenes y PostgreSQL/Redis/broker;

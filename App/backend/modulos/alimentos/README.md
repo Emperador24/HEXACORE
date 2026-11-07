@@ -3,14 +3,16 @@
 Fuente única trasladada desde `App/services/alimentos`. Conserva catálogo,
 menú, checkout, inventario/reservas, adaptador local de Pagos y confirmación
 con QR/evento. CU-015 incorpora establecimientos y CU-012 productos, menú y
-ajustes durables. Preparación/entrega y F12 siguen pendientes.
+ajustes durables. CU-013 incorpora preparación hasta listo, tiempos, incidencias
+y avisos web/app; entrega única CU-014 y cancelación CU-011F/F12 siguen pendientes.
 
 Instalar, compilar, migrar y arrancar desde [el workspace](../../README.md).
 Usa la conexión TypeORM `alimentos`, esquema `alimentos` y POSTGRES_BD común.
 Se conservan las dos migraciones históricas y se añaden
-`GestionEstablecimientosCu0151794300000000` y `MenuInventarioCu0121794400000000`
+`GestionEstablecimientosCu0151794300000000`, `MenuInventarioCu0121794400000000`
+y `PreparacionCu0131794500000000`
 a la preparación central. POSTGRES_BD_PEDIDOS se rechaza. La preparación se
-ejecuta una vez para los once esquemas (27 migraciones; 18 procedencias intactas).
+ejecuta una vez para los once esquemas (28 migraciones; 18 procedencias intactas).
 El cliente Redis de inventario conserva sus opciones específicas.
 Ver [inventario](inventario/README.md) y [pruebas aisladas](../../test/README.md).
 
@@ -135,7 +137,7 @@ financiero del cliente. El replay de pago mantiene cobro, descuento y QR.
 
 Personal activo/vinculado, incluso con establecimiento cerrado:
 
-- `GET /pedidos/establecimientos/:establecimientoId/pedidos`: últimos 100 confirmados/cancelados,
+- `GET /pedidos/establecimientos/:establecimientoId/pedidos?pagina=0`: páginas de 100 confirmados/cancelados,
   sin cliente ni QR. Incluye avance, versión, pago acreditado y cantidades históricas.
 - `GET .../pedidos/:pedidoId`: detalle operativo, incidencias e historial (últimos 100 cambios).
 - `POST .../pedidos/:pedidoId/preparacion`, UUID `Idempotency-Key`, cuerpo
@@ -156,7 +158,7 @@ importes, cancela o reembolsa. Un cancelado/expirado/no pagado no avanza.
 
 Cliente autenticado:
 
-- `GET /pedidos/mis-pedidos`: últimos 100 de su cuenta.
+- `GET /pedidos/mis-pedidos?pagina=0`: páginas de 100 de su cuenta, desde cero.
 - `GET /pedidos/mis-pedidos/:pedidoId`: detalle, misma estimación/QR y avisos
   persistidos. El QR solo se proyecta a su dueño cuando el pedido está confirmado
   y su pago acreditado; otra cuenta recibe 404. No incluye actor en los avisos.
