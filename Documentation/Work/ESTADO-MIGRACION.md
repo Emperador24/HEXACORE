@@ -1,8 +1,13 @@
 # Estado de migración de HEXACORE
 
+**Entrega posterior CU-012 (7/11/2026):** menú/productos y ajustes durables PostgreSQL/Redis,
+con autorización por establecimiento, web/móvil y recuperación de intenciones.
+El inventario suma 27 migraciones y conserva 18 procedencias; se reutiliza el
+entorno CU-015. [Decisiones, resultados y límites](PLAN-CIERRE-SEBASTIAN.md).
+
 **Entrega posterior CU-015 (7/11/2026):** gestión de establecimientos de Alimentos,
 interfaz administrativa, horario/zona, estado, validación contra Eventos y acceso
-local del Personal. El inventario actual suma once esquemas y 26 migraciones;
+local del Personal. El inventario de esa entrega sumaba once esquemas y 26 migraciones;
 las 18 procedencias originales no cambian. [Plan, evidencia y límites](PLAN-CIERRE-SEBASTIAN.md)
 y [entorno y demostración Playwright](../../App/e2e/README.md). Las cifras de las
 secciones históricas siguientes corresponden a sus entregas, no se reescriben.

@@ -17,7 +17,7 @@ requisitos de negocio y RNF no cambian. El corte del entorno habitual sigue pend
 | Samuel, CU-010 | modulos/operacion/evacuacion, Núcleo (esquema `operacion`) | Evacuación completa: plan del recinto, propuesta, activación, 010A–D, avisos por cola de prioridad con reintento y reporte. Portal admin y app. Sin sensores ni canales push/SMS reales. |
 | Samuel, CU-024–025 | modulos/parqueaderos, Núcleo (esquema `parqueaderos`) | Cobro y ocupación completos, con ingreso mínimo. **CU-021–023 (Daniel)** deben llamar a `POST …/ingresos` y `…/salidas` con lo que lean del QR. |
 | Samuel, CU-026 | modulos/eventos-recintos, Núcleo (esquema `eventos_recintos`) | Gestión de eventos completa y portal. Publica `eventos.gestion` ([contrato](../../App/backend/modulos/eventos-recintos/CONTRATO-EVENTOS.md)); **Entradas debe consumirlo** para cartelera y devolución masiva (CU-003). |
-| Sebastián Sánchez, CU-011–015 | modulos/alimentos, Núcleo | Checkout/reservas/pago/confirmación/QR existentes. **CU-015 implementado**: gestión administrativa, contacto, horario/zona, estado y validación contra Eventos. [Cierre, pruebas y siguiente CU-012](PLAN-CIERRE-SEBASTIAN.md). Menú/inventario completo, preparación/entrega y F12 siguen pendientes. |
+| Sebastián Sánchez, CU-011–015 | modulos/alimentos, Núcleo | Checkout/reservas/pago/confirmación/QR existentes. **CU-015 implementado**: gestión administrativa, contacto, horario/zona, estado y validación contra Eventos. [Cierre, pruebas y siguiente CU-013](PLAN-CIERRE-SEBASTIAN.md). **CU-012 implementado**: productos, restricciones, existencias y ajustes durables SQL/Redis, interfaces web/móvil y vínculo de Personal. Preparación/entrega y F12 siguen pendientes. |
 | Sebastián (reparto formal); implementación acordada de Samuel, CU-027–028 | modulos/identidad, Núcleo | Cuentas, sesiones, renovación/revocación, roles/guardas y administración existentes; permisos dinámicos completos pendientes de Samuel. Acuerdo: `5950dea5:App/services/administracion/README.md`, líneas 16–17. No se reasigna su implementación por esta entrega. |
 | Sebastián, CU-029 | modulos/eventos-recintos, Núcleo | **Implementado por Samuel** (3 nov): recintos, zonas, plano y avisos con eventos activos; reutilizar y revisar; no confundir con zonas de asignación laboral ya existentes. |
 | Diego Coronado, CU-016–018 | modulos/personal-logistica, Núcleo | Planificación completa pendiente; base de asignación/turnos/asistencia trasladada. Coordinar solapamiento con Samuel. F14 conserva listado global. |
@@ -60,8 +60,8 @@ Editar destinos antes de escribir. Una sola POSTGRES_BD=hexacore y coordenadas
 POSTGRES_HOST/PUERTO/USUARIO/CONTRASENA comunes. Las variables antiguas POSTGRES_BASE,
 POSTGRES_BD_* por módulo y DB_* se rechazan. Cada conexión nombrada usa un esquema.
 La base debe existir; en instalación Docker **nueva** initdb la crea.
-El inventario vigente tiene once esquemas y 26 migraciones: las 18 fuentes
-históricas permanecen congeladas; las ocho posteriores se registran en
+El inventario vigente tiene once esquemas y 27 migraciones: las 18 fuentes
+históricas permanecen congeladas; las nueve posteriores se registran en
 `compartido/persistencia/historia.ts`.
 
 ```bash
@@ -77,7 +77,7 @@ npm run start:trabajador               # terminal 3, solo broker/correo
 No poner migraciones en bootstraps ni en cada réplica. synchronize/migrationsRun=false.
 Las 18 fuentes históricas permanecen congeladas. Una migración futura debe registrarse
 en la preparación coordinada y ampliar sus comprobaciones, **sin editar ni renombrar
-los historiales originales**; actualmente se validan 26 migraciones y las 18 procedencias originales.
+los historiales originales**; actualmente se validan 27 migraciones y las 18 procedencias originales.
 
 Solo Núcleo recibe privada JWT/HMAC. Boletería y gateway reciben pública y usan
 revocación. Trabajador no necesita claves, SQL, Redis ni Finanzas. Pagos se importa

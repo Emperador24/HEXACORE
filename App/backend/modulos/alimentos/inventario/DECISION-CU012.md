@@ -98,10 +98,12 @@ público. CU-015 incorpora consulta/asignación/revocación con cuentas existent
 Si Personal accede al portal web, solo se permiten los destinos del menú; cuentas,
 roles y las otras secciones administrativas permanecen fuera de su alcance.
 
-## Verificación pendiente
+## Verificación
 
-Probar instalación vacía/actualización conservando productos, reservas y pedidos;
-primer producto sin comandos manuales; reservas activas/consumo/liberación pendiente;
-ajustes y compras/pagos/expiraciones concurrentes; reducción insegura; repetición,
-respuesta perdida y reinicio. Ampliar Playwright y Flutter, repetir CU-011/015 y
-registrar resultados realmente ejecutados en PLAN-CIERRE-SEBASTIAN.md.
+Se probaron instalación vacía/actualización conservando productos, reservas y pedidos;
+reservas activas, consumo y liberación pendientes; reducción insegura, repetición,
+respuesta perdida, reconexión entre Lua y WAITAOF y reinicio real de Núcleo.
+Flutter tiene análisis y pruebas nativas. Playwright demuestra el primer producto
+sin comandos manuales y las carreras con compra/pago/expiración, además de CU-015.
+Los resultados ejecutados, incidencias y límites se registran en
+[PLAN-CIERRE-SEBASTIAN](../../../../../Documentation/Work/PLAN-CIERRE-SEBASTIAN.md).

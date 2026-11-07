@@ -1,15 +1,164 @@
 # Cierre de Alimentos — Sebastián
 
-## Entrega en curso: CU-012
+## Entrega CU-012 — 7 de noviembre de 2026
 
-Inicio 7/11/2026 desde `6c9772e866da268ce91e919f2a9c8972d0091903`, rama
-`feature/sebastian` limpia y sincronizada antes de editar. Objetivo: productos,
-menú, ajustes durables PostgreSQL/Redis, autorización por vínculo, interfaces
-web/móvil y demostración integrada, conservando CU-011/015.
-Diseño previo a modificar inventario:
+Se partió de `6c9772e866da268ce91e919f2a9c8972d0091903`, rama
+`feature/sebastian` limpia y sincronizada. Se implementaron registro, consulta de
+activos/inactivos, edición de nombre/descripción/precio/restricciones, activación
+y ajustes de existencias. Precio decimal textual, duplicado normalizado por
+establecimiento, validaciones y snapshots de pedidos conservados.
+
+El diseño se escribió antes de modificar inventario:
 [DECISION-CU012](../../App/backend/modulos/alimentos/inventario/DECISION-CU012.md).
-Pruebas y resultados CU-012 pendientes de ejecución; las evidencias siguientes
-pertenecen a CU-015. No se completan CU-013/014 ni CU-028.
+Físico sigue siendo PostgreSQL; disponible es Redis y reservado físico es su
+diferencia coordinada. Ante intención pendiente o lectura no fiable las cantidades
+reservada/disponible son desconocidas. `cantidadInventario` conserva su significado
+físico para compatibilidad. Consumos ya descontados y liberaciones pendientes se
+tratan según el efecto realmente aplicado, sin contar únicamente reservas ACTIVA.
+
+Cada alta/ajuste registra una intención SQL durable con UUID, actor, producto,
+motivo, cantidades y resultado. Lua cambia un solo campo y guarda un resultado
+idempotente, exige confirmación local AOF antes del cierre SQL y permite recuperar
+la misma operación tras pérdida de respuesta o reinicio. La admisión de nuevos
+checkouts se bloquea mientras haya una intención pendiente; pagos de pedidos
+existentes conservan sus reglas y snapshots. No se afirma atomicidad SQL/Redis.
+El primer producto queda vendible desde el flujo normal; otro producto no reinicia
+las reservas ni los contadores existentes.
+
+Personal activo requiere vínculo vigente y producto del establecimiento. La lista
+privada incluye establecimientos cerrados. Web y Flutter permiten gestionar menú,
+cantidades, historial y reanudar la intención conservando su UUID sin guardar
+credenciales. El portal limita expresamente Personal a Menú, incluso por URL.
+CU-015 permite consultar, buscar, asignar y revocar cuentas Personal existentes.
+
+| Verificación ejecutada CU-012 | Resultado |
+|---|---|
+| Backend tipos y compilación | Aprobados |
+| Unitarias con Redis real del entorno propio | **889/889, 61 suites**, ninguna omitida |
+| Migración CU-012, vacía y actualización desde 26 con productos, reserva, pedido y detalle | **2/2**, 27 migraciones, 18 procedencias intactas y repetición sin DDL |
+| Regresión migración CU-015, vacía y actualización desde 25 | **2/2**, 27 migraciones y todos los campos previos conservados |
+| Fallos con PostgreSQL/Redis reales y reinicio de Núcleo | Aprobados: respuesta Redis perdida, AOF no confirmado, reconexión entre Lua y WAITAOF, confirmación SQL perdida, conexión Redis cerrada, liberación pendiente antes/después, consumo pendiente y SIGKILL; cinco intenciones recuperadas sin duplicar |
+| Regresión original CU-011 | **9/9**, mismas aserciones; recursos de regresión detenidos y volúmenes conservados |
+| Angular/Karma cliente y administrativo | **16/16** y **1/1**; administrativo repetido tras añadir búsqueda |
+| Flutter analyze y pruebas nativas | Sin incidencias; **53/53** con concurrencia 1 |
+| Verificador de infraestructura y fronteras | Aprobado |
+| Guardas del entorno | **11/11** |
+| Tipos Playwright | Aprobados |
+| Builds finales selectivos de Núcleo y dos portales | Aprobados, sin recompilar Boletería/Trabajador |
+| Playwright CU-012 automático | **2/2** en ejecución revisada; API repetida al cierre **1/1** (11,9 s), pago real y stock final correctos |
+| Playwright CU-015 automático | **2/2** en las ejecuciones conjuntas inicial y posterior al incidente 499 |
+| Playwright conjunto automático más reciente | **3/4**: falla CU-012 visual por 503 DNS confirmado; los otros tres pasan |
+| Playwright conjunto visible (`test:alimentos -- --headed`) | **2/4**: pasan CU-012 visual completo y API CU-015; fallan API CU-012 y UI CU-015 por indisponibilidad SQL documentada, sin declarar el conjunto verde |
+
+Las bases auxiliares conservadas son `cu012_0feeddcb2ea2_vacia/actualizacion` y
+`cu015_36f0a225bdfd_vacia/actualizacion`, dentro del PostgreSQL aislado existente.
+No se modificaron las 18 migraciones históricas ni se habilitó synchronize.
+Los ensayos de fallo usan servicios reales y fallos controlados de transporte;
+el consumo pendiente prepara una aprobación SQL como fixture para aislar ese punto.
+El pago financiero integrado se comprueba por gateway en CU-011 y Playwright.
+
+El primer recorrido visual encontró que una respuesta definitiva de duplicado
+retenía la intención y bloqueaba el formulario. Se corrigió en web y Flutter:
+400/409 definitivos permiten corregir; los fallos inciertos conservan UUID/petición.
+La repetición CU-012 pasó **2/2**. La evidencia del fallo queda privada en
+`App/e2e/.evidencia/cu012-fallo-inicial/`. No se eliminaron aserciones ni se
+ampliaron reintentos/timeouts. La incidencia DNS Docker de CU-015 sigue abierta;
+no se atribuyó a ella este defecto de interfaz.
+
+La revisión añadió una guarda de generación de conexión: WAITAOF sobre una
+sesión Redis nueva no confirma una escritura de la sesión anterior. La prueba
+cierra/reabre realmente la conexión entre Lua y WAITAOF y exige PENDIENTE.
+Una ejecución ampliada de recuperación se detuvo por `statement_timeout` de
+PostgreSQL (3 s), incluso en una consulta sin bloqueo explícito. Se conservaron
+log SQL y runner en `.evidencia/cu012-timeout-postgres/`. Al inspeccionar no había
+transacciones bloqueantes y las intenciones ya se habían recuperado. Se observó
+CPU alta en contenedores Redash ajenos y presión de memoria; son observaciones,
+no una causa probada. No se tocaron esos recursos ni se ampliaron plazos.
+La repetición completa pasó con los mismos límites y todas las aserciones.
+
+La primera ejecución conjunta dio **3/4**: CU-012 visual y los dos recorridos
+CU-015 pasaron; la prueba de dos ajustes esperaba 200/409 inmediatos, pero recibió
+dos 202. Se conservaron informe/traza en `.evidencia/cu012-concurrencia-pendiente/`.
+La inspección SQL/Redis confirmó una aplicada, otra rechazada y stock 5/5. La prueba
+se amplió para seguir una respuesta PENDIENTE por el mismo UUID, conservando la
+exigencia final de una aplicada/otra rechazada y añadiendo producto/delta y las
+cantidades 5/0/5. No reenvía POST, no crea otra clave, ni repite errores de HTTP o
+transporte; un 503 DNS falla. Usa el límite de sondeo existente, sin ampliarlo.
+En la segunda ejecución pasaron ambos CU-012 y la API CU-015; la interfaz CU-015
+agotó 120 s al seleccionar un evento después de fallar su carga. El gateway
+registró `GET /api/v1/eventos` 499 al cancelar el cliente, además de dos consultas
+del dashboard canceladas. No hay un 503 ni un error de resolución que permita
+atribuirlo al incidente DNS anterior. Informe, captura, traza y logs propios se
+conservan en `.evidencia/cu015-eventos-499/`; no se cambia la API de Eventos ni
+se elevan plazos. La causa de esta interrupción queda sin confirmar.
+La siguiente ejecución volvió a aprobar la API CU-012 y ambos CU-015, pero falló
+la interfaz CU-012. En este caso sí se confirmó DNS: el 7/11 a las 05:37:48
+America/Bogota, gateway devolvió 503 al alta adicional y registró
+`nucleo could not be resolved (110: Operation timed out)`. La interfaz retuvo UUID
+y petición; no inventó un ajuste confirmado. Se conservan traza/capturas y logs
+en `.evidencia/cu012-dns-503/`. Se añadió una aserción explícita de la respuesta
+al alta adicional, del estado aplicado y del producto distinto, antes de continuar
+editando; así un error de transporte falla en su origen y no esperando un control
+bloqueado. No se cambió DNS ni se declaró resuelto el incidente.
+
+La demostración visible ejecutó los cuatro casos, **2/4**: el flujo completo de
+menú CU-012 pasó con el alta adicional comprobada; la API CU-015 también. La API
+CU-012 recibió 500 al iniciar el pago: los logs muestran `Query read timeout`
+en `START TRANSACTION` de ajuste y en SELECT del intento de pago, antes de cobrar,
+sin evidencia de interbloqueo. La UI CU-015 falló al volver a consultar catálogo;
+Núcleo registró PostgreSQL no disponible y hubo timeout al renovar sesión.
+Se conserva todo en `.evidencia/cu012-visible-incidentes/`. No se atribuye ese
+500 al DNS ni se cambia F12 o se acepta 500 como resultado de negocio.
+Una comprobación específica posterior de la API CU-012, sin navegador y sin
+cambiar código/timeouts, pasó **1/1** con pago 200 y confirmado, ajuste concurrente,
+expiración y existencias 9/0/9. Comando: `npm run test:cu012 -- --grep 'API real'`.
+Estas repeticiones no certifican estabilidad: DNS y los timeouts SQL siguen abiertos.
+
+
+Se reutiliza `hexacore-cu015-sebastian`, sus claves, volúmenes y datos. Los builds
+se limitan a Núcleo y portales, Angular usa un trabajador y las tareas pesadas se
+ejecutan en serie. No se resembra, reconstruye Redis ni cambia ningún entorno
+habitual o referencia A/B. Comandos y demostración:
+[App/e2e/README](../../App/e2e/README.md).
+
+Límites: los ajustes requieren Redis >=7.2 con AOF activo; WAITAOF acredita disco
+local, no tolerancia a pérdida total de almacenamiento. Esa pérdida/corrupción
+requiere restauración del dueño, nunca una reconstrucción automática. La intención
+pendiente puede reducir disponibilidad de nuevos pedidos mientras se recupera.
+Flutter se verificó por análisis y tests, sin afirmar ejecución en dispositivo físico.
+El entorno terminó con todos sus servicios saludables y preparación `Exited (0)`;
+los recursos de regresión están detenidos. Ese estado puntual no resuelve las
+interrupciones DNS/SQL observadas ni certifica disponibilidad productiva.
+No se completan CU-013/014, CU-028, F12 ni políticas automáticas de cancelación/reembolso.
+
+**Siguiente encargo: preparación CU-013.** Partir de pedidos confirmados y del
+vínculo privado de Personal; completar estados/transiciones de preparación, tiempo
+estimado y avisos según la ficha vigente, conservando pagos y snapshots. Definir
+el tratamiento de pedidos cancelados con su dueño, sin anticipar entrega única
+CU-014. Repetir CU-011/012/015 y demostrar la recepción/preparación real.
+
+### Hitos CU-012 y publicación
+
+- `12f5044`: diseño previo y alcance de cantidades/estados/recuperación.
+- `3676655`: productos, contratos, migración, autorización y coordinación durable.
+- `64735e7`: interfaces web/Flutter, Personal CU-015 y demostración integrada.
+- `5277fba`: impedir que una reconexión confirme el offset de otra sesión Redis.
+- `a6e5910`: concurrencia con resolución de 202 por el mismo UUID y aserciones del alta adicional.
+
+Publicación exclusiva en `origin/feature/sebastian`; este cierre documental se
+publica en la misma rama. Sin integración a develop/main. Antes de publicar,
+la referencia remota seguía en `6c9772e866da268ce91e919f2a9c8972d0091903`.
+Las últimas imágenes de código corresponden a Núcleo `5277fba` y portales
+`64735e7`; los commits posteriores cambian pruebas y documentación.
+Núcleo conserva la marca `fuente.modificada=si` porque se estaba cerrando su
+nota DECISION-CU012 durante la compilación; el TypeScript demostrado coincide
+con `5277fba`. Los portales tienen `fuente.modificada=no`.
+No se publican claves, sesiones, informes o trazas privadas.
+
+## Antecedente: entrega CU-015
+
+Las secciones siguientes conservan la evidencia de la entrega anterior; sus
+conteos y commits corresponden a CU-015. El resultado vigente CU-012 está arriba.
 
 Revisión inicial: 7 de noviembre de 2026 (America/Bogota). Rama
 `feature/sebastian`, limpia en `a2e85d5517b8cee02a83df508dd9784fbff9de28`,
@@ -175,7 +324,7 @@ ni aserciones para obtener los resultados aprobados.
   `.estado-cu015`, tokens, contraseñas, sesiones, informes con cabeceras ni trazas.
   El respaldo externo de `publicador-pedidos.service.ts` no se tocó.
 
-**Siguiente encargo CU-012:** completar productos (nombre, descripción, precio,
+**Encargo posterior a aquella entrega (cumplido arriba como CU-012):** completar productos (nombre, descripción, precio,
 restricciones, estado) e inventario con su trazabilidad y coordinación con reservas
 activas Redis. Añadir la selección/asignación de cuentas Personal desde la interfaz
 usando el vínculo local ya probado. Mantener los pedidos/snapshots anteriores y
