@@ -12,9 +12,9 @@ import { QrPedidoComponent } from './qr-pedido.component';
   <a mat-button routerLink="/pedidos">Hacer un pedido</a><button mat-button (click)="actualizar()" [disabled]="cargando()">Actualizar seguimiento</button></header>
   @if(error()){<p role="alert">{{error()}}</p>}
   @if(pausado()){<p>Actualización automática pausada. Usa Actualizar seguimiento.</p>}
-  <div class="grilla"><section><h2>Tus pedidos</h2>
+  <div class="grilla"><section><h2>Tus pedidos</h2><p>Página {{pagina() + 1}}</p><button mat-button (click)="cambiarPagina(-1)" [disabled]="cargando() || pagina() === 0">Pedidos más recientes</button><button mat-button (click)="cambiarPagina(1)" [disabled]="cargando() || pedidos().length < 100">Pedidos anteriores</button>
   @for(p of pedidos(); track p.id){<article class="hxc-vidrio" [attr.data-pedido]="p.id"><h3>{{p.establecimiento}}</h3><p>{{p.total}} {{p.moneda}} · {{p.estado}}</p><p>{{etiqueta(p.preparacion.estado)}}</p><a mat-button [routerLink]="['/mis-pedidos',p.id]">Ver seguimiento</a></article>}
-  @empty{ @if(!cargando()){<p>Aún no tienes pedidos.</p>} }
+  @empty{ @if(!cargando()){<p>No hay pedidos en esta página.</p>} }
   </section>
   @if(detalle(); as p){<section class="hxc-vidrio detalle" aria-label="Seguimiento del pedido"><h2>{{p.establecimiento}}</h2><p data-avance>{{etiqueta(p.preparacion.estado)}}</p><p>{{p.estado}} · Total acordado {{p.total}} {{p.moneda}}</p>
   @if(p.preparacion.estimadoListoEn){<p>Estimado listo: <time data-estimacion>{{p.preparacion.estimadoListoEn | date:'short'}}</time></p>}
@@ -33,7 +33,7 @@ import { QrPedidoComponent } from './qr-pedido.component';
 export class MisPedidosComponent implements OnDestroy {
   private readonly api = inject(PedidosService); private readonly ruta = inject(ActivatedRoute);
   readonly pedidos = signal<SeguimientoPedido[]>([]); readonly detalle = signal<SeguimientoPedido | null>(null);
-  readonly cargando = signal(false); readonly error = signal(''); readonly pausado = signal(false);
+  readonly pagina = signal(0); readonly cargando = signal(false); readonly error = signal(''); readonly pausado = signal(false);
   private id: string | null = null; private destruido = false; private recargarDespues = false;
   private readonly timer: ReturnType<typeof setInterval>; private readonly suscripcion: Subscription;
   constructor() {
@@ -44,10 +44,14 @@ export class MisPedidosComponent implements OnDestroy {
   async actualizar() {
     if(this.cargando()) return; const id = this.id; this.cargando.set(true); this.error.set(''); this.pausado.set(false);
     try {
-      const pedidos = await this.api.misPedidos(); if(this.destruido) return; this.pedidos.set(pedidos);
+      const pedidos = await this.api.misPedidos(this.pagina()); if(this.destruido) return; this.pedidos.set(pedidos);
       if(id) { const p = await this.api.seguimiento(id); if(!this.destruido && id === this.id) this.detalle.set(p); }
     } catch(e) { this.error.set(e instanceof Error ? e.message : 'No pudimos consultar tus pedidos.'); this.pausado.set(true); }
     finally { this.cargando.set(false); if(this.recargarDespues && !this.destruido){this.recargarDespues=false;void this.actualizar();} }
+  }
+  async cambiarPagina(delta: number) {
+    if(this.cargando() || this.pagina() + delta < 0) return;
+    this.pagina.update(p => p + delta); this.pedidos.set([]); await this.actualizar();
   }
   etiqueta(estado: string) { return ({RECIBIDO:'Recibido por el establecimiento',EN_PREPARACION:'En preparación',LISTO_PARA_ENTREGAR:'Listo para entregar'} as Record<string,string>)[estado] ?? estado; }
 }

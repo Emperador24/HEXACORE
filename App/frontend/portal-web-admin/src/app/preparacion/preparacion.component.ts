@@ -16,7 +16,7 @@ export class PreparacionComponent implements OnDestroy {
   readonly pedidos = signal<PedidoRecibido[]>([]); readonly seleccionado = signal<PedidoRecibido | null>(null);
   readonly ocupado = signal(false); readonly error = signal(''); readonly aviso = signal('');
   readonly pendiente = signal<IntencionPreparacion | null>(null); readonly pausa = signal(false);
-  local = ''; accion?: DatosPreparacion['accion']; minutos = 10; motivo = ''; incidenciaId?: string;
+  local = ''; pagina = 0; accion?: DatosPreparacion['accion']; minutos = 10; motivo = ''; incidenciaId?: string;
   private versionFormulario = 0; private pedidoFormulario = ''; private destruido = false;
   private readonly temporizador: ReturnType<typeof setInterval>;
   private get claveLocal() { return `hexacore.cu013.intencion.${this.auth.usuarioActual()?.id}`; }
@@ -38,7 +38,7 @@ export class PreparacionComponent implements OnDestroy {
   }
   private async leer() {
     if (!this.local || this.destruido) return;
-    const lista = await this.api.listar(this.local); if (this.destruido) return; this.pedidos.set(lista);
+    const lista = await this.api.listar(this.local, this.pagina); if (this.destruido) return; this.pedidos.set(lista);
     const id = this.seleccionado()?.id ?? this.pendiente()?.pedido;
     if (id) { const detalle = await this.api.detalle(this.local, id); if (!this.destruido) this.seleccionado.set(detalle); }
   }
@@ -46,7 +46,11 @@ export class PreparacionComponent implements OnDestroy {
     if (this.ocupado()) return; this.ocupado.set(true); this.error.set(''); this.pausa.set(false);
     try { await this.leer(); } catch(e) { this.fallo(e); } finally { this.ocupado.set(false); }
   }
-  async cambiarLocal() { this.seleccionado.set(null); this.accion = undefined; await this.actualizar(); }
+  async cambiarLocal() { this.pagina = 0; this.pedidos.set([]); this.seleccionado.set(null); this.accion = undefined; await this.actualizar(); }
+  async cambiarPagina(delta: number) {
+    if(this.ocupado() || this.pendiente() || this.pagina + delta < 0) return;
+    this.pagina += delta; this.pedidos.set([]); this.seleccionado.set(null); this.accion = undefined; await this.actualizar();
+  }
   async seleccionar(p: PedidoRecibido) {
     if (this.ocupado() || this.pendiente()) return; this.accion = undefined; this.ocupado.set(true); this.error.set('');
     try { this.seleccionado.set(await this.api.detalle(this.local, p.id)); } catch(e) { this.fallo(e); } finally { this.ocupado.set(false); }

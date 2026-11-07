@@ -39,6 +39,7 @@ test('CU-013 por interfaces: compra, preparación, retraso, incidencia, listo y 
  try {
   await loginUI(operador,adminURL,'restaurante@hexacore.com');
   await operador.getByRole('navigation').getByRole('link',{name:'Preparación de pedidos',exact:true}).click();
+  await expect(operador).toHaveURL(`${adminURL}/admin/preparacion`);
   await operador.getByLabel('Establecimiento vinculado',{exact:true}).selectOption(e.local.id);
   const fila=operador.locator(`[data-pedido="${pedido.id}"]`);await fila.getByRole('button',{name:'Gestionar pedido',exact:true}).click();
   const detalle=operador.getByRole('region',{name:'Detalle de preparación'});
@@ -75,6 +76,14 @@ test('CU-013 por interfaces: compra, preparación, retraso, incidencia, listo y 
   respuesta=await cambio;expect(respuesta.status()).toBe(200);expect((await respuesta.json()).preparacion.estado).toBe('LISTO_PARA_ENTREGAR');
   await page.getByRole('button',{name:'Actualizar seguimiento',exact:true}).click();await expect(page.locator('[data-avance]')).toHaveText('Listo para entregar');
   await page.reload();await expect(page.locator('[data-avance]')).toHaveText('Listo para entregar');await expect(page.getByAltText('Código QR del pedido confirmado')).toHaveAttribute('src',qrImagen!);
+  const nuevaSesion=await browser.newContext();
+  try {
+   const regreso=await nuevaSesion.newPage();await loginUI(regreso,clienteURL,'cliente@hexacore.com');
+   await regreso.goto(`${clienteURL}/mis-pedidos/${pedido.id}`);
+   await expect(regreso.locator('[data-avance]')).toHaveText('Listo para entregar');
+   await expect(regreso.getByAltText('Código QR del pedido confirmado')).toHaveAttribute('src',qrImagen!);
+   await expect(regreso.getByText(/La preparación tiene un retraso: Demora de cocción CU013/)).toBeVisible();
+  }finally{await nuevaSesion.close();}
   expect(sql(`SELECT count(*) FROM alimentos.historial_preparacion WHERE pedido_id='${pedido.id}';`)).toBe('5');
   expect(snapshots(pedido.id)).toEqual(anterior);
   expect(sql(`SELECT cantidad_inventario FROM alimentos.productos WHERE id='${e.producto.id}';`)).toBe('0');
@@ -112,7 +121,7 @@ test('CU-013 API: concurrencia, pagos repetidos, cancelados, alcance y reinicio 
  expect(snapshots(p.id)).toEqual(anteriores);
  for(const estado of ['PENDIENTE_PAGO','EXPIRADO','CANCELADO','CONFIRMADO']){
   const otro=await comprar();
-  if(estado!=='PENDIENTE_PAGO')sql(`UPDATE alimentos.pedidos SET estado='${estado}',${estado==='CONFIRMADO'?"confirmado_en=now(),codigo_qr='fixture-sin-pago'":estado==='CANCELADO'?"cancelado_en=now(),motivo_cancelacion='Fixture conservador sin política implementada'":"creado_en=now()-interval '20 minutes',expira_en=now()-interval '1 minute'"} WHERE id='${otro.id}';`);
+  if(estado!=='PENDIENTE_PAGO')sql(`UPDATE alimentos.pedidos SET estado='${estado}',${estado==='CONFIRMADO'?`confirmado_en=now(),codigo_qr='fixture-sin-pago-${otro.id}'`:estado==='CANCELADO'?"cancelado_en=now(),motivo_cancelacion='Fixture conservador sin política implementada'":"creado_en=now()-interval '20 minutes',expira_en=now()-interval '1 minute'"} WHERE id='${otro.id}';`);
   expect((await operar(iniciar,randomUUID(),otro.id)).status()).toBe(409);
  }
  const ajeno=await request.post(`${gateway}/pedidos/admin/establecimientos`,{headers:h(e.organizador.token),data:{eventoId:e.evento.id,nombre:`Ajeno ${randomUUID()}`,contacto:'Contacto',puntoEntrega:'Puerta',horaApertura:'00:00',horaCierre:'00:00',zonaHoraria:'America/Bogota',estado:'DISPONIBLE'}});expect(ajeno.status()).toBe(201);const otroLocal=await ajeno.json();
@@ -129,6 +138,15 @@ test('CU-013 API: concurrencia, pagos repetidos, cancelados, alcance y reinicio 
  const replayListo=await pagar();expect(replayListo.status()).toBe(200);expect((await replayListo.json()).codigoQr).toBe(pago.codigoQr);
  expect(sql(`SELECT row_to_json(t) FROM finanzas_pagos.transacciones_pago t WHERE clave_idempotencia='${clavePago}';`)).toBe(libro);
  expect(sql(`SELECT cantidad_inventario FROM alimentos.productos WHERE id='${e.producto.id}';`)).toBe('19');expect(snapshots(p.id)).toEqual(anteriores);
+ // Más de una página no debe ocultar un confirmado histórico ni exponer pedidos ajenos.
+ // Filas propias de lectura: no simulan cobros ni consumos de inventario.
+ sql(`INSERT INTO alimentos.pedidos (id,cliente_id,evento_id,establecimiento_id,metodo_entrega,estado,total,moneda,expira_en,confirmado_en,codigo_qr)
+ SELECT gen_random_uuid(),'${e.cliente.usuario.id}','${e.evento.id}','${e.local.id}','RECOGER','CONFIRMADO',1000.25,'COP',now()+interval '10 minutes',now(),'fixture-pagina-'||gen_random_uuid() FROM generate_series(1,100);`);
+ for(const [ruta,token] of [[base,e.personal.token],[`${gateway}/pedidos/mis-pedidos`,e.cliente.token]]){
+  const primera=await request.get(ruta,{headers:h(token)});expect(primera.status()).toBe(200);const ultimos=await primera.json();expect(ultimos).toHaveLength(100);expect(ultimos.some((x:{id:string})=>x.id===p.id)).toBe(false);
+  const siguiente=await request.get(`${ruta}?pagina=1`,{headers:h(token)});expect(siguiente.status()).toBe(200);expect((await siguiente.json()).some((x:{id:string})=>x.id===p.id)).toBe(true);
+  for(const pagina of ['-1','1.5','texto'])expect((await request.get(`${ruta}?pagina=${pagina}`,{headers:h(token)})).status()).toBe(400);
+ }
  const antesReinicio=await request.get(`${gateway}/pedidos/mis-pedidos/${p.id}`,{headers:h(e.cliente.token)});expect(antesReinicio.status()).toBe(200);const durable=await antesReinicio.json();expect(durable.avisos).toHaveLength(5);expect(durable.codigoQr).toBe(pago.codigoQr);
  expect(JSON.stringify(durable.avisos)).not.toContain('actorId');
  const personal=await request.get(`${base}/${p.id}`,{headers:h(e.personal.token)});expect(personal.status()).toBe(200);expect(JSON.stringify(await personal.json())).not.toContain(pago.codigoQr);

@@ -14,7 +14,7 @@ export interface IntencionPreparacion { id: string; local: string; pedido: strin
 export class PreparacionApiService {
   private readonly http = inject(HttpClient); private readonly auth = inject(AuthService);
   private url(local: string, ruta = '') { return `${Servidor.api}/pedidos/establecimientos/${local}/pedidos${ruta}`; }
-  listar(local: string) { return this.auth.conAcceso(h => this.http.get<PedidoRecibido[]>(this.url(local), { headers: h })); }
+  listar(local: string, pagina = 0) { return this.auth.conAcceso(h => this.http.get<PedidoRecibido[]>(this.url(local) + (pagina ? `?pagina=${pagina}` : ''), { headers: h })); }
   detalle(local: string, pedido: string) { return this.auth.conAcceso(h => this.http.get<PedidoRecibido>(this.url(local, `/${pedido}`), { headers: h })); }
   operar(i: IntencionPreparacion) { return this.auth.conAcceso(h => this.http.post<{ id: string; preparacion: AvancePedido }>(this.url(i.local, `/${i.pedido}/preparacion`), i.datos, { headers: h.set('Idempotency-Key', i.id) })); }
 }

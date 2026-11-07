@@ -104,15 +104,17 @@ class PedidosApi {
     }
   }
 
-  Future<
-      List<
-          DatosPedido>> recibidos(String establecimiento) async => (await _enviar(
-              'establecimientos/${Uri.encodeComponent(establecimiento)}/pedidos')
-          as List)
-      .cast<DatosPedido>();
+  Future<List<DatosPedido>> recibidos(String establecimiento,
+          {int pagina = 0}) async =>
+      (await _enviar(
+                  'establecimientos/${Uri.encodeComponent(establecimiento)}/pedidos${pagina > 0 ? '?pagina=$pagina' : ''}')
+              as List)
+          .cast<DatosPedido>();
 
-  Future<List<DatosPedido>> misPedidos() async =>
-      (await _enviar('mis-pedidos') as List).cast<DatosPedido>();
+  Future<List<DatosPedido>> misPedidos({int pagina = 0}) async =>
+      (await _enviar('mis-pedidos${pagina > 0 ? '?pagina=$pagina' : ''}')
+              as List)
+          .cast<DatosPedido>();
   Future<DatosPedido> seguimiento(String pedido) async =>
       await _enviar('mis-pedidos/${Uri.encodeComponent(pedido)}')
           as DatosPedido;

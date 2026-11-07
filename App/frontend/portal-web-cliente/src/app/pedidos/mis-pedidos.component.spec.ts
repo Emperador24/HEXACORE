@@ -32,4 +32,12 @@ describe('Seguimiento propio persistido',()=>{
     tick(15000);flushMicrotasks();expect(fixture.componentInstance.pausado()).toBeTrue();const n=api.misPedidos.calls.count();
     tick(45000);expect(api.misPedidos.calls.count()).toBe(n);fixture.destroy();tick(45000);expect(api.misPedidos.calls.count()).toBe(n);
   }));
+  it('recupera otra página sin perder el detalle propio ni el QR seleccionado',fakeAsync(()=>{
+    api.misPedidos.and.callFake((pagina:number)=>Promise.resolve(pagina ? [pedido] : Array.from({length:100},(_,i)=>({...pedido,id:`p${i}`}))));
+    fixture=TestBed.createComponent(MisPedidosComponent);flushMicrotasks();fixture.detectChanges();
+    Array.from<HTMLButtonElement>(fixture.nativeElement.querySelectorAll('button')).find(b=>b.textContent?.includes('Pedidos anteriores'))!.click();flushMicrotasks();fixture.detectChanges();
+    expect(api.misPedidos).toHaveBeenCalledWith(1);expect(fixture.componentInstance.pedidos()[0].id).toBe('p');
+    expect(fixture.debugElement.query(By.directive(QrPrueba)).componentInstance.codigo).toBe('qr-persistido');fixture.destroy();
+  }));
+
 });

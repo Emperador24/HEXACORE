@@ -14,7 +14,7 @@ class BandejaApi extends PedidosApi {
         {'id': 'local-2', 'nombre': 'Restaurante dos'}
       ];
   @override
-  Future<List<DatosPedido>> recibidos(String local) async {
+  Future<List<DatosPedido>> recibidos(String local, {int pagina = 0}) async {
     consultados.add(local);
     if (fallar) throw Exception('Sin conexión');
     return local == 'local-2'

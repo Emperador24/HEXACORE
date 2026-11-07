@@ -7,10 +7,11 @@
 @if(pendiente()){<section class="panel"><p>Operación sin confirmar. Conservamos su identificador y los datos originales.</p><button mat-flat-button (click)="repetir()" [disabled]="ocupado()">Repetir operación pendiente</button></section>}
 @if(!locales().length && !ocupado()){<p>No tienes establecimientos vinculados.</p>}
 <div class="bandeja"><section class="panel"><h2>Pedidos recibidos</h2>
+<p>Página {{pagina + 1}}</p><button mat-button (click)="cambiarPagina(-1)" [disabled]="ocupado() || !!pendiente() || pagina === 0">Pedidos más recientes</button><button mat-button (click)="cambiarPagina(1)" [disabled]="ocupado() || !!pendiente() || pedidos().length < 100">Pedidos anteriores</button>
 @for(p of pedidos(); track p.id){<article [attr.data-pedido]="p.id"><h3>{{etiqueta(p.preparacion.estado)}} · {{p.total}} {{p.moneda}}</h3><p>{{p.estado}} · {{p.confirmadoEn | date:'short'}}</p>
 @for(d of p.productos; track $index){<p>{{d.cantidad}} × {{d.nombreProducto}}</p>}
 <button mat-button (click)="seleccionar(p)" [disabled]="ocupado() || !!pendiente()">Gestionar pedido</button></article>}
-@empty{<p>Aún no hay pedidos confirmados en este establecimiento.</p>}
+@empty{<p>No hay pedidos en esta página.</p>}
 </section>
 @if(seleccionado(); as p){<section class="panel" aria-label="Detalle de preparación"><h2>{{etiqueta(p.preparacion.estado)}}</h2><p>Pedido {{p.id}} · versión {{p.preparacion.version}}</p>
 @if(p.preparacion.estimadoListoEn){<p>Estimado listo: <time data-estimacion>{{p.preparacion.estimadoListoEn | date:'short'}}</time></p>}

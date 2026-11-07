@@ -56,7 +56,7 @@ class ApiPreparacion extends PedidosApi {
         {'id': 'local', 'nombre': 'Local cerrado', 'estado': 'CERRADO'}
       ];
   @override
-  Future<List<DatosPedido>> recibidos(String local) async {
+  Future<List<DatosPedido>> recibidos(String local, {int pagina = 0}) async {
     lecturas++;
     if (fallar) throw PedidosException('Sin conexión', 0);
     return [pedido];
@@ -78,7 +78,7 @@ class ApiPreparacion extends PedidosApi {
   }
 
   @override
-  Future<List<DatosPedido>> misPedidos() async {
+  Future<List<DatosPedido>> misPedidos({int pagina = 0}) async {
     lecturas++;
     if (fallar) throw PedidosException('Sin conexión', 0);
     return [pedido];
@@ -93,14 +93,54 @@ class ApiPreparacion extends PedidosApi {
 
 class ApiBandejaLarga extends ApiPreparacion {
   @override
-  Future<List<DatosPedido>> misPedidos() async => List.generate(
+  Future<List<DatosPedido>> misPedidos({int pagina = 0}) async => List.generate(
       100, (i) => {...pedido, 'id': i == 0 ? 'pedido-propio' : 'anterior-$i'});
+}
+
+class ApiPaginas extends ApiPreparacion {
+  List<DatosPedido> lista(int pagina) => pagina == 0
+      ? List.generate(100, (i) => {...pedido, 'id': 'reciente-$i'})
+      : [
+          {
+            ...pedido,
+            'id': 'historico',
+            'establecimiento': 'Histórico recuperado',
+            'productos': <dynamic>[]
+          }
+        ];
+  @override
+  Future<List<DatosPedido>> misPedidos({int pagina = 0}) async => lista(pagina);
+  @override
+  Future<List<DatosPedido>> recibidos(String local, {int pagina = 0}) async =>
+      lista(pagina);
 }
 
 Finder campo(String etiqueta) => find.ancestor(
     of: find.text(etiqueta), matching: find.byType(TextFormField));
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
+  for (final personal in [false, true]) {
+    testWidgets(
+        'recupera pedidos anteriores en ${personal ? "Personal" : "Cliente"}',
+        (t) async {
+      final api = ApiPaginas();
+      await t.pumpWidget(MaterialApp(
+          home: Scaffold(
+              body: personal
+                  ? RestaurantOrdersPage(api: api)
+                  : MisPedidosPage(api: api))));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Pedidos anteriores'));
+      await t.pumpAndSettle();
+      expect(find.text('Página 2'), findsOneWidget);
+      if (personal) expect(find.text('Gestionar pedido'), findsOneWidget);
+      if (!personal) expect(find.text('Histórico recuperado'), findsOneWidget);
+      await t.tap(find.text('Pedidos más recientes'));
+      await t.pumpAndSettle();
+      expect(find.text('Página 1'), findsOneWidget);
+      await t.pumpWidget(const SizedBox.shrink());
+    });
+  }
   testWidgets(
       'bandeja privada incluye cerrado, valida minutos y conserva la versión del formulario',
       (tester) async {

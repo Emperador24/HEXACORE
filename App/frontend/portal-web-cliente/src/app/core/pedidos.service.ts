@@ -82,8 +82,8 @@ export class PedidosService {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthService);
 
-  misPedidos(): Promise<SeguimientoPedido[]> {
-    return this.auth.conAcceso(headers => this.http.get<SeguimientoPedido[]>(`${Servidor.api}/pedidos/mis-pedidos`, { headers }));
+  misPedidos(pagina = 0): Promise<SeguimientoPedido[]> {
+    return this.auth.conAcceso(headers => this.http.get<SeguimientoPedido[]>(`${Servidor.api}/pedidos/mis-pedidos${pagina ? `?pagina=${pagina}` : ''}`, { headers }));
   }
   seguimiento(id: string): Promise<SeguimientoPedido> {
     return this.auth.conAcceso(headers => this.http.get<SeguimientoPedido>(`${Servidor.api}/pedidos/mis-pedidos/${encodeURIComponent(id)}`, { headers }));

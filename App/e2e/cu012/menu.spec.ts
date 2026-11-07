@@ -115,7 +115,10 @@ test('CU-012 por interfaces: asignar Personal, crear, reservar, ajustar, pagar y
     await comprador.goto(`${clienteURL}/pedidos?eventoId=${evento.id}`);
     await comprador.getByRole('link').filter({hasText:nombre}).click();
     await expect(comprador.getByRole('heading',{name:`${nombre} Nueva receta`,exact:true})).toHaveCount(0);
+    const activacion=operador.waitForResponse(r=>r.url().endsWith(`/productos/${producto.id}`) && r.request().method()==='PATCH');
     await fila.getByRole('button',{name:'Activar',exact:true}).click();
+    expect((await activacion).status()).toBe(200);
+    await expect(fila).toContainText('Activo');
     await comprador.reload();
     await expect(comprador.getByRole('heading',{name:`${nombre} Nueva receta`,exact:true})).toBeVisible();
     await operador.screenshot({path:info.outputPath('menu-cu012.png'),fullPage:true});

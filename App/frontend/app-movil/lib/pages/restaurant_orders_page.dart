@@ -24,6 +24,7 @@ class _RestaurantOrdersPageState extends State<RestaurantOrdersPage> {
   DatosPedido? detalle, pendiente;
   String? seleccionado, error, aviso;
   bool cargando = false;
+  int pagina = 0;
   @override
   void initState() {
     super.initState();
@@ -81,7 +82,7 @@ class _RestaurantOrdersPageState extends State<RestaurantOrdersPage> {
   Future<void> leer() async {
     final local = seleccionado;
     if (local == null || !mounted) return;
-    final lista = await api.recibidos(local);
+    final lista = await api.recibidos(local, pagina: pagina);
     if (!mounted) return;
     pedidos = lista;
     if (detalle != null) {
@@ -112,6 +113,16 @@ class _RestaurantOrdersPageState extends State<RestaurantOrdersPage> {
 
   Future<void> cargarPedidos(String local) async {
     seleccionado = local;
+    pagina = 0;
+    pedidos = [];
+    detalle = null;
+    await actualizar();
+  }
+
+  Future<void> cambiarPagina(int delta) async {
+    if (cargando || pendiente != null || pagina + delta < 0) return;
+    pagina += delta;
+    pedidos = [];
     detalle = null;
     await actualizar();
   }
@@ -289,6 +300,20 @@ class _RestaurantOrdersPageState extends State<RestaurantOrdersPage> {
                         ? cargarCatalogo
                         : actualizar,
                 child: const Text('Actualizar pedidos')),
+            Text('Página ${pagina + 1}'),
+            Wrap(children: [
+              TextButton(
+                  onPressed: cargando || pendiente != null || pagina == 0
+                      ? null
+                      : () => cambiarPagina(-1),
+                  child: const Text('Pedidos más recientes')),
+              TextButton(
+                  onPressed:
+                      cargando || pendiente != null || pedidos.length < 100
+                          ? null
+                          : () => cambiarPagina(1),
+                  child: const Text('Pedidos anteriores')),
+            ]),
             if (cargando) const LinearProgressIndicator(),
             if (error != null) ...[
               Text(error!, key: const Key('error-preparacion')),
@@ -310,8 +335,9 @@ class _RestaurantOrdersPageState extends State<RestaurantOrdersPage> {
             if (!cargando && locales.isEmpty)
               const Text('No hay establecimientos vinculados a tu cuenta.'),
             if (!cargando && locales.isNotEmpty && pedidos.isEmpty)
-              const Text(
-                  'Aún no hay pedidos confirmados en este establecimiento.'),
+              Text(pagina == 0
+                  ? 'Aún no hay pedidos confirmados en este establecimiento.'
+                  : 'No hay pedidos en esta página.'),
             if (detalle != null) ...detalleWidgets(detalle!),
             for (final p in pedidos)
               panel([

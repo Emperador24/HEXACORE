@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource, EntityManager, In } from 'typeorm';
 import { CONEXION_ALIMENTOS } from '../persistencia/conexion';
@@ -28,11 +28,16 @@ export function pagoAcreditado(p: Pedido, pagos: TransaccionPedido[]) {
 @Injectable()
 export class RecepcionService {
   constructor(@InjectDataSource(CONEXION_ALIMENTOS) private readonly datos: DataSource) {}
-  async listar(establecimientoId: string): Promise<PedidoRecibidoDto[]> {
+  private desplazamiento(pagina: number) {
+    if (!Number.isSafeInteger(pagina) || pagina < 0 || !Number.isSafeInteger(pagina * 100)) throw new BadRequestException('Indica una página válida desde cero.');
+    return pagina * 100;
+  }
+  async listar(establecimientoId: string, pagina = 0): Promise<PedidoRecibidoDto[]> {
+    const skip = this.desplazamiento(pagina);
     if (!await this.datos.manager.exists(Establecimiento, { where: { id: establecimientoId } })) throw new NotFoundException('No existe el establecimiento');
     return this.datos.transaction('REPEATABLE READ', async m => {
       const pedidos = await m.find(Pedido, { where: { establecimientoId, estado: In([EstadoPedido.CONFIRMADO, EstadoPedido.CANCELADO]) },
-        order: { confirmadoEn: 'DESC', id: 'ASC' }, take: 100 });
+        order: { confirmadoEn: 'DESC', id: 'ASC' }, take: 100, skip });
       return this.proyectar(m, pedidos, false);
     });
   }
@@ -43,9 +48,10 @@ export class RecepcionService {
       return (await this.proyectar(m, [pedido], false, true))[0];
     });
   }
-  async listarCliente(clienteId: string) {
+  async listarCliente(clienteId: string, pagina = 0) {
+    const skip = this.desplazamiento(pagina);
     return this.datos.transaction('REPEATABLE READ', async m => {
-      const pedidos = await m.find(Pedido, { where: { clienteId }, order: { creadoEn: 'DESC', id: 'DESC' }, take: 100 });
+      const pedidos = await m.find(Pedido, { where: { clienteId }, order: { creadoEn: 'DESC', id: 'DESC' }, take: 100, skip });
       return this.proyectar(m, pedidos, true);
     });
   }

@@ -24,7 +24,7 @@ describe('Consulta de pedidos recibidos', () => {
     expect(resultado[0]).not.toHaveProperty('clienteId'); expect(resultado[0]).not.toHaveProperty('codigoQr');
     expect(resultado[0]).toMatchObject({ pagoVerificado: true, preparacion: { estado: 'RECIBIDO', version: 0 } });
     expect(manager.find).toHaveBeenCalledWith(Pedido, { where: { establecimientoId: 'local', estado: In([EstadoPedido.CONFIRMADO, EstadoPedido.CANCELADO]) },
-      order: { confirmadoEn: 'DESC', id: 'ASC' }, take: 100 });
+      order: { confirmadoEn: 'DESC', id: 'ASC' }, take: 100, skip: 0 });
     expect(manager.find).toHaveBeenCalledWith(TransaccionPedido, { where: { pedidoId: In(['p']), estado: EstadoTransaccionPedido.APROBADA } });
   });
   it('devuelve lista vacía sin consultar detalles cuando no hay confirmados', async () => {

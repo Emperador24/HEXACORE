@@ -57,6 +57,13 @@ detalle, avisos y el mismo QR persistido. El canal es la bandeja dentro de web/a
 no se declara correo, push ni entrega exactamente una vez. Inicio, retraso, listo,
 incidencia y resolución producen un aviso durable por operación.
 
+Las listas se consultan en páginas de 100 (`pagina` desde 0, con orden estable
+por fecha e identificador). Web y Flutter permiten ir a pedidos anteriores y
+volver a los recientes; cambiar de establecimiento reinicia la página. No se
+ocultan definitivamente los confirmados históricos por el tamaño de la bandeja.
+El sondeo actualiza solo la página activa; el detalle se recupera por su ID y
+conserva las comprobaciones de dueño/vínculo aunque no esté en esa página.
+
 Las pantallas actualizan solo su establecimiento/pedido activo, como máximo cada
 15 segundos, sin solapar solicitudes. Se suspenden al ocultarse/salir y se pausan
 ante errores hasta actualización explícita. No hay sondeo global ni otro servidor.

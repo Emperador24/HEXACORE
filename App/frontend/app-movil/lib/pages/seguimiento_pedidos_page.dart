@@ -21,6 +21,7 @@ class _MisPedidosPageState extends State<MisPedidosPage> {
   DatosPedido? detalle;
   String? id, error;
   bool cargando = false;
+  int pagina = 0;
   @override
   void initState() {
     super.initState();
@@ -49,7 +50,7 @@ class _MisPedidosPageState extends State<MisPedidosPage> {
       sondeo.pausado = false;
     });
     try {
-      final lista = await api.misPedidos();
+      final lista = await api.misPedidos(pagina: pagina);
       if (!mounted) return;
       final d = id == null ? null : await api.seguimiento(id!);
       if (mounted) {
@@ -68,6 +69,13 @@ class _MisPedidosPageState extends State<MisPedidosPage> {
     } finally {
       if (mounted) setState(() => cargando = false);
     }
+  }
+
+  Future<void> cambiarPagina(int delta) async {
+    if (cargando || pagina + delta < 0) return;
+    pagina += delta;
+    pedidos = [];
+    await actualizar();
   }
 
   Widget panel(List<Widget> contenido) => Padding(
@@ -91,13 +99,28 @@ class _MisPedidosPageState extends State<MisPedidosPage> {
               TextButton(
                   onPressed: cargando ? null : actualizar,
                   child: const Text('Actualizar seguimiento')),
+              Text('Página ${pagina + 1}'),
+              Wrap(children: [
+                TextButton(
+                    onPressed: cargando || pagina == 0
+                        ? null
+                        : () => cambiarPagina(-1),
+                    child: const Text('Pedidos más recientes')),
+                TextButton(
+                    onPressed: cargando || pedidos.length < 100
+                        ? null
+                        : () => cambiarPagina(1),
+                    child: const Text('Pedidos anteriores')),
+              ]),
               if (cargando) const LinearProgressIndicator(),
               if (error != null) Text(error!),
               if (sondeo.pausado)
                 const Text(
                     'Actualización automática pausada. Usa Actualizar seguimiento.'),
               if (!cargando && pedidos.isEmpty)
-                const Text('Aún no tienes pedidos.'),
+                Text(pagina == 0
+                    ? 'Aún no tienes pedidos.'
+                    : 'No hay pedidos en esta página.'),
               if (detalle != null) ...detalleWidgets(detalle!),
               for (final p in pedidos)
                 panel([
