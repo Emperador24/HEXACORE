@@ -174,7 +174,15 @@ repetir CU-011/CU-015; después abordar preparación CU-013 y entrega única CU-
 
 - `6564958`: revisión, plan inicial y trazabilidad.
 - `91550ff`: backend CU-015, migración, interfaces explícitas, acceso acotado y pruebas.
-- Portal, entorno, Playwright y cierre documental: hito comprobado, listo para publicación.
+- `09b0199`: portal, entorno, Playwright, fuente Excel/SRS y cierre documental.
 
-Publicación prevista exclusivamente en `origin/feature/sebastian`; sin integración
-a develop/main. Se confirmará el SHA remoto después de publicar.
+Los tres hitos se publicaron exclusivamente en `origin/feature/sebastian`.
+`git ls-remote origin refs/heads/feature/sebastian` confirmó
+`09b0199601d1fe87aefab69c5b2e7c0d8afc9603`, coincidente con HEAD funcional.
+No se integró a develop/main. Este cierre de evidencia documental se publica
+en la misma rama; no modifica el código demostrado.
+
+Arranque final desde el hito funcional limpio: las imágenes quedaron etiquetadas
+con `org.opencontainers.image.revision=09b0199601d1fe87aefab69c5b2e7c0d8afc9603`
+y `hexacore.fuente.modificada=no`. Núcleo, Boletería, Trabajador, gateway y ambos
+portales quedaron saludables; carga demo `COMPLETA`, sin repetir semillas.
