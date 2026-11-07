@@ -3,6 +3,7 @@ import copy
 import json
 import os
 import socket
+import subprocess
 import unittest
 from unittest.mock import patch
 import revision as r
@@ -21,6 +22,20 @@ class SeguridadRevision(unittest.TestCase):
         self.assertEqual(c['name'], r.PROYECTO)
         self.assertEqual(c['services']['nucleo']['environment']['POSTGRES_BD'], r.BASE)
         self.assertFalse(c['services']['preparacion-base'].get('build'))
+
+    def test_perfil_cu015_tiene_destinos_puertos_claves_y_recursos_propios(self):
+        c = json.loads(subprocess.check_output(['python3', str(r.CARPETA / 'revision.py'),
+                        '--perfil', 'cu015', 'config'], text=True))
+        self.assertEqual(c['name'], 'hexacore-cu015-sebastian')
+        self.assertEqual(c['services']['nucleo']['environment']['POSTGRES_BD'], 'hexacore_cu015')
+        puertos = {int(p['published']) for s in c['services'].values() for p in s.get('ports', [])}
+        self.assertFalse(puertos & r.PUERTOS)
+        for tipo in ('volumes', 'networks'):
+            for recurso in c[tipo].values():
+                self.assertTrue(recurso['name'].startswith('hexacore-cu015-sebastian-'))
+        for v in c['services']['nucleo']['volumes']:
+            if 'jwt-' in v['source']:
+                self.assertIn('.estado-cu015/', v['source'])
 
     def test_rechaza_destinos_y_montajes_ajenos(self):
         for cambiar in [

@@ -20,6 +20,11 @@ export const routes: Routes = [
       },
       // CU-026: gestión de eventos contra eventos-recintos (Núcleo).
       {
+        path: 'establecimientos',
+        loadComponent: () => import('./establecimientos/establecimientos.component').then(m => m.EstablecimientosComponent),
+        data: { titulo: 'Establecimientos de alimentos' }
+      },
+      {
         path: 'eventos',
         loadComponent: () =>
           import('./eventos/eventos-lista.component').then((m) => m.EventosListaComponent),

@@ -32,6 +32,7 @@ export const NAV_GRUPOS: NavGrupo[] = [
     titulo: 'Operación',
     items: [
       { ruta: 'eventos', etiqueta: 'Eventos', icono: 'event', roles: [ORGANIZADOR, ADMINISTRADOR] }, // CU-026
+      { ruta: 'establecimientos', etiqueta: 'Establecimientos', icono: 'storefront', roles: [ORGANIZADOR, ADMINISTRADOR] }, // CU-015
       // CU-007: el administrador gestiona las fichas y el organizador asigna.
       { ruta: 'personal', etiqueta: 'Personal', icono: 'badge', roles: [ORGANIZADOR, ADMINISTRADOR] },
       { ruta: 'monitoreo', etiqueta: 'Monitoreo', icono: 'monitor_heart', roles: [ORGANIZADOR, ADMINISTRADOR] }, // CU-019

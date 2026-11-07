@@ -24,7 +24,29 @@ COMPILAR = ['nucleo', 'boleteria', 'trabajador', 'api-gateway', 'pasarela', 'cor
             'portal-web-cliente', 'portal-web-admin']
 EJECUTAR = ['nucleo', 'boleteria', 'trabajador', 'api-gateway', 'portal-web-cliente', 'portal-web-admin']
 PUERTOS = {15449, 16394, 15689, 16789, 13129, 13128, 13119, 13127, 13120, 18090, 14210, 14211}
-ESQUEMAS = "'identidad','alimentos','personal_logistica','entradas_ventas','entradas_catalogo','entradas_postventa','entradas_acceso_qr','finanzas_pagos'"
+ESQUEMAS = "'identidad','alimentos','personal_logistica','entradas_ventas','entradas_catalogo','entradas_postventa','entradas_acceso_qr','finanzas_pagos','eventos_recintos','operacion','parqueaderos'"
+PERFIL = 'arquitectura'
+DOMINIO = 'revision.localhost'
+PUERTO_CLIENTE = 14210
+PUERTO_ADMIN = 14211
+PUERTO_GATEWAY = 18090
+PUERTO_CORREO = 13128
+MAPA_PUERTOS = {}
+
+def seleccionar_perfil(perfil):
+    global PERFIL, ESTADO, PROYECTO, BASE, DOMINIO, PUERTOS, MAPA_PUERTOS
+    global PUERTO_CLIENTE, PUERTO_ADMIN, PUERTO_GATEWAY, PUERTO_CORREO
+    PERFIL = perfil
+    if perfil == 'cu015':
+        ESTADO = CARPETA / '.estado-cu015'
+        PROYECTO = 'hexacore-cu015-sebastian'
+        BASE = 'hexacore_cu015'
+        DOMINIO = 'cu015.localhost'
+        MAPA_PUERTOS = dict(zip([15449,16394,15689,16789,13129,13128,13119,13127,13120,18090,14210,14211],
+                               [15459,16404,15699,16799,13139,13138,13149,13147,13140,18100,14220,14221]))
+        PUERTOS = set(MAPA_PUERTOS.values())
+        PUERTO_CLIENTE, PUERTO_ADMIN, PUERTO_GATEWAY, PUERTO_CORREO = 14220,14221,18100,13138
+
 CHECKOUT = hashlib.sha256(str(RAIZ).encode()).hexdigest()[:16]
 
 
@@ -42,6 +64,9 @@ def entorno():
     e.update(COMPOSE_PARALLEL_LIMIT='1', COMPOSE_BAKE='false',
              REVISION_CHECKOUT=CHECKOUT, REVISION_FUENTE=revision(),
              REVISION_MODIFICADA='si' if modificada() else 'no')
+    e.update(REVISION_PROYECTO=PROYECTO, REVISION_BD=BASE, REVISION_USO='cu015' if PERFIL == 'cu015' else 'revision-arquitectura',
+             REVISION_ESTADO=str(ESTADO), REVISION_ENLACES=f'http://{DOMINIO}:{PUERTO_CLIENTE}/cuenta')
+    e.update({f'REVISION_PUERTO_{a}': str(b) for a,b in MAPA_PUERTOS.items()})
     return e
 
 
@@ -101,7 +126,7 @@ def validar_configuracion(c):
         if nombre in ('nucleo', 'boleteria', 'trabajador'):
             exigir(e.get('RABBITMQ_URL') == 'amqp://revision_demo:revision_demo@rabbitmq:5672/revision', 'Broker ajeno')
         if nombre == 'trabajador':
-            exigir(e.get('CORREO_URL_BASE_ENLACES') == 'http://revision.localhost:14210/cuenta', 'Enlaces ajenos')
+            exigir(e.get('CORREO_URL_BASE_ENLACES') == f'http://{DOMINIO}:{PUERTO_CLIENTE}/cuenta', 'Enlaces ajenos')
             exigir(not any(k.startswith(('POSTGRES_', 'REDIS_', 'AUTH_JWT_', 'PASARELA_')) for k in e), 'Trabajador con dependencias ajenas')
         if nombre in ('trabajador', 'nucleo'):
             exigir(e.get('CORREO_PROVEEDOR_URL') == 'http://correo:3098', 'Proveedor de correo ajeno')
@@ -177,13 +202,13 @@ def archivos():
     original = (RAIZ / 'App/gateway/nginx.conf').read_text()
     patron = r'map \$http_origin \$origen_permitido \{[^}]+\}'
     nuevo, n = re.subn(patron, 'map $http_origin $origen_permitido {\n    default "";\n'
-                       '    "http://revision.localhost:14210" $http_origin;\n'
-                       '    "http://revision.localhost:14211" $http_origin;\n}', original)
+                       f'    "http://{DOMINIO}:{PUERTO_CLIENTE}" $http_origin;\n'
+                       f'    "http://{DOMINIO}:{PUERTO_ADMIN}" $http_origin;\n' + '}', original)
     exigir(n == 1, 'Cambió el mapa CORS del gateway: adaptar generación')
     # Escritura sobre el mismo inode: respeta montajes de contenedores ya creados.
     for nombre, contenido in {'gateway.conf': nuevo, 'configuracion.js':
-            'window.HEXACORE_CONFIGURACION = ' + json.dumps({'api': 'http://revision.localhost:18090/api/v1',
-                'buzonDesarrollo': 'http://revision.localhost:13128/correos'}) + ';\n'}.items():
+            'window.HEXACORE_CONFIGURACION = ' + json.dumps({'api': f'http://{DOMINIO}:{PUERTO_GATEWAY}/api/v1',
+                'buzonDesarrollo': f'http://{DOMINIO}:{PUERTO_CORREO}/correos'}) + ';\n'}.items():
         p = ESTADO / nombre
         if not p.exists() or p.read_text() != contenido:
             p.write_text(contenido)
@@ -221,7 +246,7 @@ def sembrar():
     sql("""CREATE TABLE migracion_control.revision_demo(id integer PRIMARY KEY CHECK(id=1),
         estado text NOT NULL, revision text NOT NULL, creada timestamptz NOT NULL DEFAULT now());
         INSERT INTO migracion_control.revision_demo(id,estado,revision) VALUES(1,'EN_CURSO','""" + revision() + "');")
-    for modulo in ['identidad', 'entradas/ventas', 'entradas/catalogo', 'entradas/postventa', 'entradas/acceso-qr', 'alimentos']:
+    for modulo in ['identidad', 'entradas/ventas', 'entradas/catalogo', 'entradas/postventa', 'entradas/acceso-qr', 'alimentos', 'eventos-recintos']:
         compose('run', '--rm', '--no-deps', '-T', 'nucleo', 'node', f'dist/modulos/{modulo}/persistencia/semillas/sembrar.js')
     for i in range(1, 4):
         compose('run', '--rm', '--no-deps', '-T', 'nucleo', 'node',
@@ -264,20 +289,23 @@ def iniciar(demo):
                 'api-gateway', 'nucleo', 'boleteria', 'trabajador')
         raise
     print('\nRevisión disponible (demo: ' + estado_demo() + '):\n'
-          'Clientes: http://revision.localhost:14210\nAdministración: http://revision.localhost:14211\n'
-          'Gateway: http://revision.localhost:18090/api/v1\n'
+          f'Clientes: http://{DOMINIO}:{PUERTO_CLIENTE}\nAdministración: http://{DOMINIO}:{PUERTO_ADMIN}\n'
+          f'Gateway: http://{DOMINIO}:{PUERTO_GATEWAY}/api/v1\n'
           'Guía y credenciales exclusivamente demo: App/infra/revision/README.md', flush=True)
 
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--perfil', choices=['arquitectura', 'cu015'], default='arquitectura')
     p.add_argument('accion', choices=['iniciar', 'estado', 'logs', 'parar', 'config'])
     p.add_argument('--datos-demo', action='store_true', help='Solo primera carga explícita sobre recursos vacíos')
     p.add_argument('servicios', nargs='*')
     a = p.parse_args()
+    seleccionar_perfil(a.perfil)
     exigir(not a.datos_demo or a.accion == 'iniciar', '--datos-demo solo con iniciar')
     exigir(not a.servicios or (a.accion == 'logs' and set(a.servicios) <= SERVICIOS), 'Servicios solo para logs y del proyecto propio')
-    exigir(git('branch', '--show-current') == 'feature/sebastian-arquitectura', 'Usar exclusivamente feature/sebastian-arquitectura')
+    rama = 'feature/sebastian' if PERFIL == 'cu015' else 'feature/sebastian-arquitectura'
+    exigir(git('branch', '--show-current') == rama, 'Usar exclusivamente ' + rama)
     for herramienta in ('docker', 'git', 'openssl'):
         exigir(shutil.which(herramienta), 'Falta requisito: ' + herramienta)
     ejecutar(['docker', 'info', '--format', '{{.ServerVersion}}'], capturar=True)

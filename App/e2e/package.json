@@ -1,0 +1,16 @@
+{
+  "name": "hexacore-recorridos",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "test:cu015": "playwright test",
+    "test:cu015:visible": "playwright test --headed",
+    "informe": "playwright show-report .evidencia/informe",
+    "tipos": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.0",
+    "@types/node": "22.20.5",
+    "typescript": "7.0.2"
+  }
+}

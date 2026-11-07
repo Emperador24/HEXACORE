@@ -1,5 +1,12 @@
 # Estado de migración de HEXACORE
 
+**Entrega posterior CU-015 (7/11/2026):** gestión de establecimientos de Alimentos,
+interfaz administrativa, horario/zona, estado, validación contra Eventos y acceso
+local del Personal. El inventario actual suma once esquemas y 26 migraciones;
+las 18 procedencias originales no cambian. [Plan, evidencia y límites](PLAN-CIERRE-SEBASTIAN.md)
+y [entorno y demostración Playwright](../../App/e2e/README.md). Las cifras de las
+secciones históricas siguientes corresponden a sus entregas, no se reescriben.
+
 Fecha de revisión: **2 de noviembre de 2026**, America/Bogota.
 Rama `feature/sebastian-arquitectura`, cierre técnico desde
 **6e2260a31651760f5867e7c3e0f121fbcc0f802f**. HEAD y trabajo local comprobados sin
