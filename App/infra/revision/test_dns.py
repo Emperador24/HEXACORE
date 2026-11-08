@@ -39,6 +39,8 @@ def instalar(texto, marca=None):
 
 def main():
     r.seleccionar_perfil('cu015')
+    r.exigir(r.git('branch', '--show-current') == 'feature/sebastian',
+             'Ensayo DNS exclusivo de feature/sebastian')
     c = json.loads(r.compose('config', '--format', 'json', capturar=True))
     r.validar_configuracion(c)
     propios = r.contenedores_propios()
