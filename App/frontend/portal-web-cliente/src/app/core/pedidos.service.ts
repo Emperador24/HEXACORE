@@ -46,6 +46,7 @@ export interface CheckoutPedido {
 }
 
 export interface PagoPedido {
+  qrUtilizable?: boolean; entrega?: {entregadoEn:string;puntoEntrega:string};
   pedidoId: string;
   transaccionId: string;
   estadoPago: 'PENDIENTE' | 'APROBADA' | 'RECHAZADA' | 'FALLIDA';
@@ -59,6 +60,7 @@ export interface PagoPedido {
 }
 
 export interface SeguimientoPedido {
+  estadoOperativo?: string; qrUtilizable?: boolean; entrega?: {entregadoEn:string;puntoEntrega:string} | null;
   id: string; estado: string; total: string; moneda: string; establecimiento: string; puntoEntrega: string;
   creadoEn: string; confirmadoEn: string | null; codigoQr: string | null; pagoVerificado: boolean;
   preparacion: { estado: string; version: number; iniciadoEn: string | null; estimadoListoEn: string | null; listoEn: string | null; retrasado: boolean; incidenciasAbiertas: number };

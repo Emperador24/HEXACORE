@@ -1,3 +1,4 @@
+import { EntregaPedidoComponent } from '../entregas/entrega-pedido.component';
 import { Component, inject, OnDestroy, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -8,7 +9,7 @@ import { AuthService, ErrorCuenta } from '../core/auth.service';
 import { MenuApiService } from '../core/menu-api.service';
 import { DatosPreparacion, IntencionPreparacion, PedidoRecibido, PreparacionApiService } from '../core/preparacion-api.service';
 
-@Component({ selector: 'app-preparacion', standalone: true, imports: [DatePipe, FormsModule, MatButtonModule, MatFormFieldModule, MatInputModule],
+@Component({ selector: 'app-preparacion', standalone: true, imports: [EntregaPedidoComponent, DatePipe, FormsModule, MatButtonModule, MatFormFieldModule, MatInputModule],
   templateUrl: './preparacion.component.html', styleUrl: './preparacion.component.scss' })
 export class PreparacionComponent implements OnDestroy {
   private readonly api = inject(PreparacionApiService); private readonly menu = inject(MenuApiService); private readonly auth = inject(AuthService);
@@ -16,13 +17,14 @@ export class PreparacionComponent implements OnDestroy {
   readonly pedidos = signal<PedidoRecibido[]>([]); readonly seleccionado = signal<PedidoRecibido | null>(null);
   readonly ocupado = signal(false); readonly error = signal(''); readonly aviso = signal('');
   readonly pendiente = signal<IntencionPreparacion | null>(null); readonly pausa = signal(false);
+  readonly entregaOcupada = signal(false); readonly entregaPendiente = signal(false);
   local = ''; pagina = 0; accion?: DatosPreparacion['accion']; minutos = 10; motivo = ''; incidenciaId?: string;
   private versionFormulario = 0; private pedidoFormulario = ''; private destruido = false;
   private readonly temporizador: ReturnType<typeof setInterval>;
   private get claveLocal() { return `hexacore.cu013.intencion.${this.auth.usuarioActual()?.id}`; }
   constructor() {
     void this.iniciar();
-    this.temporizador = setInterval(() => { if (document.visibilityState === 'visible' && !this.ocupado() && !this.pausa() && !this.pendiente()) void this.actualizar(); }, 15000);
+    this.temporizador = setInterval(() => { if (document.visibilityState === 'visible' && !this.ocupado() && !this.pausa() && !this.pendiente() && !this.entregaOcupada()) void this.actualizar(); }, 15000);
   }
   ngOnDestroy() { this.destruido = true; clearInterval(this.temporizador); }
   private fallo(e: unknown) { this.error.set(e instanceof Error ? e.message : 'No pudimos consultar los pedidos.'); this.pausa.set(true); }
@@ -32,7 +34,9 @@ export class PreparacionComponent implements OnDestroy {
       this.locales.set(await this.menu.misEstablecimientos());
       if (this.destruido) return;
       const valor = localStorage.getItem(this.claveLocal); if (valor) this.pendiente.set(JSON.parse(valor));
-      this.local = this.pendiente()?.local ?? this.locales()[0]?.id ?? '';
+      const entrega = localStorage.getItem(`hexacore.cu014.intencion.${this.auth.usuarioActual()?.id}`);
+      this.entregaPendiente.set(!!entrega);
+      this.local = this.pendiente()?.local ?? (entrega ? JSON.parse(entrega).local : undefined) ?? this.locales()[0]?.id ?? '';
       await this.leer();
     } catch(e) { this.fallo(e); } finally { this.ocupado.set(false); }
   }

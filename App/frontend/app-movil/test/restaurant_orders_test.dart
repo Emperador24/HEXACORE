@@ -7,6 +7,8 @@ class BandejaApi extends PedidosApi {
   bool fallar = false;
   final consultados = <String>[];
   @override
+  Future<DatosPedido?> pendienteEntrega() async => null;
+  @override
   Future<DatosPedido?> pendientePreparacion() async => null;
   @override
   Future<List<DatosPedido>> misEstablecimientos() async => [

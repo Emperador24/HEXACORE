@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
@@ -18,22 +19,98 @@ class _QrScannerPage extends StatefulWidget {
   State<_QrScannerPage> createState() => _QrScannerPageState();
 }
 
-class _QrScannerPageState extends State<_QrScannerPage> {
-  final _controller = MobileScannerController();
-  bool _handled = false;
+class _QrScannerPageState extends State<_QrScannerPage>
+    with WidgetsBindingObserver {
+  final _controller = MobileScannerController(
+      formats: const [BarcodeFormat.qrCode],
+      detectionSpeed: DetectionSpeed.noDuplicates);
+  bool _handled = false, _activo = true, _ocupando = false;
+  @override
+  void initState() {
+    super.initState();
+    final estado = WidgetsBinding.instance.lifecycleState;
+    _activo = estado == null || estado == AppLifecycleState.resumed;
+    WidgetsBinding.instance.addObserver(this);
+    _controller.addListener(_sincronizar);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState estado) {
+    _activo = estado == AppLifecycleState.resumed;
+    _sincronizar();
+  }
+
+  void _sincronizar() {
+    if (!mounted || _handled || _ocupando) return;
+    final v = _controller.value;
+    if (!v.isInitialized ||
+        v.isStarting ||
+        !v.hasCameraPermission ||
+        v.error != null ||
+        _activo == v.isRunning) {
+      return;
+    }
+    _ocupando = true;
+    final f = _activo ? _controller.start() : _controller.stop();
+    unawaited(f.then((_) {
+      _ocupando = false;
+      if (mounted) _sincronizar();
+    }, onError: (Object _) {
+      _ocupando = false;
+    }));
+  }
+
+  Future<void> _reintentar() async {
+    if (_ocupando || !_activo || _handled) return;
+    _ocupando = true;
+    try {
+      await _controller.start();
+    } catch (_) {
+      /* El estado del controlador muestra el fallo, sin registrar el código. */
+    } finally {
+      _ocupando = false;
+      if (mounted) _sincronizar();
+    }
+  }
+
+  Widget _error(BuildContext context, MobileScannerException error) => Center(
+      child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text(
+                error.errorCode == MobileScannerErrorCode.permissionDenied
+                    ? 'Permiso de cámara denegado. Habilítalo en Ajustes o cierra e ingresa el código manualmente.'
+                    : 'La cámara no está disponible. Puedes reintentar o ingresar el código manualmente.',
+                style: const TextStyle(color: Colors.white),
+                textAlign: TextAlign.center),
+            TextButton(
+                onPressed: _reintentar, child: const Text('Reintentar cámara'))
+          ])));
 
   @override
   void dispose() {
-    _controller.dispose();
+    WidgetsBinding.instance.removeObserver(this);
+    _controller.removeListener(_sincronizar);
+    unawaited(_controller.dispose());
     super.dispose();
   }
 
   void _onDetect(BarcodeCapture capture) {
-    if (_handled) return;
-    final value = capture.barcodes.firstOrNull?.rawValue;
-    if (value == null) return;
+    if (_handled || !_activo) return;
+    final value = capture.barcodes
+        .map((b) => b.rawValue)
+        .whereType<String>()
+        .firstWhere((v) => v.trim().isNotEmpty, orElse: () => '');
+    if (value.isEmpty) return;
     _handled = true;
-    Navigator.of(context).pop(value);
+    unawaited(_devolver(value));
+  }
+
+  Future<void> _devolver(String codigo) async {
+    try {
+      await _controller.stop();
+    } catch (_) {/* Dispose también libera la sesión. */}
+    if (mounted) Navigator.of(context).pop(codigo);
   }
 
   @override
@@ -43,8 +120,12 @@ class _QrScannerPageState extends State<_QrScannerPage> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          MobileScanner(controller: _controller, onDetect: _onDetect),
-          Center(
+          MobileScanner(
+              controller: _controller,
+              onDetect: _onDetect,
+              errorBuilder: _error),
+          IgnorePointer(
+              child: Center(
             child: Container(
               width: 240,
               height: 240,
@@ -54,7 +135,7 @@ class _QrScannerPageState extends State<_QrScannerPage> {
                 borderRadius: BorderRadius.circular(24),
               ),
             ),
-          ),
+          )),
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

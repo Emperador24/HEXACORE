@@ -16,7 +16,8 @@
       <span class="exito"><mat-icon>check_circle</mat-icon></span>
       <p class="hxc-rotulo-seccion">PAGO APROBADO</p><h2>¡Tu pedido está confirmado!</h2>
       <p class="hxc-suave">Conserva este QR para recoger tu pedido.</p>
-      @if (pago()!.codigoQr; as codigo) { <app-qr-pedido [codigo]="codigo" /> }
+      @if (pago()!.codigoQr && pago()!.qrUtilizable !== false) { <app-qr-pedido [codigo]="pago()!.codigoQr!" /> }
+      @if(pago()!.entrega; as entrega){<p>Pedido entregado en {{entrega.puntoEntrega}}. El QR ya no permite otra entrega.</p>}
       <div class="total"><span>Total pagado</span><strong>${{ pago()!.monto | number: '1.2-2' }} <small>{{ pago()!.moneda }}</small></strong></div>
       <p class="ubicacion"><mat-icon>storefront</mat-icon>{{ establecimiento.nombre }}</p>
       <p class="hxc-suave">{{ establecimiento.puntoEntrega }}</p>

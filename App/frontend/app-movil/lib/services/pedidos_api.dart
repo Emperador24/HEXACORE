@@ -10,9 +10,10 @@ import 'sesion.dart';
 typedef DatosPedido = Map<String, dynamic>;
 
 class PedidosException implements Exception {
-  PedidosException(this.mensaje, this.estado);
+  PedidosException(this.mensaje, this.estado, [this.codigo]);
   final String mensaje;
   final int estado;
+  final String? codigo;
   @override
   String toString() => mensaje;
 }
@@ -96,7 +97,8 @@ class PedidosApi {
                       ? mensajeServidor
                       : null) ??
               'No se pudo completar la solicitud. Vuelve a intentar.',
-          respuesta.statusCode);
+          respuesta.statusCode,
+          codigo is String ? codigo : null);
     } on PedidosException {
       rethrow;
     } catch (_) {
@@ -122,6 +124,66 @@ class PedidosApi {
       await _enviar(
               'establecimientos/${Uri.encodeComponent(local)}/pedidos/${Uri.encodeComponent(pedido)}')
           as DatosPedido;
+  String get _claveEntrega =>
+      'hexacore.cu014.intencion.${_sesion.usuario?.id ?? "sin-sesion"}';
+  Future<DatosPedido?> pendienteEntrega() async {
+    final valor =
+        (await SharedPreferences.getInstance()).getString(_claveEntrega);
+    return valor == null ? null : jsonDecode(valor) as DatosPedido;
+  }
+
+  Future<DatosPedido> prevalidarEntrega(String local, String codigoQr) async =>
+      await _enviar(
+          'establecimientos/${Uri.encodeComponent(local)}/entregas/prevalidar',
+          cuerpo: {'codigoQr': codigoQr}) as DatosPedido;
+  Future<DatosPedido> confirmarEntrega(
+      String local, DatosPedido revision, String codigoQr) async {
+    final anterior = await pendienteEntrega();
+    final i = anterior ??
+        <String, dynamic>{
+          'id': nuevaClavePago(),
+          'local': local,
+          'pedidoId': revision['pedidoId'],
+          'version': revision['version'],
+          'puntoRevision': revision['puntoRevision']
+        };
+    if (i['local'] != local ||
+        i['pedidoId'] != revision['pedidoId'] ||
+        i['version'] != revision['version'] ||
+        i['puntoRevision'] != revision['puntoRevision']) {
+      throw PedidosException(
+          'Consulta primero la entrega pendiente.', 409, 'ENTREGA_PENDIENTE');
+    }
+    // El secreto solo viaja por POST; la intención local no almacena el QR.
+    await (await SharedPreferences.getInstance())
+        .setString(_claveEntrega, jsonEncode(i));
+    return _enviarEntrega(i, codigoQr: codigoQr);
+  }
+
+  Future<DatosPedido> repetirEntrega(DatosPedido i) => _enviarEntrega(i);
+  Future<DatosPedido> _enviarEntrega(DatosPedido i, {String? codigoQr}) async {
+    final claveLocal = _claveEntrega;
+    try {
+      final r = await _enviar(
+          'establecimientos/${Uri.encodeComponent(i['local'] as String)}/entregas/confirmar',
+          clave: i['id'] as String,
+          cuerpo: {
+            'pedidoId': i['pedidoId'],
+            'version': i['version'],
+            'puntoRevision': i['puntoRevision'],
+            if (codigoQr != null) 'codigoQr': codigoQr
+          }) as DatosPedido;
+      await (await SharedPreferences.getInstance()).remove(claveLocal);
+      return r;
+    } on PedidosException catch (e) {
+      if ([400, 404, 409].contains(e.estado) &&
+          !['QR_REQUERIDO', 'CLAVE_ENTREGA_INCOMPATIBLE'].contains(e.codigo)) {
+        await (await SharedPreferences.getInstance()).remove(claveLocal);
+      }
+      rethrow;
+    }
+  }
+
   String get _clavePreparacion =>
       'hexacore.cu013.intencion.${_sesion.usuario?.id ?? "sin-sesion"}';
   Future<DatosPedido?> pendientePreparacion() async {

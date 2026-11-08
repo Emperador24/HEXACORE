@@ -41,6 +41,7 @@ class SondeoPedidos with WidgetsBindingObserver {
 String avancePedido(String? estado) => switch (estado) {
       'EN_PREPARACION' => 'En preparación',
       'LISTO_PARA_ENTREGAR' => 'Listo para entregar',
+      'ENTREGADO' => 'Entregado',
       _ => 'Recibido por el establecimiento',
     };
 String fechaPedido(dynamic valor) {

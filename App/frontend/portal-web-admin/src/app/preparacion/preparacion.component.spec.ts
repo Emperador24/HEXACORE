@@ -1,3 +1,4 @@
+import { EntregasApiService } from '../core/entregas-api.service';
 import { ComponentFixture, fakeAsync, flushMicrotasks, TestBed, tick } from '@angular/core/testing';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { PreparacionComponent } from './preparacion.component';
@@ -15,7 +16,7 @@ describe('Bandeja de preparación', () => {
     localStorage.removeItem('hexacore.cu013.intencion.personal-unit');
     spyOnProperty(document, 'visibilityState', 'get').and.returnValue('visible');
     api = { listar: jasmine.createSpy().and.resolveTo([pedido]), detalle: jasmine.createSpy().and.resolveTo(pedido), operar: jasmine.createSpy().and.resolveTo({ id: 'op' }) };
-    TestBed.configureTestingModule({ imports: [PreparacionComponent], providers: [provideNoopAnimations(),
+    TestBed.configureTestingModule({ imports: [PreparacionComponent], providers: [provideNoopAnimations(), { provide: EntregasApiService, useValue: { prevalidar: jasmine.createSpy(), confirmar: jasmine.createSpy() } },
       { provide: PreparacionApiService, useValue: api }, { provide: MenuApiService, useValue: { misEstablecimientos: () => Promise.resolve([{ id: 'l', nombre: 'Local cerrado', estado: 'CERRADO' }]) } },
       { provide: AuthService, useValue: { usuarioActual: () => ({ id: 'personal-unit' }) } } ] });
   });

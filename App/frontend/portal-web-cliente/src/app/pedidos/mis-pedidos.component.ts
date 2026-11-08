@@ -13,16 +13,16 @@ import { QrPedidoComponent } from './qr-pedido.component';
   @if(error()){<p role="alert">{{error()}}</p>}
   @if(pausado()){<p>Actualización automática pausada. Usa Actualizar seguimiento.</p>}
   <div class="grilla"><section><h2>Tus pedidos</h2><p>Página {{pagina() + 1}}</p><button mat-button (click)="cambiarPagina(-1)" [disabled]="cargando() || pagina() === 0">Pedidos más recientes</button><button mat-button (click)="cambiarPagina(1)" [disabled]="cargando() || pedidos().length < 100">Pedidos anteriores</button>
-  @for(p of pedidos(); track p.id){<article class="hxc-vidrio" [attr.data-pedido]="p.id"><h3>{{p.establecimiento}}</h3><p>{{p.total}} {{p.moneda}} · {{p.estado}}</p><p>{{etiqueta(p.preparacion.estado)}}</p><a mat-button [routerLink]="['/mis-pedidos',p.id]">Ver seguimiento</a></article>}
+  @for(p of pedidos(); track p.id){<article class="hxc-vidrio" [attr.data-pedido]="p.id"><h3>{{p.establecimiento}}</h3><p>{{p.total}} {{p.moneda}} · {{p.estado}}</p><p>{{etiqueta(p.estadoOperativo ?? p.preparacion.estado)}}</p><a mat-button [routerLink]="['/mis-pedidos',p.id]">Ver seguimiento</a></article>}
   @empty{ @if(!cargando()){<p>No hay pedidos en esta página.</p>} }
   </section>
-  @if(detalle(); as p){<section class="hxc-vidrio detalle" aria-label="Seguimiento del pedido"><h2>{{p.establecimiento}}</h2><p data-avance>{{etiqueta(p.preparacion.estado)}}</p><p>{{p.estado}} · Total acordado {{p.total}} {{p.moneda}}</p>
+  @if(detalle(); as p){<section class="hxc-vidrio detalle" aria-label="Seguimiento del pedido"><h2>{{p.establecimiento}}</h2><p data-avance>{{etiqueta(p.estadoOperativo ?? p.preparacion.estado)}}</p><p>{{p.estado}} · Total acordado {{p.total}} {{p.moneda}}</p>
   @if(p.preparacion.estimadoListoEn){<p>Estimado listo: <time data-estimacion>{{p.preparacion.estimadoListoEn | date:'short'}}</time></p>}
   @if(p.preparacion.retrasado){<p>La estimación se ha superado. El establecimiento debe actualizar el tiempo.</p>}
-  @if(p.preparacion.estado === 'LISTO_PARA_ENTREGAR'){<p>Preparación finalizada. El registro de entrega todavía no está habilitado.</p>}
+  @if(p.entrega){<p>Entregado el <time data-entregado>{{p.entrega.entregadoEn | date:'short'}}</time> en {{p.entrega.puntoEntrega}}. El QR ya no permite otra entrega.</p>}@else if(p.preparacion.estado === 'LISTO_PARA_ENTREGAR'){<p>Presenta tu QR en el punto autorizado para recibir el pedido.</p>}
   @for(d of p.productos; track $index){<p>{{d.cantidad}} × {{d.nombreProducto}} · {{d.precioUnitario}} {{p.moneda}}</p><p>{{d.descripcionProducto}}</p><small>{{d.restriccionesAlimentarias.join(', ')}}</small>}
-  @if(p.codigoQr){<app-qr-pedido [codigo]="p.codigoQr" /><p>Punto de entrega: {{p.puntoEntrega}}</p>}
-  @else{<p>El QR solo está disponible para pedidos confirmados con pago aprobado.</p>}
+  @if(p.codigoQr && p.qrUtilizable !== false){<app-qr-pedido [codigo]="p.codigoQr" /><p>Punto de entrega: {{p.puntoEntrega}}</p>}
+  @else if(!p.entrega){<p>El QR solo está disponible para pedidos confirmados con pago aprobado.</p>}
   <h3>Avisos del establecimiento</h3><p>Canal dentro de la web/app; no son correos ni mensajes push.</p>
   @for(a of p.avisos; track a.id){<article class="aviso" [attr.data-aviso]="a.id"><time>{{a.creadoEn | date:'short'}}</time><p>{{a.mensaje}}</p></article>}
   @empty{<p>Aún no hay avisos de preparación.</p>}
@@ -53,5 +53,5 @@ export class MisPedidosComponent implements OnDestroy {
     if(this.cargando() || this.pagina() + delta < 0) return;
     this.pagina.update(p => p + delta); this.pedidos.set([]); await this.actualizar();
   }
-  etiqueta(estado: string) { return ({RECIBIDO:'Recibido por el establecimiento',EN_PREPARACION:'En preparación',LISTO_PARA_ENTREGAR:'Listo para entregar'} as Record<string,string>)[estado] ?? estado; }
+  etiqueta(estado: string) { return ({RECIBIDO:'Recibido por el establecimiento',EN_PREPARACION:'En preparación',LISTO_PARA_ENTREGAR:'Listo para entregar',ENTREGADO:'Entregado'} as Record<string,string>)[estado] ?? estado; }
 }

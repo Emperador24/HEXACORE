@@ -50,6 +50,8 @@ class ApiPreparacion extends PedidosApi {
         ],
       };
   @override
+  Future<DatosPedido?> pendienteEntrega() async => null;
+  @override
   Future<DatosPedido?> pendientePreparacion() async => null;
   @override
   Future<List<DatosPedido>> misEstablecimientos() async => [

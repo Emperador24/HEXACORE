@@ -3,7 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { AuthService } from './auth.service';
 import { Servidor } from './servidor';
 export interface AvancePedido { estado: string; version: number; iniciadoEn: string | null; estimadoListoEn: string | null; listoEn: string | null; incidenciasAbiertas: number; retrasado: boolean }
-export interface PedidoRecibido { id: string; estado: string; total: string; moneda: string; pagoVerificado: boolean; confirmadoEn: string | null; preparacion: AvancePedido;
+export interface PedidoRecibido { estadoOperativo?: string; entrega?: {entregadoEn:string;puntoEntrega:string} | null; id: string; estado: string; total: string; moneda: string; pagoVerificado: boolean; confirmadoEn: string | null; preparacion: AvancePedido;
   productos: { productoId: string; nombreProducto: string; cantidad: number; precioUnitario: string }[];
   incidencias?: { id: string; descripcion: string; resueltaEn: string | null; resolucion: string | null }[];
   avisos?: { id: string; mensaje: string; creadoEn: string }[];

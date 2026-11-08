@@ -126,7 +126,7 @@ class _MisPedidosPageState extends State<MisPedidosPage> {
                 panel([
                   Text(p['establecimiento'] as String),
                   Text('${p['total']} ${p['moneda']} · ${p['estado']}'),
-                  Text(avancePedido(
+                  Text(avancePedido(p['estadoOperativo'] as String? ??
                       (p['preparacion'] as Map)['estado'] as String?)),
                   TextButton(
                       onPressed: cargando
@@ -155,7 +155,9 @@ class _MisPedidosPageState extends State<MisPedidosPage> {
     return [
       panel([
         Text(p['establecimiento'] as String),
-        Text(avancePedido(a['estado'] as String?),
+        Text(
+            avancePedido(
+                p['estadoOperativo'] as String? ?? a['estado'] as String?),
             style: Theme.of(context).textTheme.titleLarge),
         Text('${p['estado']} · Total acordado ${p['total']} ${p['moneda']}'),
         if (a['estimadoListoEn'] != null)
@@ -169,7 +171,7 @@ class _MisPedidosPageState extends State<MisPedidosPage> {
           if (d['descripcionProducto'] != null)
             Text(d['descripcionProducto'] as String)
         ],
-        if (p['codigoQr'] is String) ...[
+        if (p['codigoQr'] is String && p['qrUtilizable'] != false) ...[
           Center(
               child: Semantics(
                   label: 'QR del pedido confirmado',
@@ -178,11 +180,14 @@ class _MisPedidosPageState extends State<MisPedidosPage> {
                       size: 240,
                       backgroundColor: Colors.white))),
           Text('Punto de entrega: ${p['puntoEntrega']}')
-        ] else
+        ] else if (p['entrega'] == null)
           const Text('El QR requiere un pedido confirmado con pago aprobado.'),
-        if (a['estado'] == 'LISTO_PARA_ENTREGAR')
+        if (p['entrega'] case final Map entrega)
+          Text(
+              'Entregado el ${fechaPedido(entrega['entregadoEn'])} en ${entrega['puntoEntrega']}. El QR ya no permite otra entrega.')
+        else if (a['estado'] == 'LISTO_PARA_ENTREGAR')
           const Text(
-              'Listo. El registro de entrega todavía no está habilitado.'),
+              'Presenta tu QR en el punto autorizado para recibir el pedido.'),
         const Text('Avisos del establecimiento'),
         for (final aviso in p['avisos'] as List? ?? [])
           Text('${fechaPedido(aviso['creadoEn'])} · ${aviso['mensaje']}'),

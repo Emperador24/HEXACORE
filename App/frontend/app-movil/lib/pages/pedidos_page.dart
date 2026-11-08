@@ -154,7 +154,7 @@ class _MenuPedidosPageState extends State<MenuPedidosPage> {
                 const SizedBox(height: 16),
                 Text(importePedido(pago!['monto'], pago['moneda'] as String),
                     style: titulo, textAlign: TextAlign.center),
-                if (pago['codigoQr'] is String)
+                if (pago['codigoQr'] is String && pago['qrUtilizable'] != false)
                   Center(
                       child: Semantics(
                           label: 'QR del pedido confirmado',
@@ -163,6 +163,9 @@ class _MenuPedidosPageState extends State<MenuPedidosPage> {
                               size: 240,
                               padding: const EdgeInsets.all(16),
                               backgroundColor: Colors.white))),
+                if (pago['entrega'] != null)
+                  const Text(
+                      'Este pedido ya fue entregado. El QR no permite otra entrega.'),
                 const Text(
                     'Puedes recuperar el mismo QR desde Mis pedidos después de volver a entrar.'),
                 TextButton(

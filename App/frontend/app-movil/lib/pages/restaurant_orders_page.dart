@@ -1,3 +1,4 @@
+import '../widgets/entrega_pedido_panel.dart';
 import 'package:flutter/material.dart';
 import '../services/pedidos_api.dart';
 import '../widgets/liquid_glass.dart';
@@ -23,7 +24,7 @@ class _RestaurantOrdersPageState extends State<RestaurantOrdersPage> {
   List<DatosPedido> locales = [], pedidos = [];
   DatosPedido? detalle, pendiente;
   String? seleccionado, error, aviso;
-  bool cargando = false;
+  bool cargando = false, entregaOcupada = false, entregaPendiente = false;
   int pagina = 0;
   @override
   void initState() {
@@ -34,7 +35,7 @@ class _RestaurantOrdersPageState extends State<RestaurantOrdersPage> {
             (ModalRoute.of(context)?.isCurrent ?? true) &&
             TickerMode.valuesOf(context).enabled &&
             pendiente == null,
-        ocupado: () => cargando,
+        ocupado: () => cargando || entregaOcupada,
         consultar: actualizar);
     cargarCatalogo();
   }
@@ -58,7 +59,10 @@ class _RestaurantOrdersPageState extends State<RestaurantOrdersPage> {
       final resultado = await api.misEstablecimientos();
       if (!mounted) return;
       locales = resultado;
-      final sugerido = pendiente?['local'] as String?;
+      final entrega = await api.pendienteEntrega();
+      entregaPendiente = entrega != null;
+      final sugerido =
+          pendiente?['local'] as String? ?? entrega?['local'] as String?;
       seleccionado = resultado.any((e) => e['id'] == sugerido)
           ? sugerido
           : resultado.isEmpty
@@ -179,7 +183,14 @@ class _RestaurantOrdersPageState extends State<RestaurantOrdersPage> {
             'Resultado sin confirmar. Repite la misma operación para resolverla.';
       }
     } finally {
-      if (mounted) setState(() => cargando = false);
+      if (mounted) {
+        setState(() => cargando = false);
+        if (error != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && desplazamiento.hasClients) desplazamiento.jumpTo(0);
+          });
+        }
+      }
     }
   }
 
@@ -276,7 +287,7 @@ class _RestaurantOrdersPageState extends State<RestaurantOrdersPage> {
             Text('Pedidos recibidos',
                 style: Theme.of(context).textTheme.headlineSmall),
             const Text(
-                'Preparación hasta listo. No valida el QR ni registra entrega.'),
+                'Prepara el pedido, valida el código del cliente y confirma su entrega.'),
             if (locales.isNotEmpty)
               DropdownButtonFormField<String>(
                   initialValue: seleccionado,
@@ -288,7 +299,10 @@ class _RestaurantOrdersPageState extends State<RestaurantOrdersPage> {
                           value: e['id'] as String,
                           child: Text(e['nombre'] as String)))
                       .toList(),
-                  onChanged: cargando || pendiente != null
+                  onChanged: cargando ||
+                          pendiente != null ||
+                          entregaOcupada ||
+                          entregaPendiente
                       ? null
                       : (v) {
                           if (v != null) cargarPedidos(v);
@@ -338,13 +352,30 @@ class _RestaurantOrdersPageState extends State<RestaurantOrdersPage> {
               Text(pagina == 0
                   ? 'Aún no hay pedidos confirmados en este establecimiento.'
                   : 'No hay pedidos en esta página.'),
+            if (seleccionado != null)
+              ExpansionTile(
+                  title: const Text('Validar y entregar'),
+                  initiallyExpanded: entregaPendiente,
+                  children: [
+                    EntregaPedidoPanel(
+                        api: api,
+                        local: seleccionado!,
+                        inactivo: cargando || pendiente != null,
+                        alEntregar: actualizar,
+                        alOcupar: (v) {
+                          if (mounted) setState(() => entregaOcupada = v);
+                        },
+                        alPendiente: (v) {
+                          if (mounted) setState(() => entregaPendiente = v);
+                        })
+                  ]),
             if (detalle != null) ...detalleWidgets(detalle!),
             for (final p in pedidos)
               panel([
                 Text(p['estado'] == 'CONFIRMADO'
                     ? 'Pedido confirmado'
                     : p['estado'].toString()),
-                Text(avancePedido(
+                Text(avancePedido(p['estadoOperativo'] as String? ??
                     (p['preparacion'] as Map?)?['estado'] as String?)),
                 for (final d in p['productos'] as List)
                   Text('${d['cantidad']} × ${d['nombreProducto']}'),
@@ -365,7 +396,9 @@ class _RestaurantOrdersPageState extends State<RestaurantOrdersPage> {
         Text('Pedido ${p['id']}'),
         for (final d in p['productos'] as List)
           Text('${d['cantidad']} × ${d['nombreProducto']}'),
-        Text(avancePedido(a['estado'] as String?),
+        Text(
+            avancePedido(
+                p['estadoOperativo'] as String? ?? a['estado'] as String?),
             style: Theme.of(context).textTheme.titleLarge),
         if (a['estimadoListoEn'] != null)
           Text('Estimado listo: ${fechaPedido(a['estimadoListoEn'])}'),
@@ -399,9 +432,12 @@ class _RestaurantOrdersPageState extends State<RestaurantOrdersPage> {
                       ejecutar({'accion': 'LISTO', 'version': a['version']}),
               child: const Text('Marcar listo')),
         ],
-        if (a['estado'] == 'LISTO_PARA_ENTREGAR')
+        if (p['entrega'] case final Map entrega)
+          Text(
+              'Entregado en ${entrega['puntoEntrega']} · ${fechaPedido(entrega['entregadoEn'])}. El QR ya no permite otra entrega.')
+        else if (a['estado'] == 'LISTO_PARA_ENTREGAR')
           const Text(
-              'Listo. El registro de entrega todavía no está habilitado.'),
+              'Preparación finalizada. Valida el código del cliente para entregar.'),
         for (final i in p['incidencias'] as List? ?? []) ...[
           Text(
               '${i['descripcion']} · ${i['resueltaEn'] == null ? 'Pendiente de resolver' : 'Resuelta: ${i['resolucion']}'}'),
