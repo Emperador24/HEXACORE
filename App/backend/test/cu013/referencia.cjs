@@ -9,7 +9,8 @@ const { resolve } = require('node:path');
 const { Client } = require('pg');
 const raiz = resolve(__dirname, '../../../..');
 const sello = new Date().toISOString().replace(/[:.]/g, '-');
-const salida = resolve(raiz, 'App/e2e/.evidencia', `cu013-referencia-${sello}`);
+const implementados = process.argv.includes('--implementados');
+const salida = resolve(raiz, 'App/e2e/.evidencia', `${implementados ? 'conjunto-observado' : 'cu013-referencia'}-${sello}`);
 const escribir = (tipo, datos) => appendFileSync(resolve(salida, `${tipo}.jsonl`), JSON.stringify({ instante: new Date().toISOString(), ...datos }) + '\n');
 const pausa = ms => new Promise(r => setTimeout(r, ms));
 
@@ -24,6 +25,11 @@ const pausa = ms => new Promise(r => setTimeout(r, ms));
   assert.equal(env.POSTGRES_BD, 'hexacore_cu015');
   mkdirSync(salida, { recursive: true });
   console.log(`Evidencia privada: ${salida}`);
+  const cu028 = implementados ? require(resolve(raiz, 'App/e2e/cu028-estado.cjs')).estadoCu028() : null;
+  if (cu028) {
+    writeFileSync(resolve(salida, 'cu028.json'), JSON.stringify(cu028, null, 2));
+    console.log(`CU-028 ${cu028.estado}: no se acredita el caso completo.`);
+  }
   const cliente = new Client({ host: '127.0.0.1', port: 15459, database: env.POSTGRES_BD,
     user: env.POSTGRES_USUARIO, password: env.POSTGRES_CONTRASENA,
     application_name: 'cu013-observador', connectionTimeoutMillis: 3000, query_timeout: 3000, statement_timeout: 3000 });
@@ -34,7 +40,7 @@ const pausa = ms => new Promise(r => setTimeout(r, ms));
   if (existsSync(original)) cpSync(original, resolve(salida, 'resultados-anteriores'), { recursive: true });
   let activo = true;
   // Mantener la referencia histórica de seis casos aunque crezca test:alimentos.
-  const guion = process.argv.includes('--todos') ? 'test:preparacion' : 'test:referencia';
+  const guion = implementados ? 'test:implementados' : process.argv.includes('--todos') ? 'test:preparacion' : 'test:referencia';
   const hijo = spawn('npm', ['--prefix', resolve(raiz, 'App/e2e'), 'run', guion, '--', `--output=${resolve(salida, 'resultados')}`], {
     cwd: raiz, env: { ...process.env, PLAYWRIGHT_HTML_OUTPUT_DIR: resolve(salida, 'informe') }, stdio: ['ignore', 'pipe', 'pipe'] });
   for (const canal of [hijo.stdout, hijo.stderr]) canal.on('data', d => appendFileSync(resolve(salida, 'playwright.log'), d));
@@ -75,8 +81,10 @@ const pausa = ms => new Promise(r => setTimeout(r, ms));
     const r = await ejecutar('docker', ['logs', '--since', antes, `hexacore-cu015-sebastian-${servicio}-1`]);
     writeFileSync(resolve(salida, `${servicio}.log`), r.stdout + r.stderr);
   }
-  escribir('resultado', { codigo, inicio: antes, fin: new Date().toISOString(), poolConfigurado: { max: env.POSTGRES_MAX_CONEXIONES ?? 10, esperaMs: env.POSTGRES_ESPERA_MAXIMA_MS ?? 3000 },
+  const codigoCompleto = codigo === 0 && cu028 ? 2 : codigo;
+  escribir('resultado', { codigo: codigoCompleto, playwright: codigo, cu028: cu028?.estado, completo: cu028 ? false : undefined, inicio: antes, fin: new Date().toISOString(), poolConfigurado: { max: env.POSTGRES_MAX_CONEXIONES ?? 10, esperaMs: env.POSTGRES_ESPERA_MAXIMA_MS ?? 3000 },
     limite: 'pg_stat_activity muestra conexiones en el servidor; no permite medir waitingCount del pool dentro de Núcleo.' });
   console.log(`Playwright terminó con ${codigo}. No se modificaron timeouts, reintentos ni servicios.`);
-  process.exitCode = codigo ?? 1;
+  if (cu028) console.log('El conjunto completo conserva el bloqueo explícito de CU-028.');
+  process.exitCode = codigoCompleto ?? 1;
 })().catch(e => { console.error(e.message); process.exitCode = 1; });

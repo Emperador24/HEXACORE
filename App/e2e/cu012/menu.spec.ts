@@ -1,4 +1,4 @@
-import { expect, Page, test } from '@playwright/test';
+import { APIResponse, expect, Page, test } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import { adminURL, clienteURL, comprobarAislamiento, crearEvento, gateway, loginAPI, loginUI, nucleo, sql } from '../cu015/entorno';
 
@@ -163,9 +163,7 @@ test('CU-012 API real: límites, alcance, replay y concurrencia con compra, pago
   expect(repetida.status()).toBe(201);expect((await repetida.json()).producto.id).toBe(producto.id);
   const ajusteUrl=`${url}/${producto.id}/ajustes`;
   const ajustar=(delta:number, clave=randomUUID())=>request.post(ajusteUrl,{headers:headers(personal.token,clave),data:{delta,motivo:'Ajuste de concurrencia CU012'}});
-  const simultaneos=await Promise.all([ajustar(-15),ajustar(-15)]);
-  const estados: number[]=[];
-  for (const respuesta of simultaneos) {
+  async function terminarAjuste(respuesta:APIResponse,delta:number){
     expect([200,202,409]).toContain(respuesta.status());
     let op=await respuesta.json();
     if (respuesta.status()===202) {
@@ -183,7 +181,12 @@ test('CU-012 API real: límites, alcance, replay y concurrencia con compra, pago
       expect(fallo).toBeUndefined();
     } else expect(op.estado).toBe(respuesta.status()===200?'APLICADA':'RECHAZADA');
     expect(['APLICADA','RECHAZADA']).toContain(op.estado);
-    expect(op.productoId).toBe(producto.id);expect(op.delta).toBe(-15);
+    expect(op.productoId).toBe(producto.id);expect(op.delta).toBe(delta);return op;
+  }
+  const simultaneos=await Promise.all([ajustar(-15),ajustar(-15)]);
+  const estados: number[]=[];
+  for (const respuesta of simultaneos) {
+    const op=await terminarAjuste(respuesta,-15);
     estados.push(op.estado==='APLICADA'?200:409);
   }
   expect(estados.sort()).toEqual([200,409]);
@@ -193,7 +196,7 @@ test('CU-012 API real: límites, alcance, replay y concurrencia con compra, pago
   const entrada={eventoId:evento.id,establecimientoId:local.id,metodoEntrega:'RECOGER',productos:[{productoId:producto.id,cantidad:2}]};
   const [compra,aumento]=await Promise.all([request.post(`${gateway}/pedidos/checkout`,{headers:headers(cliente.token),data:entrada}),ajustar(3)]);
   // Una intención administrativa en curso puede bloquear admisión, sin crear un pedido parcial.
-  expect([201,409]).toContain(compra.status());expect(aumento.status()).toBe(200);
+  expect([201,409]).toContain(compra.status());expect((await terminarAjuste(aumento,3)).estado).toBe('APLICADA');
   if (compra.status() === 409) {
     expect((await compra.json()).codigo).toBe('AJUSTE_INVENTARIO_PENDIENTE');
     expect(sql(`SELECT count(*) FROM alimentos.pedidos WHERE establecimiento_id='${local.id}';`)).toBe('0');
@@ -201,14 +204,15 @@ test('CU-012 API real: límites, alcance, replay y concurrencia con compra, pago
   const compraReal=compra.status()===201?compra:await request.post(`${gateway}/pedidos/checkout`,{headers:headers(cliente.token),data:entrada});
   expect(compraReal.status()).toBe(201);const pedido=await compraReal.json();
   const [pago,reduccion]=await Promise.all([request.post(`${gateway}/pedidos/${pedido.id}/pagos`,{headers:headers(cliente.token,randomUUID()),data:{tokenPago:'tok_ok_cu012'}}),ajustar(-1)]);
-  expect(pago.status()).toBe(200);expect((await pago.json()).compraConfirmada).toBe(true);expect(reduccion.status()).toBe(200);
-  const clave=randomUUID();const primera=await ajustar(2,clave);expect(primera.status()).toBe(200);
-  const resultado=await primera.json();const replay=await ajustar(2,clave);expect(replay.status()).toBe(200);expect(await replay.json()).toEqual(resultado);
+  expect(pago.status()).toBe(200);expect((await pago.json()).compraConfirmada).toBe(true);expect((await terminarAjuste(reduccion,-1)).estado).toBe('APLICADA');
+  const clave=randomUUID();const primera=await ajustar(2,clave);
+  const resultado=await terminarAjuste(primera,2);expect(resultado.estado).toBe('APLICADA');expect(resultado.id).toBe(clave);
+  const replay=await ajustar(2,clave);expect(replay.status()).toBe(200);expect(await replay.json()).toEqual(resultado);
   expect((await ajustar(3,clave)).status()).toBe(409);
   const expiracion=await request.post(`${gateway}/pedidos/checkout`,{headers:headers(cliente.token),data:entrada});expect(expiracion.status()).toBe(201);
   const expira=await expiracion.json();
   sql(`UPDATE alimentos.pedidos SET creado_en=now()-interval '20 minutes',expira_en=now()-interval '1 minute' WHERE id='${expira.id}';`);
-  expect((await ajustar(2)).status()).toBe(200);
+  expect((await terminarAjuste(await ajustar(2),2)).estado).toBe('APLICADA');
   await expect.poll(()=>sql(`SELECT estado FROM alimentos.reservas_inventario WHERE pedido_id='${expira.id}';`)).toBe('LIBERADA');
   const menu=await request.get(`${gateway}/pedidos/establecimientos/${local.id}/menu`,{headers:headers(personal.token)});expect(menu.status()).toBe(200);
   expect((await menu.json())[0]).toMatchObject({cantidadFisica:9,cantidadReservada:0,cantidadDisponible:9});
