@@ -118,6 +118,9 @@ def validar_configuracion(c):
                 permitidos.add(RAIZ / 'App/backend/modulos/personal-logistica/scripts/seed.mjs')
                 exigir(ruta in permitidos or ruta.parent == ESTADO, 'Montaje ajeno: ' + str(ruta))
         e = s.get('environment', {})
+        if nombre in ('nucleo', 'boleteria', 'trabajador'):
+            exigir(s.get('healthcheck', {}).get('test') == ['CMD', 'sh', '/revision/sonda-salud.sh'],
+                   'Sonda HTTP propia modificada: ' + nombre)
         if nombre in ('nucleo', 'boleteria', 'preparacion-base'):
             exigir((e.get('POSTGRES_HOST'), e.get('POSTGRES_BD'), e.get('POSTGRES_USUARIO')) ==
                    ('postgres', BASE, USUARIO), 'Destino SQL ajeno: ' + nombre)
@@ -206,7 +209,7 @@ def archivos():
                        f'    "http://{DOMINIO}:{PUERTO_ADMIN}" $http_origin;\n' + '}', original)
     exigir(n == 1, 'Cambió el mapa CORS del gateway: adaptar generación')
     # Escritura sobre el mismo inode: respeta montajes de contenedores ya creados.
-    for nombre, contenido in {'gateway.conf': nuevo, 'configuracion.js':
+    for nombre, contenido in {'gateway.conf': nuevo, 'sonda-salud.sh': (CARPETA / 'sonda-salud.sh').read_text(), 'configuracion.js':
             'window.HEXACORE_CONFIGURACION = ' + json.dumps({'api': f'http://{DOMINIO}:{PUERTO_GATEWAY}/api/v1',
                 'buzonDesarrollo': f'http://{DOMINIO}:{PUERTO_CORREO}/correos'}) + ';\n'}.items():
         p = ESTADO / nombre

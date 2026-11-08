@@ -4,6 +4,8 @@ import json
 import os
 import socket
 import subprocess
+import tempfile
+from pathlib import Path
 import unittest
 from unittest.mock import patch
 import revision as r
@@ -36,6 +38,16 @@ class SeguridadRevision(unittest.TestCase):
         for v in c['services']['nucleo']['volumes']:
             if 'jwt-' in v['source']:
                 self.assertIn('.estado-cu015/', v['source'])
+
+    def test_sondas_http_conservan_intervalos_y_esperas(self):
+        for nombre in ('nucleo', 'boleteria', 'trabajador'):
+            s = self.config['services'][nombre]
+            h = s['healthcheck']
+            self.assertEqual(h['test'], ['CMD', 'sh', '/revision/sonda-salud.sh'])
+            self.assertEqual((h['interval'], h['timeout'], h['retries']), ('10s', '5s', 10))
+            montaje = next(v for v in s['volumes'] if v['target'] == '/revision/sonda-salud.sh')
+            self.assertTrue(montaje['read_only'])
+            self.assertEqual(Path(montaje['source']).parent, r.ESTADO)
 
     def test_rechaza_destinos_y_montajes_ajenos(self):
         for cambiar in [
@@ -123,6 +135,41 @@ class SeguridadRevision(unittest.TestCase):
         c['State'].update(ExitCode=0, OOMKilled=True)
         with self.assertRaisesRegex(RuntimeError, 'Cierre incompleto'):
             r.comprobar_cierre([c])
+
+
+class SondaHttp(unittest.TestCase):
+    def test_un_get_sin_reintentos_y_solo_http_200(self):
+        casos = [
+            ('HTTP/1.1 200 OK', 0, 0),
+            ('HTTP/2 200', 0, 0),
+            ('HTTP/1.1 100 Continue\nHTTP/1.1 200 OK', 0, 0),
+            ('HTTP/1.1 201 Created', 0, 1),
+            ('HTTP/1.1 302 Found\nHTTP/1.1 200 OK', 0, 1),
+            ('HTTP/1.1 503 Service Unavailable', 1, 1),
+            ('Connection refused', 1, 1),
+            ('HTTP/1.1 200 OK', 1, 1),
+        ]
+        with tempfile.TemporaryDirectory() as carpeta:
+            d = Path(carpeta)
+            wget = d / 'wget'
+            wget.write_text('#!/bin/sh\nprintf x >> "$SONDA_CONTADOR"\n'
+                            'printf "%s\\n" "$*" > "$SONDA_ARGUMENTOS"\n'
+                            'printf "%s\\n" "$SONDA_RESPUESTA" >&2\nexit "$SONDA_SALIDA"\n')
+            wget.chmod(0o755)
+            for respuesta, salida_wget, esperada in casos:
+                with self.subTest(respuesta=respuesta, salida=salida_wget):
+                    contador = d / 'contador'
+                    contador.write_text('')
+                    e = {**os.environ, 'PATH': str(d) + os.pathsep + os.defpath,
+                         'PUERTO': '3002', 'SONDA_CONTADOR': str(contador),
+                         'SONDA_ARGUMENTOS': str(d / 'argumentos'),
+                         'SONDA_RESPUESTA': respuesta, 'SONDA_SALIDA': str(salida_wget)}
+                    p = subprocess.run(['sh', str(r.CARPETA / 'sonda-salud.sh')], env=e, capture_output=True)
+                    self.assertEqual(p.returncode, esperada)
+                    self.assertEqual(contador.read_text(), 'x')
+                    self.assertEqual((d / 'argumentos').read_text().strip(),
+                                     '-T 5 -S -O /dev/null http://127.0.0.1:3002/api/v1/salud')
+                    self.assertEqual(p.stdout + p.stderr, b'')
 
 
 if __name__ == '__main__':

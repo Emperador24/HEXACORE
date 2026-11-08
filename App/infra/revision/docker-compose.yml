@@ -78,6 +78,8 @@ services:
     labels: *etiquetas
     image: ${REVISION_PROYECTO:-hexacore-${REVISION_USO:-revision-arquitectura}}-nucleo:local
     build: *compilacion
+    healthcheck:
+      test: ["CMD", "sh", "/revision/sonda-salud.sh"]
     environment: !override
       <<: *comun
       PUERTO: "3002"
@@ -89,22 +91,30 @@ services:
       - ${REVISION_ESTADO:-./revision/.estado}/jwt-privada.pem:/claves/jwt-privada.pem:ro
       - ${REVISION_ESTADO:-./revision/.estado}/jwt-publica.pem:/claves/jwt-publica.pem:ro
       - ../backend/modulos/personal-logistica/scripts/seed.mjs:/revision/seed-logistica.mjs:ro
+      - ${REVISION_ESTADO:-./revision/.estado}/sonda-salud.sh:/revision/sonda-salud.sh:ro
     ports: !override ["127.0.0.1:${REVISION_PUERTO_13119:-13119}:3002"]
   boleteria:
     labels: *etiquetas
     image: ${REVISION_PROYECTO:-hexacore-${REVISION_USO:-revision-arquitectura}}-boleteria:local
     build: *compilacion
+    healthcheck:
+      test: ["CMD", "sh", "/revision/sonda-salud.sh"]
     environment: !override
       <<: *comun
       PUERTO: "3001"
       COLA_AFORO_CONCURRENTE: "25"
     volumes: !override
       - ${REVISION_ESTADO:-./revision/.estado}/jwt-publica.pem:/claves/jwt-publica.pem:ro
+      - ${REVISION_ESTADO:-./revision/.estado}/sonda-salud.sh:/revision/sonda-salud.sh:ro
     ports: !override ["127.0.0.1:${REVISION_PUERTO_13127:-13127}:3001"]
   trabajador:
     labels: *etiquetas
     image: ${REVISION_PROYECTO:-hexacore-${REVISION_USO:-revision-arquitectura}}-trabajador:local
     build: *compilacion
+    healthcheck:
+      test: ["CMD", "sh", "/revision/sonda-salud.sh"]
+    volumes:
+      - ${REVISION_ESTADO:-./revision/.estado}/sonda-salud.sh:/revision/sonda-salud.sh:ro
     environment: !override
       NODE_ENV: development
       RABBITMQ_URL: amqp://revision_demo:revision_demo@rabbitmq:5672/revision
