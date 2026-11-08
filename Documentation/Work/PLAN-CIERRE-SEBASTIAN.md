@@ -1,12 +1,31 @@
 # Cierre de Alimentos — Sebastián
 
-## CU-014 y demostraciones CU-027/029 — 8 de noviembre de 2026, en validación
+## CU-014 y demostraciones CU-027/029 — 8 de noviembre de 2026, cierre y límites
+
+CU-014 queda implementado y demostrado: entrega única transaccional, revisión
+previa sin consumo, respuesta perdida/replay, conservación financiera y cámara
+física. El último conjunto real terminó **10/13**, no verde. CU-028 sigue
+bloqueado por su implementación pendiente; las ejecuciones individuales no
+modifican el resultado conjunto.
+
+| Comprobación de este cierre | Resultado real |
+|---|---|
+| Backend tipos/build y suite completa | **919/919, 64 suites**; 105 afectados comprobados también por separado |
+| Angular administrativo / cliente | **10/10 + 19/19**, builds de ambos aprobados |
+| Flutter | Analyze limpio, **66/66**; cámara física **1/1** en iPhone 17 Pro Max, iOS 26.6 |
+| Migración CU-014 y regresiones CU-013/012/015 | **2/2 + 2/2 + 2/2 + 2/2**; 29 migraciones, 18 procedencias, 80 tablas en once esquemas y vacía sin negocio |
+| CU-011 original | **9/9**, 13,489 s; recursos de regresión detenidos, volúmenes conservados |
+| Fronteras/configuración y guardas | Aprobadas, **11/11** guardas |
+| CU-014 y CU-027 dentro del último conjunto | **3/3 + 2/2**, con backend/persistencia reales |
+| CU-029 visible posterior al conjunto | **2/2**, 51,6 s; no convierte el conjunto en 11/13 |
+| Último conjunto de trece, aplicaciones propias activas | **10/13**, 7,6 min, salida 1; sin omisiones, trabajador 1, reintentos 0, 120 s / 15 s |
+| CU-028 | **BLOQUEADO**: roles/permisos mantiene placeholder; no se acredita CRUD/matriz/propagación/auditoría |
 
 Base publicada comprobada: `db6f053d7e7259ad39684d26f085744afbbd0e24`,
 `feature/sebastian` limpia y sincronizada al comenzar. Se conserva el entorno
 CU-015 y todo recurso ajeno/A/B. No se integran develop ni cambios de parqueaderos.
 
-Fuentes en ejecución: Núcleo `b255758` (`3ecf3257c1d9`), portales `c196e1d`
+Fuentes de la referencia inicial: Núcleo `b255758` (`3ecf3257c1d9`), portales `c196e1d`
 (`31201b4c7210` y `7e9ea421bfcd`) y gateway `09b0199`. SHA-256 de preparación,
 recepción y pagos coincide con el dist local. La referencia conjunta inicial
 CU-012/013/015 terminó **4/6**: pasaron API CU-012, ambos CU-013 y API CU-015;
@@ -41,9 +60,10 @@ Regresiones migraciones CU-013/012/015 **2/2 + 2/2 + 2/2**, con bases
 `cu013_75b279750094`, `cu012_5eea418995da`, `cu015_a431ddb209dd`
 (sufijos `_vacia`/`_actualizacion`). Fronteras/configuración aprobadas y guardas
 **11/11**. CU-011 original **9/9**, 13,489 s, proyecto de regresión detenido,
-volúmenes conservados. Queda ejecutar el conjunto final de trece, sin sumar ejecuciones individuales.
+volúmenes conservados. Las ejecuciones individuales conservan su alcance, sin sumarlas como conjunto.
 CU-014 visible pasó **3/3** dentro de un conjunto nuevo **5/7**; CU-027 visible
-pasó después **2/2** dentro de **3/4**, y CU-029 visible final **2/2**, 24,4 s.
+pasó después **2/2** dentro de **3/4**; la primera ejecución aprobada CU-029
+fue **2/2**, 24,4 s. El individual posterior al último conjunto figura arriba.
 Los fallos nuevos de demostración fueron del test: navegación antes de consumir
 la respuesta de logout (traza DELETE abortada), zona inicial no contabilizada y
 DTO de recinto anidado interpretado como objeto raíz. Se esperan respuesta/estado real,
@@ -52,7 +72,7 @@ se seleccionan zonas por nombre tras ordenarlas el servidor y se consulta
 Evidencias: `.evidencia/cu014-027-029-visible-1/`,
 `cu027-029-visible-2/` y `cu029-visible-3/`.
 La repetición CU-014 de migraciones **2/2** (`cu014_73b97190d668`) exige además
-**80 tablas y 33 filas**: 29 historiales y cuatro roles, cero negocio.
+**80 tablas en once esquemas y 33 filas**: 29 historiales y cuatro roles, cero negocio.
 `test:preparacion` conserva seis casos para el observador histórico;
 `test:alimentos` incluye CU-014 (nueve) y el conjunto implementado tiene trece.
 
@@ -79,6 +99,83 @@ Primer lanzamiento: compiló, pero no descubrió Dart VM y no ejecutó tests;
 el usuario identificó una solicitud de control de Xcode en el Mac. Tras indicar
 que la aceptara, el segundo lanzamiento ejecutó y pasó. Logs/imagen/huellas y
 firma privada permanecen fuera de Git. No se cambiaron paquetes ni permisos.
+
+Primer conjunto de trece: **9/13**, 6,0 min, código 1, evidencia
+`.evidencia/conjunto-2026-11-08T06-17-23-191Z/`. Fallos: CU-012 API esperaba 200
+inmediato de un ajuste que devolvió 202; CU-013 visual recibió 503 DNS al consultar
+Mis pedidos; CU-014 carrera no alcanzó su preparación por 503/timeout de cabecera
+upstream en POST recintos; CU-027 visual recibió 503 DNS al login administrativo.
+CU-014 manual y API/reinicio, ambos CU-015 y ambos CU-029 pasaron.
+Se extiende a todos los ajustes CU-012 la consulta de la misma intención ya usada
+en concurrencia: 202 exige PENDIENTE y luego APLICADA/RECHAZADA según el escenario,
+sin reenviar POST ni ocultar HTTP/transporte; se conserva stock final y replay
+estricto. La API individual corregida pasó **1/1**, 13,2 s; no transforma el 9/13.
+La repetición observada de trece se detalla a continuación.
+
+Logs del conjunto: DNS confirmado en gateway a las **06:19:10 UTC** (GET Mis
+pedidos) y **06:22:42** (POST sesiones). A las **06:19:11.344** hubo además
+QUERY_READ_TIMEOUT SQL; siete pools con esperando=0, Alimentos total=2/libres=0,
+y máximo del bucle Node **13.195,28 ms** desde arranque/fallo anterior. No acredita
+agotamiento del pool ni causa única de DNS/SQL. POST recintos agotó espera de
+cabecera upstream a las **06:21:30**, sin DNS en esa petición; no se atribuye su
+causa a SQL sin evidencia. El 499 histórico de Eventos permanece sin causa.
+
+Último conjunto observado: **10/13**, evidencia
+`.evidencia/conjunto-observado-2026-11-08T06-27-09-380Z/`, Playwright/salida 1,
+CU-028 explícitamente BLOQUEADO y `completo=false`. Pasaron API CU-012,
+API CU-013, los tres CU-014, ambos CU-015, ambos CU-027 y el negativo CU-029.
+Fallaron: UI CU-012 tras 503 en renovación de sesión al recargar; UI CU-013 por
+500 en POST de preparación; UI CU-029 por editar ciudad antes de completar la
+carga inicial del detalle. En su traza, esa carga terminó después de introducir
+Medellín y volvió a establecer Bogotá antes del PUT: no fue una pérdida SQL de
+una ciudad enviada correctamente. El test ahora espera encabezado/datos cargados,
+fin de carga/subida y aviso de guardado, y exige que el PUT lleve Medellín antes
+de recargar. Su primer intento posterior quedó **1/2** por 503 en GET sesión;
+el siguiente pasó **2/2**, conservando ambos informes (`cu029-visible-4/5`).
+Ese individual posterior no transforma el **10/13** ni elimina las trazas fallidas.
+
+Diagnóstico observado: SQL QUERY_READ_TIMEOUT a las **06:29:19.120 UTC**; siete
+pools con esperando=0 y Alimentos total=3/libres=1 (máximo 10), máximo del bucle
+Node **29.611,79 ms** desde arranque/fallo anterior. **95 muestras** SQL, RTT
+máximo respondido **2406,88 ms**, además de timeouts del observador a 3000 ms.
+Presión de memoria de VM `full avg10` entre **1,67 % y 49,48 %**. No hubo error
+DNS registrado en este último conjunto; los DNS confirmados anteriores siguen
+abiertos. Las instantáneas no prueban agotamiento del pool, causa de pausas ni
+causa única SQL/DNS. El timeout upstream y el 499 histórico conservan su
+clasificación aparte. No se cambian plazos, reintentos, DNS ni recursos ajenos.
+
+CU-013 integra ahora los pasos 1–12 al incorporar CU-014. B conserva demora/aviso;
+C/D/E/F rechazan entrega prematura, cancelada, duplicada/punto incorrecto y QR
+inválido; G usa versión, idempotencia e historial/entrega única. A sigue siendo
+reporte/resolución conservadora: sustituciones, originar cancelaciones CU-011F y
+coordinar devoluciones F12 permanecen pendientes. No se declara cerrado ese alcance.
+
+Comandos por CU, automático/visible, conjunto y diagnóstico:
+[guía E2E](../../App/e2e/README.md). Los logs de compilación, suites y fallos,
+metadatos de imágenes y cámara se conservaron en `.evidencia/cu014-cierre/`;
+QR, correos, sesiones, firmas y trazas siguen privados/ignorados. No se repitieron
+semillas, borraron volúmenes ni cambiaron A/B. El entorno propio termina saludable,
+demo COMPLETA. Siguiente etapa: investigar las pausas/SQL y DNS con estas evidencias,
+coordinar CU-028 con Samuel y definir cancelación CU-011F/F12 con su dueño.
+
+Imágenes finales verificadas: Núcleo `83ff515b95f7` / revisión `da4ba89`,
+cliente `e925bc41bf80` / `da4ba89`, administración `3ea2d040d7ec` / `cc3e233`,
+gateway `51f6c239bfc2` / `09b0199`; todas con fuente modificada=`no`.
+Los commits posteriores a esas compilaciones cambian pruebas/documentación.
+SHA-256 de los siete JavaScript ejecutados de entrega, recepción, preparación,
+pagos, consulta Personal, historia central y migración CU-014 coincide con dist
+local. Metadatos íntegros en `cu014-cierre/fuentes-imagenes-final.json`.
+Los once servicios propios están saludables; solo la regresión propia quedó
+parada, con sus datos conservados. A/B y recursos ajenos no se detuvieron.
+
+Hitos de código/pruebas de esta entrega:
+`f24f255` referencia/decisión; `516d7b0` backend/migración CU-014;
+`da4ba89` portales/Flutter/escáner; `7f0e0e1` mensaje humano de rechazos;
+`39be37a` cámara física e historia de migraciones; `1822efd` fixture CU-011
+repetible; `cc3e233` demostraciones CU-014/027/029 y guías; `313f8e5` resolución
+de intenciones y sincronización del recinto/observador. Publicación exclusiva
+`origin/feature/sebastian`; no hay integración a develop/main ni importación de
+parqueaderos de Samuel. El commit documental posterior registra este cierre.
 
 ## CU-013: hito 2, preparación y comprobaciones — 7 de noviembre de 2026
 

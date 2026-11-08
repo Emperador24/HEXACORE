@@ -91,9 +91,27 @@ npm --prefix App/backend run test:cu015:regresion
 npm --prefix App/backend run verificar:infra
 ```
 
+Para repetir los trece con el observador SQL/recursos de solo lectura y el
+bloqueo CU-028 explícito (misma semántica de salida 2 si pasan):
+
+```bash
+node App/backend/test/cu013/referencia.cjs --implementados
+```
+
+Conserva cada ejecución en `.evidencia/conjunto-observado-FECHA/`; `--todos`
+sigue siendo la referencia de seis CU-012/013/015. No inicia ni detiene servicios.
+
 Las secciones siguientes conservan los resultados históricos y diagnósticos.
 SQL, DNS confirmado y 499 permanecen separados; una ejecución individual aprobada
 no cambia el resultado del último conjunto. No se amplían plazos ni reintentos.
+
+Resultado vigente del 8/11: último conjunto observado **10/13**, salida 1;
+fallaron UI CU-012 (renovación 503), UI CU-013 (500 SQL) y UI CU-029 (carga inicial
+sobrescribió la edición del test). CU-029 corregido pasó después **2/2 visible**;
+no convierte el conjunto en verde. CU-014 **3/3** y CU-027 **2/2** pasaron dentro
+del conjunto. Cámara física **1/1** en iPhone 17 Pro Max/iOS 26.6. CU-028 sigue
+bloqueado; SQL/DNS/499 mantienen evidencias y causas separadas. Detalle y todos los
+fallos: [plan](../../Documentation/Work/PLAN-CIERRE-SEBASTIAN.md).
 
 ## Preparación CU-013 en el entorno existente
 
@@ -227,7 +245,8 @@ La prueba API comprueba 401/403 por gateway y Núcleo, producto de otro
 establecimiento, duplicados y límites, idempotencia, dos reducciones concurrentes,
 ajuste junto a compra/pago y expiración real de una reserva. Los dos ajustes
 concurrentes deben terminar en uno APLICADA y otro RECHAZADA, con físico/disponible
-5 de 20. Si una respuesta es 202, se exige PENDIENTE y se consulta esa misma
+5 de 20. En todos los ajustes del recorrido, si la respuesta es 202 se exige PENDIENTE
+y se consulta esa misma
 operación por UUID hasta su resolución; no se reenvía POST ni se genera otra clave.
 Una respuesta HTTP distinta de 200 en la consulta o un error de transporte hace
 fallar la prueba, incluido un 503 DNS; el sondeo usa el límite existente de 15 s.

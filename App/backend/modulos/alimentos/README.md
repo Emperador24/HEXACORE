@@ -175,7 +175,7 @@ Cliente autenticado:
 - `GET /pedidos/mis-pedidos?pagina=0`: páginas de 100 de su cuenta, desde cero.
 - `GET /pedidos/mis-pedidos/:pedidoId`: detalle, misma estimación/QR y avisos
   persistidos. El QR solo se proyecta a su dueño cuando el pedido está confirmado
-  y su pago acreditado; otra cuenta recibe 404. No incluye actor en los avisos.
+  y su pago acreditado, sin entrega registrada; otra cuenta recibe 404. No incluye actor en los avisos.
 
 El canal es dentro de web/app, sin promesa de correo/push. Las consultas derivan
 retraso del reloj, sin emitir avisos en cada refresco. La bandeja lee SQL y conserva
