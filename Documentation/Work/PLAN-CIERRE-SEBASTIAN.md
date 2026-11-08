@@ -1,5 +1,49 @@
 # Cierre de Alimentos — Sebastián
 
+## CU-014 y demostraciones CU-027/029 — 8 de noviembre de 2026, en validación
+
+Base publicada comprobada: `db6f053d7e7259ad39684d26f085744afbbd0e24`,
+`feature/sebastian` limpia y sincronizada al comenzar. Se conserva el entorno
+CU-015 y todo recurso ajeno/A/B. No se integran develop ni cambios de parqueaderos.
+
+Fuentes en ejecución: Núcleo `b255758` (`3ecf3257c1d9`), portales `c196e1d`
+(`31201b4c7210` y `7e9ea421bfcd`) y gateway `09b0199`. SHA-256 de preparación,
+recepción y pagos coincide con el dist local. La referencia conjunta inicial
+CU-012/013/015 terminó **4/6**: pasaron API CU-012, ambos CU-013 y API CU-015;
+las interfaces CU-012/CU-015 agotaron 120 s. Evidencia privada
+`.evidencia/cu013-referencia-2026-11-08T04-54-50-087Z/`. Núcleo registró a las
+04:55:31 UTC PostgreSQL no disponible por statement timeout; no hubo resolución
+DNS fallida registrada en esa ejecución. No se atribuye sin prueba cada timeout
+del navegador a ese fallo. SQL, DNS confirmado y 499 histórico siguen separados;
+la API individual anterior no convirtió el conjunto previo 5/6 en verde.
+
+Remotas consultadas: `feature/samuel=f2db59e`, `develop=a2e85d5`, sin publicación
+posterior encontrada. Roles/permisos mantiene placeholder en ambas; roles fijos,
+sesiones y guardas existentes no equivalen al CRUD/matriz/propagación/auditoría
+CU-028. La demostración completa de CU-028 está bloqueada por esa dependencia de
+Samuel; no se implementa su sistema ni se presenta el placeholder como aprobado.
+
+[Decisión CU-014](../../App/backend/modulos/alimentos/recepcion/DECISION-CU014.md):
+prevalidación sin consumo, confirmación en transacción con relectura/bloqueo de
+cuenta, rol, vínculo, punto y pedido; entrega única persistente, historial/aviso,
+versión y replay. Se conserva CONFIRMADO, importe, inventario y referencia QR.
+La intención local no guarda el secreto; recuperar sin QR solo devuelve un
+resultado anterior. Escáner 7.4.2 existente con ciclo de vida/permisos/detecciones
+repetidas; entrada manual completa y confirmación explícita.
+
+Comprobado durante implementación: tipos/build backend, **105/105** afectados;
+Angular administrativo **8/8**, cliente **19/19**; Flutter analyze limpio y
+**66/66**. Migración CU-014 vacía/desde 28 **2/2**, 29 migraciones, repetición sin
+DDL y 18 procedencias. Bases propias `cu014_2a426d6d7290_vacia/actualizacion`;
+productos, reservas, pedidos, preparaciones, avisos, pagos locales y libro anterior
+se compararon íntegramente. Falta ejecutar integración y regresiones finales
+sobre imágenes nuevas y las demostraciones de CU-027/029.
+
+Se detectó un iPhone físico con iOS 26.6, además de macOS/Chrome. La verificación
+física de cámara requiere poder desbloquearlo, responder al permiso y apuntarlo;
+se solicitó esa intervención. Las pruebas de widget/plataforma no se presentan
+como cámara física, ni Playwright con ingreso manual como escaneo óptico.
+
 ## CU-013: hito 2, preparación y comprobaciones — 7 de noviembre de 2026
 
 Se implementa solo preparación hasta listo, manteniendo CONFIRMADO y el QR de
