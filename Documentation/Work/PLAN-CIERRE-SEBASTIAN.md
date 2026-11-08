@@ -1,6 +1,201 @@
 # Cierre de Alimentos — Sebastián
 
-## CU-014 y demostraciones CU-027/029 — 8 de noviembre de 2026, cierre y límites
+## Estabilidad conjunta — 8 de noviembre de 2026
+
+**La aceptación conjunta sigue pendiente. Último automático: 10/13; último
+visible, separado: 12/13; ambos salida 1.** No se suman aprobaciones individuales
+ni se presenta CU-028 como implementado. Base publicada al comenzar:
+`fafedfe87a2fb75c0026253fb6f543b9a0650d9f`, rama `feature/sebastian` limpia.
+No se integran develop/main ni se añaden casos de uso. Las secciones posteriores
+conservan el historial de las entregas anteriores.
+
+### Correcciones comprobadas
+
+- **Conexiones inactivas:** la sonda cada 10 s coincidía con el descarte de
+  `pg-pool` a los 10 s, con mínimo cero. La comparación real, tres SELECT separados
+  por 10,5 s, abrió tres backends con `min=0` y reutilizó uno con `min=1`.
+  `opcionesSesion` conserva ahora una conexión por pool de negocio; no cambia
+  máximo 10 ni conexión/consulta/statement de 3 s. Ambos controles cierran todas
+  las conexiones al terminar. Ya desplegado, Logística, Parqueaderos, Pagos de
+  Núcleo y Catálogo conservaron su PID durante las tres lecturas. No es prueba de
+  que esta apertura/cierre explicara todos los fallos anteriores.
+- **Sondas del entorno de revisión:** Núcleo, Boletería y Trabajador consultan la
+  misma salud HTTP con BusyBox, exigiendo exactamente 200. Se conservan intervalo
+  10 s, plazo 5 s, diez fallos y tiempos iniciales anteriores. La sonda Node
+  consumió 28.656/48.588 KiB de RSS en dos muestras; el script completo, 888 KiB.
+  Guardas y casos HTTP comprueban rechazo de 201, redirección, 503 y fallo de red.
+  No se cambia Compose habitual/A/B ni las sondas de los proveedores.
+- **DNS en el camino de las solicitudes:** el 503 de Mis pedidos a las
+  14:37:14,920 UTC se correlacionó con `nucleo could not be resolved` a las
+  14:37:26. Nginx 1.27.5 ya admite grupos upstream con zona compartida y
+  `server ... resolve`; se usan para ambos procesos. DNS Docker, TTL 5 s y espera
+  3 s se conservan, sin IP fija ni nuevos reintentos de negocio. El ensayo en el
+  gateway propio introdujo un resolver inaccesible: **control anterior 503,
+  upstream conocido 200**. Restauró DNS/configuración y retiró sus rutas
+  temporales. Se comprobó también acceso real a Núcleo/Boletería y rechazo 401.
+  Esto protege el destino ya conocido ante un fallo transitorio; NXDOMAIN lo
+  retira y el arranque sigue necesitando resolver. No corrige el DNS de Docker ni
+  oculta errores HTTP del servicio. `ngx.fetch` de Cola conserva su DNS directo.
+  Explicación y fuentes primarias: [gateway](../../App/gateway/README.md).
+- **Sincronización CU-012:** en el primer conjunto corregido el PUT de vínculo
+  respondió 200 en 681 ms y el GET posterior en 14.094 ms; la espera del mensaje
+  terminó antes de verlo. El test comprueba ahora ambos HTTP 200 antes del aviso.
+  Pasó dirigido **1/1**. No se cambian 120 s por test, 15 s de aserciones,
+  reintentos cero ni el contrato de operaciones 202 por el mismo UUID.
+
+### Todos los conjuntos conservados en esta etapa
+
+Cada ejecución recorre los trece casos, un trabajador, sin omisiones ni reintentos.
+Las carpetas están bajo `App/e2e/.evidencia/`, privadas e ignoradas por Git.
+
+| Ejecución | Resultado | Evidencia privada |
+|---|---|---|
+| Referencia reproducida antes de corregir | **9/13**, 7,6 min, salida 1 | `conjunto-observado-2026-11-08T13-53-16-678Z/` |
+| Conexiones y sondas corregidas | **12/13**, 3,6 min, salida 1 | `conjunto-observado-2026-11-08T14-31-33-085Z/` |
+| Después de sincronizar CU-012 | **11/13**, 3,7 min, salida 1 | `conjunto-observado-2026-11-08T14-36-09-624Z/` |
+| **Último automático, incluye DNS** | **10/13**, 5,2 min, salida 1 | `conjunto-observado-2026-11-08T14-46-48-499Z/` |
+| **Último visible, separado, mismas correcciones** | **12/13**, 4,1 min, salida 1 | `conjunto-observado-2026-11-08T14-52-23-114Z/` |
+
+La repetición del segundo conjunto respondió al fallo de sincronización comprobado;
+la del tercero, al DNS confirmado. No se repiten conjuntos para buscar un verde.
+Automático final: **14:46:50,566–14:52:01,746 UTC**. Visible final:
+**14:52:24,941–14:56:33,824 UTC** (09:52–09:56 en Bogotá).
+
+### Fallos correlacionados y límites de la explicación
+
+En la referencia 9/13: CU-012 visual renovó a las **13:53:46,455**, 503 tras
+5.194 ms; Identidad registró **connection timeout PostgreSQL a las 13:53:51**.
+No fue un DNS confirmado. CU-012 API creó producto a las **13:54:13,866** y recibió
+500 tras 8.525 ms; `FALLO_SQL` registró **COMMIT / Query read timeout** a las
+13:54:22,268, bucle Node máximo 14.982 ms y cero solicitudes esperando en los siete
+pools al capturar. Otro fallo SELECT/57014 a las 13:58:02,923 tenía máximo Node
+19.227 ms. CU-014 visual guardó preparación 200 a las 13:57:27,875; su GET posterior
+se abortó tras 15.012 ms y no llegó a enviar Marcar listo. CU-027 desactivó 200 a
+las 14:00:26,755; el GET posterior se abortó tras 15.001 ms. El `unexpected DNS
+response` a las 13:58:01 es un incidente separado, sin petición identificada.
+
+El conjunto intermedio 11/13 tuvo el 503 DNS de CU-013 ya descrito; CU-027 negativo
+agotó renovación a las **14:39:31,877**, abortada a los 15.013 ms / 499 del gateway.
+No hay un error DNS asociado a esa renovación y no se le atribuye esa causa.
+
+Fallos del **último automático 10/13**:
+
+- CU-012 visual: POST producto a las **14:47:12,027**, cancelado por el cliente
+  tras **15.006 ms**, 499 en gateway; el test terminó a 120 s esperando respuesta.
+  El 499 no determina por sí solo dónde se produjo la espera upstream.
+- CU-012 API: reserva creada a las **14:49:05,274** no alcanzó LIBERADA en los
+  15 s exigidos. PostgreSQL canceló la lectura de transacciones a las
+  **14:49:22,726**, hubo `EXPIRACION_RESERVA_PENDIENTE` a las 14:49:25 y la fila
+  quedó **LIBERADA a las 14:49:29,618**. Esa liberación tardía no aprueba el caso.
+  Otro SELECT de candidatas expiradas se canceló a las 14:48:57,011. También
+  caducaron consultas del observador; no se cuentan como fallos de negocio.
+- CU-027 visual: PATCH perfil **200 en 76 ms a las 14:51:27,662**; tras recargar,
+  renovación 200 en 189 ms, pero GET sesión actual a las **14:51:27,960** quedó
+  sin respuesta terminada en la traza y el campo no apareció dentro de 15 s.
+  No hay evidencia suficiente para asignar una causa única a esa espera.
+
+Falló únicamente CU-013 en el **último visible 12/13**: al recargar el cliente,
+POST renovación a las **14:53:45,980** recibió **503 tras 8.215 ms**. Identidad
+registró **PostgreSQL no disponible: Query read timeout a las 14:53:53**.
+Es un fallo de disponibilidad SQL de autenticación, no un DNS confirmado ni una
+aserción que deba relajarse. El filtro de Identidad y los ciclos de fondo no
+pasan siempre por `DiagnosticoPG`: cero eventos `FALLO_SQL` no significa cero
+errores SQL. Se conservan sus logs y los del servidor PostgreSQL.
+El 500 de COMMIT de la referencia no se repitió en los conjuntos finales; eso
+no demuestra que su causa haya quedado resuelta. SQL de fondo y autenticación
+sí volvieron a fallar.
+
+No se demostró agotamiento de conexiones: en los conjuntos finales se observaron
+como máximo tres conexiones simultáneas por pool de Núcleo frente a diez permitidas.
+Las esperas por bloqueo capturadas fueron **596 ms** en automático y **400 ms** en
+visible; no explican por sí solas los retrasos completos ni excluyen picos entre
+muestras. Los sondeos de expiración y ajustes ya evitan ciclos superpuestos;
+ajustes limita a cincuenta y recupera por establecimiento bajo su bloqueo.
+Las renovaciones concurrentes ya comparten promesa y las contraseñas usan scrypt
+asíncrono; no se rebaja su coste. El sondeo de ajustes llegó a 72 ms de ejecución
+SQL en la referencia, pero ese EXPLAIN no mide todas las consultas fallidas.
+
+### Condiciones y bloqueo restante
+
+Mac M2, 8 GB, Node **22.22.3**; builds, suites y navegadores en serie. Docker Desktop
+estaba cerrado al comenzar: se abrió y restauró sus contenedores configurados.
+En **ambos conjuntos finales** estaban activos **los once propios** de
+`hexacore-cu015-sebastian`: Núcleo, Boletería, Trabajador, gateway, ambos portales,
+PostgreSQL, Redis, RabbitMQ, pasarela y correo; además **treinta ajenos/habituales**.
+CU-013 API y CU-014 API paran/arrancan deliberadamente solo Núcleo para comprobar
+persistencia; no son una pausa general del entorno durante la aceptación.
+La preparación finita había terminado sin migraciones nuevas, sin semillas.
+No se paró/modificó ningún recurso ajeno, habitual o A/B ni se cambiaron los
+recursos globales de Docker. No se borraron datos/claves/volúmenes ni se reconstruyó
+Redis. Las seis aplicaciones propias se pausaron con guardas durante unitarias,
+builds y regresiones, y se restauraron antes de la aceptación.
+Al cerrar, los once propios están healthy, sin OOM; los treinta restantes
+conservan sus mismos ID. Ese estado de salud no cambia los resultados fallidos.
+
+Imágenes efectivas nuevas: Núcleo **b0678764f298**, Boletería **7fa3503e42ce**
+(revisión `748313d`), gateway **35c1e44dabeb** (`f68766d`). Boletería lleva etiqueta
+de fuente modificada porque se estaba añadiendo la opción del runner de regresión;
+el SHA-256 del JS de sesiones de ambos procesos coincide con el dist local y
+contiene `min:1`. Trabajador y portales conservan sus imágenes previas; la sonda
+del primero cambia por montaje propio. La configuración efectiva del gateway
+coincide con la generada CU-015. No se supone que todas las imágenes lleven HEAD.
+
+La VM dispone de **2,84 GiB / ocho vCPU para 41 contenedores**. Durante el último
+automático se observaron **135–175 MiB disponibles y unos 0,2 MiB libres de 1 GiB
+de swap**. La presión de memoria `full avg10` de la VM osciló **9,94–66,35 %** en
+automático y **3,74–40,79 %** en visible. Los contadores del cgroup propio muestran
+reclamación/refallos mayores de páginas, sin OOM ni limitación de CPU por cuota.
+Son pruebas de presión real, no de que explique por sí sola cada SQL/DNS/499.
+
+El consumo observado de `redash-server-1`, `redash-adhoc_worker-1`,
+`redash-scheduled_worker-1`, `redash-worker-1` y `redash-scheduler-1` suma
+aproximadamente **1,56 GiB** (suma de medianas de Docker stats del automático).
+**El contraste pendiente requiere que su propietario libere capacidad**, por
+ejemplo pausando sus cargas Redash no necesarias, o que el administrador ajuste
+el presupuesto de memoria de la VM según el host. Después deben repetirse ambos
+conjuntos con las mismas fuentes y medir de nuevo. No se intervino ese proyecto
+ni se afirma que liberarlo garantice verde: falta ese contraste causal.
+Los 500/503/499 y retrasos de fondo siguen abiertos; el diagnóstico no certifica
+disponibilidad productiva, incluso si dos conjuntos posteriores aprobaran.
+
+### Verificaciones y reproducción
+
+Tipos/build Núcleo y Boletería y builds de las tres imágenes modificadas aprobados; backend
+**919/919, 64 suites**, tipos E2E, fronteras/configuración y **13/13 guardas**.
+CU-011 original **9/9, 12,629 s**, Boletería **23/23, 28,692 s**, incluyendo cierre
+de sus cinco pools, AMQP y Redis. Sus recursos propios de regresión quedaron
+detenidos y los volúmenes conservados. CU-012 recuperación pasó respuesta Redis
+perdida, AOF no confirmado, reconexión, commit SQL perdido, conexión cerrada,
+liberación/consumo pendientes y SIGKILL; el reinicio real recuperó **cinco
+operaciones inciertas sin doble ajuste ni reinicialización Redis**. Los controles
+de pool y DNS pasaron. No hay cambios de esquema/frontend/Flutter; se reutiliza
+la evidencia CU-014/cámara y demostraciones anteriores.
+
+Con Node 22.22.3 y la clave demo definida solo localmente, desde la raíz, en serie:
+
+```bash
+./App/infra/cu015.sh iniciar --compilar nucleo boleteria api-gateway
+npm --prefix App/backend run test:cu015:pool
+python3 App/infra/revision/test_dns.py
+node App/backend/test/cu013/referencia.cjs --implementados
+node App/backend/test/cu013/referencia.cjs --implementados --visible
+# Regresiones de procesos: builds host previos; pausar aplicaciones propias.
+npm --prefix App/backend run build
+npm --prefix App/backend run build:boleteria
+npm --prefix App/backend run test:cu015:regresion -- --boleteria
+npm --prefix App/backend run test:cu012:recuperacion
+```
+
+El observador existente conserva SQL, recursos y logs; añade cgroup propio y
+`--visible`, sin cambiar el contrato de pruebas ni crear otro sistema. Guardar
+stdout de cada intento en un archivo distinto: `estabilidad-inicio/` conserva
+los de esta etapa. [Guía de ejecución](../../App/e2e/README.md).
+`test:implementados` mantiene los trece; `test:completo` y el observador conservan
+**salida 2 cuando pasan pero CU-028 sigue bloqueado**, y salida de fallo cuando no.
+Samuel `f2db59e` / develop `a2e85d5` siguen sin la implementación CU-028. No se
+implementan CU-011F, F12, CU-028 ni auditoría global OWASP en esta entrega.
+
+## Registro anterior: CU-014 y demostraciones CU-027/029 — 8 de noviembre de 2026
 
 CU-014 queda implementado y demostrado: entrega única transaccional, revisión
 previa sin consumo, respuesta perdida/replay, conservación financiera y cámara

@@ -1,13 +1,55 @@
 # Demostraciones CU-012–015, CU-027 y CU-029; CU-028 bloqueado
 
-## Ejecución actual CU-014/027/029
+## Resultado vigente: estabilidad conjunta, 8 de noviembre de 2026
+
+**Los trece todavía no aprobaron conjuntamente.** Último automático **10/13,
+5,2 min, salida 1**; último visible, separado, **12/13, 4,1 min, salida 1**.
+Evidencias privadas: `.evidencia/conjunto-observado-2026-11-08T14-46-48-499Z/`
+y `conjunto-observado-2026-11-08T14-52-23-114Z/`. Se conservan también la referencia
+9/13 y los intentos intermedios 12/13 y 11/13; no se sustituyen ni suman resultados.
+
+En automático fallaron CU-012 visual (POST producto abortado a 15 s/499), CU-012
+API (expiración tardía con timeout SQL) y CU-027 visual (sesión actual sin respuesta
+terminada tras recargar perfil). En visible falló CU-013: renovación **503 por
+Query read timeout PostgreSQL**, correlacionado en Identidad. No se atribuye ese
+503 a DNS. Los SQL, DNS confirmados, esperas upstream/499 y sincronización siguen
+separados en el [plan](../../Documentation/Work/PLAN-CIERRE-SEBASTIAN.md).
+
+Quedaron comprobados `min:1` por pool para evitar apertura/cierre cada diez segundos,
+la sonda HTTP sin arrancar Node, la resolución dinámica en segundo plano con zona
+de Nginx y la espera explícita del vínculo/lectura CU-012 antes de su aviso.
+El control DNS reprodujo **503 frente a 200** del upstream ya conocido; conserva
+DNS Docker, TTL 5 s y espera 3 s, sin IP fija ni reintentos de negocio adicionales.
+NXDOMAIN y el arranque siguen dependiendo de resolver; no se ocultan 500/503 del
+servicio. Detalle y ensayo aislado: [gateway](../gateway/README.md).
+
+Ambas aceptaciones mantuvieron **once contenedores propios y treinta restantes**
+activos, con todas las aplicaciones propias restauradas: Núcleo, Boletería,
+Trabajador, gateway, dos portales y cinco proveedores. CU-013 API y CU-014 API
+reinician deliberadamente solo Núcleo. Mac M2/8 GB; VM 2,84 GiB, ocho vCPU.
+Hubo presión de memoria, swap casi lleno y reclamación de páginas,
+sin OOM/cuota CPU propia; no hay prueba de agotamiento del pool ni causa única.
+El contraste pendiente requiere que el propietario libere capacidad compartida
+(los cinco procesos principales Redash observados suman unos 1,56 GiB), o ajuste
+el presupuesto de la VM, y repetir ambos conjuntos con las mismas fuentes.
+No se intervinieron esos recursos ni A/B. No se garantiza que esa acción sola
+resuelva cada incidente; dos conjuntos verdes tampoco certificarían disponibilidad.
+
+Además aprobaron backend **919/919 en 64 suites**, tipos/build de ambos procesos,
+tipos E2E, guardas **13/13**, fronteras, CU-011 **9/9**, Boletería **23/23**,
+control de pools y recuperación CU-012 con cinco intenciones inciertas tras
+reinicio. Los builds y esas suites se ejecutaron en serie con las seis aplicaciones
+propias pausadas; sus proveedores conservaron datos. CU-014/cámara y las funciones
+existentes se reutilizan. No se añaden casos de uso.
+
+## Recorridos implementados y comandos
 
 Con Node 22.22.3, dependencias instaladas y `CU015_CLAVE_DEMO` definida localmente,
 reutilizar el entorno propio existente, sin semillas. Builds y suites pesadas se
 ejecutan en serie (Mac M2, 8 GB). Los comandos parten de la raíz:
 
 ```bash
-./App/infra/cu015.sh iniciar --compilar nucleo portal-web-admin portal-web-cliente
+./App/infra/cu015.sh iniciar --compilar nucleo boleteria api-gateway
 npm --prefix App/e2e run tipos
 npm --prefix App/e2e run test:cu014
 npm --prefix App/e2e run test:cu014:visible
@@ -83,12 +125,45 @@ pagos, historial y reservas. Comandos backend, en serie:
 ```bash
 npm --prefix App/backend run lint
 npm --prefix App/backend run build
+npm --prefix App/backend run build:boleteria
 npm --prefix App/backend run test:cu014:migracion
 npm --prefix App/backend run test:cu013:migracion
 npm --prefix App/backend run test:cu012:migracion
 npm --prefix App/backend run test:cu015:migracion
-npm --prefix App/backend run test:cu015:regresion
+npm --prefix App/backend run test:cu015:regresion -- --boleteria
+npm --prefix App/backend run test:cu015:pool
+npm --prefix App/backend run test:cu012:recuperacion
 npm --prefix App/backend run verificar:infra
+```
+
+La opción `--boleteria` ejecuta CU-011 y las 23 regresiones de Boletería en serie,
+con los mismos recursos exclusivos `hexacore-cu015-regresion`, y los detiene al
+salir conservando volúmenes. Sin esa opción ejecuta solo CU-011; no hace falta
+ejecutar las dos variantes consecutivamente.
+Antes de tipos/build/unitarias/regresiones, se pueden pausar **solo** las seis
+aplicaciones propias con la misma validación y bloqueo del guion:
+
+```bash
+python3 - <<'PY'
+import sys, json, fcntl
+sys.path.insert(0, 'App/infra/revision')
+import revision as r
+r.seleccionar_perfil('cu015')
+c = json.loads(r.compose('config', '--format', 'json', capturar=True))
+r.validar_configuracion(c)
+r.comprobar_recursos(c, r.contenedores_propios())
+with (r.ESTADO / 'operacion.lock').open('a') as bloqueo:
+    fcntl.flock(bloqueo, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    r.compose('stop', '--timeout', '30', *r.EJECUTAR)
+PY
+```
+
+Restaurarlas antes de los recorridos mediante el primer comando `iniciar`.
+No usar `--datos-demo`, borrar volúmenes ni reconstruir Redis. El ensayo DNS se
+ejecuta sin ningún recorrido activo y restaura la configuración en `finally`:
+
+```bash
+python3 App/infra/revision/test_dns.py
 ```
 
 Para repetir los trece con el observador SQL/recursos de solo lectura y el
@@ -96,6 +171,7 @@ bloqueo CU-028 explícito (misma semántica de salida 2 si pasan):
 
 ```bash
 node App/backend/test/cu013/referencia.cjs --implementados
+node App/backend/test/cu013/referencia.cjs --implementados --visible
 ```
 
 Conserva cada ejecución en `.evidencia/conjunto-observado-FECHA/`; `--todos`
@@ -105,12 +181,13 @@ Las secciones siguientes conservan los resultados históricos y diagnósticos.
 SQL, DNS confirmado y 499 permanecen separados; una ejecución individual aprobada
 no cambia el resultado del último conjunto. No se amplían plazos ni reintentos.
 
-Resultado vigente del 8/11: último conjunto observado **10/13**, salida 1;
+Referencia publicada al comenzar esta etapa (`fafedfe`): conjunto observado **10/13**, salida 1;
 fallaron UI CU-012 (renovación 503), UI CU-013 (500 SQL) y UI CU-029 (carga inicial
 sobrescribió la edición del test). CU-029 corregido pasó después **2/2 visible**;
 no convierte el conjunto en verde. CU-014 **3/3** y CU-027 **2/2** pasaron dentro
 del conjunto. Cámara física **1/1** en iPhone 17 Pro Max/iOS 26.6. CU-028 sigue
-bloqueado; SQL/DNS/499 mantienen evidencias y causas separadas. Detalle y todos los
+bloqueado; SQL/DNS/499 mantienen evidencias y causas separadas. Los resultados
+vigentes de estabilidad están al inicio. Detalle y todos los
 fallos: [plan](../../Documentation/Work/PLAN-CIERRE-SEBASTIAN.md).
 
 ## Preparación CU-013 en el entorno existente
