@@ -23,6 +23,17 @@ const {conectar,backend}=require('../cu012/entorno.cjs');
    const c=new Client({...comunes,database:base});await c.connect();
    try{
     let local,pedido,qr;
+    if(modo==='vacia'){
+     const grupos=require('../../dist/compartido/persistencia/historia').GRUPOS_MIGRACIONES;
+     const tablas=(await c.query('SELECT schemaname,tablename FROM pg_tables WHERE schemaname=ANY($1)',[grupos.map(g=>g.esquema)])).rows;
+     assert.equal(tablas.length,80);let filas=0;
+     for(const t of tablas){
+      const n=(await c.query(`SELECT count(*)::int n FROM "${t.schemaname}"."${t.tablename}"`)).rows[0].n;
+      const grupo=grupos.find(g=>g.esquema===t.schemaname);
+      assert.equal(n,t.tablename===grupo.historial?grupo.migraciones.length:t.schemaname==='identidad'&&t.tablename==='roles'?4:0,`${t.schemaname}.${t.tablename}`);filas+=n;
+     }
+     assert.equal(filas,33); // 29 historiales y cuatro roles; cero negocio.
+    }
     if(modo==='actualizacion'){
      const evento=randomUUID(),producto=randomUUID(),cliente=randomUUID(),pago=randomUUID();local=randomUUID();pedido=randomUUID();qr='e'.repeat(64);
      await c.query("INSERT INTO alimentos.eventos_referencia(evento_id,nombre,disponible) VALUES($1,'Evento previo CU014',true)",[evento]);

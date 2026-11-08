@@ -1,4 +1,99 @@
-# Demostración integrada de Alimentos: CU-012, CU-013 parcial y CU-015
+# Demostraciones CU-012–015, CU-027 y CU-029; CU-028 bloqueado
+
+## Ejecución actual CU-014/027/029
+
+Con Node 22.22.3, dependencias instaladas y `CU015_CLAVE_DEMO` definida localmente,
+reutilizar el entorno propio existente, sin semillas. Builds y suites pesadas se
+ejecutan en serie (Mac M2, 8 GB). Los comandos parten de la raíz:
+
+```bash
+./App/infra/cu015.sh iniciar --compilar nucleo portal-web-admin portal-web-cliente
+npm --prefix App/e2e run tipos
+npm --prefix App/e2e run test:cu014
+npm --prefix App/e2e run test:cu014:visible
+npm --prefix App/e2e run test:cu027
+npm --prefix App/e2e run test:cu027:visible
+npm --prefix App/e2e run test:cu029
+npm --prefix App/e2e run test:cu029:visible
+npm --prefix App/e2e run test:cu012        # también :visible
+npm --prefix App/e2e run test:cu013        # también :visible
+npm --prefix App/e2e run test:cu015        # también :visible
+git fetch origin feature/samuel develop
+npm --prefix App/e2e run test:cu028:estado
+npm --prefix App/e2e run test:completo
+npm --prefix App/e2e run test:completo:visible
+```
+
+Son **13 recorridos implementados**, un trabajador, cero reintentos, 120 s por
+caso y 15 s de aserciones. `test:implementados` / `:visible` ejecuta esos 13;
+`test:completo` añade el diagnóstico explícito CU-028, conserva cada informe en
+`.evidencia/conjunto-FECHA/` y devuelve **2** si lo implementado pasa pero CU-028
+sigue bloqueado (o requiere revisar una referencia nueva). Un fallo de Playwright
+conserva su código de salida. Nunca se declara aprobado CU-028 por abrir Roles.
+La comprobación remota del 8/11 mantiene Samuel `f2db59e` y develop `a2e85d5`:
+faltan CRUD/matriz, propagación a sesiones, revocación/auditoría y concurrencia.
+No se integran esas ramas ni parqueaderos. El script inspecciona las referencias
+locales obtenidas por fetch: una ruta nueva exige revisar sus fuentes completas.
+
+CU-014 usa una compra/pago CU-011 real y contextos independientes Cliente/Personal.
+Personal prepara hasta listo, cierra el establecimiento al público e ingresa el
+QR completo en «Preparación de pedidos» → «Validar y entregar pedido». Prevalidar
+muestra productos/punto sin consumir; «Confirmar entrega» exige respuesta del
+servidor. La prueba pierde la respuesta después del commit real, recarga y recupera
+la misma operación sin guardar el QR; comprueba una entrega, aviso/fecha y ausencia
+de QR utilizable al recargar el cliente. API/SQL adicionales comprueban concurrencia,
+reinicio, snapshots, replay del pago y rechazos; los estados inconsistentes son
+fixtures propios, no una política de cancelación CU-011F/F12.
+
+CU-027 registra una cuenta propia desde UI y utiliza su correo simulado local
+(sin vaciar el buzón) para verificación y recuperación. Perfil, desactivación,
+reactivación y cambios de contraseña pasan por UI/gateway; un segundo contexto
+administrativo no modifica cuentas compartidas. Se exige uso único de enlaces,
+revocación y rechazo de roles no autorizados. CU-029 registra/edita zonas y plano
+por UI, recarga y comprueba persistencia. Un evento publicado CU-026 es fixture por
+API para probar protección de cupos y confirmación de impacto. Los negativos de
+roles/archivos/capacidad se verifican también por gateway y acceso directo.
+El plano usa el almacenamiento SQL existente; no certifica un proveedor S3.
+
+La prueba web CU-014 acredita **entrada manual**, no cámara física. Flutter
+reutiliza `qr_scanner_sheet.dart` y mobile_scanner resuelto 7.4.2, sin actualizar
+dependencias/permisos. Las pruebas unitarias de plataforma cubren denegación,
+cámara indisponible, detección repetida y cierre/segundo plano. Para lectura óptica:
+
+```bash
+cd App/frontend/app-movil
+flutter analyze
+flutter test --concurrency=1
+flutter test integration_test/cu014_camera_test.dart -d ID_DEL_DISPOSITIVO --dart-define=CU014_QR_VERIFICADOR=VERIFICADOR_DEL_ENSAYO
+```
+
+El verificador se toma de `qr-huella.json` (`verificadorOptico`) junto a
+`qr-real-privado.png` del informe CU-014 elegido. Abrir esa imagen en el Mac y
+apuntarla con el dispositivo conectado/desbloqueado, aceptando el permiso. El
+verificador FNV-64 solo identifica la imagen en esta prueba; no es autenticación.
+La aplicación de prueba usa el componente de cámara real, sin servidor simulado,
+y comprueba lectura/cierre. El negocio se demuestra aparte con backend real.
+No publicar imagen, QR, sesiones, trazas, credenciales ni configuración de firma.
+Resultados exactos y dispositivo: [plan](../../Documentation/Work/PLAN-CIERRE-SEBASTIAN.md).
+
+Las migraciones de CU-014 comprueban vacía y actualización desde 28 hasta **29**,
+18 procedencias, repetición sin DDL y preservación íntegra de pedido, preparación,
+pagos, historial y reservas. Comandos backend, en serie:
+
+```bash
+npm --prefix App/backend run lint
+npm --prefix App/backend run build
+npm --prefix App/backend run test:cu014:migracion
+npm --prefix App/backend run test:cu013:migracion
+npm --prefix App/backend run test:cu012:migracion
+npm --prefix App/backend run test:cu015:migracion
+npm --prefix App/backend run test:cu015:regresion
+npm --prefix App/backend run verificar:infra
+```
+
+Las secciones siguientes conservan los resultados históricos y diagnósticos.
+SQL, DNS confirmado y 499 permanecen separados; una ejecución individual aprobada
+no cambia el resultado del último conjunto. No se amplían plazos ni reintentos.
 
 ## Preparación CU-013 en el entorno existente
 
@@ -16,7 +111,7 @@ node App/backend/test/cu013/referencia.cjs --todos
 El último comando ejecuta **los seis casos juntos**, con un trabajador, cero
 reintentos, 120 s por caso y 15 s para aserciones. Sin `--todos`, el observador
 ejecuta solo los cuatro CU-012/015 originales. No ejecutar suites pesadas en paralelo.
-`test:referencia` conserva ese conjunto original; `test:alimentos` incluye ahora CU-013.
+`test:referencia` conserva ese conjunto original; `test:preparacion` conserva esos seis; `test:alimentos` incluye también CU-014 (nueve).
 
 Recorrido manual: Cliente compra y paga en el portal cliente, abre «Ver seguimiento
 y avisos» o «Mis pedidos». En otra sesión, Personal abre «Preparación de pedidos»,
@@ -42,7 +137,7 @@ El canal de avisos es web/app, durable en SQL; no son correos ni push. Sondeo de
 15 s solo en pantalla activa, sin solapar y pausado ante errores. La preparación
 no cambia estado financiero, QR, importes ni inventario. Alcance y alternativos:
 [DECISION-CU013](../backend/modulos/alimentos/recepcion/DECISION-CU013.md).
-Entrega/validación única siguen en CU-014; cancelación CU-011F y F12, pendientes.
+Entrega/validación única se integra ahora con CU-014; cancelación CU-011F y F12, pendientes.
 
 El diagnóstico de fallos SQL registra en el log propio de Núcleo `FALLO_SQL` con
 contadores reales del pool (`total`, `libres`, `esperando`, `maximo`), demoras del

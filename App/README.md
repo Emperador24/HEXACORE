@@ -43,7 +43,7 @@ Seguir [las instrucciones del workspace](backend/README.md) para instalar,
 migrar y arrancar Núcleo/Boletería y el [Trabajador](backend/modulos/comunicaciones/README.md). Integración exclusiva: [Núcleo](backend/test/README.md)
 y [Boletería](backend/test/boleteria/README.md), sin datos habituales. Compose
 ejecuta Núcleo, Boletería y Trabajador, más una tarea única de migración
-de los once historiales (28 migraciones, 18 procedencias históricas conservadas). Todo backend activo comparte manifiesto/lockfile en App/backend. Se mantiene el flujo de [WORKFLOW.md](../WORKFLOW.md).
+de los once historiales (29 migraciones, 18 procedencias históricas conservadas). Todo backend activo comparte manifiesto/lockfile en App/backend. Se mantiene el flujo de [WORKFLOW.md](../WORKFLOW.md).
 
 Los responsables funcionales se conservan: Identidad y Alimentos, Sebastián;
 Boletería, Daniel y Samuel; Personal/Logística y Operación, Samuel y Diego según

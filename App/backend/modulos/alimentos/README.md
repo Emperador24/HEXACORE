@@ -4,15 +4,16 @@ Fuente única trasladada desde `App/services/alimentos`. Conserva catálogo,
 menú, checkout, inventario/reservas, adaptador local de Pagos y confirmación
 con QR/evento. CU-015 incorpora establecimientos y CU-012 productos, menú y
 ajustes durables. CU-013 incorpora preparación hasta listo, tiempos, incidencias
-y avisos web/app; entrega única CU-014 y cancelación CU-011F/F12 siguen pendientes.
+y avisos web/app; CU-014 añade prevalidación QR y entrega única. Cancelación
+CU-011F/F12 sigue pendiente.
 
 Instalar, compilar, migrar y arrancar desde [el workspace](../../README.md).
 Usa la conexión TypeORM `alimentos`, esquema `alimentos` y POSTGRES_BD común.
 Se conservan las dos migraciones históricas y se añaden
 `GestionEstablecimientosCu0151794300000000`, `MenuInventarioCu0121794400000000`
-y `PreparacionCu0131794500000000`
+`PreparacionCu0131794500000000` y `EntregaCu0141794600000000`
 a la preparación central. POSTGRES_BD_PEDIDOS se rechaza. La preparación se
-ejecuta una vez para los once esquemas (28 migraciones; 18 procedencias intactas).
+ejecuta una vez para los once esquemas (29 migraciones; 18 procedencias intactas).
 El cliente Redis de inventario conserva sus opciones específicas.
 Ver [inventario](inventario/README.md) y [pruebas aisladas](../../test/README.md).
 
@@ -122,13 +123,26 @@ Los fallos dejan intención durable y bloquean admisión hasta recuperarla. La
 consumo/liberación pendientes y límites de recuperación. No implementa F12.
 
 
-## Preparación CU-013, entrega pendiente
+## Preparación CU-013 y entrega CU-014
+
+CU-014 reutiliza la bandeja privada y añade POST
+`/pedidos/establecimientos/:id/entregas/prevalidar` (`codigoQr`, 64 hex) y
+`/entregas/confirmar` (`pedidoId`, `version`, `puntoRevision`, `codigoQr` y cabecera
+UUID `Idempotency-Key`). Prevalidar devuelve productos/punto sin consumo; confirmar
+revalida cuenta Personal/rol/vínculo, punto, pago SQL, listo e incidencias dentro
+de la transacción. Una fila única por pedido, historial y aviso se guardan juntos.
+Recuperar una operación existente puede omitir el QR; jamás crea una entrega nueva.
+El código solo viaja en POST y memoria. Se conserva la referencia original para
+el replay financiero, pero `qrUtilizable=false` y ENTREGADO impiden reutilizarla.
+La consulta Cliente oculta el QR entregado. No modifica inventario, pagos ni snapshots.
+Contrato, caché de huellas sin autoridad y alternativos: [decisión CU-014](recepcion/DECISION-CU014.md).
 
 El hito previo obtuvo el conjunto CU-012/015 4/4, recuperación y CU-011 9/9;
 SQL/DNS/499 siguen abiertos. [Decisión de preparación](recepcion/DECISION-CU013.md)
 y [plan/mediciones](../../../../Documentation/Work/PLAN-CIERRE-SEBASTIAN.md).
-La ficha completa incluye entrega: esta etapa solo llega a LISTO_PARA_ENTREGAR;
-CU-014, cancelación CU-011F y F12 conservan sus pendientes.
+La ficha completa incluye entrega: preparación llega a LISTO_PARA_ENTREGAR y
+[CU-014](recepcion/DECISION-CU014.md) registra su entrega única y el aviso.
+Cancelación CU-011F y F12 conservan sus pendientes.
 
 `pedidos.estado` sigue CONFIRMADO durante preparación. El nuevo avance separado
 es RECIBIDO (versión 0 histórica) → EN_PREPARACION → LISTO_PARA_ENTREGAR.

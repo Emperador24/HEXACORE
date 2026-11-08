@@ -31,18 +31,54 @@ La intención local no guarda el secreto; recuperar sin QR solo devuelve un
 resultado anterior. Escáner 7.4.2 existente con ciclo de vida/permisos/detecciones
 repetidas; entrada manual completa y confirmación explícita.
 
-Comprobado durante implementación: tipos/build backend, **105/105** afectados;
-Angular administrativo **8/8**, cliente **19/19**; Flutter analyze limpio y
-**66/66**. Migración CU-014 vacía/desde 28 **2/2**, 29 migraciones, repetición sin
-DDL y 18 procedencias. Bases propias `cu014_2a426d6d7290_vacia/actualizacion`;
-productos, reservas, pedidos, preparaciones, avisos, pagos locales y libro anterior
-se compararon íntegramente. Falta ejecutar integración y regresiones finales
-sobre imágenes nuevas y las demostraciones de CU-027/029.
+Comprobaciones actuales: backend tipos/build y **919/919 en 64 suites**;
+Angular administrativo **10/10**, cliente **19/19**; Flutter analyze limpio y
+**66/66**, más cámara física **1/1**. Migración CU-014 vacía/desde 28 **2/2**,
+29 migraciones y 18 procedencias. Bases iniciales propias
+`cu014_2a426d6d7290_vacia/actualizacion`; productos, reservas, pedidos,
+preparaciones, avisos, pagos locales y libro anterior comparados íntegramente.
+Regresiones migraciones CU-013/012/015 **2/2 + 2/2 + 2/2**, con bases
+`cu013_75b279750094`, `cu012_5eea418995da`, `cu015_a431ddb209dd`
+(sufijos `_vacia`/`_actualizacion`). Fronteras/configuración aprobadas y guardas
+**11/11**. CU-011 original **9/9**, 13,489 s, proyecto de regresión detenido,
+volúmenes conservados. Queda ejecutar el conjunto final de trece, sin sumar ejecuciones individuales.
+CU-014 visible pasó **3/3** dentro de un conjunto nuevo **5/7**; CU-027 visible
+pasó después **2/2** dentro de **3/4**, y CU-029 visible final **2/2**, 24,4 s.
+Los fallos nuevos de demostración fueron del test: navegación antes de consumir
+la respuesta de logout (traza DELETE abortada), zona inicial no contabilizada y
+DTO de recinto anidado interpretado como objeto raíz. Se esperan respuesta/estado real,
+se seleccionan zonas por nombre tras ordenarlas el servidor y se consulta
+`recinto.zonas`; no se cambia el producto para acomodar la demostración.
+Evidencias: `.evidencia/cu014-027-029-visible-1/`,
+`cu027-029-visible-2/` y `cu029-visible-3/`.
+La repetición CU-014 de migraciones **2/2** (`cu014_73b97190d668`) exige además
+**80 tablas y 33 filas**: 29 historiales y cuatro roles, cero negocio.
+`test:preparacion` conserva seis casos para el observador histórico;
+`test:alimentos` incluye CU-014 (nueve) y el conjunto implementado tiene trece.
 
-Se detectó un iPhone físico con iOS 26.6, además de macOS/Chrome. La verificación
-física de cámara requiere poder desbloquearlo, responder al permiso y apuntarlo;
-se solicitó esa intervención. Las pruebas de widget/plataforma no se presentan
-como cámara física, ni Playwright con ingreso manual como escaneo óptico.
+Fallos de esta etapa conservados: backend **918/919** por expectativa antigua de
+28 migraciones (corregida a 29, sin tocar las 18 huellas). CU-014 individual
+**2/3**: API/concurrencia/reinicio y carreras de autorización pasan; UI completó
+entrega/replay/aviso pero falló al exigir el mensaje humano de segundo uso.
+AuthService administrativo descartaba `message` cuando existía `codigo`; se
+corrigió conservando ambos contratos `message`/`mensaje`, con pruebas HTTP reales
+del cliente Angular. CU-011 primero **0/9**, preparación interrumpida por timeout
+3 s de `/api/connections` de RabbitMQ; su repetición **0/9** detectó un recinto
+fixture de nombre fijo dejado tras ese fallo. Se usa ahora nombre con UUID propio,
+sin borrar filas previas ni reducir aserciones. La tercera pasó **9/9**. El timeout
+RabbitMQ se conserva como incidente distinto, sin causa atribuida ni reintentos
+nuevos/plazos mayores. Logs privados preservan todos los intentos.
+
+Cámara física comprobada en **iPhone 17 Pro Max (iPhone18,2), iOS 26.6**,
+con Xcode 27.0 y el componente real/mobile_scanner 7.4.2: **1/1** en 8 s.
+Se leyó ópticamente en el teléfono el QR real CU-011 abierto en el Mac,
+comparado mediante verificador del ensayo sin imprimir el secreto; se comprobó
+cierre del escáner. Es prueba de lectura/cierre, separada del negocio con
+backend real y de los negativos de permisos/ciclo de vida probados por widget.
+Primer lanzamiento: compiló, pero no descubrió Dart VM y no ejecutó tests;
+el usuario identificó una solicitud de control de Xcode en el Mac. Tras indicar
+que la aceptara, el segundo lanzamiento ejecutó y pasó. Logs/imagen/huellas y
+firma privada permanecen fuera de Git. No se cambiaron paquetes ni permisos.
 
 ## CU-013: hito 2, preparación y comprobaciones — 7 de noviembre de 2026
 

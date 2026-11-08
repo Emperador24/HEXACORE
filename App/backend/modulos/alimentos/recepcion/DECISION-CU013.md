@@ -1,12 +1,13 @@
-# CU-013: preparación, hasta listo para entregar
+# CU-013: preparación e integración de entrega CU-014
 
 Referencia comprobada antes de ampliar: conjunto CU-012/015 4/4, CU-011 9/9 y
 recuperación CU-012 con cinco intenciones. Los incidentes SQL/DNS/499 anteriores
 siguen abiertos; no se atribuyen a una causa única ni se consideran resueltos.
 
 La fuente es la ficha CU-013 de `CU_eventos_completo.xlsx`. Incluye entrega:
-esta etapa implementa pasos 1–6. Pasos 7–12, QR válido/punto correcto, entrega
-única e invalidación quedan en CU-014. La ficha aún usa CU-003/A–G como códigos
+el hito de preparación implementó pasos 1–6. La integración de
+[CU-014](DECISION-CU014.md) completa pasos 7–12: QR válido/punto correcto,
+entrega única e invalidación operativa. La ficha aún usa CU-003/A–G como códigos
 históricos internos; esta nota los relaciona con CU-013 sin reducir requisitos.
 
 ## Modelo y tiempos
@@ -44,16 +45,18 @@ cancelación, un nuevo cobro o devolución. CU-011F/F12 siguen pendientes.
 
 Alternativos: A cubre reporte, resolución y comunicación conservadora; cualquier
 cancelación/sustitución depende de su política. B cubre demora y aviso durable.
-C, E y F (entrega prematura, duplicada/punto incorrecto y QR inválido) son CU-014.
-D bloquea preparación de cancelados; rechazar entrega sigue en CU-014 y originar
+C, E y F (entrega prematura, duplicada/punto incorrecto y QR inválido) se rechazan en CU-014.
+D bloquea preparación y entrega de cancelados; originar
 esa cancelación/coordinar dinero sigue en CU-011F/F12. G se cubre con versión,
-idempotencia e historial para impedir iniciar dos veces, sin certificar entrega.
+idempotencia e historial para impedir iniciar dos veces, y entrega única persistida
+en CU-014. No se confunden pedidos distintos de un cliente con duplicados.
 
 ## Consultas y canal
 
 Personal activo/vinculado usa la lista privada, incluidos establecimientos cerrados.
 Sus listados no contienen cliente ni QR. Cliente consulta solo pedidos propios,
-detalle, avisos y el mismo QR persistido. El canal es la bandeja dentro de web/app:
+detalle y avisos; el QR persistido solo se muestra como utilizable antes de entregar.
+La proyección ENTREGADO y su fecha se recuperan al recargar. El canal es la bandeja dentro de web/app:
 no se declara correo, push ni entrega exactamente una vez. Inicio, retraso, listo,
 incidencia y resolución producen un aviso durable por operación.
 
