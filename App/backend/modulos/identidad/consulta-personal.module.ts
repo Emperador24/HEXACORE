@@ -15,6 +15,17 @@ export class ConsultaPersonal {
       AND u.eliminada_en IS NULL AND r.nombre='Personal') AS autorizado`, [usuarioId]);
     return r.autorizado;
   }
+  /** La política sigue en Identidad; el llamador aporta su transacción de la base común.
+   * FOR SHARE impide desactivar/eliminar la cuenta o retirar el rol mientras confirma.
+   */
+  async bloquearPersonalActivo(usuarioId: string, transaccion: { query(sql: string, parametros: any[]): Promise<any> }): Promise<boolean> {
+    const usuarios = await transaccion.query(`SELECT u.id FROM identidad.usuarios u
+      WHERE u.id=$1 AND u.estado='ACTIVA' AND u.eliminada_en IS NULL FOR SHARE`, [usuarioId]);
+    if (!usuarios.length) return false;
+    const roles = await transaccion.query(`SELECT ur.usuario_id FROM identidad.usuarios_roles ur
+      JOIN identidad.roles r ON r.id=ur.rol_id WHERE ur.usuario_id=$1 AND r.nombre='Personal' FOR SHARE OF ur,r`, [usuarioId]);
+    return roles.length > 0;
+  }
   async buscarActivos(busqueda: string) {
     return this.datos.query(`SELECT u.id,u.nombre,u.email FROM usuarios u
       JOIN usuarios_roles ur ON ur.usuario_id=u.id JOIN roles r ON r.id=ur.rol_id

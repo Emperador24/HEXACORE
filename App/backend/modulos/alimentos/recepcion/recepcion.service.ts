@@ -1,3 +1,4 @@
+import { EntregaPedido, entregaDto } from '../persistencia/entidades/entrega-pedido.entity';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource, EntityManager, In } from 'typeorm';
@@ -69,14 +70,18 @@ export class RecepcionService {
     const avances = await m.find(PreparacionPedido, { where: { pedidoId: In(ids) } });
     const pagos = await m.find(TransaccionPedido, { where: { pedidoId: In(ids), estado: EstadoTransaccionPedido.APROBADA } });
     const incidencias = await m.find(IncidenciaPreparacion, { where: { pedidoId: In(ids) }, order: { creadaEn: 'ASC' } });
+    const entregas = await m.find(EntregaPedido, { where: { pedidoId: In(ids) } });
     const historial = detalle ? await m.find(HistorialPreparacion, { where: { pedidoId: In(ids) }, order: { versionNueva: 'DESC' }, take: 100 }) : [];
     const locales = cliente ? await m.find(Establecimiento, { where: { id: In([...new Set(pedidos.map(p => p.establecimientoId))]) } }) : [];
     return pedidos.map(p => {
+      const entrega = entregas.find(e => e.pedidoId === p.id);
       const propias = incidencias.filter(i => i.pedidoId === p.id);
       const pagoVerificado = pagoAcreditado(p, pagos);
       const local = locales.find(e => e.id === p.establecimientoId);
       return { id: p.id, estado: p.estado, total: p.total, moneda: p.moneda, confirmadoEn: p.confirmadoEn?.toISOString() ?? null,
-        pagoVerificado, preparacion: preparacionDto(avances.find(a => a.pedidoId === p.id), propias.filter(i => !i.resueltaEn).length),
+        pagoVerificado, estadoOperativo: entrega ? 'ENTREGADO' : (avances.find(a => a.pedidoId === p.id)?.estado ?? 'RECIBIDO'),
+        entrega: entrega ? entregaDto(entrega) : null, qrUtilizable: p.estado === EstadoPedido.CONFIRMADO && pagoVerificado && !entrega,
+        preparacion: preparacionDto(avances.find(a => a.pedidoId === p.id), propias.filter(i => !i.resueltaEn).length),
         productos: detalles.filter(d => d.pedidoId === p.id).map(d => ({ productoId: d.productoId, nombreProducto: d.nombreProducto,
           cantidad: d.cantidad, precioUnitario: d.precioUnitario, descripcionProducto: d.descripcionProducto,
           restriccionesAlimentarias: d.restriccionesAlimentarias ?? [] })),
@@ -87,7 +92,7 @@ export class RecepcionService {
             versionNueva: h.versionNueva, datos: h.datos, creadoEn: h.creadoEn.toISOString() })) } : {}) } : {}),
         ...(cliente ? { establecimientoId: p.establecimientoId, establecimiento: local?.nombre ?? '', puntoEntrega: local?.puntoEntrega ?? '',
           creadoEn: p.creadoEn.toISOString(), metodoEntrega: p.metodoEntrega,
-          codigoQr: p.estado === EstadoPedido.CONFIRMADO && pagoVerificado ? p.codigoQr : null } : {}),
+          codigoQr: p.estado === EstadoPedido.CONFIRMADO && pagoVerificado && !entrega ? p.codigoQr : null } : {}),
       };
     });
   }

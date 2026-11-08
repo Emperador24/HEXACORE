@@ -3,6 +3,8 @@ import { EstadoPedido, Pedido } from '../../persistencia/entidades/pedido.entity
 import { EstadoTransaccionPedido, TransaccionPedido } from '../../persistencia/entidades/transaccion-pedido.entity';
 
 export class PagoDto {
+  qrUtilizable?: boolean;
+  entrega?: { operacionId: string; entregadoEn: string; puntoEntrega: string };
   @ApiProperty({ format: 'uuid' }) pedidoId: string;
   @ApiProperty({ format: 'uuid' }) transaccionId: string;
   @ApiProperty({ enum: EstadoTransaccionPedido }) estadoPago: EstadoTransaccionPedido;

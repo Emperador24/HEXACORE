@@ -1,3 +1,5 @@
+import { EntregaPedido } from './entidades/entrega-pedido.entity';
+import { EntregaCu0141794600000000 } from './migraciones/1794600000000-EntregaCu014';
 import { MenuInventarioCu0121794400000000 } from './migraciones/1794400000000-MenuInventarioCu012';
 import { PreparacionCu0131794500000000 } from './migraciones/1794500000000-PreparacionCu013';
 import { PreparacionPedido, HistorialPreparacion, IncidenciaPreparacion } from './entidades/preparacion-pedido.entity';
@@ -20,7 +22,7 @@ import { TransaccionPedido } from './entidades/transaccion-pedido.entity';
 import { EsquemaInicialCu0111789902006180 } from './migraciones/1789902006180-EsquemaInicialCu011';
 
 export const ENTIDADES: (Function | EntitySchema)[] = [
-  PreparacionPedido, HistorialPreparacion, IncidenciaPreparacion,
+  PreparacionPedido, HistorialPreparacion, IncidenciaPreparacion, EntregaPedido,
   OperacionInventario,
   PersonalEstablecimiento,
   EventoReferencia,
@@ -38,6 +40,7 @@ export const MIGRACIONES = [
   GestionEstablecimientosCu0151794300000000,
   MenuInventarioCu0121794400000000,
   PreparacionCu0131794500000000,
+  EntregaCu0141794600000000,
 ];
 
 export function opcionesDataSource(config: ConfiguracionServicio): DataSourceOptions & { name: string } {

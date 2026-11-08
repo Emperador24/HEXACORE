@@ -21,7 +21,7 @@ function preparar(database, anterior = false) {
     POSTGRES_CONTRASENA: opciones.password, POSTGRES_BD: database };
   const programa = `${anterior ? `const h=require(${JSON.stringify(resolve(raiz, 'dist/compartido/persistencia/historia'))});
     const g=h.GRUPOS_MIGRACIONES.find(g=>g.conexion==='alimentos');
-    g.migraciones=g.migraciones.filter(m=>!['GestionEstablecimientosCu0151794300000000','MenuInventarioCu0121794400000000','PreparacionCu0131794500000000'].includes(m.name));` : ''}
+    g.migraciones=g.migraciones.filter(m=>!['GestionEstablecimientosCu0151794300000000','MenuInventarioCu0121794400000000','PreparacionCu0131794500000000','EntregaCu0141794600000000'].includes(m.name));` : ''}
     require(${JSON.stringify(resolve(raiz, 'dist/compartido/persistencia/preparar-base'))}).prepararBase().catch(e=>{console.error(e.message);process.exitCode=1;});`;
   const salida = execFileSync(process.execPath, ['-e', programa], { env, cwd: '/tmp', encoding: 'utf8' });
   return JSON.parse(salida.trim().split('\n').at(-1));
@@ -34,7 +34,7 @@ function preparar(database, anterior = false) {
       const database = `${prefijo}_${tipo}`;
       await control.query(`CREATE DATABASE "${database}"`);
       const inicial = preparar(database, tipo === 'actualizacion');
-      assert.equal(inicial.migraciones, tipo === 'vacia' ? 28 : 25);
+      assert.equal(inicial.migraciones, tipo === 'vacia' ? 29 : 25);
       const c = new Client({ ...opciones, database }); await c.connect();
       try {
         if (tipo === 'actualizacion') {
@@ -50,7 +50,7 @@ function preparar(database, anterior = false) {
           const antes = [];
           for (const q of consultas) antes.push((await c.query(q)).rows);
           const actualizacion = preparar(database);
-          assert.deepEqual(actualizacion.esquemas.alimentos.aplicadas, ['GestionEstablecimientosCu0151794300000000','MenuInventarioCu0121794400000000','PreparacionCu0131794500000000']);
+          assert.deepEqual(actualizacion.esquemas.alimentos.aplicadas, ['GestionEstablecimientosCu0151794300000000','MenuInventarioCu0121794400000000','PreparacionCu0131794500000000','EntregaCu0141794600000000']);
           for (let i = 0; i < consultas.length; i++) { const nuevas=(await c.query(consultas[i])).rows.map(r=>Object.fromEntries(Object.keys(antes[i][0]).map(k=>[k,r[k]]))); assert.deepEqual(nuevas, antes[i]); }
           const fila = (await c.query('SELECT contacto,hora_apertura::text,hora_cierre::text,zona_horaria FROM alimentos.establecimientos')).rows[0];
           assert.deepEqual(fila, { contacto: 'Pendiente de actualizar', hora_apertura: '00:00:00', hora_cierre: '00:00:00', zona_horaria: 'America/Bogota' });
@@ -59,7 +59,7 @@ function preparar(database, anterior = false) {
         assert.ok(Object.values(repetida.esquemas).every(g => g.aplicadas.length === 0));
         assert.equal((await c.query('SELECT count(*)::int n FROM migracion_control.procedencia')).rows[0].n, 18);
         assert.equal((await c.query("SELECT count(*)::int n FROM pg_tables WHERE schemaname='public'")).rows[0].n, 0);
-        console.log(`${tipo}: ${database}, 28 migraciones, repetición sin DDL y 18 procedencias conservadas; ${tipo === 'actualizacion' ? 'establecimiento/pedido/producto/detalle idénticos' : 'instalación sin semillas'}.`);
+        console.log(`${tipo}: ${database}, 29 migraciones, repetición sin DDL y 18 procedencias conservadas; ${tipo === 'actualizacion' ? 'establecimiento/pedido/producto/detalle idénticos' : 'instalación sin semillas'}.`);
       } finally { await c.end(); }
     }
   } finally { await control.end(); }

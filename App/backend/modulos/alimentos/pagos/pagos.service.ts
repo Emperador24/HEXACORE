@@ -1,3 +1,4 @@
+import { EntregaPedido, entregaDto } from '../persistencia/entidades/entrega-pedido.entity';
 import { CONEXION_ALIMENTOS } from '../persistencia/conexion';
 import { randomBytes } from 'node:crypto';
 import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
@@ -130,7 +131,8 @@ export class PagosService {
         if (reserva.estado !== EstadoReserva.CONSUMO_PENDIENTE && reserva.estado !== EstadoReserva.CONSUMIDA) {
           throw new ConflictException({ codigo: 'RESERVA_CONFIRMACION_INCONSISTENTE' });
         }
-        return { pedido, intento, consumir: reserva.estado === EstadoReserva.CONSUMO_PENDIENTE, evento: null };
+        const entrega = await gestor.findOne(EntregaPedido, { where: { pedidoId } });
+        return { pedido, intento, consumir: reserva.estado === EstadoReserva.CONSUMO_PENDIENTE, evento: null, entrega };
       }
       if (pedido.estado !== EstadoPedido.PENDIENTE_PAGO || reserva.estado !== EstadoReserva.ACTIVA) {
         throw new ConflictException({ codigo: 'PEDIDO_NO_CONFIRMABLE' });
@@ -174,7 +176,7 @@ export class PagosService {
           ({ productoId, nombreProducto, cantidad, precioUnitario })),
         confirmadoEn: pedido.confirmadoEn.toISOString(),
       };
-      return { pedido, intento, consumir: true, evento };
+      return { pedido, intento, consumir: true, evento, entrega: null };
     });
     // Solo la petición que hizo la transición a CONFIRMADO publica. El replay no vuelve a publicar.
     if (confirmacion.evento) {
@@ -193,6 +195,7 @@ export class PagosService {
         this.log.error(`CONSUMO_REDIS_PENDIENTE pedido=${pedidoId} transaccion=${clave}`);
       }
     }
-    return aPagoDto(confirmacion.pedido, confirmacion.intento);
+    const respuesta = aPagoDto(confirmacion.pedido, confirmacion.intento);
+    return confirmacion.entrega ? { ...respuesta, qrUtilizable: false, entrega: entregaDto(confirmacion.entrega) } : respuesta;
   }
 }

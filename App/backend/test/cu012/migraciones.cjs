@@ -10,7 +10,7 @@ const {conectar,backend}=require('./entorno.cjs');
   const control=new Client({...comunes,database:'hexacore_cu015'});await control.connect();
   function preparar(base,anterior=false) {
     const codigo=`const h=require(${JSON.stringify(resolve(backend,'dist/compartido/persistencia/historia'))});
-      ${anterior?"const g=h.GRUPOS_MIGRACIONES.find(g=>g.conexion==='alimentos');g.migraciones=g.migraciones.filter(M=>!['MenuInventarioCu0121794400000000','PreparacionCu0131794500000000'].includes(M.name));":''}
+      ${anterior?"const g=h.GRUPOS_MIGRACIONES.find(g=>g.conexion==='alimentos');g.migraciones=g.migraciones.filter(M=>!['MenuInventarioCu0121794400000000','PreparacionCu0131794500000000','EntregaCu0141794600000000'].includes(M.name));":''}
       require(${JSON.stringify(resolve(backend,'dist/compartido/persistencia/preparar-base'))}).prepararBase().catch(e=>{console.error(e.message);process.exitCode=1;});`;
     const e={PATH:process.env.PATH,HOME:process.env.HOME,NODE_ENV:'test',POSTGRES_HOST:'127.0.0.1',POSTGRES_PUERTO:'15459',
       POSTGRES_USUARIO:comunes.user,POSTGRES_CONTRASENA:comunes.password,POSTGRES_BD:base};
@@ -22,7 +22,7 @@ const {conectar,backend}=require('./entorno.cjs');
     for(const modo of ['vacia','actualizacion']) {
       const base=`cu012_${sufijo}_${modo}`;
       await control.query(`CREATE DATABASE "${base}"`);
-      assert.equal(preparar(base,modo==='actualizacion').migraciones,modo==='vacia'?28:26);
+      assert.equal(preparar(base,modo==='actualizacion').migraciones,modo==='vacia'?29:26);
       const c=new Client({...comunes,database:base});await c.connect();
       try {
         if(modo==='actualizacion') {
@@ -36,7 +36,7 @@ const {conectar,backend}=require('./entorno.cjs');
           const tablas=['productos','pedidos','detalles_pedido','reservas_inventario','establecimientos'];
           const previas=[];
           for(const t of tablas)previas.push((await c.query(`SELECT * FROM alimentos.${t}`)).rows);
-          const r=preparar(base);assert.deepEqual(r.esquemas.alimentos.aplicadas,['MenuInventarioCu0121794400000000','PreparacionCu0131794500000000']);
+          const r=preparar(base);assert.deepEqual(r.esquemas.alimentos.aplicadas,['MenuInventarioCu0121794400000000','PreparacionCu0131794500000000','EntregaCu0141794600000000']);
           for(let n=0;n<tablas.length;n++) {
             const nuevas=(await c.query(`SELECT * FROM alimentos.${tablas[n]}`)).rows;
             assert.equal(nuevas.length,previas[n].length);
@@ -48,7 +48,7 @@ const {conectar,backend}=require('./entorno.cjs');
         assert.ok(Object.values(preparar(base).esquemas).every(g=>g.aplicadas.length===0));
         assert.equal((await c.query('SELECT count(*)::int n FROM migracion_control.procedencia')).rows[0].n,18);
         assert.equal((await c.query("SELECT count(*)::int n FROM pg_tables WHERE schemaname='public'")).rows[0].n,0);
-        console.log(`${modo}: ${base}, 28 migraciones, repetición sin DDL, 18 procedencias; productos/reservas/pedidos previos conservados.`);
+        console.log(`${modo}: ${base}, 29 migraciones, repetición sin DDL, 18 procedencias; productos/reservas/pedidos previos conservados.`);
       } finally { await c.end(); }
     }
   } finally { await control.end();await entorno.cerrar(); }
