@@ -6,6 +6,9 @@ const raiz = resolve(__dirname, '../../../..');
 const backend = resolve(__dirname, '../..');
 const proyecto = 'hexacore-cu015-regresion';
 const checkout = createHash('sha256').update(raiz).digest('hex').slice(0,16);
+// La opción añade las regresiones de los cinco pools de Boletería a CU-011.
+const boleteria = process.argv.includes('--boleteria');
+assert.ok(process.argv.slice(2).every(a=>a==='--boleteria'),'Opción de regresión desconocida');
 const env = Object.fromEntries(['PATH','HOME','TMPDIR','DOCKER_HOST','DOCKER_CONTEXT','DOCKER_CONFIG'].filter(k=>process.env[k]).map(k=>[k,process.env[k]]));
 Object.assign(env, { CU015_CHECKOUT: checkout, POSTGRES_BD_PRUEBAS: 'hexacore_vacia_e2e', COMPOSE_PARALLEL_LIMIT: '1', COMPOSE_BAKE: 'false' });
 function ejecutar(cmd, args, capturar = false) {
@@ -46,12 +49,13 @@ try {
   assert.equal(config.services['preparacion-base'].environment.POSTGRES_HOST,'postgres');
   // No arrancar si estos puertos están ocupados fuera de los contenedores propios.
   const propios=new Set(contenedores.filter(c=>c.State.Running).flatMap(c=>Object.values(c.NetworkSettings.Ports??{}).flatMap(ps=>(ps??[]).map(p=>Number(p.HostPort)))));
-  for(const p of [...puertos,13087].filter(p=>!propios.has(p))) {
+  for(const p of [...puertos,13087,...(boleteria?[13096]:[])].filter(p=>!propios.has(p))) {
     ejecutar('python3',['-c','import socket,sys; s=socket.socket(); s.bind(("127.0.0.1",int(sys.argv[1]))); s.close()',String(p)],true);
   }
   compose('up','-d','--wait','postgres','redis','rabbitmq','pasarela','correo');
   compose('up','--no-deps','--exit-code-from','preparacion-base','preparacion-base');
   ejecutar(process.execPath,['--experimental-vm-modules','node_modules/jest/bin/jest.js','--config','test/jest-e2e.json','--runInBand','--testPathPatterns=cu011.e2e-spec']);
+  if(boleteria) ejecutar(process.execPath,['--experimental-vm-modules','node_modules/jest/bin/jest.js','--config','test/boleteria/jest.json','--runInBand']);
 } catch(e) { console.error(e.message); process.exitCode=1; }
 finally {
   // Solo stop; se retienen todos los recursos para inspección/repetición.
