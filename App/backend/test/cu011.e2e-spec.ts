@@ -146,7 +146,7 @@ describe('CU-011 Alimentos → Pagos → pasarela con persistencia y mensajería
     await identidad.query(`INSERT INTO usuarios_roles (usuario_id,rol_id) SELECT $1,id FROM roles WHERE nombre='Cliente'`, [cliente]);
     // CU-015 consulta al dueño vigente, también en la regresión de CU-011.
     await datos.query(`INSERT INTO eventos_recintos.recintos(id,nombre,ciudad,capacidad)
-      VALUES($1,'Recinto CU011 E2E','Bogotá',100)`, [recinto]);
+      VALUES($1,$2,'Bogotá',100)`, [recinto, `Recinto CU011 E2E ${recinto}`]);
     await datos.query(`INSERT INTO eventos_recintos.eventos(id,nombre,categoria,recinto_id,fecha_inicio,fecha_fin,aforo_maximo,estado,creado_por)
       VALUES($1,'Evento CU011 E2E','Pruebas',$2,now()+interval '1 day',now()+interval '2 days',100,'PUBLICADO',$3)`, [evento,recinto,cliente]);
     await datos.manager.insert(EventoReferencia, { eventoId: evento, nombre: 'Evento E2E', disponible: true });
