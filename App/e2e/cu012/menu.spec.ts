@@ -30,7 +30,13 @@ test('CU-012 por interfaces: asignar Personal, crear, reservar, ajustar, pagar y
   await page.getByRole('button',{name:'Buscar personal',exact:true}).click();
   await expect(page.getByLabel('Cuenta Personal activa',{exact:true}).locator('option')).toHaveCount(2);
   await page.getByLabel('Cuenta Personal activa',{exact:true}).selectOption(personal.usuario.id);
+  // La UI confirma después del PUT y de volver a leer los vínculos. Comprobar
+  // ambas respuestas antes del mensaje evita consumir su espera en dos viajes.
+  const vinculo = page.waitForResponse(r=>r.url().endsWith(`/establecimientos/${local.id}/personal/${personal.usuario.id}`) && r.request().method()==='PUT');
+  const vinculados = page.waitForResponse(r=>r.url().endsWith(`/establecimientos/${local.id}/personal`) && r.request().method()==='GET');
   await page.getByRole('button',{name:'Asignar personal',exact:true}).click();
+  expect((await vinculo).status()).toBe(200);
+  expect((await vinculados).status()).toBe(200);
   await expect(page.getByRole('status')).toContainText('Personal asignado');
 
   const ctx = await browser.newContext(), clienteCtx = await browser.newContext();
