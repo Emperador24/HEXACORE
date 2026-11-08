@@ -6,6 +6,7 @@ describe('Propiedad de esquemas e historia conservada',()=>{
   it.each(Object.entries(ESQUEMAS))('pool %s usa solo el esquema %s y extensiones comunes',(conexion,esquema)=>{
     expect(opcionesEsquema(conexion as ConexionNegocio)).toEqual({schema:esquema,installExtensions:false});
     expect(opcionesSesion(conexion as ConexionNegocio).options).toBe(`-c search_path=${esquema},pg_catalog,extensiones`);
+    expect(opcionesSesion(conexion as ConexionNegocio).min).toBe(1);
   });
   it('las 18 fuentes originales conservan su SHA-256, nombre e historial',()=>{
     expect(PROCEDENCIA_ORIGINAL).toHaveLength(18);

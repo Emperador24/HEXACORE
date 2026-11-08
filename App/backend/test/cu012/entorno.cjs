@@ -42,4 +42,4 @@ with (r.ESTADO/'operacion.lock').open('a') as f:
 `;
   execFileSync('python3',['-c',codigo],{stdio:'pipe'});
 }
-module.exports={conectar,nucleo,backend};
+module.exports={configuracion,conectar,nucleo,backend};
