@@ -68,20 +68,44 @@ export class TurnosService {
     return { empleado, turnoVigente: turnoVigente ?? null };
   }
 
-  async crearTurno(dto: CrearTurnoDto) {
+  /**
+   * Turno directo de CU-018, sin zona de evento. La asignación de CU-007
+   * (`POST zonas/:zonaId/asignaciones`) es la que valida rol, choques y horas;
+   * esta ruta conserva el comportamiento que CU-018 prueba (turnos en eventos
+   * simultáneos, turnos largos para CU-018C), pero ya no salta las reglas
+   * comunes: solo a un empleado activo (CU-007, precondición 2), con su
+   * auditoría y su aviso, como cualquier otra asignación.
+   */
+  async crearTurno(dto: CrearTurnoDto, realizadoPor: string) {
     const empleado = await this.empleados.findOneBy({ id: dto.empleadoId });
     if (!empleado) {
       throw new NotFoundException('Empleado no encontrado.');
     }
+    if (!empleado.activo) {
+      throw new BadRequestException(`${empleado.nombre} está desactivado y no puede recibir turnos.`);
+    }
     if (new Date(dto.horaFin) <= new Date(dto.horaInicio)) {
       throw new BadRequestException('horaFin debe ser posterior a horaInicio.');
     }
-    const turno = this.turnos.create({
-      ...dto,
-      horaInicio: new Date(dto.horaInicio),
-      horaFin: new Date(dto.horaFin),
+    const guardado = await this.turnos.manager.transaction(async (m) => {
+      const turno = await m.save(
+        m.create(Turno, {
+          ...dto,
+          horaInicio: new Date(dto.horaInicio),
+          horaFin: new Date(dto.horaFin),
+        }),
+      );
+      await auditar(m, {
+        accion: 'PERSONAL_ASIGNADO',
+        realizadoPor,
+        empleadoId: empleado.id,
+        turnoId: turno.id,
+        detalle: { zona: dto.zona, eventoId: dto.eventoId, horaInicio: dto.horaInicio, horaFin: dto.horaFin, via: 'turno-directo' },
+      });
+      return turno;
     });
-    return this.turnos.save(turno);
+    await this.notificar('PERSONAL_ASIGNADO', guardado.id, empleado.id, `Se te asignó un turno en "${dto.zona}".`);
+    return guardado;
   }
 
   listarTurnos() {
@@ -282,6 +306,10 @@ export class TurnosService {
         throw new BadRequestException({ codigo: 'FALTA_REEMPLAZO', mensaje: 'Elige un reemplazo para aprobar el cambio.' });
       }
       const solicitante = await m.findOneByOrFail(Empleado, { id: solicitanteId });
+      // El reemplazo se bloquea antes de comprobar si está libre: una
+      // asignación simultánea (CU-007) también lo bloquea, así que no pueden
+      // darle a la vez dos turnos que se cruzan.
+      await m.findOne(Empleado, { where: { id: reemplazoId }, lock: { mode: 'pessimistic_write' } });
       const candidato = (await this.reemplazosPara(m, turno, solicitante.rol, solicitud.reemplazosDescartados ?? []))
         .find((c) => c.empleado.id === reemplazoId);
       if (!candidato || !candidato.disponible) {

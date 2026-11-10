@@ -3,7 +3,6 @@ import { CurrencyPipe, DatePipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
-import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -13,14 +12,31 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { firstValueFrom } from 'rxjs';
 import { AuthService, ErrorCuenta } from '../core/auth.service';
-import { AlertaParqueadero, EventoMonitoreable, PanelParqueadero, Redireccion, Rol, SalidaVehiculo, Tarifa, ZonaParqueadero } from '../core/models';
+import {
+  AlertaParqueadero, AsignacionEspacio, EspacioParqueadero, EventoMonitoreable, IngresoVehiculo, PanelParqueadero, Redireccion,
+  ReservaParqueaderoEvento, Rol, SalidaVehiculo, Tarifa, TipoVehiculo, ZonaParqueadero
+} from '../core/models';
 import { MonitoreoApiService } from '../core/monitoreo-api.service';
 import { ParqueaderosApiService } from '../core/parqueaderos-api.service';
 import { DatosConfirmacion, DialogoConfirmacionComponent } from '../compartido/dialogo-confirmacion.component';
 
+/** El QR de una reserva (CU-021) se distingue de una placa por su forma. */
+const ES_QR = /^HXP-[A-Z0-9]{16}$/i;
+
+export const TIPOS_VEHICULO: { valor: TipoVehiculo; etiqueta: string; icono: string }[] = [
+  { valor: 'AUTOMOVIL', etiqueta: 'Automóvil', icono: 'directions_car' },
+  { valor: 'MOTO', etiqueta: 'Moto', icono: 'two_wheeler' },
+  { valor: 'DISCAPACIDAD', etiqueta: 'Movilidad reducida', icono: 'accessible' }
+];
+
 /**
- * CU-024 (Cobro) y CU-025 (Control de ocupación) en el Portal Web
- * Administrativo.
+ * CU-021 a CU-025 en el Portal Web Administrativo: el parqueadero del evento.
+ *
+ * Ingreso por el QR de la reserva o por la placa (CU-022); el servidor asigna
+ * el espacio (CU-023) y el mapa de espacios muestra cuáles están libres,
+ * reservados u ocupados, con su tipo. El organizador cambia el tipo de un
+ * espacio o lo retira, y ve las reservas del evento (CU-021) y el historial
+ * de asignaciones.
  *
  * El panel llega en vivo por Server-Sent Events: porcentaje por zona,
  * tendencia de llenado y alertas (pasos 2-4). Desde una alerta, o a mano, el
@@ -32,7 +48,7 @@ import { DatosConfirmacion, DialogoConfirmacionComponent } from '../compartido/d
   selector: 'app-parqueaderos',
   standalone: true,
   imports: [
-    CurrencyPipe, DatePipe, DecimalPipe, FormsModule, MatButtonModule, MatCheckboxModule, MatFormFieldModule, MatIconModule, MatInputModule,
+    CurrencyPipe, DatePipe, DecimalPipe, FormsModule, MatButtonModule, MatFormFieldModule, MatIconModule, MatInputModule,
     MatProgressBarModule, MatSelectModule, MatTooltipModule
   ],
   templateUrl: './parqueaderos.component.html',
@@ -63,7 +79,26 @@ export class ParqueaderosComponent implements OnInit, OnDestroy {
   readonly redireccion = signal({ zonaOrigenId: '', zonaDestinoId: '', motivo: '' });
   readonly placaSalida = signal('');
   readonly ultimaSalida = signal<SalidaVehiculo | null>(null);
-  readonly ingreso = signal({ placa: '', zonaId: '', prepagada: false });
+  readonly ingreso = signal<{ texto: string; zonaId: string; tipo: TipoVehiculo }>({ texto: '', zonaId: '', tipo: 'AUTOMOVIL' });
+  readonly ultimoIngreso = signal<IngresoVehiculo | null>(null);
+  readonly tipos = TIPOS_VEHICULO;
+
+  // CU-021 y CU-023.
+  readonly espacios = signal<EspacioParqueadero[]>([]);
+  readonly asignaciones = signal<AsignacionEspacio[]>([]);
+  readonly reservas = signal<ReservaParqueaderoEvento[]>([]);
+  readonly espacioElegido = signal<EspacioParqueadero | null>(null);
+  readonly espaciosPorZona = computed(() => {
+    const grupos = new Map<string, { zona: string; espacios: EspacioParqueadero[] }>();
+    for (const e of this.espacios()) {
+      const g = grupos.get(e.zonaId) ?? { zona: e.zona, espacios: [] };
+      g.espacios.push(e);
+      grupos.set(e.zonaId, g);
+    }
+    return [...grupos.entries()].map(([id, g]) => ({ id, ...g }));
+  });
+  readonly reservasVigentes = computed(() => this.reservas().filter((r) => r.estado !== 'EXPIRADA' && r.estado !== 'USADA'));
+  private comprometidos = -1;
 
   readonly zonasDestino = computed(() => (this.panel()?.zonas ?? []).filter((z) => z.estado !== 'LLENA' && z.id !== this.redireccion().zonaOrigenId));
   readonly vigente = computed(() => this.panel()?.redirecciones.find((r) => r.vigente) ?? null);
@@ -94,6 +129,10 @@ export class ParqueaderosComponent implements OnInit, OnDestroy {
     this.eventoId.set(id);
     this.panel.set(null);
     this.ultimaSalida.set(null);
+    this.ultimoIngreso.set(null);
+    this.espacios.set([]);
+    this.espacioElegido.set(null);
+    this.comprometidos = -1;
     void this.router.navigate([], { queryParams: { evento: id }, replaceUrl: true });
     void this.consultar();
     this.conectar();
@@ -111,7 +150,7 @@ export class ParqueaderosComponent implements OnInit, OnDestroy {
     this.nuevaZona.update((z) => ({ ...z, ...cambio }));
   }
 
-  editarIngreso(cambio: Partial<{ placa: string; zonaId: string; prepagada: boolean }>): void {
+  editarIngreso(cambio: Partial<{ texto: string; zonaId: string; tipo: TipoVehiculo }>): void {
     this.ingreso.update((i) => ({ ...i, ...cambio }));
   }
 
@@ -131,25 +170,49 @@ export class ParqueaderosComponent implements OnInit, OnDestroy {
     }, 'No se pudo actualizar la tarifa.');
   }
 
+  /** CU-022, pasos 5-9: por placa o por el QR de la reserva. */
   async registrarSalida(): Promise<void> {
-    const placa = this.placaSalida().trim();
-    if (!placa) return;
+    const texto = this.placaSalida().trim();
+    if (!texto) return;
     await this.ejecutar(async () => {
-      this.ultimaSalida.set(await this.api.registrarSalida(this.eventoId(), placa));
+      this.ultimaSalida.set(await this.api.registrarSalida(this.eventoId(), ES_QR.test(texto) ? { codigoQr: texto } : { placa: texto }));
       this.placaSalida.set('');
       await this.consultar();
     }, 'No se pudo registrar la salida.');
   }
 
+  /** CU-022, pasos 1-4: el QR de la reserva lleva a su espacio; sin reserva, CU-023 asigna uno. */
   async registrarIngreso(): Promise<void> {
     const i = this.ingreso();
-    if (!i.placa.trim()) return;
+    const texto = i.texto.trim();
+    if (!texto) return;
     await this.ejecutar(async () => {
-      await this.api.registrarIngreso(this.eventoId(), { placa: i.placa.trim(), ...(i.zonaId ? { zonaId: i.zonaId } : {}), prepagada: i.prepagada });
-      this.ingreso.set({ placa: '', zonaId: '', prepagada: false });
-      this.aviso.set('Ingreso registrado.');
+      const r = await this.api.registrarIngreso(this.eventoId(), {
+        ...(ES_QR.test(texto) ? { codigoQr: texto } : { placa: texto }), tipoVehiculo: i.tipo, ...(i.zonaId ? { zonaId: i.zonaId } : {})
+      });
+      this.ultimoIngreso.set(r);
+      this.ingreso.set({ texto: '', zonaId: '', tipo: 'AUTOMOVIL' });
       await this.consultar();
     }, 'No se pudo registrar el ingreso.');
+  }
+
+  // --- CU-023: espacios -------------------------------------------------------------
+
+  elegirEspacio(e: EspacioParqueadero): void {
+    this.espacioElegido.set(this.espacioElegido()?.id === e.id ? null : e);
+  }
+
+  async guardarEspacio(cambio: { tipo?: TipoVehiculo; activo?: boolean }): Promise<void> {
+    const e = this.espacioElegido();
+    if (!e) return;
+    await this.ejecutar(async () => {
+      this.espacioElegido.set(await this.api.actualizarEspacio(this.eventoId(), e.id, cambio));
+      await this.consultar();
+    }, 'No se pudo cambiar el espacio.');
+  }
+
+  tipo(valor: TipoVehiculo) {
+    return TIPOS_VEHICULO.find((t) => t.valor === valor)!;
   }
 
   // --- Zonas ----------------------------------------------------------------------
@@ -219,6 +282,8 @@ export class ParqueaderosComponent implements OnInit, OnDestroy {
         this.panel.set(p);
         this.enVivo.set(true);
         this.espera = 2000;
+        // El mapa de espacios solo se vuelve a pedir si algo entró, salió o se reservó.
+        if (p.total.ocupados + p.total.reservados !== this.comprometidos) void this.cargarDetalle();
       },
       () => {
         if (id !== this.eventoId()) return;
@@ -242,8 +307,26 @@ export class ParqueaderosComponent implements OnInit, OnDestroy {
     try {
       const p = await this.api.panel(id);
       if (id === this.eventoId()) this.panel.set(p);
+      await this.cargarDetalle();
     } catch (e) {
       this.error.set(this.mensaje(e, 'No se pudo consultar la ocupación.'));
+    }
+  }
+
+  private async cargarDetalle(): Promise<void> {
+    const id = this.eventoId();
+    if (!id) return;
+    try {
+      const [espacios, asignaciones, reservas] = await Promise.all([this.api.espacios(id), this.api.asignaciones(id), this.api.reservas(id)]);
+      if (id !== this.eventoId()) return;
+      this.espacios.set(espacios);
+      this.asignaciones.set(asignaciones.slice(0, 30));
+      this.reservas.set(reservas);
+      this.comprometidos = espacios.filter((e) => e.estado === 'OCUPADO' || e.estado === 'RESERVADO').length;
+      const elegido = this.espacioElegido();
+      if (elegido) this.espacioElegido.set(espacios.find((e) => e.id === elegido.id) ?? null);
+    } catch {
+      // El mapa es complementario: el panel de ocupación sigue funcionando sin él.
     }
   }
 

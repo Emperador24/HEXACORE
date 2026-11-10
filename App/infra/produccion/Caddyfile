@@ -1,0 +1,27 @@
+# Entrada pública de producción: HTTPS con certificados de Let's Encrypt que
+# Caddy pide y renueva solo (solo necesita los puertos 80 y 443 abiertos y que
+# el dominio apunte a este servidor).
+#
+# Cada portal sirve también `/api/` en su propio dominio, hacia el gateway. Así
+# el navegador nunca hace peticiones a otro origen: no hace falta CORS y la
+# cookie de renovación de sesión (SameSite=Strict) funciona tal cual.
+
+{$DOMINIO} {
+	encode zstd gzip
+	handle /api/* {
+		reverse_proxy api-gateway:8080
+	}
+	handle {
+		reverse_proxy portal-web-cliente:4200
+	}
+}
+
+{$DOMINIO_ADMIN} {
+	encode zstd gzip
+	handle /api/* {
+		reverse_proxy api-gateway:8080
+	}
+	handle {
+		reverse_proxy portal-web-admin:4201
+	}
+}

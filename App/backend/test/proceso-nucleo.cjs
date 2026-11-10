@@ -27,7 +27,7 @@ async function iniciar({ rabbitmqUrl, gestionUrl = 'http://127.0.0.1:16779' } = 
                 r = await fetch('http://127.0.0.1:13087/api/v1/salud', { signal: AbortSignal.timeout(1000) });
             }
             catch { }
-            if (r?.ok && p.salida.includes('6 topologías declaradas'))
+            if (r?.ok && p.salida.includes('7 topologías declaradas'))
                 break;
             if (Date.now() > limite)
                 throw Error('Núcleo auxiliar no disponible: ' + p.salida);

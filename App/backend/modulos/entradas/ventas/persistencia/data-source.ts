@@ -19,6 +19,7 @@ import { SecuenciaNumeroTransaccion1789344000000 } from './migraciones/178934400
 import { CarteleraCu0051789776000000 } from './migraciones/1789776000000-CarteleraCu005';
 import { VentaPrimariaCu001a0041789862400000 } from './migraciones/1789862400000-VentaPrimariaCu001a004';
 import { BandejaSalida1790553600000 } from './migraciones/1790553600000-BandejaSalida';
+import { VersionEvento1794400000000 } from './migraciones/1794400000000-VersionEvento';
 
 /**
  * La entidad `Ingreso` ya no está aquí: se fue a `acceso-qr` en la fase A de
@@ -49,6 +50,7 @@ export const MIGRACIONES = [
   CarteleraCu0051789776000000,
   VentaPrimariaCu001a0041789862400000,
   BandejaSalida1790553600000,
+  VersionEvento1794400000000,
 ];
 
 export function opcionesDataSource(config: ConfiguracionServicio): DataSourceOptions & { name: string } {

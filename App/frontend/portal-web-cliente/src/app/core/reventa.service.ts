@@ -118,10 +118,16 @@ export class ReventaService {
   }
 
   /** Paso 1: las entradas de la cuenta, con el veredicto de cada una. */
-  misEntradas(): Promise<EntradaPropia[]> {
-    return this.auth.conAcceso((cabeceras: HttpHeaders) =>
-      this.http.get<EntradaPropia[]>(this.url('mis-entradas'), { headers: cabeceras })
+  async misEntradas(): Promise<EntradaPropia[]> {
+    const entradas = await this.auth.conAcceso((cabeceras: HttpHeaders) =>
+      this.http.get<(EntradaPropia & { publicacion?: { id: string; precio: number } | null })[]>(this.url('mis-entradas'), { headers: cabeceras })
     );
+    // El servidor anida la publicación vigente; la pantalla necesita su id para retirarla (CU-006B).
+    return entradas.map(({ publicacion, ...entrada }) => ({
+      ...entrada,
+      publicacionId: publicacion?.id ?? entrada.publicacionId ?? null,
+      precioReventa: publicacion?.precio ?? entrada.precioReventa ?? null
+    }));
   }
 
   /** Paso 5: el catálogo. Sin las propias publicaciones: nadie se compra su entrada. */

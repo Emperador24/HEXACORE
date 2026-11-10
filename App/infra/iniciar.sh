@@ -8,7 +8,7 @@
 #   ./iniciar.sh --rol servicios --datos 192.168.1.20
 #                                         servicios y gateway apuntando al A (computador B)
 #   ./iniciar.sh --registro develop       desde las imágenes que publicó el CD
-#   ./iniciar.sh --datos-demo npm         semillas explícitas, solo instalación vacía
+#   ./iniciar.sh --datos-demo             con datos de ejemplo (solo sobre instalación vacía)
 #   ./iniciar.sh --parar                  baja todo, conservando los datos
 #
 # Por qué existe: el atributo de **desplegabilidad** exige que el sistema
@@ -19,6 +19,10 @@
 # Los datos demo requieren petición explícita y una instalación vacía; no forman
 # parte de una actualización ni de la migración de datos existentes.
 #
+# Solo necesita Docker: los servicios, los portales y las semillas de
+# demostración se compilan y corren en contenedores, así que no hace falta
+# Node, npm ni nada más instalado en el computador.
+#
 # Lo que NO hace: instalar Docker, ni construir la app móvil. Tampoco borra
 # datos: para eso está `docker compose down -v`, a propósito fuera de este
 # script.
@@ -26,15 +30,12 @@
 set -euo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")"
-RAIZ="$(cd ../.. && pwd)"
 
 ROL="todo"
 DATOS=""
 REPLICAS=1
 DEMO="no"
 PARAR="no"
-# Las semillas destructivas requieren --datos-demo npm y una base vacía.
-DATOS_DEMO="npm"
 # Etiqueta a desplegar desde el registro (develop, main, latest, sha-<SHA40>).
 # Vacío = compilar aquí, que es lo normal mientras se desarrolla.
 REGISTRO=""
@@ -55,7 +56,9 @@ while [[ $# -gt 0 ]]; do
     --datos)     DATOS="${2:-}"; shift 2 ;;
     --replicas)  REPLICAS="${2:-1}"; shift 2 ;;
     --registro)  REGISTRO="${2:-develop}"; shift 2 ;;
-    --datos-demo) DATOS_DEMO="${2:-npm}"; DEMO="si"; shift 2 ;;
+    # `npm` era el único valor admitido antes de que las semillas corrieran en
+    # Docker; se sigue aceptando para no romper a quien lo tenga anotado.
+    --datos-demo) DEMO="si"; shift; if [[ "${1:-}" == "npm" ]]; then shift; fi ;;
     --sin-demo)  DEMO="no"; shift ;;
     --parar)     PARAR="si"; shift ;;
     -h|--help)   uso 0 ;;
@@ -117,10 +120,6 @@ if [[ -z "$DATOS" ]] && docker ps --format '{{.Names}}' | grep -qx hexacore-post
     rojo "Instalación anterior detectada. Ejecuta el procedimiento autorizado de corte y conciliación; iniciar.sh no lo automatiza."
     exit 1
   fi
-fi
-if [[ "$DEMO" == "si" && "$DATOS_DEMO" != "npm" ]]; then
-  rojo "Los volcados por bases antiguas están retirados. Usa --datos-demo npm solo en una instalación vacía."
-  exit 1
 fi
 
 # Un servicio retirado puede seguir como huérfano del mismo proyecto Compose.
@@ -212,99 +211,25 @@ fi
 
 # La tarea Compose preparacion-base migra una sola vez, antes de ambas aplicaciones.
 
-# Carga en Redis el inventario de cada establecimiento de Pedidos.
-#
-# El CU-011 reserva inventario con scripts Lua sobre Redis, y esos contadores
-# no salen de PostgreSQL: hay que sembrarlos con un comando de mantenimiento,
-# uno por establecimiento. Sin ellos el checkout responde 503
-# INVENTARIO_NO_PREPARADO aunque la base esté perfecta.
-#
-# El comando se niega a pisar un inventario ya cargado (INVENTARIO_YA_EXISTENTE),
-# que es lo correcto en producción; aquí eso no es un error, solo significa que
-# ya estaba hecho.
-preparar_inventario_pedidos() {
-  # El inventario pertenece a Alimentos, dentro del workspace del Núcleo.
-  local carpeta="$RAIZ/App/backend"
-  [[ -d "$carpeta/node_modules" ]] || return 0
-
-  local establecimientos
-  establecimientos="$(docker exec hexacore-postgres psql -qtA \
-    --username=hexacore --dbname="${POSTGRES_BD:-hexacore}" \
-    -c 'SELECT id FROM alimentos.establecimientos;' 2>/dev/null || true)"
-  if [[ -z "$establecimientos" ]]; then
-    gris "  pedidos: sin establecimientos, no hay inventario que preparar"
-    return 0
-  fi
-
-  local preparados=0 ya=0
-  while read -r establecimiento; do
-    [[ -n "$establecimiento" ]] || continue
-    local salida
-    salida="$(cd "$carpeta" && REDIS_HOST="${HOST_REDIS:-localhost}" \
-      REDIS_PUERTO="${PUERTO_REDIS:-6380}" \
-      npm run inventario:preparar -- \
-      "$establecimiento" --compras-detenidas 2>&1 || true)"
-    if grep -q 'Inventario preparado' <<<"$salida"; then
-      preparados=$(( preparados + 1 ))
-    elif grep -q 'INVENTARIO_YA_EXISTENTE' <<<"$salida"; then
-      ya=$(( ya + 1 ))
-    else
-      gris "  pedidos: no se pudo preparar $establecimiento"
-    fi
-  done <<<"$establecimientos"
-
-  verde "  pedidos: inventario en Redis ($preparados preparados, $ya ya estaban)"
-}
-
-sembrar() {
-  local servicio="$1" tarea="${2:-semilla}" carpeta="$RAIZ/App/backend"
-  [[ "$servicio" == "nucleo" || "$servicio" == "boleteria" ]] || { rojo "Programa retirado: $servicio"; return 1; }
-  if [[ ! -d "$carpeta/node_modules" ]]; then
-    rojo "  $servicio: falta npm ci en $carpeta"
-    return 1
-  fi
-  if (cd "$carpeta" && npm run "$tarea" >/dev/null 2>&1); then
-    verde "  $servicio: datos de ejemplo listos"
-  else
-    rojo "  $servicio: falló $tarea"
-    return 1
-  fi
-}
-
+# Las semillas y el inventario de Pedidos corren en el contenedor `datos-demo`
+# (perfil `demo`, ver App/backend/herramientas/datos-demo.sh). Sobre una base
+# que ya tiene datos no hacen nada.
 if [[ "$DEMO" == "si" && "$ROL" != "datos" ]]; then
   [[ -z "$DATOS" ]] || { rojo "Las semillas automáticas solo admiten instalación local vacía."; exit 1; }
-  command -v npm >/dev/null && [[ -d "$RAIZ/App/backend/node_modules" ]] || {
-    rojo "Instala Node 22.22.3 y npm ci en App/backend antes de solicitar semillas."; exit 1;
-  }
-  # Cuenta todas las tablas de negocio, salvo los cuatro roles iniciales y los
-  # historiales. No se confía en estadísticas aproximadas ni se trunca para vaciar.
-  OCUPADAS="$(docker exec -i hexacore-postgres psql -U hexacore -d "${POSTGRES_BD:-hexacore}" -At -v ON_ERROR_STOP=1 <<'SQL'
-SELECT format('SELECT count(*) FROM %I.%I;',schemaname,tablename)
-FROM pg_tables WHERE schemaname IN ('identidad','alimentos','personal_logistica',
- 'entradas_ventas','entradas_catalogo','entradas_postventa','entradas_acceso_qr','finanzas_pagos',
- 'eventos_recintos')
-AND tablename NOT IN ('migraciones','migrations')
-AND NOT (schemaname='identidad' AND tablename='roles')
-\gexec
-SELECT count(*) FROM migracion_control.procedencia WHERE origen <> 'instalacion-vacia';
-SQL
-)"
-  if grep -qv '^0$' <<<"$OCUPADAS"; then
-    rojo "Semillas rechazadas: la base contiene datos o procede de una transferencia."; exit 1
+  titulo "Datos de ejemplo (solo sobre instalación vacía)"
+  if "${COMPOSE[@]}" --profile servicios --profile demo run --rm --no-deps --build datos-demo; then
+    verde "  datos de ejemplo listos"
+  else
+    rojo "  falló la carga de datos de ejemplo. Mira la salida de arriba."
+    exit 1
   fi
-  titulo "Datos de ejemplo explícitos sobre instalación vacía"
-  sembrar nucleo semilla:identidad
-  sembrar boleteria semilla:ventas
-  sembrar boleteria semilla:catalogo
-  sembrar nucleo semilla:logistica
-  sembrar nucleo semilla:alimentos
-  sembrar nucleo semilla:eventos
-  preparar_inventario_pedidos
 fi
 
 # --- Resumen ----------------------------------------------------------------
 
 IP_LOCAL="$(ipconfig getifaddr en0 2>/dev/null || hostname -I 2>/dev/null | awk '{print $1}' || echo localhost)"
+# En Linux sin `ipconfig` la tubería de `hostname -I` puede salir bien y vacía.
+[[ -n "$IP_LOCAL" ]] || IP_LOCAL=localhost
 
 titulo "HEXACORE en marcha"
 
@@ -326,7 +251,7 @@ else
 
     http://$IP_LOCAL:8080/api/v1
 
-  No se crean cuentas salvo --datos-demo npm sobre instalación local vacía.
+  No se crean cuentas salvo con --datos-demo sobre una instalación vacía.
 
   Portales web (ya levantados):
 

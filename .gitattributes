@@ -1,0 +1,13 @@
+# Lo que se ejecuta dentro de contenedores Linux o con bash tiene que llegar con
+# finales de línea LF, también a quien clona en Windows: con CRLF, bash falla
+# con "$'\r': command not found" y nginx/njs pueden rechazar su configuración.
+*.sh         text eol=lf
+*.mjs        text eol=lf
+*.cjs        text eol=lf
+*.conf       text eol=lf
+Dockerfile*  text eol=lf
+*.yml        text eol=lf
+*.sql        text eol=lf
+*.pem        text eol=lf
+# PowerShell en Windows espera CRLF.
+*.ps1        text eol=crlf

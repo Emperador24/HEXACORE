@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ConsumidorEventosCatalogo } from './consumidor-eventos.service';
 import { PersistenciaModule } from '../persistencia/persistencia.module';
 import { CarteleraController } from './cartelera.controller';
 import { CarteleraService } from './cartelera.service';
@@ -13,6 +14,6 @@ import { CarteleraService } from './cartelera.service';
 @Module({
   imports: [PersistenciaModule],
   controllers: [CarteleraController],
-  providers: [CarteleraService],
+  providers: [CarteleraService, ConsumidorEventosCatalogo],
 })
 export class CarteleraModule {}

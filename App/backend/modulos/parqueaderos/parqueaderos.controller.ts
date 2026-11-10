@@ -2,8 +2,11 @@ import { Body, Controller, Delete, Get, Header, MessageEvent, Param, ParseUUIDPi
 import { Observable, catchError, exhaustMap, from, interval, map, of, startWith } from 'rxjs';
 import { validacionAlimentos as validacion } from '../../compartido/validacion';
 import { PeticionConSesion, RolesPermitidos, SesionValida } from './comun/autenticacion/sesion-valida.guard';
+import { AccesosService } from './accesos/accesos.service';
+import { AsignacionService } from './asignacion/asignacion.service';
 import { CobroService } from './cobro/cobro.service';
 import {
+  ActualizarEspacioDto,
   ActualizarZonaDto,
   DefinirTarifaDto,
   GuardarZonaDto,
@@ -11,6 +14,7 @@ import {
   RegistrarIngresoDto,
   RegistrarSalidaDto,
   ResultadoRedireccionDto,
+  SincronizarDto,
 } from './dto/parqueaderos.dto';
 import { OcupacionService } from './ocupacion/ocupacion.service';
 
@@ -18,12 +22,15 @@ import { OcupacionService } from './ocupacion/ocupacion.service';
 const INTERVALO_MS = 3000;
 
 /**
- * CU-024 (Cobro) y CU-025 (Control de ocupación).
+ * CU-022 (Ingreso y salida), CU-023 (Asignación de espacios), CU-024 (Cobro)
+ * y CU-025 (Control de ocupación). La reserva del cliente (CU-021) está en
+ * `ReservasController`.
  *
  * El operador y el supervisor del panel trabajan en el Portal Web
  * Administrativo: Organizador y Administrador. El personal de parqueadero
- * (`Personal`) registra ingresos y salidas y consulta la tarifa y la zona
- * recomendada. La tarifa solo la cambia el Administrador.
+ * (`Personal`) registra ingresos y salidas en el punto de control, también sin
+ * red, y consulta la tarifa, los espacios y la zona recomendada. La tarifa
+ * solo la cambia el Administrador.
  */
 @Controller('parqueaderos')
 @UsePipes(validacion)
@@ -33,6 +40,8 @@ export class ParqueaderosController {
   constructor(
     private readonly cobro: CobroService,
     private readonly ocupacion: OcupacionService,
+    private readonly accesos: AccesosService,
+    private readonly asignacion: AsignacionService,
   ) {}
 
   // --- Tarifa (CU-024) ---------------------------------------------------------
@@ -72,25 +81,59 @@ export class ParqueaderosController {
     return this.cobro.eliminarZona(eventoId, zonaId);
   }
 
-  // --- Ingreso y salida ----------------------------------------------------------
+  // --- Ingreso y salida (CU-022) -----------------------------------------------------
 
+  /** Pasos 1-4: por QR de la reserva o por placa; CU-023 asigna el espacio. */
   @Post('eventos/:eventoId/ingresos')
   @RolesPermitidos('Organizador', 'Administrador', 'Personal')
   ingreso(@Param('eventoId', ParseUUIDPipe) eventoId: string, @Body() dto: RegistrarIngresoDto, @Req() peticion: PeticionConSesion) {
-    return this.cobro.registrarIngreso(eventoId, dto, peticion.sesion!.usuarioId);
+    return this.accesos.registrarIngreso(eventoId, dto, peticion.sesion!.usuarioId);
   }
 
-  /** CU-024, pasos 1-6: registra la salida y muestra el cobro. */
+  /** Pasos 5-9 y CU-024, pasos 1-6: registra la salida, libera el espacio y muestra el cobro. */
   @Post('eventos/:eventoId/salidas')
   @RolesPermitidos('Organizador', 'Administrador', 'Personal')
   salida(@Param('eventoId', ParseUUIDPipe) eventoId: string, @Body() dto: RegistrarSalidaDto, @Req() peticion: PeticionConSesion) {
-    return this.cobro.registrarSalida(eventoId, dto.placa, peticion.sesion!.usuarioId);
+    return this.accesos.registrarSalida(eventoId, dto, peticion.sesion!.usuarioId);
   }
 
   @Get('eventos/:eventoId/vehiculos')
   @RolesPermitidos('Organizador', 'Administrador', 'Personal')
   vehiculos(@Param('eventoId', ParseUUIDPipe) eventoId: string, @Query('enLote') enLote?: string) {
-    return this.cobro.vehiculos(eventoId, enLote !== 'false');
+    return this.accesos.vehiculos(eventoId, enLote !== 'false');
+  }
+
+  /** Offline-first: lo que el punto de control guarda para validar sin red. */
+  @Get('eventos/:eventoId/cache')
+  @RolesPermitidos('Organizador', 'Administrador', 'Personal')
+  cache(@Param('eventoId', ParseUUIDPipe) eventoId: string) {
+    return this.accesos.cache(eventoId);
+  }
+
+  /** Offline-first: lo registrado sin red, en orden e idempotente por id. */
+  @Post('eventos/:eventoId/sincronizacion')
+  @RolesPermitidos('Organizador', 'Administrador', 'Personal')
+  sincronizar(@Param('eventoId', ParseUUIDPipe) eventoId: string, @Body() dto: SincronizarDto, @Req() peticion: PeticionConSesion) {
+    return this.accesos.sincronizar(eventoId, dto.registros, peticion.sesion!.usuarioId);
+  }
+
+  // --- Espacios (CU-023) ------------------------------------------------------------
+
+  @Get('eventos/:eventoId/espacios')
+  @RolesPermitidos('Organizador', 'Administrador', 'Personal')
+  espacios(@Param('eventoId', ParseUUIDPipe) eventoId: string, @Query('zonaId', new ParseUUIDPipe({ optional: true })) zonaId?: string) {
+    return this.asignacion.espacios(eventoId, zonaId);
+  }
+
+  @Patch('eventos/:eventoId/espacios/:espacioId')
+  actualizarEspacio(@Param('eventoId', ParseUUIDPipe) eventoId: string, @Param('espacioId', ParseUUIDPipe) espacioId: string, @Body() dto: ActualizarEspacioDto) {
+    return this.asignacion.actualizarEspacio(eventoId, espacioId, dto);
+  }
+
+  /** Paso 8: historial de asignaciones y liberaciones. */
+  @Get('eventos/:eventoId/asignaciones')
+  asignaciones(@Param('eventoId', ParseUUIDPipe) eventoId: string) {
+    return this.asignacion.historial(eventoId);
   }
 
   // --- Ocupación (CU-025) --------------------------------------------------------

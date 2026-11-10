@@ -209,6 +209,13 @@ services:
       # Postventa (CU-006D). En desarrollo es un valor fijo y conocido; en
       # producción lo inyecta el orquestador y el servicio no arranca sin él.
       TOKEN_SERVICIOS: ${TOKEN_SERVICIOS:-hexacore-servicios-dev}
+      # Pasarela real (Stripe en modo de prueba): PAGOS_PROVEEDOR=stripe y las
+      # llaves en App/infra/.env (ver .env.ejemplo). Núcleo y Boletería cobran
+      # con el mismo módulo de Pagos, así que las dos reciben lo mismo.
+      PAGOS_PROVEEDOR: ${PAGOS_PROVEEDOR:-simulada}
+      STRIPE_CLAVE_SECRETA: ${STRIPE_CLAVE_SECRETA:-}
+      STRIPE_CLAVE_PUBLICA: ${STRIPE_CLAVE_PUBLICA:-}
+      STRIPE_SECRETO_WEBHOOK: ${STRIPE_SECRETO_WEBHOOK:-}
     # Solo aquí se monta también la privada: el módulo de Administración es el
     # único que firma tokens (ADR-11).
     environment:
@@ -311,6 +318,17 @@ services:
       RABBITMQ_URL: amqp://hexacore:hexacore@${HOST_RABBIT:-rabbitmq}:${PUERTO_RABBIT:-5672}
       PUERTO: "3006"
       CORREO_PROVEEDOR_URL: http://${HOST_CORREO:-correo}:${PUERTO_CORREO:-3098}
+      # Correo real (Gmail): CORREO_PROVEEDOR=smtp y las credenciales en
+      # App/infra/.env, que Compose lee solo y git ignora (ver .env.ejemplo).
+      CORREO_PROVEEDOR: ${CORREO_PROVEEDOR:-simulado}
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PUERTO: ${SMTP_PUERTO:-465}
+      SMTP_USUARIO: ${SMTP_USUARIO:-}
+      SMTP_CONTRASENA: ${SMTP_CONTRASENA:-}
+      CORREO_REMITENTE: ${CORREO_REMITENTE:-}
+      # El enlace del correo lo abre quien lo recibe, quizá en otro dispositivo:
+      # con correo real conviene poner la IP del computador en vez de localhost.
+      CORREO_URL_BASE_ENLACES: ${CORREO_URL_BASE_ENLACES:-http://localhost:4200/cuenta}
     healthcheck:
       test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3006/api/v1/salud',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
       interval: 10s
@@ -319,6 +337,36 @@ services:
       retries: 10
     ports:
       - "3006:3006"
+
+  # Datos de demostración (perfil `demo`), sin Node en el computador: corre las
+  # semillas y el inventario de Pedidos desde su propia imagen, una vez que la
+  # base está preparada y el gateway responde. Sobre una base con datos no hace
+  # nada, así que volver a levantar el perfil es seguro.
+  #
+  #   docker compose -f App/infra/docker-compose.yml --profile servicios --profile demo up -d --build
+  datos-demo:
+    profiles: ["demo"]
+    build:
+      context: ../backend
+      dockerfile: Dockerfile.herramientas
+    restart: "no"
+    depends_on:
+      preparacion-base: { condition: service_completed_successfully }
+      api-gateway: { condition: service_healthy }
+    environment:
+      <<: *entorno-comun
+      AUTH_JWT_CLAVE_PRIVADA_ARCHIVO: /claves/jwt-privada.pem
+      AUTH_JWT_EMISOR: hexacore-administracion
+      POSTGRES_USUARIO: hexacore
+      POSTGRES_CONTRASENA: hexacore
+      CORREO_PROVEEDOR_URL: http://${HOST_CORREO:-correo}:${PUERTO_CORREO:-3098}
+      PAGOS_PROVEEDOR_URL: http://${HOST_PASARELA:-pasarela}:${PUERTO_PASARELA:-3099}
+      PASARELA_SECRETO_WEBHOOK: secreto-webhook-desarrollo
+      GATEWAY_URL: http://api-gateway:8080/api/v1
+    volumes:
+      - ./claves-desarrollo/jwt-privada.pem:/claves/jwt-privada.pem:ro
+      - ./claves-desarrollo/jwt-publica.pem:/claves/jwt-publica.pem:ro
+    healthcheck: { disable: true }
 
   # Portal Web de Clientes. Se sirve como sitio estático: el navegador de quien
   # lo abre es el que llama al gateway, así que la misma imagen vale en

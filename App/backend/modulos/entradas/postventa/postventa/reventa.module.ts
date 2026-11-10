@@ -9,6 +9,7 @@ import { ConsumidorLiquidaciones } from './eventos/consumidor-liquidaciones.serv
 import { ConsumidorNotificaciones } from './eventos/consumidor-notificaciones.service';
 import { PublicadorEventos } from './eventos/publicador-eventos.service';
 import { ExpiracionService } from './expiracion.service';
+import { ConsumidorEventosPostventa } from './eventos/consumidor-eventos.service';
 import { PublicacionService } from './publicacion.service';
 import { ReventaController } from './reventa.controller';
 
@@ -35,6 +36,7 @@ import { ReventaController } from './reventa.controller';
     PublicacionService,
     CheckoutService,
     ExpiracionService,
+    ConsumidorEventosPostventa,
   ],
 })
 export class ReventaModule {}
