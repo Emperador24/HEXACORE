@@ -1,5 +1,11 @@
 # Entorno local de revisión de la migración
 
+**Desarrollo CU-015 desde `feature/sebastian`:** usar
+`./App/infra/cu015.sh iniciar --datos-demo` solo sobre recursos nuevos vacíos;
+después `iniciar` sin semillas. [Guía CU-015, puertos y Playwright](../../e2e/README.md).
+Es otro perfil con proyecto, datos, red, claves y cookies propios. El perfil
+histórico descrito abajo conserva sus destinos y su restricción de rama.
+
 La migración (ADR-16) ya está integrada en develop mediante el PR #44. Este
 entorno se conserva para revisar en aislamiento: construye las fuentes de
 `feature/sebastian-arquitectura` (el guion rechaza otras ramas). Reúne
@@ -50,8 +56,9 @@ Desde la raíz, **solo la primera vez**, solicitar expresamente los datos demo:
 El guion comprueba rama, Docker local, configuración efectiva, propiedad de
 recursos y doce puertos libres antes de construir/modificar recursos Docker.
 Construye ocho imágenes **secuencialmente**, reutilizando los Dockerfiles actuales.
-Ejecuta la preparación central (18 migraciones), semillas existentes sobre base
-vacía, inventario Redis y altas/turno de Personal a través del gateway.
+Ejecuta la preparación central (26 migraciones, 18 procedencias históricas), semillas existentes sobre base
+vacía, inventario Redis y altas/turno de Personal a través del gateway. Incluye
+la semilla vigente de Eventos/Recintos; no toma la proyección local como autoridad.
 La preparación SQL se espera por su código de salida antes de iniciar apps;
 `--wait` se utiliza para servicios permanentes, no para esa tarea finita.
 No ejecuta `iniciar.sh`, volcados ni semillas contra destinos habituales.
@@ -124,15 +131,15 @@ por Git; conservar las claves al reiniciar. No compartir ese directorio ni respa
    Bruno: `/reventa` → reservar → pagar → comprobar cambio de titular y QR nuevo.
    Las proyecciones conservan sus ventanas de consistencia anteriores.
 5. Administrativo: login → `/admin/cuentas`, buscar cuentas y revisar los controles
-   existentes. Eventos administrativos son un prototipo en memoria; no cambian la
-   cartelera de Boletería. Personal/logística se revisa por API o móvil existente,
-   no por el placeholder del portal administrativo. El turno demo vence seis horas
+   existentes. Eventos/Recintos, Personal, cambios/asistencia, monitoreo, evacuación
+   y cobro/ocupación de parqueaderos tienen implementación y portal vigentes de Samuel.
+   La integración de mensajes de Eventos hacia Entradas conserva sus pendientes
+   documentados en el contrato. El turno demo vence seis horas
    después de cargar: su vencimiento no justifica resembrar.
 
-Parqueaderos/pagos de parqueadero en el cliente siguen simulados. Paneles de
-monitoreo, incidentes, evacuación, proveedores, recintos, finanzas e informes del
-administrativo son placeholders/datos de ejemplo. No se implementa Operación ni
-se completan CU faltantes. F12 (recuperación financiera), F13 (timeouts), F14
+Roles/permisos dinámicos, incidentes, proveedores, conciliación e informes del
+administrativo siguen pendientes. CU-015 añade la gestión real de establecimientos;
+CU-012–014 no se completan con ella. F12 (recuperación financiera), F13 (timeouts), F14
 (limitaciones de logística) y F15 (Identidad/correo) siguen pendientes. Compartir
 base no acredita atomicidad nueva ni invalidación inmediata del QR.
 

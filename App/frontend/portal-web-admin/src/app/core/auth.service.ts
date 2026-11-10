@@ -284,7 +284,8 @@ export class AuthService {
       return new ErrorCuenta('SIN_CONEXION', SIN_CONEXION, 0);
     }
     const cuerpo = error.error as { codigo?: string; mensaje?: string; message?: string | string[] } | null;
-    if (cuerpo?.codigo) return new ErrorCuenta(cuerpo.codigo, cuerpo.mensaje ?? cuerpo.codigo, error.status, cuerpo as Record<string, unknown>);
+    const mensaje = cuerpo?.mensaje ?? (Array.isArray(cuerpo?.message) ? cuerpo.message.join('\n') : cuerpo?.message);
+    if (cuerpo?.codigo) return new ErrorCuenta(cuerpo.codigo, mensaje ?? cuerpo.codigo, error.status, cuerpo as Record<string, unknown>);
     if (cuerpo?.message) {
       const texto = Array.isArray(cuerpo.message) ? cuerpo.message.join('\n') : cuerpo.message;
       return new ErrorCuenta('VALIDACION', texto, error.status);

@@ -28,7 +28,7 @@ describe('PedidosService HTTP', () => {
 
   it('conserva precios decimales e inventario cero del catálogo', async () => {
     const respuesta = servicio.productos('local');
-    const producto = { id: 'producto', precio: '7000.00', cantidadInventario: 0 };
+    const producto = { id: 'producto', precio: '7000.00', cantidadInventario: 0, cantidadDisponible: 0 };
     http.expectOne(`${Servidor.api}/pedidos/establecimientos/local/productos`).flush([producto]);
     expect((await respuesta)[0].cantidadInventario).toBe(0);
   });

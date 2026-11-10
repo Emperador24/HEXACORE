@@ -97,9 +97,18 @@ no monta otro webhook. El simulador también llama a nucleo:3002.
 
 ## Balanceo y caída de una instancia
 
-Los nombres de los servicios los resuelve el DNS interno de Docker **en cada petición**
-(`resolver 127.0.0.11` + variable en `proxy_pass`), no solo al arrancar. Por eso al levantar réplicas
-el gateway empieza a repartir sin reiniciarlo, y al caer una deja de usarla:
+Los grupos `nucleo_http` y `boleteria_http` resuelven los nombres Docker en segundo
+plano mediante `zone` + `server ... resolve` (Nginx 1.27.5 de la imagen existente).
+Se conserva `127.0.0.11`, TTL 5 s y espera DNS 3 s. Un timeout transitorio de DNS
+conserva los destinos conocidos; NXDOMAIN los retira. Las solicitudes no quedan
+esperando otra resolución al vencer la caché. No hay IP fija, reintentos de
+negocio nuevos ni cambios al manejo de respuestas 500/503 de los servicios.
+La llamada `ngx.fetch` para gastar un turno conserva su nombre DNS directo.
+
+La [documentación de Nginx](https://nginx.org/en/docs/http/ngx_http_upstream_module.html#resolve)
+y el [manejador de resolución de 1.27.5](https://github.com/nginx/nginx/blob/release-1.27.5/src/http/modules/ngx_http_upstream_zone_module.c#L728)
+describen la actualización dinámica y el tratamiento de errores. Por eso al levantar
+réplicas el gateway empieza a repartir sin reiniciarlo:
 
 ```bash
 cd ../infra
@@ -107,6 +116,18 @@ docker compose -f docker-compose.yml -f docker-compose.escalado.yml \
   --profile servicios up -d --scale boleteria=2
 python3 ../gateway/pruebas/gateway.py
 ```
+
+Ensayo dirigido exclusivo de CU-015, desde la raíz y sin otros recorridos en curso:
+
+```bash
+python3 App/infra/revision/test_dns.py
+```
+
+Valida etiquetas/checkout y toma el bloqueo del entorno. Con el mismo Núcleo real,
+compara el proxy por variable anterior y el upstream nuevo. Introduce un resolver
+inaccesible **solo en el gateway propio**: exige 503 del control y 200 del upstream
+conocido. Finalmente restaura DNS/configuración y comprueba salud 200 y retirada
+de las rutas temporales. No levanta servidores ni cambia el DNS de Docker.
 
 La cabecera `X-Servidor` de cada respuesta dice qué instancia contestó, que es lo que permite ver el
 reparto en vivo. Con dos instancias, 20 peticiones se reparten ~11/9; matando una, las 20 siguen

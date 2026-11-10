@@ -14,6 +14,10 @@ export const opcionesEsquema = (conexion: ConexionNegocio) => ({
 export const opcionesSesion = (conexion: ConexionNegocio) => ({
   // Un solo dueño por pool; pg_catalog precede al homónimo de pgcrypto.
   options: `-c search_path=${ESQUEMAS[conexion]},pg_catalog,extensiones`,
+  // La sonda llega cada 10 s, igual que el descarte inactivo de pg-pool.
+  // Conservar una conexión evita abrir otro backend en cada sonda. No cambia
+  // el máximo ni las esperas de conexión/consulta; destroy sigue cerrándola.
+  min: 1,
 });
 
 /** Las fuentes históricas no cambian. Solo su antigua cualificación DDL public.

@@ -1,42 +1,50 @@
-import { CONEXION_ALIMENTOS } from '../persistencia/conexion';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
-import { ProductoDto, aProductoDto } from '../catalogo/dto/producto.dto';
+import { CONEXION_ALIMENTOS } from '../persistencia/conexion';
+import { ProductoDto } from '../catalogo/dto/producto.dto';
 import { Establecimiento } from '../persistencia/entidades/establecimiento.entity';
 import { Producto } from '../persistencia/entidades/producto.entity';
+import { AjustesInventarioService } from '../inventario/ajustes-inventario.service';
+import { LecturaInventarioService } from '../inventario/lectura-inventario.service';
+import { GuardarProductoDto, RegistrarProductoDto, precioNormalizado } from './dto/guardar-producto.dto';
 
-/** Administración mínima de la disponibilidad del menú (CU-012). */
 @Injectable()
 export class MenuService {
-  constructor(@InjectDataSource(CONEXION_ALIMENTOS) private readonly datos: DataSource) {}
+  constructor(@InjectDataSource(CONEXION_ALIMENTOS) private readonly datos: DataSource,
+    private readonly inventario: LecturaInventarioService, private readonly ajustes: AjustesInventarioService) {}
+  listar(establecimientoId: string): Promise<ProductoDto[]> { return this.inventario.listar(establecimientoId); }
 
-  private async exigirEstablecimiento(establecimientoId: string): Promise<void> {
-    if (!await this.datos.manager.exists(Establecimiento, { where: { id: establecimientoId } })) {
-      throw new NotFoundException('No existe el establecimiento');
+  async registrar(establecimientoId: string, actorId: string, clave: string, dto: RegistrarProductoDto) {
+    const operacion = await this.ajustes.solicitar(establecimientoId, actorId, clave, { registro: dto });
+    return { producto: (await this.listar(establecimientoId)).find(p => p.id === operacion.productoId), operacion };
+  }
+  async editar(establecimientoId: string, productoId: string, dto: GuardarProductoDto) {
+    const precio = precioNormalizado(dto.precio);
+    if (BigInt(precio.replace('.', '')) <= 0n) throw new BadRequestException('El precio debe ser mayor que cero.');
+    try {
+      await this.datos.transaction(async m => {
+        if (!await m.findOne(Establecimiento, { where: { id: establecimientoId }, lock: { mode: 'pessimistic_write' } })) throw new NotFoundException('No existe el establecimiento');
+        const r = await m.update(Producto, { id: productoId, establecimientoId }, {
+          nombre: dto.nombre, descripcion: dto.descripcion ?? null, precio,
+          restriccionesAlimentarias: dto.restriccionesAlimentarias, activo: dto.activo,
+        });
+        if (!r.affected) throw new NotFoundException('No existe el producto en este establecimiento');
+      });
+    } catch (e) {
+      if ((e as { driverError?: { code?: string } }).driverError?.code === '23505') throw new ConflictException('El producto ya está registrado en este establecimiento.');
+      throw e;
     }
+    return (await this.listar(establecimientoId)).find(p => p.id === productoId)!;
   }
-
-  async listar(establecimientoId: string): Promise<ProductoDto[]> {
-    await this.exigirEstablecimiento(establecimientoId);
-    const productos = await this.datos.manager.find(Producto, {
-      where: { establecimientoId }, order: { nombre: 'ASC', id: 'ASC' },
-    });
-    return productos.map(aProductoDto);
-  }
-
   async actualizar(establecimientoId: string, productoId: string, activo: boolean): Promise<ProductoDto> {
-    await this.exigirEstablecimiento(establecimientoId);
-    // UPDATE parcial: nunca reescribir precio ni inventario desde una lectura anterior.
-    const resultado = await this.datos.getRepository(Producto).createQueryBuilder()
-      .update(Producto).set({ activo })
-      .where({ id: productoId, establecimientoId }).returning('*').execute();
-    if (!resultado.affected) throw new NotFoundException('No existe el producto en este establecimiento');
-    const fila = resultado.raw[0];
-    return aProductoDto({
-      id: fila.id, establecimientoId: fila.establecimiento_id, nombre: fila.nombre,
-      descripcion: fila.descripcion, precio: fila.precio, activo: fila.activo,
-      cantidadInventario: fila.cantidad_inventario,
-    } as Producto);
+    await this.datos.transaction(async m => {
+      if (!await m.findOne(Establecimiento, { where: { id: establecimientoId }, lock: { mode: 'pessimistic_write' } })) throw new NotFoundException('No existe el establecimiento');
+      // UPDATE parcial: nunca reescribir precio ni físico desde una lectura anterior.
+      const r = await m.getRepository(Producto).createQueryBuilder().update(Producto).set({ activo })
+        .where({ id: productoId, establecimientoId }).execute();
+      if (!r.affected) throw new NotFoundException('No existe el producto en este establecimiento');
+    });
+    return (await this.listar(establecimientoId)).find(p => p.id === productoId)!;
   }
 }

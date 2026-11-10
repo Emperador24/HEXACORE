@@ -1,0 +1,47 @@
+<div class="pagina-encabezado"><div><h1>Menú e inventario <span class="referencia-cu">CU-012</span></h1>
+  <p class="descripcion">Gestiona productos de tus establecimientos vinculados, incluso si están cerrados al público.</p></div>
+  <button mat-flat-button (click)="nuevo()" [disabled]="!establecimientoId || ocupado() || !!pendiente()">Nuevo producto</button></div>
+<section class="panel controles"><label for="localMenu">Establecimiento vinculado</label>
+  <select id="localMenu" [(ngModel)]="establecimientoId" (ngModelChange)="cargar()" [disabled]="ocupado() || !!pendiente()">
+    @for (e of locales(); track e.id) { <option [value]="e.id">{{ e.nombre }} · {{ e.estado }}</option> }
+  </select><button mat-button (click)="cargar()" [disabled]="!establecimientoId || ocupado()">Actualizar menú</button></section>
+@if (ocupado()) { <mat-progress-bar mode="indeterminate" /> }
+@if (error()) { <p class="mensaje error" role="alert">{{ error() }}</p> }
+@if (aviso()) { <p class="mensaje info" role="status">{{ aviso() }}</p> }
+@if (pendiente(); as op) { <section class="panel controles"><span>Operación {{ op.id }} sin confirmar. No generes otro ajuste para la misma intención.</span>
+  <button mat-flat-button (click)="resolver()" [disabled]="ocupado()">Repetir operación pendiente</button></section> }
+@if (!locales().length && !ocupado()) { <p class="panel controles">No tienes establecimientos vinculados. Solicita la asignación a un organizador o administrador.</p> }
+@if (formulario()) {
+  <section class="panel ficha"><h2>{{ editando ? 'Editar producto' : 'Registrar producto' }}</h2>
+    <form #f="ngForm" (ngSubmit)="f.valid && guardar()"><div class="campos">
+      <mat-form-field><mat-label>Nombre del producto</mat-label><input matInput name="nombre" [(ngModel)]="datos.nombre" required minlength="2" maxlength="200" /></mat-form-field>
+      <mat-form-field><mat-label>Precio COP</mat-label><input matInput name="precio" [(ngModel)]="datos.precio" required pattern="(0|[1-9][0-9]{0,9})(\.[0-9]{1,2})?" inputmode="decimal" /><mat-hint>Decimal, por ejemplo 15000.50</mat-hint></mat-form-field>
+      <mat-form-field><mat-label>Descripción</mat-label><textarea matInput name="descripcion" [(ngModel)]="datos.descripcion" maxlength="5000"></textarea></mat-form-field>
+      <mat-form-field><mat-label>Restricciones alimentarias</mat-label><input matInput name="restricciones" [(ngModel)]="restricciones" /><mat-hint>Separadas por coma: contiene gluten, contiene leche</mat-hint></mat-form-field>
+      @if (!editando) { <mat-form-field><mat-label>Existencias físicas iniciales</mat-label><input matInput type="number" name="inicial" [(ngModel)]="cantidadInicial" required min="0" max="2147483647" step="1" /></mat-form-field> }
+      <label class="activo"><input type="checkbox" name="activo" [(ngModel)]="datos.activo" />Activo para nuevos pedidos</label>
+    </div><div class="acciones"><button mat-flat-button type="submit" [disabled]="!f.valid || ocupado() || !!pendiente()">Guardar producto</button>
+      <button mat-button type="button" (click)="formulario.set(false)">Cancelar producto</button></div></form></section>
+}
+@if (ajuste(); as p) {
+  <section class="panel ficha"><h2>Ajustar existencias de {{ p.nombre }}</h2><p>Indica unidades a añadir (positivas) o retirar (negativas). Se respetan las cantidades comprometidas.</p>
+    <form #a="ngForm" (ngSubmit)="a.valid && guardarAjuste()"><div class="campos">
+      <mat-form-field><mat-label>Variación de existencias</mat-label><input matInput name="delta" type="number" [(ngModel)]="delta" required min="-2147483647" max="2147483647" step="1" /></mat-form-field>
+      <mat-form-field><mat-label>Motivo del ajuste</mat-label><input matInput name="motivo" [(ngModel)]="motivo" required minlength="3" maxlength="500" /></mat-form-field></div>
+      <button mat-flat-button type="submit" [disabled]="!a.valid || !delta || ocupado() || !!pendiente()">Aplicar ajuste</button>
+      <button mat-button type="button" (click)="ajuste.set(null)">Cancelar ajuste</button></form></section>
+}
+@if (establecimientoId) {
+  <section class="panel ficha"><h2>Productos activos e inactivos</h2><p>Físico: unidades aún no vendidas. Reservado: unidades comprometidas. Disponible: unidades que se pueden reservar ahora. «Por confirmar» impide nuevas compras.</p>
+    <div class="tabla-contenedor"><table><thead><tr><th>Producto</th><th>Precio COP</th><th>Físico</th><th>Reservado</th><th>Disponible</th><th>Estado y acciones</th></tr></thead><tbody>
+      @for (p of productos(); track p.id) { <tr [attr.data-producto]="p.id"><td><strong>{{ p.nombre }}</strong><p>{{ p.descripcion }}</p><small>{{ p.restriccionesAlimentarias.join(', ') }}</small></td><td>{{ p.precio }}</td>
+        <td data-cantidad="fisica">{{ p.cantidadFisica }}</td><td data-cantidad="reservada">{{ p.cantidadReservada ?? 'Por confirmar' }}</td><td data-cantidad="disponible">{{ p.cantidadDisponible ?? 'Por confirmar' }}</td>
+        <td>{{ p.activo ? 'Activo' : 'Inactivo' }} · {{ p.inventarioEstado }}<br />
+          <button mat-button (click)="editar(p)" [disabled]="ocupado() || !!pendiente()">Editar</button>
+          <button mat-button (click)="alternar(p)" [disabled]="ocupado() || !!pendiente()">{{ p.activo ? 'Desactivar' : 'Activar' }}</button>
+          <button mat-button (click)="ajustar(p)" [disabled]="ocupado() || !!pendiente()">Ajustar existencias</button></td></tr>
+      } @empty { <tr><td colspan="6">Este establecimiento aún no tiene productos.</td></tr> }</tbody></table></div></section>
+  <section class="panel ficha"><h2>Trazabilidad de inventario</h2><ul>@for (o of operaciones(); track o.id) {
+    <li>{{ o.motivo }} · {{ o.delta }} unidades · {{ o.estado }} · {{ o.id }}<br />Físico {{ o.fisicoAntes ?? '?' }} → {{ o.fisicoDespues ?? '?' }}, disponible {{ o.disponibleAntes ?? '?' }} → {{ o.disponibleDespues ?? '?' }}</li>
+  } @empty { <li>No hay ajustes registrados.</li> }</ul></section>
+}

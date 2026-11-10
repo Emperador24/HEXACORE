@@ -27,6 +27,18 @@ export class Establecimiento {
   @Column({ name: 'nombre', type: 'varchar', length: 200 })
   nombre: string;
 
+  @Column({ type: 'varchar', length: 200, default: 'Pendiente de actualizar' })
+  contacto: string;
+
+  @Column({ name: 'hora_apertura', type: 'time', precision: 0, default: '00:00' })
+  horaApertura: string;
+
+  @Column({ name: 'hora_cierre', type: 'time', precision: 0, default: '00:00' })
+  horaCierre: string;
+
+  @Column({ name: 'zona_horaria', type: 'varchar', length: 80, default: 'America/Bogota' })
+  zonaHoraria: string;
+
   /** Cerrado o saturado distingue las causas del alterno CU-011C. */
   @Column({
     name: 'estado',

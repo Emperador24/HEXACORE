@@ -1,5 +1,11 @@
 # Preparación explícita del inventario Redis
 
+**CU-012, operación normal:** productos y ajustes se administran desde web/móvil
+con una intención identificada por UUID. El primer producto crea su contador y los
+siguientes incorporan solo su campo, sin este comando. Ver la
+[decisión de coordinación y recuperación](DECISION-CU012.md). Un ajuste
+administrativo PENDIENTE también bloquea el preparador histórico.
+
 Desde `App/backend`, con las migraciones aplicadas:
 
 ```sh

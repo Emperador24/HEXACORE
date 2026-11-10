@@ -1,13 +1,7 @@
 import { Column, Entity, PrimaryColumn, UpdateDateColumn } from 'typeorm';
 
-/**
- * Proyección local mínima del evento seleccionado en CU-011.
- *
- * El evento pertenece a `eventos-emergencias`: aquí se conserva su identidad
- * y la disponibilidad necesaria para la primera precondición del caso de uso,
- * sin relaciones ni consultas a la base de datos de otro servicio (ADR-01).
- * La carga y sincronización de esta proyección se implementarán por separado.
- */
+/** Referencia histórica para conservar FK. CU-015 valida y consulta la disponibilidad
+ * por ConsultaEventos del módulo Eventos/Recintos; esta fila no es autoridad. */
 @Entity({ name: 'eventos_referencia' })
 export class EventoReferencia {
   /** Identificador del servicio de Eventos; no se genera en Pedidos. */

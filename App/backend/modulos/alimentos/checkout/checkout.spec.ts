@@ -1,3 +1,5 @@
+import { ConsultaEventos } from '../../eventos-recintos/consulta-eventos.module';
+import { NotFoundException } from '@nestjs/common';
 import { ConflictException, Logger, ServiceUnavailableException, ValidationPipe } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { CheckoutService, CHECKOUT_DURACION_SEGUNDOS } from './checkout.service';
@@ -42,7 +44,7 @@ describe('CheckoutService', () => {
   let evento: Partial<EventoReferencia> | null;
   let establecimiento: Partial<Establecimiento> | null;
   let productos: Partial<Producto>[];
-  let gestor: { findOne: jest.Mock; find: jest.Mock; create: jest.Mock; save: jest.Mock; insert: jest.Mock; update: jest.Mock };
+  let gestor: { exists: jest.Mock; findOne: jest.Mock; find: jest.Mock; create: jest.Mock; save: jest.Mock; insert: jest.Mock; update: jest.Mock };
   let crearTransaccion: jest.Mock;
   let transaccion: { manager: unknown; isTransactionActive: boolean; connect: jest.Mock; startTransaction: jest.Mock;
     commitTransaction: jest.Mock; rollbackTransaction: jest.Mock; release: jest.Mock };
@@ -52,13 +54,14 @@ describe('CheckoutService', () => {
   let service: CheckoutService;
   beforeEach(() => {
     evento = { eventoId, disponible: true };
-    establecimiento = { id: establecimientoId, eventoId, estado: EstadoEstablecimiento.DISPONIBLE };
+    establecimiento = { id: establecimientoId, eventoId, estado: EstadoEstablecimiento.DISPONIBLE, horaApertura: '00:00:00', horaCierre: '00:00:00', zonaHoraria: 'America/Bogota' };
     productos = [{ id: productoId, establecimientoId, nombre: 'Producto original', precio: '0.10', activo: true, cantidadInventario: 20 }];
     pendientes = [];
     persistidas = [];
     jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
     gestor = {
+      exists: jest.fn().mockResolvedValue(false),
       findOne: jest.fn(async (tipo) => tipo === EventoReferencia ? evento : establecimiento),
       find: jest.fn(async () => productos),
       create: jest.fn((_tipo, datos) => datos),
@@ -82,9 +85,15 @@ describe('CheckoutService', () => {
       reservar: jest.fn(async (datos) => ({ estado: 'ACTIVA', expiraEn: datos.expiraEn, repetida: false })),
       liberar: jest.fn().mockResolvedValue({ estado: 'LIBERADA', repetida: false }),
     };
-    service = new CheckoutService({ createQueryRunner: crearTransaccion } as unknown as DataSource, reservas as unknown as ReservasService);
+    service = new CheckoutService({ createQueryRunner: crearTransaccion } as unknown as DataSource, reservas as unknown as ReservasService, { paraAlimentos: async () => { if (!evento) throw new NotFoundException(); return evento; } } as unknown as ConsultaEventos);
   });
   afterEach(() => jest.restoreAllMocks());
+  it('un ajuste pendiente rechaza antes de guardar pedido o reservar Redis', async () => {
+    gestor.exists.mockResolvedValue(true);
+    await expect(service.crear(clienteId, entrada())).rejects.toMatchObject({ status: 409, response: { codigo: 'AJUSTE_INVENTARIO_PENDIENTE' } });
+    expect(gestor.save).not.toHaveBeenCalled();
+    expect(reservas.reservar).not.toHaveBeenCalled();
+  });
   it('calcula centavos exactos, guarda snapshots y reserva sin descontar stock físico', async () => {
     const respuesta = await service.crear(clienteId, entrada());
     expect(transaccion.commitTransaction).toHaveBeenCalledTimes(1);

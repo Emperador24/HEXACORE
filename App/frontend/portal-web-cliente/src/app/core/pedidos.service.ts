@@ -18,7 +18,12 @@ export interface ProductoPedido {
   descripcion: string | null;
   precio: string;
   activo: boolean;
-  cantidadInventario: number;
+  cantidadInventario: number; // físico, compatibilidad
+  cantidadFisica?: number;
+  cantidadDisponible?: number | null;
+  cantidadReservada?: number | null;
+  restriccionesAlimentarias?: string[];
+  inventarioEstado?: string;
 }
 export interface CrearCheckout {
   eventoId: string;
@@ -41,6 +46,7 @@ export interface CheckoutPedido {
 }
 
 export interface PagoPedido {
+  qrUtilizable?: boolean; entrega?: {entregadoEn:string;puntoEntrega:string};
   pedidoId: string;
   transaccionId: string;
   estadoPago: 'PENDIENTE' | 'APROBADA' | 'RECHAZADA' | 'FALLIDA';
@@ -51,6 +57,16 @@ export interface PagoPedido {
   codigo: string;
   compraConfirmada: boolean;
   codigoQr: string | null;
+}
+
+export interface SeguimientoPedido {
+  estadoOperativo?: string; qrUtilizable?: boolean; entrega?: {entregadoEn:string;puntoEntrega:string} | null;
+  id: string; estado: string; total: string; moneda: string; establecimiento: string; puntoEntrega: string;
+  creadoEn: string; confirmadoEn: string | null; codigoQr: string | null; pagoVerificado: boolean;
+  preparacion: { estado: string; version: number; iniciadoEn: string | null; estimadoListoEn: string | null; listoEn: string | null; retrasado: boolean; incidenciasAbiertas: number };
+  productos: { productoId: string; nombreProducto: string; cantidad: number; precioUnitario: string; descripcionProducto: string | null; restriccionesAlimentarias: string[] }[];
+  avisos?: { id: string; accion: string; mensaje: string; creadoEn: string }[];
+  incidencias?: { id: string; descripcion: string; resueltaEn: string | null; resolucion: string | null }[];
 }
 
 /** UUID v4 también en HTTP de la red local, donde randomUUID puede no estar disponible. */
@@ -67,6 +83,13 @@ export function clavePago(): string {
 export class PedidosService {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthService);
+
+  misPedidos(pagina = 0): Promise<SeguimientoPedido[]> {
+    return this.auth.conAcceso(headers => this.http.get<SeguimientoPedido[]>(`${Servidor.api}/pedidos/mis-pedidos${pagina ? `?pagina=${pagina}` : ''}`, { headers }));
+  }
+  seguimiento(id: string): Promise<SeguimientoPedido> {
+    return this.auth.conAcceso(headers => this.http.get<SeguimientoPedido>(`${Servidor.api}/pedidos/mis-pedidos/${encodeURIComponent(id)}`, { headers }));
+  }
 
   establecimientos(eventoId: string): Promise<EstablecimientoPedido[]> {
     return this.auth.conAcceso((headers) => this.http.get<EstablecimientoPedido[]>(
@@ -108,6 +131,7 @@ export class PedidosService {
 export function mensajePedidos(error: unknown): string {
   if (!(error instanceof ErrorCuenta)) return 'No se pudo completar la solicitud. Intenta nuevamente.';
   const mensajes: Record<string, string> = {
+    AJUSTE_INVENTARIO_PENDIENTE: 'El establecimiento está confirmando un ajuste de inventario. Actualiza el menú antes de intentar de nuevo.',
     INVENTARIO_NO_PREPARADO: 'El establecimiento todavía no está listo para recibir pedidos.',
     INVENTARIO_INSUFICIENTE: 'No hay suficientes unidades disponibles. Revisa las cantidades.',
     PRODUCTO_NO_ENCONTRADO: 'Uno de los productos ya no está disponible.',

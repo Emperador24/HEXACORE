@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard } from './core/auth.guard';
+import { authGuard, destinoGuard } from './core/auth.guard';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'login' },
@@ -10,15 +10,23 @@ export const routes: Routes = [
   {
     path: 'admin',
     canActivate: [authGuard],
+    canActivateChild: [destinoGuard],
     loadComponent: () => import('./shell/shell.component').then((m) => m.ShellComponent),
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'inicio' },
+      { path: 'menu', loadComponent: () => import('./menu/menu.component').then(m => m.MenuComponent), data: { titulo: 'Menú e inventario' } },
+      { path: 'preparacion', loadComponent: () => import('./preparacion/preparacion.component').then(m => m.PreparacionComponent), data: { titulo: 'Preparación de pedidos' } },
       {
         path: 'inicio',
         loadComponent: () => import('./dashboard/dashboard.component').then((m) => m.DashboardComponent),
         data: { titulo: 'Inicio' }
       },
       // CU-026: gestión de eventos contra eventos-recintos (Núcleo).
+      {
+        path: 'establecimientos',
+        loadComponent: () => import('./establecimientos/establecimientos.component').then(m => m.EstablecimientosComponent),
+        data: { titulo: 'Establecimientos de alimentos' }
+      },
       {
         path: 'eventos',
         loadComponent: () =>

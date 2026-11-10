@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'seguimiento_pedidos_page.dart';
 import '../services/pedidos_api.dart';
 import '../widgets/liquid_glass.dart';
 
@@ -29,6 +30,12 @@ class _PedidosPageState extends State<PedidosPage> {
         future: catalogo,
         builder: (context, snapshot) =>
             ListView(padding: const EdgeInsets.all(16), children: [
+          TextButton(
+              onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                      builder: (_) =>
+                          MisPedidosPage(api: api, paginaCompleta: true))),
+              child: const Text('Mis pedidos y avisos')),
           Text('¿Qué se te antoja?',
               style: Theme.of(context).textTheme.headlineSmall),
           const Padding(
@@ -147,7 +154,7 @@ class _MenuPedidosPageState extends State<MenuPedidosPage> {
                 const SizedBox(height: 16),
                 Text(importePedido(pago!['monto'], pago['moneda'] as String),
                     style: titulo, textAlign: TextAlign.center),
-                if (pago['codigoQr'] is String)
+                if (pago['codigoQr'] is String && pago['qrUtilizable'] != false)
                   Center(
                       child: Semantics(
                           label: 'QR del pedido confirmado',
@@ -156,8 +163,19 @@ class _MenuPedidosPageState extends State<MenuPedidosPage> {
                               size: 240,
                               padding: const EdgeInsets.all(16),
                               backgroundColor: Colors.white))),
+                if (pago['entrega'] != null)
+                  const Text(
+                      'Este pedido ya fue entregado. El QR no permite otra entrega.'),
                 const Text(
-                    'Conserva este QR para recoger tu pedido. Guarda una captura antes de salir.'),
+                    'Puedes recuperar el mismo QR desde Mis pedidos después de volver a entrar.'),
+                TextButton(
+                    onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                            builder: (_) => MisPedidosPage(
+                                api: compra.api,
+                                paginaCompleta: true,
+                                pedidoId: pedido!['id'] as String))),
+                    child: const Text('Ver seguimiento y avisos')),
               ])
             else if (pedido != null)
               _panel([
@@ -212,9 +230,20 @@ class _MenuPedidosPageState extends State<MenuPedidosPage> {
                               if (producto['descripcion'] != null)
                                 Text(producto['descripcion'] as String),
                               Text(importePedido(producto['precio'])),
+                              if ((producto['restriccionesAlimentarias']
+                                          as List? ??
+                                      [])
+                                  .isNotEmpty)
+                                Text((producto['restriccionesAlimentarias']
+                                        as List)
+                                    .join(', ')),
                               if (producto['activo'] != true ||
-                                  producto['cantidadInventario'] == 0)
-                                const Text('Agotado')
+                                  (producto['cantidadDisponible'] as num? ??
+                                          0) ==
+                                      0)
+                                Text(producto['cantidadDisponible'] == null
+                                    ? 'Disponibilidad por confirmar'
+                                    : 'Agotado')
                               else
                                 Row(
                                     mainAxisAlignment: MainAxisAlignment.end,

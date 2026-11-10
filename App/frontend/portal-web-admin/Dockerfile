@@ -18,7 +18,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
-RUN npm run build
+RUN NG_BUILD_MAX_WORKERS=1 npm run build
 
 FROM nginx:1.27-alpine
 

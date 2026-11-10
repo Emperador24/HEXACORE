@@ -13,6 +13,8 @@ node --version
 **No ejecutar iniciar.sh, semillas ni guiones históricos que truncan tablas.**
 El proyecto anterior hexacore-backend-e2e queda reservado a la referencia inmóvil
 con ocho bases; su preparación está en [consolidacion](consolidacion/README.md).
+Para el trabajo CU-012–015 y las demostraciones CU-027/029 se reutiliza únicamente
+el perfil CU-015, según [la guía vigente](../../e2e/README.md), sin modificar A/B.
 El recorrido sobre copia transferida y el recorrido vacío se describen en
 [base-unica](base-unica/README.md). No sobrescribir esa referencia para empezar pruebas.
 
@@ -64,8 +66,8 @@ cerrar. Para volver a ellas:
 node test/base-unica/compose.cjs imagenes stop gateway nucleo boleteria trabajador
 ```
 
-El preparador central es el único que aplica 25 migraciones (18 consolidadas + CU-007, CU-026,
-CU-029, CU-019, CU-008/009, CU-010 y CU-024/025); los helpers reconocen historias existentes. Se conservan 74 tablas en once esquemas, sin tablas de
+El preparador central es el único que aplica 29 migraciones (18 consolidadas + CU-007, CU-026,
+CU-029, CU-019, CU-008/009, CU-010, CU-024/025, CU-015, CU-012, CU-013 y CU-014); los helpers reconocen historias existentes. Se conservan los datos anteriores en 80 tablas en once esquemas, sin tablas de
 negocio public. Cada corrida añade UUID propios, sin TRUNCATE/FLUSH/purge,
 sin borrar mensajes anteriores ni modificar TTL. El inventario del fixture se
 prepara antes de habilitar sus compras; no se usa semilla de desarrollo.

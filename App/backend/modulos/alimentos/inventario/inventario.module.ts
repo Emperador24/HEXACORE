@@ -5,6 +5,8 @@ import { PersistenciaModule } from '../persistencia/persistencia.module';
 import { PreparacionInventarioService } from './preparacion-inventario.service';
 import { proveedorRedisInventario, REDIS_INVENTARIO } from './redis-inventario.provider';
 import { ReservasService } from './reservas.service';
+import { AjustesInventarioService } from './ajustes-inventario.service';
+import { LecturaInventarioService } from './lectura-inventario.service';
 
 /**
  * Infraestructura exportada; todavía no se importa desde checkout ni pagos.
@@ -19,8 +21,8 @@ import { ReservasService } from './reservas.service';
  */
 @Module({
   imports: [ConfigModule, PersistenciaModule],
-  providers: [proveedorRedisInventario, ReservasService, PreparacionInventarioService],
-  exports: [ReservasService, PreparacionInventarioService],
+  providers: [proveedorRedisInventario, ReservasService, PreparacionInventarioService, AjustesInventarioService, LecturaInventarioService],
+  exports: [ReservasService, PreparacionInventarioService, AjustesInventarioService, LecturaInventarioService],
 })
 export class InventarioModule implements OnModuleDestroy {
   constructor(@Inject(REDIS_INVENTARIO) private readonly redis: Redis) {}

@@ -21,14 +21,16 @@ class CatalogoPrueba extends PedidosApi {
           'nombre': 'Hamburguesa',
           'precio': '25000.00',
           'activo': true,
-          'cantidadInventario': 20
+          'cantidadInventario': 20,
+          'cantidadDisponible': 20
         },
         {
           'id': 'uuid-agotado',
           'nombre': 'Jugo',
           'precio': '7000.00',
           'activo': true,
-          'cantidadInventario': 0
+          'cantidadInventario': 0,
+          'cantidadDisponible': 0
         },
       ];
   @override

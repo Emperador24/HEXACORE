@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "noEmit": true,
+    "types": [
+      "node"
+    ],
+    "skipLibCheck": true
+  },
+  "include": [
+    "playwright.config.ts",
+    "cu012/**/*.ts",
+    "cu013/**/*.ts",
+    "cu014/**/*.ts",
+    "cu027/**/*.ts",
+    "cu029/**/*.ts"
+  ]
+}
