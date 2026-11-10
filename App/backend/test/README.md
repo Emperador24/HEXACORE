@@ -64,8 +64,8 @@ cerrar. Para volver a ellas:
 node test/base-unica/compose.cjs imagenes stop gateway nucleo boleteria trabajador
 ```
 
-El preparador central es el único que aplica 26 migraciones (18 consolidadas + CU-007, CU-026,
-CU-029, CU-019, CU-008/009, CU-010, CU-024/025 y CU-021/023); los helpers reconocen historias existentes. Se conservan 78 tablas en once esquemas, sin tablas de
+El preparador central es el único que aplica 30 migraciones (18 consolidadas + CU-007, CU-026,
+CU-029, CU-019, CU-008/009, CU-010, CU-024/025, CU-021/023 y la versión del evento en las cuatro copias de Boletería); los helpers reconocen historias existentes. Se conservan 78 tablas en once esquemas, sin tablas de
 negocio public. Cada corrida añade UUID propios, sin TRUNCATE/FLUSH/purge,
 sin borrar mensajes anteriores ni modificar TTL. El inventario del fixture se
 prepara antes de habilitar sus compras; no se usa semilla de desarrollo.
