@@ -320,6 +320,36 @@ services:
     ports:
       - "3006:3006"
 
+  # Datos de demostración (perfil `demo`), sin Node en el computador: corre las
+  # semillas y el inventario de Pedidos desde su propia imagen, una vez que la
+  # base está preparada y el gateway responde. Sobre una base con datos no hace
+  # nada, así que volver a levantar el perfil es seguro.
+  #
+  #   docker compose -f App/infra/docker-compose.yml --profile servicios --profile demo up -d --build
+  datos-demo:
+    profiles: ["demo"]
+    build:
+      context: ../backend
+      dockerfile: Dockerfile.herramientas
+    restart: "no"
+    depends_on:
+      preparacion-base: { condition: service_completed_successfully }
+      api-gateway: { condition: service_healthy }
+    environment:
+      <<: *entorno-comun
+      AUTH_JWT_CLAVE_PRIVADA_ARCHIVO: /claves/jwt-privada.pem
+      AUTH_JWT_EMISOR: hexacore-administracion
+      POSTGRES_USUARIO: hexacore
+      POSTGRES_CONTRASENA: hexacore
+      CORREO_PROVEEDOR_URL: http://${HOST_CORREO:-correo}:${PUERTO_CORREO:-3098}
+      PAGOS_PROVEEDOR_URL: http://${HOST_PASARELA:-pasarela}:${PUERTO_PASARELA:-3099}
+      PASARELA_SECRETO_WEBHOOK: secreto-webhook-desarrollo
+      GATEWAY_URL: http://api-gateway:8080/api/v1
+    volumes:
+      - ./claves-desarrollo/jwt-privada.pem:/claves/jwt-privada.pem:ro
+      - ./claves-desarrollo/jwt-publica.pem:/claves/jwt-publica.pem:ro
+    healthcheck: { disable: true }
+
   # Portal Web de Clientes. Se sirve como sitio estático: el navegador de quien
   # lo abre es el que llama al gateway, así que la misma imagen vale en
   # cualquier máquina sin recompilar.

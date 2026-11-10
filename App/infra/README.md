@@ -39,14 +39,19 @@ cd App/infra
 ./iniciar.sh                       # sin semillas por defecto
 ./iniciar.sh --replicas 2           # Boletería; no acredita capacidad/rendimiento
 ./iniciar.sh --parar                # conserva datos
-# Solo instalación local vacía, tras npm ci con Node 22.22.3:
-./iniciar.sh --datos-demo npm
+./iniciar.sh --datos-demo           # semillas, solo sobre instalación vacía
+.\iniciar.ps1 -DatosDemo            # lo mismo en Windows (PowerShell)
 ```
 
+Solo hace falta Docker. Las semillas y el inventario de Pedidos corren en el contenedor
+`datos-demo` (perfil `demo`, imagen `backend/Dockerfile.herramientas`, guion
+`backend/herramientas/datos-demo.sh`), no en el anfitrión. Sobre una base con datos no
+hacen nada, así que repetirlas es seguro. `--datos-demo npm` se sigue aceptando.
+
 El script rechaza instalaciones locales anteriores detectadas; no realiza el
-corte. Las semillas son explícitas, destructivas y se rechazan si cualquier tabla
-de negocio contiene filas o la procedencia indica transferencia. No hay carga
-automática de los SQL por bases antiguas ni alternativa sin Node.
+corte. Las semillas son explícitas y se omiten si cualquier tabla de negocio
+contiene filas o la procedencia indica transferencia. No hay carga automática de
+los SQL por bases antiguas.
 `exportar-datos-demo.sh /ruta/privada/nuevo.dump` genera un respaldo custom de la
 base única, solo lectura y sin sobrescribir archivos; no es conciliación ni corte.
 
