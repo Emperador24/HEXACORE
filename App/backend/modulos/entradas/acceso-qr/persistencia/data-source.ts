@@ -10,9 +10,10 @@ import { QrEntradas1790553600000 } from './migraciones/1790553600000-QrEntradas'
 import { QrEntrada } from './entidades/qr-entrada.entity';
 import { EventoSaliente } from './entidades/evento-saliente.entity';
 import { BandejaSalida1790553600001 } from './migraciones/1790553600001-BandejaSalida';
+import { VersionEvento1794400000003 } from './migraciones/1794400000003-VersionEvento';
 
 export const ENTIDADES = [EventoReferencia, Ingreso, QrEntrada, EventoSaliente];
-export const MIGRACIONES = [EsquemaAccesoQr1790467200000, QrEntradas1790553600000, BandejaSalida1790553600001];
+export const MIGRACIONES = [EsquemaAccesoQr1790467200000, QrEntradas1790553600000, BandejaSalida1790553600001, VersionEvento1794400000003];
 
 export function opcionesDataSource(config: ConfiguracionServicio): DataSourceOptions & { name: string } {
   return {

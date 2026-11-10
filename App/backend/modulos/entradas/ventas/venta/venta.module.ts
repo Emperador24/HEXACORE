@@ -10,6 +10,7 @@ import { ComunModule } from '../comun/comun.module';
 import { CancelacionService } from './cancelacion.service';
 import { CompraService } from './compra.service';
 import { ConsumidorIngresos } from './consumidor-ingresos.service';
+import { ConsumidorEventosVentas } from './consumidor-eventos.service';
 import { ComprasController } from './compras.controller';
 import { Contadores } from './contadores';
 import { ExpiracionReservas } from './expiracion-reservas.service';
@@ -36,6 +37,7 @@ import { PromocionesService } from './promociones.service';
     BandejaSalida,
     NotificacionesVenta,
     ConsumidorIngresos,
+    ConsumidorEventosVentas,
     PromocionesService,
     CompraService,
     ExpiracionReservas,

@@ -209,4 +209,55 @@ describe('CancelacionService — CU-003', () => {
       expect(gestor.update).not.toHaveBeenCalledWith(Entrada, expect.anything(), { estado: EstadoEntrada.VALIDA });
     });
   });
+
+  describe('devolverPorEventoCancelado (CU-026D → CU-003)', () => {
+    function conCompras(compras: Compra[], entradas: Entrada[]) {
+      const contexto = construir({ eventoCancelado: true, fechaEvento: dias(1), entradas });
+      const { gestor } = contexto;
+      gestor.findOne.mockImplementation((entidad: unknown, { where }: { where: { id?: string } }) => {
+        if (entidad === Compra) return Promise.resolve(compras.find((c) => !where.id || c.id === where.id) ?? null);
+        if (entidad === EventoReferencia) return Promise.resolve({ nombre: 'Stand-up', fechaInicio: dias(1), estado: EstadoEvento.CANCELADO });
+        return Promise.resolve(null);
+      });
+      gestor.find.mockImplementation((entidad: unknown) => Promise.resolve(entidad === Compra ? compras : entradas));
+      return contexto;
+    }
+
+    it('devuelve el 100 % aunque falte un día, sin pedir confirmación de monto', async () => {
+      const { servicio, pagos } = conCompras([compra()], [entrada('e1'), entrada('e2')]);
+
+      const resumen = await servicio.devolverPorEventoCancelado('evt-1', 'Evento cancelado');
+
+      expect(resumen).toEqual({ compras: 1, devueltas: 1, sinEntradasCancelables: 0, fallidas: 0 });
+      expect(pagos.reembolsar).toHaveBeenCalledWith(expect.objectContaining({ monto: 140000, referenciaCobro: 'pas_1' }), '');
+    });
+
+    it('también devuelve las entradas que estaban publicadas en reventa', async () => {
+      const { servicio, pagos } = conCompras([compra()], [entrada('e1', { estado: EstadoEntrada.EN_REVENTA }), entrada('e2')]);
+
+      await servicio.devolverPorEventoCancelado('evt-1', 'Evento cancelado');
+
+      expect(pagos.reembolsar).toHaveBeenCalledWith(expect.objectContaining({ monto: 140000 }), '');
+    });
+
+    it('salta la compra cuyas entradas ya se usaron o revendieron, y sigue con las demás', async () => {
+      const { servicio, pagos } = conCompras([compra()], [entrada('e1', { propietarioId: BRUNO })]);
+
+      const resumen = await servicio.devolverPorEventoCancelado('evt-1', 'Evento cancelado');
+
+      expect(resumen).toMatchObject({ devueltas: 0, sinEntradasCancelables: 1 });
+      expect(pagos.reembolsar).not.toHaveBeenCalled();
+    });
+
+    it('un reembolso rechazado no detiene la devolución masiva', async () => {
+      const { servicio, pagos } = conCompras([compra(), compra({ id: 'compra-2', numeroCompra: 'CMP-2' })], [entrada('e1')]);
+      pagos.reembolsar
+        .mockResolvedValueOnce({ resultado: ResultadoCobro.RECHAZADO, referencia: null, motivo: 'No admite reembolsos' })
+        .mockResolvedValueOnce({ resultado: ResultadoCobro.APROBADO, referencia: 'ree_2', motivo: null });
+
+      const resumen = await servicio.devolverPorEventoCancelado('evt-1', 'Evento cancelado');
+
+      expect(resumen).toMatchObject({ compras: 2, devueltas: 1, fallidas: 1 });
+    });
+  });
 });

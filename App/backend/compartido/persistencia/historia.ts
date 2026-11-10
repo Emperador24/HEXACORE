@@ -23,16 +23,20 @@ import { EsquemaOperacionMonitoreo1793900000000 } from '../../modulos/operacion/
 import { Cu010Evacuacion1794100000000 } from '../../modulos/operacion/persistencia/migraciones/1794100000000-Cu010Evacuacion';
 import { EsquemaParqueaderos1794200000000 } from '../../modulos/parqueaderos/persistencia/migraciones/1794200000000-EsquemaParqueaderos';
 import { Cu021Cu023ReservasEspacios1794300000000 } from '../../modulos/parqueaderos/persistencia/migraciones/1794300000000-Cu021Cu023ReservasEspacios';
+import { VersionEvento1794400000000 } from '../../modulos/entradas/ventas/persistencia/migraciones/1794400000000-VersionEvento';
+import { VersionEvento1794400000001 } from '../../modulos/entradas/catalogo/persistencia/migraciones/1794400000001-VersionEvento';
+import { VersionEvento1794400000002 } from '../../modulos/entradas/postventa/persistencia/migraciones/1794400000002-VersionEvento';
+import { VersionEvento1794400000003 } from '../../modulos/entradas/acceso-qr/persistencia/migraciones/1794400000003-VersionEvento';
 import { EsquemaPagos1790380800000 } from '../../modulos/finanzas/pagos/persistencia/migraciones/1790380800000-EsquemaPagos';
 
 export const GRUPOS_MIGRACIONES = [
   { conexion: 'identidad' as const, esquema: 'identidad', historial: 'migraciones', migraciones: [EsquemaInicialCu0271789430400000, AdministracionCuentasCu027b1789516800000, RenovacionSesiones1789603200000] },
   { conexion: 'alimentos' as const, esquema: 'alimentos', historial: 'migraciones', migraciones: [EsquemaInicialCu0111789902006180, ReservasInventarioCu0111790000000000] },
   { conexion: 'personal-logistica' as const, esquema: 'personal_logistica', historial: 'migraciones', migraciones: [EsquemaInicialCu0181789718400000, Cu017PersonalOperativo1789750000000, Cu007GestionPersonal1793664000000, Cu008Cu009CambiosAsistencia1794000000000] },
-  { conexion: 'entradas-ventas' as const, esquema: 'entradas_ventas', historial: 'migraciones', migraciones: [EsquemaInicialCu0061789257600000, SecuenciaNumeroTransaccion1789344000000, CarteleraCu0051789776000000, VentaPrimariaCu001a0041789862400000, BandejaSalida1790553600000] },
-  { conexion: 'entradas-catalogo' as const, esquema: 'entradas_catalogo', historial: 'migraciones', migraciones: [EsquemaCatalogo1790208000000] },
-  { conexion: 'entradas-postventa' as const, esquema: 'entradas_postventa', historial: 'migrations', migraciones: [EsquemaPostventa1790035200000] },
-  { conexion: 'entradas-acceso-qr' as const, esquema: 'entradas_acceso_qr', historial: 'migraciones', migraciones: [EsquemaAccesoQr1790467200000, QrEntradas1790553600000, BandejaSalida1790553600001] },
+  { conexion: 'entradas-ventas' as const, esquema: 'entradas_ventas', historial: 'migraciones', migraciones: [EsquemaInicialCu0061789257600000, SecuenciaNumeroTransaccion1789344000000, CarteleraCu0051789776000000, VentaPrimariaCu001a0041789862400000, BandejaSalida1790553600000, VersionEvento1794400000000] },
+  { conexion: 'entradas-catalogo' as const, esquema: 'entradas_catalogo', historial: 'migraciones', migraciones: [EsquemaCatalogo1790208000000, VersionEvento1794400000001] },
+  { conexion: 'entradas-postventa' as const, esquema: 'entradas_postventa', historial: 'migrations', migraciones: [EsquemaPostventa1790035200000, VersionEvento1794400000002] },
+  { conexion: 'entradas-acceso-qr' as const, esquema: 'entradas_acceso_qr', historial: 'migraciones', migraciones: [EsquemaAccesoQr1790467200000, QrEntradas1790553600000, BandejaSalida1790553600001, VersionEvento1794400000003] },
   { conexion: 'finanzas-pagos' as const, esquema: 'finanzas_pagos', historial: 'migraciones', migraciones: [EsquemaPagos1790380800000] },
   // CU-026, posterior a la consolidación: noveno esquema, sin procedencia histórica.
   { conexion: 'eventos-recintos' as const, esquema: 'eventos_recintos', historial: 'migraciones', migraciones: [EsquemaEventosRecintos1793700000000, Cu029RecintosZonas1793800000000] },

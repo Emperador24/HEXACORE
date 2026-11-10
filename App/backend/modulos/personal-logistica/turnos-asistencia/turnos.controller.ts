@@ -77,8 +77,8 @@ export class TurnosController {
 
   @Post('turnos')
   @UseGuards(SoloQuienSupervisa)
-  crearTurno(@Body() dto: CrearTurnoDto) {
-    return this.turnosService.crearTurno(dto);
+  crearTurno(@Body() dto: CrearTurnoDto, @Req() peticion: PeticionDeLogistica) {
+    return this.turnosService.crearTurno(dto, peticion.sesion!.usuarioId);
   }
 
   /**

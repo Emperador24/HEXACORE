@@ -164,7 +164,7 @@ export class FueraDePlazo extends ConflictException {
  * se procesan las demás y la respuesta dice cuáles quedaron fuera.
  */
 export class NingunaEntradaCancelable extends ConflictException {
-  constructor(rechazadas: { entradaId: string; motivo: string }[]) {
+  constructor(readonly rechazadas: { entradaId: string; motivo: string }[]) {
     super({ codigo: 'CU-003D', mensaje: 'Ninguna de las entradas indicadas se puede cancelar', rechazadas });
   }
 }
