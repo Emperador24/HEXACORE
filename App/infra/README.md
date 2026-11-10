@@ -68,6 +68,12 @@ Ambos procesos usan POSTGRES_BD común, también en modo remoto/escalado/registr
 La tarea de preparación se conecta al destino remoto antes de habilitar apps.
 No cambia destinos existentes ni copia datos. No lanzar --datos-demo en este modo.
 
+## Producción
+
+Servidor con dominio y HTTPS (Caddy), claves JWT propias y despliegue automático de cada
+commit de `main` desde el CD: [DESPLIEGUE.md](DESPLIEGUE.md) (`preparar-servidor.sh`,
+`desplegar.sh`, `docker-compose.produccion.yml`).
+
 ## Configuración y comprobaciones
 
 ```bash

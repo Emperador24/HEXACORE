@@ -93,6 +93,8 @@ computador en lugar de `localhost`. Parar conservando los datos: `./iniciar.sh -
 4201, 5432, 5672, 6380, 8080 y 15672. Más opciones (dos computadores, réplicas, imágenes del
 registro): [App/infra/README.md](App/infra/README.md).
 
+**En internet, con HTTPS y despliegue automático de `main`:** [App/infra/DESPLIEGUE.md](App/infra/DESPLIEGUE.md).
+
 ## Arquitectura vigente y continuación del equipo
 
 [ADR-16 y fuentes actuales](Documentation/Work/README.md),

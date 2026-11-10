@@ -13,10 +13,10 @@
 # ## Qué es y qué no es
 #
 # Es **entrega** continua: el artefacto queda construido, versionado y listo
-# para desplegar, y el despliegue es una orden de un paso. No es **despliegue**
-# continuo a un servidor de producción, porque este proyecto todavía no tiene
-# uno; cuando lo tenga, se añade aquí un trabajo más que haga `docker compose
-# pull && up -d` contra esa máquina.
+# para desplegar, y el despliegue es una orden de un paso. Y en `main` es
+# además **despliegue** continuo: el último trabajo (`despliegue`) lleva la
+# imagen exacta de ese commit al servidor de producción, en cuanto el
+# repositorio tenga configurado el servidor (App/infra/DESPLIEGUE.md).
 #
 # Decir esto con precisión importa más que aparentar más de lo que hay.
 #
@@ -169,3 +169,55 @@ jobs:
         run: node test/publicadas/comprobar.cjs "$RUNNER_TEMP/hexacore-imagenes"
       # Solo se suben los ocho JSON de nombre/revisión/digest. No .evidencia-e2e,
       # logs, dumps, RDB, tokens, correos ni manifiestos privados de datos.
+
+  # Despliegue continuo: lo que entra a `main` y pasó la comprobación de arriba
+  # llega solo a producción. Entra por SSH al servidor, pone el repositorio en
+  # el mismo commit (para que los archivos de Compose coincidan con las
+  # imágenes) y despliega la imagen exacta `sha-<SHA40>`. Si no arranca sana,
+  # desplegar.sh vuelve a la versión anterior y este trabajo falla.
+  #
+  # No corre hasta que exista el servidor: hace falta la variable del
+  # repositorio PRODUCCION_DOMINIO y los secretos PRODUCCION_SSH_* (ver
+  # App/infra/DESPLIEGUE.md).
+  despliegue:
+    name: Desplegar en producción
+    needs: comprobacion
+    if: github.ref == 'refs/heads/main' && vars.PRODUCCION_DOMINIO != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: produccion
+      url: https://${{ vars.PRODUCCION_DOMINIO }}
+    # Dos merges seguidos no despliegan a la vez: el segundo espera al primero.
+    concurrency:
+      group: produccion
+      cancel-in-progress: false
+    permissions:
+      contents: read
+    steps:
+      - name: Llave SSH y huella del servidor
+        env:
+          CLAVE: ${{ secrets.PRODUCCION_SSH_CLAVE }}
+          HUELLA: ${{ secrets.PRODUCCION_SSH_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$CLAVE" > ~/.ssh/produccion
+          chmod 600 ~/.ssh/produccion
+          # La huella se fija en un secreto en vez de aceptar la que diga el
+          # servidor al conectar: así nadie puede hacerse pasar por él.
+          printf '%s\n' "$HUELLA" > ~/.ssh/known_hosts
+      - name: Desplegar sha-${{ github.sha }}
+        env:
+          HOST: ${{ secrets.PRODUCCION_SSH_HOST }}
+          USUARIO: ${{ secrets.PRODUCCION_SSH_USUARIO }}
+        run: |
+          ssh -i ~/.ssh/produccion -o BatchMode=yes "$USUARIO@$HOST" \
+            "cd ~/HEXACORE && git fetch --quiet origin main && git checkout --quiet --detach '${{ github.sha }}' && App/infra/desplegar.sh 'sha-${{ github.sha }}'"
+      - name: La página responde
+        run: |
+          for _ in $(seq 1 12); do
+            curl -fsS "https://${{ vars.PRODUCCION_DOMINIO }}/api/v1/salud" >/dev/null && exit 0
+            sleep 5
+          done
+          echo "::error::https://${{ vars.PRODUCCION_DOMINIO }}/api/v1/salud no respondió"
+          exit 1

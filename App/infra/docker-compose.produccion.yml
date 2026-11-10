@@ -1,0 +1,82 @@
+# Producción en un servidor con dominio propio. Se aplica encima de
+# docker-compose.yml y docker-compose.registro.yml; lo usa desplegar.sh:
+#
+#   ./desplegar.sh sha-<SHA40>
+#
+# Qué cambia respecto al entorno local:
+#
+# - **Una sola entrada pública:** Caddy en 80/443 con HTTPS automático. Ningún
+#   otro contenedor publica puertos: PostgreSQL, Redis, RabbitMQ y los
+#   servicios solo se alcanzan dentro de la red de Docker.
+# - **Claves JWT propias del servidor** (claves-produccion/, que genera
+#   preparar-servidor.sh y git ignora). Las de claves-desarrollo/ están en el
+#   repositorio: con ellas cualquiera podría firmar sesiones de administrador.
+# - **Los portales llaman al API en su mismo dominio** (/api/v1), sin CORS.
+#
+# Variables, en App/infra/.env del servidor: DOMINIO (obligatoria),
+# DOMINIO_ADMIN (por defecto admin.<DOMINIO>) y las de correo y pagos de
+# .env.ejemplo.
+
+services:
+  caddy:
+    image: caddy:2.8.4-alpine
+    profiles: ["servicios"]
+    restart: unless-stopped
+    depends_on:
+      api-gateway: { condition: service_healthy }
+    environment:
+      DOMINIO: ${DOMINIO:?Falta DOMINIO en App/infra/.env}
+      DOMINIO_ADMIN: ${DOMINIO_ADMIN:-admin.${DOMINIO}}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./produccion/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-datos:/data
+      - caddy-config:/config
+
+  postgres: { ports: !reset [] }
+  redis: { ports: !reset [] }
+  rabbitmq: { ports: !reset [] }
+  pasarela: { ports: !reset [] }
+  correo: { ports: !reset [] }
+  trabajador:
+    ports: !reset []
+    environment:
+      CORREO_URL_BASE_ENLACES: ${CORREO_URL_BASE_ENLACES:-https://${DOMINIO}/cuenta}
+
+  api-gateway:
+    ports: !reset []
+    volumes:
+      - ./claves-produccion/jwt-publica.pem:/etc/nginx/claves/jwt-publica.pem:ro
+
+  nucleo:
+    ports: !reset []
+    volumes:
+      - ./claves-produccion/jwt-privada.pem:/claves/jwt-privada.pem:ro
+      - ./claves-produccion/jwt-publica.pem:/claves/jwt-publica.pem:ro
+
+  boleteria:
+    ports: !reset []
+    volumes:
+      - ./claves-produccion/jwt-publica.pem:/claves/jwt-publica.pem:ro
+
+  datos-demo:
+    volumes:
+      - ./claves-produccion/jwt-privada.pem:/claves/jwt-privada.pem:ro
+      - ./claves-produccion/jwt-publica.pem:/claves/jwt-publica.pem:ro
+
+  portal-web-cliente:
+    ports: !reset []
+    volumes:
+      - ./produccion/configuracion.js:/usr/share/nginx/html/configuracion.js:ro
+
+  portal-web-admin:
+    ports: !reset []
+    volumes:
+      - ./produccion/configuracion.js:/usr/share/nginx/html/configuracion.js:ro
+
+volumes:
+  caddy-datos:
+  caddy-config:
