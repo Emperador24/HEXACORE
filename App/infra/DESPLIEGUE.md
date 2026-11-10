@@ -1,8 +1,8 @@
 # Despliegue en producción
 
 Cómo poner HEXACORE en internet con HTTPS, y cómo hacer que **cada cambio que entra a `main`
-se despliegue solo**. Funciona en cualquier máquina virtual Ubuntu con 4 GB de RAM; abajo va
-con Azure for Students, que no pide tarjeta.
+se despliegue solo**. Funciona en cualquier máquina virtual Ubuntu con 4 GB de RAM o más; abajo
+va con Oracle Cloud, cuya capa gratuita da una máquina ARM de 24 GB sin costo y sin fecha de fin.
 
 ```text
 merge a main ──► CI ──► CD: compila y publica las imágenes en ghcr.io
@@ -26,19 +26,35 @@ cookie de sesión funciona igual que en local. Detalle en
 > https://github.com/settings/billing. Mientras tanto se puede desplegar a mano con
 > `./desplegar.sh --compilar` (paso 5).
 
-## 1. Máquina virtual (Azure for Students)
+## 1. Máquina virtual (Oracle Cloud, capa *Always Free*)
 
-1. Activar la suscripción en https://azure.microsoft.com/free/students con el correo de la
-   universidad (US$100 de crédito, sin tarjeta).
-2. Crear una máquina virtual:
-   - Imagen **Ubuntu Server 24.04 LTS**, tamaño **B2s** (2 vCPU, 4 GB; unos US$30 al mes).
-   - Autenticación con **clave SSH** y usuario, por ejemplo, `hexacore`.
-   - Puertos de entrada: **SSH (22), HTTP (80) y HTTPS (443)**. Ninguno más.
-3. En la IP pública de la máquina, cambiar la asignación a **estática**, para que no cambie al
-   reiniciarla.
+1. Crear la cuenta en https://www.oracle.com/cloud/free. Pide una tarjeta débito o crédito
+   solo para verificar (retiene cerca de US$1 y lo devuelve); en la capa *Always Free* no cobra.
+   - La **región de inicio** que elijas no se puede cambiar después, y las máquinas ARM
+     gratis solo se crean ahí: elige la más cercana (por ejemplo, *Brazil East (São Paulo)*).
+2. *Compute → Instances → Create instance*:
+   - **Image:** *Canonical Ubuntu 24.04* (la variante *aarch64*).
+   - **Shape:** *Ampere → VM.Standard.A1.Flex* con **4 OCPU y 24 GB** (todo lo gratis; con
+     2 OCPU y 12 GB también alcanza). Debe decir *Always Free-eligible*.
+   - **Networking:** crear una VCN nueva con subred **pública** y *Assign a public IPv4 address*.
+   - **SSH keys:** subir tu llave pública (o descargar la que genera Oracle y guardarla bien).
+   - Si sale **"Out of capacity"**, prueba otro *Availability domain* en la misma pantalla, una
+     forma más chica (2 OCPU / 12 GB) o vuelve a intentar en unas horas: es lo normal en la
+     capa gratis y no es un error tuyo.
+3. Abrir HTTP y HTTPS en la red de Oracle: en la instancia, *Primary VNIC → Subnet → Security
+   Lists → Default Security List → Add Ingress Rules*, con *Source CIDR* `0.0.0.0/0`:
+   - TCP, puerto de destino `80`
+   - TCP, puerto de destino `443`
+   - UDP, puerto de destino `443` (HTTP/3; opcional)
 
-Para ahorrar crédito, la máquina se puede **detener (desasignar)** cuando no se use; al
-encenderla, los contenedores vuelven solos.
+   El SSH (22) ya viene abierto. Los puertos también hay que abrirlos dentro del Ubuntu, por las
+   reglas de `iptables` que traen las imágenes de Oracle; de eso se encarga
+   `preparar-servidor.sh`.
+4. Para que la IP no cambie al reiniciar la máquina, se puede reservar: *Networking → IP
+   Management → Reserved public IPs* (una reservada también es gratis).
+
+El usuario de SSH de las imágenes de Ubuntu de Oracle es **`ubuntu`**. El CD ya publica las
+imágenes también para ARM (`arm64`), así que la máquina no tiene que compilar nada.
 
 ## 2. Dominio gratis (DuckDNS)
 
@@ -53,14 +69,14 @@ va en otro nombre, se pone en `DOMINIO_ADMIN` en el `.env`.
 ## 3. Preparar el servidor (una vez)
 
 ```bash
-ssh hexacore@hexacore.duckdns.org
+ssh ubuntu@hexacore.duckdns.org
 curl -fsSL https://raw.githubusercontent.com/Emperador24/HEXACORE/main/App/infra/preparar-servidor.sh \
   | bash -s -- hexacore.duckdns.org
 exit   # y volver a entrar, para usar docker sin sudo
 ```
 
 [preparar-servidor.sh](preparar-servidor.sh) instala Docker, crea memoria swap, deja abiertos
-solo los puertos 22, 80 y 443 y clona el repositorio en `~/HEXACORE`. También **genera claves JWT
+solo los puertos 22, 80 y 443 (en Oracle, con sus reglas de `iptables`) y clona el repositorio en `~/HEXACORE`. También **genera claves JWT
 propias** en `App/infra/claves-produccion/` y escribe `App/infra/.env` con el dominio. Las claves
 de `claves-desarrollo/` están en git: con ellas cualquiera podría firmarse una sesión de
 administrador, y en producción el gateway las rechaza.
@@ -94,7 +110,7 @@ mientras Caddy obtiene el certificado.
 1. En tu computador, una llave solo para el CD:
    ```bash
    ssh-keygen -t ed25519 -f hexacore-cd -N "" -C "hexacore-cd"
-   ssh-copy-id -i hexacore-cd.pub hexacore@hexacore.duckdns.org
+   ssh-copy-id -i hexacore-cd.pub ubuntu@hexacore.duckdns.org
    ssh-keyscan hexacore.duckdns.org > hexacore-cd.known_hosts
    ```
 2. En GitHub → el repositorio → Settings → Secrets and variables → Actions:
@@ -103,7 +119,7 @@ mientras Caddy obtiene el certificado.
    |---|---|---|
    | Secret | `PRODUCCION_SSH_CLAVE` | contenido de `hexacore-cd` (la privada) |
    | Secret | `PRODUCCION_SSH_HOST` | `hexacore.duckdns.org` |
-   | Secret | `PRODUCCION_SSH_USUARIO` | `hexacore` |
+   | Secret | `PRODUCCION_SSH_USUARIO` | `ubuntu` |
    | Secret | `PRODUCCION_SSH_KNOWN_HOSTS` | contenido de `hexacore-cd.known_hosts` |
    | Variable | `PRODUCCION_DOMINIO` | `hexacore.duckdns.org` |
 

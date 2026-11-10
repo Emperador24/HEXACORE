@@ -40,7 +40,17 @@ if ! swapon --show | grep -q /swapfile; then
 fi
 
 paso "Cortafuegos: solo SSH, HTTP y HTTPS"
-if command -v ufw >/dev/null; then
+if [[ -f /etc/iptables/rules.v4 ]] && grep -q -- '-j REJECT' /etc/iptables/rules.v4; then
+  # Imágenes de Ubuntu de Oracle Cloud: traen iptables que rechaza todo salvo
+  # SSH, y no se llevan bien con ufw. Se abren 80 y 443 antes de ese REJECT y
+  # se guardan para que sobrevivan al reinicio. (Además hay que abrirlos en la
+  # Security List de la VCN, en la consola de Oracle: ver DESPLIEGUE.md.)
+  for regla in "-p tcp --dport 80" "-p tcp --dport 443" "-p udp --dport 443"; do
+    # shellcheck disable=SC2086
+    sudo iptables -C INPUT $regla -j ACCEPT 2>/dev/null || sudo iptables -I INPUT 1 $regla -j ACCEPT
+  done
+  sudo netfilter-persistent save >/dev/null
+elif command -v ufw >/dev/null; then
   sudo ufw allow OpenSSH >/dev/null
   sudo ufw allow 80/tcp >/dev/null
   sudo ufw allow 443 >/dev/null
