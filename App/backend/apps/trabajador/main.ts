@@ -17,7 +17,11 @@ async function bootstrap(): Promise<void> {
 
   const log = new Logger('Arranque');
   log.log(`Trabajador escuchando en http://localhost:${config.puerto}/${config.prefijoApi}`);
-  log.log(`Proveedor de correo: ${config.correo.urlProveedor}`);
+  const proveedor =
+    config.correo.proveedor === 'smtp'
+      ? `SMTP ${config.correo.smtp.host}:${config.correo.smtp.puerto} como ${config.correo.smtp.remitente}`
+      : `simulado en ${config.correo.urlProveedor}`;
+  log.log(`Proveedor de correo: ${proveedor}`);
 }
 
 void bootstrap();

@@ -1,4 +1,4 @@
-import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal, viewChild } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -10,6 +10,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { FormsModule } from '@angular/forms';
 import { AuthService, ErrorCuenta } from '../core/auth.service';
+import { StripeService } from '../core/stripe.service';
+import { TarjetaStripeComponent } from '../pago/tarjeta-stripe.component';
 import {
   Checkout,
   PublicacionMercado,
@@ -46,7 +48,8 @@ import {
     MatFormFieldModule,
     MatIconModule,
     MatProgressSpinnerModule,
-    MatSelectModule
+    MatSelectModule,
+    TarjetaStripeComponent
   ],
   templateUrl: './mercado-reventa.component.html',
   styleUrl: './mercado-reventa.component.scss'
@@ -56,6 +59,7 @@ export class MercadoReventaComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly stripe = inject(StripeService);
 
   readonly publicaciones = signal<PublicacionMercado[]>([]);
   readonly cargando = signal(true);
@@ -81,11 +85,16 @@ export class MercadoReventaComponent implements OnInit {
   metodo = 'TARJETA';
   token = 'tok_ok_demo';
 
+  /** Con Stripe la tarjeta se escribe de verdad; PSE sigue simulado (Stripe no lo ofrece). */
+  readonly conStripe = signal(false);
+  private readonly tarjeta = viewChild(TarjetaStripeComponent);
+
   private reloj?: ReturnType<typeof setInterval>;
 
   readonly reservaVencida = computed(() => this.checkout() !== null && this.segundos() <= 0);
 
   ngOnInit(): void {
+    void this.stripe.activo().then((activo) => this.conStripe.set(activo));
     this.cargar();
     this.destroyRef.onDestroy(() => this.pararReloj());
   }
@@ -145,7 +154,9 @@ export class MercadoReventaComponent implements OnInit {
     this.pagando.set(true);
     this.error.set(null);
     try {
-      const resultado = await this.reventa.pagar(checkout.id, this.metodo, this.token);
+      const tarjeta = this.conStripe() && this.metodo === 'TARJETA' ? this.tarjeta() : undefined;
+      const token = tarjeta ? await tarjeta.token() : this.token;
+      const resultado = await this.reventa.pagar(checkout.id, this.metodo, token);
       this.resultado.set(resultado);
       this.cerrarReserva();
       this.cargar();
