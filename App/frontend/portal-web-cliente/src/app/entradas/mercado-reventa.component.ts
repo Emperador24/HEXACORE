@@ -9,7 +9,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { FormsModule } from '@angular/forms';
-import { AuthService } from '../core/auth.service';
+import { AuthService, ErrorCuenta } from '../core/auth.service';
 import {
   Checkout,
   PublicacionMercado,
@@ -150,10 +150,15 @@ export class MercadoReventaComponent implements OnInit {
       this.cerrarReserva();
       this.cargar();
     } catch (error) {
-      this.error.set(mensajeDeError(error));
-      // Un rechazo devuelve la publicación al mercado de inmediato, así que el
-      // catálogo de al lado ya no refleja la realidad.
-      this.cargar();
+      const mensaje = mensajeDeError(error);
+      // CU-006G: un rechazo termina la reserva en el servidor y devuelve la
+      // publicación al mercado; se cierra aquí también para no ofrecer un pago
+      // que ya no es posible.
+      if (error instanceof ErrorCuenta && error.codigo === 'CU-006G') this.cerrarReserva();
+      // El catálogo ya no refleja la realidad. Se recarga antes de mostrar el
+      // motivo, porque recargar limpia el error.
+      await this.cargar();
+      this.error.set(mensaje);
     } finally {
       this.pagando.set(false);
     }
