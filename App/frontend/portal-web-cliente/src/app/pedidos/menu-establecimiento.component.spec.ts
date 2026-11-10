@@ -8,7 +8,7 @@ describe('Inicio del checkout de Pedidos', () => {
   let componente: MenuEstablecimientoComponent;
   let servicio: jasmine.SpyObj<PedidosService>;
   const producto = { id: 'producto', establecimientoId: 'local', nombre: 'Hamburguesa', descripcion: null,
-    precio: '25000.00', activo: true, cantidadInventario: 20 };
+    precio: '25000.00', activo: true, cantidadInventario: 20, cantidadDisponible: 20 };
   beforeEach(async () => {
     servicio = jasmine.createSpyObj('PedidosService', ['establecimientos', 'productos', 'crearCheckout', 'pagar']);
     servicio.establecimientos.and.resolveTo([{ id: 'local', eventoId: 'evento', nombre: 'Local', estado: 'DISPONIBLE', puntoEntrega: 'Módulo 4' }]);

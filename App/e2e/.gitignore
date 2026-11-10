@@ -1,0 +1,4 @@
+.evidencia/
+playwright-report/
+test-results/
+.auth/

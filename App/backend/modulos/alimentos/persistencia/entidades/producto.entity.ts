@@ -24,6 +24,9 @@ export class Producto {
   @Column({ name: 'descripcion', type: 'text', nullable: true })
   descripcion: string | null;
 
+  @Column({ name: 'restricciones_alimentarias', type: 'jsonb', default: () => "'[]'::jsonb" })
+  restriccionesAlimentarias: string[];
+
   /** PostgreSQL devuelve numeric como texto; se conserva sin conversión a coma flotante. */
   @Column({ name: 'precio', type: 'numeric', precision: 12, scale: 2 })
   precio: string;
@@ -32,7 +35,7 @@ export class Producto {
   @Column({ name: 'activo', type: 'boolean', default: false })
   activo: boolean;
 
-  /** Existencias físicas; las reservas y el descuento concurrente se implementarán después. */
+  /** Existencias físicas: se descuentan al confirmar el pago, no al reservar. */
   @Column({ name: 'cantidad_inventario', type: 'integer', default: 0 })
   cantidadInventario: number;
 }

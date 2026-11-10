@@ -1,0 +1,34 @@
+{
+  "name": "hexacore-recorridos",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "test:cu015": "playwright test cu015",
+    "test:cu015:visible": "playwright test cu015 --headed",
+    "test:cu012": "playwright test cu012",
+    "test:cu012:visible": "playwright test cu012 --headed",
+    "test:alimentos": "playwright test cu012 cu013 cu014 cu015",
+    "test:preparacion": "playwright test cu012 cu013 cu015",
+    "informe": "playwright show-report .evidencia/informe",
+    "tipos": "tsc --noEmit",
+    "test:cu013": "playwright test cu013",
+    "test:cu013:visible": "playwright test cu013 --headed",
+    "test:referencia": "playwright test cu012 cu015",
+    "test:cu014": "playwright test cu014",
+    "test:cu014:visible": "playwright test cu014 --headed",
+    "test:cu027": "playwright test cu027",
+    "test:cu027:visible": "playwright test cu027 --headed",
+    "test:cu029": "playwright test cu029",
+    "test:cu029:visible": "playwright test cu029 --headed",
+    "test:cu028:estado": "node cu028-estado.cjs",
+    "test:implementados": "playwright test",
+    "test:implementados:visible": "playwright test --headed",
+    "test:completo": "node conjunto.cjs",
+    "test:completo:visible": "node conjunto.cjs --headed"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.0",
+    "@types/node": "22.20.5",
+    "typescript": "7.0.2"
+  }
+}

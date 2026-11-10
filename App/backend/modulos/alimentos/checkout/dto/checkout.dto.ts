@@ -6,6 +6,8 @@ export class DetalleCheckoutDto {
   nombreProducto: string;
   precioUnitario: string;
   cantidad: number;
+  descripcionProducto?: string | null;
+  restriccionesAlimentarias?: string[];
 }
 
 /** Checkout con inventario reservado temporalmente, pendiente de pago y confirmación. */

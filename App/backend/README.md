@@ -13,7 +13,9 @@ compartido/persistencia/ esquemas, adaptación de migraciones y preparación ún
 ```
 
 Pagos es un módulo importado por ambos programas; conserva HTTP solo hacia la
-pasarela. Operación está definida en el plan y **no implementada**.
+pasarela. Monitoreo y evacuación de Operación ya están dentro de Núcleo;
+su separación en proceso sigue pendiente. CU-015: [reglas de Alimentos](modulos/alimentos/README.md)
+y [demostración integrada](../e2e/README.md).
 
 ## Instalar y preparar
 
@@ -40,16 +42,19 @@ incluso vacías. Quitarlas del entorno y del .env; no se ignoran silenciosamente
 | Conexión Nest/TypeORM | Esquema | Historial / migraciones |
 |---|---|---|
 | identidad | identidad | migraciones / 3 |
-| alimentos | alimentos | migraciones / 2 |
-| personal-logistica | personal_logistica | migraciones / 2 |
+| alimentos | alimentos | migraciones / 5 |
+| personal-logistica | personal_logistica | migraciones / 4 |
 | entradas-ventas | entradas_ventas | migraciones / 5 |
 | entradas-catalogo | entradas_catalogo | migraciones / 1 |
 | entradas-postventa | entradas_postventa | **migrations** / 1 |
 | entradas-acceso-qr | entradas_acceso_qr | migraciones / 3 |
 | finanzas-pagos | finanzas_pagos | migraciones / 1 |
+| eventos-recintos | eventos_recintos | migraciones / 2 |
+| operacion | operacion | migraciones / 2 |
+| parqueaderos | parqueaderos | migraciones / 1 |
 
 Cada pool usa solo su esquema, pg_catalog y extensiones en search_path. No se
-mezclan los ocho propietarios. synchronize=false, migrationsRun=false e
+mezclan los once propietarios (34 migraciones; 18 procedencias históricas). synchronize=false, migrationsRun=false e
 installExtensions=false en todas las conexiones. Extensiones uuid-ossp 1.1 y
 pgcrypto 1.3 se preparan centralmente en extensiones. pg_catalog precede al
 homónimo gen_random_uuid de pgcrypto. No se modifican las 18 fuentes históricas:

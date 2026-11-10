@@ -36,14 +36,14 @@ App/
 Este es un paso hacia Núcleo, Boletería, Operación y Trabajador. Pagos es reutilizable sin servidor; Personal/Logística ya pertenece al Núcleo; Operación sigue pendiente; Trabajador ejecuta solo el correo ya implementado. Los dominios sin
 backend o con pantallas simuladas siguen pendientes. No hay MongoDB desplegado
 ni se modifican aquí las bases habituales. La configuración activa usa una sola
-base con ocho esquemas, comprobada sobre copia transferida y base vacía aisladas;
+base que actualmente tiene once esquemas (ocho de la consolidación y tres posteriores), comprobada sobre instalaciones aisladas;
 el corte del entorno habitual sigue pendiente.
 
 Seguir [las instrucciones del workspace](backend/README.md) para instalar,
 migrar y arrancar Núcleo/Boletería y el [Trabajador](backend/modulos/comunicaciones/README.md). Integración exclusiva: [Núcleo](backend/test/README.md)
 y [Boletería](backend/test/boleteria/README.md), sin datos habituales. Compose
 ejecuta Núcleo, Boletería y Trabajador, más una tarea única de migración
-de los ocho historiales (18 migraciones). Todo backend activo comparte manifiesto/lockfile en App/backend. Se mantiene el flujo de [WORKFLOW.md](../WORKFLOW.md).
+de los once historiales (29 migraciones, 18 procedencias históricas conservadas). Todo backend activo comparte manifiesto/lockfile en App/backend. Se mantiene el flujo de [WORKFLOW.md](../WORKFLOW.md).
 
 Los responsables funcionales se conservan: Identidad y Alimentos, Sebastián;
 Boletería, Daniel y Samuel; Personal/Logística y Operación, Samuel y Diego según

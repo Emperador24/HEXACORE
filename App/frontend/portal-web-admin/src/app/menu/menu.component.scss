@@ -1,0 +1,8 @@
+:host { display: block; }
+.controles { padding: 20px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+select { font: inherit; color: inherit; background: var(--hxc-fondo, #151924); border: 1px solid var(--hxc-borde, #636779); border-radius: 8px; padding: 12px; max-width: 100%; }
+option { background: white; color: #111827; }
+.ficha { padding: 24px; margin: 20px 0; }.campos { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; }
+.acciones { display: flex; gap: 12px; margin-top: 16px; }.activo { display: flex; gap: 10px; align-items: center; }
+table { width: 100%; border-collapse: collapse; text-align: left; }td,th { padding: 12px; border-bottom: 1px solid var(--hxc-borde, #636779); vertical-align: top; }.tabla-contenedor { overflow-x: auto; }
+li { margin-bottom: 12px; overflow-wrap: anywhere; }@media(max-width:700px) { .campos { grid-template-columns:1fr; }.ficha{padding:16px;} }

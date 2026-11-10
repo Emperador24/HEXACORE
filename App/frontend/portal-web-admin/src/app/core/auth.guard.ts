@@ -1,5 +1,5 @@
 import { inject } from '@angular/core';
-import { CanActivateFn, Router } from '@angular/router';
+import { CanActivateChildFn, CanActivateFn, Router } from '@angular/router';
 import { AuthService } from './auth.service';
 
 /**
@@ -15,4 +15,12 @@ export const authGuard: CanActivateFn = async () => {
   const router = inject(Router);
   if (!auth.usuarioActual()) await auth.restaurar();
   return auth.usuarioActual() ? true : router.parseUrl('/login');
+};
+
+/** Personal accede solo a sus pantallas operativas, también por URL directa. */
+export const destinoGuard: CanActivateChildFn = (ruta) => {
+  const auth = inject(AuthService), router = inject(Router);
+  const roles = auth.roles();
+  if (['menu', 'preparacion'].includes(ruta.routeConfig?.path ?? '')) return roles.includes('Personal') || router.parseUrl('/admin/inicio');
+  return roles.some(r => r === 'Organizador' || r === 'Administrador') || router.parseUrl('/admin/menu');
 };

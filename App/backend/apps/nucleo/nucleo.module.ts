@@ -10,9 +10,12 @@ import { EventosRecintosModule } from '../../modulos/eventos-recintos/eventos-re
 import { OperacionModule } from '../../modulos/operacion/operacion.module';
 import { ParqueaderosModule } from '../../modulos/parqueaderos/parqueaderos.module';
 import { SaludController } from './salud.controller';
+import { APP_FILTER } from '@nestjs/core';
+import { DiagnosticoPgFilter } from './diagnostico-pg.filter';
 
 @Module({
   imports: [WebhookPagosModule, ConfiguracionProcesoModule, RedisModule, RabbitMqModule, IdentidadModule, AlimentosModule, PersonalLogisticaModule, EventosRecintosModule, OperacionModule, ParqueaderosModule],
   controllers: [SaludController],
+  providers: [{ provide: APP_FILTER, useClass: DiagnosticoPgFilter }],
 })
 export class NucleoModule {}

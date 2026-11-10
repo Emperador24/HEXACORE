@@ -6,14 +6,16 @@ describe('Propiedad de esquemas e historia conservada',()=>{
   it.each(Object.entries(ESQUEMAS))('pool %s usa solo el esquema %s y extensiones comunes',(conexion,esquema)=>{
     expect(opcionesEsquema(conexion as ConexionNegocio)).toEqual({schema:esquema,installExtensions:false});
     expect(opcionesSesion(conexion as ConexionNegocio).options).toBe(`-c search_path=${esquema},pg_catalog,extensiones`);
+    expect(opcionesSesion(conexion as ConexionNegocio).min).toBe(1);
   });
   it('las 18 fuentes originales conservan su SHA-256, nombre e historial',()=>{
     expect(PROCEDENCIA_ORIGINAL).toHaveLength(18);
     for(const h of PROCEDENCIA_ORIGINAL)expect(createHash('sha256').update(readFileSync(resolve(__dirname,'../..',h.ruta))).digest('hex')).toBe(h.sha256);
     expect(GRUPOS_MIGRACIONES.find(g=>g.conexion==='entradas-postventa')!.historial).toBe('migrations');
-    // 18 consolidadas + 7 posteriores: CU-007, CU-026, CU-029, CU-019, CU-008/009, CU-010 y CU-024/025,
-    // más la versión del evento en las cuatro copias de Boletería (consumidores de CU-026).
-    expect(GRUPOS_MIGRACIONES.reduce((n,g)=>n+g.migraciones.length,0)).toBe(30);
+    // 18 consolidadas + 16 posteriores: CU-007, CU-026, CU-029, CU-019, CU-008/009, CU-010, CU-024/025,
+    // CU-021/023, CU-015, CU-012, CU-013 y entrega CU-014, más la versión del evento en las cuatro
+    // copias de Boletería (consumidores de CU-026).
+    expect(GRUPOS_MIGRACIONES.reduce((n,g)=>n+g.migraciones.length,0)).toBe(34);
   });
   it('adapta la cualificación histórica sin cambiar nombres ni parámetros/filas',async()=>{
     class Original { name='Ejemplo1700000000000';async up(q:QueryRunner){await q.query('CREATE TYPE "public"."estado" AS ENUM (\'A\')');await q.query('SELECT $1',[ '"public"."dato"' ]);}async down(q:QueryRunner){await q.query('DROP TYPE "public"."estado"');} }

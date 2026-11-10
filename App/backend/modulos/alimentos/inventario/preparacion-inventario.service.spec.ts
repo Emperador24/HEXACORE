@@ -8,6 +8,7 @@ import { EstadoTransaccionPedido, TransaccionPedido } from '../persistencia/enti
 import { PreparacionInventarioService } from './preparacion-inventario.service';
 import { PREPARAR_INVENTARIO_LUA } from './preparacion.scripts';
 import { clavesReserva } from './reservas.service';
+import { OperacionInventario } from '../persistencia/entidades/operacion-inventario.entity';
 
 const establecimientoId = '30000000-0000-4000-8000-000000000001';
 const productoId = '40000000-0000-4000-8000-000000000001';
@@ -48,7 +49,7 @@ describe('PreparacionInventarioService', () => {
       { pedido: { establecimientoId, estado: Not(EstadoPedido.CONFIRMADO) }, estado: EstadoTransaccionPedido.APROBADA },
     ] });
   });
-  it.each([ReservaInventario, Pedido, TransaccionPedido])('un compromiso persistente impide tocar Redis (%p)', async (tipoComprometido) => {
+  it.each([ReservaInventario, Pedido, TransaccionPedido, OperacionInventario])('un compromiso persistente impide tocar Redis (%p)', async (tipoComprometido) => {
     gestor.exists.mockImplementation(async (tipo) => tipo === Establecimiento || tipo === tipoComprometido);
     await expect(servicio.preparar(establecimientoId)).rejects.toMatchObject({ status: 409, response: { codigo: 'COMPROMISOS_INVENTARIO_PENDIENTES' } });
     expect(evaluar).not.toHaveBeenCalled();

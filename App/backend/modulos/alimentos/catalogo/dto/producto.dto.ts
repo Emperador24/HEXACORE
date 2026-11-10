@@ -10,6 +10,11 @@ export class ProductoDto {
   @ApiProperty({ example: '25000.00', description: 'Importe decimal representado como texto' }) precio: string;
   @ApiProperty() activo: boolean;
   @ApiProperty({ type: 'integer', minimum: 0, example: 20 }) cantidadInventario: number;
+  @ApiProperty({ type: [String] }) restriccionesAlimentarias: string[];
+  @ApiProperty() cantidadFisica?: number;
+  @ApiProperty({ type: Number, nullable: true }) cantidadReservada?: number | null;
+  @ApiProperty({ type: Number, nullable: true }) cantidadDisponible?: number | null;
+  @ApiProperty() inventarioEstado?: string;
 }
 
 export function aProductoDto(producto: Producto): ProductoDto {
@@ -21,5 +26,6 @@ export function aProductoDto(producto: Producto): ProductoDto {
     precio: producto.precio,
     activo: producto.activo,
     cantidadInventario: producto.cantidadInventario,
+    restriccionesAlimentarias: producto.restriccionesAlimentarias ?? [],
   };
 }

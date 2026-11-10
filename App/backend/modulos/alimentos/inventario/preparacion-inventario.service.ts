@@ -12,6 +12,7 @@ import { EstadoTransaccionPedido, TransaccionPedido } from '../persistencia/enti
 import { REDIS_INVENTARIO } from './redis-inventario.provider';
 import { clavesReserva } from './reservas.service';
 import { PREPARAR_INVENTARIO_LUA } from './preparacion.scripts';
+import { OperacionInventario } from '../persistencia/entidades/operacion-inventario.entity';
 
 @Injectable()
 export class PreparacionInventarioService {
@@ -38,7 +39,8 @@ export class PreparacionInventarioService {
         { pedido: { establecimientoId }, estado: In([EstadoTransaccionPedido.PENDIENTE, EstadoTransaccionPedido.FALLIDA]) },
         { pedido: { establecimientoId, estado: Not(EstadoPedido.CONFIRMADO) }, estado: EstadoTransaccionPedido.APROBADA },
       ] });
-      if (reservaPendiente || pedidoPendiente || pagoPendiente) {
+      const ajustePendiente = await gestor.exists(OperacionInventario, { where: { establecimientoId, estado: 'PENDIENTE' } });
+      if (reservaPendiente || pedidoPendiente || pagoPendiente || ajustePendiente) {
         throw new ConflictException({ codigo: 'COMPROMISOS_INVENTARIO_PENDIENTES' });
       }
       // Sin filtro activo: incluye todo el catálogo, también productos con stock cero.

@@ -21,7 +21,7 @@ export const Rol = {
 export type Rol = (typeof Rol)[keyof typeof Rol];
 
 /** Los roles que pueden entrar a este portal. Un Cliente usa el suyo; el Personal, la app. */
-export const ROLES_DEL_PORTAL: readonly string[] = [Rol.ADMINISTRADOR, Rol.ORGANIZADOR];
+export const ROLES_DEL_PORTAL: readonly string[] = [Rol.ADMINISTRADOR, Rol.ORGANIZADOR, Rol.PERSONAL];
 
 export interface Usuario {
   id: string;
