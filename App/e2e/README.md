@@ -1,6 +1,37 @@
 # Demostraciones CU-012–015, CU-027 y CU-029; CU-028 bloqueado
 
-## Aceptación local actual — 11 de noviembre de 2026
+## Aceptación local actual con Redash detenido — 11 de noviembre de 2026
+
+**13/13 automático normal y 13/13 visible normal**, una ejecución completa de
+cada modalidad, en ese orden, con los mismos tests y fuentes funcionales de
+**9f3fdca** documentadas en **96c9764**. Un trabajador, cero reintentos/omisiones,
+120 s por caso y 15 s por aserción; sin demo ni cambios de código, dependencias,
+imágenes o datos de preparación. Playwright salió con **0** en ambos; el
+observador conserva **2** por **CU-028 bloqueado, pendiente de Samuel**.
+
+Se detuvieron temporalmente los siete contenedores etiquetados como proyecto
+Compose `redash`, con autorización expresa. La memoria disponible de VM pasó
+de **175,73 a 1.605,41 MiB**; no se cambiaron recursos de Docker ni otros proyectos.
+Frente al anterior **11/13 automático y 10/13 visible**, no reaparecieron los
+fallos de recorridos, HTTP 5xx, timeouts SQL o errores DNS en las ventanas recogidas.
+Persistieron 10/6 HTTP 499 sin fallo de caso; no se atribuye cada cierre a una
+navegación concreta ni se certifica disponibilidad global.
+
+Al finalizar se arrancaron únicamente los mismos siete contenedores Redash
+inicialmente activos. **Los siete están en running, pero su disponibilidad HTTP
+no quedó confirmada**: `/ping` agotó 15 s y hubo workers SIGKILL/marcas OOM.
+El scheduler había agotado además los 60 s de cierre, con salida 137.
+HEXACORE conserva sus once servicios saludables. La aceptación solo acredita
+la condición de **Redash detenido**, no la convivencia posterior. Corresponde
+revisar la capacidad y recuperar/verificar HTTP de Redash antes de ampliar el
+alcance; no se comienzan cancelaciones ni Seguridad en esta entrega.
+
+Mediciones, respuestas HTTP, incidencias de restauración y evidencia privada
+separada: [PLAN-CIERRE-SEBASTIAN.md](../../Documentation/Work/PLAN-CIERRE-SEBASTIAN.md).
+La CI GitHub 8/8 en 9f3fdca sigue siendo una verificación independiente.
+Las referencias anteriores se conservan debajo como historial.
+
+## Referencia anterior con Redash activo — 11 de noviembre de 2026
 
 Fuentes y seis aplicaciones Docker en **9f3fdca**, sin cambios funcionales.
 Se actualizó el entorno CU-015 de 29 a **34 migraciones**, conservando las 18

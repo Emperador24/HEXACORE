@@ -1,6 +1,177 @@
 # Cierre de Alimentos — Sebastián
 
-## Revalidación local actual — 11 de noviembre de 2026, fuentes 9f3fdca
+## Comparación actual con Redash detenido — 11 de noviembre de 2026
+
+**Aceptación de los 13 recorridos implementados: automático normal 13/13 y
+visible normal 13/13, exclusivamente bajo la condición de Redash detenido.**
+Cada conjunto se ejecutó una vez; no hubo fallos, omisiones ni reintentos.
+La referencia anterior, con Redash activo, fue **11/13 automático y 10/13
+visible** y se conserva íntegra debajo. No se afirma haber corregido todos los
+problemas de disponibilidad ni que esta aceptación se mantenga con Redash activo.
+**CU-028 sigue BLOQUEADO, pendiente de Samuel.** Playwright salió con **0** en
+ambas modalidades; el observador salió con **2**, expresamente por ese caso
+sin implementar, no por un fallo de los trece implementados.
+
+### Fuentes, límites y conservación
+
+- Rama `feature/sebastian`, árbol limpio al comenzar, HEAD documental
+  **96c976412359b7ee720789853698dbc91926096c**. Se comprobó que sus únicas
+  diferencias con **9f3fdca429ceb49259c5f6ab32cb57cf8e731862** son README y este
+  plan. Las seis aplicaciones conservan las imágenes limpias de **9f3fdca**.
+- Sin integración de ramas, actualización de dependencias, builds, preparación
+  de base, semillas, cambio de claves ni eliminación de datos/volúmenes.
+  PostgreSQL y los proveedores simulados existentes se conservaron. Los casos
+  generaron sus propios datos, como en la ejecución anterior.
+- Los doce contenedores propios (once servicios permanentes y la preparación
+  ya terminada) conservaron sus IDs, imágenes, configuración y conjuntos de
+  montajes. Los once servicios estaban saludables antes y después. Se mantienen
+  los reinicios de solo Núcleo que ya forman parte de CU-013/014 API.
+- Node **22.22.3**, Playwright **1.65.0**, Chromium instalado; configuración demo
+  local cargada en privado. Se descubrieron **13 casos en cada modalidad**,
+  todos con resultado esperado aprobado. Un trabajador, ejecución en serie,
+  **cero reintentos, 120 s por caso y 15 s por aserción**; sin modo demo, slowMo
+  ni presupuesto ampliado. No se modificó producto, test ni dependencia.
+
+Se usaron los mismos comandos y observador de la referencia anterior:
+
+```bash
+node --env-file=App/e2e/.env.local App/backend/test/cu013/referencia.cjs --implementados
+node --env-file=App/e2e/.env.local App/backend/test/cu013/referencia.cjs --implementados --visible
+```
+
+### Redash: selección, parada y restauración
+
+La autorización de esta comparación permitió detener temporalmente únicamente
+Redash. Se seleccionó por **`com.docker.compose.project=redash`**, comprobando
+también su etiqueta de archivo Compose
+`/Users/sebastiansanchez/lab03/redash/compose.yaml` y los servicios. El registro
+privado conserva los IDs completos, estados y tiempos; abajo se abrevian a doce
+caracteres. **Los siete estaban activos; ninguno estaba detenido inicialmente.**
+
+| Servicio Compose de Redash | ID conservado | Inicial | Salida al detener | Estado restaurado observado |
+|---|---|---|---|---|
+| server | `696829f89a19` | running | 0 | running |
+| scheduled_worker | `1fed94f26882` | running | 0 | running |
+| scheduler | `c5e9e8983754` | running | **137** | running, con reinicios posteriores |
+| adhoc_worker | `7270b184abd6` | running | 0 | running |
+| worker | `491bb6861184` | running | 0 | running |
+| redis | `89c695fa90ce` | running | 0 | running |
+| postgres | `5a7113756b80` | running | 0 | running |
+
+Se ejecutó `docker stop --time 60` sobre los cinco servicios de aplicación a
+las **18:13:49.803 UTC**, manteniendo PostgreSQL/Redis hasta que terminaran;
+después se detuvieron esos dos proveedores a las **18:14:50.714 UTC**. Seis
+salieron con código 0. **El scheduler no completó el cierre ordenado dentro de
+los 60 s y terminó con 137 al agotarse la gracia de Docker**; se registra la
+incidencia, sin presentarlo como un cierre correcto de los siete. No se usaron
+`down`, `pause`, `prune`, eliminación de contenedores o volúmenes.
+
+La restauración estaba protegida por `finally`, incluso ante fallo de pruebas.
+Al terminar el visible se arrancaron **solo los siete IDs inicialmente activos**:
+PostgreSQL/Redis desde **18:18:58.246 UTC**, luego las cinco aplicaciones desde
+**18:19:06.834 UTC**. Se comprobaron los siete en `running` con los mismos IDs
+y configuración. No se intervinieron otros proyectos. Se observó un reinicio
+externo del gateway de `hexacore-infra` a las **18:18:30.558 UTC**; su causa no
+quedó aislada y no se atribuye a una operación de esta comparación.
+
+**Límite de la restauración:** contenedores arrancados no equivale a Redash
+disponible. GET `http://127.0.0.1:5001/ping` agotó **15 s** a las 18:19 y de
+nuevo tras más de dos minutos de arranque (comprobación iniciada a
+**18:21:51.540 UTC**, 15.043 ms). El servidor registró workers terminados con
+SIGKILL a las 18:19:38/42, 18:21:09/22 y 18:22:56 UTC; cuatro contenedores
+volvieron a marcar `OOMKilled`, igual que en la observación inicial. El scheduler
+también reinició por su política existente. Se dejan los siete activos, sin
+reinicios manuales adicionales, cambios de límites ni intervención ajena.
+**La disponibilidad HTTP de Redash no quedó restablecida/comprobada.** El
+responsable debe revisar su capacidad y los workers OOM, y confirmar `/ping`;
+no se cambió el presupuesto global de Docker para resolverlo.
+
+### Memoria, swap y presión medidas
+
+Mismo Mac M2 de **8 GiB** y Docker con **3.053.772.800 bytes / 8 vCPU**; no se
+cambiaron recursos globales. `MemAvailable` y swap de VM provienen de
+`/proc/meminfo`; presión de memoria de `/proc/pressure/memory`. Swap de macOS
+se midió con `sysctl vm.swapusage`, separado del swap de la VM.
+
+| Medición UTC | Memoria disponible VM, MiB | Swap libre VM, MiB (total 1.024) | Memoria PSI some / full avg10, % | Swap usado macOS, MiB |
+|---|---:|---:|---:|---:|
+| 18:13:31.251, Redash activo | 175,73 | 0,14 | 43,49 / 34,40 | 2.475,38 |
+| 18:15:01.366, Redash detenido | 1.605,41 | 160,42 | 0,06 / 0,05 | 2.463,12 |
+| 18:16:58.363, después del automático | 1.533,36 | 250,78 | 0,00 / 0,00 | 2.710,69 |
+| 18:18:55.634, después del visible | 1.493,07 | 265,29 | 0,00 / 0,00 | 3.575,00 |
+| 18:19:21.890, Redash nuevamente arrancado | 317,06 | 0,27 | 13,39 / 8,74 | 3.132,31 |
+
+El contraste inmediato liberó **1.429,68 MiB de memoria disponible de VM
+(aproximadamente 1,40 GiB)** y aumentó el swap libre de VM en **160,28 MiB**.
+No se deduce una reducción equivalente del swap de macOS, que varió durante
+los recorridos. `memory_pressure -Q` informó 35 % libre en el host antes y
+36 % después de detener Redash. El máximo muestreado de memoria `full avg10`
+durante los conjuntos fue **0,03 % automático / 0,00 % visible**, frente a
+**57,03 % / 53,53 %** en la referencia anterior. Al restaurar Redash reapareció
+presión; no se repitió ningún recorrido en esa condición.
+
+Salud de las seis aplicaciones y cinco logins: **todos HTTP 200** antes de
+detener Redash, antes de cada conjunto y al terminar la restauración. Antes del
+automático: salud 1–70 ms y login 71–100 ms; antes del visible: 1–69 ms y
+69–110 ms. Después de restaurar Redash: salud 17–211 ms y login 372–3.548 ms.
+
+### Resultados exactos y comparación
+
+| Modalidad normal | Aprobados / fallidos / omitidos | Playwright / observador | Ventana del observador UTC | Duración de ventana / CLI |
+|---|---|---|---|---|
+| Automático | **13 / 0 / 0** | **0 / 2 (CU-028)** | 18:15:06.414–18:16:58.335 | 111,921 s / 1,8 min |
+| Visible | **13 / 0 / 0** | **0 / 2 (CU-028)** | 18:17:02.156–18:18:55.601 | 113,445 s / 1,9 min |
+
+En ambos conjuntos aprobaron, individualmente, **CU-012 interfaces y API;
+CU-013 interfaces y API; CU-014 interfaces, API y autorización en transacción;
+CU-015 portales y backend; CU-027 interfaces y negativos; CU-029 interfaces y
+negativos**. Los HTML privados confirman trece resultados aprobados por modo,
+un único resultado por caso y sin reintentos.
+
+- Automático pasa de **11/13 a 13/13**: CU-013 API y CU-014 interfaz ya no fallan.
+- Visible pasa de **10/13 a 13/13**: CU-014 interfaz, CU-015 portales y CU-029
+  interfaz ya no fallan. No se reutilizan aprobaciones del otro conjunto.
+- **Cero HTTP 5xx** en el gateway durante cada ventana; cero cancelaciones por
+  `statement_timeout`, cero `Query read timeout` y cero errores DNS en los logs
+  recogidos de gateway/Núcleo/PostgreSQL; cero errores del observador SQL.
+- Se conservan **10 HTTP 499 en automático / 6 en visible**, todos GET de
+  cartelera, empleados, menú o establecimientos. Son cierres del cliente en el
+  registro del gateway; no se dispone de traza de fallo para atribuir cada uno
+  a una navegación concreta ni se presentan como prueba de disponibilidad.
+  Ninguno produjo un recorrido fallido; no hubo las altas abortadas anteriores.
+- PostgreSQL registró **cuatro duplicados por conjunto**: uno en
+  `uq_producto_establecimiento_nombre`, dos en
+  `uq_establecimiento_evento_nombre` y uno en `idx_usuarios_email`, en las
+  ventanas de los negativos CU-012/CU-015/CU-027. Se contrastaron con los tests
+  de duplicados/concurrencia: Alimentos conserva los rechazos 409 y Cuentas
+  responde 202 también al registro repetido, sin enumeración. No son los
+  timeouts anteriores.
+- HTTP en el gateway, automático / visible: 200 **338/343**, 201 **60/60**,
+  202 **7/7**, 204 **135/135**, 304 **64/65**, 400 **29/29**, 401 **24/24**,
+  403 **30/30**, 404 **7/7**, 409 **35/35**, 422 **2/2**, 499 **10/6**.
+  Las respuestas negativas esperadas conservan sus aserciones.
+
+La mejora observada es compatible con el efecto de liberar capacidad, sin
+aislar todas las causas ni certificar disponibilidad sostenida o convivencia
+con Redash. La **aceptación local de los trece implementados queda registrada
+bajo Redash detenido**; CU-028 y la disponibilidad de Redash siguen pendientes.
+El siguiente paso es acordar capacidad estable para futuras validaciones y
+comprobar la recuperación HTTP de Redash. No se comienzan cancelaciones ni
+Seguridad. La CI GitHub 8/8 en 9f3fdca es evidencia independiente, no este ensayo.
+
+Evidencia privada, ignorada por Git y sin publicar:
+
+- Estados completos, configuración resumida por hashes, memoria, salud/login y
+  restauración: `.evidencia/comparacion-redash-2026-11-11T18-13-22Z/`.
+- Automático: `.evidencia/conjunto-observado-2026-11-11T18-15-05-459Z/`.
+- Visible: `.evidencia/conjunto-observado-2026-11-11T18-17-01-309Z/`.
+
+Solo se publica documentación revisada en `origin/feature/sebastian`, con PR #49
+si continúa abierto, sin merge ni auto-merge. No se publican `.env.local`, claves,
+tokens, QR, trazas, capturas, cuerpos HTTP ni informes privados. No se ejecutan
+otras suites por estos cambios documentales.
+
+## Revalidación local anterior, Redash activo — 11 de noviembre de 2026, fuentes 9f3fdca
 
 **Automático normal: 11/13; visible normal: 10/13. Ambos salida 1. La aceptación
 local continúa pendiente y no se recomienda iniciar todavía la cancelación de
