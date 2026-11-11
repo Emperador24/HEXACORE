@@ -3,7 +3,6 @@ const { spawn, spawnSync } = require('node:child_process');
 const { mkdirSync, writeFileSync, rmSync } = require('node:fs');
 const { resolve } = require('node:path');
 const assert = require('node:assert/strict');
-const { isDeepStrictEqual } = require('node:util');
 const { Client } = require('pg');
 const Redis = require('ioredis');
 const raiz = resolve(__dirname, '../../../..'),
@@ -31,7 +30,11 @@ const colasEsperadas = Object.freeze([
   'reventa.notificaciones', 'reventa.liquidaciones', 'postventa.eventos',
   'acceso-qr.entradas', 'acceso.eventos-gestion',
 ].sort());
-const consumosListos = m => m.conexiones === 1 && isDeepStrictEqual(m.colas, colasEsperadas);
+// fetch puede devolver arrays de otro contexto de V8 al ejecutarse bajo Jest.
+// Comparar los nombres primitivos, sin exigir identidad de prototipos.
+const consumosListos = m => m.conexiones === 1 && Array.isArray(m.colas)
+  && m.colas.length === colasEsperadas.length
+  && m.colas.every((cola, i) => cola === colasEsperadas[i]);
 async function esperar(accion, limite = 15000) {
   const fin = Date.now() + limite;
   while (!(await accion())) {

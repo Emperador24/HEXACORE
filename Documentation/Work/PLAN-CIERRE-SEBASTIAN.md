@@ -148,6 +148,16 @@ todavía la composición real. Se añade al error solamente la composición
 observada (nombres y conteos), manteniendo privados los mensajes y logs del
 proceso. Boletería se ejecuta primero para obtener ese diagnóstico antes del
 bloque largo; permanecen exactamente las mismas dobles pasadas y límites.
+La ejecución de diagnóstico
+[43044482972](https://github.com/Emperador24/HEXACORE/actions/runs/43044482972),
+SHA **5d3b329**, observó **una conexión y las nueve colas exactas**, sin ausencias
+ni duplicados. La comparación `isDeepStrictEqual` añadida al arnés rechazaba los
+prototipos de los arrays creados por `fetch` fuera del contexto V8 de Jest.
+Se comparan ahora longitud y nombres primitivos exactos; se conserva la
+exigencia de una conexión y se rechazan duplicados, colas ajenas y ausencias.
+Una regresión con `node:vm` reproduce el contexto externo sin Docker y cubre los
+rechazos; **2/2 locales**, Node 22.22.3. Se incorpora antes de crear recursos.
+No se amplían esperas.
 Las verificaciones usan los runners aislados, sin usar la referencia A/B del
 Mac. No se relanzaron ejecuciones fallidas. Logs locales privados en
 `App/e2e/.evidencia/integracion-ci-2026-11-11T13-52-03Z/`.
