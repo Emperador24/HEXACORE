@@ -39,6 +39,18 @@ class SeguridadRevision(unittest.TestCase):
             if 'jwt-' in v['source']:
                 self.assertIn('.estado-cu015/', v['source'])
 
+    def test_config_detached_no_autoriza_operaciones_del_entorno(self):
+        with patch.object(r, 'PERFIL', 'cu015'):
+            for rama in ('', 'develop', 'feature/otra'):
+                with self.subTest(rama=rama), patch.object(r, 'git', return_value=rama):
+                    r.validar_rama('config')
+                    for accion in ('iniciar', 'parar', 'estado', 'logs'):
+                        with self.assertRaisesRegex(RuntimeError, 'feature/sebastian'):
+                            r.validar_rama(accion)
+            with patch.object(r, 'git', return_value='feature/sebastian'):
+                r.validar_rama('iniciar')
+                r.validar_rama('parar')
+
     def test_sondas_http_conservan_intervalos_y_esperas(self):
         for nombre in ('nucleo', 'boleteria', 'trabajador'):
             s = self.config['services'][nombre]

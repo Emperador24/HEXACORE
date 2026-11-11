@@ -308,6 +308,8 @@ jobs:
           cache-dependency-path: App/backend/package-lock.json
       - run: git fetch --no-tags origin be57961472a0802c90a57d247fb67e96e6717b1b
       - run: npm ci && npm run build
+      - name: Procedencias históricas fijadas, nombres y propietarios
+        run: node --test --test-concurrency=1 test/consolidacion/migraciones-originales.test.cjs
       - name: Fuente histórica fijada y destino del ensayo
         run: |
           npm run ensayo:datos:infra

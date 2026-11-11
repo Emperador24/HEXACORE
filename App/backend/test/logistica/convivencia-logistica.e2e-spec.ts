@@ -4,6 +4,7 @@ import request from 'supertest';
 import { Empleado } from '../../modulos/personal-logistica/turnos-asistencia/entities/empleado.entity';
 import { JEFE_DE_PERSONAL } from '../../modulos/personal-logistica/turnos-asistencia/turnos-asistencia.constants';
 import { NucleoPrueba, esperar } from './nucleo-prueba';
+import { GRUPOS_MIGRACIONES } from '../../compartido/persistencia/historia';
 
 describe('Convivencia de Personal/Logística con Identidad y Alimentos en Núcleo', () => {
   let nucleo: NucleoPrueba;
@@ -75,19 +76,28 @@ describe('Convivencia de Personal/Logística con Identidad y Alimentos en Núcle
     expect(asistencia.body.map((a: { empleadoId: string }) => a.empleadoId)).not.toContain(empleadoAjeno.id);
   });
 
-  it('usa las tres bases correctas y conserva nueve migraciones (cuatro de logística con CU-007 y CU-008/009), sin synchronize', async () => {
+  it('usa la base y el esquema propios de cada pool, con sus nombres e historial de migraciones, sin synchronize', async () => {
     const conexiones = await nucleo.datos.query(`SELECT DISTINCT application_name,datname FROM pg_stat_activity WHERE application_name LIKE 'nucleo-%'`);
     expect(conexiones).toEqual(expect.arrayContaining([
       { application_name: 'nucleo-identidad', datname: basePruebas },
       { application_name: 'nucleo-alimentos', datname: basePruebas },
       { application_name: 'nucleo-personal-logistica', datname: basePruebas },
     ]));
-    const cantidades: number[] = [];
-    for (const fuente of [nucleo.identidad, nucleo.alimentos, nucleo.datos]) {
+    for (const [fuente, conexion] of [[nucleo.identidad, 'identidad'], [nucleo.alimentos, 'alimentos'],
+      [nucleo.datos, 'personal-logistica']] as const) {
+      const grupo = GRUPOS_MIGRACIONES.find(g => g.conexion === conexion)!;
       expect(fuente.options.synchronize).toBe(false);
-      cantidades.push((await fuente.query('SELECT count(*)::int AS n FROM migraciones'))[0].n as number);
+      expect(fuente.options.database).toBe(basePruebas);
+      expect((fuente.options as { schema?: string }).schema).toBe(grupo.esquema);
+      const [sesion] = await fuente.query('SELECT current_schema() AS esquema');
+      expect(sesion.esquema).toBe(grupo.esquema);
+      const historial = await fuente.query(`SELECT name,"timestamp"::text AS marca FROM "${grupo.esquema}"."${grupo.historial}" ORDER BY "timestamp"`);
+      const esperado = grupo.migraciones.map(M => {
+        const name = (new M() as { name?: string }).name || M.name;
+        return { name, marca: name.slice(-13) };
+      }).sort((a,b) => a.marca.localeCompare(b.marca));
+      expect(historial).toEqual(esperado);
     }
-    expect(cantidades).toEqual([3, 2, 4]);
     expect((await nucleo.identidad.query("SELECT to_regclass('identidad.empleados') AS tabla"))[0].tabla).toBeNull();
     expect((await nucleo.alimentos.query("SELECT to_regclass('alimentos.empleados') AS tabla"))[0].tabla).toBeNull();
   });
