@@ -1,5 +1,149 @@
 # Cierre de Alimentos — Sebastián
 
+## Revalidación local actual — 11 de noviembre de 2026, fuentes 9f3fdca
+
+**Automático normal: 11/13; visible normal: 10/13. Ambos salida 1. La aceptación
+local continúa pendiente y no se recomienda iniciar todavía la cancelación de
+pedidos. CU-028 sigue BLOQUEADO, pendiente de implementación de Samuel.**
+Son dos conjuntos completos intentados por separado, un intento por modalidad;
+no se suman sus aprobaciones ni se sustituyen por el demo lento. Los resultados
+10/13 automático y 12/13 visible del 8 de noviembre se conservan abajo como historia.
+
+La referencia de GitHub sigue siendo la [CI 43048018224](https://github.com/Emperador24/HEXACORE/actions/runs/43048018224),
+**8/8 trabajos en 9f3fdca429ceb49259c5f6ab32cb57cf8e731862**. Esa CI no acredita
+que estos recorridos pasen en este Mac. Los cambios posteriores de esta
+revalidación son documentales; las fuentes funcionales y los tests ejecutados
+son los de ese SHA, sin modificaciones locales.
+
+### Versión ejecutada y conservación del entorno
+
+- Rama `feature/sebastian`, árbol limpio al comenzar, HEAD y remota propia en
+  **9f3fdca**; develop **6e5e7fa**, Samuel **5c641a8**. PR #49 abierto.
+- Docker estaba ejecutando las seis aplicaciones desde **ab6ae56**, marca de
+  fuente limpia, con **29 migraciones**. Se revisaron las diferencias y se
+  reconstruyeron secuencialmente únicamente Núcleo, Boletería, Trabajador,
+  gateway y ambos portales mediante `cu015.sh`, con sus guardas y bloqueo.
+  Solo esas seis aplicaciones se pausaron para el build, entre 16:01:56 y
+  16:07:04 UTC aproximadamente. Los otros proyectos no se intervinieron.
+- La preparación registrada terminó con código **0** y dejó **34 migraciones**:
+  añadió VersionEvento de Ventas, Catálogo, Postventa y Acceso QR
+  (`1794400000000`–`1794400000003`) y
+  `Cu021Cu023ReservasEspacios1794300000000` de Parqueaderos. Conservó las
+  **18 procedencias históricas**, sin editar sus fuentes.
+- Las seis imágenes y la tarea de preparación quedaron etiquetadas con
+  **9f3fdca**, `hexacore.fuente.modificada=no`. Correo y pasarela simulados no
+  tenían cambios en sus Dockerfiles/server.js respecto de ab6ae56, y se
+  conservaron sus imágenes. PostgreSQL, Redis, RabbitMQ, correo y pasarela
+  conservaron sus cinco identificadores de contenedor y sus volúmenes.
+- Sin `--datos-demo`, semillas, reconstrucción de inventario ni cambios de
+  contraseñas. Las **38 cuentas preexistentes** conservaron identificadores,
+  correos y hashes de contraseña, comprobados antes/después de la preparación
+  y al terminar ambos conjuntos. Los casos crean sus propios datos nuevos.
+  Se conservó también el marcador de carga demo COMPLETA.
+
+### Condiciones y resultados separados
+
+Node **22.22.3**, Playwright **1.65.0**, Chromium del proyecto. Se comprobó
+descubrimiento de **13 casos en ambos modos**, todos con resultado esperado
+`passed`, un trabajador, cero reintentos, **120 s por caso y 15 s de aserción**.
+Se usó `playwright.config.ts`, sin slowMo ni pausas/presupuesto del modo demo.
+La configuración demo local se cargó desde el archivo privado, sin mostrarla.
+
+Antes del automático, las seis comprobaciones HTTP de aplicaciones respondieron
+200 (5–105 ms) y los cinco logins demo respondieron 200 (88–288 ms). Antes del
+visible, salud respondió 200 (7–121 ms) y login 200 (177–212 ms).
+Las aplicaciones estaban funcionando durante los recorridos; se conservan los
+reinicios deliberados de **solo Núcleo** que ya ejercitan CU-013/014 API.
+No se pausaron aplicaciones para dar más recursos a Playwright.
+
+Comandos ejecutados en serie, con Node 22.22.3 seleccionado:
+
+```bash
+node --env-file=App/e2e/.env.local App/backend/test/cu013/referencia.cjs --implementados
+node --env-file=App/e2e/.env.local App/backend/test/cu013/referencia.cjs --implementados --visible
+```
+
+| Modalidad normal, misma versión 9f3fdca | Aprobados / fallidos / omitidos | Salida Playwright / observador | Duración informada por Playwright | Ventana del observador UTC |
+|---|---|---|---|---|
+| Automático | **11 / 2 / 0** | **1 / 1** | **5,2 min** | 16:10:54.144–16:16:08.100 |
+| Visible | **10 / 3 / 0** | **1 / 1** | **8,5 min** | 16:23:12.963–16:32:00.172 |
+
+| Recorrido | Automático | Visible |
+|---|---|---|
+| CU-012 interfaces | Aprobado | Aprobado |
+| CU-012 API | Aprobado | Aprobado |
+| CU-013 interfaces | Aprobado | Aprobado |
+| CU-013 API | **Falló** | Aprobado |
+| CU-014 interfaces | **Falló** | **Falló** |
+| CU-014 API | Aprobado | Aprobado |
+| CU-014 autorización en transacción | Aprobado | Aprobado |
+| CU-015 portales | Aprobado | **Falló** |
+| CU-015 backend | Aprobado | Aprobado |
+| CU-027 interfaces | Aprobado | Aprobado |
+| CU-027 negativos | Aprobado | Aprobado |
+| CU-029 interfaces | Aprobado | **Falló** |
+| CU-029 negativos | Aprobado | Aprobado |
+
+### Fallos demostrados y límites del diagnóstico
+
+| Modalidad / caso | Evidencia conocida |
+|---|---|
+| Automático CU-013 API | GET de pedidos del establecimiento: **500**, esperado 200, petición de 27,21 s iniciada a las 16:13:02.165 UTC. Aserción en `cu013/preparacion.spec.ts:160`. PostgreSQL/Núcleo registraron cancelación por `statement_timeout` en esa ventana. |
+| Automático CU-014 interfaces | POST de preparación: **500**, esperado 200, 5,23 s, iniciado a las 16:13:38.884 UTC. Cancelación SQL correlacionada; aserción en `cu014/entrega.spec.ts:30`. |
+| Visible CU-014 interfaces | GET de pedidos: **500**, 8,65 s, iniciado a las 16:25:48.977 UTC, con cancelación SQL correlacionada. El click de «Gestionar pedido» quedó sin fila y agotó los **120 s** totales. |
+| Visible CU-015 portales | La edición y su consulta respondieron 200, y los campos editados siguen correctos en SQL. Tras recargar, `/sesiones/renovar` respondió 200 en **14.657,65 ms**, seguido de `/sesiones/actual` en 308 ms. La espera de fila agotó sus **15 s**; GET `/eventos` se inició al final y fue abortado al cerrar el test. No se atribuye ese tiempo a un GET de eventos de 15 s. |
+| Visible CU-029 interfaces | POST `/recintos` abortado por el cliente a los **15.011,87 ms**; `waitForResponse` terminó por el límite total de **120 s**. La lectura posterior encontró **un recinto persistido** de ese intento. No se repitió el alta ni se presenta como caso aprobado. |
+
+Los 500 y las peticiones tardías son fallos operacionales observados en los
+servicios, con presión de recursos del entorno. Las aserciones los detectaron;
+no se demostró un error de selector o de sincronización que justifique retocar
+el test. La **causa última no está aislada**: no se demuestra un defecto lógico
+del producto ni se excluyen todos los factores posibles. No se modifica código
+funcional por una hipótesis, ni se amplían esperas o reintentos.
+
+Mac M2, **8 GiB**; Docker conserva **8 vCPU y 2,84 GiB**. Antes del automático
+se midieron unos **89 MiB disponibles** y **108 KiB libres de 1 GiB de swap**
+en la VM. El máximo de presión de memoria `full avg10` fue **57,03 %** en
+automático y **53,53 %** en visible. El observador tuvo respectivamente **1 y 5
+Query read timeout**. En automático también se canceló un EXPLAIN de lectura
+en PostgreSQL; sus planes exitosos ejecutaron en 0,069–39,534 ms.
+No hubo OOM ni CPU limitada por cuota en las muestras. Se observaron como máximo
+19/20 conexiones en la base, agregadas entre pools; eso no mide `waitingCount`
+ni demuestra agotamiento de un pool. El bloqueo SQL muestreado de 379 ms fue
+durante CU-012 concurrente, fuera de las ventanas de los fallos automáticos.
+
+El gateway registró además errores de resolución de Núcleo/Boletería. Se
+conservan separados: esos mensajes DNS no explican por sí solos los 500 SQL
+correlacionados ni cada espera HTTP. No se cambian DNS, límites del pool,
+plazos del servidor o recursos globales de Docker para obtener verde.
+
+**Bloqueo y acción siguiente:** la aceptación queda bloqueada por timeouts
+operacionales en un entorno con capacidad muy ajustada. La presión observada
+no demuestra una causa única. El responsable del Mac debe liberar capacidad de los otros
+proyectos, o revisar por separado el presupuesto global de Docker. No se
+detuvo Redash, el entorno habitual ni la referencia A/B. Después de un cambio
+de condiciones comprobado, corresponde un nuevo automático y visible completos,
+con los mismos límites, para contrastar los timeouts. **No hay otra repetición
+justificada en las condiciones actuales.**
+
+Al cerrar quedaron **once contenedores propios permanentes saludables** y la
+preparación terminada con salida 0. La comprobación final de salud y los cinco
+logins también devolvió 200. Stripe y correo real permanecen desactivados.
+CU-028 fue diagnosticado **BLOQUEADO** en ambos conjuntos con las referencias
+actuales; sigue siendo trabajo pendiente de Samuel.
+
+Evidencia privada e ignorada por Git:
+
+- Preparación, versiones, conservación de cuentas, configuración y resúmenes:
+  `App/e2e/.evidencia/aceptacion-local-2026-11-11T16-00-00Z/`.
+- Automático: `.evidencia/conjunto-observado-2026-11-11T16-10-49-710Z/`.
+- Visible: `.evidencia/conjunto-observado-2026-11-11T16-23-10-416Z/`.
+
+Cada conjunto conserva su HTML, capturas/trazas, log de Playwright y mediciones
+SQL/VM/gateway/Núcleo/PostgreSQL. No se publican esos informes ni configuración,
+credenciales, tokens o QR. Esta entrega no añade funcionalidades, cancelaciones
+ni Seguridad; solo actualiza el entorno existente y registra su estado real.
+
 ## Integración de develop, demo y compatibilidad de CI — 11 de noviembre de 2026
 
 PR nuevo: [#49](https://github.com/Emperador24/HEXACORE/pull/49), hacia develop,

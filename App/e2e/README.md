@@ -1,5 +1,35 @@
 # Demostraciones CU-012–015, CU-027 y CU-029; CU-028 bloqueado
 
+## Aceptación local actual — 11 de noviembre de 2026
+
+Fuentes y seis aplicaciones Docker en **9f3fdca**, sin cambios funcionales.
+Se actualizó el entorno CU-015 de 29 a **34 migraciones**, conservando las 18
+procedencias, las 38 cuentas anteriores con sus claves y los volúmenes, sin
+semillas. Correo y pasarela simulados se reutilizaron porque no cambiaron.
+
+Se descubrieron y ejecutaron los **13 implementados**, en serie y con las
+aplicaciones funcionando: **11/13 automático normal** y **10/13 visible normal**,
+ambos salida 1, sin omisiones y con un trabajador/cero reintentos. Se conservaron
+120 s por caso y 15 s por aserción; no se usó el demo lento como aceptación.
+
+Automático: fallaron CU-013 API y CU-014 interfaz con 500 y cancelaciones SQL.
+Visible: CU-014 interfaz recibió 500 y agotó el plazo total; CU-015 no recuperó
+su fila tras una renovación de sesión de 14,66 s; CU-029 abortó el alta a los
+15,01 s y terminó por timeout, aunque el recinto quedó persistido.
+Hay presión de memoria/swap y errores DNS separados; la causa última de cada
+latencia no está aislada. No se relajaron pruebas ni se repitieron buscando verde.
+
+**La aceptación local sigue pendiente; todavía no se recomienda empezar la
+cancelación de pedidos. CU-028 permanece pendiente de Samuel.** La CI GitHub
+8/8 en 9f3fdca es una verificación distinta. El siguiente contraste requiere
+capacidad liberada por el responsable del entorno antes de otro par de conjuntos;
+no se detuvo Redash ni se cambiaron recursos globales de Docker.
+Los once contenedores permanentes propios quedaron saludables.
+
+Condiciones, tabla completa de casos y evidencias privadas separadas:
+[PLAN-CIERRE-SEBASTIAN.md](../../Documentation/Work/PLAN-CIERRE-SEBASTIAN.md).
+Los resultados del 8 de noviembre se conservan debajo como referencia histórica.
+
 ## Demo visual con velocidad configurable
 
 Desde la raíz, abre el navegador con **800 ms entre operaciones de Playwright**
@@ -88,7 +118,7 @@ para ocultar esos fallos. El aprobado de CU-029 verifica la presentación con
 negocio real y no convierte los fallos CU-015 en aprobaciones ni actualiza la
 aceptación conjunta histórica que se conserva debajo.
 
-## Resultado vigente: estabilidad conjunta, 8 de noviembre de 2026
+## Referencia histórica: estabilidad conjunta, 8 de noviembre de 2026
 
 **Los trece todavía no aprobaron conjuntamente.** Último automático **10/13,
 5,2 min, salida 1**; último visible, separado, **12/13, 4,1 min, salida 1**.
