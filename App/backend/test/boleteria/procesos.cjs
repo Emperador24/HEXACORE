@@ -104,10 +104,17 @@ async function iniciar() {
       );
       return true;
     });
-    await esperar(async () => {
-      const m = await metricasRabbit();
-      return consumosListos(m);
-    });
+    let observadas;
+    try {
+      await esperar(async () => {
+        observadas = await metricasRabbit();
+        return consumosListos(observadas);
+      });
+    } catch (error) {
+      // Solo composición AMQP: nunca salida completa del proceso, mensajes,
+      // credenciales, destinatarios ni datos de negocio en el log público.
+      throw new Error(`Composición AMQP no converge: ${JSON.stringify({ esperadas: colasEsperadas, observadas })}`, { cause: error });
+    }
     return app;
   } catch (e) {
     try {

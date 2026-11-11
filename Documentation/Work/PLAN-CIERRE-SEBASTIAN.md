@@ -140,6 +140,14 @@ deduplicar y también al reconectar. Se revisó además su expectativa antigua d
 diez migraciones: las cuatro VersionEvento elevan el registro actual a catorce;
 se comparan nombres y timestamps por base/esquema/historial canónico. Las diez
 fuentes históricas de Entradas y las 18 totales conservan sus huellas.
+La quinta ejecución,
+[43041816382](https://github.com/Emperador24/HEXACORE/actions/runs/43041816382),
+SHA **5dac00a**, aprobó de nuevo siete trabajos y ambas pasadas del Núcleo, pero
+el arnés AMQP de Boletería tampoco convergió con la lista esperada. No confirma
+todavía la composición real. Se añade al error solamente la composición
+observada (nombres y conteos), manteniendo privados los mensajes y logs del
+proceso. Boletería se ejecuta primero para obtener ese diagnóstico antes del
+bloque largo; permanecen exactamente las mismas dobles pasadas y límites.
 Las verificaciones usan los runners aislados, sin usar la referencia A/B del
 Mac. No se relanzaron ejecuciones fallidas. Logs locales privados en
 `App/e2e/.evidencia/integracion-ci-2026-11-11T13-52-03Z/`.

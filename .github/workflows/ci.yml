@@ -158,16 +158,18 @@ jobs:
         run: npm run test:trabajador:identidad
       - name: Composición real del módulo financiero sin HTTP
         run: npm run test:pagos:modulo
-      - name: Integración del Núcleo dos veces
-        id: nucleo
-        run: |
-          npm run test:e2e
-          npm run test:e2e
+      # Verificar primero la composición AMQP de Boletería: una incompatibilidad
+      # de arranque debe informar sus colas antes de las dos pasadas del Núcleo.
       - name: Integración de Boletería dos veces, con Núcleo para los callbacks
         id: boleteria
         run: |
           npm run test:boleteria
           npm run test:boleteria
+      - name: Integración del Núcleo dos veces
+        id: nucleo
+        run: |
+          npm run test:e2e
+          npm run test:e2e
       - name: Configuración y fronteras
         run: npm run verificar:infra
       - name: Imagen del Trabajador
