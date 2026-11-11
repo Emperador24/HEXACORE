@@ -38,8 +38,11 @@ clave pública: las firmas fixture se hacen fuera del proceso del programa.
 
 Base exclusiva **hexacore_e2e**, esquemas entradas_ventas/catalogo/postventa/acceso_qr
 (con prefijo entradas_ en cada uno) y libro finanzas_pagos compartido con Núcleo.
-Los cuatro historiales conservan 5+1+1+3 migraciones; Postventa usa **migrations**.
-La tarea preparacion-base prepara los ocho esquemas/18 historiales antes de apps,
+Los cuatro historiales actuales contienen 6+2+2+4 migraciones: las diez originales
+más VersionEvento en cada propietario; se verifican nombres y timestamps exactos
+contra el registro canónico, además de base y esquema. Postventa usa **migrations**.
+La tarea preparacion-base prepara once esquemas/34 migraciones antes de apps y
+conserva las 18 procedencias del corte histórico de ocho propietarios,
 synchronize/migrationsRun=false. Los helpers usan opcionesPg y el destino común;
 las POSTGRES_BD_* heredadas se rechazan. [Recorridos A y B](../base-unica/README.md).
 
@@ -47,7 +50,12 @@ las POSTGRES_BD_* heredadas se rechazan. [Recorridos A y B](../base-unica/README
 `dist/apps/boleteria/main.js`. Inicia además un Núcleo compilado en 13087 para
 el webhook del simulador; no simula callbacks ni monta otro receptor en Boletería.
 Exige un PID por programa, los dos cron, una conexión AMQP y
-cinco consumidores de Boletería (se filtran sus canales, sin contar al auxiliar). VENTAS_URL apunta a un puerto inaccesible: publicación,
+exactamente las nueve colas propias (se filtran sus canales, sin contar al auxiliar):
+Ventas `ventas.ingresos`, `ventas.notificaciones`, `ventas.eventos`; Catálogo
+`catalogo.eventos`; Postventa `reventa.notificaciones`, `reventa.liquidaciones`,
+`postventa.eventos`; Acceso QR `acceso-qr.entradas`, `acceso.eventos-gestion`.
+Se comparan sus nombres, sin deduplicar, al arrancar y reconectar.
+VENTAS_URL apunta a un puerto inaccesible: publicación,
 transferencia y devolución deben funcionar por la interfaz local. SIGTERM debe
 terminar sin SIGKILL, con cron/outbox/consumos drenados, cuatro conexiones SQL de Entradas más finanzas-pagos, y
 clientes Redis/AMQP desaparecidos. Guarda logs en .evidencia-e2e, ignorada por Git.

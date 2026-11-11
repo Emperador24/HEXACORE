@@ -116,9 +116,32 @@ un único instante y la tarifa propia empieza exactamente en la salida simulada,
 conservando la comprobación de 3000 frente a los 5000 actuales. Se mantiene la
 doble pasada sobre la misma base, sin limpieza de tarifas previas ni reintentos.
 
-Las comprobaciones completas sobre copia transferida e instalación nueva siguen
-en los runners aislados, sin usar la referencia A/B del Mac. No se relanzaron
-ejecuciones fallidas. Logs locales privados en
+La cuarta ejecución,
+[43039387841](https://github.com/Emperador24/HEXACORE/actions/runs/43039387841),
+SHA **8daf011**, aprobó completamente el trabajo de transferencia histórica y
+aplicaciones sobre esquemas:
+
+| Comprobación de GitHub Actions | Resultado |
+|---|---|
+| Procedencias, nombres, propietarios y huellas contra be579614 | **3/3** |
+| Captura y conciliación del corte original | Ocho respaldos, **18 migraciones; 12/12** |
+| Lectura ORM transferida | Once conexiones/historiales, **34 migraciones**, cero tablas public |
+| Escenario común sobre copia transferida / instalación nueva | **46 comprobaciones en cada base** |
+| Lectura y contratos de la copia / instalación nueva | **5/5 en cada base** |
+| Convivencia financiera y reinicio en la copia / instalación nueva | **5/5 en cada base** |
+| Instalación vacía antes de fixtures | **84 tablas**, 34 registros de migración + cuatro roles, cero filas de negocio |
+
+La CI terminó con **7/8 trabajos aprobados**: **983/983 unitarias**, Núcleo
+**122/122 en ambas pasadas**, transferencia y autenticación completas. Boletería
+falló en su precondición de arranque (**0/23**): esperaba cinco consumidores,
+pero Samuel añadió cuatro colas de eventos. La corrección exige los nueve
+nombres propietarios exactos, filtrados por la única conexión propia, sin
+deduplicar y también al reconectar. Se revisó además su expectativa antigua de
+diez migraciones: las cuatro VersionEvento elevan el registro actual a catorce;
+se comparan nombres y timestamps por base/esquema/historial canónico. Las diez
+fuentes históricas de Entradas y las 18 totales conservan sus huellas.
+Las verificaciones usan los runners aislados, sin usar la referencia A/B del
+Mac. No se relanzaron ejecuciones fallidas. Logs locales privados en
 `App/e2e/.evidencia/integracion-ci-2026-11-11T13-52-03Z/`.
 
 **La aceptación conjunta local sigue pendiente: 10/13 automática y 12/13

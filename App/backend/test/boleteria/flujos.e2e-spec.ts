@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { JwtService } from '@nestjs/jwt';
 import Redis from 'ioredis';
+import { GRUPOS_MIGRACIONES } from '../../compartido/persistencia/historia';
 const procesos = require('./procesos.cjs');
 const { Client } = require('pg');
 const dias = (n: number) => new Date(Date.now() + n * 86400000);
@@ -69,9 +70,17 @@ describe('Referencia real de Boletería: CU-001–006', () => {
     }
     // Historial financiero y de propietarios inmutable: UUID nuevos, sin truncar.
   });
-  it('conserva los cuatro esquemas y sus diez migraciones', async () => {
-    const esperadas = { ventas:5, catalogo:1, postventa:1, 'acceso-qr':3 };
-    for (const [n,cantidad] of Object.entries(esperadas)) expect((await sql(n,`SELECT count(*)::int n FROM ${n === 'postventa' ? 'migrations' : 'migraciones'}`))[0].n).toBe(cantidad);
+  it('conserva los cuatro esquemas y los nombres y timestamps de sus migraciones actuales', async () => {
+    for (const n of ['ventas','catalogo','postventa','acceso-qr']) {
+      const grupo = GRUPOS_MIGRACIONES.find(g => g.conexion === 'entradas-' + n)!;
+      expect(await sql(n,'SELECT current_database() base,current_schema() esquema')).toEqual([{ base:basePruebas, esquema:grupo.esquema }]);
+      const historial = await sql(n,`SELECT name,"timestamp"::text AS marca FROM "${grupo.esquema}"."${grupo.historial}" ORDER BY "timestamp"`);
+      const esperado = grupo.migraciones.map(M => {
+        const name = (new M() as { name?: string }).name || M.name;
+        return { name, marca:name.slice(-13) };
+      }).sort((a,b) => a.marca.localeCompare(b.marca));
+      expect(historial).toEqual(esperado);
+    }
   });
   it('consulta cartelera pública y filtra el evento real', async () => {
     const detalle = await pedir('catalogo','GET',`/cartelera/${evento}`);
@@ -105,17 +114,17 @@ describe('Referencia real de Boletería: CU-001–006', () => {
     await procesos.esperar(async()=> (await sql('acceso-qr','SELECT count(*)::int n FROM qr_entradas WHERE evento_id=$1',[evento]))[0].n===2);
     expect((await sql('ventas','SELECT count(*)::int n FROM eventos_salientes WHERE publicado_en IS NULL'))[0].n).toBe(0);
   });
-  it('reconecta una sola conexión AMQP y recupera sus cinco consumidores y el outbox', async () => {
+  it('reconecta una sola conexión AMQP y recupera exactamente sus colas propias y el outbox', async () => {
     const headers={Authorization:`Basic ${Buffer.from('cu011_e2e:cu011_e2e').toString('base64')}`};
     const r=await fetch('http://127.0.0.1:16779/api/connections',{headers});expect(r.status).toBe(200);
     const conexiones=(await r.json() as {name:string;client_properties:{connection_name?:string}}[]).filter(c=>c.client_properties.connection_name==='hexacore-boleteria');
     expect(conexiones).toHaveLength(1);
     const cerrada=await fetch('http://127.0.0.1:16779/api/connections/'+encodeURIComponent(conexiones[0].name),{method:'DELETE',headers});expect(cerrada.status).toBe(204);
     await procesos.esperar(()=> (app.procesos[0].salida.match(/Conectado a RabbitMQ/g)||[]).length===2);
-    await procesos.esperar(async()=>{const m=await procesos.metricasRabbit();return m.conexiones===1&&m.consumidores===5;});
+    await procesos.esperar(async()=>procesos.consumosListos(await procesos.metricasRabbit()));
     const c=await comprar();
     await procesos.esperar(async()=> (await sql('acceso-qr','SELECT count(*)::int n FROM qr_entradas WHERE entrada_id=$1',[c.entradas[0].id]))[0].n===1);
-    expect((await procesos.metricasRabbit()).consumidores).toBe(5);
+    expect(await procesos.metricasRabbit()).toEqual({ conexiones:1, consumidores:procesos.colasEsperadas.length, colas:procesos.colasEsperadas });
   });
   it('cotiza cancelación parcial de compra y ejecuta un reembolso real', async () => {
     const entrada=compra.entradas[0];

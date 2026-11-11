@@ -3,6 +3,7 @@ const { spawn, spawnSync } = require('node:child_process');
 const { mkdirSync, writeFileSync, rmSync } = require('node:fs');
 const { resolve } = require('node:path');
 const assert = require('node:assert/strict');
+const { isDeepStrictEqual } = require('node:util');
 const { Client } = require('pg');
 const Redis = require('ioredis');
 const raiz = resolve(__dirname, '../../../..'),
@@ -22,6 +23,15 @@ const bases = {
 };
 const puertos = Object.fromEntries(nombres.map((n) => [n, 13096]));
 const entorno = () => ({...require('../base-unica/conexiones.cjs').entorno(),PUERTO:'13096',VENTAS_URL:'http://127.0.0.1:9/retirado',TOKEN_SERVICIOS:'boleteria-e2e-servicios',COMPRA_RESERVA_MINUTOS:'2',RESERVAS_CRON:'*/1 * * * * *',EXPIRACION_CRON:'*/1 * * * * *'});
+// Contratos de los cuatro propietarios; conserva duplicados al comparar con
+// RabbitMQ para detectar consumidores extra al arrancar o reconectar.
+const colasEsperadas = Object.freeze([
+  'ventas.ingresos', 'ventas.notificaciones', 'ventas.eventos',
+  'catalogo.eventos',
+  'reventa.notificaciones', 'reventa.liquidaciones', 'postventa.eventos',
+  'acceso-qr.entradas', 'acceso.eventos-gestion',
+].sort());
+const consumosListos = m => m.conexiones === 1 && isDeepStrictEqual(m.colas, colasEsperadas);
 async function esperar(accion, limite = 15000) {
   const fin = Date.now() + limite;
   while (!(await accion())) {
@@ -45,8 +55,9 @@ async function metricasRabbit() {
     (c) => c.client_properties.connection_name === 'hexacore-boleteria',
   );
   const nombres = new Set(conexiones.map(c => c.name));
-  const consumidores = (await leer('consumers/cu011')).filter(c => nombres.has(c.channel_details.connection_name)).length;
-  return { conexiones: conexiones.length, consumidores };
+  const colas = (await leer('consumers/cu011')).filter(c => nombres.has(c.channel_details.connection_name))
+    .map(c => c.queue.name).sort();
+  return { conexiones: conexiones.length, consumidores: colas.length, colas };
 }
 async function iniciar() {
   assert.equal(process.version, 'v22.22.3');
@@ -95,7 +106,7 @@ async function iniciar() {
     });
     await esperar(async () => {
       const m = await metricasRabbit();
-      return m.conexiones === 1 && m.consumidores === 5;
+      return consumosListos(m);
     });
     return app;
   } catch (e) {
@@ -176,4 +187,4 @@ async function cerrar(app) {
     if (app.auxiliar) await require('../proceso-nucleo.cjs').cerrar(app.auxiliar);
   }
 }
-module.exports = { iniciar, cerrar, entorno, bases, puertos, esperar, raiz, metricasRabbit };
+module.exports = { iniciar, cerrar, entorno, bases, puertos, esperar, raiz, metricasRabbit, colasEsperadas, consumosListos };
