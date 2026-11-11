@@ -1,5 +1,100 @@
 # Cierre de Alimentos — Sebastián
 
+## Integración de develop, demo y compatibilidad de CI — 11 de noviembre de 2026
+
+PR nuevo: [#49](https://github.com/Emperador24/HEXACORE/pull/49), hacia develop,
+sin merge ni auto-merge. El PR #48 ya estaba integrado. Se comprobaron las remotas:
+`origin/develop=6e5e7fa` (incluye #47 de Samuel), `origin/feature/samuel=5c641a8`
+y la rama propia publicada antes de empezar en `ab6ae56`.
+
+Primero se revisaron y conservaron los doce archivos locales del demo en
+**9707569**, sin incluir `.env.local`, claves, trazas ni informes privados.
+Después se integró `origin/develop` mediante el merge **5131b1e**, sin conflictos,
+reset ni force-push. El trabajo de Samuel se conserva: versiones de evento en
+las cuatro copias de Entradas, reservas de Parqueaderos y cambios de despliegue,
+pagos/correo y clientes. Se comprobaron las rutas existentes de Alimentos en web
+y Flutter. No se activó Stripe, SMTP ni un despliegue real para verificarlo.
+
+La corrección funcional de CI está en **6683795**:
+
+- **Checkout detached:** en la ejecución
+  [42825246231](https://github.com/Emperador24/HEXACORE/actions/runs/42825246231),
+  la consulta de configuración CU-015 fallaba por exigir una rama local. Solo
+  `config` puede resolver y validar en lectura desde otra rama/detached. Las
+  acciones iniciar/parar/estado/logs siguen exigiendo su rama; se mantienen las
+  comprobaciones de Docker local, destinos, etiquetas, checkout, puertos y
+  recursos. La prueba nueva rechaza operaciones en detached/develop/otra rama.
+- **Convivencia de Logística:** la expectativa antigua `[3,2,4]` confundía el
+  historial actual de Alimentos con su corte inicial. Su registro vigente tiene
+  seis nombres: EsquemaInicialCu011, ReservasInventarioCu011,
+  GestionEstablecimientosCu015, MenuInventarioCu012, PreparacionCu013 y EntregaCu014
+  (con sus timestamps completos del registro canónico). Se comparan ahora los
+  nombres y timestamps exactos de cada historial, base y esquema de cada pool,
+  y `synchronize=false`; no se sustituye simplemente 2 por 6.
+- **Captura histórica:** el selector recorría las carpetas actuales y excluía
+  solamente CU-007. Incorporaba cinco fuentes posteriores al corte, de ahí
+  **23 en vez de 18**; después del merge también habría incluido las cuatro
+  VersionEvento nuevas. Ahora usa la lista positiva `PROCEDENCIA_ORIGINAL`,
+  comprueba 18 rutas únicas, propietario de cada fuente, nombre y SHA antes de
+  inmovilizar el origen. Los ocho historiales y sus registros siguen siendo
+  validados durante la captura. Una prueba compara las 18 fuentes contra el
+  commit fijado **be57961472a0802c90a57d247fb67e96e6717b1b**, excluye las posteriores
+  y rechaza una huella/propietario alterados en memoria. Se añade a la CI antes
+  de levantar la referencia. No se altera ninguna de las 18 migraciones ni su
+  procedencia; se conservan las guardas del ensayo y sus recursos separados.
+
+Tras integrar Samuel, el registro actual suma **34 migraciones**: las 29
+anteriores más cuatro VersionEvento (Ventas, Catálogo, Postventa y Acceso QR) y
+Cu021Cu023ReservasEspacios de Parqueaderos. Esto no amplía el corte histórico
+de 18. Las 13 pruebas de esquemas comprueban ese registro y las huellas conservadas.
+
+| Verificación local de esta entrega | Resultado |
+|---|---|
+| Tipos y build del backend integrado, Node 22.22.3 | Aprobados |
+| Guardas de revisión y salud | **14/14** |
+| Procedencias contra el Git fijado y controles negativos | **3/3** |
+| Esquemas y 18 fuentes conservadas | **13/13** |
+| Archivo histórico, sin Docker | Tres archivos idénticos a be579614; aprobado |
+| Tipos E2E y configuración/fronteras | Aprobados |
+| Consumidor de eventos: entrega, confirmación y DLQ | **15/15** |
+
+Se reutiliza la verificación del demo ya realizada: CU-029 visual completo
+**1/1**, ocho pausas medidas de cinco segundos y slowMo en los contextos reales,
+incluidos los explícitos; CU-015 normal **1/1**. Sus dos demos fallidos siguen
+registrados. No se repitieron recorridos locales por los cambios de documentación.
+El demo mantiene su configuración, pausas, foco e informes separados. Playwright
+normal/CI conserva 120 s por test, 15 s por aserción y cero reintentos; el
+presupuesto ampliado de presentación es exclusivo del demo.
+
+**Primera GitHub CI de la entrega:**
+[43035031451](https://github.com/Emperador24/HEXACORE/actions/runs/43035031451),
+SHA **6683795**: **6/8 trabajos aprobados**. La guarda detached y la captura,
+conciliación, procedencias y lectura de las 18 migraciones históricas aprobaron.
+Se diagnosticaron otros dos fallos antes de publicar la siguiente corrección:
+
+- Una unitaria de Samuel generaba dos mensajes con `new Date()` y comparaba
+  timestamps separados por 1 ms (**982/983** pruebas). Ahora entrega y compara
+  el mismo evento, con la aserción completa intacta; la suite dirigida aprueba
+  **15/15**.
+- El escenario de aplicaciones actuales solo insertaba la referencia antigua
+  de Alimentos, pero el checkout consulta `eventos_recintos.eventos`: devolvía
+  **404**. El contexto exclusivo de base única prepara ahora recinto y evento
+  publicado en el esquema propietario comprobado. La preparación del origen
+  histórico no recibe ese contexto y conserva su comportamiento. No se cambian
+  el HTTP esperado, las aserciones, los límites ni los reintentos.
+
+La siguiente CI debe verificar la convivencia y los flujos completos sobre copia
+transferida e instalación nueva en sus runners aislados, sin usar la referencia
+A/B del Mac. No se relanzó la ejecución fallida. Logs locales privados en
+`App/e2e/.evidencia/integracion-ci-2026-11-11T13-52-03Z/`.
+
+**La aceptación conjunta local sigue pendiente: 10/13 automática y 12/13
+visible**, correspondientes al cierre del 8 de noviembre. No se convierten en
+verde por una CI aprobada, por tipos/unitarias ni por el demo. CU-028 continúa
+sin implementación; no se añaden casos de uso, CU-011F, F12 o seguridad global.
+No se detuvo Redash ni otro proyecto, no se borraron volúmenes ni se repitieron
+semillas locales. Las verificaciones locales usaron proveedores simulados.
+
 ## Estabilidad conjunta — 8 de noviembre de 2026
 
 **La aceptación conjunta sigue pendiente. Último automático: 10/13; último
