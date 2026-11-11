@@ -22,6 +22,8 @@ dependencies:
   # Llavero del dispositivo (Keychain / Keystore) para los tokens de sesión (CU-027).
   flutter_secure_storage: ^11.2.0
   qr_flutter: ^4.1.0
+  # Hash del QR de parqueadero para validarlo sin red en el punto de control (CU-022).
+  crypto: ^3.0.7
 
 dev_dependencies:
   # Pruebas de extremo a extremo en un simulador contra el backend real.

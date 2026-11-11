@@ -28,6 +28,24 @@ import {
   ReembolsoRechazado,
 } from './venta.errors';
 
+/** Cómo se pidió la cancelación: por el comprador (CU-003) o por cancelarse el evento (CU-026D). */
+interface Solicitud {
+  motivo: string;
+  entradaIds?: string[];
+  /** Lo que el comprador vio y aceptó. No lo hay cuando cancela el organizador. */
+  montoAceptado?: number;
+  /** CU-026D: también se devuelven las entradas que estaban publicadas en reventa. */
+  porEventoCancelado?: boolean;
+}
+
+/** Resultado de la devolución masiva de un evento cancelado. */
+export interface ResumenDevolucionMasiva {
+  compras: number;
+  devueltas: number;
+  sinEntradasCancelables: number;
+  fallidas: number;
+}
+
 interface Evaluacion {
   compra: Compra;
   evento: EventoReferencia | null;
@@ -72,20 +90,83 @@ export class CancelacionService {
     datos: CancelarCompraDto,
     tokenSesion: string,
   ): Promise<CancelacionDto> {
+    return this.ejecutar(usuarioId, compraId, datos, tokenSesion);
+  }
+
+  /**
+   * CU-026D → CU-003: el organizador canceló el evento y se devuelve el 100 %
+   * de cada compra pagada, con el mismo flujo que si la cancelara su
+   * comprador. Lo invoca el consumidor de `eventos.gestion` cuando la copia
+   * del evento ya está CANCELADO, que es lo que pone la política en 100 %.
+   *
+   * Idempotente: una compra ya CANCELADA no se vuelve a tocar, y una cuyas
+   * entradas ya están anuladas se salta. Un reembolso rechazado o sin
+   * respuesta no detiene a los demás: queda registrado en su `Cancelacion`
+   * para conciliación, como en CU-003C/CU-003 indeterminado.
+   *
+   * Las entradas que ya se revendieron no son de quien compró: CU-003 no las
+   * devuelve a él, y quedan en el log para conciliar con Postventa.
+   */
+  async devolverPorEventoCancelado(eventoId: string, motivo: string): Promise<ResumenDevolucionMasiva> {
+    const compras = await this.fuenteDatos.manager.find(Compra, {
+      where: { eventoId, estado: In([EstadoCompra.PAGADA, EstadoCompra.PARCIALMENTE_CANCELADA]) },
+      order: { id: 'ASC' },
+    });
+    const resumen: ResumenDevolucionMasiva = { compras: compras.length, devueltas: 0, sinEntradasCancelables: 0, fallidas: 0 };
+    for (const compra of compras) {
+      try {
+        // Sin token de usuario: la cancelación la ordena el organizador y el
+        // adaptador de pagos no reenvía sesión alguna.
+        await this.ejecutar(compra.compradorId, compra.id, { motivo, porEventoCancelado: true }, '');
+        resumen.devueltas += 1;
+      } catch (error) {
+        if (error instanceof NingunaEntradaCancelable) {
+          resumen.sinEntradasCancelables += 1;
+          const revendidas = error.rechazadas.filter((r) => r.motivo.includes('revendió'));
+          if (revendidas.length > 0) {
+            this.log.warn(`Compra ${compra.numeroCompra}: ${revendidas.length} entradas revendidas quedan para conciliar (CU-026D)`);
+          }
+        } else if (error instanceof ReembolsoRechazado || error instanceof ReembolsoIndeterminado) {
+          resumen.fallidas += 1;
+          this.log.error(`Devolución de ${compra.numeroCompra} por evento cancelado no completada: ${error.message}`);
+        } else {
+          throw error;
+        }
+      }
+    }
+    this.log.log(
+      `Evento ${eventoId} cancelado: ${resumen.devueltas} de ${resumen.compras} compras devueltas` +
+        (resumen.fallidas ? `, ${resumen.fallidas} para conciliar` : ''),
+    );
+    return resumen;
+  }
+
+  private async ejecutar(
+    usuarioId: string,
+    compraId: string,
+    datos: Solicitud,
+    tokenSesion: string,
+  ): Promise<CancelacionDto> {
    const { evaluacion, cancelacion } = await this.fuenteDatos.transaction(async (tx) => {
       // Bloqueo de la compra: no pueden cotizar sobre las mismas entradas
       await tx.findOne(Compra, { where: { id: compraId }, lock: { mode: 'pessimistic_write' } });
-      const actual = await this.evaluar(tx, usuarioId, compraId, datos.entradaIds);
+      const actual = await this.evaluar(tx, usuarioId, compraId, datos.entradaIds, datos.porEventoCancelado);
 
       // confirma el monto, si cambio se le vuelve a preguntar
-      if (Math.round(datos.montoAceptado * 100) !== Math.round(actual.cotizacion.montoReembolso * 100)) {
+      if (
+        datos.montoAceptado !== undefined &&
+        Math.round(datos.montoAceptado * 100) !== Math.round(actual.cotizacion.montoReembolso * 100)
+      ) {
         throw new MontoCambio(actual.cotizacion.montoReembolso);
       }
 
       const ids = actual.cancelables.map((e) => e.id);
+      const estadosAnulables = datos.porEventoCancelado
+        ? [EstadoEntrada.VALIDA, EstadoEntrada.EN_REVENTA]
+        : [EstadoEntrada.VALIDA];
       const anuladas = await tx.update(
         Entrada,
-        { id: In(ids), estado: EstadoEntrada.VALIDA, propietarioId: usuarioId },
+        { id: In(ids), estado: In(estadosAnulables), propietarioId: usuarioId },
         { estado: EstadoEntrada.ANULADA },
       );
       if (anuladas.affected !== ids.length) {
@@ -199,6 +280,7 @@ export class CancelacionService {
     usuarioId: string,
     compraId: string,
     entradaIds?: string[],
+    porEventoCancelado = false,
   ): Promise<Evaluacion> {
     // Seguridad: solo el titular de la compra
     const compra = await gestor.findOne(Compra, { where: { id: compraId, compradorId: usuarioId } });
@@ -224,7 +306,7 @@ export class CancelacionService {
     const cancelables: Entrada[] = [];
     const rechazadas: EntradaRechazadaDto[] = [];
     for (const id of pedidas) {
-      const motivo = motivoNoCancelable(porId.get(id), usuarioId);
+      const motivo = motivoNoCancelable(porId.get(id), usuarioId, porEventoCancelado);
       if (motivo) rechazadas.push({ entradaId: id, motivo });
       else cancelables.push(porId.get(id)!);
     }
@@ -261,7 +343,7 @@ export class CancelacionService {
 }
 
 //Por que una entrada no se puede cancelar
-function motivoNoCancelable(entrada: Entrada | undefined, usuarioId: string): string | null {
+function motivoNoCancelable(entrada: Entrada | undefined, usuarioId: string, porEventoCancelado: boolean): string | null {
   if (!entrada) return 'La entrada no pertenece a esta compra';
   if (entrada.propietarioId !== usuarioId) return 'La entrada ya no es tuya (se revendió)';
   switch (entrada.estado) {
@@ -270,6 +352,9 @@ function motivoNoCancelable(entrada: Entrada | undefined, usuarioId: string): st
     case EstadoEntrada.ANULADA:
       return 'La entrada ya estaba cancelada';
     case EstadoEntrada.EN_REVENTA:
+      // Si el evento se canceló, Postventa retira la publicación por su lado
+      // y su devolución de la entrada no resucita una ANULADA.
+      if (porEventoCancelado) return null;
       return 'La entrada está publicada en reventa; retírala del mercado antes de cancelarla';
     default:
       return null;

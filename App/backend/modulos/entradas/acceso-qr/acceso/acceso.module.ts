@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ConsumidorEventosAcceso } from './consumidor-eventos.service';
 import { PersistenciaModule } from '../persistencia/persistencia.module';
 import { BandejaSalida } from '../comun/eventos/bandeja-salida.service';
 import { Contadores } from './contadores';
@@ -17,6 +18,6 @@ import { ProyeccionQr } from './proyeccion-qr.service';
 @Module({
   imports: [PersistenciaModule],
   controllers: [IngresosController],
-  providers: [IngresoService, Contadores, ProyeccionQr, BandejaSalida],
+  providers: [IngresoService, Contadores, ProyeccionQr, BandejaSalida, ConsumidorEventosAcceso],
 })
 export class AccesoModule {}

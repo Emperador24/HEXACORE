@@ -46,4 +46,17 @@ Reglas comunes: idempotencia por `id`; descartar `versionEvento` menor o igual a
 una localidad ya no se elimina ni reduce en un evento publicado (el productor lo impide), así
 que el upsert nunca tiene que bajar un `aforo` por debajo de lo vendido.
 
-**Estado actual:** el productor está hecho y probado; ningún consumidor existe todavía.
+**Estado actual:** productor y los cuatro consumidores hechos. Comparten la base
+`modulos/entradas/compartido/consumidor-eventos-gestion.ts` (cola durable por módulo con DLQ en
+`eventos.gestion.muertos`, tres intentos) y guardan la versión aplicada en
+`eventos_referencia.version_evento`:
+
+| Módulo | Cola | Archivo |
+|---|---|---|
+| Catálogo | `catalogo.eventos` | `entradas/catalogo/cartelera/consumidor-eventos.service.ts` |
+| Ventas | `ventas.eventos` | `entradas/ventas/venta/consumidor-eventos.service.ts` (devolución masiva: `CancelacionService.devolverPorEventoCancelado`) |
+| Postventa | `postventa.eventos` | `entradas/postventa/postventa/eventos/consumidor-eventos.service.ts` |
+| Acceso QR | `acceso.eventos-gestion` | `entradas/acceso-qr/acceso/consumidor-eventos.service.ts` |
+
+Límite conocido: una entrada ya revendida no es de quien hizo la compra original, así que CU-003
+no se la devuelve a él; queda en el log de Ventas para conciliar con Postventa.

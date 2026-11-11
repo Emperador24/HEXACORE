@@ -44,7 +44,7 @@ npm run build:boleteria
 npm run build:trabajador
 npm run test:infra                 # recursos y preparacion-base, sin apps
 REDIS_HOST=127.0.0.1 REDIS_PUERTO=16384 REDIS_INVENTARIO_PRUEBAS_URL=redis://127.0.0.1:16384 npm test -- --runInBand
-npm run test:e2e                   # 117 escenarios Núcleo (11 CU-007, 7 CU-008/009, 9 CU-026, 5 CU-029, 6 CU-019, 3 CU-010, 3 CU-024/025), proceso compilado
+npm run test:e2e                   # 122 escenarios Núcleo (11 CU-007, 7 CU-008/009, 9 CU-026, 5 CU-029, 6 CU-019, 3 CU-010, 8 CU-021 a CU-025), proceso compilado
 npm run test:boleteria             # 23 escenarios Boletería y auxiliar webhook
 npm run test:pagos:modulo
 npm run verificar:infra
@@ -66,8 +66,8 @@ cerrar. Para volver a ellas:
 node test/base-unica/compose.cjs imagenes stop gateway nucleo boleteria trabajador
 ```
 
-El preparador central es el único que aplica 29 migraciones (18 consolidadas + CU-007, CU-026,
-CU-029, CU-019, CU-008/009, CU-010, CU-024/025, CU-015, CU-012, CU-013 y CU-014); los helpers reconocen historias existentes. Se conservan los datos anteriores en 80 tablas en once esquemas, sin tablas de
+El preparador central es el único que aplica 34 migraciones (18 consolidadas + CU-007, CU-026,
+CU-029, CU-019, CU-008/009, CU-010, CU-024/025, CU-021/023, CU-015, CU-012, CU-013, CU-014 y la versión del evento en las cuatro copias de Boletería); los helpers reconocen historias existentes. Se conservan los datos anteriores en 84 tablas en once esquemas, sin tablas de
 negocio public. Cada corrida añade UUID propios, sin TRUNCATE/FLUSH/purge,
 sin borrar mensajes anteriores ni modificar TTL. El inventario del fixture se
 prepara antes de habilitar sus compras; no se usa semilla de desarrollo.

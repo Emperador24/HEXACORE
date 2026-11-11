@@ -19,7 +19,8 @@ export type EstadoZona = 'DISPONIBLE' | 'CASI_LLENA' | 'LLENA';
 
 export interface ZonaConOcupacion {
   id: string; nombre: string; capacidad: number; orden: number;
-  ocupados: number; disponibles: number; porcentaje: number; estado: EstadoZona;
+  /** Vehículos dentro y espacios retenidos por reservas vigentes (CU-021). */
+  ocupados: number; reservados: number; disponibles: number; porcentaje: number; estado: EstadoZona;
   tendencia: { ingresos: number; salidas: number; netoPorMinuto: number; minutosParaLlenarse: number | null };
 }
 
@@ -36,7 +37,8 @@ export interface AlertaParqueadero {
  *
  * La ocupación se calcula de las estancias abiertas al leer, sin contador
  * aparte que pueda desincronizarse; los índices parciales por zona la hacen
- * barata. La tendencia es el saldo de ingresos menos salidas en los últimos
+ * barata. Un espacio reservado (CU-021) no está ocupado pero tampoco
+ * disponible: cuenta para el porcentaje y para llenar la zona. La tendencia es el saldo de ingresos menos salidas en los últimos
  * `ventanaMinutos`. La recomendación que ven los operadores de ingreso
  * (paso 7) es la redirección vigente si su destino tiene espacio; si no, la
  * zona menos ocupada.
@@ -59,12 +61,16 @@ export class OcupacionService {
     ]);
     const capacidad = zonas.reduce((n, z) => n + z.capacidad, 0);
     const ocupados = zonas.reduce((n, z) => n + z.ocupados, 0);
+    const reservados = zonas.reduce((n, z) => n + z.reservados, 0);
     return {
       evento: {
         id: evento.id, nombre: evento.nombre, fechaInicio: evento.fechaInicio, fechaFin: evento.fechaFin,
         enCurso: evento.fechaInicio <= ahora && evento.fechaFin > ahora,
       },
-      total: { capacidad, ocupados, disponibles: capacidad - ocupados, porcentaje: capacidad ? redondear((ocupados / capacidad) * 100) : 0 },
+      total: {
+        capacidad, ocupados, reservados, disponibles: Math.max(0, capacidad - ocupados - reservados),
+        porcentaje: capacidad ? redondear(((ocupados + reservados) / capacidad) * 100) : 0,
+      },
       zonas,
       alertas: this.evaluar(zonas),
       recomendacion,
@@ -79,17 +85,19 @@ export class OcupacionService {
     const zonas = await this.estadoZonas(this.datos.manager, eventoId);
     const capacidad = zonas.reduce((n, z) => n + z.capacidad, 0);
     const ocupados = zonas.reduce((n, z) => n + z.ocupados, 0);
+    const reservados = zonas.reduce((n, z) => n + z.reservados, 0);
     return {
-      zonas: zonas.map(({ id, nombre, capacidad, ocupados, porcentaje, estado }) => ({ id, nombre, capacidad, ocupados, porcentaje, estado })),
-      capacidad, ocupados, porcentaje: capacidad ? redondear((ocupados / capacidad) * 100) : 0,
+      zonas: zonas.map(({ id, nombre, capacidad, ocupados, reservados, porcentaje, estado }) => ({ id, nombre, capacidad, ocupados, reservados, porcentaje, estado })),
+      capacidad, ocupados, reservados, porcentaje: capacidad ? redondear(((ocupados + reservados) / capacidad) * 100) : 0,
       alertas: this.evaluar(zonas),
     };
   }
 
   async estadoZonas(m: EntityManager, eventoId: string): Promise<ZonaConOcupacion[]> {
-    const filas: { id: string; nombre: string; capacidad: number; orden: number; ocupados: number; ingresos: number; salidas: number }[] = await m.query(
+    const filas: { id: string; nombre: string; capacidad: number; orden: number; ocupados: number; reservados: number; ingresos: number; salidas: number }[] = await m.query(
       `SELECT z.id, z.nombre, z.capacidad, z.orden,
               count(e.id) FILTER (WHERE e.salida_en IS NULL)::int AS ocupados,
+              (SELECT count(*)::int FROM reservas r WHERE r.zona_id = z.id AND r.estado IN ('PENDIENTE_PAGO', 'PAGANDO', 'CONFIRMADA')) AS reservados,
               count(e.id) FILTER (WHERE e.ingreso_en > now() - make_interval(mins => $2))::int AS ingresos,
               count(e.id) FILTER (WHERE e.salida_en > now() - make_interval(mins => $2))::int AS salidas
          FROM zonas_parqueadero z
@@ -100,14 +108,15 @@ export class OcupacionService {
       [eventoId, UMBRALES_PARQUEADERO.ventanaMinutos],
     );
     return filas.map((f) => {
-      const disponibles = Math.max(0, f.capacidad - f.ocupados);
-      const porcentaje = redondear((f.ocupados / f.capacidad) * 100);
+      const comprometidos = f.ocupados + f.reservados;
+      const disponibles = Math.max(0, f.capacidad - comprometidos);
+      const porcentaje = redondear((comprometidos / f.capacidad) * 100);
       const netoPorMinuto = redondear((f.ingresos - f.salidas) / UMBRALES_PARQUEADERO.ventanaMinutos);
       return {
         ...f,
         disponibles,
         porcentaje,
-        estado: f.ocupados >= f.capacidad ? 'LLENA' : porcentaje >= UMBRALES_PARQUEADERO.casiLlena ? 'CASI_LLENA' : 'DISPONIBLE',
+        estado: comprometidos >= f.capacidad ? 'LLENA' : porcentaje >= UMBRALES_PARQUEADERO.casiLlena ? 'CASI_LLENA' : 'DISPONIBLE',
         tendencia: {
           ingresos: f.ingresos, salidas: f.salidas, netoPorMinuto,
           minutosParaLlenarse: netoPorMinuto > 0 && disponibles > 0 ? Math.ceil(disponibles / netoPorMinuto) : null,
@@ -184,7 +193,7 @@ export class OcupacionService {
     };
     for (const z of zonas) {
       if (z.estado === 'LLENA') {
-        alertas.push({ tipo: 'ZONA_LLENA', severidad: 'critica', zonaId: z.id, mensaje: `«${z.nombre}» está llena (${z.ocupados}/${z.capacidad}): no admite más ingresos.`, ...sugerir(z) });
+        alertas.push({ tipo: 'ZONA_LLENA', severidad: 'critica', zonaId: z.id, mensaje: `«${z.nombre}» está llena (${z.ocupados}/${z.capacidad}${z.reservados ? ` y ${z.reservados} reservados` : ''}): no admite más ingresos.`, ...sugerir(z) });
       } else if (z.estado === 'CASI_LLENA') {
         alertas.push({ tipo: 'ZONA_CASI_LLENA', severidad: 'aviso', zonaId: z.id, mensaje: `«${z.nombre}» al ${z.porcentaje} % (${z.disponibles} libres).`, ...sugerir(z) });
       } else if (z.tendencia.minutosParaLlenarse !== null && z.tendencia.minutosParaLlenarse <= UMBRALES_PARQUEADERO.minutosParaLlenarse) {

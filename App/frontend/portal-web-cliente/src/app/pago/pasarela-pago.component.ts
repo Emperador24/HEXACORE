@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, viewChild } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -7,6 +7,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { PagoService } from '../core/pago.service';
 import { MetodoPago } from '../core/models';
 import { mensajeDeError } from '../core/reventa.service';
+import { StripeService } from '../core/stripe.service';
+import { TarjetaStripeComponent } from './tarjeta-stripe.component';
 
 /** Cómo se muestra cada medio. */
 const ETIQUETAS: Record<MetodoPago, string> = {
@@ -28,7 +30,7 @@ const ETIQUETAS: Record<MetodoPago, string> = {
 @Component({
   selector: 'app-pasarela-pago',
   standalone: true,
-  imports: [DecimalPipe, MatCardModule, MatRadioModule, MatButtonModule],
+  imports: [DecimalPipe, MatCardModule, MatRadioModule, MatButtonModule, TarjetaStripeComponent],
   templateUrl: './pasarela-pago.component.html',
   styleUrl: './pasarela-pago.component.scss'
 })
@@ -43,7 +45,16 @@ export class PasarelaPagoComponent {
   readonly metodos = computed(
     () => this.pendiente()?.metodos ?? [MetodoPago.TARJETA, MetodoPago.EFECTIVO]
   );
-  readonly etiqueta = (m: MetodoPago) => ETIQUETAS[m];
+  readonly etiqueta = (m: MetodoPago) =>
+    m === MetodoPago.TARJETA && this.conStripe() ? 'Tarjeta de crédito o débito' : ETIQUETAS[m];
+
+  /**
+   * Con Stripe, la tarjeta se escribe de verdad y su `pm_…` reemplaza al token
+   * de demostración. PSE sigue con la pasarela simulada: Stripe no lo ofrece.
+   */
+  readonly conStripe = signal(false);
+  readonly tarjetaReal = computed(() => this.conStripe() && this.metodo() === MetodoPago.TARJETA);
+  private readonly tarjeta = viewChild(TarjetaStripeComponent);
 
   readonly metodo = signal(MetodoPago.TARJETA);
   readonly token = signal('');
@@ -53,6 +64,7 @@ export class PasarelaPagoComponent {
   constructor() {
     const tokens = this.pendiente()?.tokensDemo;
     if (tokens?.length) this.token.set(tokens[0].valor);
+    void inject(StripeService).activo().then((activo) => this.conStripe.set(activo));
   }
 
   async confirmar(): Promise<void> {
@@ -63,7 +75,9 @@ export class PasarelaPagoComponent {
     this.procesando.set(true);
     this.error.set(null);
     try {
-      await this.pagoService.confirmar(this.metodo(), this.token() || undefined);
+      const tarjeta = this.tarjetaReal() ? this.tarjeta() : undefined;
+      const token = tarjeta ? await tarjeta.token() : this.token() || undefined;
+      await this.pagoService.confirmar(this.metodo(), token);
       this.router.navigateByUrl(destino);
     } catch (error) {
       this.error.set(mensajeDeError(error));

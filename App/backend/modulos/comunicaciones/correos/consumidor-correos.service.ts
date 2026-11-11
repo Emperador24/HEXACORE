@@ -3,14 +3,9 @@ import { ConsumeMessage } from 'amqplib';
 import { CONFIGURACION, ConfiguracionServicio } from '../config/configuracion';
 import { ConexionRabbitMq } from '../rabbitmq/conexion-rabbitmq.service';
 import { CorreoPendiente, TipoCorreo } from './correo-pendiente.evento';
+import { CorreoCompuesto, EnviadorCorreo, ErrorPermanenteDeCorreo, crearEnviador } from './enviador-correo';
 import { COLA_CORREOS, MAXIMO_INTENTOS, VERSION_CORREO_PENDIENTE } from './topologia';
 
-/** Lo que se le manda al proveedor de notificaciones. */
-interface CorreoCompuesto {
-  para: string;
-  asunto: string;
-  texto: string;
-}
 
 /**
  * Envía los correos encolados (CU-027 paso 5 y CU-027A).
@@ -41,7 +36,7 @@ export class ConsumidorCorreos implements OnApplicationBootstrap, OnApplicationS
 
   private etiquetaConsumidor: string | null = null;
   private cerrando = false;
-  private readonly urlProveedor: string;
+  private readonly enviador: EnviadorCorreo;
   private readonly urlBase: string;
   private readonly bloqueoMinutos: number;
 
@@ -49,7 +44,7 @@ export class ConsumidorCorreos implements OnApplicationBootstrap, OnApplicationS
     private readonly conexion: ConexionRabbitMq,
     @Inject(CONFIGURACION) config: ConfiguracionServicio,
   ) {
-    this.urlProveedor = config.correo.urlProveedor;
+    this.enviador = crearEnviador(config.correo);
     this.urlBase = config.correo.urlBaseEnlaces;
     this.bloqueoMinutos = config.seguridad.bloqueoMinutos;
   }
@@ -235,30 +230,8 @@ export class ConsumidorCorreos implements OnApplicationBootstrap, OnApplicationS
   }
 
   /** Llama al proveedor de notificaciones. */
-  private async enviar(correo: CorreoCompuesto): Promise<void> {
-    let respuesta: Response;
-    try {
-      respuesta = await fetch(`${this.urlProveedor}/correos`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(correo),
-        // Sin timeout, un proveedor que no responde dejaría el consumidor
-        // bloqueado con `prefetch(1)`: ningún otro correo saldría.
-        signal: AbortSignal.timeout(10_000),
-      });
-    } catch (error) {
-      // Red caída o timeout: pasajero por definición, se reintenta.
-      throw new Error(`no hubo respuesta del proveedor (${error instanceof Error ? error.name : 'error'})`);
-    }
-
-    if (respuesta.ok) return;
-
-    // 4xx: el proveedor entendió y rechazó. Reintentar no cambiará nada.
-    if (respuesta.status >= 400 && respuesta.status < 500) {
-      throw new ErrorPermanenteDeCorreo(`el proveedor rechazó el envío (${respuesta.status})`);
-    }
-    // 5xx: el proveedor está mal ahora mismo.
-    throw new Error(`el proveedor respondió ${respuesta.status}`);
+  private enviar(correo: CorreoCompuesto): Promise<void> {
+    return this.enviador.enviar(correo);
   }
 
   /** Confirma o rechaza el mensaje, tolerando que el canal haya muerto. */
@@ -288,6 +261,3 @@ export class ConsumidorCorreos implements OnApplicationBootstrap, OnApplicationS
     }
   }
 }
-
-/** Fallo del que no se vuelve: la dirección no existe, el mensaje es inválido. */
-class ErrorPermanenteDeCorreo extends Error {}

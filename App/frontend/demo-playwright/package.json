@@ -1,0 +1,16 @@
+{
+  "name": "hexacore-demo-playwright",
+  "private": true,
+  "description": "Demostración automatizada de los casos de uso de Samuel (CU-006 a CU-010, CU-024 a CU-026) en los portales reales.",
+  "scripts": {
+    "demo": "playwright test",
+    "demo:ver": "DEMO_VISIBLE=1 DEMO_LENTO=600 playwright test",
+    "demo:informe": "playwright show-report informe"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.1"
+  }
+}

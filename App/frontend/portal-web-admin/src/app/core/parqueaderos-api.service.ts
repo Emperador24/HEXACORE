@@ -2,10 +2,13 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { AuthService } from './auth.service';
 import { seguirFlujo } from './flujo-sse';
-import { PanelParqueadero, SalidaVehiculo, Tarifa, ZonaParqueadero } from './models';
+import {
+  AsignacionEspacio, EspacioParqueadero, IngresoVehiculo, PanelParqueadero, ReservaParqueaderoEvento, SalidaVehiculo, Tarifa, TipoVehiculo,
+  ZonaParqueadero
+} from './models';
 import { Servidor } from './servidor';
 
-/** CU-024 y CU-025 contra `/api/v1/parqueaderos` (en el Núcleo). */
+/** CU-021 a CU-025 contra `/api/v1/parqueaderos` (en el Núcleo). */
 @Injectable({ providedIn: 'root' })
 export class ParqueaderosApiService {
   private readonly http = inject(HttpClient);
@@ -36,12 +39,29 @@ export class ParqueaderosApiService {
     return this.auth.conAcceso((h) => this.http.patch<ZonaParqueadero>(this.url(`/eventos/${eventoId}/zonas/${zonaId}`), datos, { headers: h }));
   }
 
-  registrarIngreso(eventoId: string, datos: { placa: string; zonaId?: string; prepagada?: boolean }): Promise<unknown> {
-    return this.auth.conAcceso((h) => this.http.post(this.url(`/eventos/${eventoId}/ingresos`), datos, { headers: h }));
+  /** CU-022: por el QR de la reserva o por la placa; el servidor asigna el espacio (CU-023). */
+  registrarIngreso(eventoId: string, datos: { placa?: string; codigoQr?: string; tipoVehiculo: TipoVehiculo; zonaId?: string }): Promise<IngresoVehiculo> {
+    return this.auth.conAcceso((h) => this.http.post<IngresoVehiculo>(this.url(`/eventos/${eventoId}/ingresos`), datos, { headers: h }));
   }
 
-  registrarSalida(eventoId: string, placa: string): Promise<SalidaVehiculo> {
-    return this.auth.conAcceso((h) => this.http.post<SalidaVehiculo>(this.url(`/eventos/${eventoId}/salidas`), { placa }, { headers: h }));
+  registrarSalida(eventoId: string, datos: { placa?: string; codigoQr?: string }): Promise<SalidaVehiculo> {
+    return this.auth.conAcceso((h) => this.http.post<SalidaVehiculo>(this.url(`/eventos/${eventoId}/salidas`), datos, { headers: h }));
+  }
+
+  espacios(eventoId: string): Promise<EspacioParqueadero[]> {
+    return this.auth.conAcceso((h) => this.http.get<EspacioParqueadero[]>(this.url(`/eventos/${eventoId}/espacios`), { headers: h }));
+  }
+
+  actualizarEspacio(eventoId: string, espacioId: string, datos: { tipo?: TipoVehiculo; activo?: boolean }): Promise<EspacioParqueadero> {
+    return this.auth.conAcceso((h) => this.http.patch<EspacioParqueadero>(this.url(`/eventos/${eventoId}/espacios/${espacioId}`), datos, { headers: h }));
+  }
+
+  asignaciones(eventoId: string): Promise<AsignacionEspacio[]> {
+    return this.auth.conAcceso((h) => this.http.get<AsignacionEspacio[]>(this.url(`/eventos/${eventoId}/asignaciones`), { headers: h }));
+  }
+
+  reservas(eventoId: string): Promise<ReservaParqueaderoEvento[]> {
+    return this.auth.conAcceso((h) => this.http.get<ReservaParqueaderoEvento[]>(this.url(`/eventos/${eventoId}/reservas`), { headers: h }));
   }
 
   redirigir(eventoId: string, datos: { zonaOrigenId?: string; zonaDestinoId: string; motivo: string }): Promise<PanelParqueadero> {

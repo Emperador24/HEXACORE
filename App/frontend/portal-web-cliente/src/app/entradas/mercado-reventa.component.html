@@ -42,15 +42,20 @@
           </mat-select>
         </mat-form-field>
 
-        <mat-form-field appearance="outline" subscriptSizing="dynamic">
-          <mat-label>Resultado a simular</mat-label>
-          <mat-select [(ngModel)]="token" name="token">
-            @for (opcion of tokensDemo; track opcion.valor) {
-              <mat-option [value]="opcion.valor">{{ opcion.etiqueta }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
+        @if (!(conStripe() && metodo === 'TARJETA')) {
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Resultado a simular</mat-label>
+            <mat-select [(ngModel)]="token" name="token">
+              @for (opcion of tokensDemo; track opcion.valor) {
+                <mat-option [value]="opcion.valor">{{ opcion.etiqueta }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        }
       </div>
+      @if (conStripe() && metodo === 'TARJETA') {
+        <app-tarjeta-stripe />
+      }
     </mat-card-content>
 
     <mat-card-actions class="acciones">

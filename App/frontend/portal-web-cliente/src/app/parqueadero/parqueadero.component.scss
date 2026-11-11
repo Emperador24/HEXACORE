@@ -5,7 +5,7 @@
 }
 
 .tarjeta-form {
-  max-width: 400px;
+  max-width: 480px;
   margin-top: 20px;
 }
 
@@ -32,4 +32,73 @@
   p {
     color: rgb(var(--hxc-texto-rgb) / 0.6);
   }
+}
+
+.nota {
+  color: rgb(var(--hxc-texto-rgb) / 0.7);
+  font-size: 0.9rem;
+  margin: 4px 0 12px;
+}
+
+.error {
+  color: var(--mat-sys-error, #b3261e);
+  margin: 8px 0;
+}
+
+.aviso {
+  font-weight: 600;
+}
+
+.codigo {
+  text-align: center;
+  font-family: monospace;
+  letter-spacing: 0.05em;
+}
+
+.zonas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+  margin: 4px 0 16px;
+}
+
+.zona {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgb(var(--hxc-texto-rgb) / 0.2);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+
+  &.elegida {
+    border-color: var(--hxc-primario-texto);
+    box-shadow: inset 0 0 0 1px var(--hxc-primario-texto);
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .nombre {
+    font-weight: 600;
+  }
+
+  .libres {
+    font-size: 0.85rem;
+    color: rgb(var(--hxc-texto-rgb) / 0.7);
+  }
+}
+
+.alternativas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
 }

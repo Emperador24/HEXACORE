@@ -1,4 +1,4 @@
-// Cliente de la evacuación (CU-010) y del parqueadero (CU-024/025) para el
+// Cliente de la evacuación (CU-010) y del parqueadero (CU-022 a CU-025) para el
 // personal, contra el Núcleo a través del API Gateway — igual que
 // `logistica_api_client.dart`: el token es el de la sesión de quien usa la
 // app y el servidor decide qué puede hacer según su rol.
@@ -86,16 +86,31 @@ class OperacionApi {
   Future<Map<String, dynamic>> recomendacion(String eventoId) async =>
       await _pedir('GET', '/parqueaderos/eventos/$eventoId/recomendacion') as Map<String, dynamic>;
 
-  Future<Map<String, dynamic>> registrarIngreso(String eventoId, String placa, {String? zonaId, bool prepagada = false}) async =>
+  /// CU-022: ingreso por el QR de la reserva o por la placa; el servidor
+  /// asigna el espacio (CU-023) y decide si viene prepagada.
+  Future<Map<String, dynamic>> registrarIngreso(String eventoId,
+          {String? placa, String? codigoQr, String tipoVehiculo = 'AUTOMOVIL', String? zonaId}) async =>
       await _pedir('POST', '/parqueaderos/eventos/$eventoId/ingresos', {
-        'placa': placa,
+        if (placa != null) 'placa': placa,
+        if (codigoQr != null) 'codigoQr': codigoQr,
+        'tipoVehiculo': tipoVehiculo,
         if (zonaId != null) 'zonaId': zonaId,
-        'prepagada': prepagada,
       }) as Map<String, dynamic>;
 
-  /// CU-024: registra la salida y devuelve el cobro.
-  Future<Map<String, dynamic>> registrarSalida(String eventoId, String placa) async =>
-      await _pedir('POST', '/parqueaderos/eventos/$eventoId/salidas', {'placa': placa}) as Map<String, dynamic>;
+  /// CU-022 y CU-024: registra la salida, libera el espacio y devuelve el cobro.
+  Future<Map<String, dynamic>> registrarSalida(String eventoId, {String? placa, String? codigoQr}) async =>
+      await _pedir('POST', '/parqueaderos/eventos/$eventoId/salidas', {
+        if (placa != null) 'placa': placa,
+        if (codigoQr != null) 'codigoQr': codigoQr,
+      }) as Map<String, dynamic>;
+
+  /// CU-022, offline-first: lo que el punto de control guarda para validar sin red.
+  Future<Map<String, dynamic>> cacheParqueadero(String eventoId) async =>
+      await _pedir('GET', '/parqueaderos/eventos/$eventoId/cache') as Map<String, dynamic>;
+
+  /// CU-022, offline-first: envía lo registrado sin red; reenviar no duplica.
+  Future<Map<String, dynamic>> sincronizarParqueadero(String eventoId, List<Map<String, dynamic>> registros) async =>
+      await _pedir('POST', '/parqueaderos/eventos/$eventoId/sincronizacion', {'registros': registros}) as Map<String, dynamic>;
 }
 
 OperacionApi operacionApi = OperacionApi();

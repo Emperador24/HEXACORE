@@ -1,4 +1,5 @@
 import { EsquemaPostventa1790035200000 } from './migraciones/1790035200000-EsquemaPostventa';
+import { VersionEvento1794400000002 } from './migraciones/1794400000002-VersionEvento';
 import { opcionesEsquema, opcionesSesion, migracionesEnEsquema } from '../../../../compartido/persistencia/esquemas';
 import { CONEXION } from './conexion';
 import 'reflect-metadata';
@@ -30,7 +31,7 @@ export function opcionesDataSource(config: ConfiguracionServicio): DataSourceOpt
     password: config.postgres.contrasena,
     database: config.postgres.base,
     entities: ENTIDADES,
-    migrations: migracionesEnEsquema([EsquemaPostventa1790035200000], 'entradas-postventa'),
+    migrations: migracionesEnEsquema([EsquemaPostventa1790035200000, VersionEvento1794400000002], 'entradas-postventa'),
     migrationsTableName: 'migrations',
     // Nunca `synchronize`: el esquema lo gobiernan las migraciones, también en
     // desarrollo. Una tabla que aparece sola no deja constancia de por qué.

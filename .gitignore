@@ -58,3 +58,6 @@ cobertura-integracion.log
 # Respaldos privados de ensayos/datos; nunca se versionan.
 *.dump
 *.rdb
+
+# Servidor de producción: versión desplegada (la escribe App/infra/desplegar.sh).
+App/infra/.version-desplegada

@@ -63,6 +63,10 @@ export class EventoReferencia {
   @Column({ name: 'permite_reventa', type: 'boolean', default: true })
   permiteReventa: boolean;
 
+  /** Última `versionEvento` aplicada de los mensajes de Núcleo (CU-026); 0 si vino de las semillas. */
+  @Column({ name: 'version_evento', type: 'integer', default: 0 })
+  versionEvento: number;
+
   /** Cuándo se sincronizó por última vez con el servicio de Eventos. */
   @UpdateDateColumn({ name: 'actualizado_en', type: 'timestamptz' })
   actualizadoEn: Date;

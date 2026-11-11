@@ -6,10 +6,11 @@ import { ConfiguracionServicio, cargarConfiguracion } from '../config/configurac
 import { EventoReferencia } from './entidades/evento-referencia.entity';
 import { LocalidadEvento } from './entidades/localidad-evento.entity';
 import { EsquemaCatalogo1790208000000 } from './migraciones/1790208000000-EsquemaCatalogo';
+import { VersionEvento1794400000001 } from './migraciones/1794400000001-VersionEvento';
 
 export const ENTIDADES = [EventoReferencia, LocalidadEvento];
 
-export const MIGRACIONES = [EsquemaCatalogo1790208000000];
+export const MIGRACIONES = [EsquemaCatalogo1790208000000, VersionEvento1794400000001];
 
 export function opcionesDataSource(config: ConfiguracionServicio): DataSourceOptions & { name: string } {
   return {

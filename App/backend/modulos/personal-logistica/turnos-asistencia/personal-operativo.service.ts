@@ -83,12 +83,13 @@ export class PersonalOperativoService {
     horaInicio?: Date,
     horaFin?: Date,
     excluirTurnoId?: string,
+    turnos: Repository<Turno> = this.turnos,
   ): Promise<boolean> {
     if (!horaInicio || !horaFin) {
       // Sin ventana horaria (listado general), solo importa que exista.
       return true;
     }
-    const choque = await this.turnos.findOne({
+    const choque = await turnos.findOne({
       where: {
         empleadoId,
         estado: Not(EstadoTurno.CANCELADO),
@@ -159,69 +160,76 @@ export class PersonalOperativoService {
       );
     }
 
-    // Paso 4 + CU-017A: ¿tiene un choque de horario con otro turno?
-    const disponible = await this.estaDisponible(empleado.id, horaInicio, horaFin, excluirTurnoId);
-    if (!disponible) {
-      const sugerencia = await this.buscarDisponible(zona.rolRequerido, horaInicio, horaFin, empleado.id);
-      throw new ConflictException({
-        message: `${empleado.nombre} ya tiene un turno que se solapa con ese horario.`,
-        sugerencia,
-      });
-    }
-
-    // CU-017C: límite de horas por turno y diarias del empleado.
-    //
-    // Lo diario se mide contra los turnos que ya tiene **ese día**, no contra
-    // `horasTrabajadasTotales`, que es el acumulado de toda su vida laboral:
-    // usándolo, cualquiera que hubiera trabajado un par de turnos quedaba
-    // inasignable para siempre. Ver `horas-del-dia.ts`.
     const duracionHoras = (horaFin.getTime() - horaInicio.getTime()) / 3_600_000;
-    const yaAsignadas = await horasAsignadasEseDia(
-      this.turnos,
-      empleado.id,
-      horaInicio,
-      excluirTurnoId,
-    );
-    if (
-      duracionHoras > MAX_HORAS_POR_TURNO ||
-      yaAsignadas + duracionHoras > MAX_HORAS_DIARIAS_EMPLEADO
-    ) {
-      throw new BadRequestException(
-        `${empleado.nombre} superaría el límite de horas: ya tiene ${yaAsignadas.toFixed(1)} h ` +
-          `asignadas ese día y este turno suma ${duracionHoras.toFixed(1)} h ` +
-          `(máximo ${MAX_HORAS_DIARIAS_EMPLEADO} h diarias, ${MAX_HORAS_POR_TURNO} h por turno). ` +
-          'Selecciona otro empleado.',
-      );
-    }
-
-    let turno: Turno;
     let anterior: { empleadoId: string; horaInicio: Date; horaFin: Date } | null = null;
-    if (excluirTurnoId) {
-      // CU-017E / CU-007C: reasignación sobre un turno existente.
-      turno = (await this.turnos.findOneBy({ id: excluirTurnoId }))!;
-      anterior = { empleadoId: turno.empleadoId, horaInicio: turno.horaInicio, horaFin: turno.horaFin };
-      turno.empleado = empleado;
-      turno.empleadoId = empleado.id;
-      turno.horaInicio = horaInicio;
-      turno.horaFin = horaFin;
-      // Otra persona u otro horario es otra propuesta: vuelve a esperar
-      // respuesta. Y si el anterior la había rechazado, el puesto se reabre.
-      turno.confirmacion = ConfirmacionTurno.PENDIENTE;
-      turno.motivoRechazo = null;
-      turno.respondidoEn = null;
-      if (turno.estado === EstadoTurno.CANCELADO) turno.estado = EstadoTurno.ASIGNADO;
-    } else {
-      turno = this.turnos.create({
-        empleadoId: empleado.id,
-        eventoId: zona.eventoId,
-        zona: zona.nombre,
-        zonaEventoId: zona.id,
-        horaInicio,
-        horaFin,
-        estado: EstadoTurno.ASIGNADO,
-      });
-    }
     const guardado = await this.turnos.manager.transaction(async (m) => {
+      // Validar y guardar van en la misma transacción y con el empleado
+      // bloqueado: si no, dos asignaciones simultáneas al mismo empleado
+      // pasaban las dos la comprobación de choque y lo dejaban con dos turnos
+      // cruzados. El turno que se reasigna se bloquea antes que el empleado,
+      // en el mismo orden que la aprobación de un cambio (CU-008), para que
+      // las dos no se esperen mutuamente.
+      const turnosTx = m.getRepository(Turno);
+      const existente = excluirTurnoId
+        ? await turnosTx.findOne({ where: { id: excluirTurnoId }, lock: { mode: 'pessimistic_write' }, loadEagerRelations: false })
+        : null;
+      if (excluirTurnoId && !existente) throw new NotFoundException('Turno no encontrado.');
+      await m.findOne(Empleado, { where: { id: empleado.id }, lock: { mode: 'pessimistic_write' } });
+
+      // Paso 4 + CU-017A: ¿tiene un choque de horario con otro turno?
+      if (!(await this.estaDisponible(empleado.id, horaInicio, horaFin, excluirTurnoId, turnosTx))) {
+        const sugerencia = await this.buscarDisponible(zona.rolRequerido, horaInicio, horaFin, empleado.id);
+        throw new ConflictException({
+          message: `${empleado.nombre} ya tiene un turno que se solapa con ese horario.`,
+          sugerencia,
+        });
+      }
+
+      // CU-017C: límite de horas por turno y diarias del empleado.
+      //
+      // Lo diario se mide contra los turnos que ya tiene **ese día**, no contra
+      // `horasTrabajadasTotales`, que es el acumulado de toda su vida laboral:
+      // usándolo, cualquiera que hubiera trabajado un par de turnos quedaba
+      // inasignable para siempre. Ver `horas-del-dia.ts`.
+      const yaAsignadas = await horasAsignadasEseDia(turnosTx, empleado.id, horaInicio, excluirTurnoId);
+      if (
+        duracionHoras > MAX_HORAS_POR_TURNO ||
+        yaAsignadas + duracionHoras > MAX_HORAS_DIARIAS_EMPLEADO
+      ) {
+        throw new BadRequestException(
+          `${empleado.nombre} superaría el límite de horas: ya tiene ${yaAsignadas.toFixed(1)} h ` +
+            `asignadas ese día y este turno suma ${duracionHoras.toFixed(1)} h ` +
+            `(máximo ${MAX_HORAS_DIARIAS_EMPLEADO} h diarias, ${MAX_HORAS_POR_TURNO} h por turno). ` +
+            'Selecciona otro empleado.',
+        );
+      }
+
+      let turno: Turno;
+      if (existente) {
+        // CU-017E / CU-007C: reasignación sobre un turno existente.
+        turno = existente;
+        anterior = { empleadoId: turno.empleadoId, horaInicio: turno.horaInicio, horaFin: turno.horaFin };
+        turno.empleado = empleado;
+        turno.empleadoId = empleado.id;
+        turno.horaInicio = horaInicio;
+        turno.horaFin = horaFin;
+        // Otra persona u otro horario es otra propuesta: vuelve a esperar
+        // respuesta. Y si el anterior la había rechazado, el puesto se reabre.
+        turno.confirmacion = ConfirmacionTurno.PENDIENTE;
+        turno.motivoRechazo = null;
+        turno.respondidoEn = null;
+        if (turno.estado === EstadoTurno.CANCELADO) turno.estado = EstadoTurno.ASIGNADO;
+      } else {
+        turno = turnosTx.create({
+          empleadoId: empleado.id,
+          eventoId: zona.eventoId,
+          zona: zona.nombre,
+          zonaEventoId: zona.id,
+          horaInicio,
+          horaFin,
+          estado: EstadoTurno.ASIGNADO,
+        });
+      }
       const guardado = await m.save(turno);
       await auditar(m, {
         accion: anterior ? 'ASIGNACION_MODIFICADA' : 'PERSONAL_ASIGNADO',

@@ -9,7 +9,9 @@ export class ErrorCuenta extends Error {
   constructor(
     readonly codigo: string,
     mensaje: string,
-    readonly estado: number
+    readonly estado: number,
+    /** El cuerpo completo del error, para los que traen más que el mensaje (p. ej. zonas alternativas). */
+    readonly detalle: Record<string, unknown> | null = null
   ) {
     super(mensaje);
   }
@@ -318,7 +320,7 @@ export class AuthService {
       return new ErrorCuenta('SIN_CONEXION', SIN_CONEXION, 0);
     }
     const cuerpo = error.error as { codigo?: string; mensaje?: string; message?: string | string[] } | null;
-    if (cuerpo?.codigo) return new ErrorCuenta(cuerpo.codigo, cuerpo.mensaje ?? cuerpo.codigo, error.status);
+    if (cuerpo?.codigo) return new ErrorCuenta(cuerpo.codigo, cuerpo.mensaje ?? cuerpo.codigo, error.status, cuerpo as Record<string, unknown>);
     if (cuerpo?.message) {
       const texto = Array.isArray(cuerpo.message) ? cuerpo.message.join('\n') : cuerpo.message;
       return new ErrorCuenta('VALIDACION', texto, error.status);
