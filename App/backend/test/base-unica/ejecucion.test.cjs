@@ -34,7 +34,16 @@ test('datos conservados se consultan con login nuevo; instalación vacía conser
     const token=login.body.token;assert.equal((await api('/cuentas/perfil','GET',undefined,token)).body.id,f.cuentas.cliente);
     const personal=await db('identidad',async c=>(await c.query('SELECT email FROM usuarios WHERE id=$1',[f.cuentas.personal])).rows[0]);
     const sesionPersonal=await api('/sesiones','POST',{email:personal.email,contrasena:'EnsayoHexacore22!'});assert.equal(sesionPersonal.status,200);
-    const pedidos=await api('/pedidos/establecimientos/'+f.ids.local+'/pedidos','GET',undefined,sesionPersonal.body.token);assert.equal(pedidos.status,200);
+    const rutaPedidos='/pedidos/establecimientos/'+f.ids.local+'/pedidos';
+    // El corte original precede al vínculo CU-015. Primero se comprueba la
+    // guarda actual y luego se completa el fixture solo en la copia del ensayo.
+    assert.equal((await api(rutaPedidos,'GET',undefined,sesionPersonal.body.token)).status,403);
+    await db('alimentos',async c=>{
+      assert.equal((await c.query('SELECT current_database() b,current_schema() e')).rows[0].b,base);
+      const vinculo=await c.query('INSERT INTO personal_establecimiento(establecimiento_id,usuario_id,asignado_por) VALUES($1,$2,$3)',[f.ids.local,f.cuentas.personal,f.cuentas.admin]);
+      assert.equal(vinculo.rowCount,1);
+    });
+    const pedidos=await api(rutaPedidos,'GET',undefined,sesionPersonal.body.token);assert.equal(pedidos.status,200);
     const pedido=pedidos.body.find(p=>p.id===f.ids.pedidos[0]);assert.ok(pedido);assert.equal(pedido.total,'1150.25');assert.equal(pedido.moneda,'COP');
     assert.equal((await api('/sesiones/actual','DELETE',undefined,sesionPersonal.body.token)).status,200);
     assert.equal((await api('/compras/'+f.ids.compra,'GET',undefined,token)).status,200);

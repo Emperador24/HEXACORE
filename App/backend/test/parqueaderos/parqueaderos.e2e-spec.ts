@@ -407,6 +407,12 @@ describe('CU-021 a CU-025 · Parqueaderos (e2e)', () => {
 
   it('CU-022: el punto de control trabaja sin red con su caché y sincroniza después sin duplicar', async () => {
     await fijarTarifa(5000);
+    // La salida simulada precede al arranque del ensayo: necesita su propia
+    // tarifa histórica, distinta de la actual y sin depender de datos previos.
+    await parqueaderos.query(
+      `INSERT INTO tarifas (id, valor_hora, definida_por, vigente_desde, motivo)
+       VALUES ($1, 3000, $2, now() - interval '2 hours', 'Fixture de salida offline')`,
+      [randomUUID(), administrador.id]);
     const evento = await eventoEnCurso();
     const z = await zona(evento, 'Zona Offline', 5, 1);
     const conReserva = placa();
@@ -439,6 +445,7 @@ describe('CU-021 a CU-025 · Parqueaderos (e2e)', () => {
     // 65 min de permanencia → 2 h, calculadas con las horas del dispositivo y la tarifa vigente cuando salió.
     const [{ valor }] = await parqueaderos.query(
       `SELECT valor_hora::float AS valor FROM tarifas WHERE vigente_desde <= $1 ORDER BY vigente_desde DESC LIMIT 1`, [lote[0].ocurridoEn]);
+    expect(valor).toBe(3000);
     expect(por(lote[0].id)).toMatchObject({ resultado: 'APLICADO', cobro: { horas: 2, valorHora: valor, monto: 2 * valor } });
     const [estancia] = await parqueaderos.query(`SELECT ingreso_en, salida_en FROM estancias WHERE registro_local_id = $1`, [lote[1].id]);
     expect(Math.abs(new Date(estancia.ingreso_en).getTime() - Date.parse(lote[1].ocurridoEn))).toBeLessThan(1000);

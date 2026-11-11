@@ -83,9 +83,28 @@ Se diagnosticaron otros dos fallos antes de publicar la siguiente corrección:
   histórico no recibe ese contexto y conserva su comportamiento. No se cambian
   el HTTP esperado, las aserciones, los límites ni los reintentos.
 
-La siguiente CI debe verificar la convivencia y los flujos completos sobre copia
-transferida e instalación nueva en sus runners aislados, sin usar la referencia
-A/B del Mac. No se relanzó la ejecución fallida. Logs locales privados en
+La segunda ejecución,
+[43036251973](https://github.com/Emperador24/HEXACORE/actions/runs/43036251973),
+SHA **785d701**, volvió a aprobar **6/8 trabajos**: incluye autenticación,
+**983/983 unitarias** y la convivencia de Logística con nombres e historiales
+exactos. El escenario común completó **46 comprobaciones HTTP/proyecciones**
+sobre la copia transferida; la conciliación histórica aprobó **12/12**. Quedaron
+dos incompatibilidades de fixtures, diagnosticadas antes de volver a publicar:
+
+- **403 del lector Personal conservado:** el corte precede al vínculo CU-015.
+  La prueba comprueba primero el rechazo y completa el vínculo únicamente en la
+  copia, conservando la referencia y la lectura del pedido original (suite
+  entonces **4/5**). No se elimina la guarda ni se cambia el 200 esperado.
+- **Tarifa offline inexistente:** la salida simulada ocurre cinco minutos antes
+  del ensayo y sus tarifas nacían al iniciarlo (Núcleo **121/122**, segunda pasada
+  aún no ejecutada). Ahora el fixture inserta una tarifa anterior de 3000 y
+  comprueba que se usa esa, mientras la caché actual sigue valiendo 5000. Se
+  conservan cobro de dos horas, sincronización e idempotencia. No se cambia
+  código productivo, tiempos ni reintentos de Parqueaderos.
+
+Las comprobaciones completas sobre copia transferida e instalación nueva siguen
+en los runners aislados, sin usar la referencia A/B del Mac. No se relanzaron
+ejecuciones fallidas. Logs locales privados en
 `App/e2e/.evidencia/integracion-ci-2026-11-11T13-52-03Z/`.
 
 **La aceptación conjunta local sigue pendiente: 10/13 automática y 12/13
