@@ -1,4 +1,5 @@
 const { base: basePruebas, opcionesPg } = require('../base-unica/conexiones.cjs');
+const { prepararEvento } = require('../base-unica/preparar-evento.cjs');
 const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const { randomUUID, createHmac } = require('node:crypto');
@@ -40,6 +41,7 @@ before(async () => {
     }
     await db.identidad.query("INSERT INTO usuarios(id,nombre,email,hash_contrasena,estado,verificado_en) VALUES($1,'Convivencia',$2,$3,'ACTIVA',now())", [id, email, await cifrarContrasena(contrasena)]);
     await db.identidad.query("INSERT INTO usuarios_roles(usuario_id,rol_id) SELECT $1,id FROM roles WHERE nombre='Cliente'", [id]);
+    await prepararEvento(evento, id);
     await db.alimentos.query("INSERT INTO eventos_referencia(evento_id,nombre,disponible) VALUES($1,'Convivencia',true)", [evento]);
     await db.alimentos.query("INSERT INTO establecimientos(id,evento_id,nombre,estado,punto_entrega) VALUES($1,$2,'Local convivencia','DISPONIBLE','Prueba aislada')", [local, evento]);
     await db.alimentos.query("INSERT INTO productos(id,establecimiento_id,nombre,precio,activo,cantidad_inventario) VALUES($1,$2,'Producto convivencia',1150.25,true,8)", [producto, local]);

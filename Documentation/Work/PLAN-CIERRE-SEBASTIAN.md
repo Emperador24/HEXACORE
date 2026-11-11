@@ -102,6 +102,20 @@ dos incompatibilidades de fixtures, diagnosticadas antes de volver a publicar:
   conservan cobro de dos horas, sincronización e idempotencia. No se cambia
   código productivo, tiempos ni reintentos de Parqueaderos.
 
+En la tercera ejecución,
+[43037594145](https://github.com/Emperador24/HEXACORE/actions/runs/43037594145),
+SHA **671d604**, el escenario común mantuvo sus 46 comprobaciones y la lectura
+de datos conservados aprobó **5/5**, incluido rechazo previo y vínculo posterior
+del Personal. El siguiente paso financiero tenía otro fixture que solo creaba
+la referencia antigua del evento: **404** en checkout, con tres fallos derivados
+de ese primer fallo (**1/5**). La preparación actual de eventos se comparte
+ahora entre los dos fixtures. No se tocan contratos, cancelaciones ni F12.
+Núcleo aprobó **122/122** en su primera pasada; la segunda detectó que una
+tarifa anterior podía imponerse a la del fixture (**121/122**). El lote usa ahora
+un único instante y la tarifa propia empieza exactamente en la salida simulada,
+conservando la comprobación de 3000 frente a los 5000 actuales. Se mantiene la
+doble pasada sobre la misma base, sin limpieza de tarifas previas ni reintentos.
+
 Las comprobaciones completas sobre copia transferida e instalación nueva siguen
 en los runners aislados, sin usar la referencia A/B del Mac. No se relanzaron
 ejecuciones fallidas. Logs locales privados en
