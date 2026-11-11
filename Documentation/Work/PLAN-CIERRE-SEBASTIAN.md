@@ -7,6 +7,11 @@ sin merge ni auto-merge. El PR #48 ya estaba integrado. Se comprobaron las remot
 `origin/develop=6e5e7fa` (incluye #47 de Samuel), `origin/feature/samuel=5c641a8`
 y la rama propia publicada antes de empezar en `ab6ae56`.
 
+**CI funcional final aprobada: 8/8 trabajos**, ejecución
+[43045591370](https://github.com/Emperador24/HEXACORE/actions/runs/43045591370),
+SHA **e51db8748740d957d2536ca6f4ae973d42ab4070**. La aceptación conjunta local
+permanece pendiente: **10/13 automática y 12/13 visible; CU-028 bloqueado**.
+
 Primero se revisaron y conservaron los doce archivos locales del demo en
 **9707569**, sin incluir `.env.local`, claves, trazas ni informes privados.
 Después se integró `origin/develop` mediante el merge **5131b1e**, sin conflictos,
@@ -57,6 +62,7 @@ de 18. Las 13 pruebas de esquemas comprueban ese registro y las huellas conserva
 | Archivo histórico, sin Docker | Tres archivos idénticos a be579614; aprobado |
 | Tipos E2E y configuración/fronteras | Aprobados |
 | Consumidor de eventos: entrega, confirmación y DLQ | **15/15** |
+| Composición AMQP entre contextos V8 y controles negativos, sin recursos | **2/2** |
 
 Se reutiliza la verificación del demo ya realizada: CU-029 visual completo
 **1/1**, ocho pausas medidas de cinco segundos y slowMo en los contextos reales,
@@ -158,6 +164,36 @@ exigencia de una conexión y se rechazan duplicados, colas ajenas y ausencias.
 Una regresión con `node:vm` reproduce el contexto externo sin Docker y cubre los
 rechazos; **2/2 locales**, Node 22.22.3. Se incorpora antes de crear recursos.
 No se amplían esperas.
+
+### Resultado funcional comprobado de la entrega
+
+La ejecución **43045591370** aprobó los ocho trabajos: backend real, integración
+de autenticación, transferencia histórica, ambos portales, Flutter, gateway y
+guardas/artefactos. Los logs de Actions confirman:
+
+| Backend real de GitHub Actions | Resultado exacto |
+|---|---|
+| Regresión AMQP entre contextos V8 | **2/2** |
+| Unitarias con Redis | **983/983; 71/71 suites** |
+| Boletería, incluidos nueve consumidores y catorce migraciones propias | **23/23 en cada una de dos pasadas; 2/2 suites** |
+| Núcleo, incluida convivencia de Logística | **122/122 en cada una de dos pasadas; 11/11 suites** |
+| Contratos del Trabajador / correo de Identidad al simulador | **20/20 y 3/3** |
+| Contratos financieros/webhook | **13/13 en cada una de dos pasadas** |
+| Libro común, convivencia y reinicio | **5/5** |
+| Protección de manifiestos y resúmenes publicados | **7/7** |
+| Tipos, fronteras, imágenes, salud y smoke de programas/gateway | Aprobados |
+
+La transferencia confirmó también los resultados de su tabla anterior:
+procedencias **3/3**, conciliación histórica **12/12**, ocho respaldos/18 fuentes,
+once conexiones/historiales y 34 migraciones actuales, instalación vacía con
+84 tablas, **46 comprobaciones por base**, lectura **5/5 por base** y convivencia
+financiera **5/5 por base**. No se cambió ninguna fuente ni procedencia histórica.
+
+Este cierre documental posterior solo modifica el plan; las fuentes funcionales
+validadas son las de **e51db87**. Las comprobaciones automáticas posteriores de
+ese cierre se consultan en [Checks del PR #49](https://github.com/Emperador24/HEXACORE/pull/49/checks).
+No se repiten recorridos Playwright locales por esta actualización documental.
+
 Las verificaciones usan los runners aislados, sin usar la referencia A/B del
 Mac. No se relanzaron ejecuciones fallidas. Logs locales privados en
 `App/e2e/.evidencia/integracion-ci-2026-11-11T13-52-03Z/`.
@@ -166,7 +202,7 @@ Mac. No se relanzaron ejecuciones fallidas. Logs locales privados en
 visible**, correspondientes al cierre del 8 de noviembre. No se convierten en
 verde por una CI aprobada, por tipos/unitarias ni por el demo. CU-028 continúa
 sin implementación; no se añaden casos de uso, CU-011F, F12 o seguridad global.
-No se detuvo Redash ni otro proyecto, no se borraron volúmenes ni se repitieron
+No se detuvo Redash ni otro proyecto, no se borraron volúmenes locales ni se repitieron
 semillas locales. Las verificaciones locales usaron proveedores simulados.
 
 ## Estabilidad conjunta — 8 de noviembre de 2026
