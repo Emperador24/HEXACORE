@@ -1,5 +1,6 @@
 import { expect, Page, test } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
+import { presentar } from '../presentacion';
 import { adminURL, clienteURL, comprobarAislamiento, crearEvento, gateway, loginAPI, loginUI, nucleo, productoPropio, sql } from './entorno';
 
 test.beforeAll(() => comprobarAislamiento());
@@ -33,6 +34,7 @@ test('CU-015 por portales: registrar, persistir, editar, validar y operar; regre
     await expect(page.getByRole('status')).toHaveText('Establecimiento registrado.');
     await page.reload();
     await expect(page.getByRole('row').filter({ hasText: nombre })).toContainText('Recibe pedidos');
+    await presentar(page, 'Organizador: establecimiento registrado y persistido');
   });
 
   await test.step('Duplicado e información inválida se rechazan sin mutar el registro', async () => {
@@ -40,10 +42,12 @@ test('CU-015 por portales: registrar, persistir, editar, validar y operar; regre
     await llenar(page, `  ${nombre.toUpperCase()}  `);
     await page.getByRole('button', { name: 'Guardar establecimiento' }).click();
     await expect(page.getByRole('alert')).toContainText('ya está registrado');
+    await presentar(page, 'Organizador: rechazo del establecimiento duplicado');
     await llenar(page, `${nombre} inválido`);
     await page.getByLabel('Zona horaria', { exact: true }).fill('Planeta/Inexistente');
     await page.getByRole('button', { name: 'Guardar establecimiento' }).click();
     await expect(page.getByRole('alert')).toContainText('zona horaria IANA');
+    await presentar(page, 'Organizador: validación de la zona horaria');
     await page.getByRole('button', { name: 'Cancelar', exact: true }).click();
     expect(sql(`SELECT count(*) FROM alimentos.establecimientos WHERE evento_id='${evento.id}';`)).toBe('1');
   });
@@ -58,6 +62,7 @@ test('CU-015 por portales: registrar, persistir, editar, validar y operar; regre
     await page.reload();
     await expect(page.getByRole('row').filter({ hasText: editado })).toContainText('Contacto actualizado CU015');
     await expect(page.getByRole('row').filter({ hasText: editado })).toContainText('Puerta actualizada CU015');
+    await presentar(page, 'Organizador: edición conservada después de recargar');
   });
 
   const productoId = await productoPropio(request, localId, organizador.token);
@@ -69,6 +74,7 @@ test('CU-015 por portales: registrar, persistir, editar, validar y operar; regre
       await comprador.goto(`${clienteURL}/pedidos?eventoId=${evento.id}`);
       await comprador.getByRole('link').filter({ hasText: editado }).click();
       await comprador.getByRole('button', { name: 'Agregar Producto CU015', exact: true }).click();
+      await presentar(comprador, 'Cliente: menú y carrito antes del checkout');
       const checkout = comprador.waitForResponse(r => r.url().endsWith('/pedidos/checkout'));
       await comprador.getByRole('button', { name: 'Continuar', exact: true }).click();
       const creado = await checkout; expect(creado.status()).toBe(201); pedidoId = (await creado.json()).id;
@@ -76,6 +82,7 @@ test('CU-015 por portales: registrar, persistir, editar, validar y operar; regre
       await expect(comprador.getByRole('heading', { name: '¡Tu pedido está confirmado!' })).toBeVisible();
       await expect(comprador.getByAltText('Código QR del pedido confirmado')).toBeVisible();
       expect(sql(`SELECT estado||'|'||total||'|'||moneda||'|'||(codigo_qr IS NOT NULL) FROM alimentos.pedidos WHERE id='${pedidoId}';`)).toBe('CONFIRMADO|1000.00|COP|true');
+      await presentar(comprador, 'Cliente: pago confirmado y QR disponible');
     });
 
     const historial = sql(`SELECT row_to_json(p) FROM alimentos.pedidos p WHERE id='${pedidoId}';`);
@@ -83,14 +90,19 @@ test('CU-015 por portales: registrar, persistir, editar, validar y operar; regre
       await comprador.goto(`${clienteURL}/pedidos?eventoId=${evento.id}`);
       await comprador.getByRole('link').filter({ hasText: editado }).click();
       await comprador.getByRole('button', { name: 'Agregar Producto CU015', exact: true }).click();
+      await presentar(page, 'Organizador: deshabilitar el establecimiento con un menú cliente abierto');
       await page.getByRole('row').filter({ hasText: editado }).getByRole('button', { name: 'Deshabilitar', exact: true }).click();
       await expect(page.getByRole('status')).toContainText('deshabilitado');
+      await presentar(page, 'Organizador: establecimiento deshabilitado');
+      await presentar(comprador, 'Cliente: intentar checkout desde el menú anterior');
       const rechazo = comprador.waitForResponse(r => r.url().endsWith('/pedidos/checkout'));
       await comprador.getByRole('button', { name: 'Continuar', exact: true }).click();
       expect((await rechazo).status()).toBe(409);
       await expect(comprador.getByRole('alert')).toContainText('no está disponible');
+      await presentar(comprador, 'Cliente: checkout rechazado por cierre');
       await comprador.goto(`${clienteURL}/pedidos?eventoId=${evento.id}`);
       await expect(comprador.getByText('Aún no hay establecimientos disponibles')).toBeVisible();
+      await presentar(comprador, 'Cliente: catálogo sin establecimientos disponibles');
       await page.reload();
       await expect(page.getByRole('row').filter({ hasText: editado })).toContainText('DESHABILITADO');
       expect(sql(`SELECT row_to_json(p) FROM alimentos.pedidos p WHERE id='${pedidoId}';`)).toBe(historial);
@@ -98,10 +110,13 @@ test('CU-015 por portales: registrar, persistir, editar, validar y operar; regre
 
     await test.step('Habilitar recupera el catálogo; un horario cerrado vuelve a bloquearlo', async () => {
       const fila = page.getByRole('row').filter({ hasText: editado });
+      await presentar(page, 'Organizador: volver a habilitar el establecimiento');
       await fila.getByRole('button', { name: 'Habilitar', exact: true }).click();
       await expect(page.getByRole('status')).toContainText('habilitado');
       await comprador.reload();
       await expect(comprador.getByRole('link').filter({ hasText: editado })).toBeVisible();
+      await presentar(comprador, 'Cliente: catálogo recuperado al habilitar');
+      await presentar(page, 'Organizador: configurar un horario cerrado');
       await fila.getByRole('button', { name: 'Editar', exact: true }).click();
       // Ventana de un minuto en UTC, doce horas después de ahora: siempre cerrada al ejecutar.
       const abre = new Date(Date.now() + 43_200_000).toISOString().slice(11, 16);
@@ -114,6 +129,7 @@ test('CU-015 por portales: registrar, persistir, editar, validar y operar; regre
       await page.reload();
       await expect(fila).toContainText(`${abre} – ${cierra}`);
       await expect(fila).toContainText('No recibe pedidos');
+      await presentar(page, 'Organizador: horario cerrado persistido');
       await comprador.reload();
       await expect(comprador.getByText('Aún no hay establecimientos disponibles')).toBeVisible();
       const sesion = await loginAPI(request, 'cliente@hexacore.com');
@@ -123,6 +139,7 @@ test('CU-015 por portales: registrar, persistir, editar, validar y operar; regre
       expect(intento.status()).toBe(409);
       expect(sql(`SELECT row_to_json(p) FROM alimentos.pedidos p WHERE id='${pedidoId}';`)).toBe(historial);
       expect(sql(`SELECT cantidad_inventario FROM alimentos.productos WHERE id='${productoId}';`)).toBe('4');
+      await presentar(comprador, 'Cliente: horario cerrado y pedido pagado conservado');
     });
     await page.screenshot({ path: info.outputPath('administracion-cu015.png'), fullPage: true });
   } finally { await cliente.close(); }

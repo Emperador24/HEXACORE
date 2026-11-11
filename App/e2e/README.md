@@ -1,5 +1,93 @@
 # Demostraciones CU-012–015, CU-027 y CU-029; CU-028 bloqueado
 
+## Demo visual con velocidad configurable
+
+Desde la raíz, abre el navegador con **800 ms entre operaciones de Playwright**
+y **cinco segundos para leer las etapas relevantes**:
+
+```bash
+npm --prefix App/e2e run demo
+```
+
+El modo demo carga `App/e2e/.env.local` si existe, incluida la `CU015_CLAVE_DEMO`
+configurada localmente; las variables ya exportadas tienen prioridad. El archivo
+es privado e ignorado por Git. No cambia contraseñas ni vuelve a sembrar datos.
+Requiere el entorno CU-015 existente activo y Chromium instalado.
+
+Para cambiar la velocidad o elegir un recorrido visual:
+
+```bash
+CU015_DEMO_MS=2000 npm --prefix App/e2e run demo
+CU015_DEMO_MS=2000 npm --prefix App/e2e run demo -- cu015 --grep 'por portales'
+CU015_DEMO_MS=2000 CU015_DEMO_PAUSA_MS=8000 npm --prefix App/e2e run demo -- cu015 --grep 'por portales'
+```
+
+`CU015_DEMO_MS` y `CU015_DEMO_PAUSA_MS` aceptan enteros desde cero; valores
+inválidos fallan explícitamente. El primero configura `slowMo` al lanzar el
+navegador; los contextos creados explícitamente con `browser.newContext()`
+comparten ese navegador y esa demora. Ningún recorrido crea un navegador con
+`launch()` independiente. Las llamadas API/SQL no reciben esa pausa.
+Sin filtros se descubren los mismos trece casos implementados; algunos son
+comprobaciones API sin interfaz visible.
+
+`slowMo` separa operaciones, pero no mantiene una pantalla después de una
+respuesta o antes de cambiar de actor. `presentar()` añade puntos de lectura
+en los recorridos CU-012/013/014/015/027/029 y sus accesos: trae la página activa
+al frente, muestra la etapa en el informe y espera `CU015_DEMO_PAUSA_MS` (5.000 por
+defecto). Permite leer registro/validaciones, edición, compra/pago/QR, preparación,
+entrega, cuentas y recintos. En normal/CI la función retorna sin enfocar páginas,
+crear etapas, esperar ni adjuntar datos. No modifica las aserciones ni reintenta
+peticiones fallidas; los tiempos y vencimientos reales del negocio siguen activos.
+
+Este modo usa una configuración separada y se rechaza en CI. Mantiene un
+trabajador, cero reintentos y 15 s por aserción. **Solo demo** dispone de hasta
+quince minutos totales por caso para la presentación; una acción/navegación
+individual sigue limitada a 120 s. No se amplían las esperas HTTP del producto.
+Normal/CI conservan 120 s totales y su velocidad original. Los errores HTTP,
+aserciones fallidas y timeouts conservan la salida de error. Elegir otro ritmo
+o recorrido para una presentación no cambia la aceptación registrada.
+
+Sus resultados e informes quedan separados en una sola carpeta
+`.evidencia/demo-FECHA/` por ejecución, con marca DEMO y trazas de todos los
+contextos incluso cuando pasan. Cada punto de lectura adjunta contexto/navegador
+y duración, sin URL, credenciales ni QR en esos metadatos. Las trazas completas
+siguen siendo privadas. No se sobrescriben los informes de aceptación. Los comandos normales,
+`:visible`, CI y el diagnóstico CU-028 de `test:completo` mantienen su velocidad
+y límites actuales. **Un demo aprobado no sustituye la aceptación automática ni
+declara aprobado CU-028.**
+
+### Verificación de presentación — 11 de noviembre de 2026
+
+Se reprodujo `CU015_DEMO_MS=2000 npm --prefix App/e2e run demo`. La traza de
+CU-012 contiene el contexto de la fixture y los dos `browser.newContext()`
+explícitos, con separaciones de aproximadamente dos segundos entre acciones.
+`slowMo` ya llegaba a los tres: faltaban pausas para leer las etapas y cambiar
+el foco entre actores. CU-012 visual agotó los 120 s de la configuración demo
+anterior. Se interrumpió esa reproducción después de conservar los primeros
+fallos (salida 130); no se presenta como un conjunto completo.
+
+Comprobaciones posteriores, con las mismas operaciones y aserciones de negocio:
+
+| Comprobación | Resultado |
+|---|---|
+| CU-015 normal, recorrido visual completo | **1/1**, 14,3 s; ninguna etapa demo ejecutada |
+| Primer CU-015 demo, 2.000/5.000 ms | Falló con **500 al vincular Personal**; SELECT/57014 registrado a las 13:19:41 UTC |
+| Segundo CU-015 demo, 2.000/5.000 ms | Falló al seleccionar evento: GET `/eventos` abortado tras 14.962 ms; se conserva el timeout del selector |
+| CU-029 demo, recorrido visual completo, 2.000/5.000 ms | **1/1**, 2,1 min; registro, zonas, plano, edición persistida, protección de cupos y confirmación de impacto |
+| Lectura real en CU-029 | **Ocho etapas**, 5.001–5.004 ms cada una; 27 acciones con intervalo mínimo 2.014 ms |
+| Tipos y controles de configuración | Aprobados; normal/CI, valores por defecto, 2.000 ms, pausa 8.000 ms, cero y rechazo de valores inválidos/CI |
+
+Evidencias privadas de los recorridos: `.evidencia/demo-reproduccion-2026-11-11T13-07-53Z/`,
+`demo-cu015-negocio-2026-11-11T13-17-09Z/`,
+`demo-normal-cu015-2026-11-11T13-21-40Z/`,
+`demo-cu015-negocio-2-2026-11-11T13-23-06Z/` y
+`demo-cu029-negocio-2026-11-11T13-28-33Z/`. Cada log indica su informe DEMO;
+el aprobado quedó en `demo-2026-11-11T13-28-34-062Z/` con captura y traza completas.
+No se repitieron semillas ni se alteraron contraseñas. No hay reintentos nuevos
+para ocultar esos fallos. El aprobado de CU-029 verifica la presentación con
+negocio real y no convierte los fallos CU-015 en aprobaciones ni actualiza la
+aceptación conjunta histórica que se conserva debajo.
+
 ## Resultado vigente: estabilidad conjunta, 8 de noviembre de 2026
 
 **Los trece todavía no aprobaron conjuntamente.** Último automático **10/13,
