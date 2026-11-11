@@ -1,5 +1,87 @@
 # Cierre de Alimentos — Sebastián
 
+## Recuperación de Redash con CU-015 detenido — 11 de noviembre de 2026
+
+**Redash accesible: `/ping` y `/login` HTTP 200. Quedan activos sus siete
+contenedores y detenido únicamente `hexacore-cu015-sebastian`.** No se volvió
+a ejecutar aceptación: se conservan **13/13 automático y 13/13 visible**,
+obtenidos anteriormente con Redash detenido. Esta recuperación no demuestra
+que ambos proyectos puedan funcionar a la vez con la capacidad actual.
+
+Se ejecutó **`./App/infra/cu015.sh parar`**, con las guardas del perfil y el
+bloqueo existentes; salida **0**, sin modificar el script. Los once servicios
+propios terminaron entre **21:35:38.380 y 21:35:42.744 UTC**. Núcleo, Boletería y
+Trabajador salieron con **143**, el cierre SIGTERM previsto; los ocho restantes
+con **0**. Sin OOM/SIGKILL propios. La preparación anterior siguió terminada con
+0, sin volver a ejecutarse. Se conservan los doce contenedores propios y los
+siete de Redash, sus IDs, imágenes, configuración y montajes/volúmenes.
+No hubo reinicios manuales de Redash, cambios de contraseñas, imágenes,
+dependencias, recursos globales de Docker ni intervención sobre otros proyectos.
+
+### Recursos y distinción de OOM
+
+Mismo presupuesto Docker: **3.053.772.800 bytes, 8 vCPU**. Las mediciones de VM
+se obtuvieron desde el Redis de Redash, sin arrancar proveedores de HEXACORE.
+
+| Medición UTC | Memoria disponible VM, MiB | Swap libre VM, MiB | Memoria PSI some / full avg10, % |
+|---|---:|---:|---:|
+| 21:35:25.668, antes de parar CU-015 | 126,59 | 0,15 | 54,04 / 43,11 |
+| 21:36:32.568, CU-015 detenido | 284,52 | 0,54 | 0,23 / 0,19 |
+| 21:40:43.518, estado de entrega | 282,43 | 2,68 | 0,01 / 0,01 |
+
+Swap total VM: aproximadamente **1.024 MiB**; no se vació ni reconfiguró.
+El swap usado de macOS varió de **2.756,56 a 2.812,69 MiB**; no se confunde
+con memoria o swap liberados en la VM. La memoria disponible medida aumentó
+**157,93 MiB** inmediatamente después de parar CU-015; la presión descendió.
+
+Las cuatro marcas `State.OOMKilled=true` de server, scheduled_worker,
+adhoc_worker y worker **ya existían al inicio**. Sus contadores cgroup
+`oom_kill` fueron respectivamente **43, 79, 72 y 86**, sin incremento entre
+las mediciones inicial, posterior a la parada y final. No basta esa marca
+persistente para declarar un OOM nuevo.
+
+Sí se conservan eventos recientes diferenciados: scheduled_worker tuvo un
+evento OOM a las **21:35:23 UTC**, antes de la primera medición; scheduler tuvo
+un OOM/salida **137 a las 21:35:36 UTC**, antes de terminar la parada de CU-015.
+Docker lo arrancó automáticamente a las **21:35:38 UTC**, pasando de **106 a
+107 reinicios**. Su cgroup se reinició con el proceso: contador 0 y marca OOM
+falsa posteriores no borran la evidencia del evento anterior.
+
+Desde la medición con CU-015 detenido, **21:36:32.568–21:40:43.518 UTC
+(250,949 s)**, no se registraron eventos OOM, muertes, arranques o reinicios
+nuevos de Redash, ni SIGKILL/tracebacks en sus logs recogidos. Los siete estaban
+`running`; scheduler seguía en 107 reinicios. Se revisaron los logs de cada
+servicio y no se justificó ningún reinicio manual. Esta ventana acotada no
+garantiza estabilidad indefinida con el swap aún muy ocupado.
+
+### Comprobaciones de recuperación
+
+Primero PostgreSQL: `pg_isready` y **`SELECT 1`**, salida 0. Redis: **`PONG`**,
+salida 0. Se usó la configuración existente en privado, sin mostrar claves ni
+cambiar cuentas. Una primera sonda SQL había pasado un usuario vacío; se
+corrigió únicamente esa invocación usando el valor existente/predeterminado,
+sin interpretar ese error del comando como fallo de PostgreSQL.
+
+Comprobación HTTP **21:37:26.124–21:37:26.634 UTC**, sin autenticarse ni
+modificar datos:
+
+- **GET `/ping`: 200, 147 ms.**
+- **GET `/login`: 200, 353 ms**, formulario de correo/contraseña presente.
+- **GET `/`: redirige a `/login`, termina en 200, 10 ms.**
+
+Estado entregado: **Redash encendido y accesible; CU-015 detenido con datos
+conservados**. Otros proyectos se dejaron sin intervención; un contenedor
+ajeno ya reiniciaba automáticamente y no se atribuye su actividad a una
+operación nuestra. No se añade código, cancelaciones ni Seguridad.
+
+Guía para alternar los proyectos y reanudar los mismos contenedores sin builds,
+semillas ni volúmenes nuevos:
+[OPERACION-LOCAL-REDASH-HEXACORE.md](OPERACION-LOCAL-REDASH-HEXACORE.md).
+Evidencia privada e ignorada por Git:
+`App/e2e/.evidencia/recuperacion-redash-2026-11-11T21-35-22Z/` (estados,
+contadores, eventos, logs y HTTP). No se publica configuración, claves ni HTML
+privado. Los resultados anteriores se conservan íntegros debajo.
+
 ## Comparación actual con Redash detenido — 11 de noviembre de 2026
 
 **Aceptación de los 13 recorridos implementados: automático normal 13/13 y

@@ -1,5 +1,11 @@
 # Demostraciones CU-012–015, CU-027 y CU-029; CU-028 bloqueado
 
+**Estado posterior, 11/11 a las 21:40 UTC:** Redash recuperado (`/ping` y
+`/login` HTTP 200), siete contenedores activos; CU-015 detenido con datos
+conservados. No se repitieron los conjuntos 13/13. Guía de alternancia sin
+reconstruir ni resembrar:
+[OPERACION-LOCAL-REDASH-HEXACORE.md](../../Documentation/Work/OPERACION-LOCAL-REDASH-HEXACORE.md).
+
 ## Aceptación local actual con Redash detenido — 11 de noviembre de 2026
 
 **13/13 automático normal y 13/13 visible normal**, una ejecución completa de
