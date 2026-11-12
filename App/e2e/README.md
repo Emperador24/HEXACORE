@@ -37,6 +37,14 @@ publica las correcciones de instalación/lectura vacía y su documentación; con
 esta aceptación sin repetir los recorridos. CI previa e4310a5: **6/8**, con los
 dos fallos de instalación diagnosticados en el plan. La CI nueva es independiente.
 
+PR #50, bd40eaf: CI **7/8**, instalación/transferencia corregidas aprobadas;
+Flutter **78/78**, unitarias backend **1.010/1.010**, Boletería **23/23 dos veces**.
+Falló la primera pasada Núcleo **121/122** por cierre SIGTERM que excedió sus
+5 s; no se ejecutó la segunda. Causa raíz aún no aislada, sin atribuirla al Mac
+o relajar tiempos; hace falta observar hooks/handles en ese control. El registro
+documental posterior no sustituye ese resultado. La aceptación local **16/16
+por modalidad** sigue separada; no se declara CI remota verde.
+
 Estado restaurado: **HEXACORE detenido, Redash siete running** con sus datos,
 pero `/ping` y `/login` no recuperados por presión/OOM nuevos. PostgreSQL y Redis
 responden; el responsable debe revisar capacidad. No repetir ciclos de reinicio.

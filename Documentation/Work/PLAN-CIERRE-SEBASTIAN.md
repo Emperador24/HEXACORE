@@ -170,6 +170,41 @@ a certificar disponibilidad HTTP.
 
 ### Hitos y pendientes
 
+**CI del nuevo PR #50, fuente bd40eaf:**
+[43133728869](https://github.com/Emperador24/HEXACORE/actions/runs/43133728869)
+terminó **7/8 trabajos aprobados**. Instalación demo, transferencia histórica y
+lector vacío corregidos aprobaron con SQL real; este último confirmó 85 tablas,
+35 historiales y 18 procedencias completas. Flutter **78/78** y analyze sin
+incidencias; unitarias backend **1.010/1.010 en 74 suites**; Boletería **23/23 en
+cada una de sus dos pasadas**. Los dos portales, gateway y guardas aprobaron.
+
+Falló otro control: primera pasada de Núcleo **121/122, 10/11 suites**; la
+segunda no se ejecutó al fallar la primera. En CU-011, `SIGTERM cierra el único
+proceso…`, el hijo no terminó dentro de los **5 s existentes** y el arnés lo
+cerró con SIGKILL. Ventana del hijo: arranque **01:24:12–13 UTC**, solicitud de
+cierre **01:24:17**, fallo **01:24:22**. Antes del bloqueo registró «Sondeo de
+reservas detenido», «Consumidor de logística detenido», «Outbox Eventos
+detenido» y «Consumos AMQP detenidos; pendientes=0». No aparece después un error
+SQL/DNS ni un hook concreto responsable en su log. Los errores SQL de unicidad y
+los cierres AMQP forzados anteriores pertenecen a negativos de otras pruebas;
+no se usan como explicación de este cierre. No se atribuye al Redash de este Mac.
+
+**Causa inmediata conocida: cierre excedió 5 s; causa raíz y clasificación
+producto/test/entorno aún no aisladas.** Los hooks, main y el test CU-011 son
+idénticos entre e4310a5 y bd40eaf; e4310a5 aprobó sus dos pasadas. Ese contraste
+no demuestra que sea solo fluctuación del runner ni exculpa el cierre. No se
+relajó el límite, ocultó el caso, cambió producto o reejecutó para obtener verde.
+Evidencia privada: `ci-130903896238-privado.log` junto a los informes de esta
+entrega. Siguiente diagnóstico concreto: instrumentar por fase el cierre del
+hijo (hooks, cierre HTTP/PG/Redis/AMQP y handles pendientes), y ejecutar solo ese
+control con los mismos 5 s. Sin esa observabilidad no hay una corrección causal
+demostrada para aplicar. **No se declara CI verde ni disponibilidad global.**
+
+Este registro es documental: no cambia las fuentes de aplicación aceptadas ni
+requiere otros recorridos. El push inicia la CI automática habitual; no se
+solicita un rerun manual ni se sustituye el resultado 7/8 por una ejecución
+documental posterior. Su estado se comunica en el PR por separado.
+
 **Cambio remoto durante la entrega:** PR #49 fue integrado externamente a las
 **01:05:46 UTC del 12/11**, hasta **e4310a5**. El fetch posterior confirmó
 `origin/develop` **41ca881b1248970b226aef789efec353f41feecf**, cuyo único commit
@@ -231,7 +266,8 @@ local; no se heredan sus resultados históricos como nuevos.
 
 Pendientes: **CU-028 Samuel**, recuperador global de pagos inciertos **F12**,
 conciliación financiera de operaciones inciertas sin garantía de reenvío y
-capacidad/disponibilidad de Redash/gateway durante reinicios. No se amplía esta
+capacidad/disponibilidad de Redash/gateway durante reinicios; diagnóstico del
+cierre SIGTERM de CI antes de considerar verde la entrega remota. No se amplía esta
 entrega a esos trabajos. Demo nueva, tras reanudar CU-015 con Redash detenido:
 
 ```bash
