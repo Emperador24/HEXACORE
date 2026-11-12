@@ -5,6 +5,30 @@ hallazgos demostrados y se publica evidencia reproducible; permanecen bloqueos
 de dependencias, CSP y cobertura semántica. No confundir una matriz de acceso
 aprobada con la aprobación de todos los requisitos de Seguridad.
 
+## CI posterior y ajuste de contrato de prueba
+
+[CI 43211225540](https://github.com/Emperador24/HEXACORE/actions/runs/43211225540)
+en **3c9e0b4**: siete trabajos aprobados y fallo del octavo en contratos financieros.
+**12/13 contratos aprobados** en la primera pasada; segunda no ejecutada. Causa
+comprobada: la aserción esperaba `/TimeoutError/`, pero RNF-05 ahora devuelve el
+mensaje propio **“No hubo respuesta de la pasarela (tiempo agotado)”**, observado
+en la respuesta real. Estado INDETERMINADO y contadores de intentos pasaban.
+Se cambia únicamente esa expectativa a igualdad exacta, conservando los demás
+controles; no se cambia comportamiento, plazos, reintentos o estado del producto.
+
+Dos controles adicionales **1/1 + 1/1** verifican la categoría propia y ausencia de
+PAN/CVV en respuesta/log: Error sintético del contexto Jest y DOMException nativo
+en Node real, sin proveedor/red. El primer intento usando el DOMException nativo
+desde otro contexto V8 de Jest se conserva como fallo del doble: se clasificó
+como comunicación. No se cambia el producto por ese artefacto; el caso nativo se
+comprueba en el proceso Node correspondiente. Las ocho pruebas previas ya
+verificadas no se repitieron localmente; se filtró solo el caso nuevo.
+
+En esa misma CI aprobaron **1.038/1.038 unitarias**, Boletería **23/23 en cada una
+de dos pasadas** y Núcleo **122/122 en cada una de dos pasadas**. Esto no demuestra
+resuelta la intermitencia SIGTERM. La nueva CI del ajuste se registra en el PR;
+no sustituye ni las finales de Seguridad con bloqueos ni este fallo histórico.
+
 ## Referencia, fuentes y entorno
 
 - Inicio limpio en `feature/sebastian`, local/remoto **82bac776abe0566483d7a8641aa293c1fa5ab322**;

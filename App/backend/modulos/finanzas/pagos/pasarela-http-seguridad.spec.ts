@@ -36,6 +36,13 @@ describe('RNF-05: respuesta no confiable del proveedor', () => {
     global.fetch = jest.fn().mockRejectedValue(new Error(canario));
     const r = await servicio().cobrar(solicitud); comprobar(r); expect(r.resultado).toBe(ResultadoCobro.INDETERMINADO);
   });
+  it('un timeout conserva su categoría sin propagar el mensaje remoto', async () => {
+    // Error del mismo contexto V8; el DOMException nativo se prueba con Node real.
+    global.fetch = jest.fn().mockRejectedValue(Object.assign(new Error(canario), { name: 'TimeoutError' }));
+    const r = await servicio().cobrar(solicitud);
+    comprobar(r);
+    expect(r).toEqual({ resultado: ResultadoCobro.INDETERMINADO, referencia: null, motivo: 'No hubo respuesta de la pasarela (tiempo agotado)' });
+  });
   it('no persiste una referencia que sea datos de tarjeta', async () => {
     global.fetch = jest.fn().mockResolvedValue(Response.json({ estado: 'APROBADO', referencia: canario }));
     const r = await servicio().cobrar(solicitud); comprobar(r); expect(r.resultado).toBe(ResultadoCobro.INDETERMINADO);

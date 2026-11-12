@@ -55,6 +55,22 @@ python3 App/infra/informe-atributos/seguridad/procedencia.py
 python3 App/infra/informe-atributos/seguridad/resumir.py
 ```
 
+`iniciar` es solo para la primera creación del escáner. Si ya existe el escáner
+conservado por esta entrega, reutilizar su estado privado sin borrar evidencias.
+Crear una carpeta de salida nueva como arriba y, antes de preparar fixtures,
+copiar únicamente estos dos archivos desde el ensayo previo (no imprimirlos):
+
+```bash
+cp "$SEGURIDAD_ANTERIOR/fixture.json" "$SEGURIDAD_SALIDA/fixture.json"
+cp "$SEGURIDAD_ANTERIOR/zap-entorno.json" "$SEGURIDAD_SALIDA/zap-entorno.json"
+python3 App/infra/informe-atributos/seguridad/zap-entorno.py reanudar
+```
+
+Definir `SEGURIDAD_ANTERIOR` con la carpeta privada anterior, omitir `preparar.cjs`
+y sustituir `iniciar` por `reanudar`. Así se conservan cuentas/datos y los tres
+resultados anteriores; `finales.py` escribe únicamente en la carpeta nueva.
+No usar un estado privado de otro proyecto/checkout.
+
 La imagen es **ZAP 2.17.0, arm64**. El contenedor tiene límite propio de 640 MiB,
 heap 384 MiB y una CPU; no cambia recursos globales. Se conecta únicamente a una
 red Docker **internal**, con el gateway y los dos portales propios. No tiene
@@ -89,7 +105,7 @@ quedan excluidos; ampliar esa cobertura requiere contextos/fixtures adicionales.
 ## Regresiones y exportación
 
 ```bash
-node --test App/infra/informe-atributos/seguridad/gateway.test.cjs App/infra/informe-atributos/seguridad/correo-stream.test.cjs
+node --test --test-concurrency=1 App/infra/informe-atributos/seguridad/gateway.test.cjs App/infra/informe-atributos/seguridad/correo-stream.test.cjs App/infra/informe-atributos/seguridad/timeout.test.cjs
 node App/infra/informe-atributos/seguridad/pan-contrato.cjs
 npm --prefix App/backend test -- --runInBand --testPathPatterns='token-pago|finanzas/pagos|stripe.controller|autorizacion-pagos|adaptadores-pagos|alimentos/pagos|alimentos/catalogo|enviador-correo|sesion-valida.guard|cookie-renovacion'
 npm --prefix App/backend test -- --runInBand --testPathPatterns='llamada-interna.guard|cliente-ventas.service|entradas-internas.service|postventa/publicacion|postventa/checkout'

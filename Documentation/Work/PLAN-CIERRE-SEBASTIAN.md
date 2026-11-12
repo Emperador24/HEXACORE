@@ -1,5 +1,29 @@
 # Cierre de Alimentos — Sebastián
 
+## Seguimiento de publicación de Seguridad — 12/11/2026
+
+**3c9e0b4** publicó scripts/resultados y actualizó el PR #50. La
+[CI 43211225540](https://github.com/Emperador24/HEXACORE/actions/runs/43211225540)
+aprobó siete trabajos y falló el octavo en contratos financieros: **12/13** en
+primera pasada, segunda sin ejecutar. Causa identificada: una expectativa buscaba
+`TimeoutError`; el saneamiento RNF-05 devuelve el mensaje propio exacto “No hubo
+respuesta de la pasarela (tiempo agotado)”. La respuesta real y el código lo
+confirman; INDETERMINADO/contadores permanecen correctos. Se adapta la expectativa
+con igualdad exacta y se conservan todos los controles financieros, límites y
+reintentos. No cambia producto ni fuentes funcionales e5c6ba7.
+
+Comprobaciones adicionales acotadas: **1/1** del Error de timeout en el contexto
+Jest y **1/1** con DOMException nativo en Node real, ambos con PAN/CVV sintéticos
+que no aparecen en resultados/logs. Se preserva el primer fallo del doble nativo
+entre contextos V8 de Jest; el caso se comprueba también en Node, sin modificar
+producto por ese artefacto. No se repiten matrices, ZAP, Playwright o negocio.
+
+En la CI fallida también aprobaron **1.038/1.038 unitarias**, Boletería
+**23/23 × dos pasadas**, Núcleo **122/122 × dos pasadas**, portales/Flutter/gateway/
+histórico. No se interpreta como corrección causal de SIGTERM. La CI del nuevo
+commit de prueba se informa por separado en PR/final; los bloqueos audit/ZAP y
+el estado operativo local consignados debajo permanecen vigentes.
+
 ## Seguridad RNF-05 / RNF-06 — 12/11/2026
 
 **Entrega parcial con correcciones comprobadas; NO se declara cumplimiento
