@@ -29,7 +29,9 @@ test('CU-011F por interfaces: compra, cancelación explícita en local cerrado, 
   const cobro = page.waitForResponse(r => r.url().endsWith(`/pedidos/${p.id}/pagos`));
   await page.getByRole('button', { name: 'Pagar pedido', exact: true }).click(); const pago = await cobro; expect(pago.status()).toBe(200); const pagado = await pago.json();
   const antes = original(p.id, pagado.transaccionId);
-  await page.getByRole('link', { name: 'Ver seguimiento y avisos', exact: true }).click();
+  const comprobante = page;
+  const [seguimientoNuevo] = await Promise.all([page.context().waitForEvent('page'), page.getByRole('link', { name: 'Ver seguimiento y avisos', exact: true }).click({ modifiers: ['ControlOrMeta'] })]);
+  page = seguimientoNuevo; await expect(page).toHaveURL(`${clienteURL}/mis-pedidos/${p.id}`);
   await expect(page.getByAltText('Código QR del pedido confirmado')).toBeVisible();
   await presentar(page, 'Cliente: pedido pagado y QR antes de la cancelación');
   expect((await request.patch(`${gateway}/pedidos/admin/establecimientos/${e.local.id}/estado`, { headers: h(e.organizador.token), data: { estado: 'CERRADO' } })).status()).toBe(200);
@@ -75,6 +77,9 @@ test('CU-011F por interfaces: compra, cancelación explícita en local cerrado, 
     const cliente = page.getByRole('region', { name: 'Cancelación y reembolso', exact: true });
     await expect(cliente).toContainText('No podemos preparar lo acordado'); await expect(cliente.locator('[data-cancelado]')).toBeVisible();
     await expect(cliente.locator('[data-reembolso]')).toContainText('aprobado'); await expect(page.getByAltText('Código QR del pedido confirmado')).toHaveCount(0);
+    await comprobante.getByRole('button', { name: 'Actualizar estado del pedido', exact: true }).click();
+    await expect(comprobante.getByRole('heading', { name: 'Pedido cancelado por el establecimiento', exact: true })).toBeVisible();
+    await expect(comprobante.getByAltText('Código QR del pedido confirmado')).toHaveCount(0);
     await expect(page.getByText('El establecimiento canceló tu pedido: No podemos preparar lo acordado. El reembolso se encuentra pendiente de confirmación.', { exact: true })).toBeVisible();
     await presentar(page, 'Cliente: motivo, fecha, aviso durable y reembolso confirmado sin QR utilizable');
   } finally { await contexto.close(); }

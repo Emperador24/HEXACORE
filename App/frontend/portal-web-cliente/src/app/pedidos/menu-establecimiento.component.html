@@ -14,14 +14,17 @@
   @if (pago()?.compraConfirmada) {
     <section class="confirmacion hxc-vidrio" aria-live="polite">
       <span class="exito"><mat-icon>check_circle</mat-icon></span>
-      <p class="hxc-rotulo-seccion">PAGO APROBADO</p><h2>¡Tu pedido está confirmado!</h2>
+      <p class="hxc-rotulo-seccion">PAGO APROBADO</p><h2>{{estadoActual()?.estado === 'CANCELADO' ? 'Pedido cancelado por el establecimiento' : estadoActual()?.estadoOperativo === 'ENTREGADO' ? 'Pedido entregado' : '¡Tu pedido está confirmado!'}}</h2>
       <p class="hxc-suave">Conserva este QR para recoger tu pedido.</p>
-      @if (pago()!.codigoQr && pago()!.qrUtilizable !== false) { <app-qr-pedido [codigo]="pago()!.codigoQr!" /> }
+      @if (pago()!.codigoQr && pago()!.qrUtilizable !== false && !vigenciaIncierta() && estadoActual()?.qrUtilizable !== false) { <app-qr-pedido [codigo]="pago()!.codigoQr!" /> }
+      @if(estadoActual()?.cancelacion; as c){<p>{{c.motivo}} · {{c.canceladoEn | date:'short'}}</p><p>Reembolso: {{c.reembolso.estado}} · {{c.reembolso.monto}} {{c.reembolso.moneda}}. La cancelación y la devolución del dinero son independientes.</p>}
+      @if(vigenciaIncierta()){<p role="alert">No pudimos confirmar la vigencia del QR. Actualiza el estado antes de presentarlo.</p>}
+      <button mat-button (click)="actualizarEstado()" [disabled]="consultandoEstado()">Actualizar estado del pedido</button>
       @if(pago()!.entrega; as entrega){<p>Pedido entregado en {{entrega.puntoEntrega}}. El QR ya no permite otra entrega.</p>}
       <div class="total"><span>Total pagado</span><strong>${{ pago()!.monto | number: '1.2-2' }} <small>{{ pago()!.moneda }}</small></strong></div>
       <p class="ubicacion"><mat-icon>storefront</mat-icon>{{ establecimiento.nombre }}</p>
       <p class="hxc-suave">{{ establecimiento.puntoEntrega }}</p>
-      <a mat-button [routerLink]="['/mis-pedidos',checkout()!.id]">Ver seguimiento y avisos</a><p class="nota">Puedes recuperar tu comprobante y el mismo QR desde Mis pedidos después de recargar o volver a entrar.</p>
+      <a mat-button [routerLink]="['/mis-pedidos',checkout()!.id]">Ver seguimiento y avisos</a><p class="nota">Recupera tu comprobante y el estado vigente desde Mis pedidos. Los pedidos cancelados o entregados no permiten usar el QR.</p>
     </section>
   } @else if (checkout()) {
     @let pedido = checkout()!;

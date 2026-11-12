@@ -10,7 +10,7 @@ describe('Inicio del checkout de Pedidos', () => {
   const producto = { id: 'producto', establecimientoId: 'local', nombre: 'Hamburguesa', descripcion: null,
     precio: '25000.00', activo: true, cantidadInventario: 20, cantidadDisponible: 20 };
   beforeEach(async () => {
-    servicio = jasmine.createSpyObj('PedidosService', ['establecimientos', 'productos', 'crearCheckout', 'pagar']);
+    servicio = jasmine.createSpyObj('PedidosService', ['establecimientos', 'productos', 'crearCheckout', 'pagar', 'seguimiento']);
     servicio.establecimientos.and.resolveTo([{ id: 'local', eventoId: 'evento', nombre: 'Local', estado: 'DISPONIBLE', puntoEntrega: 'Módulo 4' }]);
     servicio.productos.and.resolveTo([producto]);
     TestBed.configureTestingModule({ providers: [
@@ -22,6 +22,15 @@ describe('Inicio del checkout de Pedidos', () => {
     await Promise.resolve();
     componente.cambiar(producto, 1);
     componente.metodoEntrega = 'Retiro';
+  });
+  afterEach(() => componente.ngOnDestroy());
+  it('consulta el estado vigente del comprobante sin repetir el pago y retira un QR cancelado', async () => {
+    componente.checkout.set({ id: 'pedido' } as never);
+    servicio.seguimiento.and.resolveTo({ id: 'pedido', estado: 'CANCELADO', qrUtilizable: false, codigoQr: null } as never);
+    await componente.actualizarEstado();
+    expect(componente.estadoActual()?.qrUtilizable).toBeFalse(); expect(servicio.pagar).not.toHaveBeenCalled();
+    servicio.seguimiento.and.rejectWith(new Error('Sin respuesta')); await componente.actualizarEstado();
+    expect(componente.vigenciaIncierta()).toBeTrue(); expect(componente.estadoActual()?.estado).toBe('CANCELADO');
   });
 
   it('consulta el catálogo real y muestra el checkout pendiente sin confirmar localmente', async () => {

@@ -1,11 +1,11 @@
 import { QrPedidoComponent } from './qr-pedido.component';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, OnDestroy, signal } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { PagoPedido, clavePago, CheckoutPedido, EstablecimientoPedido, PedidosService, ProductoPedido, mensajePedidos } from '../core/pedidos.service';
+import { PagoPedido, clavePago, CheckoutPedido, EstablecimientoPedido, PedidosService, ProductoPedido, SeguimientoPedido, mensajePedidos } from '../core/pedidos.service';
 import { ErrorCuenta } from '../core/auth.service';
 
 @Component({
@@ -15,7 +15,7 @@ import { ErrorCuenta } from '../core/auth.service';
   templateUrl: './menu-establecimiento.component.html',
   styleUrl: './menu-establecimiento.component.scss'
 })
-export class MenuEstablecimientoComponent {
+export class MenuEstablecimientoComponent implements OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly servicio = inject(PedidosService);
   private readonly establecimientoId: string = this.route.snapshot.params['id'];
@@ -32,6 +32,11 @@ export class MenuEstablecimientoComponent {
   readonly pago = signal<PagoPedido | null>(null);
   readonly pagando = signal(false);
   readonly mensajePago = signal('');
+  readonly estadoActual = signal<SeguimientoPedido | null>(null);
+  readonly vigenciaIncierta = signal(false);
+  readonly consultandoEstado = signal(false);
+  private timerEstado?: ReturnType<typeof setInterval>;
+  private destruido = false;
   private claveIntento: string | null = null;
   metodoEntrega = 'RECOGER';
 
@@ -44,6 +49,11 @@ export class MenuEstablecimientoComponent {
       this.claveIntento ??= clavePago();
       const resultado = await this.servicio.pagar(pedido.id, this.claveIntento);
       this.pago.set(resultado);
+      if (resultado.compraConfirmada && !this.timerEstado) {
+        this.timerEstado = setInterval(() => {
+          if (document.visibilityState === 'visible' && !this.vigenciaIncierta()) void this.actualizarEstado();
+        }, 15000);
+      }
       if (resultado.estadoPago === 'RECHAZADA') {
         this.mensajePago.set('Pago rechazado. Puedes intentar nuevamente.');
         // Solo un rechazo definitivo permite iniciar otro intento lógico.
@@ -58,6 +68,18 @@ export class MenuEstablecimientoComponent {
   }
 
   constructor() { void this.cargar(); }
+  ngOnDestroy() { this.destruido = true; clearInterval(this.timerEstado); }
+  async actualizarEstado() {
+    const id = this.checkout()?.id;
+    if (!id || this.destruido || this.consultandoEstado()) return;
+    this.consultandoEstado.set(true);
+    try {
+      const actual = await this.servicio.seguimiento(id);
+      if (actual.id !== id || typeof actual.qrUtilizable !== 'boolean') throw new Error('Estado no confirmado');
+      if (!this.destruido) { this.estadoActual.set(actual); this.vigenciaIncierta.set(false); }
+    } catch { if (!this.destruido) this.vigenciaIncierta.set(true); }
+    finally { this.consultandoEstado.set(false); }
+  }
 
   async cargar(): Promise<void> {
     if (this.cargando()) return;
