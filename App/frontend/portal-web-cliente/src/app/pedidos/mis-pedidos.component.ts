@@ -19,7 +19,8 @@ import { QrPedidoComponent } from './qr-pedido.component';
   @if(detalle(); as p){<section class="hxc-vidrio detalle" aria-label="Seguimiento del pedido"><h2>{{p.establecimiento}}</h2><p data-avance>{{etiqueta(p.estadoOperativo ?? p.preparacion.estado)}}</p><p>{{p.estado}} · Total acordado {{p.total}} {{p.moneda}}</p>
   @if(p.preparacion.estimadoListoEn){<p>Estimado listo: <time data-estimacion>{{p.preparacion.estimadoListoEn | date:'short'}}</time></p>}
   @if(p.preparacion.retrasado){<p>La estimación se ha superado. El establecimiento debe actualizar el tiempo.</p>}
-  @if(p.entrega){<p>Entregado el <time data-entregado>{{p.entrega.entregadoEn | date:'short'}}</time> en {{p.entrega.puntoEntrega}}. El QR ya no permite otra entrega.</p>}@else if(p.preparacion.estado === 'LISTO_PARA_ENTREGAR'){<p>Presenta tu QR en el punto autorizado para recibir el pedido.</p>}
+  @if(p.entrega){<p>Entregado el <time data-entregado>{{p.entrega.entregadoEn | date:'short'}}</time> en {{p.entrega.puntoEntrega}}. El QR ya no permite otra entrega.</p>}@else if(p.estado === 'CONFIRMADO' && p.preparacion.estado === 'LISTO_PARA_ENTREGAR'){<p>Presenta tu QR en el punto autorizado para recibir el pedido.</p>}
+  @if(p.cancelacion; as c){<section aria-label="Cancelación y reembolso"><h3>Pedido cancelado por el establecimiento</h3><p>{{c.motivo}}</p><p>Fecha: <time data-cancelado>{{c.canceladoEn | date:'short'}}</time></p><p data-reembolso>Reembolso {{estadoReembolso(c.reembolso.estado)}} · {{c.reembolso.monto}} {{c.reembolso.moneda}}</p>@if(c.reembolso.estado === 'APROBADO'){<p>La pasarela confirmó la aprobación del reembolso total.</p>}@else{<p>No se confirma dinero devuelto. El pedido permanece cancelado.</p>}</section>}
   @for(d of p.productos; track $index){<p>{{d.cantidad}} × {{d.nombreProducto}} · {{d.precioUnitario}} {{p.moneda}}</p><p>{{d.descripcionProducto}}</p><small>{{d.restriccionesAlimentarias.join(', ')}}</small>}
   @if(p.codigoQr && p.qrUtilizable !== false){<app-qr-pedido [codigo]="p.codigoQr" /><p>Punto de entrega: {{p.puntoEntrega}}</p>}
   @else if(!p.entrega){<p>El QR solo está disponible para pedidos confirmados con pago aprobado.</p>}
@@ -53,5 +54,6 @@ export class MisPedidosComponent implements OnDestroy {
     if(this.cargando() || this.pagina() + delta < 0) return;
     this.pagina.update(p => p + delta); this.pedidos.set([]); await this.actualizar();
   }
-  etiqueta(estado: string) { return ({RECIBIDO:'Recibido por el establecimiento',EN_PREPARACION:'En preparación',LISTO_PARA_ENTREGAR:'Listo para entregar',ENTREGADO:'Entregado'} as Record<string,string>)[estado] ?? estado; }
+  estadoReembolso(e: string) { return ({PENDIENTE:'pendiente',APROBADO:'aprobado',RECHAZADO:'rechazado',INCIERTO:'incierto'} as Record<string,string>)[e] ?? e; }
+  etiqueta(estado: string) { return ({RECIBIDO:'Recibido por el establecimiento',EN_PREPARACION:'En preparación',LISTO_PARA_ENTREGAR:'Listo para entregar',ENTREGADO:'Entregado',CANCELADO:'Cancelado'} as Record<string,string>)[estado] ?? estado; }
 }

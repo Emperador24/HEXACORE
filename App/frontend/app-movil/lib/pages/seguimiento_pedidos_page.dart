@@ -1,3 +1,4 @@
+import '../widgets/cancelacion_pedido_panel.dart' show resumenCancelacion;
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../services/pedidos_api.dart';
@@ -95,7 +96,7 @@ class _MisPedidosPageState extends State<MisPedidosPage> {
               Text('Mis pedidos y avisos',
                   style: Theme.of(context).textTheme.headlineSmall),
               const Text(
-                  'Canal dentro de la web/app. Conservas el mismo QR al volver a entrar.'),
+                  'Canal dentro de la web/app. Consulta el estado vigente del pedido y su QR.'),
               TextButton(
                   onPressed: cargando ? null : actualizar,
                   child: const Text('Actualizar seguimiento')),
@@ -185,9 +186,11 @@ class _MisPedidosPageState extends State<MisPedidosPage> {
         if (p['entrega'] case final Map entrega)
           Text(
               'Entregado el ${fechaPedido(entrega['entregadoEn'])} en ${entrega['puntoEntrega']}. El QR ya no permite otra entrega.')
-        else if (a['estado'] == 'LISTO_PARA_ENTREGAR')
+        else if (p['estado'] == 'CONFIRMADO' &&
+            a['estado'] == 'LISTO_PARA_ENTREGAR')
           const Text(
               'Presenta tu QR en el punto autorizado para recibir el pedido.'),
+        if (p['cancelacion'] case final Map c) ...resumenCancelacion(c),
         const Text('Avisos del establecimiento'),
         for (final aviso in p['avisos'] as List? ?? [])
           Text('${fechaPedido(aviso['creadoEn'])} · ${aviso['mensaje']}'),

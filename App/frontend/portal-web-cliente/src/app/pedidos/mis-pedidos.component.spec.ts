@@ -20,6 +20,19 @@ describe('Seguimiento propio persistido',()=>{
       {provide:ActivatedRoute,useValue:{paramMap:of(convertToParamMap({pedidoId:'p'}))}}, {provide:PedidosService,useValue:api}]});
     TestBed.overrideComponent(MisPedidosComponent,{remove:{imports:[QrPedidoComponent]},add:{imports:[QrPrueba]}});
   });
+  for(const estado of ['PENDIENTE','APROBADO','RECHAZADO','INCIERTO']){
+    it(`muestra cancelación y reembolso ${estado} sin QR utilizable`,fakeAsync(()=>{
+      const cancelado={...pedido,estado:'CANCELADO',estadoOperativo:'CANCELADO',codigoQr:null,qrUtilizable:false,
+        cancelacion:{motivo:'No se puede preparar',canceladoEn:'2026-11-11T22:00:00Z',inventario:'NO_REINCORPORAR',
+          reembolso:{estado,monto:'1000.25',moneda:'COP',referencia:estado==='APROBADO'?'ree_confirmada':null}}};
+      api.misPedidos.and.resolveTo([cancelado]);api.seguimiento.and.resolveTo(cancelado);
+      fixture=TestBed.createComponent(MisPedidosComponent);fixture.detectChanges();flushMicrotasks();fixture.detectChanges();
+      expect(fixture.nativeElement.textContent).toContain('No se puede preparar');
+      expect(fixture.nativeElement.querySelector('[data-reembolso]').textContent).toContain(estado.toLowerCase());
+      expect(fixture.debugElement.query(By.directive(QrPrueba))).toBeNull();
+      expect(fixture.nativeElement.textContent.includes('La pasarela confirmó la aprobación')).toBe(estado==='APROBADO');fixture.destroy();
+    }));
+  }
   it('recupera detalle, aviso y mismo QR desde su cuenta tras una nueva instancia',fakeAsync(()=>{
     fixture=TestBed.createComponent(MisPedidosComponent);fixture.detectChanges();flushMicrotasks();fixture.detectChanges();
     expect(api.seguimiento).toHaveBeenCalledWith('p');expect(fixture.nativeElement.textContent).toContain('Tu pedido está en preparación.');
