@@ -150,6 +150,19 @@ test('CU-011F API real: autorización, duplicados, carreras, inventario, rechazo
     escenarios = JSON.parse(salida.trim().split('\n').at(-1)!).escenarios;
     expect(escenarios).toHaveLength(2);
   } finally { controlarNucleo('iniciar'); }
+  // Compose acredita la salud interna; la comprobación de durabilidad requiere
+  // además que el gateway vuelva a alcanzar Núcleo después del stop deliberado.
+  // Solo son sondas de salud, con los 15 s normales; ninguna operación de negocio
+  // o financiera se reintenta para esconder un fallo de disponibilidad.
+  const saludReinicio: { instante: string; http: number }[] = [];
+  try {
+    await expect.poll(async () => {
+      const r = await request.get(`${gateway}/salud`);
+      saludReinicio.push({ instante: new Date().toISOString(), http: r.status() }); return r.status();
+    }, { message: 'Salud pública de Núcleo tras el reinicio deliberado' }).toBe(200);
+  } finally {
+    await test.info().attach('salud-publica-tras-reinicio.json', { body: Buffer.from(JSON.stringify(saludReinicio)), contentType: 'application/json' });
+  }
   expect(await seguimiento(request, e.cliente.token, p.id)).toEqual(durable);
   expect((await cancelar(request, e, p.id, 0, id)).status()).toBe(200); expect(original(p.id, compra.clave)).toEqual(antes);
   expect(sql(`SELECT count(*) FROM alimentos.cancelaciones_pedido WHERE pedido_id='${p.id}'`)).toBe('1');
