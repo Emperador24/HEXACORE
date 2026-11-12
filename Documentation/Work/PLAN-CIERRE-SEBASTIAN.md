@@ -1,5 +1,197 @@
 # Cierre de Alimentos — Sebastián
 
+## Entrega CU-011F — 11 de noviembre de 2026 (12/11 UTC)
+
+**Implementada la cancelación por Personal del establecimiento, con reembolso
+durable y seguimiento web/Flutter. Aceptación actual: 16/16 automático normal
+y 16/16 visible normal, por separado, con Redash detenido.** Se reutilizó la
+referencia previa 13/13; no se repitió su diagnóstico. CU-028 continúa bloqueado,
+pendiente de Samuel. La CI GitHub histórica 8/8 de 9f3fdca es otra verificación;
+no representa los cambios CU-011F ni estos resultados locales.
+
+### Fuentes y decisiones
+
+Trabajo exclusivamente en `feature/sebastian`, desde d5cb490. Se conservaron y
+versionaron primero los documentos locales de recuperación anteriores en
+dc8d40b. Las referencias remotas comprobadas al inicio y antes de publicar
+mantienen `origin/develop` en 6e5e7fa y Samuel en 5c641a8; no se integraron ramas,
+actualizaron dependencias ni modificaron migraciones históricas.
+
+Se leyeron las fichas CU-011/013/014 de `CU_eventos_completo.xlsx`, los requisitos
+y decisiones CU-012/013/014. La política implementada está en
+[DECISION-CU011F.md](../../App/backend/modulos/alimentos/recepcion/DECISION-CU011F.md):
+
+- Personal activo y vinculado cancela un confirmado con cobro aprobado y sin
+  entrega, también con el establecimiento cerrado. Motivo, confirmación y
+  versión son obligatorios. Cuenta, vínculo, pedido y entrega se revalidan dentro
+  de la transacción. Cancelación, preparación y entrega serializan sobre el
+  pedido: solo una transición incompatible puede ganar.
+- Una cancelación por pedido conserva actor, fecha, motivo, snapshots, cobro
+  original e historial/aviso durable. Desde su commit se bloquean preparación,
+  listo y entrega; seguimiento y comprobante dejan de ofrecer QR utilizable.
+  El replay del pago conserva el rechazo 409 de un cancelado y no lo reactiva.
+- La intención financiera tiene clave UUID persistida y monto/moneda/referencia
+  tomados del servidor. Solo usa la API pública local de Finanzas. El claim SQL
+  termina antes de llamar al proveedor. Una operación ya intentada se consulta,
+  **no se reenvía**, porque la idempotencia del simulador es solo en memoria.
+  Caída entre claim y envío queda INCIERTO para conciliación, con la misma clave.
+  PENDIENTE/APROBADO/RECHAZADO/INCIERTO se muestran según evidencia; cancelar no
+  equivale a devolver dinero. No se implementa el recuperador global F12.
+- Inventario: solo RECIBIDO consistente y sin inicio permite restituir unidades
+  vendibles. Preparado/iniciado/listo no se reincorpora; ambiguo queda REVISION.
+  Las restituciones usan intenciones CU-012, Lua/AOF y confirmación SQL existentes,
+  una vez por UUID. Una reserva consumida no se libera como una ACTIVA. Se
+  conserva cualquier otra reserva activa y no se reconstruye inventario.
+- Web y Flutter guardan la misma intención por cuenta ante respuesta perdida o
+  reinicio; Personal consulta el resultado. Cliente ve motivo, fecha y estado
+  real del reembolso en historial/avisos existentes. El comprobante consulta la
+  vigencia sin repetir el pago. No se añaden correo real, push, sustituciones,
+  cambios de precio, cancelación voluntaria ni Seguridad global.
+
+### Preparación, migraciones y comprobaciones afectadas
+
+Se alternaron los proyectos según la guía: Redash identificado por etiquetas
+Compose, sus siete IDs/estados guardados en privado y detenidos ordenadamente
+con gracia de 120 s, todos salida 0. CU-015 estaba inicialmente detenido. No se
+ejecutaron recorridos con ambos proyectos activos ni se intervinieron otros.
+
+Solo se reconstruyeron Núcleo y los dos portales; después del ajuste de vigencia
+del comprobante, únicamente el cliente. Se aplicó la preparación con guardas,
+sin semillas ni cambios de claves. Pasarela y correo locales simulados. Las
+imágenes verificadas durante aceptación fueron Núcleo/admin **b4a9fba**, cliente
+**6d29617** y gateway/Boletería/Trabajador **9f3fdca**. Los commits posteriores
+modifican tests anfitriones/documentación, sin cambios adicionales de aplicación.
+
+Nueva migración aditiva `CancelacionCu011F1794700000000`, séptima de Alimentos:
+**35 migraciones actuales**, con las **18 fuentes y procedencias históricas
+intactas**. La prueba PostgreSQL comprobó instalación vacía y actualización,
+nombres/propietarios, repetición sin DDL, ausencia de tablas en public y datos
+conservados (vacía: 85 tablas y 39 registros de sistema/historia). En la base
+principal, las huellas de establecimientos, productos, pedidos, detalles,
+transacciones y reservas anteriores fueron idénticas antes/después de migrar.
+Al terminar se verificaron las **50 cuentas preexistentes con sus claves sin
+cambios** y la misma huella de procedencias. Las fixtures de pruebas se conservan.
+
+| Verificación afectada | Resultado ejecutado |
+|---|---|
+| Backend: cancelación, adaptador, consulta pública financiera, pago/preparación/entrega, esquemas | **146/146, 9 suites** |
+| Fuentes/propietarios de migraciones originales | **3/3** |
+| Migración PostgreSQL vacía y actualización | **Ambas aprobadas**, 35 actuales / 18 históricas |
+| Backend tipos y build de Núcleo | **Aprobados** |
+| Angular admin preparación/cancelación/entrega | **13/13** |
+| Angular cliente seguimiento/servicio; comprobante | **12/12** y **10/10**, invocaciones separadas |
+| Flutter cancelación/preparación/entrega/API; comprobante | **24/24** y **1/1**, invocaciones separadas |
+| Flutter analyze final | **0 incidencias**; avisos de estilo iniciales corregidos |
+| Tipos E2E | **Aprobados** |
+
+No se presenta esta selección como toda la suite backend/Angular/Flutter. La
+prueba CU-011F API usa SQL/Redis/Finanzas reales locales: autorización incluida
+revocación tras admitir la petición, duplicados, carreras con preparación y
+entrega, no restitución de preparado, reserva consumida pendiente, rechazo
+financiero y dos ventanas de caída. Una conexión PostgreSQL independiente usa
+`FOR UPDATE NOWAIT` durante la llamada financiera para comprobar que no queda
+bloqueado el pedido. Se conserva la misma clave, una solicitud y una devolución
+como máximo. Un caso recupera aprobación del libro tras perder la respuesta;
+el otro queda incierto sin libro y demuestra ausencia de reenvío tras reinicio.
+
+### Aceptación final y fallos anteriores conservados
+
+Los 13 existentes más tres CU-011F se descubrieron como **16** en ambas
+modalidades. Fuente de tests **c3d3386dbfb95f89546c4bb7c88904fcfe383786**.
+Node 22.22.3, Playwright 1.65.0; once servicios propios saludables antes de cada
+conjunto, seis sondas HTTP y cinco logins demo con 200, configuración privada.
+Un trabajador, serie, **cero reintentos**, 120 s por caso, 15 s por aserción; sin
+modo demo ni presupuesto ampliado. Primero automático y después visible:
+
+| Modalidad normal final, 12/11 UTC | Ventana exacta | Resultado | Salida |
+|---|---|---|---:|
+| Automático | 00:38:15.684208–00:40:17.529140 | **16/16**, 0 fallidos/omitidos; CLI 2,0 min | 0 |
+| Visible | 00:42:11.458672–00:44:27.249983 | **16/16**, 0 fallidos/omitidos; CLI 2,3 min | 0 |
+
+Se conservan, sin sumarlos ni convertirlos en aprobados, los intentos anteriores:
+
+1. Dirigido CU-011F 00:13:00.885899–00:15:26.251788: **2/3**, salida 1, sobre
+   b4a9fba con cambios locales de tests después incluidos en fa6873f. El UI
+   seleccionaba un local en la pantalla Menú anterior a terminar la navegación;
+   GET 200 vacío y timeout de 120 s, sin cancelar. Se exigió URL/encabezado de
+   Preparación antes de seleccionar. Dirigido UI posterior en fa6873f: **1/1**,
+   00:18:44.385361–00:18:53.958957, CLI 9,2 s, salida 0.
+2. Par completo en 6d29617: automático **16/16**, salida 0,
+   00:28:59.319208–00:31:09.542523 (CLI 2,2 min); visible **15/16**, salida 1,
+   00:31:59.528907–00:34:58.950765 (CLI 3,0 min). Falló el primer GET de pedidos
+   después del reinicio deliberado de Núcleo: **503 a las 00:32:31.562**,
+   correlacionado con `nucleo Host not found` a las 00:32:25.823; sin timeout SQL.
+   El helper esperaba salud interna pero aún no estaba listo el acceso público.
+3. c3d3386 comprueba `/salud` pública después de ese reinicio con el límite de
+   aserción **existente de 15 s**, conserva observaciones privadas y exige luego
+   una sola respuesta de negocio 200. No modifica producción, reintenta negocio,
+   relaja aserciones ni aumenta tiempos. Ese cambio justifica el par final de
+   arriba; la primera sonda pública fue 200 en ambas ejecuciones finales.
+
+En **cada ventana final** hubo tres **503 POST `/pagos/webhook`** durante los
+reinicios deliberados y una línea DNS del gateway; los reintentos existentes del
+simulador no se modificaron. Se recogieron cero statement/query read timeout en
+PostgreSQL/Núcleo/gateway. Los casos aprobaron, pero **no se afirma ausencia
+global de 5xx/DNS ni disponibilidad continua**, ni recuperación global F12.
+
+Informes automático, visible, dirigidos, logs, huellas y fallos permanecen
+separados y privados en `.evidencia/cu011f-2026-11-11T23-46-55Z/` bajo App/e2e.
+No se publican configuración, credenciales, tokens, QR, trazas ni HTML privado.
+
+### Restauración y bloqueo externo de Redash
+
+Al terminar se detuvo CU-015 con **`./App/infra/cu015.sh parar`**, salida 0,
+conservando contenedores/datos/volúmenes. Se arrancaron solo los siete IDs de
+Redash inicialmente activos, mismos montajes, configuración e imágenes. El
+arranque frío produjo **OOM nuevos**, distintos de las marcas históricas: a
+las 00:49 UTC los contadores nuevos server/scheduled_worker/adhoc_worker/worker
+eran 4/4/3/8, con SIGKILL y swap casi agotado, estando CU-015 ya detenido.
+
+Se hizo **un solo arranque más escalonado** de los cuatro servicios worker y
+scheduler, sin reiniciar PostgreSQL/Redis/server: servidor solo respondió
+`/ping` y `/login` 200 a las 00:52:25; continuó en 200 al incorporar scheduler,
+worker y adhoc_worker. Tras incorporar scheduled_worker, ambos agotaron 5 s a
+las 00:53:53 y en las sondas finales. No se repitió otro ciclo.
+
+Estado final registrado **00:55:49 UTC**: **Redash 7 running, CU-015 0 activos**;
+PostgreSQL listo y Redis PONG, pero **Redash HTTP no recuperado**. Memoria VM
+disponible 180,21 MiB, swap libre 0,32 MiB, PSI some/full avg10 31,21/24,42 %.
+El contador server aumentó de 4 a 8; hubo nuevos OOM también en workers tras
+el escalonado (sus cgroups reiniciados no son comparables con los anteriores).
+La incorporación del último worker correlaciona con el fallo y la presión; no
+demuestra por sí sola que sea la única causa. Se conserva evidencia privada.
+
+**Acción necesaria del responsable:** liberar capacidad ajena o revisar el
+presupuesto/concurrencia de Redash, con autorización específica, y comprobar
+`/ping` y acceso. Esta entrega no autoriza detener otros proyectos ni cambiar
+recursos globales; no se hicieron esas acciones ni reinicios repetidos.
+La guía refleja la alternancia y este límite; restaurar `running` no equivale
+a certificar disponibilidad HTTP.
+
+### Hitos y pendientes
+
+Commits comprobados: **dc8d40b** conservación documental previa; **5edafb7**
+backend/migración/política; **bbb0195** web/Flutter; **b4a9fba** negocio/carreras;
+**fa6873f** recuperación financiera y navegación; **6d29617** vigencia de QR del
+comprobante; **c3d3386** salud pública después del reinicio. La documentación de
+esta entrega se publica después, sin repetir suites por ese cambio documental.
+Publicación únicamente a `origin/feature/sebastian`, en PR **#49** hacia develop,
+sin merge ni auto-merge. La CI nueva se informa por separado de la aceptación
+local; no se heredan sus resultados históricos como nuevos.
+
+Pendientes: **CU-028 Samuel**, recuperador global de pagos inciertos **F12**,
+conciliación financiera de operaciones inciertas sin garantía de reenvío y
+capacidad/disponibilidad de Redash/gateway durante reinicios. No se amplía esta
+entrega a esos trabajos. Demo nueva, tras reanudar CU-015 con Redash detenido:
+
+```bash
+CU015_DEMO_MS=2000 npm --prefix App/e2e run demo -- cu011f --grep 'por interfaces'
+```
+
+El descubrimiento `--list` de ese comando aprobó: un recorrido por interfaces,
+slowMo 2.000 ms y etapas de 5.000 ms. No se ejecutó el demo lento como aceptación.
+Conserva pausas e informes DEMO separados. El historial anterior sigue debajo.
+
 ## Recuperación de Redash con CU-015 detenido — 11 de noviembre de 2026
 
 **Redash accesible: `/ping` y `/login` HTTP 200. Quedan activos sus siete

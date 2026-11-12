@@ -1,4 +1,49 @@
-# Demostraciones CU-012–015, CU-027 y CU-029; CU-028 bloqueado
+# Demostraciones CU-011F, CU-012–015, CU-027 y CU-029; CU-028 bloqueado
+
+## Entrega y aceptación CU-011F — 11/11 de 2026 (12/11 UTC)
+
+**16/16 automático normal y 16/16 visible normal**, por separado, con Redash
+detenido. Tests **c3d3386**: automático 00:38:15.684208–00:40:17.529140 UTC
+(CLI 2,0 min); visible 00:42:11.458672–00:44:27.249983 (CLI 2,3 min). Ambos
+salida 0, un trabajador, cero reintentos/fallos/omisiones, 120 s por caso y 15 s
+por aserción. Once servicios saludables y logins 200 antes de cada conjunto.
+Son los trece anteriores más tres CU-011F. No se usó demo como aceptación.
+
+CU-011F incorpora negocio por interfaces, negativos/autorización, duplicados,
+carreras con preparación/entrega, respuesta perdida, reinicio, evidencia del
+reembolso e inventario sin doble restitución. El UI mantiene el comprobante
+abierto y demuestra también retirada de su QR, además de historial/avisos del
+cliente. La API pierde una respuesta financiera confirmada y simula una caída
+antes del envío: solo el primer caso recupera aprobación del libro; el segundo
+queda incierto con la misma clave y sin reenviar. No se toca el recuperador F12.
+
+Los fallos iniciales de navegación y disponibilidad pública tras reinicio se
+conservan en el plan: dirigido 2/3 y primer visible 15/16. Se corrigió la
+precondición de pantalla y después la salud pública dentro de los 15 s existentes,
+sin relajar aserciones o repetir negocio. Cada conjunto final registró tres
+503 de webhook y una línea DNS durante reinicios deliberados; no se certifica
+disponibilidad global. CU-028 sigue pendiente de Samuel y la CI GitHub se informa
+independientemente de esta aceptación local.
+
+Estado restaurado: **HEXACORE detenido, Redash siete running** con sus datos,
+pero `/ping` y `/login` no recuperados por presión/OOM nuevos. PostgreSQL y Redis
+responden; el responsable debe revisar capacidad. No repetir ciclos de reinicio.
+Alternancia y diagnóstico:
+[guía local](../../Documentation/Work/OPERACION-LOCAL-REDASH-HEXACORE.md) y
+[plan con resultados e historial](../../Documentation/Work/PLAN-CIERRE-SEBASTIAN.md).
+
+Tras reanudar los mismos servicios HEXACORE con Redash detenido y configuración
+demo privada existente, el nuevo recorrido visible se ejecuta con:
+
+```bash
+CU015_DEMO_MS=2000 npm --prefix App/e2e run demo -- cu011f --grep 'por interfaces'
+```
+
+Conserva 800 ms por defecto y pausas de lectura de 5 s; los contextos explícitos
+usan el mismo navegador lento. Informes DEMO separados; no se ejecutó esta
+presentación lenta como aceptación. Las referencias previas siguen debajo.
+
+## Referencia histórica: recuperación anterior de Redash
 
 **Estado posterior, 11/11 a las 21:40 UTC:** Redash recuperado (`/ping` y
 `/login` HTTP 200), siete contenedores activos; CU-015 detenido con datos
@@ -6,7 +51,7 @@ conservados. No se repitieron los conjuntos 13/13. Guía de alternancia sin
 reconstruir ni resembrar:
 [OPERACION-LOCAL-REDASH-HEXACORE.md](../../Documentation/Work/OPERACION-LOCAL-REDASH-HEXACORE.md).
 
-## Aceptación local actual con Redash detenido — 11 de noviembre de 2026
+## Referencia histórica: 13 recorridos con Redash detenido — 11 de noviembre de 2026
 
 **13/13 automático normal y 13/13 visible normal**, una ejecución completa de
 cada modalidad, en ese orden, con los mismos tests y fuentes funcionales de
@@ -85,6 +130,7 @@ Para cambiar la velocidad o elegir un recorrido visual:
 
 ```bash
 CU015_DEMO_MS=2000 npm --prefix App/e2e run demo
+CU015_DEMO_MS=2000 npm --prefix App/e2e run demo -- cu011f --grep 'por interfaces'
 CU015_DEMO_MS=2000 npm --prefix App/e2e run demo -- cu015 --grep 'por portales'
 CU015_DEMO_MS=2000 CU015_DEMO_PAUSA_MS=8000 npm --prefix App/e2e run demo -- cu015 --grep 'por portales'
 ```
@@ -94,12 +140,12 @@ inválidos fallan explícitamente. El primero configura `slowMo` al lanzar el
 navegador; los contextos creados explícitamente con `browser.newContext()`
 comparten ese navegador y esa demora. Ningún recorrido crea un navegador con
 `launch()` independiente. Las llamadas API/SQL no reciben esa pausa.
-Sin filtros se descubren los mismos trece casos implementados; algunos son
+Sin filtros se descubren los dieciséis casos implementados; algunos son
 comprobaciones API sin interfaz visible.
 
 `slowMo` separa operaciones, pero no mantiene una pantalla después de una
 respuesta o antes de cambiar de actor. `presentar()` añade puntos de lectura
-en los recorridos CU-012/013/014/015/027/029 y sus accesos: trae la página activa
+en los recorridos CU-011F/012/013/014/015/027/029 y sus accesos: trae la página activa
 al frente, muestra la etapa en el informe y espera `CU015_DEMO_PAUSA_MS` (5.000 por
 defecto). Permite leer registro/validaciones, edición, compra/pago/QR, preparación,
 entrega, cuentas y recintos. En normal/CI la función retorna sin enfocar páginas,
@@ -204,7 +250,7 @@ reutilizar el entorno propio existente, sin semillas. Builds y suites pesadas se
 ejecutan en serie (Mac M2, 8 GB). Los comandos parten de la raíz:
 
 ```bash
-./App/infra/cu015.sh iniciar --compilar nucleo boleteria api-gateway
+# Reanudar los mismos contenedores siguiendo primero la guía de alternancia.
 npm --prefix App/e2e run tipos
 npm --prefix App/e2e run test:cu014
 npm --prefix App/e2e run test:cu014:visible
@@ -221,8 +267,8 @@ npm --prefix App/e2e run test:completo
 npm --prefix App/e2e run test:completo:visible
 ```
 
-Son **13 recorridos implementados**, un trabajador, cero reintentos, 120 s por
-caso y 15 s de aserciones. `test:implementados` / `:visible` ejecuta esos 13;
+Son **16 recorridos implementados**, un trabajador, cero reintentos, 120 s por
+caso y 15 s de aserciones. `test:implementados` / `:visible` ejecuta esos 16;
 `test:completo` añade el diagnóstico explícito CU-028, conserva cada informe en
 `.evidencia/conjunto-FECHA/` y devuelve **2** si lo implementado pasa pero CU-028
 sigue bloqueado (o requiere revisar una referencia nueva). Un fallo de Playwright
@@ -239,8 +285,9 @@ muestra productos/punto sin consumir; «Confirmar entrega» exige respuesta del
 servidor. La prueba pierde la respuesta después del commit real, recarga y recupera
 la misma operación sin guardar el QR; comprueba una entrega, aviso/fecha y ausencia
 de QR utilizable al recargar el cliente. API/SQL adicionales comprueban concurrencia,
-reinicio, snapshots, replay del pago y rechazos; los estados inconsistentes son
-fixtures propios, no una política de cancelación CU-011F/F12.
+reinicio, snapshots, replay del pago y rechazos. CU-011F añade su propia política
+de cancelación en [DECISION-CU011F.md](../backend/modulos/alimentos/recepcion/DECISION-CU011F.md);
+las fixtures inconsistentes CU-014 no implementan recuperación global F12.
 
 CU-027 registra una cuenta propia desde UI y utiliza su correo simulado local
 (sin vaciar el buzón) para verificación y recuperación. Perfil, desactivación,
@@ -321,7 +368,7 @@ ejecuta sin ningún recorrido activo y restaura la configuración en `finally`:
 python3 App/infra/revision/test_dns.py
 ```
 
-Para repetir los trece con el observador SQL/recursos de solo lectura y el
+Para ejecutar los dieciséis con el observador SQL/recursos de solo lectura y el
 bloqueo CU-028 explícito (misma semántica de salida 2 si pasan):
 
 ```bash
@@ -387,7 +434,8 @@ El canal de avisos es web/app, durable en SQL; no son correos ni push. Sondeo de
 15 s solo en pantalla activa, sin solapar y pausado ante errores. La preparación
 no cambia estado financiero, QR, importes ni inventario. Alcance y alternativos:
 [DECISION-CU013](../backend/modulos/alimentos/recepcion/DECISION-CU013.md).
-Entrega/validación única se integra ahora con CU-014; cancelación CU-011F y F12, pendientes.
+Entrega/validación única se integra con CU-014 y cancelación con CU-011F;
+la recuperación global F12 sigue pendiente.
 
 El diagnóstico de fallos SQL registra en el log propio de Núcleo `FALLO_SQL` con
 contadores reales del pool (`total`, `libres`, `esperando`, `maximo`), demoras del

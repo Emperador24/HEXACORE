@@ -70,3 +70,10 @@ conserva las comprobaciones de dueño/vínculo aunque no esté en esa página.
 Las pantallas actualizan solo su establecimiento/pedido activo, como máximo cada
 15 segundos, sin solapar solicitudes. Se suspenden al ocultarse/salir y se pausan
 ante errores hasta actualización explícita. No hay sondeo global ni otro servidor.
+
+## Actualización de integración CU-011F — 11/11/2026
+
+Las menciones anteriores a CU-011F pendiente conservan el alcance histórico de
+CU-013. La cancelación del establecimiento ya se implementó en
+[DECISION-CU011F.md](DECISION-CU011F.md), con la misma serialización del pedido,
+historial/avisos y política conservadora de inventario. F12 global sigue pendiente.

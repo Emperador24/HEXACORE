@@ -1,10 +1,19 @@
 # Alternar Redash y HEXACORE en este Mac
 
-Estado comprobado el **11 de noviembre de 2026, 21:40 UTC**: siete contenedores
-Redash activos, `/ping` y `/login` responden 200; `hexacore-cu015-sebastian`
-detenido mediante su script, con datos y volúmenes conservados. No se repitió
-la aceptación: los **13/13 automático y 13/13 visible** corresponden a la
-condición anterior con Redash detenido. CU-028 sigue pendiente de Samuel.
+Estado posterior a CU-011F, **12 de noviembre de 2026, 00:55 UTC** (11/11 en
+Bogotá): siete contenedores Redash activos; `hexacore-cu015-sebastian` detenido
+mediante su script, con datos y volúmenes conservados. **Redash HTTP pendiente**:
+PostgreSQL listo y Redis PONG, pero `/ping` y `/login` agotan 5 s y hay OOM nuevos
+con CU-015 detenido. Un único arranque escalonado logró HTTP 200 hasta incorporar
+el último worker; no se repiten reinicios ni se afirma disponibilidad por estar
+`running`. El responsable debe liberar capacidad autorizada o revisar concurrencia
+de Redash y comprobar HTTP; no intervenir otros proyectos con esta guía.
+
+Aceptación CU-011F actual con Redash detenido: **16/16 automático y 16/16 visible**,
+tests c3d3386, límites normales, cero reintentos. Conserva la referencia histórica
+13/13. Esquema actual **35 migraciones, 18 procedencias históricas intactas**;
+no volver a preparar o sembrar para reanudar los mismos contenedores. CU-028 sigue
+pendiente de Samuel. Las ventanas y fallos anteriores están en el plan.
 
 Con el presupuesto actual de Docker, usar un proyecto cada vez. Estos pasos
 reanudan **los contenedores existentes**; no construyen ni descargan imágenes,
@@ -36,14 +45,22 @@ docker exec redash-postgres-1 sh -c 'pg_isready -q -U "${POSTGRES_USER:-postgres
 docker exec redash-redis-1 redis-cli PING
 ```
 
-Esperar a PostgreSQL listo y Redis `PONG`. Después reanudar las aplicaciones
-que estaban activas antes de alternar; en esta instalación son estas cinco:
+Esperar a PostgreSQL listo y Redis `PONG`. Reanudar solo aplicaciones que estaban
+activas antes de alternar; en esta instalación son cinco. Incorporarlas una a
+una, comprobando `/ping` y `/login` antes de continuar:
 
 ```bash
-docker compose --project-name redash -f compose.yaml start server scheduled_worker scheduler adhoc_worker worker
+docker compose --project-name redash -f compose.yaml start server
 curl --fail --silent --show-error --max-time 15 http://127.0.0.1:5001/ping
 curl --fail --silent --show-error --max-time 15 --output /dev/null --write-out '%{http_code}\n' http://127.0.0.1:5001/login
 ```
+
+Si responde, incorporar `scheduler`, `worker`, `adhoc_worker` y `scheduled_worker`
+con `docker compose --project-name redash -f compose.yaml start SERVICIO`,
+comprobando salud HTTP y nuevos OOM después de cada uno. No automatizar un ciclo
+de reinicios ante fallo. El 12/11 el servidor respondió 200 hasta la incorporación
+del último worker y después volvió a agotar el plazo con memoria/swap escasos.
+Se restauraron los siete estados iniciales, pero su disponibilidad quedó bloqueada.
 
 Comprobar también el acceso en el navegador:
 [http://127.0.0.1:5001/login](http://127.0.0.1:5001/login).
@@ -92,7 +109,10 @@ docker start hexacore-cu015-sebastian-{nucleo,boleteria,trabajador,api-gateway,p
 ```
 
 Comprobar once servicios saludables y salud HTTP/login con la configuración
-demo privada habitual, sin mostrar claves. **No arrancar `preparacion-base`**
+demo privada habitual, sin mostrar claves. Tras reiniciar Núcleo, comprobar
+también **la ruta pública `/api/v1/salud` del gateway**: salud interna no demuestra
+que haya terminado su resolución DNS. No comenzar el negocio si falla esta
+precondición ni reintentar pagos para ocultarla. **No arrancar `preparacion-base`**
 para una simple reanudación del entorno ya preparado. Estas instrucciones
 requieren los mismos contenedores, configuración, esquema e imágenes actuales;
 si falta alguno, cambian fuentes o hay puertos ocupados, detenerse y revisar el
@@ -107,8 +127,24 @@ activo. Comparar eventos Docker, horas de logs y contadores cgroup `oom_kill`
 entre dos momentos. Un reinicio recrea el cgroup y puede devolver sus contadores
 a cero; conservar también el evento anterior y el contador de reinicios.
 
-La recuperación de esta entrega se logró **sin reinicios manuales de Redash**.
-Después de parar CU-015 se observaron unos cuatro minutos sin nuevos OOM o
-reinicios, con HTTP correcto; no es una garantía de disponibilidad sostenida.
+La recuperación histórica de las 21:40 UTC logró HTTP 200 sin reinicios manuales.
+En la restauración posterior a CU-011F hubo **OOM nuevos** con CU-015 detenido;
+server pasó de 4 a 8 `oom_kill` en el mismo cgroup entre las 00:49 y 00:55 UTC.
+El único escalonado reinició cuatro servicios de aplicación, no proveedores,
+sin cambiar imágenes, configuración o volúmenes. Dejar siete `running` no resolvió
+la falta de capacidad; no se amplió esa intervención.
 Diagnóstico y mediciones exactas:
 [PLAN-CIERRE-SEBASTIAN.md](PLAN-CIERRE-SEBASTIAN.md).
+
+## Ver CU-011F tras alternar a HEXACORE
+
+Con los once servicios saludables, login demo disponible y Redash detenido:
+
+```bash
+CU015_DEMO_MS=2000 npm --prefix App/e2e run demo -- cu011f --grep 'por interfaces'
+```
+
+Muestra compra, cancelación por Personal con motivo/confirmación, recuperación
+de respuesta perdida, reembolso confirmado y aviso al cliente sin QR utilizable.
+Usa cuentas y proveedores simulados existentes, más fixtures propias; no cambia
+claves ni resiembra. Los informes DEMO privados no sustituyen la aceptación normal.
