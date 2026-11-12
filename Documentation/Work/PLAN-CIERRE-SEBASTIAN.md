@@ -1,5 +1,180 @@
 # Cierre de Alimentos — Sebastián
 
+## Publicación del diagnóstico de apagado — 11/11/2026 (12/11 UTC)
+
+**Se publica instrumentación de diagnóstico, no una corrección de SIGTERM. La
+causa sigue desconocida.** Permanecen sin reemplazar la CI **43133728869 7/8**
+y la posterior **43137450806 8/8** descritas debajo. Un nuevo aprobado no
+demuestra que la intermitencia haya desaparecido ni convierte el fallo previo
+en aprobado. La aceptación CU-011F **16/16 automático y 16/16 visible** se
+reutiliza; no se repiten sus recorridos.
+
+Se revisó el trabajo local sobre **feature/sebastian**, HEAD 333b4c9; fetch sin
+cambios de referencias: origin/feature/sebastian 333b4c9 y develop 41ca881.
+PR #50 continúa abierto. Solo cambian el arnés CU-011, el observador y sus
+comprobaciones/documentación, un paso CI que las ejecuta y este plan. **Main,
+hooks y comportamiento de producto intactos**, sin dependencias nuevas,
+recursos globales, cambio de plazo o aserciones del control real.
+
+El preload se carga en el hijo del test que ya ejecuta CI; registra fases
+abiertas, duración y cantidades de tareas, HTTP, PostgreSQL, Redis, AMQP y tipos
+de handles. La escucha de SIGTERM es de un solo uso. Se mantienen **5.000 ms**
+en el arnés, hasta ocho muestras cada 500 ms y 256 registros totales. Si el
+watchdog hace fallar el control, el error conserva los registros de diagnóstico
+emitidos antes del cierre forzado. Se evita volcar la salida ordinaria del hijo
+en ese error; el log completo sigue privado. No se incorporan datos
+de negocio, credenciales, consultas, argumentos, mensajes o identidades a esos
+registros, ni se publican informes privados como artefactos CI.
+
+Comprobación adicional necesaria: fixture Nest/HTTP **sin proveedores externos**,
+con una tarea artificial retenida. Verifica ocho muestras, fase abierta con
+espera de al menos 3,5 s y última muestra antes de 5 s, una tarea y una solicitud/
+socket HTTP pendientes. Después libera esa tarea exclusivamente de la fixture y
+exige SIGTERM sin watchdog; un cierre forzado sería fallo. Comprueba que no se
+filtren los marcadores privados artificiales de URL, cabecera y tarea. Resultado
+**1/1**, salida 0, **02:50:08.460862–02:50:13.404776 UTC**. No es una reproducción
+del bloqueo de Núcleo ni una corrección del producto. CI ejecutará el conjunto
+de **siete comprobaciones del observador** antes de levantar sus proveedores.
+
+Se reutilizan sin repetir el control real **31,23 ms / 1 aprobado**, las **5/5**
+comprobaciones previas del observador y el build aprobado. Además de la captura
+controlada **1/1**, se ejecutan el reporte acotado de timeout **1/1**, la guarda
+directamente afectada por el workflow **1/1** y tipos backend tras el cambio del
+reporte en el arnés, todos aprobados. No se cambian
+sus artefactos permitidos, los límites de CI o los dos controles Núcleo existentes.
+Esta publicación no opera Docker ni repite diagnóstico de memoria/Redash.
+
+Límite de observación: si el event loop del hijo se congela, no puede emitir
+muestras nuevas. Quedan el último inicio/muestra y la señal/tiempo del padre;
+no se promete una fotografía reciente de un proceso que no ejecuta JavaScript.
+Sigue faltando una captura instrumentada durante una **ocurrencia real** del
+fallo que permita clasificar producto/arnés/entorno. No se intenta reproducir
+indefinidamente ni se amplía a otras funciones.
+
+Publicación autorizada únicamente en origin/feature/sebastian, como diagnóstico,
+y actualización del PR #50, sin merge o auto-merge. El resultado de la CI de ese
+commit se registra en el PR y se informa por separado: **no es evidencia de una
+corrección causal**. El registro de la entrega local anterior se conserva debajo.
+
+## Investigación acotada de SIGTERM — 11/11/2026 (12/11 UTC)
+
+**El bloqueo no se reprodujo en el único control dirigido. No hay corrección
+causal de producto demostrada ni se declara resuelta la intermitencia.** Se
+conservan ambos resultados remotos, sin convertir el anterior en aprobado:
+
+| Referencia GitHub | Resultado comprobado |
+|---|---|
+| [43133728869](https://github.com/Emperador24/HEXACORE/actions/runs/43133728869), bd40eaf | **7/8 trabajos**; primera pasada Núcleo **121/122**, fallo SIGTERM tras 5 s y SIGKILL del arnés; segunda no ejecutada |
+| [43137450806](https://github.com/Emperador24/HEXACORE/actions/runs/43137450806), 333b4c9 | **8/8 trabajos**; Núcleo **122/122 en cada una de dos pasadas**, 11/11 suites por pasada |
+
+Entre bd40eaf y 333b4c9 solo hay documentación. Main, hooks y control CU-011
+eran idénticos: la aprobación posterior no acredita una corrección. Se revisaron
+el test exacto, `enableShutdownHooks`, el manejador de Nest instalado y sus
+fases reales: `callDestroyHook` → `callBeforeShutdownHook` → `dispose` (HTTP) →
+`callShutdownHook` (liberación de proveedores) → señal final de Nest.
+
+### Instrumentación local y alcance
+
+Rama **feature/sebastian**, HEAD inicial **333b4c9**, árbol inicialmente limpio;
+fetch mantuvo origin/feature/sebastian en esa referencia y develop en 41ca881.
+PR #50 seguía abierto al consultar. Los cambios de esta investigación son solo
+el arnés CU-011, el preload/controles de observación y documentación; no cambian
+main, hooks de producto, lógica financiera, funciones, dependencias o recursos
+globales. No se repitieron aceptación CU-011F (16/16 por modalidad), recorridos
+de negocio ni diagnóstico de memoria/Redash.
+
+Se añade [observador de cierre](../../App/backend/test/apagado/README.md),
+cargado exclusivamente en el hijo E2E. Registra inicio/final/duración por hook y
+fase, contadores de tareas, HTTP, PG, Redis y AMQP; tipos de handles, no destinos
+ni contenido. Un máximo de ocho muestras de recursos cada 500 ms y 256 registros
+totales. No emite claves, SQL, comandos, mensajes, identidades ni excepciones.
+El arnés añade duración monótona hasta `exit`, señal/código y disparo del
+watchdog. Conserva sus **5.000 ms**, aserciones y rechazo de cierre forzado.
+No se añadió process.exit/SIGKILL de producto ni se absorbe la señal final.
+
+El smoke inicial del preload detectó un subpath privado de amqplib no exportado;
+se sustituyó por observación mediante su API pública `connect` y creación de
+canales. Se añadió el smoke a las pruebas del observador; no se confundió ese
+error de instrumentación con el bloqueo de Núcleo.
+
+### Entorno y ejecución única
+
+Se registraron IDs/estados iniciales: **Redash 7 activos**, CU-015 y el entorno
+E2E `hexacore-base-unica-e2e` detenidos. Redash se detuvo por sus etiquetas,
+aplicaciones primero y proveedores después, con gracia de 120 s, sin down,
+recreaciones o volúmenes nuevos. Solo se arrancaron los cinco proveedores E2E
+existentes (PostgreSQL, Redis, RabbitMQ, pasarela y correo simulados), todos
+saludables; ni sus imágenes de aplicaciones ni CU-015 se arrancaron.
+
+La base exclusiva E2E estaba aún en las 18 migraciones originales (Alimentos 2).
+Se ejecutó una vez la preparación registrada actual desde el build, **18 → 35**,
+con sus 17 migraciones posteriores; salida 0, **sin semillas**, sin modificar
+fuentes históricas o limpiar datos. Esto actualiza el esquema del recurso de
+prueba existente; no se revierte al restaurar los estados de contenedores.
+El entorno CU-015 de la aceptación conservó su base/servicios detenidos intactos.
+El control crea y limpia únicamente sus fixtures originales de beforeAll/afterAll.
+
+Comando ejecutado desde App/backend, con Node **22.22.3**, después de tipos y build:
+
+```bash
+node --experimental-vm-modules node_modules/jest/bin/jest.js --config test/jest-e2e.json --runInBand --runTestsByPath test/cu011.e2e-spec.ts --testNamePattern='SIGTERM cierra el único proceso'
+```
+
+Ventana **02:18:16.112432–02:18:24.946550 UTC**. **Un control aprobado**, salida
+0; los otros ocho no se ejecutaron por el filtro. No es un 9/9 ni una aceptación
+de negocio. El hijo terminó por **SIGTERM en 31,23 ms**; exitCode null,
+watchdog false y ninguna solicitud SIGKILL. Se recogieron **85 registros**:
+
+| Fase observada | Duración / evidencia |
+|---|---|
+| Tareas y hooks onModuleDestroy | **9,67 ms**; sin fases abiertas al terminar |
+| beforeApplicationShutdown | **1,21 ms** |
+| HTTP dispose | **0,24 ms**; sin escucha, solicitudes o sockets HTTP al final |
+| PostgreSQL | **7 pools cerrados**, total/libres/en espera 0 y siete DataSource desinicializados; destroy 0,04–0,35 ms por fuente |
+| Redis compartido | quit **1,06 ms**; ambos clientes Redis terminaron end y sin comandos/cola sin conexión |
+| AMQP | canal **8,84 ms**, conexión **0,85 ms**, hook total **9,77 ms**; cero canales/conexiones al final |
+| Fase liberar proveedores completa | **12,78 ms**; registro completo a **25,93 ms** desde la señal |
+
+Las fases anidadas se solapan; no se suman como tiempos independientes. Quedaban
+dos TCPSocketWrap y un SimpleShutdownWrap en la muestra previa a la señal final,
+con todos los proveedores cerrados; no se declaran cero handles del proceso.
+El hijo salió normalmente por señal y las comprobaciones externas originales
+de PostgreSQL, Redis y RabbitMQ aprobaron.
+
+Comprobaciones relacionadas: **observador 5/5** (carga con dependencias reales,
+promesas/callback/this/error, pendientes y límites sin datos privados), tipos
+backend y build Núcleo aprobados. No se ejecutó ninguna suite ajena ni un
+segundo control SIGTERM para buscar verde.
+
+### Diagnóstico, límite y siguiente observación
+
+En este control local **no había una espera bloqueada**: todas las fases
+terminaron. No permite determinar qué esperaba el hijo de la CI fallida ni
+clasificar definitivamente producto/arnés/entorno. La CI 43133728869 solo conserva
+los últimos logs de tareas/AMQP antes de agotar el plazo; no contiene la fase
+abierta, recursos pendientes, duración monótona o señal real de salida del hijo.
+Además, el filtro local ejecuta el beforeAll original sin los ocho casos API
+previos de la CI: no se afirma equivalencia de carga/historia o runner.
+
+**Observación concreta faltante:** una captura instrumentada de un SIGTERM que
+exceda 5 s en esas condiciones, con inicio sin final del hook/fase responsable,
+sus recursos pendientes y el evento exit del padre. Esa evidencia permitirá
+distinguir una espera de HTTP/PG/Redis/AMQP/tarea de una demora del arnés/entorno.
+El observador está preparado localmente para capturarla sin relajar el control.
+Sin reproducción o causa demostrada no se modifica el producto. Se conserva
+el trabajo local para revisión; **no se hace commit/push como corrección** al no
+cumplirse esa condición de la entrega. No se modifica ni se declara resuelto
+el PR #50. Logs, JSON por fases y ambos resultados CI permanecen privados en
+`App/e2e/.evidencia/sigterm-2026-11-12T02-08-34Z/`.
+
+Restauración registrada **02:21:50.436 UTC**: **los mismos siete IDs Redash
+running, cero activos E2E y cero CU-015**, igual que al inicio. No se alteraron
+otros proyectos, imágenes, configuración, montajes o volúmenes. No se repitió
+el diagnóstico de memoria ni se amplía a F12 o Seguridad. La comparación final
+de **29 contenedores a las 02:26:19.574 UTC** confirmó los mismos IDs, estados,
+imágenes, configuración y conjuntos de montajes. Docker devolvió algunos
+montajes en otro orden; se compararon por su contenido, sin diferencias reales.
+
 ## Entrega CU-011F — 11 de noviembre de 2026 (12/11 UTC)
 
 **Comprobación final de Redash, 01:50:36.571–01:50:38.617 UTC:** sus siete

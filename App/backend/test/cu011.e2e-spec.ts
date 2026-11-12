@@ -1,11 +1,13 @@
 import { opcionesSesion } from '../compartido/persistencia/esquemas';
 const { base: basePruebas, opcionesPg } = require('./base-unica/conexiones.cjs');
+const { diagnosticoCapturado } = require('./apagado/observar.cjs');
 import { opcionesDataSource as opcionesLogistica } from '../modulos/personal-logistica/persistencia/data-source';
 import 'reflect-metadata';
 import { ChildProcess, execFileSync, spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { readFileSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { performance } from 'node:perf_hooks';
 import { JwtService } from '@nestjs/jwt';
 import { Channel, ChannelModel, connect, ConsumeMessage } from 'amqplib';
 import Redis from 'ioredis';
@@ -63,12 +65,17 @@ describe('CU-011 Alimentos → Pagos → pasarela con persistencia y mensajería
       throw new Error(`Núcleo terminó antes del SIGTERM de la prueba: ${salidaServidor}`);
     }
     cierreSolicitado = true;
+    const inicioCierre = performance.now();
     const cerrado = new Promise<void>((resolve) => servidor.once('exit', () => resolve()));
     servidor.kill('SIGTERM');
     let forzado = false;
-    const timer = setTimeout(() => { forzado = true; servidor.kill('SIGKILL'); }, 5000);
+    let killSolicitado: boolean | null = null;
+    const timer = setTimeout(() => { forzado = true; killSolicitado = servidor.kill('SIGKILL'); }, 5000);
     try { await cerrado; } finally { clearTimeout(timer); }
-    if (forzado) throw new Error(`Núcleo no terminó tras SIGTERM: ${salidaServidor}`);
+    console.log('CIERRE_ARNES ' + JSON.stringify({ plazoMs: 5000,
+      duracionMs: Math.round((performance.now() - inicioCierre) * 100) / 100,
+      codigo: servidor.exitCode, senal: servidor.signalCode, watchdogDisparo: forzado, killSolicitado }));
+    if (forzado) throw new Error(`Núcleo no terminó tras SIGTERM: ${diagnosticoCapturado(salidaServidor)}`);
     expect(servidor.signalCode === 'SIGTERM' || servidor.exitCode === 0).toBe(true);
     expect(salidaServidor).not.toMatch(/UnknownElementException|Cierre de RabbitMQ con incidencias|EXPIRACION_RESERVAS_FALLIDA|ERROR/);
     expect(salidaServidor).toContain('Sondeo de reservas detenido');
@@ -164,8 +171,8 @@ describe('CU-011 Alimentos → Pagos → pasarela con persistencia y mensajería
     base = `http://127.0.0.1:${config.puerto}`;
     // main.js usa el AppModule/ValidationPipe reales. No hay mocks, mappers ni
     // providers reemplazados. El proceso hijo hereda solo los destinos fijados.
-    servidor = spawn(process.execPath, [resolve(__dirname, '../dist/apps/nucleo/main.js')],
-      { env: process.env, stdio: ['ignore', 'pipe', 'pipe'] });
+    servidor = spawn(process.execPath, ['--require', resolve(__dirname, 'apagado/observar.cjs'), resolve(__dirname, '../dist/apps/nucleo/main.js')],
+      { env: { ...process.env, NUCLEO_OBSERVAR_CIERRE: '1' }, stdio: ['ignore', 'pipe', 'pipe'] });
     mkdirSync(resolve(__dirname, '../.evidencia-e2e'), { recursive: true });
     writeFileSync(resolve(__dirname, '../.evidencia-e2e/servidor.pid'), String(servidor.pid));
     let errorArranque: Error | undefined;

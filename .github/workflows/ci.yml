@@ -135,6 +135,8 @@ jobs:
       - run: npm ci
       - name: Composición AMQP entre contextos V8, sin recursos
         run: node --test test/boleteria/procesos.test.cjs
+      - name: Instrumentación de apagado, sin proveedores
+        run: node --test test/apagado/observar.test.cjs
       - name: Infraestructura exclusiva y preparación única de ocho esquemas
         run: npm run test:infra
       - name: Tipos
