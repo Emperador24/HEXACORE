@@ -183,6 +183,19 @@ esa corrección de test y documentación; no requiere repetir los 16 recorridos
 de negocio ni reconstruir aplicaciones. El resultado remoto posterior se
 informa en el PR, separado de esta aceptación local.
 
+La CI siguiente de **e4310a5**, ejecución
+[43131655958](https://github.com/Emperador24/HEXACORE/actions/runs/43131655958),
+aprobó Flutter y encontró otro fallo durante la semilla de la instalación nueva:
+PostgreSQL **0A000**, `cancelaciones_pedido` referencia `historial_preparacion`
+y no figuraba en el grupo explícito TRUNCATE. Se incorpora únicamente esa tabla
+al grupo de la semilla, conservando **RESTRICT**, sin CASCADE ni cambios de FK o
+migración. La regresión del script con DataSource simulado reproduce la FK
+incompleta (**1/1 fallido**, 01:07:26–01:07:29 UTC) y aprueba después de corregir
+la lista (**1/1 aprobado**, 01:07:34.924598–01:07:36.925183 UTC). **No se ejecutó
+la semilla en este Mac ni se alteraron sus datos**; la instalación nueva se
+comprueba en el runner aislado de GitHub. Este ajuste del script de fixtures no
+cambia las aplicaciones aceptadas ni requiere repetir sus recorridos de negocio.
+
 Commits comprobados: **dc8d40b** conservación documental previa; **5edafb7**
 backend/migración/política; **bbb0195** web/Flutter; **b4a9fba** negocio/carreras;
 **fa6873f** recuperación financiera y navegación; **6d29617** vigencia de QR del

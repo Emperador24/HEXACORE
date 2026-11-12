@@ -29,6 +29,9 @@ La primera CI de esta publicación encontró dos widgets Flutter fallidos por
 un doble antiguo sin `pendienteCancelacion()`. Se reprodujeron y corrigieron
 solo en el doble; dirigido local **2/2**. No cambia la aplicación ni invalida la
 fuente de aceptación anterior; la nueva CI se registra aparte en el PR.
+La instalación nueva de CI detectó además una FK omitida de la limpieza explícita
+de la semilla: se añadió `cancelaciones_pedido` manteniendo RESTRICT. Regresión
+del script **1/1**; no se ejecutó ninguna semilla contra los datos locales.
 
 Estado restaurado: **HEXACORE detenido, Redash siete running** con sus datos,
 pero `/ping` y `/login` no recuperados por presión/OOM nuevos. PostgreSQL y Redis
