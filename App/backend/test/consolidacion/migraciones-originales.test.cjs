@@ -28,7 +28,7 @@ test('las migraciones posteriores de Alimentos, Logística y Entradas no amplía
   const posteriores = mapa.flatMap(m => readdirSync(join(raiz,m.modulo,'persistencia/migraciones'))
     .filter(f => f.endsWith('.ts')).map(f => `${m.modulo}/persistencia/migraciones/${f}`))
     .filter(ruta => !fuentes.has(ruta));
-  for (const nombre of ['GestionEstablecimientosCu015','MenuInventarioCu012','PreparacionCu013','EntregaCu014',
+  for (const nombre of ['GestionEstablecimientosCu015','MenuInventarioCu012','PreparacionCu013','EntregaCu014','CancelacionCu011F',
     'Cu007GestionPersonal','Cu008Cu009CambiosAsistencia']) {
     assert.ok(posteriores.some(ruta => ruta.includes(nombre)), nombre);
   }

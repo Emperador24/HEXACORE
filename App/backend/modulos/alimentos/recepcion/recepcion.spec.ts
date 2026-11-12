@@ -17,7 +17,7 @@ describe('Consulta de pedidos recibidos', () => {
     manager.find.mockResolvedValueOnce([{ id: 'p', estado: EstadoPedido.CONFIRMADO, total: '62000.00', moneda: 'COP',
       confirmadoEn: new Date('2026-09-22T00:00:00Z'), clienteId: 'privado', codigoQr: 'secreto' }])
       .mockResolvedValueOnce([{ pedidoId: 'p', nombreProducto: 'Nombre histórico', cantidad: 2, precioUnitario: '31000.00' }])
-      .mockResolvedValueOnce([]).mockResolvedValueOnce([{ pedidoId: 'p', estado: EstadoTransaccionPedido.APROBADA, monto: '62000.00', moneda: 'COP' }]).mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+      .mockResolvedValueOnce([]).mockResolvedValueOnce([{ pedidoId: 'p', estado: EstadoTransaccionPedido.APROBADA, monto: '62000.00', moneda: 'COP' }]).mockResolvedValueOnce([]).mockResolvedValueOnce([]).mockResolvedValueOnce([]);
     const resultado = await servicio.listar('local');
     expect(resultado).toMatchObject([{ id: 'p', estado: 'CONFIRMADO', total: '62000.00', moneda: 'COP',
       confirmadoEn: '2026-09-22T00:00:00.000Z', productos: [{ nombreProducto: 'Nombre histórico', cantidad: 2, precioUnitario: '31000.00' }] }]);

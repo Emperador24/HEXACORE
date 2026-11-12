@@ -10,7 +10,7 @@ const {conectar,backend}=require('../cu012/entorno.cjs');
  const control=new Client({...comunes,database:'hexacore_cu015'});await control.connect();
  function preparar(base,anterior=false){
   const programa=`const h=require(${JSON.stringify(resolve(backend,'dist/compartido/persistencia/historia'))});
-   ${anterior?"const g=h.GRUPOS_MIGRACIONES.find(g=>g.conexion==='alimentos');g.migraciones=g.migraciones.filter(M=>!['PreparacionCu0131794500000000','EntregaCu0141794600000000'].includes(M.name));":''}
+   ${anterior?"const g=h.GRUPOS_MIGRACIONES.find(g=>g.conexion==='alimentos');g.migraciones=g.migraciones.filter(M=>!['PreparacionCu0131794500000000','EntregaCu0141794600000000','CancelacionCu011F1794700000000'].includes(M.name));":''}
    require(${JSON.stringify(resolve(backend,'dist/compartido/persistencia/preparar-base'))}).prepararBase().catch(e=>{console.error(e.message);process.exitCode=1;});`;
   const env={PATH:process.env.PATH,HOME:process.env.HOME,NODE_ENV:'test',POSTGRES_HOST:'127.0.0.1',POSTGRES_PUERTO:'15459',POSTGRES_USUARIO:comunes.user,POSTGRES_CONTRASENA:comunes.password,POSTGRES_BD:base};
   return JSON.parse(execFileSync(process.execPath,['-e',programa],{env,cwd:'/tmp',encoding:'utf8'}).trim().split('\n').at(-1));
@@ -19,7 +19,7 @@ const {conectar,backend}=require('../cu012/entorno.cjs');
   const sufijo=randomUUID().replaceAll('-','').slice(0,12);
   for(const modo of ['vacia','actualizacion']){
    const base=`cu013_${sufijo}_${modo}`;await control.query(`CREATE DATABASE "${base}"`);
-   assert.equal(preparar(base,modo==='actualizacion').migraciones,modo==='vacia'?34:32);
+   assert.equal(preparar(base,modo==='actualizacion').migraciones,modo==='vacia'?35:32);
    const c=new Client({...comunes,database:base});await c.connect();
    try {
     if(modo==='actualizacion'){
@@ -35,7 +35,7 @@ const {conectar,backend}=require('../cu012/entorno.cjs');
      await c.query("INSERT INTO alimentos.transacciones_pedido(id,pedido_id,monto,moneda,estado,referencia_pasarela) VALUES($1,$2,2000.50,'COP','APROBADA','referencia previa')",[randomUUID(),pagado]);
      const tablas=['productos','pedidos','transacciones_pedido','reservas_inventario','detalles_pedido','establecimientos'];
      const antes=[];for(const t of tablas)antes.push((await c.query(`SELECT * FROM alimentos.${t} ORDER BY 1`)).rows);
-     assert.deepEqual(preparar(base).esquemas.alimentos.aplicadas,['PreparacionCu0131794500000000','EntregaCu0141794600000000']);
+     assert.deepEqual(preparar(base).esquemas.alimentos.aplicadas,['PreparacionCu0131794500000000','EntregaCu0141794600000000','CancelacionCu011F1794700000000']);
      for(let i=0;i<tablas.length;i++)assert.deepEqual((await c.query(`SELECT * FROM alimentos.${tablas[i]} ORDER BY 1`)).rows,antes[i]);
      const {DataSource}=require('typeorm');const {ENTIDADES}=require(resolve(backend,'dist/modulos/alimentos/persistencia/data-source'));
      const ds=new DataSource({type:'postgres',host:comunes.host,port:comunes.port,username:comunes.user,password:comunes.password,database:base,schema:'alimentos',entities:ENTIDADES,synchronize:false,installExtensions:false,extra:{options:'-c search_path=alimentos,pg_catalog,extensiones',max:2}});
@@ -48,7 +48,7 @@ const {conectar,backend}=require('../cu012/entorno.cjs');
     assert.ok(Object.values(preparar(base).esquemas).every(g=>g.aplicadas.length===0));
     assert.equal((await c.query('SELECT count(*)::int n FROM migracion_control.procedencia')).rows[0].n,18);
     assert.equal((await c.query("SELECT count(*)::int n FROM pg_tables WHERE schemaname='public'")).rows[0].n,0);
-    console.log(`${modo}: ${base}, 34 migraciones; repetición sin DDL y 18 procedencias. Productos, reservas, pedidos, pagos y detalles previos idénticos; confirmado histórico recibido y mismo QR.`);
+    console.log(`${modo}: ${base}, 35 migraciones; repetición sin DDL y 18 procedencias. Productos, reservas, pedidos, pagos y detalles previos idénticos; confirmado histórico recibido y mismo QR.`);
    }finally{await c.end();}
   }
  }finally{await control.end();await entorno.cerrar();}

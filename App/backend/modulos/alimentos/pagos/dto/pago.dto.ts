@@ -27,6 +27,7 @@ export function aPagoDto(pedido: Pedido, intento: TransaccionPedido): PagoDto {
       ? intento.motivo === 'PASARELA_TIMEOUT' ? 'PASARELA_TIMEOUT' : 'PAGO_INCIERTO'
       : `PAGO_${intento.estado}`,
     compraConfirmada: pedido.estado === EstadoPedido.CONFIRMADO,
-    codigoQr: pedido.codigoQr,
+    codigoQr: pedido.estado === EstadoPedido.CONFIRMADO ? pedido.codigoQr : null,
+    ...(pedido.estado === EstadoPedido.CANCELADO ? { qrUtilizable: false } : {}),
   };
 }

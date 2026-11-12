@@ -41,6 +41,13 @@ export class PagosService {
     );
   }
 
+  /** Lectura del libro existente; no llama al proveedor ni recupera cobros F12. */
+  async consultar(claveIdempotencia: string, solicitante: string) {
+    const r = await this.datos.getRepository(TransaccionPago).findOne({ where: { claveIdempotencia, solicitante } });
+    return r ? { tipo: r.tipo, monto: r.monto, moneda: r.moneda,
+      resultado: r.resultado, referencia: r.referencia, motivo: r.motivo } : null;
+  }
+
   /**
    * Libro por clave: conserva los resultados terminales ya registrados.
    *
