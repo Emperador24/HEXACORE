@@ -37,7 +37,7 @@ describe('Webhook de Stripe', () => {
     });
     it('un cobro fallido', () => {
       expect(traducirEvento(evento('payment_intent.payment_failed', { id: 'pi_1', last_payment_error: { message: 'Your card was declined.' } })))
-        .toMatchObject({ resultado: ResultadoCobro.RECHAZADO, motivo: 'Your card was declined.' });
+        .toMatchObject({ resultado: ResultadoCobro.RECHAZADO, motivo: 'Stripe rechazó la operación' });
     });
     it.each([
       ['succeeded', ResultadoCobro.APROBADO],

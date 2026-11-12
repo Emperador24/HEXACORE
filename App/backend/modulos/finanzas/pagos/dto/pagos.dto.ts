@@ -1,3 +1,5 @@
+import { TOKEN_PAGO } from '../../../../compartido/token-pago';
+import { Matches as CoincideToken } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsIn, IsNumber, IsPositive, IsString, Length, Matches, MaxLength } from 'class-validator';
 import { ResultadoCobro } from '../procesador-pagos';
@@ -28,6 +30,7 @@ export class CobrarDto {
   @ApiProperty({ description: 'Token opaco del medio de pago. RNF-05: aquí nunca llegan datos de tarjeta.' })
   @IsString()
   @Length(4, 200)
+  @CoincideToken(TOKEN_PAGO, { message: 'Usa un token opaco emitido por la pasarela' })
   token: string;
 
   @ApiProperty()

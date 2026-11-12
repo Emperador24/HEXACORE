@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsIn, IsOptional, IsString, Length, MaxLength } from 'class-validator';
+import { IsIn, IsOptional, IsString, Length, Matches, MaxLength } from 'class-validator';
 import { TipoOperacion } from '../contratos/tipo-operacion';
 import { ResultadoCobro } from '../procesador-pagos';
 
@@ -28,11 +28,13 @@ export class NotificacionPasarelaDto {
   @IsOptional()
   @IsString()
   @MaxLength(128)
+  @Matches(/^(?:pas|ree)_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
   referencia: string | null;
 
   @ApiProperty({ nullable: true })
   @IsOptional()
   @IsString()
   @MaxLength(120)
+  @IsIn(['Fondos insuficientes', 'No existe un cobro aprobado con esa referencia', 'El medio de pago no admite reembolsos', 'El reembolso supera lo cobrado'])
   motivo: string | null;
 }

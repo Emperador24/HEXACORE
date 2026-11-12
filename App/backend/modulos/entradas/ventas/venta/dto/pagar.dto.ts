@@ -1,3 +1,5 @@
+import { TOKEN_PAGO } from '../../../../../compartido/token-pago';
+import { Matches as CoincideToken } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsIn, IsString, Length } from 'class-validator';
 
@@ -34,5 +36,6 @@ export class PagarDto {
   @ApiProperty({ description: 'Token opaco del medio de pago; nunca datos de tarjeta', example: 'tok_ok_demo' })
   @IsString()
   @Length(3, 200)
+  @CoincideToken(TOKEN_PAGO, { message: 'Usa un token opaco emitido por la pasarela' })
   token: string;
 }
