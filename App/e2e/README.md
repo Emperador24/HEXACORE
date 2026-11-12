@@ -45,9 +45,10 @@ o relajar tiempos; hace falta observar hooks/handles en ese control. El registro
 documental posterior no sustituye ese resultado. La aceptación local **16/16
 por modalidad** sigue separada; no se declara CI remota verde.
 
-Estado restaurado: **HEXACORE detenido, Redash siete running** con sus datos,
-pero `/ping` y `/login` no recuperados por presión/OOM nuevos. PostgreSQL y Redis
-responden; el responsable debe revisar capacidad. No repetir ciclos de reinicio.
+Estado final comprobado a las **01:50 UTC**: **HEXACORE detenido, Redash siete
+running y `/ping`/`/login` 200**. Antes hubo presión/OOM nuevos y timeouts, que
+se conservan en el plan. No se hicieron más reinicios tras el único escalonado;
+la sonda posterior acredita acceso, sin garantizar estabilidad sostenida.
 Alternancia y diagnóstico:
 [guía local](../../Documentation/Work/OPERACION-LOCAL-REDASH-HEXACORE.md) y
 [plan con resultados e historial](../../Documentation/Work/PLAN-CIERRE-SEBASTIAN.md).

@@ -2,6 +2,14 @@
 
 ## Entrega CU-011F — 11 de noviembre de 2026 (12/11 UTC)
 
+**Comprobación final de Redash, 01:50:36.571–01:50:38.617 UTC:** sus siete
+IDs iniciales siguen `running`, CU-015 tiene cero servicios activos y **`/ping`
+y `/login` responden 200**. No hubo otra intervención después del único
+escalonado. Esta sonda posterior supera el bloqueo HTTP observado a las 00:55,
+que se conserva abajo; no borra los OOM del arranque ni demuestra estabilidad
+sostenida o convivencia de proyectos. Evidencia privada:
+`comprobacion-final-publicacion.json` en la carpeta de esta entrega.
+
 **Implementada la cancelación por Personal del establecimiento, con reembolso
 durable y seguimiento web/Flutter. Aceptación actual: 16/16 automático normal
 y 16/16 visible normal, por separado, con Redash detenido.** Se reutilizó la
@@ -153,7 +161,7 @@ scheduler, sin reiniciar PostgreSQL/Redis/server: servidor solo respondió
 worker y adhoc_worker. Tras incorporar scheduled_worker, ambos agotaron 5 s a
 las 00:53:53 y en las sondas finales. No se repitió otro ciclo.
 
-Estado final registrado **00:55:49 UTC**: **Redash 7 running, CU-015 0 activos**;
+Estado intermedio registrado **00:55:49 UTC**: **Redash 7 running, CU-015 0 activos**;
 PostgreSQL listo y Redis PONG, pero **Redash HTTP no recuperado**. Memoria VM
 disponible 180,21 MiB, swap libre 0,32 MiB, PSI some/full avg10 31,21/24,42 %.
 El contador server aumentó de 4 a 8; hubo nuevos OOM también en workers tras

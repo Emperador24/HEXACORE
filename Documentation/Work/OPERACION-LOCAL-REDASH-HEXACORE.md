@@ -1,5 +1,11 @@
 # Alternar Redash y HEXACORE en este Mac
 
+**Comprobación posterior, 12/11 a las 01:50 UTC:** `/ping` y `/login` volvieron
+a responder 200, con los siete IDs iniciales Redash activos y CU-015 detenido.
+No se hicieron más reinicios después del único escalonado. Se deja Redash
+accesible; la sonda no elimina los OOM del arranque ni certifica estabilidad
+continua. El diagnóstico de las 00:55 se conserva como condición intermedia.
+
 Estado posterior a CU-011F, **12 de noviembre de 2026, 00:55 UTC** (11/11 en
 Bogotá): siete contenedores Redash activos; `hexacore-cu015-sebastian` detenido
 mediante su script, con datos y volúmenes conservados. **Redash HTTP pendiente**:
