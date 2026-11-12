@@ -12,6 +12,7 @@
   },
   "include": [
     "playwright*.config.ts",
+    "cu011f/**/*.ts",
     "cu012/**/*.ts",
     "cu013/**/*.ts",
     "cu014/**/*.ts",
