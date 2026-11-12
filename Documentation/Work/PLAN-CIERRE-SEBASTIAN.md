@@ -196,6 +196,18 @@ la semilla en este Mac ni se alteraron sus datos**; la instalación nueva se
 comprueba en el runner aislado de GitHub. Este ajuste del script de fixtures no
 cambia las aplicaciones aceptadas ni requiere repetir sus recorridos de negocio.
 
+En esa misma ejecución, transferencia histórica aprobó la copia/lectura y sus
+aplicaciones; falló después la comprobación de instalación vacía al comparar
+**85 tablas reales frente a 84 esperadas** (`lectura-vacia.cjs`). CU-011F añade
+exactamente `alimentos.cancelaciones_pedido` y un registro de migración: el
+ensayo PostgreSQL local anterior ya comprobó 85 tablas y 39 registros de sistema.
+Se actualiza ese control a **85 / 35 historiales + cuatro roles**, exigiendo
+además el nombre/esquema de la tabla, nombres/timestamps en el historial de cada
+propietario y las 18 procedencias completas (conexión, esquema, historial, fuente,
+origen y SHA). No se modifican las fuentes históricas ni sus registros. Sintaxis
+de los dos lectores aprobada; la ejecución SQL de ese lector actualizado queda
+a cargo de la siguiente CI aislada, sin arrancar otro entorno local.
+
 Commits comprobados: **dc8d40b** conservación documental previa; **5edafb7**
 backend/migración/política; **bbb0195** web/Flutter; **b4a9fba** negocio/carreras;
 **fa6873f** recuperación financiera y navegación; **6d29617** vigencia de QR del
