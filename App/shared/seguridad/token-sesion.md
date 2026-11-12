@@ -105,3 +105,16 @@ puede llamar al servicio directamente y poner la cabecera que quiera. Comprobado
 - Verificación: `backend/modulos/entradas/compartido/sesion-valida.guard.ts`
 - Prueba entre servicios: `backend/modulos/entradas/ventas/pruebas/rnf06-autenticacion.py`
 - Validación en el borde: `gateway/autenticacion.js` (njs) y `gateway/pruebas/gateway.py`
+# API interna de Ventas (RNF-06, 12/11/2026)
+
+Las cuatro operaciones `/interno/entradas/*` exigen `X-Token-Servicio`, validado
+en tiempo constante contra `TOKEN_SERVICIOS`. Un JWT de usuario, incluso de
+Administrador, no acredita a Postventa: el cuerpo puede declarar un propietario
+distinto del actor. Se elimina esa alternativa. Postventa autoriza al usuario
+en sus rutas públicas y sus adaptadores HTTP/local presentan la credencial del
+servidor. No se envía al navegador ni se registra su valor.
+
+La operación interna de Cola conserva su contrato independiente de sesión y
+propiedad del turno. Ninguna ruta `/interno/` se publica en gateway. En producción
+`TOKEN_SERVICIOS` sigue siendo obligatorio; no habilitar valores de desarrollo.
+

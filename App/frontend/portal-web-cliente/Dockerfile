@@ -26,14 +26,7 @@ COPY --from=compilacion /app/dist/portal-web-cliente/browser /usr/share/nginx/ht
 # index: `/cuenta/verificar` no es un archivo en disco, es una ruta que resuelve
 # el enrutador de Angular. Sin esto, recargar dentro de la aplicación da 404 —
 # y el enlace de verificación que llega por correo entra justo por ahí.
-RUN printf 'server {\n\
-  listen 4200;\n\
-  root /usr/share/nginx/html;\n\
-  index index.html;\n\
-  location / {\n\
-    try_files $uri $uri/ /index.html;\n\
-  }\n\
-}\n' > /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 4200
 
