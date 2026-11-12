@@ -60,6 +60,7 @@ export interface PagoPedido {
 }
 
 export interface SeguimientoPedido {
+  cancelacion?: { motivo: string; canceladoEn: string; inventario: string; reembolso: { estado: string; monto: string; moneda: string; referencia: string | null } } | null;
   estadoOperativo?: string; qrUtilizable?: boolean; entrega?: {entregadoEn:string;puntoEntrega:string} | null;
   id: string; estado: string; total: string; moneda: string; establecimiento: string; puntoEntrega: string;
   creadoEn: string; confirmadoEn: string | null; codigoQr: string | null; pagoVerificado: boolean;

@@ -1,3 +1,4 @@
+import { presentar } from '../presentacion';
 import { APIResponse, expect, Page, test } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import { adminURL, clienteURL, comprobarAislamiento, crearEvento, gateway, loginAPI, loginUI, nucleo, sql } from '../cu015/entorno';
@@ -38,6 +39,7 @@ test('CU-012 por interfaces: asignar Personal, crear, reservar, ajustar, pagar y
   expect((await vinculo).status()).toBe(200);
   expect((await vinculados).status()).toBe(200);
   await expect(page.getByRole('status')).toContainText('Personal asignado');
+ await presentar(page,'Organizador: Personal asignado');
 
   const ctx = await browser.newContext(), clienteCtx = await browser.newContext();
   const operador = await ctx.newPage(), comprador = await clienteCtx.newPage();
@@ -63,6 +65,7 @@ test('CU-012 por interfaces: asignar Personal, crear, reservar, ajustar, pagar y
     const fila = operador.locator(`[data-producto="${producto.id}"]`);
     await expect(fila.locator('[data-cantidad="fisica"]')).toHaveText('10');
     await expect(fila.locator('[data-cantidad="disponible"]')).toHaveText('10');
+ await presentar(operador,'Personal: producto e inventario inicial');
     await operador.getByRole('button',{name:'Nuevo producto',exact:true}).click();
     await llenarProducto(operador,productoNombre);
     await operador.getByRole('button',{name:'Guardar producto',exact:true}).click();
@@ -86,6 +89,7 @@ test('CU-012 por interfaces: asignar Personal, crear, reservar, ajustar, pagar y
     await operador.getByLabel('Motivo del ajuste',{exact:true}).fill('Merma que excede disponibilidad');
     await operador.getByRole('button',{name:'Aplicar ajuste',exact:true}).click();
     await expect(operador.getByRole('alert')).toContainText('cantidades comprometidas');
+ await presentar(operador,'Personal: ajuste rechazado por reservas comprometidas');
     await expect(fila.locator('[data-cantidad="fisica"]')).toHaveText('10');
     await fila.getByRole('button',{name:'Ajustar existencias',exact:true}).click();
     await operador.getByLabel('Variación de existencias',{exact:true}).fill('2');
@@ -93,6 +97,7 @@ test('CU-012 por interfaces: asignar Personal, crear, reservar, ajustar, pagar y
     await operador.getByRole('button',{name:'Aplicar ajuste',exact:true}).click();
     await expect(fila.locator('[data-cantidad="fisica"]')).toHaveText('12');
     await expect(fila.locator('[data-cantidad="disponible"]')).toHaveText('9');
+ await presentar(operador,'Personal: reposición con reserva activa');
     await operador.getByRole('button',{name:'Nuevo producto',exact:true}).click();
     await llenarProducto(operador,`${nombre} Adicional`,4);
     const adicional=operador.waitForResponse(r=>r.url().endsWith(`/establecimientos/${local.id}/productos`) && r.request().method()==='POST');
@@ -113,6 +118,7 @@ test('CU-012 por interfaces: asignar Personal, crear, reservar, ajustar, pagar y
     await comprador.getByRole('button',{name:'Pagar pedido',exact:true}).click();
     await expect(comprador.getByRole('heading',{name:'¡Tu pedido está confirmado!'})).toBeVisible();
     await expect(comprador.getByAltText('Código QR del pedido confirmado')).toBeVisible();
+ await presentar(comprador,'Cliente: pago y QR del pedido');
     await operador.getByRole('button',{name:'Actualizar menú',exact:true}).click();
     await expect(fila.locator('[data-cantidad="fisica"]')).toHaveText('9');
     await expect(fila.locator('[data-cantidad="reservada"]')).toHaveText('0');
@@ -143,6 +149,7 @@ test('CU-012 por interfaces: asignar Personal, crear, reservar, ajustar, pagar y
     await expect(page.getByRole('status')).toContainText('revocado');
     await operador.getByRole('button',{name:'Actualizar menú',exact:true}).click();
     await expect(operador.getByRole('alert')).toContainText('vinculada');
+ await presentar(operador,'Personal: vínculo revocado y acceso rechazado');
   } finally { await Promise.allSettled([ctx.close(), clienteCtx.close()]); }
 });
 

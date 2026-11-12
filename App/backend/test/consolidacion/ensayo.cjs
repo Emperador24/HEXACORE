@@ -6,6 +6,7 @@ const { join } = require('node:path');
 const { execFileSync } = require('node:child_process');
 const { mapa, raiz, q, lit, docker, guardas, cliente, directorio, composeOrigen, proyectoOrigen, proyectoDestino } = require('./config.cjs');
 const { sha, inventario, comparar } = require('./catalogo.cjs');
+const { migracionesOriginales } = require('./migraciones-originales.cjs');
 const contenedor = lado => `${lado === 'origen' ? proyectoOrigen : proyectoDestino}-postgres-1`;
 const guardar = (salida,nombre,valor) => fs.writeFileSync(join(salida,nombre),JSON.stringify(valor,null,2)+'\n',{mode:0o600,flag:'wx'});
 const leer = (salida,nombre) => JSON.parse(fs.readFileSync(join(salida,nombre),'utf8'));
@@ -53,25 +54,16 @@ async function inventariarTemporales(salida) {
   guardar(salida,'rabbitmq.json',{colas:colas.map(c=>({nombre:c.name,durable:c.durable,arguments:c.arguments,corte:c.corte})),
     exchanges:await obtener('exchanges/cu011'),bindings:await obtener('bindings/cu011'),advertencia:'Solo inventario; sin consumir/purgar mensajes. No equivale a respaldo restaurable de mensajes.'});
 }
-// Migraciones escritas después de la consolidación: no venían de los servicios
-// anteriores, así que no forman parte del corte que este ensayo compara.
-const POSTERIORES=new Set(['1793664000000-Cu007GestionPersonal.ts']);
-function migracionesOriginales() {
-  return mapa.flatMap(m=>fs.readdirSync(join(raiz,m.modulo,'persistencia/migraciones')).filter(f=>f.endsWith('.ts')&&!POSTERIORES.has(f)).sort().map(f=>{
-    const ruta=m.modulo+'/persistencia/migraciones/'+f,contenido=fs.readFileSync(join(raiz,ruta),'utf8');
-    const nombre=/export class (\w+)/.exec(contenido)?.[1]; assert.ok(nombre,ruta);
-    return {conexion:m.conexion,ruta,nombre,sha256:sha(contenido)};
-  }));
-}
 async function capturar(salida) {
   assert.ok(!fs.existsSync(join(salida,'manifiesto.json')),'Referencia ya capturada; usa un directorio nuevo, no sobrescribas respaldos');
   const identidad=guardas();
+  const originales=migracionesOriginales(); // Validar procedencia antes de inmovilizar el origen.
   const fixtures=leer(salida,'fixtures.json');assert.deepEqual(fixtures.identidad,identidad);
   docker([...composeOrigen,'stop','gateway','nucleo','boleteria','pasarela']);
   await usar('origen','postgres',async c=>{for(const m of mapa)await c.query(`ALTER DATABASE ${q(m.base)} SET default_transaction_read_only=on`);});
   await sinEscritores();
   await inventariarTemporales(salida);
-  const modulos=[],originales=migracionesOriginales();assert.equal(originales.length,18);
+  const modulos=[];
   for(const m of mapa){
     await sinEscritores();
     const antes=await usar('origen',m.base,c=>inventario(c,'public'));

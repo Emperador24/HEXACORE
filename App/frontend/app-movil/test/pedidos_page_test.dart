@@ -7,6 +7,24 @@ import 'package:hexacore_app/services/pedidos_api.dart';
 class CatalogoPrueba extends PedidosApi {
   int cobros = 0;
   @override
+  Future<DatosPedido> seguimiento(String pedido) async => {
+        'id': pedido,
+        'estado': 'CANCELADO',
+        'estadoOperativo': 'CANCELADO',
+        'qrUtilizable': false,
+        'codigoQr': null,
+        'cancelacion': {
+          'motivo': 'No se puede preparar',
+          'canceladoEn': '2026-11-11T22:00:00Z',
+          'reembolso': {
+            'estado': 'INCIERTO',
+            'monto': '25000.00',
+            'moneda': 'COP',
+            'referencia': null
+          }
+        },
+      };
+  @override
   Future<List<DatosPedido>> establecimientos(String e) async => [
         {
           'id': 'uuid-local',
@@ -90,5 +108,13 @@ void main() {
         Colors.white);
     expect(find.text('qr-exacto-del-backend'), findsNothing);
     expect(api.cobros, 1);
+    await tester.pump(const Duration(seconds: 15));
+    await tester.pumpAndSettle();
+    expect(find.byType(QrImageView), findsNothing);
+    expect(
+        find.text('Pedido cancelado por el establecimiento'), findsOneWidget);
+    expect(find.textContaining('Reembolso incierto'), findsOneWidget);
+    expect(api.cobros, 1);
+    await tester.pumpWidget(const SizedBox.shrink());
   });
 }

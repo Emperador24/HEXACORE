@@ -1,3 +1,4 @@
+import { presentar } from '../presentacion';
 import { expect, test } from '@playwright/test';
 import { randomUUID, createHash } from 'node:crypto';
 import { writeFileSync } from 'node:fs';
@@ -19,6 +20,7 @@ test('CU-014 por interfaces: QR real ingresado, revisión, entrega única y avis
  const imagen=await page.getByAltText('Código QR del pedido confirmado').getAttribute('src');
  writeFileSync(info.outputPath('qr-real-privado.png'),Buffer.from(imagen!.split(',')[1],'base64'));writeFileSync(info.outputPath('qr-huella.json'),JSON.stringify({sha256:createHash('sha256').update(pagado.codigoQr).digest('hex'),verificadorOptico:verificadorOptico(pagado.codigoQr)}));
  const antes=snapshot(p.id);
+ await presentar(page,'Cliente: QR del pedido confirmado');
  const contexto=await browser.newContext(),operador=await contexto.newPage();
  try{
   await loginUI(operador,adminURL,'restaurante@hexacore.com');await operador.getByRole('navigation').getByRole('link',{name:'Preparación de pedidos',exact:true}).click();await expect(operador).toHaveURL(`${adminURL}/admin/preparacion`);await expect(operador.getByRole('heading',{name:/Preparación de pedidos/})).toBeVisible();
@@ -32,17 +34,22 @@ test('CU-014 por interfaces: QR real ingresado, revisión, entrega única y avis
   await entrega.getByLabel('Código QR completo',{exact:true}).fill(pagado.codigoQr);
   let consulta=operador.waitForResponse(r=>r.url().endsWith('/entregas/prevalidar'));await entrega.getByRole('button',{name:'Validar código',exact:true}).click();expect((await consulta).status()).toBe(200);
   await expect(entrega.getByRole('region',{name:'Revisar entrega'})).toContainText(e.local.puntoEntrega);
+ await presentar(operador,'Personal: revisar productos y punto antes de entregar');
   expect(sql(`SELECT count(*) FROM alimentos.entregas_pedido WHERE pedido_id='${p.id}'`)).toBe('0');expect(sql(`SELECT version FROM alimentos.preparaciones_pedido WHERE pedido_id='${p.id}'`)).toBe('2');
   // Fallo de transporte después de COMMIT: se llama al backend real y se pierde solo su respuesta.
   let responder!:(estado:number)=>void;const recibidaServidor=new Promise<number>(r=>responder=r);
   await operador.route('**/entregas/confirmar',async ruta=>{try{const real=await ruta.fetch({maxRetries:0});responder(real.status());}catch{responder(0);}await ruta.abort('failed');});
   await entrega.getByRole('button',{name:'Confirmar entrega',exact:true}).click();expect(await recibidaServidor).toBe(200);await expect(entrega.getByRole('button',{name:'Consultar entrega pendiente',exact:true})).toBeVisible();
+ await presentar(operador,'Personal: resultado incierto conservado para consulta segura');
   const almacenada=await operador.evaluate(id=>localStorage.getItem(`hexacore.cu014.intencion.${id}`),e.personal.usuario.id);expect(almacenada).not.toContain(pagado.codigoQr);
   await operador.unroute('**/entregas/confirmar');await operador.reload();
   const confirmar=operador.waitForResponse(r=>r.url().endsWith('/entregas/confirmar'));await entrega.getByRole('button',{name:'Consultar entrega pendiente',exact:true}).click();expect((await confirmar).status()).toBe(200);await expect(entrega.getByRole('status')).toContainText('Pedido entregado');
+ await presentar(operador,'Personal: entrega única confirmada');
   expect(sql(`SELECT count(*) FROM alimentos.entregas_pedido WHERE pedido_id='${p.id}'`)).toBe('1');expect(sql(`SELECT count(*) FROM alimentos.historial_preparacion WHERE pedido_id='${p.id}' AND accion='ENTREGAR'`)).toBe('1');expect(snapshot(p.id)).toEqual(antes);
   await page.reload();await expect(page.locator('[data-avance]')).toHaveText('Entregado');await expect(page.locator('[data-entregado]')).toBeVisible();await expect(page.getByAltText('Código QR del pedido confirmado')).toHaveCount(0);await expect(page.getByText(`Tu pedido fue entregado en ${e.local.puntoEntrega}.`,{exact:true})).toBeVisible();
+ await presentar(page,'Cliente: entrega y fecha sin QR reutilizable');
   await entrega.getByLabel('Código QR completo',{exact:true}).fill(pagado.codigoQr);consulta=operador.waitForResponse(r=>r.url().endsWith('/entregas/prevalidar'));await entrega.getByRole('button',{name:'Validar código',exact:true}).click();expect((await consulta).status()).toBe(409);await expect(entrega.getByRole('alert')).toContainText('ya fue entregado');
+ await presentar(operador,'Personal: segundo uso del QR rechazado');
   await operador.screenshot({path:info.outputPath('entrega-unica.png'),fullPage:true});await page.screenshot({path:info.outputPath('cliente-entregado.png'),fullPage:true});
  }finally{await contexto.close();}
 });

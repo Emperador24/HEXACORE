@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "demo": "playwright test --config=playwright.demo.config.ts",
     "test:cu015": "playwright test cu015",
     "test:cu015:visible": "playwright test cu015 --headed",
     "test:cu012": "playwright test cu012",

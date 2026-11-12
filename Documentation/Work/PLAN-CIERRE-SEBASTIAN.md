@@ -1,5 +1,812 @@
 # Cierre de Alimentos — Sebastián
 
+## Entrega CU-011F — 11 de noviembre de 2026 (12/11 UTC)
+
+**Implementada la cancelación por Personal del establecimiento, con reembolso
+durable y seguimiento web/Flutter. Aceptación actual: 16/16 automático normal
+y 16/16 visible normal, por separado, con Redash detenido.** Se reutilizó la
+referencia previa 13/13; no se repitió su diagnóstico. CU-028 continúa bloqueado,
+pendiente de Samuel. La CI GitHub histórica 8/8 de 9f3fdca es otra verificación;
+no representa los cambios CU-011F ni estos resultados locales.
+
+### Fuentes y decisiones
+
+Trabajo exclusivamente en `feature/sebastian`, desde d5cb490. Se conservaron y
+versionaron primero los documentos locales de recuperación anteriores en
+dc8d40b. Las referencias remotas comprobadas al inicio y antes de publicar
+mantienen `origin/develop` en 6e5e7fa y Samuel en 5c641a8; no se integraron ramas,
+actualizaron dependencias ni modificaron migraciones históricas.
+
+Se leyeron las fichas CU-011/013/014 de `CU_eventos_completo.xlsx`, los requisitos
+y decisiones CU-012/013/014. La política implementada está en
+[DECISION-CU011F.md](../../App/backend/modulos/alimentos/recepcion/DECISION-CU011F.md):
+
+- Personal activo y vinculado cancela un confirmado con cobro aprobado y sin
+  entrega, también con el establecimiento cerrado. Motivo, confirmación y
+  versión son obligatorios. Cuenta, vínculo, pedido y entrega se revalidan dentro
+  de la transacción. Cancelación, preparación y entrega serializan sobre el
+  pedido: solo una transición incompatible puede ganar.
+- Una cancelación por pedido conserva actor, fecha, motivo, snapshots, cobro
+  original e historial/aviso durable. Desde su commit se bloquean preparación,
+  listo y entrega; seguimiento y comprobante dejan de ofrecer QR utilizable.
+  El replay del pago conserva el rechazo 409 de un cancelado y no lo reactiva.
+- La intención financiera tiene clave UUID persistida y monto/moneda/referencia
+  tomados del servidor. Solo usa la API pública local de Finanzas. El claim SQL
+  termina antes de llamar al proveedor. Una operación ya intentada se consulta,
+  **no se reenvía**, porque la idempotencia del simulador es solo en memoria.
+  Caída entre claim y envío queda INCIERTO para conciliación, con la misma clave.
+  PENDIENTE/APROBADO/RECHAZADO/INCIERTO se muestran según evidencia; cancelar no
+  equivale a devolver dinero. No se implementa el recuperador global F12.
+- Inventario: solo RECIBIDO consistente y sin inicio permite restituir unidades
+  vendibles. Preparado/iniciado/listo no se reincorpora; ambiguo queda REVISION.
+  Las restituciones usan intenciones CU-012, Lua/AOF y confirmación SQL existentes,
+  una vez por UUID. Una reserva consumida no se libera como una ACTIVA. Se
+  conserva cualquier otra reserva activa y no se reconstruye inventario.
+- Web y Flutter guardan la misma intención por cuenta ante respuesta perdida o
+  reinicio; Personal consulta el resultado. Cliente ve motivo, fecha y estado
+  real del reembolso en historial/avisos existentes. El comprobante consulta la
+  vigencia sin repetir el pago. No se añaden correo real, push, sustituciones,
+  cambios de precio, cancelación voluntaria ni Seguridad global.
+
+### Preparación, migraciones y comprobaciones afectadas
+
+Se alternaron los proyectos según la guía: Redash identificado por etiquetas
+Compose, sus siete IDs/estados guardados en privado y detenidos ordenadamente
+con gracia de 120 s, todos salida 0. CU-015 estaba inicialmente detenido. No se
+ejecutaron recorridos con ambos proyectos activos ni se intervinieron otros.
+
+Solo se reconstruyeron Núcleo y los dos portales; después del ajuste de vigencia
+del comprobante, únicamente el cliente. Se aplicó la preparación con guardas,
+sin semillas ni cambios de claves. Pasarela y correo locales simulados. Las
+imágenes verificadas durante aceptación fueron Núcleo/admin **b4a9fba**, cliente
+**6d29617** y gateway/Boletería/Trabajador **9f3fdca**. Los commits posteriores
+modifican tests anfitriones/documentación, sin cambios adicionales de aplicación.
+
+Nueva migración aditiva `CancelacionCu011F1794700000000`, séptima de Alimentos:
+**35 migraciones actuales**, con las **18 fuentes y procedencias históricas
+intactas**. La prueba PostgreSQL comprobó instalación vacía y actualización,
+nombres/propietarios, repetición sin DDL, ausencia de tablas en public y datos
+conservados (vacía: 85 tablas y 39 registros de sistema/historia). En la base
+principal, las huellas de establecimientos, productos, pedidos, detalles,
+transacciones y reservas anteriores fueron idénticas antes/después de migrar.
+Al terminar se verificaron las **50 cuentas preexistentes con sus claves sin
+cambios** y la misma huella de procedencias. Las fixtures de pruebas se conservan.
+
+| Verificación afectada | Resultado ejecutado |
+|---|---|
+| Backend: cancelación, adaptador, consulta pública financiera, pago/preparación/entrega, esquemas | **146/146, 9 suites** |
+| Fuentes/propietarios de migraciones originales | **3/3** |
+| Migración PostgreSQL vacía y actualización | **Ambas aprobadas**, 35 actuales / 18 históricas |
+| Backend tipos y build de Núcleo | **Aprobados** |
+| Angular admin preparación/cancelación/entrega | **13/13** |
+| Angular cliente seguimiento/servicio; comprobante | **12/12** y **10/10**, invocaciones separadas |
+| Flutter cancelación/preparación/entrega/API; comprobante | **24/24** y **1/1**, invocaciones separadas |
+| Flutter analyze final | **0 incidencias**; avisos de estilo iniciales corregidos |
+| Tipos E2E | **Aprobados** |
+
+No se presenta esta selección como toda la suite backend/Angular/Flutter. La
+prueba CU-011F API usa SQL/Redis/Finanzas reales locales: autorización incluida
+revocación tras admitir la petición, duplicados, carreras con preparación y
+entrega, no restitución de preparado, reserva consumida pendiente, rechazo
+financiero y dos ventanas de caída. Una conexión PostgreSQL independiente usa
+`FOR UPDATE NOWAIT` durante la llamada financiera para comprobar que no queda
+bloqueado el pedido. Se conserva la misma clave, una solicitud y una devolución
+como máximo. Un caso recupera aprobación del libro tras perder la respuesta;
+el otro queda incierto sin libro y demuestra ausencia de reenvío tras reinicio.
+
+### Aceptación final y fallos anteriores conservados
+
+Los 13 existentes más tres CU-011F se descubrieron como **16** en ambas
+modalidades. Fuente de tests **c3d3386dbfb95f89546c4bb7c88904fcfe383786**.
+Node 22.22.3, Playwright 1.65.0; once servicios propios saludables antes de cada
+conjunto, seis sondas HTTP y cinco logins demo con 200, configuración privada.
+Un trabajador, serie, **cero reintentos**, 120 s por caso, 15 s por aserción; sin
+modo demo ni presupuesto ampliado. Primero automático y después visible:
+
+| Modalidad normal final, 12/11 UTC | Ventana exacta | Resultado | Salida |
+|---|---|---|---:|
+| Automático | 00:38:15.684208–00:40:17.529140 | **16/16**, 0 fallidos/omitidos; CLI 2,0 min | 0 |
+| Visible | 00:42:11.458672–00:44:27.249983 | **16/16**, 0 fallidos/omitidos; CLI 2,3 min | 0 |
+
+Se conservan, sin sumarlos ni convertirlos en aprobados, los intentos anteriores:
+
+1. Dirigido CU-011F 00:13:00.885899–00:15:26.251788: **2/3**, salida 1, sobre
+   b4a9fba con cambios locales de tests después incluidos en fa6873f. El UI
+   seleccionaba un local en la pantalla Menú anterior a terminar la navegación;
+   GET 200 vacío y timeout de 120 s, sin cancelar. Se exigió URL/encabezado de
+   Preparación antes de seleccionar. Dirigido UI posterior en fa6873f: **1/1**,
+   00:18:44.385361–00:18:53.958957, CLI 9,2 s, salida 0.
+2. Par completo en 6d29617: automático **16/16**, salida 0,
+   00:28:59.319208–00:31:09.542523 (CLI 2,2 min); visible **15/16**, salida 1,
+   00:31:59.528907–00:34:58.950765 (CLI 3,0 min). Falló el primer GET de pedidos
+   después del reinicio deliberado de Núcleo: **503 a las 00:32:31.562**,
+   correlacionado con `nucleo Host not found` a las 00:32:25.823; sin timeout SQL.
+   El helper esperaba salud interna pero aún no estaba listo el acceso público.
+3. c3d3386 comprueba `/salud` pública después de ese reinicio con el límite de
+   aserción **existente de 15 s**, conserva observaciones privadas y exige luego
+   una sola respuesta de negocio 200. No modifica producción, reintenta negocio,
+   relaja aserciones ni aumenta tiempos. Ese cambio justifica el par final de
+   arriba; la primera sonda pública fue 200 en ambas ejecuciones finales.
+
+En **cada ventana final** hubo tres **503 POST `/pagos/webhook`** durante los
+reinicios deliberados y una línea DNS del gateway; los reintentos existentes del
+simulador no se modificaron. Se recogieron cero statement/query read timeout en
+PostgreSQL/Núcleo/gateway. Los casos aprobaron, pero **no se afirma ausencia
+global de 5xx/DNS ni disponibilidad continua**, ni recuperación global F12.
+
+Informes automático, visible, dirigidos, logs, huellas y fallos permanecen
+separados y privados en `.evidencia/cu011f-2026-11-11T23-46-55Z/` bajo App/e2e.
+No se publican configuración, credenciales, tokens, QR, trazas ni HTML privado.
+
+### Restauración y bloqueo externo de Redash
+
+Al terminar se detuvo CU-015 con **`./App/infra/cu015.sh parar`**, salida 0,
+conservando contenedores/datos/volúmenes. Se arrancaron solo los siete IDs de
+Redash inicialmente activos, mismos montajes, configuración e imágenes. El
+arranque frío produjo **OOM nuevos**, distintos de las marcas históricas: a
+las 00:49 UTC los contadores nuevos server/scheduled_worker/adhoc_worker/worker
+eran 4/4/3/8, con SIGKILL y swap casi agotado, estando CU-015 ya detenido.
+
+Se hizo **un solo arranque más escalonado** de los cuatro servicios worker y
+scheduler, sin reiniciar PostgreSQL/Redis/server: servidor solo respondió
+`/ping` y `/login` 200 a las 00:52:25; continuó en 200 al incorporar scheduler,
+worker y adhoc_worker. Tras incorporar scheduled_worker, ambos agotaron 5 s a
+las 00:53:53 y en las sondas finales. No se repitió otro ciclo.
+
+Estado final registrado **00:55:49 UTC**: **Redash 7 running, CU-015 0 activos**;
+PostgreSQL listo y Redis PONG, pero **Redash HTTP no recuperado**. Memoria VM
+disponible 180,21 MiB, swap libre 0,32 MiB, PSI some/full avg10 31,21/24,42 %.
+El contador server aumentó de 4 a 8; hubo nuevos OOM también en workers tras
+el escalonado (sus cgroups reiniciados no son comparables con los anteriores).
+La incorporación del último worker correlaciona con el fallo y la presión; no
+demuestra por sí sola que sea la única causa. Se conserva evidencia privada.
+
+**Acción necesaria del responsable:** liberar capacidad ajena o revisar el
+presupuesto/concurrencia de Redash, con autorización específica, y comprobar
+`/ping` y acceso. Esta entrega no autoriza detener otros proyectos ni cambiar
+recursos globales; no se hicieron esas acciones ni reinicios repetidos.
+La guía refleja la alternancia y este límite; restaurar `running` no equivale
+a certificar disponibilidad HTTP.
+
+### Hitos y pendientes
+
+La publicación documental **0d44a2e** inició la
+[CI GitHub 43131313630](https://github.com/Emperador24/HEXACORE/actions/runs/43131313630).
+Flutter analyze y ambos builds web aprobaron; widgets reportó **76 aprobados,
+2 fallidos** en `restaurant_orders_test.dart`: el doble `BandejaApi` no simulaba
+la nueva consulta `pendienteCancelacion()` y esperaba el almacenamiento de
+plataforma durante `pumpAndSettle`. Se reprodujeron exactamente los dos fallos
+locales (01:01:35–01:01:40 UTC, salida 1), se añadió el método al doble sin
+cambiar producto, tiempos o aserciones y se ejecutaron **2/2 aprobados**
+(01:01:52.575786–01:01:55.917261 UTC, salida 0). La nueva publicación incluye
+esa corrección de test y documentación; no requiere repetir los 16 recorridos
+de negocio ni reconstruir aplicaciones. El resultado remoto posterior se
+informa en el PR, separado de esta aceptación local.
+
+Commits comprobados: **dc8d40b** conservación documental previa; **5edafb7**
+backend/migración/política; **bbb0195** web/Flutter; **b4a9fba** negocio/carreras;
+**fa6873f** recuperación financiera y navegación; **6d29617** vigencia de QR del
+comprobante; **c3d3386** salud pública después del reinicio. La documentación de
+esta entrega se publica después, sin repetir suites por ese cambio documental.
+Publicación únicamente a `origin/feature/sebastian`, en PR **#49** hacia develop,
+sin merge ni auto-merge. La CI nueva se informa por separado de la aceptación
+local; no se heredan sus resultados históricos como nuevos.
+
+Pendientes: **CU-028 Samuel**, recuperador global de pagos inciertos **F12**,
+conciliación financiera de operaciones inciertas sin garantía de reenvío y
+capacidad/disponibilidad de Redash/gateway durante reinicios. No se amplía esta
+entrega a esos trabajos. Demo nueva, tras reanudar CU-015 con Redash detenido:
+
+```bash
+CU015_DEMO_MS=2000 npm --prefix App/e2e run demo -- cu011f --grep 'por interfaces'
+```
+
+El descubrimiento `--list` de ese comando aprobó: un recorrido por interfaces,
+slowMo 2.000 ms y etapas de 5.000 ms. No se ejecutó el demo lento como aceptación.
+Conserva pausas e informes DEMO separados. El historial anterior sigue debajo.
+
+## Recuperación de Redash con CU-015 detenido — 11 de noviembre de 2026
+
+**Redash accesible: `/ping` y `/login` HTTP 200. Quedan activos sus siete
+contenedores y detenido únicamente `hexacore-cu015-sebastian`.** No se volvió
+a ejecutar aceptación: se conservan **13/13 automático y 13/13 visible**,
+obtenidos anteriormente con Redash detenido. Esta recuperación no demuestra
+que ambos proyectos puedan funcionar a la vez con la capacidad actual.
+
+Se ejecutó **`./App/infra/cu015.sh parar`**, con las guardas del perfil y el
+bloqueo existentes; salida **0**, sin modificar el script. Los once servicios
+propios terminaron entre **21:35:38.380 y 21:35:42.744 UTC**. Núcleo, Boletería y
+Trabajador salieron con **143**, el cierre SIGTERM previsto; los ocho restantes
+con **0**. Sin OOM/SIGKILL propios. La preparación anterior siguió terminada con
+0, sin volver a ejecutarse. Se conservan los doce contenedores propios y los
+siete de Redash, sus IDs, imágenes, configuración y montajes/volúmenes.
+No hubo reinicios manuales de Redash, cambios de contraseñas, imágenes,
+dependencias, recursos globales de Docker ni intervención sobre otros proyectos.
+
+### Recursos y distinción de OOM
+
+Mismo presupuesto Docker: **3.053.772.800 bytes, 8 vCPU**. Las mediciones de VM
+se obtuvieron desde el Redis de Redash, sin arrancar proveedores de HEXACORE.
+
+| Medición UTC | Memoria disponible VM, MiB | Swap libre VM, MiB | Memoria PSI some / full avg10, % |
+|---|---:|---:|---:|
+| 21:35:25.668, antes de parar CU-015 | 126,59 | 0,15 | 54,04 / 43,11 |
+| 21:36:32.568, CU-015 detenido | 284,52 | 0,54 | 0,23 / 0,19 |
+| 21:40:43.518, estado de entrega | 282,43 | 2,68 | 0,01 / 0,01 |
+
+Swap total VM: aproximadamente **1.024 MiB**; no se vació ni reconfiguró.
+El swap usado de macOS varió de **2.756,56 a 2.812,69 MiB**; no se confunde
+con memoria o swap liberados en la VM. La memoria disponible medida aumentó
+**157,93 MiB** inmediatamente después de parar CU-015; la presión descendió.
+
+Las cuatro marcas `State.OOMKilled=true` de server, scheduled_worker,
+adhoc_worker y worker **ya existían al inicio**. Sus contadores cgroup
+`oom_kill` fueron respectivamente **43, 79, 72 y 86**, sin incremento entre
+las mediciones inicial, posterior a la parada y final. No basta esa marca
+persistente para declarar un OOM nuevo.
+
+Sí se conservan eventos recientes diferenciados: scheduled_worker tuvo un
+evento OOM a las **21:35:23 UTC**, antes de la primera medición; scheduler tuvo
+un OOM/salida **137 a las 21:35:36 UTC**, antes de terminar la parada de CU-015.
+Docker lo arrancó automáticamente a las **21:35:38 UTC**, pasando de **106 a
+107 reinicios**. Su cgroup se reinició con el proceso: contador 0 y marca OOM
+falsa posteriores no borran la evidencia del evento anterior.
+
+Desde la medición con CU-015 detenido, **21:36:32.568–21:40:43.518 UTC
+(250,949 s)**, no se registraron eventos OOM, muertes, arranques o reinicios
+nuevos de Redash, ni SIGKILL/tracebacks en sus logs recogidos. Los siete estaban
+`running`; scheduler seguía en 107 reinicios. Se revisaron los logs de cada
+servicio y no se justificó ningún reinicio manual. Esta ventana acotada no
+garantiza estabilidad indefinida con el swap aún muy ocupado.
+
+### Comprobaciones de recuperación
+
+Primero PostgreSQL: `pg_isready` y **`SELECT 1`**, salida 0. Redis: **`PONG`**,
+salida 0. Se usó la configuración existente en privado, sin mostrar claves ni
+cambiar cuentas. Una primera sonda SQL había pasado un usuario vacío; se
+corrigió únicamente esa invocación usando el valor existente/predeterminado,
+sin interpretar ese error del comando como fallo de PostgreSQL.
+
+Comprobación HTTP **21:37:26.124–21:37:26.634 UTC**, sin autenticarse ni
+modificar datos:
+
+- **GET `/ping`: 200, 147 ms.**
+- **GET `/login`: 200, 353 ms**, formulario de correo/contraseña presente.
+- **GET `/`: redirige a `/login`, termina en 200, 10 ms.**
+
+Estado entregado: **Redash encendido y accesible; CU-015 detenido con datos
+conservados**. Otros proyectos se dejaron sin intervención; un contenedor
+ajeno ya reiniciaba automáticamente y no se atribuye su actividad a una
+operación nuestra. No se añade código, cancelaciones ni Seguridad.
+
+Guía para alternar los proyectos y reanudar los mismos contenedores sin builds,
+semillas ni volúmenes nuevos:
+[OPERACION-LOCAL-REDASH-HEXACORE.md](OPERACION-LOCAL-REDASH-HEXACORE.md).
+Evidencia privada e ignorada por Git:
+`App/e2e/.evidencia/recuperacion-redash-2026-11-11T21-35-22Z/` (estados,
+contadores, eventos, logs y HTTP). No se publica configuración, claves ni HTML
+privado. Los resultados anteriores se conservan íntegros debajo.
+
+## Comparación actual con Redash detenido — 11 de noviembre de 2026
+
+**Aceptación de los 13 recorridos implementados: automático normal 13/13 y
+visible normal 13/13, exclusivamente bajo la condición de Redash detenido.**
+Cada conjunto se ejecutó una vez; no hubo fallos, omisiones ni reintentos.
+La referencia anterior, con Redash activo, fue **11/13 automático y 10/13
+visible** y se conserva íntegra debajo. No se afirma haber corregido todos los
+problemas de disponibilidad ni que esta aceptación se mantenga con Redash activo.
+**CU-028 sigue BLOQUEADO, pendiente de Samuel.** Playwright salió con **0** en
+ambas modalidades; el observador salió con **2**, expresamente por ese caso
+sin implementar, no por un fallo de los trece implementados.
+
+### Fuentes, límites y conservación
+
+- Rama `feature/sebastian`, árbol limpio al comenzar, HEAD documental
+  **96c976412359b7ee720789853698dbc91926096c**. Se comprobó que sus únicas
+  diferencias con **9f3fdca429ceb49259c5f6ab32cb57cf8e731862** son README y este
+  plan. Las seis aplicaciones conservan las imágenes limpias de **9f3fdca**.
+- Sin integración de ramas, actualización de dependencias, builds, preparación
+  de base, semillas, cambio de claves ni eliminación de datos/volúmenes.
+  PostgreSQL y los proveedores simulados existentes se conservaron. Los casos
+  generaron sus propios datos, como en la ejecución anterior.
+- Los doce contenedores propios (once servicios permanentes y la preparación
+  ya terminada) conservaron sus IDs, imágenes, configuración y conjuntos de
+  montajes. Los once servicios estaban saludables antes y después. Se mantienen
+  los reinicios de solo Núcleo que ya forman parte de CU-013/014 API.
+- Node **22.22.3**, Playwright **1.65.0**, Chromium instalado; configuración demo
+  local cargada en privado. Se descubrieron **13 casos en cada modalidad**,
+  todos con resultado esperado aprobado. Un trabajador, ejecución en serie,
+  **cero reintentos, 120 s por caso y 15 s por aserción**; sin modo demo, slowMo
+  ni presupuesto ampliado. No se modificó producto, test ni dependencia.
+
+Se usaron los mismos comandos y observador de la referencia anterior:
+
+```bash
+node --env-file=App/e2e/.env.local App/backend/test/cu013/referencia.cjs --implementados
+node --env-file=App/e2e/.env.local App/backend/test/cu013/referencia.cjs --implementados --visible
+```
+
+### Redash: selección, parada y restauración
+
+La autorización de esta comparación permitió detener temporalmente únicamente
+Redash. Se seleccionó por **`com.docker.compose.project=redash`**, comprobando
+también su etiqueta de archivo Compose
+`/Users/sebastiansanchez/lab03/redash/compose.yaml` y los servicios. El registro
+privado conserva los IDs completos, estados y tiempos; abajo se abrevian a doce
+caracteres. **Los siete estaban activos; ninguno estaba detenido inicialmente.**
+
+| Servicio Compose de Redash | ID conservado | Inicial | Salida al detener | Estado restaurado observado |
+|---|---|---|---|---|
+| server | `696829f89a19` | running | 0 | running |
+| scheduled_worker | `1fed94f26882` | running | 0 | running |
+| scheduler | `c5e9e8983754` | running | **137** | running, con reinicios posteriores |
+| adhoc_worker | `7270b184abd6` | running | 0 | running |
+| worker | `491bb6861184` | running | 0 | running |
+| redis | `89c695fa90ce` | running | 0 | running |
+| postgres | `5a7113756b80` | running | 0 | running |
+
+Se ejecutó `docker stop --time 60` sobre los cinco servicios de aplicación a
+las **18:13:49.803 UTC**, manteniendo PostgreSQL/Redis hasta que terminaran;
+después se detuvieron esos dos proveedores a las **18:14:50.714 UTC**. Seis
+salieron con código 0. **El scheduler no completó el cierre ordenado dentro de
+los 60 s y terminó con 137 al agotarse la gracia de Docker**; se registra la
+incidencia, sin presentarlo como un cierre correcto de los siete. No se usaron
+`down`, `pause`, `prune`, eliminación de contenedores o volúmenes.
+
+La restauración estaba protegida por `finally`, incluso ante fallo de pruebas.
+Al terminar el visible se arrancaron **solo los siete IDs inicialmente activos**:
+PostgreSQL/Redis desde **18:18:58.246 UTC**, luego las cinco aplicaciones desde
+**18:19:06.834 UTC**. Se comprobaron los siete en `running` con los mismos IDs
+y configuración. No se intervinieron otros proyectos. Se observó un reinicio
+externo del gateway de `hexacore-infra` a las **18:18:30.558 UTC**; su causa no
+quedó aislada y no se atribuye a una operación de esta comparación.
+
+**Límite de la restauración:** contenedores arrancados no equivale a Redash
+disponible. GET `http://127.0.0.1:5001/ping` agotó **15 s** a las 18:19 y de
+nuevo tras más de dos minutos de arranque (comprobación iniciada a
+**18:21:51.540 UTC**, 15.043 ms). El servidor registró workers terminados con
+SIGKILL a las 18:19:38/42, 18:21:09/22 y 18:22:56 UTC; cuatro contenedores
+volvieron a marcar `OOMKilled`, igual que en la observación inicial. El scheduler
+también reinició por su política existente. Se dejan los siete activos, sin
+reinicios manuales adicionales, cambios de límites ni intervención ajena.
+**La disponibilidad HTTP de Redash no quedó restablecida/comprobada.** El
+responsable debe revisar su capacidad y los workers OOM, y confirmar `/ping`;
+no se cambió el presupuesto global de Docker para resolverlo.
+
+### Memoria, swap y presión medidas
+
+Mismo Mac M2 de **8 GiB** y Docker con **3.053.772.800 bytes / 8 vCPU**; no se
+cambiaron recursos globales. `MemAvailable` y swap de VM provienen de
+`/proc/meminfo`; presión de memoria de `/proc/pressure/memory`. Swap de macOS
+se midió con `sysctl vm.swapusage`, separado del swap de la VM.
+
+| Medición UTC | Memoria disponible VM, MiB | Swap libre VM, MiB (total 1.024) | Memoria PSI some / full avg10, % | Swap usado macOS, MiB |
+|---|---:|---:|---:|---:|
+| 18:13:31.251, Redash activo | 175,73 | 0,14 | 43,49 / 34,40 | 2.475,38 |
+| 18:15:01.366, Redash detenido | 1.605,41 | 160,42 | 0,06 / 0,05 | 2.463,12 |
+| 18:16:58.363, después del automático | 1.533,36 | 250,78 | 0,00 / 0,00 | 2.710,69 |
+| 18:18:55.634, después del visible | 1.493,07 | 265,29 | 0,00 / 0,00 | 3.575,00 |
+| 18:19:21.890, Redash nuevamente arrancado | 317,06 | 0,27 | 13,39 / 8,74 | 3.132,31 |
+
+El contraste inmediato liberó **1.429,68 MiB de memoria disponible de VM
+(aproximadamente 1,40 GiB)** y aumentó el swap libre de VM en **160,28 MiB**.
+No se deduce una reducción equivalente del swap de macOS, que varió durante
+los recorridos. `memory_pressure -Q` informó 35 % libre en el host antes y
+36 % después de detener Redash. El máximo muestreado de memoria `full avg10`
+durante los conjuntos fue **0,03 % automático / 0,00 % visible**, frente a
+**57,03 % / 53,53 %** en la referencia anterior. Al restaurar Redash reapareció
+presión; no se repitió ningún recorrido en esa condición.
+
+Salud de las seis aplicaciones y cinco logins: **todos HTTP 200** antes de
+detener Redash, antes de cada conjunto y al terminar la restauración. Antes del
+automático: salud 1–70 ms y login 71–100 ms; antes del visible: 1–69 ms y
+69–110 ms. Después de restaurar Redash: salud 17–211 ms y login 372–3.548 ms.
+
+### Resultados exactos y comparación
+
+| Modalidad normal | Aprobados / fallidos / omitidos | Playwright / observador | Ventana del observador UTC | Duración de ventana / CLI |
+|---|---|---|---|---|
+| Automático | **13 / 0 / 0** | **0 / 2 (CU-028)** | 18:15:06.414–18:16:58.335 | 111,921 s / 1,8 min |
+| Visible | **13 / 0 / 0** | **0 / 2 (CU-028)** | 18:17:02.156–18:18:55.601 | 113,445 s / 1,9 min |
+
+En ambos conjuntos aprobaron, individualmente, **CU-012 interfaces y API;
+CU-013 interfaces y API; CU-014 interfaces, API y autorización en transacción;
+CU-015 portales y backend; CU-027 interfaces y negativos; CU-029 interfaces y
+negativos**. Los HTML privados confirman trece resultados aprobados por modo,
+un único resultado por caso y sin reintentos.
+
+- Automático pasa de **11/13 a 13/13**: CU-013 API y CU-014 interfaz ya no fallan.
+- Visible pasa de **10/13 a 13/13**: CU-014 interfaz, CU-015 portales y CU-029
+  interfaz ya no fallan. No se reutilizan aprobaciones del otro conjunto.
+- **Cero HTTP 5xx** en el gateway durante cada ventana; cero cancelaciones por
+  `statement_timeout`, cero `Query read timeout` y cero errores DNS en los logs
+  recogidos de gateway/Núcleo/PostgreSQL; cero errores del observador SQL.
+- Se conservan **10 HTTP 499 en automático / 6 en visible**, todos GET de
+  cartelera, empleados, menú o establecimientos. Son cierres del cliente en el
+  registro del gateway; no se dispone de traza de fallo para atribuir cada uno
+  a una navegación concreta ni se presentan como prueba de disponibilidad.
+  Ninguno produjo un recorrido fallido; no hubo las altas abortadas anteriores.
+- PostgreSQL registró **cuatro duplicados por conjunto**: uno en
+  `uq_producto_establecimiento_nombre`, dos en
+  `uq_establecimiento_evento_nombre` y uno en `idx_usuarios_email`, en las
+  ventanas de los negativos CU-012/CU-015/CU-027. Se contrastaron con los tests
+  de duplicados/concurrencia: Alimentos conserva los rechazos 409 y Cuentas
+  responde 202 también al registro repetido, sin enumeración. No son los
+  timeouts anteriores.
+- HTTP en el gateway, automático / visible: 200 **338/343**, 201 **60/60**,
+  202 **7/7**, 204 **135/135**, 304 **64/65**, 400 **29/29**, 401 **24/24**,
+  403 **30/30**, 404 **7/7**, 409 **35/35**, 422 **2/2**, 499 **10/6**.
+  Las respuestas negativas esperadas conservan sus aserciones.
+
+La mejora observada es compatible con el efecto de liberar capacidad, sin
+aislar todas las causas ni certificar disponibilidad sostenida o convivencia
+con Redash. La **aceptación local de los trece implementados queda registrada
+bajo Redash detenido**; CU-028 y la disponibilidad de Redash siguen pendientes.
+El siguiente paso es acordar capacidad estable para futuras validaciones y
+comprobar la recuperación HTTP de Redash. No se comienzan cancelaciones ni
+Seguridad. La CI GitHub 8/8 en 9f3fdca es evidencia independiente, no este ensayo.
+
+Evidencia privada, ignorada por Git y sin publicar:
+
+- Estados completos, configuración resumida por hashes, memoria, salud/login y
+  restauración: `.evidencia/comparacion-redash-2026-11-11T18-13-22Z/`.
+- Automático: `.evidencia/conjunto-observado-2026-11-11T18-15-05-459Z/`.
+- Visible: `.evidencia/conjunto-observado-2026-11-11T18-17-01-309Z/`.
+
+Solo se publica documentación revisada en `origin/feature/sebastian`, con PR #49
+si continúa abierto, sin merge ni auto-merge. No se publican `.env.local`, claves,
+tokens, QR, trazas, capturas, cuerpos HTTP ni informes privados. No se ejecutan
+otras suites por estos cambios documentales.
+
+## Revalidación local anterior, Redash activo — 11 de noviembre de 2026, fuentes 9f3fdca
+
+**Automático normal: 11/13; visible normal: 10/13. Ambos salida 1. La aceptación
+local continúa pendiente y no se recomienda iniciar todavía la cancelación de
+pedidos. CU-028 sigue BLOQUEADO, pendiente de implementación de Samuel.**
+Son dos conjuntos completos intentados por separado, un intento por modalidad;
+no se suman sus aprobaciones ni se sustituyen por el demo lento. Los resultados
+10/13 automático y 12/13 visible del 8 de noviembre se conservan abajo como historia.
+
+La referencia de GitHub sigue siendo la [CI 43048018224](https://github.com/Emperador24/HEXACORE/actions/runs/43048018224),
+**8/8 trabajos en 9f3fdca429ceb49259c5f6ab32cb57cf8e731862**. Esa CI no acredita
+que estos recorridos pasen en este Mac. Los cambios posteriores de esta
+revalidación son documentales; las fuentes funcionales y los tests ejecutados
+son los de ese SHA, sin modificaciones locales.
+
+### Versión ejecutada y conservación del entorno
+
+- Rama `feature/sebastian`, árbol limpio al comenzar, HEAD y remota propia en
+  **9f3fdca**; develop **6e5e7fa**, Samuel **5c641a8**. PR #49 abierto.
+- Docker estaba ejecutando las seis aplicaciones desde **ab6ae56**, marca de
+  fuente limpia, con **29 migraciones**. Se revisaron las diferencias y se
+  reconstruyeron secuencialmente únicamente Núcleo, Boletería, Trabajador,
+  gateway y ambos portales mediante `cu015.sh`, con sus guardas y bloqueo.
+  Solo esas seis aplicaciones se pausaron para el build, entre 16:01:56 y
+  16:07:04 UTC aproximadamente. Los otros proyectos no se intervinieron.
+- La preparación registrada terminó con código **0** y dejó **34 migraciones**:
+  añadió VersionEvento de Ventas, Catálogo, Postventa y Acceso QR
+  (`1794400000000`–`1794400000003`) y
+  `Cu021Cu023ReservasEspacios1794300000000` de Parqueaderos. Conservó las
+  **18 procedencias históricas**, sin editar sus fuentes.
+- Las seis imágenes y la tarea de preparación quedaron etiquetadas con
+  **9f3fdca**, `hexacore.fuente.modificada=no`. Correo y pasarela simulados no
+  tenían cambios en sus Dockerfiles/server.js respecto de ab6ae56, y se
+  conservaron sus imágenes. PostgreSQL, Redis, RabbitMQ, correo y pasarela
+  conservaron sus cinco identificadores de contenedor y sus volúmenes.
+- Sin `--datos-demo`, semillas, reconstrucción de inventario ni cambios de
+  contraseñas. Las **38 cuentas preexistentes** conservaron identificadores,
+  correos y hashes de contraseña, comprobados antes/después de la preparación
+  y al terminar ambos conjuntos. Los casos crean sus propios datos nuevos.
+  Se conservó también el marcador de carga demo COMPLETA.
+
+### Condiciones y resultados separados
+
+Node **22.22.3**, Playwright **1.65.0**, Chromium del proyecto. Se comprobó
+descubrimiento de **13 casos en ambos modos**, todos con resultado esperado
+`passed`, un trabajador, cero reintentos, **120 s por caso y 15 s de aserción**.
+Se usó `playwright.config.ts`, sin slowMo ni pausas/presupuesto del modo demo.
+La configuración demo local se cargó desde el archivo privado, sin mostrarla.
+
+Antes del automático, las seis comprobaciones HTTP de aplicaciones respondieron
+200 (5–105 ms) y los cinco logins demo respondieron 200 (88–288 ms). Antes del
+visible, salud respondió 200 (7–121 ms) y login 200 (177–212 ms).
+Las aplicaciones estaban funcionando durante los recorridos; se conservan los
+reinicios deliberados de **solo Núcleo** que ya ejercitan CU-013/014 API.
+No se pausaron aplicaciones para dar más recursos a Playwright.
+
+Comandos ejecutados en serie, con Node 22.22.3 seleccionado:
+
+```bash
+node --env-file=App/e2e/.env.local App/backend/test/cu013/referencia.cjs --implementados
+node --env-file=App/e2e/.env.local App/backend/test/cu013/referencia.cjs --implementados --visible
+```
+
+| Modalidad normal, misma versión 9f3fdca | Aprobados / fallidos / omitidos | Salida Playwright / observador | Duración informada por Playwright | Ventana del observador UTC |
+|---|---|---|---|---|
+| Automático | **11 / 2 / 0** | **1 / 1** | **5,2 min** | 16:10:54.144–16:16:08.100 |
+| Visible | **10 / 3 / 0** | **1 / 1** | **8,5 min** | 16:23:12.963–16:32:00.172 |
+
+| Recorrido | Automático | Visible |
+|---|---|---|
+| CU-012 interfaces | Aprobado | Aprobado |
+| CU-012 API | Aprobado | Aprobado |
+| CU-013 interfaces | Aprobado | Aprobado |
+| CU-013 API | **Falló** | Aprobado |
+| CU-014 interfaces | **Falló** | **Falló** |
+| CU-014 API | Aprobado | Aprobado |
+| CU-014 autorización en transacción | Aprobado | Aprobado |
+| CU-015 portales | Aprobado | **Falló** |
+| CU-015 backend | Aprobado | Aprobado |
+| CU-027 interfaces | Aprobado | Aprobado |
+| CU-027 negativos | Aprobado | Aprobado |
+| CU-029 interfaces | Aprobado | **Falló** |
+| CU-029 negativos | Aprobado | Aprobado |
+
+### Fallos demostrados y límites del diagnóstico
+
+| Modalidad / caso | Evidencia conocida |
+|---|---|
+| Automático CU-013 API | GET de pedidos del establecimiento: **500**, esperado 200, petición de 27,21 s iniciada a las 16:13:02.165 UTC. Aserción en `cu013/preparacion.spec.ts:160`. PostgreSQL/Núcleo registraron cancelación por `statement_timeout` en esa ventana. |
+| Automático CU-014 interfaces | POST de preparación: **500**, esperado 200, 5,23 s, iniciado a las 16:13:38.884 UTC. Cancelación SQL correlacionada; aserción en `cu014/entrega.spec.ts:30`. |
+| Visible CU-014 interfaces | GET de pedidos: **500**, 8,65 s, iniciado a las 16:25:48.977 UTC, con cancelación SQL correlacionada. El click de «Gestionar pedido» quedó sin fila y agotó los **120 s** totales. |
+| Visible CU-015 portales | La edición y su consulta respondieron 200, y los campos editados siguen correctos en SQL. Tras recargar, `/sesiones/renovar` respondió 200 en **14.657,65 ms**, seguido de `/sesiones/actual` en 308 ms. La espera de fila agotó sus **15 s**; GET `/eventos` se inició al final y fue abortado al cerrar el test. No se atribuye ese tiempo a un GET de eventos de 15 s. |
+| Visible CU-029 interfaces | POST `/recintos` abortado por el cliente a los **15.011,87 ms**; `waitForResponse` terminó por el límite total de **120 s**. La lectura posterior encontró **un recinto persistido** de ese intento. No se repitió el alta ni se presenta como caso aprobado. |
+
+Los 500 y las peticiones tardías son fallos operacionales observados en los
+servicios, con presión de recursos del entorno. Las aserciones los detectaron;
+no se demostró un error de selector o de sincronización que justifique retocar
+el test. La **causa última no está aislada**: no se demuestra un defecto lógico
+del producto ni se excluyen todos los factores posibles. No se modifica código
+funcional por una hipótesis, ni se amplían esperas o reintentos.
+
+Mac M2, **8 GiB**; Docker conserva **8 vCPU y 2,84 GiB**. Antes del automático
+se midieron unos **89 MiB disponibles** y **108 KiB libres de 1 GiB de swap**
+en la VM. El máximo de presión de memoria `full avg10` fue **57,03 %** en
+automático y **53,53 %** en visible. El observador tuvo respectivamente **1 y 5
+Query read timeout**. En automático también se canceló un EXPLAIN de lectura
+en PostgreSQL; sus planes exitosos ejecutaron en 0,069–39,534 ms.
+No hubo OOM ni CPU limitada por cuota en las muestras. Se observaron como máximo
+19/20 conexiones en la base, agregadas entre pools; eso no mide `waitingCount`
+ni demuestra agotamiento de un pool. El bloqueo SQL muestreado de 379 ms fue
+durante CU-012 concurrente, fuera de las ventanas de los fallos automáticos.
+
+El gateway registró además errores de resolución de Núcleo/Boletería. Se
+conservan separados: esos mensajes DNS no explican por sí solos los 500 SQL
+correlacionados ni cada espera HTTP. No se cambian DNS, límites del pool,
+plazos del servidor o recursos globales de Docker para obtener verde.
+
+**Bloqueo y acción siguiente:** la aceptación queda bloqueada por timeouts
+operacionales en un entorno con capacidad muy ajustada. La presión observada
+no demuestra una causa única. El responsable del Mac debe liberar capacidad de los otros
+proyectos, o revisar por separado el presupuesto global de Docker. No se
+detuvo Redash, el entorno habitual ni la referencia A/B. Después de un cambio
+de condiciones comprobado, corresponde un nuevo automático y visible completos,
+con los mismos límites, para contrastar los timeouts. **No hay otra repetición
+justificada en las condiciones actuales.**
+
+Al cerrar quedaron **once contenedores propios permanentes saludables** y la
+preparación terminada con salida 0. La comprobación final de salud y los cinco
+logins también devolvió 200. Stripe y correo real permanecen desactivados.
+CU-028 fue diagnosticado **BLOQUEADO** en ambos conjuntos con las referencias
+actuales; sigue siendo trabajo pendiente de Samuel.
+
+Evidencia privada e ignorada por Git:
+
+- Preparación, versiones, conservación de cuentas, configuración y resúmenes:
+  `App/e2e/.evidencia/aceptacion-local-2026-11-11T16-00-00Z/`.
+- Automático: `.evidencia/conjunto-observado-2026-11-11T16-10-49-710Z/`.
+- Visible: `.evidencia/conjunto-observado-2026-11-11T16-23-10-416Z/`.
+
+Cada conjunto conserva su HTML, capturas/trazas, log de Playwright y mediciones
+SQL/VM/gateway/Núcleo/PostgreSQL. No se publican esos informes ni configuración,
+credenciales, tokens o QR. Esta entrega no añade funcionalidades, cancelaciones
+ni Seguridad; solo actualiza el entorno existente y registra su estado real.
+
+## Integración de develop, demo y compatibilidad de CI — 11 de noviembre de 2026
+
+PR nuevo: [#49](https://github.com/Emperador24/HEXACORE/pull/49), hacia develop,
+sin merge ni auto-merge. El PR #48 ya estaba integrado. Se comprobaron las remotas:
+`origin/develop=6e5e7fa` (incluye #47 de Samuel), `origin/feature/samuel=5c641a8`
+y la rama propia publicada antes de empezar en `ab6ae56`.
+
+**CI funcional final aprobada: 8/8 trabajos**, ejecución
+[43045591370](https://github.com/Emperador24/HEXACORE/actions/runs/43045591370),
+SHA **e51db8748740d957d2536ca6f4ae973d42ab4070**. La aceptación conjunta local
+permanece pendiente: **10/13 automática y 12/13 visible; CU-028 bloqueado**.
+
+Primero se revisaron y conservaron los doce archivos locales del demo en
+**9707569**, sin incluir `.env.local`, claves, trazas ni informes privados.
+Después se integró `origin/develop` mediante el merge **5131b1e**, sin conflictos,
+reset ni force-push. El trabajo de Samuel se conserva: versiones de evento en
+las cuatro copias de Entradas, reservas de Parqueaderos y cambios de despliegue,
+pagos/correo y clientes. Se comprobaron las rutas existentes de Alimentos en web
+y Flutter. No se activó Stripe, SMTP ni un despliegue real para verificarlo.
+
+La corrección funcional de CI está en **6683795**:
+
+- **Checkout detached:** en la ejecución
+  [42825246231](https://github.com/Emperador24/HEXACORE/actions/runs/42825246231),
+  la consulta de configuración CU-015 fallaba por exigir una rama local. Solo
+  `config` puede resolver y validar en lectura desde otra rama/detached. Las
+  acciones iniciar/parar/estado/logs siguen exigiendo su rama; se mantienen las
+  comprobaciones de Docker local, destinos, etiquetas, checkout, puertos y
+  recursos. La prueba nueva rechaza operaciones en detached/develop/otra rama.
+- **Convivencia de Logística:** la expectativa antigua `[3,2,4]` confundía el
+  historial actual de Alimentos con su corte inicial. Su registro vigente tiene
+  seis nombres: EsquemaInicialCu011, ReservasInventarioCu011,
+  GestionEstablecimientosCu015, MenuInventarioCu012, PreparacionCu013 y EntregaCu014
+  (con sus timestamps completos del registro canónico). Se comparan ahora los
+  nombres y timestamps exactos de cada historial, base y esquema de cada pool,
+  y `synchronize=false`; no se sustituye simplemente 2 por 6.
+- **Captura histórica:** el selector recorría las carpetas actuales y excluía
+  solamente CU-007. Incorporaba cinco fuentes posteriores al corte, de ahí
+  **23 en vez de 18**; después del merge también habría incluido las cuatro
+  VersionEvento nuevas. Ahora usa la lista positiva `PROCEDENCIA_ORIGINAL`,
+  comprueba 18 rutas únicas, propietario de cada fuente, nombre y SHA antes de
+  inmovilizar el origen. Los ocho historiales y sus registros siguen siendo
+  validados durante la captura. Una prueba compara las 18 fuentes contra el
+  commit fijado **be57961472a0802c90a57d247fb67e96e6717b1b**, excluye las posteriores
+  y rechaza una huella/propietario alterados en memoria. Se añade a la CI antes
+  de levantar la referencia. No se altera ninguna de las 18 migraciones ni su
+  procedencia; se conservan las guardas del ensayo y sus recursos separados.
+
+Tras integrar Samuel, el registro actual suma **34 migraciones**: las 29
+anteriores más cuatro VersionEvento (Ventas, Catálogo, Postventa y Acceso QR) y
+Cu021Cu023ReservasEspacios de Parqueaderos. Esto no amplía el corte histórico
+de 18. Las 13 pruebas de esquemas comprueban ese registro y las huellas conservadas.
+
+| Verificación local de esta entrega | Resultado |
+|---|---|
+| Tipos y build del backend integrado, Node 22.22.3 | Aprobados |
+| Guardas de revisión y salud | **14/14** |
+| Procedencias contra el Git fijado y controles negativos | **3/3** |
+| Esquemas y 18 fuentes conservadas | **13/13** |
+| Archivo histórico, sin Docker | Tres archivos idénticos a be579614; aprobado |
+| Tipos E2E y configuración/fronteras | Aprobados |
+| Consumidor de eventos: entrega, confirmación y DLQ | **15/15** |
+| Composición AMQP entre contextos V8 y controles negativos, sin recursos | **2/2** |
+
+Se reutiliza la verificación del demo ya realizada: CU-029 visual completo
+**1/1**, ocho pausas medidas de cinco segundos y slowMo en los contextos reales,
+incluidos los explícitos; CU-015 normal **1/1**. Sus dos demos fallidos siguen
+registrados. No se repitieron recorridos locales por los cambios de documentación.
+El demo mantiene su configuración, pausas, foco e informes separados. Playwright
+normal/CI conserva 120 s por test, 15 s por aserción y cero reintentos; el
+presupuesto ampliado de presentación es exclusivo del demo.
+
+**Primera GitHub CI de la entrega:**
+[43035031451](https://github.com/Emperador24/HEXACORE/actions/runs/43035031451),
+SHA **6683795**: **6/8 trabajos aprobados**. La guarda detached y la captura,
+conciliación, procedencias y lectura de las 18 migraciones históricas aprobaron.
+Se diagnosticaron otros dos fallos antes de publicar la siguiente corrección:
+
+- Una unitaria de Samuel generaba dos mensajes con `new Date()` y comparaba
+  timestamps separados por 1 ms (**982/983** pruebas). Ahora entrega y compara
+  el mismo evento, con la aserción completa intacta; la suite dirigida aprueba
+  **15/15**.
+- El escenario de aplicaciones actuales solo insertaba la referencia antigua
+  de Alimentos, pero el checkout consulta `eventos_recintos.eventos`: devolvía
+  **404**. El contexto exclusivo de base única prepara ahora recinto y evento
+  publicado en el esquema propietario comprobado. La preparación del origen
+  histórico no recibe ese contexto y conserva su comportamiento. No se cambian
+  el HTTP esperado, las aserciones, los límites ni los reintentos.
+
+La segunda ejecución,
+[43036251973](https://github.com/Emperador24/HEXACORE/actions/runs/43036251973),
+SHA **785d701**, volvió a aprobar **6/8 trabajos**: incluye autenticación,
+**983/983 unitarias** y la convivencia de Logística con nombres e historiales
+exactos. El escenario común completó **46 comprobaciones HTTP/proyecciones**
+sobre la copia transferida; la conciliación histórica aprobó **12/12**. Quedaron
+dos incompatibilidades de fixtures, diagnosticadas antes de volver a publicar:
+
+- **403 del lector Personal conservado:** el corte precede al vínculo CU-015.
+  La prueba comprueba primero el rechazo y completa el vínculo únicamente en la
+  copia, conservando la referencia y la lectura del pedido original (suite
+  entonces **4/5**). No se elimina la guarda ni se cambia el 200 esperado.
+- **Tarifa offline inexistente:** la salida simulada ocurre cinco minutos antes
+  del ensayo y sus tarifas nacían al iniciarlo (Núcleo **121/122**, segunda pasada
+  aún no ejecutada). Ahora el fixture inserta una tarifa anterior de 3000 y
+  comprueba que se usa esa, mientras la caché actual sigue valiendo 5000. Se
+  conservan cobro de dos horas, sincronización e idempotencia. No se cambia
+  código productivo, tiempos ni reintentos de Parqueaderos.
+
+En la tercera ejecución,
+[43037594145](https://github.com/Emperador24/HEXACORE/actions/runs/43037594145),
+SHA **671d604**, el escenario común mantuvo sus 46 comprobaciones y la lectura
+de datos conservados aprobó **5/5**, incluido rechazo previo y vínculo posterior
+del Personal. El siguiente paso financiero tenía otro fixture que solo creaba
+la referencia antigua del evento: **404** en checkout, con tres fallos derivados
+de ese primer fallo (**1/5**). La preparación actual de eventos se comparte
+ahora entre los dos fixtures. No se tocan contratos, cancelaciones ni F12.
+Núcleo aprobó **122/122** en su primera pasada; la segunda detectó que una
+tarifa anterior podía imponerse a la del fixture (**121/122**). El lote usa ahora
+un único instante y la tarifa propia empieza exactamente en la salida simulada,
+conservando la comprobación de 3000 frente a los 5000 actuales. Se mantiene la
+doble pasada sobre la misma base, sin limpieza de tarifas previas ni reintentos.
+
+La cuarta ejecución,
+[43039387841](https://github.com/Emperador24/HEXACORE/actions/runs/43039387841),
+SHA **8daf011**, aprobó completamente el trabajo de transferencia histórica y
+aplicaciones sobre esquemas:
+
+| Comprobación de GitHub Actions | Resultado |
+|---|---|
+| Procedencias, nombres, propietarios y huellas contra be579614 | **3/3** |
+| Captura y conciliación del corte original | Ocho respaldos, **18 migraciones; 12/12** |
+| Lectura ORM transferida | Once conexiones/historiales, **34 migraciones**, cero tablas public |
+| Escenario común sobre copia transferida / instalación nueva | **46 comprobaciones en cada base** |
+| Lectura y contratos de la copia / instalación nueva | **5/5 en cada base** |
+| Convivencia financiera y reinicio en la copia / instalación nueva | **5/5 en cada base** |
+| Instalación vacía antes de fixtures | **84 tablas**, 34 registros de migración + cuatro roles, cero filas de negocio |
+
+La CI terminó con **7/8 trabajos aprobados**: **983/983 unitarias**, Núcleo
+**122/122 en ambas pasadas**, transferencia y autenticación completas. Boletería
+falló en su precondición de arranque (**0/23**): esperaba cinco consumidores,
+pero Samuel añadió cuatro colas de eventos. La corrección exige los nueve
+nombres propietarios exactos, filtrados por la única conexión propia, sin
+deduplicar y también al reconectar. Se revisó además su expectativa antigua de
+diez migraciones: las cuatro VersionEvento elevan el registro actual a catorce;
+se comparan nombres y timestamps por base/esquema/historial canónico. Las diez
+fuentes históricas de Entradas y las 18 totales conservan sus huellas.
+La quinta ejecución,
+[43041816382](https://github.com/Emperador24/HEXACORE/actions/runs/43041816382),
+SHA **5dac00a**, aprobó de nuevo siete trabajos y ambas pasadas del Núcleo, pero
+el arnés AMQP de Boletería tampoco convergió con la lista esperada. No confirma
+todavía la composición real. Se añade al error solamente la composición
+observada (nombres y conteos), manteniendo privados los mensajes y logs del
+proceso. Boletería se ejecuta primero para obtener ese diagnóstico antes del
+bloque largo; permanecen exactamente las mismas dobles pasadas y límites.
+La ejecución de diagnóstico
+[43044482972](https://github.com/Emperador24/HEXACORE/actions/runs/43044482972),
+SHA **5d3b329**, observó **una conexión y las nueve colas exactas**, sin ausencias
+ni duplicados. La comparación `isDeepStrictEqual` añadida al arnés rechazaba los
+prototipos de los arrays creados por `fetch` fuera del contexto V8 de Jest.
+Se comparan ahora longitud y nombres primitivos exactos; se conserva la
+exigencia de una conexión y se rechazan duplicados, colas ajenas y ausencias.
+Una regresión con `node:vm` reproduce el contexto externo sin Docker y cubre los
+rechazos; **2/2 locales**, Node 22.22.3. Se incorpora antes de crear recursos.
+No se amplían esperas.
+
+### Resultado funcional comprobado de la entrega
+
+La ejecución **43045591370** aprobó los ocho trabajos: backend real, integración
+de autenticación, transferencia histórica, ambos portales, Flutter, gateway y
+guardas/artefactos. Los logs de Actions confirman:
+
+| Backend real de GitHub Actions | Resultado exacto |
+|---|---|
+| Regresión AMQP entre contextos V8 | **2/2** |
+| Unitarias con Redis | **983/983; 71/71 suites** |
+| Boletería, incluidos nueve consumidores y catorce migraciones propias | **23/23 en cada una de dos pasadas; 2/2 suites** |
+| Núcleo, incluida convivencia de Logística | **122/122 en cada una de dos pasadas; 11/11 suites** |
+| Contratos del Trabajador / correo de Identidad al simulador | **20/20 y 3/3** |
+| Contratos financieros/webhook | **13/13 en cada una de dos pasadas** |
+| Libro común, convivencia y reinicio | **5/5** |
+| Protección de manifiestos y resúmenes publicados | **7/7** |
+| Tipos, fronteras, imágenes, salud y smoke de programas/gateway | Aprobados |
+
+La transferencia confirmó también los resultados de su tabla anterior:
+procedencias **3/3**, conciliación histórica **12/12**, ocho respaldos/18 fuentes,
+once conexiones/historiales y 34 migraciones actuales, instalación vacía con
+84 tablas, **46 comprobaciones por base**, lectura **5/5 por base** y convivencia
+financiera **5/5 por base**. No se cambió ninguna fuente ni procedencia histórica.
+
+Este cierre documental posterior solo modifica el plan; las fuentes funcionales
+validadas son las de **e51db87**. Las comprobaciones automáticas posteriores de
+ese cierre se consultan en [Checks del PR #49](https://github.com/Emperador24/HEXACORE/pull/49/checks).
+No se repiten recorridos Playwright locales por esta actualización documental.
+
+Las verificaciones usan los runners aislados, sin usar la referencia A/B del
+Mac. No se relanzaron ejecuciones fallidas. Logs locales privados en
+`App/e2e/.evidencia/integracion-ci-2026-11-11T13-52-03Z/`.
+
+**La aceptación conjunta local sigue pendiente: 10/13 automática y 12/13
+visible**, correspondientes al cierre del 8 de noviembre. No se convierten en
+verde por una CI aprobada, por tipos/unitarias ni por el demo. CU-028 continúa
+sin implementación; no se añaden casos de uso, CU-011F, F12 o seguridad global.
+No se detuvo Redash ni otro proyecto, no se borraron volúmenes locales ni se repitieron
+semillas locales. Las verificaciones locales usaron proveedores simulados.
+
 ## Estabilidad conjunta — 8 de noviembre de 2026
 
 **La aceptación conjunta sigue pendiente. Último automático: 10/13; último

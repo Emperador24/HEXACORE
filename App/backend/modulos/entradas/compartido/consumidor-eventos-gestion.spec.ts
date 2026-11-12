@@ -94,8 +94,9 @@ describe('ConsumidorEventosGestion', () => {
     it('aplica y confirma', async () => {
       const consumidor = nuevo();
       const c = canal();
-      await entregar(consumidor, c, mensaje());
-      expect(consumidor.aplicar).toHaveBeenCalledWith(mensaje());
+      const evento = mensaje();
+      await entregar(consumidor, c, evento);
+      expect(consumidor.aplicar).toHaveBeenCalledWith(evento);
       expect(c.ack).toHaveBeenCalled();
     });
 

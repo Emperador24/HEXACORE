@@ -11,6 +11,8 @@ class BandejaApi extends PedidosApi {
   @override
   Future<DatosPedido?> pendientePreparacion() async => null;
   @override
+  Future<DatosPedido?> pendienteCancelacion() async => null;
+  @override
   Future<List<DatosPedido>> misEstablecimientos() async => [
         {'id': 'local-1', 'nombre': 'Restaurante uno'},
         {'id': 'local-2', 'nombre': 'Restaurante dos'}

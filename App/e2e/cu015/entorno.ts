@@ -2,6 +2,7 @@ import { APIRequestContext, expect, Page } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { presentar } from '../presentacion';
 
 export const adminURL = 'http://cu015.localhost:14221';
 export const clienteURL = 'http://cu015.localhost:14220';
@@ -31,10 +32,12 @@ export async function loginAPI(api: APIRequestContext, email: string): Promise<{
 
 export async function loginUI(page: Page, url: string, email: string): Promise<void> {
   await page.goto(`${url}/login`);
+  await presentar(page, url === adminURL ? 'Acceso al portal administrativo' : 'Acceso al portal cliente');
   await page.getByLabel('Correo', { exact: true }).fill(email);
   await page.getByLabel('Contraseña', { exact: true }).fill(clave()!);
   await page.getByRole('button', { name: 'Ingresar', exact: true }).click();
   await expect(page).not.toHaveURL(/\/login(?:\?|$)/);
+  await presentar(page, 'Sesión abierta en el portal');
 }
 
 export async function crearEvento(api: APIRequestContext, token: string, nombre: string) {

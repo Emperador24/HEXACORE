@@ -1,3 +1,4 @@
+import { CancelacionPedidoComponent } from './cancelacion-pedido.component';
 import { EntregaPedidoComponent } from '../entregas/entrega-pedido.component';
 import { Component, inject, OnDestroy, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
@@ -9,7 +10,7 @@ import { AuthService, ErrorCuenta } from '../core/auth.service';
 import { MenuApiService } from '../core/menu-api.service';
 import { DatosPreparacion, IntencionPreparacion, PedidoRecibido, PreparacionApiService } from '../core/preparacion-api.service';
 
-@Component({ selector: 'app-preparacion', standalone: true, imports: [EntregaPedidoComponent, DatePipe, FormsModule, MatButtonModule, MatFormFieldModule, MatInputModule],
+@Component({ selector: 'app-preparacion', standalone: true, imports: [CancelacionPedidoComponent, EntregaPedidoComponent, DatePipe, FormsModule, MatButtonModule, MatFormFieldModule, MatInputModule],
   templateUrl: './preparacion.component.html', styleUrl: './preparacion.component.scss' })
 export class PreparacionComponent implements OnDestroy {
   private readonly api = inject(PreparacionApiService); private readonly menu = inject(MenuApiService); private readonly auth = inject(AuthService);
@@ -17,6 +18,7 @@ export class PreparacionComponent implements OnDestroy {
   readonly pedidos = signal<PedidoRecibido[]>([]); readonly seleccionado = signal<PedidoRecibido | null>(null);
   readonly ocupado = signal(false); readonly error = signal(''); readonly aviso = signal('');
   readonly pendiente = signal<IntencionPreparacion | null>(null); readonly pausa = signal(false);
+  readonly cancelacionOcupada = signal(false); readonly cancelacionPendiente = signal(false);
   readonly entregaOcupada = signal(false); readonly entregaPendiente = signal(false);
   local = ''; pagina = 0; accion?: DatosPreparacion['accion']; minutos = 10; motivo = ''; incidenciaId?: string;
   private versionFormulario = 0; private pedidoFormulario = ''; private destruido = false;
@@ -24,7 +26,7 @@ export class PreparacionComponent implements OnDestroy {
   private get claveLocal() { return `hexacore.cu013.intencion.${this.auth.usuarioActual()?.id}`; }
   constructor() {
     void this.iniciar();
-    this.temporizador = setInterval(() => { if (document.visibilityState === 'visible' && !this.ocupado() && !this.pausa() && !this.pendiente() && !this.entregaOcupada()) void this.actualizar(); }, 15000);
+    this.temporizador = setInterval(() => { if (document.visibilityState === 'visible' && !this.ocupado() && !this.pausa() && !this.pendiente() && !this.entregaOcupada() && !this.cancelacionOcupada() && !this.cancelacionPendiente()) void this.actualizar(); }, 15000);
   }
   ngOnDestroy() { this.destruido = true; clearInterval(this.temporizador); }
   private fallo(e: unknown) { this.error.set(e instanceof Error ? e.message : 'No pudimos consultar los pedidos.'); this.pausa.set(true); }
@@ -34,16 +36,19 @@ export class PreparacionComponent implements OnDestroy {
       this.locales.set(await this.menu.misEstablecimientos());
       if (this.destruido) return;
       const valor = localStorage.getItem(this.claveLocal); if (valor) this.pendiente.set(JSON.parse(valor));
+      const cancelacion = localStorage.getItem(`hexacore.cu011f.intencion.${this.auth.usuarioActual()?.id}`);
+      this.cancelacionPendiente.set(!!cancelacion);
       const entrega = localStorage.getItem(`hexacore.cu014.intencion.${this.auth.usuarioActual()?.id}`);
       this.entregaPendiente.set(!!entrega);
-      this.local = this.pendiente()?.local ?? (entrega ? JSON.parse(entrega).local : undefined) ?? this.locales()[0]?.id ?? '';
+      this.local = this.pendiente()?.local ?? (cancelacion ? JSON.parse(cancelacion).local : undefined) ?? (entrega ? JSON.parse(entrega).local : undefined) ?? this.locales()[0]?.id ?? '';
       await this.leer();
     } catch(e) { this.fallo(e); } finally { this.ocupado.set(false); }
   }
   private async leer() {
     if (!this.local || this.destruido) return;
     const lista = await this.api.listar(this.local, this.pagina); if (this.destruido) return; this.pedidos.set(lista);
-    const id = this.seleccionado()?.id ?? this.pendiente()?.pedido;
+    const cancelacion = localStorage.getItem(`hexacore.cu011f.intencion.${this.auth.usuarioActual()?.id}`);
+    const id = this.seleccionado()?.id ?? this.pendiente()?.pedido ?? (cancelacion ? JSON.parse(cancelacion).pedido : undefined);
     if (id) { const detalle = await this.api.detalle(this.local, id); if (!this.destruido) this.seleccionado.set(detalle); }
   }
   async actualizar() {
@@ -91,5 +96,5 @@ export class PreparacionComponent implements OnDestroy {
       } else this.aviso.set('Resultado sin confirmar. Conservamos la misma operación para consultarla mediante repetición segura.');
     } finally { this.ocupado.set(false); }
   }
-  etiqueta(estado: string) { return ({ RECIBIDO: 'Recibido', EN_PREPARACION: 'En preparación', LISTO_PARA_ENTREGAR: 'Listo para entregar' } as Record<string,string>)[estado] ?? estado; }
+  etiqueta(estado: string) { return ({ RECIBIDO: 'Recibido', EN_PREPARACION: 'En preparación', LISTO_PARA_ENTREGAR: 'Listo para entregar', CANCELADO: 'Cancelado' } as Record<string,string>)[estado] ?? estado; }
 }

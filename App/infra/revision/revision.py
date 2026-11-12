@@ -297,6 +297,15 @@ def iniciar(demo, compilar=None):
           'Guía y credenciales exclusivamente demo: App/infra/revision/README.md', flush=True)
 
 
+def validar_rama(accion):
+    # Resolver/validar config es de solo lectura, también en el merge checkout
+    # detached de Actions. No concede permiso para arrancar ni parar recursos.
+    if accion == 'config':
+        return
+    rama = 'feature/sebastian' if PERFIL == 'cu015' else 'feature/sebastian-arquitectura'
+    exigir(git('branch', '--show-current') == rama, 'Usar exclusivamente ' + rama)
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--perfil', choices=['arquitectura', 'cu015'], default='arquitectura')
@@ -309,8 +318,7 @@ def main():
     exigir(a.compilar is None or a.accion == 'iniciar', '--compilar solo con iniciar')
     exigir(not a.datos_demo or a.accion == 'iniciar', '--datos-demo solo con iniciar')
     exigir(not a.servicios or (a.accion == 'logs' and set(a.servicios) <= SERVICIOS), 'Servicios solo para logs y del proyecto propio')
-    rama = 'feature/sebastian' if PERFIL == 'cu015' else 'feature/sebastian-arquitectura'
-    exigir(git('branch', '--show-current') == rama, 'Usar exclusivamente ' + rama)
+    validar_rama(a.accion)
     for herramienta in ('docker', 'git', 'openssl'):
         exigir(shutil.which(herramienta), 'Falta requisito: ' + herramienta)
     ejecutar(['docker', 'info', '--format', '{{.ServerVersion}}'], capturar=True)

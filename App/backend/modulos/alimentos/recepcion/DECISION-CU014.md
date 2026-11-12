@@ -61,3 +61,10 @@ incidencias, sin sustituciones ni cambios financieros automáticos; B conserva
 retrasos y avisos. Originar cancelaciones del establecimiento CU-011F y coordinar
 F12 siguen pendientes. No se implementan permisos globales CU-028 ni funciones
 de parqueaderos de la rama de Samuel.
+
+## Actualización de integración CU-011F — 11/11/2026
+
+Las menciones anteriores a CU-011F pendiente son históricas. La cancelación ya se
+implementó en [DECISION-CU011F.md](DECISION-CU011F.md): comparte bloqueo de Pedido
+con entrega, revalida la transición y retira el QR utilizable. Una carrera tiene
+un solo resultado válido. La coordinación financiera global F12 sigue pendiente.

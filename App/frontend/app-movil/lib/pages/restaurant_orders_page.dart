@@ -1,3 +1,4 @@
+import '../widgets/cancelacion_pedido_panel.dart';
 import '../widgets/entrega_pedido_panel.dart';
 import 'package:flutter/material.dart';
 import '../services/pedidos_api.dart';
@@ -23,8 +24,9 @@ class _RestaurantOrdersPageState extends State<RestaurantOrdersPage> {
   late final SondeoPedidos sondeo;
   List<DatosPedido> locales = [], pedidos = [];
   DatosPedido? detalle, pendiente;
-  String? seleccionado, error, aviso;
+  String? seleccionado, error, aviso, pedidoCancelacionPendiente;
   bool cargando = false, entregaOcupada = false, entregaPendiente = false;
+  bool cancelacionOcupada = false, cancelacionPendiente = false;
   int pagina = 0;
   @override
   void initState() {
@@ -34,8 +36,9 @@ class _RestaurantOrdersPageState extends State<RestaurantOrdersPage> {
             mounted &&
             (ModalRoute.of(context)?.isCurrent ?? true) &&
             TickerMode.valuesOf(context).enabled &&
-            pendiente == null,
-        ocupado: () => cargando || entregaOcupada,
+            pendiente == null &&
+            !cancelacionPendiente,
+        ocupado: () => cargando || entregaOcupada || cancelacionOcupada,
         consultar: actualizar);
     cargarCatalogo();
   }
@@ -59,10 +62,14 @@ class _RestaurantOrdersPageState extends State<RestaurantOrdersPage> {
       final resultado = await api.misEstablecimientos();
       if (!mounted) return;
       locales = resultado;
+      final cancelacion = await api.pendienteCancelacion();
+      cancelacionPendiente = cancelacion != null;
+      pedidoCancelacionPendiente = cancelacion?['pedido'] as String?;
       final entrega = await api.pendienteEntrega();
       entregaPendiente = entrega != null;
-      final sugerido =
-          pendiente?['local'] as String? ?? entrega?['local'] as String?;
+      final sugerido = pendiente?['local'] as String? ??
+          cancelacion?['local'] as String? ??
+          entrega?['local'] as String?;
       seleccionado = resultado.any((e) => e['id'] == sugerido)
           ? sugerido
           : resultado.isEmpty
@@ -89,8 +96,9 @@ class _RestaurantOrdersPageState extends State<RestaurantOrdersPage> {
     final lista = await api.recibidos(local, pagina: pagina);
     if (!mounted) return;
     pedidos = lista;
-    if (detalle != null) {
-      detalle = await api.detalleRecibido(local, detalle!['id'] as String);
+    final pedido = detalle?['id'] as String? ?? pedidoCancelacionPendiente;
+    if (pedido != null) {
+      detalle = await api.detalleRecibido(local, pedido);
     }
   }
 
@@ -124,7 +132,13 @@ class _RestaurantOrdersPageState extends State<RestaurantOrdersPage> {
   }
 
   Future<void> cambiarPagina(int delta) async {
-    if (cargando || pendiente != null || pagina + delta < 0) return;
+    if (cargando ||
+        cancelacionOcupada ||
+        cancelacionPendiente ||
+        pendiente != null ||
+        pagina + delta < 0) {
+      return;
+    }
     pagina += delta;
     pedidos = [];
     detalle = null;
@@ -132,7 +146,12 @@ class _RestaurantOrdersPageState extends State<RestaurantOrdersPage> {
   }
 
   Future<void> seleccionar(DatosPedido p) async {
-    if (cargando || pendiente != null) return;
+    if (cargando ||
+        cancelacionOcupada ||
+        cancelacionPendiente ||
+        pendiente != null) {
+      return;
+    }
     setState(() {
       cargando = true;
       error = null;
@@ -301,8 +320,12 @@ class _RestaurantOrdersPageState extends State<RestaurantOrdersPage> {
                       .toList(),
                   onChanged: cargando ||
                           pendiente != null ||
+                          cancelacionOcupada ||
+                          cancelacionPendiente ||
                           entregaOcupada ||
-                          entregaPendiente
+                          entregaPendiente ||
+                          cancelacionOcupada ||
+                          cancelacionPendiente
                       ? null
                       : (v) {
                           if (v != null) cargarPedidos(v);
@@ -317,15 +340,22 @@ class _RestaurantOrdersPageState extends State<RestaurantOrdersPage> {
             Text('Página ${pagina + 1}'),
             Wrap(children: [
               TextButton(
-                  onPressed: cargando || pendiente != null || pagina == 0
+                  onPressed: cargando ||
+                          cancelacionOcupada ||
+                          cancelacionPendiente ||
+                          pendiente != null ||
+                          pagina == 0
                       ? null
                       : () => cambiarPagina(-1),
                   child: const Text('Pedidos más recientes')),
               TextButton(
-                  onPressed:
-                      cargando || pendiente != null || pedidos.length < 100
-                          ? null
-                          : () => cambiarPagina(1),
+                  onPressed: cargando ||
+                          cancelacionOcupada ||
+                          cancelacionPendiente ||
+                          pendiente != null ||
+                          pedidos.length < 100
+                      ? null
+                      : () => cambiarPagina(1),
                   child: const Text('Pedidos anteriores')),
             ]),
             if (cargando) const LinearProgressIndicator(),
@@ -360,7 +390,10 @@ class _RestaurantOrdersPageState extends State<RestaurantOrdersPage> {
                     EntregaPedidoPanel(
                         api: api,
                         local: seleccionado!,
-                        inactivo: cargando || pendiente != null,
+                        inactivo: cargando ||
+                            cancelacionOcupada ||
+                            cancelacionPendiente ||
+                            pendiente != null,
                         alEntregar: actualizar,
                         alOcupar: (v) {
                           if (mounted) setState(() => entregaOcupada = v);
@@ -381,7 +414,10 @@ class _RestaurantOrdersPageState extends State<RestaurantOrdersPage> {
                   Text('${d['cantidad']} × ${d['nombreProducto']}'),
                 Text(importePedido(p['total'], p['moneda'] as String)),
                 TextButton(
-                    onPressed: cargando || pendiente != null
+                    onPressed: cargando ||
+                            cancelacionOcupada ||
+                            cancelacionPendiente ||
+                            pendiente != null
                         ? null
                         : () => seleccionar(p),
                     child: const Text('Gestionar pedido')),
@@ -408,24 +444,35 @@ class _RestaurantOrdersPageState extends State<RestaurantOrdersPage> {
           const Text('Solo se preparan pedidos confirmados con pago aprobado.'),
         if (habilitado && a['estado'] == 'RECIBIDO')
           FilledButton(
-              onPressed: cargando || pendiente != null
+              onPressed: cargando ||
+                      cancelacionOcupada ||
+                      cancelacionPendiente ||
+                      pendiente != null
                   ? null
                   : () => formulario('INICIAR'),
               child: const Text('Iniciar preparación')),
         if (habilitado && a['estado'] == 'EN_PREPARACION') ...[
           TextButton(
-              onPressed: cargando || pendiente != null
+              onPressed: cargando ||
+                      cancelacionOcupada ||
+                      cancelacionPendiente ||
+                      pendiente != null
                   ? null
                   : () => formulario('RETRASAR'),
               child: const Text('Registrar retraso')),
           TextButton(
-              onPressed: cargando || pendiente != null
+              onPressed: cargando ||
+                      cancelacionOcupada ||
+                      cancelacionPendiente ||
+                      pendiente != null
                   ? null
                   : () => formulario('INCIDENCIA'),
               child: const Text('Reportar incidencia')),
           FilledButton(
               onPressed: cargando ||
                       pendiente != null ||
+                      cancelacionOcupada ||
+                      cancelacionPendiente ||
                       a['incidenciasAbiertas'] != 0
                   ? null
                   : () =>
@@ -435,7 +482,8 @@ class _RestaurantOrdersPageState extends State<RestaurantOrdersPage> {
         if (p['entrega'] case final Map entrega)
           Text(
               'Entregado en ${entrega['puntoEntrega']} · ${fechaPedido(entrega['entregadoEn'])}. El QR ya no permite otra entrega.')
-        else if (a['estado'] == 'LISTO_PARA_ENTREGAR')
+        else if (p['estado'] == 'CONFIRMADO' &&
+            a['estado'] == 'LISTO_PARA_ENTREGAR')
           const Text(
               'Preparación finalizada. Valida el código del cliente para entregar.'),
         for (final i in p['incidencias'] as List? ?? []) ...[
@@ -445,14 +493,33 @@ class _RestaurantOrdersPageState extends State<RestaurantOrdersPage> {
               i['resueltaEn'] == null &&
               a['estado'] == 'EN_PREPARACION')
             TextButton(
-                onPressed: cargando || pendiente != null
+                onPressed: cargando ||
+                        cancelacionOcupada ||
+                        cancelacionPendiente ||
+                        pendiente != null
                     ? null
                     : () => formulario('RESOLVER_INCIDENCIA',
                         incidencia: i['id'] as String),
                 child: const Text('Resolver incidencia'))
         ],
+        CancelacionPedidoPanel(
+            key: ValueKey('cancelacion-$seleccionado-${p['id']}'),
+            api: api,
+            local: seleccionado!,
+            pedido: p,
+            inactivo: cargando ||
+                entregaOcupada ||
+                entregaPendiente ||
+                pendiente != null,
+            alCambiar: actualizar,
+            alOcupar: (v) {
+              if (mounted) setState(() => cancelacionOcupada = v);
+            },
+            alPendiente: (v) {
+              if (mounted) setState(() => cancelacionPendiente = v);
+            }),
         const Text(
-            'Una incidencia no cambia productos, importes ni pagos. No cancela ni reembolsa.'),
+            'Una incidencia no cambia productos, importes ni pagos. La cancelación explícita tiene seguimiento separado del reembolso.'),
         const Text('Historial y avisos'),
         for (final h in p['historial'] as List? ?? [])
           Text(

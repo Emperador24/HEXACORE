@@ -406,7 +406,16 @@ describe('CU-021 a CU-025 · Parqueaderos (e2e)', () => {
   });
 
   it('CU-022: el punto de control trabaja sin red con su caché y sincroniza después sin duplicar', async () => {
+    const ahora = Date.now();
+    const hace = (min: number) => new Date(ahora - min * 60_000).toISOString();
     await fijarTarifa(5000);
+    // La salida simulada precede al arranque del ensayo: necesita su propia
+    // tarifa desde ese instante, distinta de la actual e independiente de
+    // tarifas anteriores, también en la segunda pasada sobre la misma base.
+    await parqueaderos.query(
+      `INSERT INTO tarifas (id, valor_hora, definida_por, vigente_desde, motivo)
+       VALUES ($1, 3000, $2, $3, 'Fixture de salida offline')`,
+      [randomUUID(), administrador.id, hace(5)]);
     const evento = await eventoEnCurso();
     const z = await zona(evento, 'Zona Offline', 5, 1);
     const conReserva = placa();
@@ -421,14 +430,13 @@ describe('CU-021 a CU-025 · Parqueaderos (e2e)', () => {
     expect(cache.tarifa).toMatchObject({ valorHora: 5000 });
 
     // Lo que pasó sin red llega después, desordenado, con la hora real de cada registro.
-    const hace = (min: number) => new Date(Date.now() - min * 60_000).toISOString();
     const suelto = placa();
     const lote = [
       { id: randomUUID(), tipo: 'SALIDA', placa: suelto, ocurridoEn: hace(5) },
       { id: randomUUID(), tipo: 'INGRESO', placa: suelto, ocurridoEn: hace(70) },
       { id: randomUUID(), tipo: 'INGRESO', codigoQr, ocurridoEn: hace(40) },
       { id: randomUUID(), tipo: 'INGRESO', codigoQr: 'HXP-BBBBBBBBBBBBBBBB', ocurridoEn: hace(30) },
-      { id: randomUUID(), tipo: 'INGRESO', placa: placa(), ocurridoEn: new Date(Date.now() + 3_600_000).toISOString() },
+      { id: randomUUID(), tipo: 'INGRESO', placa: placa(), ocurridoEn: new Date(ahora + 3_600_000).toISOString() },
     ];
     const enviar = () => request(nucleo.url).post(`${P}/eventos/${evento}/sincronizacion`).set('Authorization', como(personal)).send({ registros: lote }).expect(201).then((r) => r.body);
     const primera = await enviar();
@@ -439,6 +447,7 @@ describe('CU-021 a CU-025 · Parqueaderos (e2e)', () => {
     // 65 min de permanencia → 2 h, calculadas con las horas del dispositivo y la tarifa vigente cuando salió.
     const [{ valor }] = await parqueaderos.query(
       `SELECT valor_hora::float AS valor FROM tarifas WHERE vigente_desde <= $1 ORDER BY vigente_desde DESC LIMIT 1`, [lote[0].ocurridoEn]);
+    expect(valor).toBe(3000);
     expect(por(lote[0].id)).toMatchObject({ resultado: 'APLICADO', cobro: { horas: 2, valorHora: valor, monto: 2 * valor } });
     const [estancia] = await parqueaderos.query(`SELECT ingreso_en, salida_en FROM estancias WHERE registro_local_id = $1`, [lote[1].id]);
     expect(Math.abs(new Date(estancia.ingreso_en).getTime() - Date.parse(lote[1].ocurridoEn))).toBeLessThan(1000);

@@ -186,6 +186,65 @@ class PedidosApi {
 
   String get _clavePreparacion =>
       'hexacore.cu013.intencion.${_sesion.usuario?.id ?? "sin-sesion"}';
+  String get _claveCancelacion =>
+      'hexacore.cu011f.intencion.${_sesion.usuario?.id ?? "sin-sesion"}';
+  Future<DatosPedido?> pendienteCancelacion() async {
+    final raw =
+        (await SharedPreferences.getInstance()).getString(_claveCancelacion);
+    return raw == null ? null : jsonDecode(raw) as DatosPedido;
+  }
+
+  Future<DatosPedido> cancelarPedido(
+      String local, String pedido, DatosPedido datos) async {
+    final anterior = await pendienteCancelacion();
+    if (anterior != null) {
+      throw PedidosException('Consulta primero la cancelación pendiente.', 409,
+          'CANCELACION_PENDIENTE');
+    }
+    final i = <String, dynamic>{
+      'id': nuevaClavePago(),
+      'local': local,
+      'pedido': pedido,
+      'datos': {
+        'version': datos['version'],
+        'motivo': datos['motivo'],
+        'confirmar': datos['confirmar']
+      }
+    };
+    await (await SharedPreferences.getInstance())
+        .setString(_claveCancelacion, jsonEncode(i));
+    return repetirCancelacion(i);
+  }
+
+  Future<DatosPedido> repetirCancelacion(DatosPedido i) async {
+    final clave = _claveCancelacion;
+    final anterior = await pendienteCancelacion();
+    if (anterior == null || jsonEncode(anterior) != jsonEncode(i)) {
+      throw PedidosException(
+          'La operación no corresponde a la cancelación pendiente de esta cuenta.',
+          409,
+          'CLAVE_CANCELACION_INCOMPATIBLE');
+    }
+    try {
+      final r = await _enviar(
+          'establecimientos/${Uri.encodeComponent(i['local'] as String)}/pedidos/${Uri.encodeComponent(i['pedido'] as String)}/cancelacion',
+          clave: i['id'] as String,
+          cuerpo: Map<String, dynamic>.from(i['datos'] as Map)) as DatosPedido;
+      await (await SharedPreferences.getInstance()).remove(clave);
+      return r;
+    } on PedidosException catch (e) {
+      if ([400, 404, 409].contains(e.estado) &&
+          e.codigo != 'CLAVE_CANCELACION_INCOMPATIBLE') {
+        await (await SharedPreferences.getInstance()).remove(clave);
+      }
+      rethrow;
+    }
+  }
+
+  Future<DatosPedido> consultarCancelacion(String local, String pedido) async =>
+      await _enviar(
+              'establecimientos/${Uri.encodeComponent(local)}/pedidos/${Uri.encodeComponent(pedido)}/cancelacion')
+          as DatosPedido;
   Future<DatosPedido?> pendientePreparacion() async {
     final valor =
         (await SharedPreferences.getInstance()).getString(_clavePreparacion);

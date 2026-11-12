@@ -39,6 +39,9 @@ async function preparar(salida, contexto) {
     await api('/cuentas/registro',202,{cuenta:'',metodo:'POST',cuerpo:{nombre:'Pendiente ensayo',email:pendiente,contrasena}});
     await api(`/admin/cuentas/${cuentas.auditable.id}/desactivar`,200,{cuenta:'admin',metodo:'POST',cuerpo:{motivo:'Auditoría propia del ensayo'}});
     assert.equal((await db.identidad.query('SELECT count(*)::int n FROM auditoria_cuentas WHERE cuenta_id=$1',[cuentas.auditable.id])).rows[0].n,1);
+    // La aplicación actual consulta al dueño del evento; la referencia histórica
+    // conserva su preparación anterior, sin esquemas ni escritores posteriores.
+    if (contexto?.prepararEvento) await contexto.prepararEvento(ids.evento, cuentas.admin.id);
     await db.alimentos.query("INSERT INTO eventos_referencia(evento_id,nombre,disponible) VALUES($1,'Ensayo consolidación',true)",[ids.evento]);
     await db.alimentos.query("INSERT INTO establecimientos(id,evento_id,nombre,estado,punto_entrega) VALUES($1,$2,'Ensayo','DISPONIBLE','Pruebas')",[ids.local,ids.evento]);
     await db.alimentos.query("INSERT INTO productos(id,establecimiento_id,nombre,precio,activo,cantidad_inventario) VALUES($1,$2,'Producto',1150.25,true,20)",[ids.producto,ids.local]);

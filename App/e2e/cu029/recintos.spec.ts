@@ -1,3 +1,4 @@
+import { presentar } from '../presentacion';
 import { expect, Page, test } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import { adminURL, comprobarAislamiento, gateway, loginAPI, loginUI, nucleo, sql } from '../cu015/entorno';
@@ -20,27 +21,33 @@ test('CU-029 por interfaz: recinto y zonas, capacidad, plano, edición persistid
  await page.getByLabel('Zona',{exact:true}).nth(0).fill('VIP');await page.getByLabel('Capacidad',{exact:true}).nth(0).fill('40');
  await page.getByRole('button',{name:'Añadir zona',exact:true}).click();await expect(page.getByLabel('Zona',{exact:true})).toHaveCount(2);
  await page.getByLabel('Zona',{exact:true}).nth(1).fill('General');await page.getByLabel('Capacidad',{exact:true}).nth(1).fill('80');
- await expect(page.getByText(/Las zonas suman 120 y el recinto admite 100/)).toBeVisible();await expect(page.getByRole('button',{name:'Registrar recinto',exact:true})).toBeDisabled();expect(sql(`SELECT count(*) FROM eventos_recintos.recintos WHERE nombre='${nombre}'`)).toBe('0');
+ await expect(page.getByText(/Las zonas suman 120 y el recinto admite 100/)).toBeVisible();await expect(page.getByRole('button',{name:'Registrar recinto',exact:true})).toBeDisabled();
+ await presentar(page,'Organizador: suma de zonas inválida');expect(sql(`SELECT count(*) FROM eventos_recintos.recintos WHERE nombre='${nombre}'`)).toBe('0');
  await page.getByLabel('Capacidad',{exact:true}).nth(1).fill('60');const alta=page.waitForResponse(r=>r.url().endsWith('/recintos')&&r.request().method()==='POST');await page.getByRole('button',{name:'Registrar recinto',exact:true}).click();const r=await alta;expect(r.status()).toBe(201);const d=await r.json(),id=d.recinto.id;await expect(page).toHaveURL(`${adminURL}/admin/recintos/${id}`);
  // La navegación ya cambió de URL, pero ngOnInit aún puede estar cargando el detalle.
  // Esperar los datos visibles antes de editar evita que esa carga sobrescriba la entrada.
  await expect(page.getByRole('heading',{name:new RegExp(nombre)})).toBeVisible();
  await expect(page.getByLabel('Ciudad',{exact:true})).toHaveValue('Bogotá');await expect(page.getByRole('progressbar')).toHaveCount(0);
+ await presentar(page,'Organizador: recinto registrado');
  await page.locator('input[type="file"]').setInputFiles({name:'plano.txt',mimeType:'text/plain',buffer:Buffer.from('No es un plano')});await expect(page.getByRole('alert')).toContainText('PNG');
  const subir=page.waitForResponse(r=>r.url().endsWith(`/recintos/${id}/plano`)&&r.request().method()==='PUT');await page.locator('input[type="file"]').setInputFiles({name:'plano.png',mimeType:'image/png',buffer:plano});expect((await subir).status()).toBe(200);
  await expect(page.getByRole('status')).toContainText('Plano actualizado.');await expect(page.getByRole('progressbar')).toHaveCount(0);
  await page.getByLabel('Ciudad',{exact:true}).fill('Medellín');await (await capacidadZona(page,'VIP')).fill('45');await (await capacidadZona(page,'General')).fill('55');await page.getByRole('button',{name:'Ubicar',exact:true}).first().click();
  let guardar=page.waitForResponse(r=>r.url().endsWith(`/recintos/${id}`)&&r.request().method()==='PUT');await page.getByRole('button',{name:'Guardar cambios',exact:true}).click();const guardado=await guardar;expect(guardado.status()).toBe(200);expect(guardado.request().postDataJSON().ciudad).toBe('Medellín');await expect(page.getByRole('status')).toContainText('Cambios guardados.');await page.reload();
  await expect(page.getByLabel('Ciudad',{exact:true})).toHaveValue('Medellín');await expect(await capacidadZona(page,'VIP')).toHaveValue('45');await expect(await capacidadZona(page,'General')).toHaveValue('55');await expect(page.getByAltText('Plano del recinto')).toBeVisible();await expect.poll(()=>page.getByAltText('Plano del recinto').evaluate((i:HTMLImageElement)=>i.complete&&i.naturalWidth>0)).toBe(true);
+ await presentar(page,'Organizador: zonas y plano persistidos');
  const organizador=await loginAPI(request,'organizador@hexacore.com');const detalle=await request.get(`${gateway}/recintos/${id}`,{headers:h(organizador.token)});expect(detalle.status()).toBe(200);const persistido=await detalle.json();const archivo=await request.get(`${gateway}/recintos/${id}/plano`,{headers:h(organizador.token)});expect(archivo.status()).toBe(200);expect(await archivo.body()).toEqual(plano);
  // CU-026 se usa solo como fixture para ejercer las restricciones de edición CU-029.
  expect(persistido.recinto.zonas).toEqual(expect.arrayContaining([expect.objectContaining({nombre:'VIP',capacidad:45}),expect.objectContaining({nombre:'General',capacidad:55})]));
  expect(persistido.recinto.zonas.some((z:{x:number|null})=>z.x!==null&&z.x!==undefined)).toBe(true);
  const evento=await request.post(`${gateway}/eventos`,{headers:h(organizador.token),data:{nombre:`Evento ${nombre}`,categoria:'Prueba CU029',recintoId:id,fechaInicio:new Date(Date.now()+86400000).toISOString(),fechaFin:new Date(Date.now()+90000000).toISOString(),aforoMaximo:90,localidades:persistido.recinto.zonas.map((z:{id:string;nombre:string})=>({nombre:z.nombre,precio:1000,cantidad:z.nombre==='VIP'?40:50,zonaRecintoId:z.id}))}});expect(evento.status()).toBe(201);const e=(await evento.json()).evento;
  expect((await request.post(`${gateway}/eventos/${e.id}/publicar`,{headers:h(organizador.token),data:{version:e.version}})).status()).toBe(200);await page.reload();await expect(page.getByText(/Tiene 1 evento\(s\) publicados/)).toBeVisible();
- await (await capacidadZona(page,'VIP')).fill('10');guardar=page.waitForResponse(r=>r.url().endsWith(`/recintos/${id}`)&&r.request().method()==='PUT');await page.getByRole('button',{name:'Guardar cambios',exact:true}).click();expect((await guardar).status()).toBe(409);await expect(page.getByRole('alert')).toContainText('no puede bajar');await page.reload();await expect(await capacidadZona(page,'VIP')).toHaveValue('45');
+ await (await capacidadZona(page,'VIP')).fill('10');guardar=page.waitForResponse(r=>r.url().endsWith(`/recintos/${id}`)&&r.request().method()==='PUT');await page.getByRole('button',{name:'Guardar cambios',exact:true}).click();expect((await guardar).status()).toBe(409);await expect(page.getByRole('alert')).toContainText('no puede bajar');
+ await presentar(page,'Organizador: capacidad comprometida protegida');await page.reload();await expect(await capacidadZona(page,'VIP')).toHaveValue('45');
  // Cambio permitido con aviso explícito, sin vulnerar los cupos comprometidos.
- await page.getByLabel('Capacidad total',{exact:true}).fill('110');guardar=page.waitForResponse(r=>r.url().endsWith(`/recintos/${id}`)&&r.request().method()==='PUT');await page.getByRole('button',{name:'Guardar cambios',exact:true}).click();expect((await guardar).status()).toBe(409);const dialogo=page.getByRole('dialog');await expect(dialogo).toContainText('eventos publicados');guardar=page.waitForResponse(r=>r.url().endsWith(`/recintos/${id}`)&&r.request().method()==='PUT');await dialogo.getByRole('button',{name:'Guardar de todos modos',exact:true}).click();expect((await guardar).status()).toBe(200);await page.reload();await expect(page.getByLabel('Capacidad total',{exact:true})).toHaveValue('110');
+ await page.getByLabel('Capacidad total',{exact:true}).fill('110');guardar=page.waitForResponse(r=>r.url().endsWith(`/recintos/${id}`)&&r.request().method()==='PUT');await page.getByRole('button',{name:'Guardar cambios',exact:true}).click();expect((await guardar).status()).toBe(409);const dialogo=page.getByRole('dialog');await expect(dialogo).toContainText('eventos publicados');
+ await presentar(page,'Organizador: confirmación de impacto sobre eventos publicados');guardar=page.waitForResponse(r=>r.url().endsWith(`/recintos/${id}`)&&r.request().method()==='PUT');await dialogo.getByRole('button',{name:'Guardar de todos modos',exact:true}).click();expect((await guardar).status()).toBe(200);await page.reload();await expect(page.getByLabel('Capacidad total',{exact:true})).toHaveValue('110');
+ await presentar(page,'Organizador: cambio confirmado y persistido');
  await page.screenshot({path:info.outputPath('cu029-recinto-zonas-plano.png'),fullPage:true});
 });
 

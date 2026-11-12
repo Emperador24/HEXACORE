@@ -4,18 +4,38 @@ Fuente única trasladada desde `App/services/alimentos`. Conserva catálogo,
 menú, checkout, inventario/reservas, adaptador local de Pagos y confirmación
 con QR/evento. CU-015 incorpora establecimientos y CU-012 productos, menú y
 ajustes durables. CU-013 incorpora preparación hasta listo, tiempos, incidencias
-y avisos web/app; CU-014 añade prevalidación QR y entrega única. Cancelación
-CU-011F/F12 sigue pendiente.
+y avisos web/app; CU-014 añade prevalidación QR y entrega única. CU-011F añade
+cancelación por Personal, reembolso durable y seguimiento web/app. La recuperación
+global de pagos originales inciertos F12 sigue pendiente.
 
 Instalar, compilar, migrar y arrancar desde [el workspace](../../README.md).
 Usa la conexión TypeORM `alimentos`, esquema `alimentos` y POSTGRES_BD común.
 Se conservan las dos migraciones históricas y se añaden
 `GestionEstablecimientosCu0151794300000000`, `MenuInventarioCu0121794400000000`
-`PreparacionCu0131794500000000` y `EntregaCu0141794600000000`
+`PreparacionCu0131794500000000`, `EntregaCu0141794600000000` y
+`CancelacionCu011F1794700000000`
 a la preparación central. POSTGRES_BD_PEDIDOS se rechaza. La preparación se
-ejecuta una vez para los once esquemas (34 migraciones; 18 procedencias intactas).
+ejecuta una vez para los once esquemas (35 migraciones; 18 procedencias intactas).
 El cliente Redis de inventario conserva sus opciones específicas.
 Ver [inventario](inventario/README.md) y [pruebas aisladas](../../test/README.md).
+
+## CU-011F: cancelación y reembolso
+
+Personal activo y vinculado puede usar POST/GET
+`/api/v1/pedidos/establecimientos/:local/pedidos/:pedido/cancelacion`, incluso
+con el local cerrado. POST requiere `Idempotency-Key` UUID y
+`{version, motivo, confirmar:true}`. Revalida autorización, confirmado/cobro
+aprobado y ausencia de entrega bajo bloqueo; la transición conserva originales
+y produce historial/aviso durable. Impide preparación/entrega y oculta el QR
+utilizable en seguimiento y comprobante.
+
+La devolución es otra operación: PENDIENTE/APROBADO/RECHAZADO/INCIERTO según
+evidencia de la API pública local de Finanzas. No se mantienen bloqueos SQL
+durante la llamada ni se reenvía una intención ya intentada sin garantías del
+proveedor. Solo preparación no iniciada y consistente permite ajustes durables
+CU-012 de restitución; preparado no se reincorpora y ambiguo requiere revisión.
+Política completa, ventanas de caída y contratos:
+[DECISION-CU011F.md](recepcion/DECISION-CU011F.md).
 
 ## CU-015: contrato y reglas
 
@@ -142,7 +162,7 @@ SQL/DNS/499 siguen abiertos. [Decisión de preparación](recepcion/DECISION-CU01
 y [plan/mediciones](../../../../Documentation/Work/PLAN-CIERRE-SEBASTIAN.md).
 La ficha completa incluye entrega: preparación llega a LISTO_PARA_ENTREGAR y
 [CU-014](recepcion/DECISION-CU014.md) registra su entrega única y el aviso.
-Cancelación CU-011F y F12 conservan sus pendientes.
+CU-011F integra la cancelación descrita arriba; F12 global sigue pendiente.
 
 `pedidos.estado` sigue CONFIRMADO durante preparación. El nuevo avance separado
 es RECIBIDO (versión 0 histórica) → EN_PREPARACION → LISTO_PARA_ENTREGAR.

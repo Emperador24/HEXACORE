@@ -22,6 +22,19 @@ const bases = {
 };
 const puertos = Object.fromEntries(nombres.map((n) => [n, 13096]));
 const entorno = () => ({...require('../base-unica/conexiones.cjs').entorno(),PUERTO:'13096',VENTAS_URL:'http://127.0.0.1:9/retirado',TOKEN_SERVICIOS:'boleteria-e2e-servicios',COMPRA_RESERVA_MINUTOS:'2',RESERVAS_CRON:'*/1 * * * * *',EXPIRACION_CRON:'*/1 * * * * *'});
+// Contratos de los cuatro propietarios; conserva duplicados al comparar con
+// RabbitMQ para detectar consumidores extra al arrancar o reconectar.
+const colasEsperadas = Object.freeze([
+  'ventas.ingresos', 'ventas.notificaciones', 'ventas.eventos',
+  'catalogo.eventos',
+  'reventa.notificaciones', 'reventa.liquidaciones', 'postventa.eventos',
+  'acceso-qr.entradas', 'acceso.eventos-gestion',
+].sort());
+// fetch puede devolver arrays de otro contexto de V8 al ejecutarse bajo Jest.
+// Comparar los nombres primitivos, sin exigir identidad de prototipos.
+const consumosListos = m => m.conexiones === 1 && Array.isArray(m.colas)
+  && m.colas.length === colasEsperadas.length
+  && m.colas.every((cola, i) => cola === colasEsperadas[i]);
 async function esperar(accion, limite = 15000) {
   const fin = Date.now() + limite;
   while (!(await accion())) {
@@ -45,8 +58,9 @@ async function metricasRabbit() {
     (c) => c.client_properties.connection_name === 'hexacore-boleteria',
   );
   const nombres = new Set(conexiones.map(c => c.name));
-  const consumidores = (await leer('consumers/cu011')).filter(c => nombres.has(c.channel_details.connection_name)).length;
-  return { conexiones: conexiones.length, consumidores };
+  const colas = (await leer('consumers/cu011')).filter(c => nombres.has(c.channel_details.connection_name))
+    .map(c => c.queue.name).sort();
+  return { conexiones: conexiones.length, consumidores: colas.length, colas };
 }
 async function iniciar() {
   assert.equal(process.version, 'v22.22.3');
@@ -93,10 +107,17 @@ async function iniciar() {
       );
       return true;
     });
-    await esperar(async () => {
-      const m = await metricasRabbit();
-      return m.conexiones === 1 && m.consumidores === 5;
-    });
+    let observadas;
+    try {
+      await esperar(async () => {
+        observadas = await metricasRabbit();
+        return consumosListos(observadas);
+      });
+    } catch (error) {
+      // Solo composición AMQP: nunca salida completa del proceso, mensajes,
+      // credenciales, destinatarios ni datos de negocio en el log público.
+      throw new Error(`Composición AMQP no converge: ${JSON.stringify({ esperadas: colasEsperadas, observadas })}`, { cause: error });
+    }
     return app;
   } catch (e) {
     try {
@@ -176,4 +197,4 @@ async function cerrar(app) {
     if (app.auxiliar) await require('../proceso-nucleo.cjs').cerrar(app.auxiliar);
   }
 }
-module.exports = { iniciar, cerrar, entorno, bases, puertos, esperar, raiz, metricasRabbit };
+module.exports = { iniciar, cerrar, entorno, bases, puertos, esperar, raiz, metricasRabbit, colasEsperadas, consumosListos };
