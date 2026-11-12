@@ -1,5 +1,18 @@
 # Alternar Redash y HEXACORE en este Mac
 
+**Estado posterior a Seguridad, 12/11/2026 11:36 UTC:** siete IDs Redash
+originales activos, CU-015 y ZAP detenidos; montajes/datos conservados. Tras el
+arranque por etapas hubo 200 en `/ping` y `/login`, pero el último control agotó
+10 s en ambos. Cgroups del último arranque: server 2 / scheduled_worker 1
+`oom_kill`, incidentes nuevos; no confundirlos con las marcas históricas de abajo.
+No se hicieron reinicios de recuperación. Estados restaurados; acceso HTTP
+bloqueado al último control. Requiere capacidad autorizada/revisión de concurrencia
+Redash y verificación HTTP; no detener otros proyectos ni cambiar recursos globales.
+La ventana adicional solo leyó PostgreSQL propio para corregir cobertura del arnés
+RNF-05; no repitió recorridos funcionales ni diagnóstico SIGTERM. Detalles en
+[RESULTADO.md](../../App/infra/informe-atributos/seguridad/RESULTADO.md).
+
+
 **Comprobación posterior, 12/11 a las 01:50 UTC:** `/ping` y `/login` volvieron
 a responder 200, con los siete IDs iniciales Redash activos y CU-015 detenido.
 No se hicieron más reinicios después del único escalonado. Se deja Redash

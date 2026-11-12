@@ -1,5 +1,116 @@
 # Cierre de Alimentos — Sebastián
 
+## Seguridad RNF-05 / RNF-06 — 12/11/2026
+
+**Entrega parcial con correcciones comprobadas; NO se declara cumplimiento
+completo.** [Resultado y comandos](../../App/infra/informe-atributos/seguridad/RESULTADO.md),
+[inventario](../../App/infra/informe-atributos/seguridad/INVENTARIO.md) y
+[evidencia saneada](../../App/infra/informe-atributos/seguridad/EVIDENCIA.json).
+Se conservan todos los registros históricos inferiores.
+
+Inicio limpio en feature/sebastian, local/remoto 82bac77 (GitHub 43144806561,
+8/8); fetch mantuvo develop 41ca881. No se integraron ramas. La aceptación
+funcional **16/16 automático y 16/16 visible con Redash detenido** es referencia
+independiente y no se repitió. El informe de octubre es histórico y no se usa
+como prueba de esta arquitectura. SIGTERM conserva causa desconocida: no se
+reabrió su investigación ni se cambiaron hooks, cinco segundos o arnés.
+
+Hitos funcionales:
+
+- **4aad53f:** guarda propia del catálogo Alimentos; rechazo de PAN/JSON/CVV en
+  los cinco DTO de cobro; mensajes/referencias remotos acotados antes de logs/libro.
+  Actualización dirigida Nest 11/Multer/Swagger y Nodemailer 10.5 con tipos propios.
+  Backend producción pasa de 3 altos + 2 moderados a cero avisos de npm audit.
+- **e5c6ba7:** cuatro rutas internas de Ventas exigen credencial de servicio,
+  ya disponible; Postventa HTTP/local se adapta. Un Cliente ajeno obtenía 200
+  directo con su JWT; ahora Cliente/Administrador no suplantan a un servicio.
+  Conserva 401 de sesión revocada durante consumo de turno (antes gateway 503).
+  Cabeceras defensivas en portales/gateway comprobadas antes/después con ZAP.
+- Fuentes ejecutadas: e5c6ba7; ocho hashes contrastados con contenedores coinciden.
+  La etiqueta de imagen sola no acredita el contenido: revisiones y hashes en
+  evidencia. Solo se reconstruyeron componentes afectados, sin semillas, cambios
+  de contraseñas, nuevas migraciones o recursos globales.
+
+Inventario actual: **178 operaciones de controlador**, 159 protegidas, 10 públicas
+justificadas, cinco internas, dos webhooks y dos de salud. **173 expuestas
+incluyendo salud propia del gateway**; preflight OPTIONS se documenta aparte.
+No se cierra login/registro/recuperación/cartelera para conseguir cero abiertas.
+
+Tres finales comparables sobre e5c6ba7, con Redash detenido, en serie:
+
+| Matriz — UTC 12/11 | Acceso | Propiedad / PAN HTTP | ZAP | Resultado de Seguridad |
+|---|---|---|---|---|
+| 1 — 11:15:51.926 | **1.760/1.760** | **11/11; 8/8** | 2 altos + 4 medios + 4 informativos | **No aprobado**, dependencias/CSP pendientes |
+| 2 — 11:16:34.227 | **1.760/1.760** | **11/11; 8/8** | 2 altos + 4 medios + 4 informativos | **No aprobado**, mismos pendientes |
+| 3 — 11:17:02.032 | **1.760/1.760** | **11/11; 8/8** | 2 altos + 4 medios + 4 informativos | **No aprobado**, mismos pendientes |
+
+Por pasada: 159 rutas × sin/inválido/caducado/revocado × gateway/directo;
+159 cabeceras falsas, 73 HEAD, 234 controles de rol fijo incorrecto, diez de
+internas sin credencial/publicación y doce de credenciales internas falsas/JWT.
+Cero rutas protegidas accesibles en esas condiciones: **0/159**, sin esconder
+las públicas. Cookies/refresh/replay/revocación aprobados. Roles incorrectos
+cubren **117/159**; una ruta admite los cuatro roles y otras 41 requieren sesión/
+contexto u organización/supervisión, enumeradas sin declararlas cubiertas por
+el control de rol. La propiedad comprobada es de Alimentos, no de todo el sistema.
+**CU-028 dinámico continúa pendiente de Samuel.**
+
+RNF-05: DTO, delegación al proveedor, persistencia y logs de Alimentos, Entradas,
+reventa y reservas Parqueaderos revisados con datos sintéticos. CU-024 liquida
+horas/tarifa: no se afirma un pago con tarjeta adicional que no implementa.
+La consulta SQL inicial de las finales solo revisó Alimentos/Parqueaderos
+(24 tablas, 5.828 filas, cero canarios) por nombres antiguos en el arnés. **Se
+conserva como parcial**. Se corrigió el helper compartido para derivar propietarios
+actuales y exigir cinco esquemas; complemento **3/3** con aplicaciones detenidas,
+solo PostgreSQL propio activo y Redash detenido: **43 tablas / 6.441 filas / cero
+coincidencias** en cada lectura, incluyendo entradas_ventas, entradas_postventa y
+finanzas_pagos. También cero en la clave Redis fixture/logs propios inspeccionados.
+No es detector exhaustivo ni certificación de todos los históricos/encodings.
+
+ZAP 2.17.0 aislado sin salida, 62 reglas pasivas habilitadas, ninguna suprimida;
+33 solicitudes por final y tres lecturas de negocio autenticadas 200 fuera de
+login. Pasivo de HTML/assets iniciales de ambos portales y API con/sin sesión;
+no navegación JS completa ni scanner activo ZAP. Pruebas activas de autorización
+acotadas a fixture propia. Stripe/Gmail/remotos/Redash no se escanearon.
+
+Pendientes/bloqueos explícitos:
+
+- Angular 19.2.25 vulnerable servido en ambos portales: producción 4 altos + 4
+  moderados por portal; migración coordinada de framework/CLI/Material y análisis
+  de cada advisory/sink. SSR/hidratación no se usa; no se inventa explotación ni
+  se elimina por ello el aviso de componente vulnerable.
+- Tooling dev: Cliente 4 críticos/28 altos/25 moderados/2 bajos; Admin 4 críticos/
+  19 altos/25 moderados/2 bajos. Críticos: piscina/proxy-addr/shell-quote/tar. No se
+  sirven en Nginx, sí afectan construcción/desarrollo; corregir padres/overrides
+  compatibles y validar builds. Backend dev 20 moderados/2 bajos. Las cifras dev
+  se clasificaron por paths del lock; no se suman a los totales completos.
+- CSP ausente, ampliar DAST/autorizaciones de organización y otras propiedades;
+  CU-028 Samuel y correspondencia de RNF-05 con CU-024 pendientes. Ningún alto/
+  crítico remanente se oculta ni se declara aprobado.
+
+Regresiones necesarias: **267/267** (16 suites), **87/87** internas/Postventa
+(cuatro suites), **4/4** cookie/webhook (dos suites), gateway **1/1**, correo real
+en memoria **1/1**, comparación DTO de referencia **5/5**, tipos y builds afectados
+aprobados. Se preserva el fallo inicial 266/267 por cambio deliberado del mensaje
+remoto, corregido en el contrato de prueba. Sin repetir Playwright ni suites
+Angular/Flutter ajenas a lógica modificada. Scripts Python/Node con sintaxis válida.
+
+Alternancia/restauración: siete Redash pararon ordenadamente (código 0), pruebas
+con CU-015 y proveedores simulados. Dos ventanas, segunda solo de lectura SQL;
+no se mantuvieron ambos proyectos activos. Al terminar ZAP/CU-015 detenidos,
+siete IDs Redash originales activos y montajes conservados. PG listo/Redis PONG;
+tras arranque escalonado hubo HTTP 200, pero **última comprobación 11:36:33 UTC:
+/ping y /login agotan 10 s**, OOM nuevos server 2 / scheduled_worker 1 en los cgroups
+del último arranque. Estados restaurados, **acceso Redash bloqueado**. No se hacen
+reinicios adicionales ni diagnóstico ampliado: requiere capacidad autorizada/
+revisión de concurrencia y verificar HTTP; no intervenir otros proyectos.
+
+Publicación solo origin/feature/sebastian; actualizar PR #50 abierto, sin merge
+ni auto-merge. La CI de publicación se informa separada de los ensayos de Seguridad;
+un eventual 8/8 no elimina los bloqueos de audit/ZAP. No se publica configuración,
+credenciales, sesiones, cookies, QR, trazas o informes privados. Sin F12, nuevas
+funciones, cambios históricos o Seguridad ajena a RNF-05/06.
+
+
 ## Publicación del diagnóstico de apagado — 11/11/2026 (12/11 UTC)
 
 **Se publica instrumentación de diagnóstico, no una corrección de SIGTERM. La
