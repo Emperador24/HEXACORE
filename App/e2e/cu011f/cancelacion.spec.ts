@@ -37,6 +37,8 @@ test('CU-011F por interfaces: compra, cancelación explícita en local cerrado, 
   try {
     await loginUI(operador, adminURL, 'restaurante@hexacore.com');
     await operador.getByRole('navigation').getByRole('link', { name: 'Preparación de pedidos', exact: true }).click();
+    await expect(operador).toHaveURL(`${adminURL}/admin/preparacion`);
+    await expect(operador.getByRole('heading', { name: /Preparación de pedidos/ })).toBeVisible();
     await operador.getByLabel('Establecimiento vinculado', { exact: true }).selectOption(e.local.id);
     await operador.locator(`[data-pedido="${p.id}"]`).getByRole('button', { name: 'Gestionar pedido', exact: true }).click();
     const panel = operador.getByRole('region', { name: 'Cancelación del pedido', exact: true });
@@ -133,11 +135,26 @@ test('CU-011F API real: autorización, duplicados, carreras, inventario, rechazo
   expect((await seguimiento(request, e.cliente.token, rechazo.pedido.id)).estado).toBe('CANCELADO');
   const durable = await seguimiento(request, e.cliente.token, p.id); expect(durable.codigoQr).toBeNull(); expect(durable.avisos.filter((a: {accion: string}) => a.accion === 'CANCELAR')).toHaveLength(1);
   const fisicoReinicio = sql(`SELECT cantidad_inventario FROM alimentos.productos WHERE id='${e.producto.id}'`);
-  controlarNucleo('parar'); controlarNucleo('iniciar');
+  const perdidas = [await comprar(request, e), await comprar(request, e)];
+  const { execFileSync } = require('node:child_process'), { resolve } = require('node:path');
+  let escenarios: { pedido: string; operacion: string; reembolso: string; estadoEsperado: string }[] = [];
+  controlarNucleo('parar');
+  try {
+    const args = perdidas.map((p, i) => ({ local: e.local.id, pedido: p.pedido.id, actor: e.personal.usuario.id, modo: i ? 'despues_libro' : 'antes_proveedor' }));
+    const salida = execFileSync(process.execPath, [resolve(__dirname, '../../backend/test/cu011f/recuperacion.cjs'), JSON.stringify(args)], { encoding: 'utf8' });
+    escenarios = JSON.parse(salida.trim().split('\n').at(-1)!).escenarios;
+    expect(escenarios).toHaveLength(2);
+  } finally { controlarNucleo('iniciar'); }
   expect(await seguimiento(request, e.cliente.token, p.id)).toEqual(durable);
   expect((await cancelar(request, e, p.id, 0, id)).status()).toBe(200); expect(original(p.id, compra.clave)).toEqual(antes);
   expect(sql(`SELECT count(*) FROM alimentos.cancelaciones_pedido WHERE pedido_id='${p.id}'`)).toBe('1');
   expect(sql(`SELECT cantidad_inventario FROM alimentos.productos WHERE id='${e.producto.id}'`)).toBe(fisicoReinicio);
+  for (const s of escenarios) {
+    const respuesta = await request.get(ruta(e.local.id, s.pedido), { headers: h(e.personal.token) }); expect(respuesta.status()).toBe(200);
+    const c = await respuesta.json(); expect(c).toMatchObject({ operacionId: s.operacion, inventario: 'RESTITUIDO', reembolso: { estado: s.estadoEsperado } });
+    expect(sql(`SELECT reembolso_id FROM alimentos.cancelaciones_pedido WHERE pedido_id='${s.pedido}'`)).toBe(s.reembolso);
+    expect(sql(`SELECT count(*) FROM finanzas_pagos.transacciones_pago WHERE clave_idempotencia='${s.reembolso}'`)).toBe(s.estadoEsperado === 'APROBADO' ? '1' : '0');
+  }
 });
 
 test('CU-011F revalida cuenta y vínculo después de admitir la petición, sin cancelación ni reembolso ajenos', async ({ request }) => {
