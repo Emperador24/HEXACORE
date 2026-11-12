@@ -13,8 +13,8 @@ no representa los cambios CU-011F ni estos resultados locales.
 
 Trabajo exclusivamente en `feature/sebastian`, desde d5cb490. Se conservaron y
 versionaron primero los documentos locales de recuperación anteriores en
-dc8d40b. Las referencias remotas comprobadas al inicio y antes de publicar
-mantienen `origin/develop` en 6e5e7fa y Samuel en 5c641a8; no se integraron ramas,
+dc8d40b. Las referencias remotas comprobadas inicialmente y durante la preparación
+estaban en `origin/develop` 6e5e7fa y Samuel 5c641a8; no se integraron ramas,
 actualizaron dependencias ni modificaron migraciones históricas.
 
 Se leyeron las fichas CU-011/013/014 de `CU_eventos_completo.xlsx`, los requisitos
@@ -170,6 +170,15 @@ a certificar disponibilidad HTTP.
 
 ### Hitos y pendientes
 
+**Cambio remoto durante la entrega:** PR #49 fue integrado externamente a las
+**01:05:46 UTC del 12/11**, hasta **e4310a5**. El fetch posterior confirmó
+`origin/develop` **41ca881b1248970b226aef789efec353f41feecf**, cuyo único commit
+posterior a e4310a5 es ese merge. El agente no lo realizó ni habilitó auto-merge.
+La funcionalidad CU-011F ya está integrada allí; lo que se entrega en un **nuevo
+PR hacia develop** son **b167261** (semilla explícita), **96cffd9** (lector de
+base vacía) y esta actualización documental. Se continúa únicamente en
+`feature/sebastian`, sin integración adicional ni reescritura de historia.
+
 La publicación documental **0d44a2e** inició la
 [CI GitHub 43131313630](https://github.com/Emperador24/HEXACORE/actions/runs/43131313630).
 Flutter analyze y ambos builds web aprobaron; widgets reportó **76 aprobados,
@@ -185,7 +194,9 @@ informa en el PR, separado de esta aceptación local.
 
 La CI siguiente de **e4310a5**, ejecución
 [43131655958](https://github.com/Emperador24/HEXACORE/actions/runs/43131655958),
-aprobó Flutter y encontró otro fallo durante la semilla de la instalación nueva:
+terminó con **6/8 trabajos aprobados**: Flutter, portales, gateway, guardas y
+backend completo (incluidas dos pasadas de Boletería/Núcleo e imágenes).
+Encontró otro fallo durante la semilla de la instalación nueva:
 PostgreSQL **0A000**, `cancelaciones_pedido` referencia `historial_preparacion`
 y no figuraba en el grupo explícito TRUNCATE. Se incorpora únicamente esa tabla
 al grupo de la semilla, conservando **RESTRICT**, sin CASCADE ni cambios de FK o
@@ -213,8 +224,9 @@ backend/migración/política; **bbb0195** web/Flutter; **b4a9fba** negocio/carre
 **fa6873f** recuperación financiera y navegación; **6d29617** vigencia de QR del
 comprobante; **c3d3386** salud pública después del reinicio. La documentación de
 esta entrega se publica después, sin repetir suites por ese cambio documental.
-Publicación únicamente a `origin/feature/sebastian`, en PR **#49** hacia develop,
-sin merge ni auto-merge. La CI nueva se informa por separado de la aceptación
+Publicación únicamente a `origin/feature/sebastian`: PR **#49** actualizado hasta
+su integración externa y nuevo PR de las correcciones posteriores hacia develop,
+sin merge ni auto-merge por el agente. La CI nueva se informa por separado de la aceptación
 local; no se heredan sus resultados históricos como nuevos.
 
 Pendientes: **CU-028 Samuel**, recuperador global de pagos inciertos **F12**,

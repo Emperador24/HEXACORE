@@ -32,6 +32,10 @@ fuente de aceptación anterior; la nueva CI se registra aparte en el PR.
 La instalación nueva de CI detectó además una FK omitida de la limpieza explícita
 de la semilla: se añadió `cancelaciones_pedido` manteniendo RESTRICT. Regresión
 del script **1/1**; no se ejecutó ninguna semilla contra los datos locales.
+PR #49 fue integrado externamente hasta e4310a5 durante la entrega. Un nuevo PR
+publica las correcciones de instalación/lectura vacía y su documentación; conserva
+esta aceptación sin repetir los recorridos. CI previa e4310a5: **6/8**, con los
+dos fallos de instalación diagnosticados en el plan. La CI nueva es independiente.
 
 Estado restaurado: **HEXACORE detenido, Redash siete running** con sus datos,
 pero `/ping` y `/login` no recuperados por presión/OOM nuevos. PostgreSQL y Redis
