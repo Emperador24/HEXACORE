@@ -25,6 +25,11 @@ sin relajar aserciones o repetir negocio. Cada conjunto final registró tres
 disponibilidad global. CU-028 sigue pendiente de Samuel y la CI GitHub se informa
 independientemente de esta aceptación local.
 
+La primera CI de esta publicación encontró dos widgets Flutter fallidos por
+un doble antiguo sin `pendienteCancelacion()`. Se reprodujeron y corrigieron
+solo en el doble; dirigido local **2/2**. No cambia la aplicación ni invalida la
+fuente de aceptación anterior; la nueva CI se registra aparte en el PR.
+
 Estado restaurado: **HEXACORE detenido, Redash siete running** con sus datos,
 pero `/ping` y `/login` no recuperados por presión/OOM nuevos. PostgreSQL y Redis
 responden; el responsable debe revisar capacidad. No repetir ciclos de reinicio.

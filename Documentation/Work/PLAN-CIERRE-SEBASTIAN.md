@@ -170,6 +170,19 @@ a certificar disponibilidad HTTP.
 
 ### Hitos y pendientes
 
+La publicación documental **0d44a2e** inició la
+[CI GitHub 43131313630](https://github.com/Emperador24/HEXACORE/actions/runs/43131313630).
+Flutter analyze y ambos builds web aprobaron; widgets reportó **76 aprobados,
+2 fallidos** en `restaurant_orders_test.dart`: el doble `BandejaApi` no simulaba
+la nueva consulta `pendienteCancelacion()` y esperaba el almacenamiento de
+plataforma durante `pumpAndSettle`. Se reprodujeron exactamente los dos fallos
+locales (01:01:35–01:01:40 UTC, salida 1), se añadió el método al doble sin
+cambiar producto, tiempos o aserciones y se ejecutaron **2/2 aprobados**
+(01:01:52.575786–01:01:55.917261 UTC, salida 0). La nueva publicación incluye
+esa corrección de test y documentación; no requiere repetir los 16 recorridos
+de negocio ni reconstruir aplicaciones. El resultado remoto posterior se
+informa en el PR, separado de esta aceptación local.
+
 Commits comprobados: **dc8d40b** conservación documental previa; **5edafb7**
 backend/migración/política; **bbb0195** web/Flutter; **b4a9fba** negocio/carreras;
 **fa6873f** recuperación financiera y navegación; **6d29617** vigencia de QR del
