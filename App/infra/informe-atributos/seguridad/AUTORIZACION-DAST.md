@@ -1,5 +1,9 @@
 # Reproducir autorización por recurso y DAST de API
 
+El bloque posterior de Alimentos está en [AUTORIZACION-ALIMENTOS.md](AUTORIZACION-ALIMENTOS.md):
+30/30 en el módulo, 69/159 global y 90 pendientes. Esta guía y sus cifras 49/159
+describen el ensayo DAST anterior; no se amplía ni se repite en la entrega posterior.
+
 Node **22.22.3**, dependencias bloqueadas existentes. Fuente de las finales:
 **d402a89**, correcciones funcionales **545e19c / 9a06ba8**. Alcance/resultados:
 [RESULTADO.md](RESULTADO.md), [COBERTURA-RECURSOS.md](COBERTURA-RECURSOS.md),

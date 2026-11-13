@@ -1,5 +1,149 @@
 # Seguridad de Sebastián — RNF-05 y RNF-06
 
+## Autorización de Alimentos — 13/11/2026, entrega posterior
+
+**Alimentos 30/30; global 69/159; RNF-05/06 siguen parciales.** Se completan las
+20 operaciones pendientes y se reejecutan las diez anteriores de Alimentos.
+Las otras **39** cubiertas se reutilizan de la entrega anterior; quedan **90**
+operaciones globales pendientes de ampliación semántica. No se demuestra una
+brecha nueva de producto: no cambian controladores, guardas, servicios, reglas,
+estados, historial, idempotencia, migraciones ni límites financieros.
+
+Inicio limpio en `feature/sebastian` **7130d52**, sincronizada con origin. Fetch
+confirma develop **41ca881** y PR **#50 abierto** hacia develop; sin integrar
+ramas. [CI anterior 43454519623: 8/8](https://github.com/Emperador24/HEXACORE/actions/runs/43454519623)
+confirmada por API, separada de estas ejecuciones. Se conserva el fallo anterior
+de outbox y la causa desconocida de SIGTERM: esta aprobación no los corrige.
+
+[Reproducción y contratos](AUTORIZACION-ALIMENTOS.md) ·
+[Cobertura actual, método/ruta](COBERTURA-RECURSOS.md) ·
+[Evidencia nueva saneada](ALIMENTOS-RECURSOS-EVIDENCIA.json).
+Las secciones inferiores describen sus entregas históricas; sus 49/159 y 110
+pendientes no son el corte actual. La evidencia DAST anterior no se sobrescribe.
+
+### Contratos revisados y evidencia nueva
+
+El inventario sigue en **178 operaciones declaradas / 173 expuestas / 159
+protegidas**. Las **30** de Alimentos coinciden exactamente por método/ruta
+entre inventario y controladores actuales, sin cambios en el denominador.
+Checkout usa Cliente de sesión; consultas/pago filtran comprador. Personal
+requiere vínculo al local; las consultas y mutaciones también acotan producto,
+operación, pedido, incidencia y QR a su recurso padre. Catálogos son compartidos.
+Organizador/Administrador administran globalmente según contrato: `creadoPor`
+no define una frontera de organización; no se inventa una asociación nueva.
+
+Siete cuentas nuevas exclusivas: dos clientes, dos Personal, dos Organizadores
+y Administrador. Cada canal/pasada crea locales A/B y productos distintos,
+asignados a Personal diferente. Se intercambian IDs de local/producto/operación/
+pedido/incidencia y QR existentes. Los propietarios tienen controles positivos
+200; los cuerpos/versiones/QR son válidos y las mutaciones se rechazan **antes**
+de su primera ejecución autorizada. Se verifica la misma clave tras rechazar
+pago, alta, ajuste, preparación, entrega y cancelación, sin consumirla con un replay.
+
+Las consultas propias no aceptan identidad ajena desde cabeceras/query;
+asignación, preparación, entrega y cancelación auditan al actor de sesión.
+La eliminación de un vínculo impide la lectura siguiente y su reposición
+restaura el acceso. Organizador B administra locales creados por Organizador A
+y viceversa; Administrador mantiene el alcance global. No se exige propiedad
+individual donde el contrato no la define.
+
+Por final: **274 observaciones de autorización/contrato**, **dos** de validación
+de `clienteId` extra y **dos** de relación producto-pedido separadas. Los cuatro
+400 no se acreditan como autorización. Los 404 ocultan recursos reales,
+comprobados positivamente en su local/cuenta; no se usan recursos inexistentes.
+Las **30/30** rutas tienen control positivo en **cada canal**, no solo la guarda.
+
+**142 rechazos por final** tienen capturas iguales antes/después en SQL y Redis,
+incluidas las cuatro observaciones separadas. SQL cubre locales del evento
+exclusivo, vínculos, productos/inventario, pedidos, detalles, reservas, ajustes,
+preparación/incidencias/historial, entregas, cancelaciones y libro financiero de
+cobros/reembolsos/claves intentadas. Redis compara disponibles, preparado,
+reservas, vencimientos de esos pedidos y marcas de ajustes. Capturas crudas
+privadas, persistidas antes de pedir y después incluso si falla la expectativa.
+No se inspeccionan sesiones ni datos Redis de terceros. Cubrir una ruta no
+certifica todas sus combinaciones, carreras o estados.
+
+### Tres finales comparables
+
+| Final, inicio UTC | Total | Autorización/contrato | Validación / relación separadas | Rechazos sin cambios SQL/Redis | Duración |
+|---|---|---|---|---|---|
+| 1, 22:48:47.727 | **278/278** | **274/274** | **2/2 + 2/2** | **142/142** | 22,726 s |
+| 2, 22:49:13.971 | **278/278** | **274/274** | **2/2 + 2/2** | **142/142** | 22,914 s |
+| 3, 22:49:40.370 | **278/278** | **274/274** | **2/2 + 2/2** | **142/142** | 24,318 s |
+
+Cada final: 114×200, 106×403, 16×201, 28×404, 2×422, 4×400, 2×409 y 6×204.
+Cero 5xx. Ejecución serial, sin reintentos HTTP ni cambios de límites/fuentes
+entre esas tres finales. La consulta de convergencia asíncrona del reembolso
+usa 10 s y no reenvía cancelación/cobro. Node **22.22.3** host/Núcleo/Boletería;
+once imágenes/servicios saludables, Redash detenido. Los **83 compilados JS**
+de Alimentos coinciden con los del contenedor. Árbol de ejecución `7130d52` más
+herramientas nuevas, registradas por hash antes de publicarlas; producto intacto.
+Herramientas publicadas en **8ee59fb**; exportador ampliado después únicamente
+para documentar los OOM de restauración, como indica su propia evidencia.
+
+Memoria disponible VM KiB, antes→después: **1464524→1441380**,
+**1443476→1439064**, **1430512→1409476**. Swap libre: **529016→529016**,
+**529272→529272**, **529272→529272**. Los otros proyectos inicialmente activos
+se conservan; no se intervienen ni se atribuye capacidad/disponibilidad global.
+
+Regresiones actuales: **210/210 unitarias, ocho suites** (checkout, pagos, menú,
+establecimientos, recepción, preparación, entrega y cancelación). Sintaxis de
+herramientas y diff comprobados. Se reutilizan **16/16 automático y 16/16 visible**
+de `ec07de2`: `git diff ec07de2 HEAD` vacío en Alimentos, Finanzas/Pagos,
+ConsultaPersonal y validación compartida. No se repiten los recorridos completos.
+
+### Hash anterior a la primera cancelación e historial
+
+**Seis pedidos exclusivos nuevos**, uno por canal/final, tienen captura guardada
+y releída **antes de su primera cancelación**. Si falla, el caso se detiene antes
+de cancelar. Los seis hashes posteriores coinciden: conserva íntegramente el
+cobro de Alimentos, el libro original de Finanzas, detalles/snapshots y todos los
+campos del pedido excepto `estado`, `motivo_cancelacion`, `cancelado_en` y
+`actualizado_en`, que sí deben poder cambiar. Se comprueban cancelación/motivo/
+fecha, restitución, un reembolso confirmado con un intento y actor correcto.
+El hash ausente del ensayo histórico sigue ausente; no se reconstruye.
+
+Se conservan tres incidencias del arnés, sin declararlas brechas de producto:
+
+- Control inicial: **104 aprobadas / 105 observadas**, detenido por esperar 200
+  con `NO_DISPONIBLE`, estado inexistente. Se corrige a `CERRADO`; el rechazo
+  previo con cuerpo inválido no acredita autorización. Ya había captura correcta
+  anterior a la cancelación, separada de las seis finales.
+- Primera serie interrumpida: **139/139 HTTP en gateway**, pero clasificador
+  asignó `cuentas-personal` a `:id` y contó 29/30. Se priorizan rutas literales;
+  no se cambia la petición ni el contrato. Directo/finales 2 y 3 no ejecutados.
+- Siguiente carpeta: alta inicial **409 frente a 201**, al reutilizar nombres
+  de locales previos. Cero controles de autorización; se añade sufijo nuevo por
+  canal/pasada. No se opera otra vez un local ya completado. Las tres finales
+  completas son posteriores a esas correcciones y no sobrescriben sus archivos.
+
+Restauración: **Docker activo al inicio y al final**, siete Redash activos y
+CU-015/ZAP detenidos. Mismos 92 IDs/imágenes/montajes y estados activo/detenido,
+comparando montajes por destino (el orden del array de inspect varía). La parada
+de Redash tuvo cinco cierres de aplicación 0; las marcas OOMKilled iniciales
+eran históricas y no se interpretan como incidentes nuevos. CU-015 cerró 0/143
+por su script, sin OOM/SIGKILL. No se reconstruyeron imágenes ni ejecutó preparación.
+
+Redash se reanudó una vez por etapas: PG listo, Redis PONG, `/ping` y `/login`
+200 al incorporar cada aplicación, siete cgroups oom_kill=0 en esos controles.
+El control posterior **22:53:57 UTC** agotó 15 s en ambas rutas. Después se
+registran **OOM nuevos**: server **3**, worker **8**, adhoc_worker **3**,
+scheduled_worker **2**; postgres/redis/scheduler **0**, frente a cero en el último
+control por etapas. VM disponible **140780 KiB**, swap libre **3268 KiB**.
+Se guardan logs/estado privados. **Estados restaurados, acceso HTTP pendiente**:
+estar running no demuestra disponibilidad. No se repiten reinicios ni se detienen
+otros proyectos. Requiere que el responsable libere capacidad autorizada o revise
+concurrencia de Redash y compruebe HTTP; no es una corrección de SIGTERM/outbox.
+La exportación posterior solo agrega esos contadores de restauración; no cambia
+las solicitudes/aserciones de las tres finales ni exige repetir los recorridos.
+
+Publicación se registra en PR #50. Datos, cuentas/claves anteriores y volúmenes conservados; sin semillas
+destructivas ni proveedores reales. Publicación solo `origin/feature/sebastian`,
+sin merge/auto-merge. Permanecen **90 rutas**, combinaciones adicionales, residuos
+previos CSP/DAST, CU-028 de Samuel y límites RNF-05/06. CU-028, F12, sustituciones,
+arquitectura, Google Fonts/imágenes y ampliación DAST quedan fuera. ZeroTier solo
+queda como futura prueba con un servidor HEXACORE y varios clientes, sin instalación.
+
 
 ## Autorización sobre recursos y DAST activo — 13/11/2026
 

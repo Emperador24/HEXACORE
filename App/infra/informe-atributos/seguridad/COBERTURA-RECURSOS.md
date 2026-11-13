@@ -1,12 +1,36 @@
-# Cobertura por recurso — 13/11/2026
+# Cobertura por recurso — 13/11/2026, cierre de Alimentos
 
-159 operaciones protegidas; 49 con controles nuevos en ambos canales. Las 41 originalmente sin metadato de rol están incluidas. Cada ruta cubierta tiene un contexto/contrato ejercitado; no significa todas sus combinaciones posibles.
+**69/159 operaciones protegidas** con ampliación semántica por gateway y backend
+directo; **90 pendientes**. Alimentos pasa de **10/30 a 30/30**: se agregan las
+20 pendientes y se reejecutan las otras diez. Las **39** cubiertas fuera de
+Alimentos se reutilizan de la entrega anterior, con sus fuentes relevantes sin
+cambios desde `7130d52`; no son ejecuciones nuevas de este bloque.
 
-302 controles de matriz + 30 complementarios por final. Cuatro 404 de ficha ausente se registran como contexto, sin acreditarlos como autorización sobre recursos existentes. Los 404 de pedido ajeno sí usan un pedido cuya existencia/lectura propia 200 se verifica. No se usan 400 de DTO como permiso.
+El inventario actual sigue en **178 operaciones declaradas / 173 expuestas /
+159 protegidas**. Las 30 de Alimentos coinciden por método/ruta con los
+controladores compilados y con esta tabla: sin altas/bajas ni diferencias en el
+denominador. HEAD implícito no duplica GET. Las 41 originalmente sin metadato de
+rol mantienen su evidencia previa; actualmente hay 39 sin ese metadato.
 
-Las otras 110 rutas mantienen la evidencia anterior de identidad/rol, pero su autorización semántica ampliada queda pendiente. El inventario histórico no se sobrescribe. Dos rutas de asistencia pasan a rol explícito; sin metadato actual: 39.
+Tres finales nuevas, **278/278 por final**: 274 observaciones de autorización/
+contrato, dos de validación de identidad extra y dos de relación producto-pedido
+separadas. **142 rechazos** por final tienen capturas SQL/Redis iguales antes y
+después; incluyen esas cuatro observaciones separadas. Los 400 no se usan como
+prueba de autorización. Cada canal tiene controles positivos de **30/30** rutas;
+los 404 usan recursos existentes con acceso propio 200, y las mutaciones se
+prueban antes de completarlas. Administración es global por contrato, catálogos
+son compartidos y no se inventa una frontera organización-evento.
 
-| Método | Ruta | Regla efectiva revisada | Nueva prueba por gateway/directo | Ubicación |
+[Caso/contrato y reproducción](AUTORIZACION-ALIMENTOS.md) ·
+[Evidencia nueva saneada](ALIMENTOS-RECURSOS-EVIDENCIA.json).
+Las 90 pendientes conservan la evidencia previa de identidad/rol. Cubrir una
+operación no agota todas sus combinaciones, carreras o estados. RNF-05/06 siguen
+parciales; DAST no se amplía. [Historia 49/159](RECURSOS-DAST-EVIDENCIA.json):
+302 + 30 observaciones por final, cuatro 404 de ficha ausente separados, sin
+sobrescribir sus fallos o resultados. La columna distingue ampliación/reejecución
+de Alimentos y cobertura previa de las demás rutas.
+
+| Método | Ruta | Regla efectiva revisada | Prueba por gateway/directo | Ubicación |
 |---|---|---|---|---|
 |POST|`/api/v1/cola/eventos/:eventoId/turnos`|SesionValida; identidad/contexto del servicio|Sí; contexto probado, combinaciones limitadas|`App/backend/modulos/entradas/fila/cola/cola.controller.ts`|
 |GET|`/api/v1/cola/eventos/:eventoId`|SesionValida; identidad/contexto del servicio|Sí; contexto probado, combinaciones limitadas|`App/backend/modulos/entradas/fila/cola/cola.controller.ts`|
@@ -126,36 +150,36 @@ Las otras 110 rutas mantienen la evidencia anterior de identidad/rol, pero su au
 |GET|`/api/v1/parqueaderos/reservas`|SesionValida; Cliente|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/parqueaderos/reservas/reservas.controller.ts`|
 |GET|`/api/v1/parqueaderos/tarifa`|SesionValida; Organizador, Administrador, Personal|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
 |PUT|`/api/v1/parqueaderos/tarifa`|SesionValida; Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
-|POST|`/api/v1/pedidos/:pedidoId/pagos`|SesionValida; Cliente|Sí; contexto probado, combinaciones limitadas|`App/backend/modulos/alimentos/pagos/pagos.controller.ts`|
-|PATCH|`/api/v1/pedidos/admin/establecimientos/:id/estado`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/alimentos/establecimientos/establecimientos.controller.ts`|
-|DELETE|`/api/v1/pedidos/admin/establecimientos/:id/personal/:usuarioId`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/alimentos/establecimientos/establecimientos.controller.ts`|
-|PUT|`/api/v1/pedidos/admin/establecimientos/:id/personal/:usuarioId`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/alimentos/establecimientos/establecimientos.controller.ts`|
-|GET|`/api/v1/pedidos/admin/establecimientos/:id/personal`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/alimentos/establecimientos/establecimientos.controller.ts`|
-|GET|`/api/v1/pedidos/admin/establecimientos/:id`|SesionValida; Organizador, Administrador|Sí; contexto probado, combinaciones limitadas|`App/backend/modulos/alimentos/establecimientos/establecimientos.controller.ts`|
-|PUT|`/api/v1/pedidos/admin/establecimientos/:id`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/alimentos/establecimientos/establecimientos.controller.ts`|
-|GET|`/api/v1/pedidos/admin/establecimientos/cuentas-personal`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/alimentos/establecimientos/establecimientos.controller.ts`|
-|GET|`/api/v1/pedidos/admin/establecimientos`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/alimentos/establecimientos/establecimientos.controller.ts`|
-|POST|`/api/v1/pedidos/admin/establecimientos`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/alimentos/establecimientos/establecimientos.controller.ts`|
-|POST|`/api/v1/pedidos/checkout`|SesionValida; Cliente|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/alimentos/checkout/checkout.controller.ts`|
-|GET|`/api/v1/pedidos/establecimientos/:establecimientoId/ajustes`|SesionValida, PersonalDelEstablecimiento; Personal|Sí; contexto probado, combinaciones limitadas|`App/backend/modulos/alimentos/menu/menu.controller.ts`|
-|POST|`/api/v1/pedidos/establecimientos/:establecimientoId/entregas/confirmar`|SesionValida, PersonalDelEstablecimiento; Personal|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/alimentos/recepcion/entrega.controller.ts`|
-|POST|`/api/v1/pedidos/establecimientos/:establecimientoId/entregas/prevalidar`|SesionValida, PersonalDelEstablecimiento; Personal|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/alimentos/recepcion/entrega.controller.ts`|
-|GET|`/api/v1/pedidos/establecimientos/:establecimientoId/menu`|SesionValida, PersonalDelEstablecimiento; Personal|Sí; contexto probado, combinaciones limitadas|`App/backend/modulos/alimentos/menu/menu.controller.ts`|
-|GET|`/api/v1/pedidos/establecimientos/:establecimientoId/operaciones/:operacionId`|SesionValida, PersonalDelEstablecimiento; Personal|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/alimentos/menu/menu.controller.ts`|
-|GET|`/api/v1/pedidos/establecimientos/:establecimientoId/pedidos/:pedidoId/cancelacion`|SesionValida, PersonalDelEstablecimiento; Personal|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/alimentos/recepcion/cancelacion.controller.ts`|
-|POST|`/api/v1/pedidos/establecimientos/:establecimientoId/pedidos/:pedidoId/cancelacion`|SesionValida, PersonalDelEstablecimiento; Personal|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/alimentos/recepcion/cancelacion.controller.ts`|
-|POST|`/api/v1/pedidos/establecimientos/:establecimientoId/pedidos/:pedidoId/preparacion`|SesionValida, PersonalDelEstablecimiento; Personal|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/alimentos/recepcion/recepcion.controller.ts`|
-|GET|`/api/v1/pedidos/establecimientos/:establecimientoId/pedidos/:pedidoId`|SesionValida, PersonalDelEstablecimiento; Personal|Sí; contexto probado, combinaciones limitadas|`App/backend/modulos/alimentos/recepcion/recepcion.controller.ts`|
-|GET|`/api/v1/pedidos/establecimientos/:establecimientoId/pedidos`|SesionValida, PersonalDelEstablecimiento; Personal|Sí; contexto probado, combinaciones limitadas|`App/backend/modulos/alimentos/recepcion/recepcion.controller.ts`|
-|POST|`/api/v1/pedidos/establecimientos/:establecimientoId/productos/:productoId/ajustes`|SesionValida, PersonalDelEstablecimiento; Personal|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/alimentos/menu/menu.controller.ts`|
-|PATCH|`/api/v1/pedidos/establecimientos/:establecimientoId/productos/:productoId`|SesionValida, PersonalDelEstablecimiento; Personal|Sí; contexto probado, combinaciones limitadas|`App/backend/modulos/alimentos/menu/menu.controller.ts`|
-|PUT|`/api/v1/pedidos/establecimientos/:establecimientoId/productos/:productoId`|SesionValida, PersonalDelEstablecimiento; Personal|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/alimentos/menu/menu.controller.ts`|
-|GET|`/api/v1/pedidos/establecimientos/:establecimientoId/productos`|SesionValida; identidad/contexto del servicio|Sí; contexto probado, combinaciones limitadas|`App/backend/modulos/alimentos/catalogo/catalogo.controller.ts`|
-|POST|`/api/v1/pedidos/establecimientos/:establecimientoId/productos`|SesionValida, PersonalDelEstablecimiento; Personal|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/alimentos/menu/menu.controller.ts`|
-|GET|`/api/v1/pedidos/eventos/:eventoId/establecimientos`|SesionValida; identidad/contexto del servicio|Sí; contexto probado, combinaciones limitadas|`App/backend/modulos/alimentos/catalogo/catalogo.controller.ts`|
-|GET|`/api/v1/pedidos/mis-establecimientos`|SesionValida; Personal|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/alimentos/establecimientos/establecimientos.controller.ts`|
-|GET|`/api/v1/pedidos/mis-pedidos/:pedidoId`|SesionValida; Cliente|Sí; contexto probado, combinaciones limitadas|`App/backend/modulos/alimentos/recepcion/recepcion.controller.ts`|
-|GET|`/api/v1/pedidos/mis-pedidos`|SesionValida; Cliente|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/alimentos/recepcion/recepcion.controller.ts`|
+|POST|`/api/v1/pedidos/:pedidoId/pagos`|SesionValida; Cliente|Sí; Alimentos 3×278, ambas vías; reejecutada|`App/backend/modulos/alimentos/pagos/pagos.controller.ts`|
+|PATCH|`/api/v1/pedidos/admin/establecimientos/:id/estado`|SesionValida; Organizador, Administrador|Sí; Alimentos 3×278, ambas vías; ampliada|`App/backend/modulos/alimentos/establecimientos/establecimientos.controller.ts`|
+|DELETE|`/api/v1/pedidos/admin/establecimientos/:id/personal/:usuarioId`|SesionValida; Organizador, Administrador|Sí; Alimentos 3×278, ambas vías; ampliada|`App/backend/modulos/alimentos/establecimientos/establecimientos.controller.ts`|
+|PUT|`/api/v1/pedidos/admin/establecimientos/:id/personal/:usuarioId`|SesionValida; Organizador, Administrador|Sí; Alimentos 3×278, ambas vías; ampliada|`App/backend/modulos/alimentos/establecimientos/establecimientos.controller.ts`|
+|GET|`/api/v1/pedidos/admin/establecimientos/:id/personal`|SesionValida; Organizador, Administrador|Sí; Alimentos 3×278, ambas vías; ampliada|`App/backend/modulos/alimentos/establecimientos/establecimientos.controller.ts`|
+|GET|`/api/v1/pedidos/admin/establecimientos/:id`|SesionValida; Organizador, Administrador|Sí; Alimentos 3×278, ambas vías; reejecutada|`App/backend/modulos/alimentos/establecimientos/establecimientos.controller.ts`|
+|PUT|`/api/v1/pedidos/admin/establecimientos/:id`|SesionValida; Organizador, Administrador|Sí; Alimentos 3×278, ambas vías; ampliada|`App/backend/modulos/alimentos/establecimientos/establecimientos.controller.ts`|
+|GET|`/api/v1/pedidos/admin/establecimientos/cuentas-personal`|SesionValida; Organizador, Administrador|Sí; Alimentos 3×278, ambas vías; ampliada|`App/backend/modulos/alimentos/establecimientos/establecimientos.controller.ts`|
+|GET|`/api/v1/pedidos/admin/establecimientos`|SesionValida; Organizador, Administrador|Sí; Alimentos 3×278, ambas vías; ampliada|`App/backend/modulos/alimentos/establecimientos/establecimientos.controller.ts`|
+|POST|`/api/v1/pedidos/admin/establecimientos`|SesionValida; Organizador, Administrador|Sí; Alimentos 3×278, ambas vías; ampliada|`App/backend/modulos/alimentos/establecimientos/establecimientos.controller.ts`|
+|POST|`/api/v1/pedidos/checkout`|SesionValida; Cliente|Sí; Alimentos 3×278, ambas vías; ampliada|`App/backend/modulos/alimentos/checkout/checkout.controller.ts`|
+|GET|`/api/v1/pedidos/establecimientos/:establecimientoId/ajustes`|SesionValida, PersonalDelEstablecimiento; Personal|Sí; Alimentos 3×278, ambas vías; reejecutada|`App/backend/modulos/alimentos/menu/menu.controller.ts`|
+|POST|`/api/v1/pedidos/establecimientos/:establecimientoId/entregas/confirmar`|SesionValida, PersonalDelEstablecimiento; Personal|Sí; Alimentos 3×278, ambas vías; ampliada|`App/backend/modulos/alimentos/recepcion/entrega.controller.ts`|
+|POST|`/api/v1/pedidos/establecimientos/:establecimientoId/entregas/prevalidar`|SesionValida, PersonalDelEstablecimiento; Personal|Sí; Alimentos 3×278, ambas vías; ampliada|`App/backend/modulos/alimentos/recepcion/entrega.controller.ts`|
+|GET|`/api/v1/pedidos/establecimientos/:establecimientoId/menu`|SesionValida, PersonalDelEstablecimiento; Personal|Sí; Alimentos 3×278, ambas vías; reejecutada|`App/backend/modulos/alimentos/menu/menu.controller.ts`|
+|GET|`/api/v1/pedidos/establecimientos/:establecimientoId/operaciones/:operacionId`|SesionValida, PersonalDelEstablecimiento; Personal|Sí; Alimentos 3×278, ambas vías; ampliada|`App/backend/modulos/alimentos/menu/menu.controller.ts`|
+|GET|`/api/v1/pedidos/establecimientos/:establecimientoId/pedidos/:pedidoId/cancelacion`|SesionValida, PersonalDelEstablecimiento; Personal|Sí; Alimentos 3×278, ambas vías; ampliada|`App/backend/modulos/alimentos/recepcion/cancelacion.controller.ts`|
+|POST|`/api/v1/pedidos/establecimientos/:establecimientoId/pedidos/:pedidoId/cancelacion`|SesionValida, PersonalDelEstablecimiento; Personal|Sí; Alimentos 3×278, ambas vías; ampliada|`App/backend/modulos/alimentos/recepcion/cancelacion.controller.ts`|
+|POST|`/api/v1/pedidos/establecimientos/:establecimientoId/pedidos/:pedidoId/preparacion`|SesionValida, PersonalDelEstablecimiento; Personal|Sí; Alimentos 3×278, ambas vías; ampliada|`App/backend/modulos/alimentos/recepcion/recepcion.controller.ts`|
+|GET|`/api/v1/pedidos/establecimientos/:establecimientoId/pedidos/:pedidoId`|SesionValida, PersonalDelEstablecimiento; Personal|Sí; Alimentos 3×278, ambas vías; reejecutada|`App/backend/modulos/alimentos/recepcion/recepcion.controller.ts`|
+|GET|`/api/v1/pedidos/establecimientos/:establecimientoId/pedidos`|SesionValida, PersonalDelEstablecimiento; Personal|Sí; Alimentos 3×278, ambas vías; reejecutada|`App/backend/modulos/alimentos/recepcion/recepcion.controller.ts`|
+|POST|`/api/v1/pedidos/establecimientos/:establecimientoId/productos/:productoId/ajustes`|SesionValida, PersonalDelEstablecimiento; Personal|Sí; Alimentos 3×278, ambas vías; ampliada|`App/backend/modulos/alimentos/menu/menu.controller.ts`|
+|PATCH|`/api/v1/pedidos/establecimientos/:establecimientoId/productos/:productoId`|SesionValida, PersonalDelEstablecimiento; Personal|Sí; Alimentos 3×278, ambas vías; reejecutada|`App/backend/modulos/alimentos/menu/menu.controller.ts`|
+|PUT|`/api/v1/pedidos/establecimientos/:establecimientoId/productos/:productoId`|SesionValida, PersonalDelEstablecimiento; Personal|Sí; Alimentos 3×278, ambas vías; ampliada|`App/backend/modulos/alimentos/menu/menu.controller.ts`|
+|GET|`/api/v1/pedidos/establecimientos/:establecimientoId/productos`|SesionValida; identidad/contexto del servicio|Sí; Alimentos 3×278, ambas vías; reejecutada|`App/backend/modulos/alimentos/catalogo/catalogo.controller.ts`|
+|POST|`/api/v1/pedidos/establecimientos/:establecimientoId/productos`|SesionValida, PersonalDelEstablecimiento; Personal|Sí; Alimentos 3×278, ambas vías; ampliada|`App/backend/modulos/alimentos/menu/menu.controller.ts`|
+|GET|`/api/v1/pedidos/eventos/:eventoId/establecimientos`|SesionValida; identidad/contexto del servicio|Sí; Alimentos 3×278, ambas vías; reejecutada|`App/backend/modulos/alimentos/catalogo/catalogo.controller.ts`|
+|GET|`/api/v1/pedidos/mis-establecimientos`|SesionValida; Personal|Sí; Alimentos 3×278, ambas vías; ampliada|`App/backend/modulos/alimentos/establecimientos/establecimientos.controller.ts`|
+|GET|`/api/v1/pedidos/mis-pedidos/:pedidoId`|SesionValida; Cliente|Sí; Alimentos 3×278, ambas vías; reejecutada|`App/backend/modulos/alimentos/recepcion/recepcion.controller.ts`|
+|GET|`/api/v1/pedidos/mis-pedidos`|SesionValida; Cliente|Sí; Alimentos 3×278, ambas vías; ampliada|`App/backend/modulos/alimentos/recepcion/recepcion.controller.ts`|
 |DELETE|`/api/v1/recintos/:id/plano`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/eventos-recintos/recintos/recintos.controller.ts`|
 |GET|`/api/v1/recintos/:id/plano`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/eventos-recintos/recintos/recintos.controller.ts`|
 |PUT|`/api/v1/recintos/:id/plano`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/eventos-recintos/recintos/recintos.controller.ts`|

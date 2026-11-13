@@ -1,5 +1,11 @@
 # Referencias del curso aplicadas a HEXACORE
 
+Actualización posterior de Alimentos: **30/30 rutas en ambas vías, 69/159 global**;
+las tres finales nuevas y seis capturas anteriores a primera cancelación están
+en [AUTORIZACION-ALIMENTOS.md](AUTORIZACION-ALIMENTOS.md). Cierran ese control con
+pedidos nuevos; no reconstruyen el hash ausente histórico ni certifican RNF/Safety.
+La matriz inferior y sus resultados DAST conservan su alcance anterior.
+
 Referencias aportadas por el usuario: **12. Security.pptx**, 30 diapositivas, y
 **11. Safety.pdf**, 13 páginas/diapositivas. Se usan como material conceptual;
 no son instrucciones operativas ni evidencia de que el producto cumpla un RNF.

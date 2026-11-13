@@ -1,5 +1,78 @@
 # Cierre de Alimentos — Sebastián
 
+## Cierre de autorización de Alimentos — 13 de noviembre de 2026
+
+**Alimentos: 30/30. Global: 69/159; 90 pendientes. RNF-05/06 parciales.**
+Se amplían las 20 rutas pendientes y se reejecutan las otras diez de Alimentos;
+las 39 cubiertas fuera de este módulo se reutilizan, sin fuentes relevantes
+modificadas desde `7130d52`. El inventario sigue en 178 operaciones declaradas,
+173 expuestas y 159 protegidas; las 30 rutas de Alimentos coinciden por método/
+ruta con los controladores, sin cambios del denominador.
+
+Inicio limpio y sincronizado únicamente en `feature/sebastian` **7130d52**;
+develop **41ca881** y PR **#50 abierto** comprobados. CI previa **43454519623,
+8/8** confirmada. No se integran ramas ni se corrigen producto o arquitectura:
+las pruebas no demuestran una brecha nueva. Se conservan estados, snapshots,
+autorización, historial, idempotencia y límites financieros.
+
+Las pruebas usan siete cuentas nuevas, clientes distintos y Personal A/B
+vinculado a locales diferentes. Cada canal/pasada crea locales/productos/pedidos
+nuevos. Checkout/consultas/pago usan comprador de sesión; productos, ajustes,
+operaciones, preparación, incidencias, QR, entrega y cancelación cruzan recursos
+existentes con cuerpos válidos y controles positivos. Se comprueba antes de la
+primera mutación autorizada, con versión actual. Organizador/Administrador
+conservan administración global; catálogos permanecen compartidos por contrato.
+
+| Final, inicio UTC | Total | Autorización/contrato | Validación / relación separadas | SQL/Redis iguales en rechazos |
+|---|---|---|---|---|
+| 22:48:47.727 | **278/278**, 22,726 s | **274/274** | **2/2 + 2/2** | **142/142** |
+| 22:49:13.971 | **278/278**, 22,914 s | **274/274** | **2/2 + 2/2** | **142/142** |
+| 22:49:40.370 | **278/278**, 24,318 s | **274/274** | **2/2 + 2/2** | **142/142** |
+
+Tres finales seriales, mismo producto/herramientas/imágenes, sin reintentos ni
+relajar límites; **30/30 controles positivos en cada canal**. Los cuatro 400
+por final están separados de autorización. SQL/Redis incluyen inventario,
+reservas, preparación/historial/incidencias, entrega, cancelación y movimientos
+financieros enlazados al ensayo. Sin 5xx ni alteraciones en rechazos. Node
+22.22.3; 83 compilados Alimentos coinciden con el contenedor, once servicios
+saludables y Redash detenido. Fuentes/herramientas nuevas guardadas por hash
+sobre árbol 7130d52 antes de publicar; detalle en evidencia.
+Herramientas publicadas en **8ee59fb**, sin corrección de producto.
+
+**Hash previo: seis de seis pedidos nuevos**, uno por canal/final. Captura
+persistida y releída antes de la primera cancelación; si falla no se cancela.
+Los seis conservan cobro Alimentos/libro Finanzas, detalles/snapshots y acuerdo
+del pedido; se exceptúan únicamente estado, motivo/fecha de cancelación y fecha
+de actualización. Se verifica restitución, actor y un reembolso aprobado con
+un intento. El hash histórico ausente sigue ausente; no se reconstruye.
+
+Regresiones actuales **210/210 unitarias, ocho suites**. Se reutiliza **16/16
+automático y 16/16 visible** de ec07de2, con diff vacío en Alimentos/Finanzas y
+contratos compartidos relevantes. No se repiten los conjuntos completos.
+Fallos del arnés conservados: 104/105 del control por estado inexistente corregido
+a CERRADO; serie con 139/139 gateway pero clasificador cuentas-personal/:id contó
+29/30; siguiente carpeta detenida por alta 409 debido a nombres reutilizados.
+Se corrigen clasificador y unicidad de recursos antes de las tres finales,
+sin cambiar producto, peticiones ni límites. No se ocultan series interrumpidas.
+
+La restauración conserva el estado real inicial: Docker activo y Redash siete
+servicios activos, CU-015/ZAP detenidos; otros proyectos fuera de intervención.
+Controles Redash por etapa 200/200; control posterior con timeout HTTP y OOM nuevos,
+conservados sin ciclos de reinicio. PostgreSQL listo y Redis PONG; el acceso HTTP
+queda pendiente de capacidad del responsable. Datos, volúmenes, cuentas y claves
+previas conservados, solo proveedores simulados. Diagnóstico en RESULTADO.
+
+[Resultado y restauración](../../App/infra/informe-atributos/seguridad/RESULTADO.md) ·
+[Cobertura vigente](../../App/infra/informe-atributos/seguridad/COBERTURA-RECURSOS.md) ·
+[Reproducción](../../App/infra/informe-atributos/seguridad/AUTORIZACION-ALIMENTOS.md) ·
+[Evidencia saneada](../../App/infra/informe-atributos/seguridad/ALIMENTOS-RECURSOS-EVIDENCIA.json).
+Publicación solo `origin/feature/sebastian`, PR #50 hacia develop, sin merge ni
+auto-merge; CI de publicación separada en el PR. Los cortes 49/159 y 110 pendientes
+de las secciones inferiores son históricos. SIGTERM/outbox conservan causa
+pendiente. Fuera: CU-028/Samuel, F12, sustituciones, DAST adicional, imágenes/
+Google Fonts, arquitectura y ZeroTier. Este último solo queda como futura prueba
+compartida con un servidor HEXACORE y varios clientes, sin instalar/configurar.
+
 
 ## Cierre de autorización por recurso y DAST — 13/11/2026
 

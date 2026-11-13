@@ -1,5 +1,23 @@
 # Alternar Redash y HEXACORE en este Mac
 
+**Última ventana — 13/11, autorización de Alimentos:** Docker estaba **activo**
+al inicio y se deja **activo**. CU-015/ZAP detenidos; siete IDs/imágenes/montajes
+Redash reanudados una sola vez, estados originales conservados. Las tres finales
+de Alimentos aprobaron 278/278 cada una, con Redash detenido; otros proyectos no
+se intervinieron. No se reconstruyó ni resiembra el entorno.
+
+PG listo y Redis PONG; `/ping` y `/login` dieron 200 en cada etapa, con siete
+cgroups sin oom_kill entonces. Control posterior **22:53:57 UTC**: ambas rutas
+agotan 15 s. **OOM nuevos posteriores**: server 3, worker 8, adhoc_worker 3,
+scheduled_worker 2; proveedores/scheduler 0. VM disponible 140780 KiB y swap libre
+3268 KiB. No se hicieron reinicios de recuperación. **Estados restaurados;
+disponibilidad HTTP pendiente**. El responsable debe liberar capacidad autorizada
+o revisar concurrencia de Redash y verificar HTTP; no intervenir otros proyectos.
+Las marcas OOMKilled históricas no se confunden con esos contadores nuevos.
+Detalles y fallos de arnés en [RESULTADO](../../App/infra/informe-atributos/seguridad/RESULTADO.md).
+
+Los registros de motor apagado inferiores describen ventanas anteriores.
+
 
 **Última ventana — 13/11, autorización/DAST:** motor apagado al inicio y al final.
 CU-015/ZAP detenidos por scripts; siete IDs/imágenes/montajes Redash restaurados
