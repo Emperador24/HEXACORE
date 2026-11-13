@@ -1,4 +1,4 @@
-import { Component, effect, input, signal } from '@angular/core';
+import { Component, effect, input, signal, ChangeDetectionStrategy } from '@angular/core';
 import { toDataURL } from 'qrcode';
 
 /** El valor del backend se codifica localmente: no se envía a servicios externos. */
@@ -10,6 +10,7 @@ import { toDataURL } from 'qrcode';
     @if (error()) { <p role="alert">No pudimos mostrar tu QR. Tu compra sigue confirmada; mantén esta pantalla abierta.</p> }
 
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [':host { display: block; text-align: center; } img { max-width: 100%; height: auto; } .codigo { overflow-wrap: anywhere; }']
 })
 export class QrPedidoComponent {

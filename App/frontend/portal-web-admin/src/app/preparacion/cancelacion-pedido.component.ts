@@ -1,4 +1,4 @@
-import { Component, EventEmitter, inject, Input, OnChanges, Output, signal } from '@angular/core';
+import { Component, EventEmitter, inject, Input, OnChanges, Output, signal, ChangeDetectionStrategy } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -28,7 +28,8 @@ import { CancelacionPedido, IntencionCancelacion, PedidoRecibido, PreparacionApi
   }
   @if(pendiente()){<p>Cancelación sin respuesta confirmada. Se conserva la misma operación.</p>
     <button mat-button (click)="recuperar()" [disabled]="ocupado() || inactivo">Consultar cancelación pendiente</button>}
-  </section>`, styles: [`section{border-top:1px solid #888;padding:1rem 0}label{display:block;margin:1rem 0}textarea{display:block;width:min(100%,40rem);min-height:5rem}p{overflow-wrap:anywhere}`] })
+  </section>`, changeDetection: ChangeDetectionStrategy.Eager,
+ styles: [`section{border-top:1px solid #888;padding:1rem 0}label{display:block;margin:1rem 0}textarea{display:block;width:min(100%,40rem);min-height:5rem}p{overflow-wrap:anywhere}`] })
 export class CancelacionPedidoComponent implements OnChanges {
   @Input({ required: true }) local = ''; @Input({ required: true }) pedido!: PedidoRecibido; @Input() inactivo = false;
   @Output() ocupacion = new EventEmitter<boolean>(); @Output() pendienteChange = new EventEmitter<boolean>(); @Output() cambiada = new EventEmitter<void>();

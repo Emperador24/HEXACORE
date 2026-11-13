@@ -1,4 +1,4 @@
-import { Component, inject, OnDestroy, signal } from '@angular/core';
+import { Component, inject, OnDestroy, signal, ChangeDetectionStrategy } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -29,6 +29,7 @@ import { QrPedidoComponent } from './qr-pedido.component';
   @empty{<p>Aún no hay avisos de preparación.</p>}
   <h3>Incidencias</h3>@for(i of p.incidencias; track i.id){<p>{{i.descripcion}} · {{i.resueltaEn ? 'Resuelta: ' + i.resolucion : 'Pendiente de resolver'}}</p>}
   </section>}</div>`,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`:host{display:block;padding:1rem}article,.detalle{padding:1.2rem;margin:1rem 0}.grilla{display:grid;grid-template-columns:minmax(220px,1fr) minmax(300px,1.6fr);gap:1rem}.aviso{border-left:3px solid var(--hxc-ambar);padding-left:1rem}p{overflow-wrap:anywhere}[role=alert]{color:var(--hxc-rojo,#ffb4ab)}@media(max-width:800px){.grilla{grid-template-columns:1fr}}`]
 })
 export class MisPedidosComponent implements OnDestroy {

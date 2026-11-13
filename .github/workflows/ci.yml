@@ -242,13 +242,19 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: '22.22.3'
           cache: npm
           cache-dependency-path: App/frontend/${{ matrix.portal }}/package-lock.json
 
       - run: npm ci
+      - name: Tipos del portal
+        run: npx tsc --noEmit -p tsconfig.app.json && npx tsc --noEmit -p tsconfig.spec.json
       - name: Compilar
         run: npm run build
+      - name: Pruebas del portal
+        env:
+          CHROME_BIN: /usr/bin/google-chrome
+        run: npm test -- --watch=false --browsers=ChromeHeadless
 
   # --------------------------------------------------------------------------
   # App móvil: análisis estático y pruebas de widget. No se compila el APK

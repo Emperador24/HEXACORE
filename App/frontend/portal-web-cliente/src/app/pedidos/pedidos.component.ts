@@ -1,5 +1,5 @@
 import { MatIconModule } from '@angular/material/icon';
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { EstablecimientoPedido, PedidosService, mensajePedidos } from '../core/pedidos.service';
@@ -9,6 +9,7 @@ import { EstablecimientoPedido, PedidosService, mensajePedidos } from '../core/p
   standalone: true,
   imports: [MatIconModule, RouterLink, MatButtonModule],
   templateUrl: './pedidos.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './pedidos.component.scss'
 })
 export class PedidosComponent {

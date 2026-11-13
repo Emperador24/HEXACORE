@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -43,6 +43,7 @@ const ETIQUETAS_DECISION: Record<string, string> = {
     MatSelectModule, MatTooltipModule
   ],
   templateUrl: './monitoreo.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './monitoreo.component.scss'
 })
 export class MonitoreoComponent implements OnInit, OnDestroy {

@@ -14,7 +14,8 @@
  */
 @use '@angular/material' as mat;
 
-@include mat.core();
+@include mat.elevation-classes();
+@include mat.app-background();
 
 html {
   // `color-scheme` hace que Material elija sus colores claros u oscuros solo.

@@ -9,7 +9,8 @@
 // Las pantallas no usan colores fijos: usan los tokens `--hx-*` de abajo, que
 // cambian con la clase `tema-oscuro` en <html>.
 
-@include mat.core();
+@include mat.elevation-classes();
+@include mat.app-background();
 
 html {
   color-scheme: light;
@@ -417,7 +418,7 @@ a.nombre {
 .mat-mdc-dialog-content { line-height: 1.5; }
 .mat-mdc-dialog-title { font-family: 'Space Grotesk', sans-serif !important; font-weight: 700 !important; }
 
-.mat-mdc-tab-nav-bar, .mat-mdc-tab-header { --mat-tab-header-divider-color: transparent; }
+.mat-mdc-tab-nav-bar, .mat-mdc-tab-header { --mat-tab-divider-color: transparent; }
 
 // El contenedor del menú lateral es transparente: deja ver el fondo de color.
 .mat-drawer-container, .mat-drawer-content { background: transparent !important; }

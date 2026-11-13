@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -34,6 +34,7 @@ const TOKENS_DEMO = [
   standalone: true,
   imports: [RouterLink, DecimalPipe, MatCardModule, MatButtonModule, MatIconModule],
   templateUrl: './evento-detalle.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './evento-detalle.component.scss'
 })
 export class EventoDetalleComponent {

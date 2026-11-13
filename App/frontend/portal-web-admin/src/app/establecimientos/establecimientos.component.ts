@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -13,7 +13,8 @@ import { EventoResumen } from '../core/models';
 @Component({
   selector: 'app-establecimientos', standalone: true,
   imports: [FormsModule, MatButtonModule, MatFormFieldModule, MatIconModule, MatInputModule, MatProgressBarModule],
-  templateUrl: './establecimientos.component.html', styleUrl: './establecimientos.component.scss'
+  templateUrl: './establecimientos.component.html', changeDetection: ChangeDetectionStrategy.Eager,
+ styleUrl: './establecimientos.component.scss'
 })
 export class EstablecimientosComponent {
   private readonly api = inject(EstablecimientosApiService);

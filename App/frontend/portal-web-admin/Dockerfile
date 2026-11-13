@@ -13,7 +13,7 @@
 # a la vez en la misma máquina, y el gateway ya acepta ambos como origen de
 # CORS (`nginx.conf`, mapa `$origen_permitido`).
 
-FROM node:22-alpine AS compilacion
+FROM node:22.22.3-alpine AS compilacion
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci

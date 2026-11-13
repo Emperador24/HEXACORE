@@ -9,7 +9,7 @@
 # (`window.location.hostname` en `core/servidor.ts`), así que la misma imagen
 # sirve en `localhost` y en el computador de al lado.
 
-FROM node:22-alpine AS compilacion
+FROM node:22.22.3-alpine AS compilacion
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci

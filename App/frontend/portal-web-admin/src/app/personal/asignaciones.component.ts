@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -48,6 +48,7 @@ import { DatosReasignacion, ReasignarDialogoComponent } from './reasignar-dialog
     PestanasPersonalComponent
   ],
   templateUrl: './asignaciones.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './asignaciones.component.scss'
 })
 export class AsignacionesComponent implements OnInit {

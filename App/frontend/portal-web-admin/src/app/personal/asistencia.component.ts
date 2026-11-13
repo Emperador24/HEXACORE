@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -91,6 +91,7 @@ import { PestanasPersonalComponent } from './pestanas-personal.component';
       <section class="panel"><div class="vacio"><mat-icon>badge</mat-icon><p>No hay eventos publicados.</p></div></section>
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     .barra { padding: 14px 20px 0; .evento { width: 100%; max-width: 560px; } }
     .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }

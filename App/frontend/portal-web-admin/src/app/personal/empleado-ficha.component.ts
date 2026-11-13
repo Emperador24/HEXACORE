@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, input, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, input, signal, ChangeDetectionStrategy } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -49,6 +49,7 @@ const ROLES_SUGERIDOS = ['Entrada', 'Parqueadero', 'Restaurante', 'Seguridad', '
     MatTooltipModule
   ],
   templateUrl: './empleado-ficha.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './empleado-ficha.component.scss'
 })
 export class EmpleadoFichaComponent implements OnInit {

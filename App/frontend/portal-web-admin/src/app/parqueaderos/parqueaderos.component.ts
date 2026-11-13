@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CurrencyPipe, DatePipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -52,6 +52,7 @@ export const TIPOS_VEHICULO: { valor: TipoVehiculo; etiqueta: string; icono: str
     MatProgressBarModule, MatSelectModule, MatTooltipModule
   ],
   templateUrl: './parqueaderos.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './parqueaderos.component.scss'
 })
 export class ParqueaderosComponent implements OnInit, OnDestroy {

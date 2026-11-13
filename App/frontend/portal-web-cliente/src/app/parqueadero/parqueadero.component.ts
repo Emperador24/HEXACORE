@@ -1,4 +1,4 @@
-import { Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
+import { Component, DestroyRef, computed, effect, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatTabsModule } from '@angular/material/tabs';
@@ -51,6 +51,7 @@ const ESTADOS: Record<ReservaParqueadero['estado'], string> = {
     MatIconModule, QrPedidoComponent
   ],
   templateUrl: './parqueadero.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './parqueadero.component.scss'
 })
 export class ParqueaderoComponent {

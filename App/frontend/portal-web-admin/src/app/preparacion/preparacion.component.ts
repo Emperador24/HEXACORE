@@ -1,6 +1,6 @@
 import { CancelacionPedidoComponent } from './cancelacion-pedido.component';
 import { EntregaPedidoComponent } from '../entregas/entrega-pedido.component';
-import { Component, inject, OnDestroy, signal } from '@angular/core';
+import { Component, inject, OnDestroy, signal, ChangeDetectionStrategy } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -11,7 +11,8 @@ import { MenuApiService } from '../core/menu-api.service';
 import { DatosPreparacion, IntencionPreparacion, PedidoRecibido, PreparacionApiService } from '../core/preparacion-api.service';
 
 @Component({ selector: 'app-preparacion', standalone: true, imports: [CancelacionPedidoComponent, EntregaPedidoComponent, DatePipe, FormsModule, MatButtonModule, MatFormFieldModule, MatInputModule],
-  templateUrl: './preparacion.component.html', styleUrl: './preparacion.component.scss' })
+  templateUrl: './preparacion.component.html', changeDetection: ChangeDetectionStrategy.Eager,
+ styleUrl: './preparacion.component.scss' })
 export class PreparacionComponent implements OnDestroy {
   private readonly api = inject(PreparacionApiService); private readonly menu = inject(MenuApiService); private readonly auth = inject(AuthService);
   readonly locales = signal<{ id: string; nombre: string; estado: string }[]>([]);

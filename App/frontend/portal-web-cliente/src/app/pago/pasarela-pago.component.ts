@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal, viewChild } from '@angular/core';
+import { Component, computed, inject, signal, viewChild, ChangeDetectionStrategy } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -32,6 +32,7 @@ const ETIQUETAS: Record<MetodoPago, string> = {
   standalone: true,
   imports: [DecimalPipe, MatCardModule, MatRadioModule, MatButtonModule, TarjetaStripeComponent],
   templateUrl: './pasarela-pago.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './pasarela-pago.component.scss'
 })
 export class PasarelaPagoComponent {

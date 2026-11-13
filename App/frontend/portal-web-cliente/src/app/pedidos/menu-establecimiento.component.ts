@@ -1,5 +1,5 @@
 import { QrPedidoComponent } from './qr-pedido.component';
-import { Component, computed, inject, OnDestroy, signal } from '@angular/core';
+import { Component, computed, inject, OnDestroy, signal, ChangeDetectionStrategy } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -13,6 +13,7 @@ import { ErrorCuenta } from '../core/auth.service';
   standalone: true,
   imports: [QrPedidoComponent, DatePipe, DecimalPipe, FormsModule, RouterLink, MatButtonModule, MatIconModule],
   templateUrl: './menu-establecimiento.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './menu-establecimiento.component.scss'
 })
 export class MenuEstablecimientoComponent implements OnDestroy {
