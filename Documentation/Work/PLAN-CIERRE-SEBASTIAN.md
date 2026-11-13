@@ -1,6 +1,40 @@
 # Cierre de Alimentos — Sebastián
 
 
+## Autorización por recurso y DAST — 13/11/2026, hito de corrección
+
+Inicio limpio únicamente feature/sebastian **ec07de2**, CI **43426230483, 8/8**;
+fetch mantiene las referencias, sin integrar ramas. Se conservan historia y
+residuos Angular/CSP (dos medias de imágenes, ocho SRI y cuatro informativas).
+No se reabren Angular, CSP o SIGTERM. Se leen INVENTARIO/RESULTADO y los materiales
+Security (30 diapositivas) y Safety (13 páginas), como referencia conceptual.
+
+Dos brechas demostradas con objetos nuevos exclusivos, en gateway y Núcleo:
+Cliente/empleado ajeno leen notificaciones de otro; Cliente registra entrada y
+salida con credencial válida. **8 fallos / 16 controles antes**, incluyendo
+cuatro escrituras reales comprobadas en PostgreSQL. Se reutiliza ContextoDeLogistica
+para filtrar destinatario o permitir supervisión; asistencia exige roles
+Personal/Organizador/Administrador sin cambiar la credencial del empleado escaneado.
+**16/16 después**, cero filas añadidas por Cliente. Tipos/build/imagen Núcleo y
+**3/3 unitarias** relacionadas aprobados. Se añaden dos regresiones HTTP reales
+al arnés CI existente, sin quitar las cinco anteriores.
+
+Matriz ampliada inicial: **296/302**, con seis fallos del arnés (cuatro esperaban
+200 en verificar, cuyo contrato es 204; dos candidatos omitían fechas requeridas).
+Se preserva la pasada fallida, se corrigen expectativas/DTO a sus contratos y el
+control adicional aprueba **18/18**: los seis corregidos y ficha/contraseña/logout
+con cuentas auxiliares exclusivas. No se cuentan 400 ni recursos inexistentes
+como autorización. Las contraseñas previas/demo no cambian; solo se cambia la de
+una cuenta auxiliar creada para comprobar ese contrato.
+
+Las 41 rutas originalmente sin roles requieren reglas de identidad/contexto;
+se revisan expresamente. Organización sigue siendo rol global: no existe relación
+organización-evento ni un tenant que pueda probarse como frontera. No se inventa
+esa regla ni se declara cubierta por creadoPor (auditoría). CU-028 dinámico sigue
+pendiente de Samuel. Finales comparables, DAST activo acotado, cobertura y matriz
+del curso se incorporan en los siguientes hitos, sin declarar RNF completo.
+
+
 ## Portales, tooling y CSP — 13/11/2026, hito de implementación
 
 Referencia limpia local/remota **7457e7b**, CI **43214215628, 8/8**; solo

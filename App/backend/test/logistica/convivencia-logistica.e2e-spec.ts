@@ -11,6 +11,7 @@ describe('Convivencia de Personal/Logística con Identidad y Alimentos en Núcle
   let jefe: { id: string; token: string };
   let personal: { id: string; token: string };
   let otro: { id: string; token: string };
+  let cliente: { id: string; token: string };
   let empleado: Empleado;
   let empleadoAjeno: Empleado;
   let turnoId: string;
@@ -23,6 +24,7 @@ describe('Convivencia de Personal/Logística con Identidad y Alimentos en Núcle
     nucleo = new NucleoPrueba('convivencia-logistica');
     await nucleo.iniciar();
     jefe = await nucleo.cuenta(); personal = await nucleo.cuenta(); otro = await nucleo.cuenta();
+    cliente = await nucleo.cuenta(['Cliente']);
     // Solo la ficha inicial del jefe es fixture: el resto se administra por HTTP.
     await nucleo.datos.getRepository(Empleado).save({ usuarioId: jefe.id, nombre: 'Jefatura fixture',
       rol: JEFE_DE_PERSONAL, credencial: `jefe-${randomUUID()}` });
@@ -74,6 +76,32 @@ describe('Convivencia de Personal/Logística con Identidad y Alimentos en Núcle
     const asistencia = await request(nucleo.url).get(`${RUTA}/asistencia`).set('Authorization', cabecera(personal)).expect(200);
     expect(asistencia.body.map((a: { empleadoId: string }) => a.empleadoId)).toContain(empleado.id);
     expect(asistencia.body.map((a: { empleadoId: string }) => a.empleadoId)).not.toContain(empleadoAjeno.id);
+  });
+
+  it('notificaciones: el destinatario y el supervisor ven la existente; otro empleado y un Cliente no', async () => {
+    await esperar(async () => (await nucleo.datos.query('SELECT id FROM notificaciones WHERE "turnoId"=$1', [turnoAjenoId])).length === 1);
+    const propias = await request(nucleo.url).get(`${RUTA}/notificaciones`).set('Authorization', cabecera(personal)).expect(200);
+    expect(propias.body).toEqual(expect.arrayContaining([expect.objectContaining({ turnoId })]));
+    expect(propias.body).not.toEqual(expect.arrayContaining([expect.objectContaining({ turnoId: turnoAjenoId })]));
+    const ajenas = await request(nucleo.url).get(`${RUTA}/notificaciones`).set('Authorization', cabecera(otro))
+      .set('X-Usuario-Id', personal.id).set('X-Usuario-Roles', 'Administrador').expect(200);
+    expect(ajenas.body).toEqual(expect.arrayContaining([expect.objectContaining({ turnoId: turnoAjenoId })]));
+    expect(ajenas.body).not.toEqual(expect.arrayContaining([expect.objectContaining({ turnoId })]));
+    const sinFicha = await request(nucleo.url).get(`${RUTA}/notificaciones`).set('Authorization', cabecera(cliente)).expect(200);
+    expect(sinFicha.body).toEqual([]);
+    const supervision = await request(nucleo.url).get(`${RUTA}/notificaciones`).set('Authorization', cabecera(jefe)).expect(200);
+    expect(supervision.body).toEqual(expect.arrayContaining([expect.objectContaining({ turnoId }), expect.objectContaining({ turnoId: turnoAjenoId })]));
+  });
+
+  it('un Cliente no escribe fichajes con una credencial válida; un punto de control Personal conserva su operación', async () => {
+    for (const operacion of ['entrada', 'salida']) {
+      const idempotencyKey = randomUUID();
+      const datos = { credencial: empleado.credencial, idempotencyKey };
+      await request(nucleo.url).post(`${RUTA}/asistencia/${operacion}`).set('Authorization', cabecera(cliente)).send(datos).expect(403);
+      expect((await nucleo.datos.query('SELECT id FROM registros_asistencia WHERE "idempotencyKey"=$1', [idempotencyKey])).length).toBe(0);
+      await request(nucleo.url).post(`${RUTA}/asistencia/${operacion}`).set('Authorization', cabecera(personal)).send(datos).expect(201);
+      expect((await nucleo.datos.query('SELECT id FROM registros_asistencia WHERE "idempotencyKey"=$1', [idempotencyKey])).length).toBe(1);
+    }
   });
 
   it('usa la base y el esquema propios de cada pool, con sus nombres e historial de migraciones, sin synchronize', async () => {
