@@ -427,3 +427,11 @@ a.nombre {
 
 .celda-con-badge { display: flex; align-items: center; gap: 12px; padding: 6px 0; }
 .badge-icono.avatar { width: 40px; height: 40px; border-radius: 50%; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.85rem; }
+
+// Sustituye los atributos style estáticos; conserva sus colores con CSP estricta.
+.csp-hx-ambar { --tinte: var(--hx-ambar) !important; }
+.csp-hx-cian { --tinte: var(--hx-cian) !important; }
+.csp-hx-primario { --tinte: var(--hx-primario) !important; }
+.csp-hx-rosa { --tinte: var(--hx-rosa) !important; }
+.csp-hx-verde { --tinte: var(--hx-verde) !important; }
+.csp-hx-violeta { --tinte: var(--hx-violeta) !important; }

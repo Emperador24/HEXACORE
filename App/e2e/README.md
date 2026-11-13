@@ -784,3 +784,13 @@ Cliente autenticado → `/pedidos?eventoId=UUID` → establecimientos disponible
 → checkout → pago → QR. Un menú abierto antes del cierre informa el rechazo sin
 crear un pedido nuevo. Sebastián documenta estas pantallas; Daniel consolida la
 validación global de Usabilidad. No se afirma cumplimiento global RNF con este recorrido.
+
+
+### Validación CSP de imágenes de portales
+
+Existe un config optativo de diagnóstico: `playwright.csp.config.ts`, que hereda
+los límites normales y los 16 casos, y añade captura de consola/CSP en todos los
+contextos. Requiere `HEXACORE_COMPROBAR_CSP=1` y `SEGURIDAD_SALIDA` privada e
+ignorada. [Comandos y alcance](../infra/informe-atributos/seguridad/README.md#bloque-portales-y-csp--13112026).
+Normal, CI y demo conservan sus opciones. No habilitar el indicador para las
+sondas negativas CSP: estas se ejecutan aparte con `csp-portales.cjs`.

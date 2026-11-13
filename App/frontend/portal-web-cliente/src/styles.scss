@@ -303,3 +303,7 @@ p {
   backdrop-filter: blur(var(--hxc-vidrio-blur));
   -webkit-backdrop-filter: blur(var(--hxc-vidrio-blur));
 }
+
+// Sustituye los atributos style estáticos; conserva sus colores con CSP estricta.
+.csp-hxc-ambar { --tinte: var(--hxc-ambar) !important; }
+.csp-hxc-verde { --tinte: var(--hxc-verde) !important; }

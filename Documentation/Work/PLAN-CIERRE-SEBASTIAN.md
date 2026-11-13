@@ -1,5 +1,36 @@
 # Cierre de Alimentos — Sebastián
 
+
+## Portales, tooling y CSP — 13/11/2026, hito de implementación
+
+Referencia limpia local/remota **7457e7b**, CI **43214215628, 8/8**; solo
+feature/sebastian, sin integrar ramas. La historia RNF-05/06 inferior se conserva.
+No se investiga SIGTERM (causa desconocida) ni se amplía semántica, DAST activo,
+F12 o CU-028. **No se declara cumplimiento completo de RNF-05/06.**
+
+- **ca413fc**: migraciones oficiales Angular 19→20→21→22; core/compiler 22.2.6,
+  CLI/Material/CDK 22.2.7, TypeScript 6.0.3. Node frontend conserva 22.22.3;
+  backend intacto. Instalaciones limpias, tipos/builds y unitarias **30/30 Cliente,
+  16/16 Admin**. Audit compatible completo: cero en ambos, frente a 67/58 iniciales.
+- CSP efectiva con nonce por respuesta y no-store HTML; no unsafe-inline/eval.
+  Colores estáticos trasladados a CSS; orígenes API/buzón concretos por perfil.
+  [Decisiones de CSP](../../App/infra/informe-atributos/seguridad/CSP.md).
+- Primera regresión automática **15/16**, CU-029 falló: tres bloqueos `img-src`
+  para Object URLs del plano. Se conserva evidencia privada; permitir `blob:`
+  solo en imágenes Admin corrigió el contrato existente. CU-029 aislado **1/1**,
+  conjunto corregido **16/16 automático (132,066 s) y 16/16 visible (151,574 s)**,
+  27 contextos por conjunto, cero violaciones CSP/cero errores JavaScript.
+  Un trabajador, cero reintentos, 120 s/15 s; sin modo demo ni cambios de límites.
+- Control adicional: nonce/recarga, bloqueo de inline, SDK/iframe sintéticos,
+  siete rutas Cliente y seis Admin con 13 renovaciones reales 200. Su primer
+  intento esperaba networkidle en Parqueaderos y agotó 15 s por el SSE existente;
+  se cambió solo el arnés a pantalla visible/flujo activo. Aprobó sin cambiar
+  producto o plazo. Los conjuntos de negocio no se repitieron por ese ajuste.
+
+Las tres mediciones comparables finales y la restauración se añaden en el hito
+de evidencia; permanecen los límites históricos y los hallazgos que no cubre
+este bloque. [Migración](../../App/infra/informe-atributos/seguridad/MIGRACION-ANGULAR.md).
+
 ## Seguimiento de publicación de Seguridad — 12/11/2026
 
 **3c9e0b4** publicó scripts/resultados y actualizó el PR #50. La

@@ -1,4 +1,4 @@
-import { expect, test, APIRequestContext } from '@playwright/test';
+import { expect, test, APIRequestContext } from '../csp.fixture';
 import { createHash, randomUUID } from 'node:crypto';
 import { presentar } from '../presentacion';
 import { adminURL, clienteURL, comprobarAislamiento, gateway, loginAPI, loginUI, nucleo, sql } from '../cu015/entorno';

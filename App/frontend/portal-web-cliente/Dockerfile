@@ -27,6 +27,7 @@ COPY --from=compilacion /app/dist/portal-web-cliente/browser /usr/share/nginx/ht
 # el enrutador de Angular. Sin esto, recargar dentro de la aplicación da 404 —
 # y el enlace de verificación que llega por correo entra justo por ahí.
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY origenes-csp.conf /etc/nginx/hexacore/origenes-csp.conf
 
 EXPOSE 4200
 

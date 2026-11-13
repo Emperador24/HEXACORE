@@ -138,3 +138,65 @@ volúmenes, las salidas privadas y los estados inicialmente detenidos. ZAP queda
 detenido y desconectado de los objetivos. La red aislada y el contenedor del
 escáner se conservan; no se borran datos. Informar por separado estados Docker
 y accesibilidad HTTP.
+
+
+## Bloque portales y CSP — 13/11/2026
+
+La migración y exposición por dependencia están en [MIGRACION-ANGULAR.md](MIGRACION-ANGULAR.md);
+la política y configuración de despliegue, en [CSP.md](CSP.md). Usar el Node
+22.22.3 fijado, sin cambiar el backend. En cada portal, en serie:
+
+```bash
+npm ci --no-audit --no-fund
+npx tsc --noEmit --project tsconfig.app.json
+npx tsc --noEmit --project tsconfig.spec.json
+NG_BUILD_MAX_WORKERS=1 npm run build
+CHROME_BIN="/ruta/al/chrome" npm test -- --watch=false --browsers=ChromeHeadless
+```
+
+Tras alternar y conservar el estado inicial como indica la guía, reconstruir
+solo lo necesario (sin semillas):
+
+```bash
+./App/infra/cu015.sh iniciar --compilar portal-web-cliente portal-web-admin api-gateway
+```
+
+Para la regresión normal instrumentada, con salida nueva e ignorada, cuentas
+existentes en `App/e2e/.env.local` y proveedores simulados:
+
+```bash
+export HEXACORE_COMPROBAR_CSP=1
+export CSP_EJECUCION=negocio-automatico
+node --env-file=App/e2e/.env.local App/e2e/node_modules/@playwright/test/cli.js test --config=App/e2e/playwright.csp.config.ts
+export CSP_EJECUCION=negocio-visible
+node --env-file=App/e2e/.env.local App/e2e/node_modules/@playwright/test/cli.js test --config=App/e2e/playwright.csp.config.ts --headed
+```
+
+`SEGURIDAD_SALIDA` debe estar definida como arriba. No publicar los informes ni
+su consola: pueden contener identificadores/URLs de ensayo. Se descubren los
+mismos 16 casos; no hay modo demo, plazos ampliados o reintentos. La prueba
+histórica de reventa de `portal-web-cliente/pruebas/reventa-portal.mjs` no se
+invoca: resembra y borra reservas; sus supuestos no son adecuados a este ensayo.
+La navegación de lectura de Reventa/Entradas/Parqueadero sí se comprueba abajo;
+no equivale a sus procesos de negocio completos.
+
+Reutilizar fixture/scanner como arriba, sin resembrar ni sobrescribir anteriores.
+Para las tres mediciones **solo de portales/CSP**, con Redash detenido:
+
+```bash
+python3 App/infra/informe-atributos/seguridad/zap-entorno.py reanudar
+python3 App/infra/informe-atributos/seguridad/portales-finales.py
+```
+
+El runner verifica Node, imagen/configuración y huella de todos los assets en
+cada pasada; mantiene las imágenes iguales. Ejecuta memoria → salud/login →
+audit producción y completo de ambos portales → control CSP/browser con 13
+rutas autenticadas/renovación → ZAP pasivo HTTP → memoria. Renueva credenciales
+privadas de prueba, no cambia contraseñas. ZAP conserva reglas/alertas y las tres
+lecturas autenticadas 200 fuera de login; no se ejecuta DAST activo. La espera
+de disponibilidad de su API al arrancar es acotada a 30 s, sin repetir escaneos.
+
+No ejecutar `finales.py` para este bloque: repetiría matrices ajenas al cambio.
+Al terminar detener/desconectar el scanner con `zap-entorno.py parar`, detener
+CU-015 por su script y restaurar únicamente los estados iniciales de Redash.
+Si Docker Desktop estaba apagado inicialmente, restaurar también ese estado.

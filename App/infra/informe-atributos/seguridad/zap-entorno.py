@@ -2,7 +2,7 @@
 """ZAP sin salida a Internet: red interna temporal y tres objetivos propios.
 No arranca/paraliza proyectos. La alternancia se realiza previamente con la guía.
 """
-import json, os, pathlib, secrets, subprocess, sys
+import json, os, pathlib, secrets, subprocess, sys, time
 
 ROOT = pathlib.Path(__file__).resolve().parents[4]
 IMAGE = 'ghcr.io/zaproxy/zaproxy@sha256:0b8847b2c722b16f0964431aabcbb499560a1f17e8698d52326d82db29efac1d'
@@ -16,6 +16,23 @@ def docker(*args):
     if r.returncode:
         raise RuntimeError('Docker '+args[0]+' falló (código '+str(r.returncode)+'); revisar estado privado')
     return r.stdout.strip()
+
+def esperar_api(state):
+    # La existencia del contenedor no implica que Java haya abierto la API.
+    # Acotado a 30 s y sin imprimir clave ni contenido de respuestas.
+    codigo = """import json,sys,urllib.request,urllib.parse
+c=json.load(sys.stdin)
+u='http://127.0.0.1:8080/JSON/core/view/version/?'+urllib.parse.urlencode({'apikey':c['clave']})
+with urllib.request.urlopen(u,timeout=2) as r: assert json.load(r)['version']
+"""
+    limite = time.monotonic() + 30
+    while time.monotonic() < limite:
+        r = subprocess.run(['docker','exec','-i',state['contenedor'],'python3','-c',codigo],
+                           input=json.dumps({'clave':state['clave']}),text=True,capture_output=True)
+        if r.returncode == 0:
+            return
+        time.sleep(1)
+    raise RuntimeError('ZAP no abrió su API en 30 s; conservar logs privados, no repetir el escaneo')
 
 def main():
     output = pathlib.Path(os.environ['SEGURIDAD_SALIDA']).resolve()
@@ -32,6 +49,7 @@ def main():
             if NETWORK not in c['NetworkSettings']['Networks']:
                 docker('network', 'connect', '--alias', alias, NETWORK, name)
         docker('start', state['contenedor'])
+        esperar_api(state)
         print('ZAP reanudado tras la reconstrucción autorizada de los objetivos propios.')
         return
     if sys.argv[1:] == ['parar']:
@@ -66,6 +84,7 @@ def main():
                IMAGE, 'zap.sh', '-daemon', '-silent', '-host', '0.0.0.0', '-port', '8080',
                '-config', 'api.key=' + key, '-config', 'api.addrs.addr.name=.*', '-config', 'api.addrs.addr.regex=true')
         docker('start', CONTAINER)
+        esperar_api(state)
     except Exception:
         print('Arranque incompleto: usar el estado privado para restaurar las conexiones.', file=sys.stderr)
         raise

@@ -30,6 +30,7 @@ COPY --from=compilacion /app/dist/portal-web-admin/browser /usr/share/nginx/html
 # index: `/admin/cuentas` no es un archivo en disco, es una ruta que resuelve el
 # enrutador de Angular. Sin esto, recargar dentro del portal da 404.
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY origenes-csp.conf /etc/nginx/hexacore/origenes-csp.conf
 
 EXPOSE 4201
 

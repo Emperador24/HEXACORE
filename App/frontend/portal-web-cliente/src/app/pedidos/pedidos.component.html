@@ -1,5 +1,5 @@
 <header class="cabecera hxc-vidrio">
-  <span class="hxc-badge-icono" style="--tinte: var(--hxc-ambar)"><mat-icon>restaurant</mat-icon></span>
+  <span class="hxc-badge-icono csp-hxc-ambar"><mat-icon>restaurant</mat-icon></span>
   <div><p class="hxc-rotulo-seccion">TU EVENTO, A TU RITMO</p><h1>¿Qué se te antoja?</h1>
   <p class="hxc-suave">Elige un establecimiento y prepara tu pedido sin perderte el evento.</p></div>
 </header>
@@ -13,7 +13,7 @@
   <div class="grilla">
     @for (establecimiento of establecimientos(); track establecimiento.id) {
       <a class="tarjeta-link hxc-vidrio" [routerLink]="['/pedidos', establecimiento.id]" [queryParams]="{ eventoId: eventoConsultado() }">
-        <div class="tarjeta-arriba"><span class="hxc-badge-icono" style="--tinte: var(--hxc-ambar)"><mat-icon>storefront</mat-icon></span><span class="hxc-badge" style="--tinte: var(--hxc-verde)">Disponible</span></div>
+        <div class="tarjeta-arriba"><span class="hxc-badge-icono csp-hxc-ambar"><mat-icon>storefront</mat-icon></span><span class="hxc-badge csp-hxc-verde">Disponible</span></div>
         <h3>{{ establecimiento.nombre }}</h3>
         <p class="ubicacion"><mat-icon>place</mat-icon>{{ establecimiento.puntoEntrega }}</p>
         <span class="cta">Ver menú <mat-icon>arrow_forward</mat-icon></span>
