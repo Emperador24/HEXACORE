@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Header, MessageEvent, Param, ParseUUIDPipe, Patch, Post, Req, Sse, UseGuards, UsePipes } from '@nestjs/common';
 import { Observable, catchError, exhaustMap, from, interval, map, of, startWith } from 'rxjs';
 import { validacionAlimentos as validacion } from '../../../compartido/validacion';
-import { PeticionConSesion, RolesPermitidos, SesionValida } from '../comun/autenticacion/sesion-valida.guard';
+import { ModuloPermisos, PeticionConSesion, RolesPermitidos, SesionValida } from '../comun/autenticacion/sesion-valida.guard';
 import { RegistrarDecisionDto, ResultadoDecisionDto } from './dto/decision.dto';
 import { PanelService } from './panel.service';
 
@@ -16,6 +16,7 @@ const INTERVALO_MS = 3000;
 @UsePipes(validacion)
 @UseGuards(SesionValida)
 @RolesPermitidos('Organizador', 'Administrador')
+@ModuloPermisos('reportes')
 export class MonitoreoController {
   constructor(private readonly panel: PanelService) {}
 

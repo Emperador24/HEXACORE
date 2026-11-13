@@ -43,8 +43,7 @@ export class ShellComponent {
   );
 
   readonly gruposMenu = computed(() => {
-    const roles = this.auth.roles();
-    return NAV_GRUPOS.map((g) => ({ ...g, items: g.items.filter((i) => i.roles.some((r) => roles.includes(r))) })).filter(
+    return NAV_GRUPOS.map((g) => ({ ...g, items: g.items.filter((i) => this.auth.puedeVer(i)) })).filter(
       (g) => g.items.length > 0
     );
   });

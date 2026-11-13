@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import type { PeticionConSesion } from '../comun/autenticacion/sesion-valida.guard';
+import { tienePermiso, type PeticionConSesion } from '../comun/autenticacion/sesion-valida.guard';
 import { Empleado } from './entities/empleado.entity';
 import {
   JEFE_DE_PERSONAL,
@@ -58,9 +58,12 @@ export class ContextoDeLogistica implements CanActivate {
     const empleado = await this.empleados.findOneBy({ usuarioId, activo: true });
 
     peticion.empleado = empleado;
+    // Un rol propio con permiso sobre `personal` (CU-028) supervisa en la
+    // acción que concede: con `leer` ve el trabajo de todos, pero no lo cambia.
     peticion.supervisa =
       empleado?.rol === JEFE_DE_PERSONAL ||
-      roles.some((rol) => ROLES_DE_CUENTA_QUE_SUPERVISAN.includes(rol));
+      roles.some((rol) => ROLES_DE_CUENTA_QUE_SUPERVISAN.includes(rol)) ||
+      tienePermiso(peticion, 'personal');
 
     return true;
   }

@@ -2,7 +2,8 @@
 
 Playwright recorre en los portales reales los casos de uso de Samuel Emperador: abre Chrome,
 hace lo que haría una persona y deja un **video por caso de uso**, con un rótulo en pantalla que
-dice qué paso del caso de uso se está viendo. No incluye CU-027 ni CU-029.
+dice qué paso del caso de uso se está viendo. No incluye CU-027 ni CU-029. Los 8 casos duran
+unos 5 min 20 s.
 
 | Archivo | Caso de uso | Portal · cuenta |
 |---|---|---|
@@ -13,6 +14,7 @@ dice qué paso del caso de uso se está viendo. No incluye CU-027 ni CU-029.
 | `casos/05-cu010-evacuacion.spec.ts` | CU-010 Evacuación: propuesta, avisos, salida bloqueada (010A), escalar, finalizar | Admin · organizador |
 | `casos/06-cu024-025-parqueadero.spec.ts` | CU-024 Tarifa y cobro · CU-025 Ocupación, zona llena (025A) y redirección | Admin · administrador y organizador |
 | `casos/07-cu006-reventa.spec.ts` | CU-006 Reventa: publicar, retirar (006B), pago rechazado (006G) y compra | Cliente · Ana y Bruno |
+| `casos/08-cu028-roles.spec.ts` | CU-028 Roles y permisos: crear rol, asignar, restringir sin cerrar sesión (028B), eliminar reasignando (028A) | Admin · administrador y una cuenta nueva |
 
 ## Requisitos
 
@@ -33,7 +35,9 @@ npm run demo -- casos/05-cu010-evacuacion.spec.ts   # un solo caso de uso
 npm run demo:informe    # abre el informe con los videos y los pasos
 ```
 
-`DEMO_LENTO` (ms entre acciones) y `DEMO_PAUSA` (ms al final de cada paso) ajustan el ritmo.
+`DEMO_LENTO` (ms entre acciones) y `DEMO_PAUSA` (ms al final de cada paso y en cada pantalla
+nueva) ajustan el ritmo. Cada pantalla se queda **al menos 2 s**: `DEMO_PAUSA` puede alargarla,
+no acortarla.
 
 ## Qué prepara y qué no toca
 

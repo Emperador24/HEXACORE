@@ -2,3 +2,6 @@
 # pese la corrida: no se versionan. El informe sí, porque es el entregable y
 # conviene poder ver en el historial cómo se movieron las cifras.
 *.log
+
+# Datos crudos de prueba-carga.py; el informe en Markdown sí se versiona.
+*.json

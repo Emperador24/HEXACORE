@@ -23,12 +23,17 @@ export type Rol = (typeof Rol)[keyof typeof Rol];
 /** Los roles que pueden entrar a este portal. Un Cliente usa el suyo; el Personal, la app. */
 export const ROLES_DEL_PORTAL: readonly string[] = [Rol.ADMINISTRADOR, Rol.ORGANIZADOR, Rol.PERSONAL];
 
+/** Cualquier rol que no sea uno de estos es un rol propio de CU-028, con su matriz de permisos. */
+export const ROLES_DEL_SISTEMA: readonly string[] = Object.values(Rol);
+
 export interface Usuario {
   id: string;
   nombre: string;
   correo: string;
   /** Roles del CU-028. Una cuenta puede tener varios (admin@hexacore.com tiene dos). */
   roles: string[];
+  /** Permisos de sus roles propios (`modulo:accion`), CU-028. Solo deciden qué se muestra. */
+  permisos: string[];
 }
 
 /** Estados de una cuenta en el Servicio de Administración. */
@@ -655,4 +660,32 @@ export interface ReservaParqueaderoEvento {
   monto: number;
   creadaEn: string;
   expiraEn: string;
+}
+
+// --- CU-028: roles y permisos ---------------------------------------------------
+
+export interface PermisoRol {
+  modulo: string;
+  accion: string;
+}
+
+export interface RolConPermisos {
+  id: string;
+  nombre: string;
+  descripcion: string;
+  delSistema: boolean;
+  version: number;
+  permisos: PermisoRol[];
+  usuarios: number;
+  actualizadoEn: string;
+}
+
+export interface CatalogoPermisos {
+  modulos: { id: string; nombre: string }[];
+  acciones: string[];
+}
+
+export interface DetalleRol extends RolConPermisos {
+  asignados: { id: string; nombre: string; email: string; estado: string; asignadoEn: string }[];
+  auditoria: { accion: string; realizadaPor: string; detalle: Record<string, unknown>; fecha: string }[];
 }

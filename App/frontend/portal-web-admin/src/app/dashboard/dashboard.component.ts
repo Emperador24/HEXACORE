@@ -42,8 +42,7 @@ export class DashboardComponent {
   readonly sinContacto = computed(() => (this.empleados() ?? []).filter((e) => e.activo && (!e.documento || !e.correo)).length);
 
   readonly accesos = computed(() => {
-    const roles = this.auth.roles();
-    return NAV_ITEMS.filter((i) => !i.pendiente && i.ruta !== 'inicio' && i.roles.some((r) => roles.includes(r)));
+    return NAV_ITEMS.filter((i) => !i.pendiente && i.ruta !== 'inicio' && this.auth.puedeVer(i));
   });
 
   constructor() {

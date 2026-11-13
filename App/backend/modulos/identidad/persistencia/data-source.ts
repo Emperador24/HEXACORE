@@ -12,6 +12,7 @@ import { AuditoriaCuenta } from './entidades/auditoria-cuenta.entity';
 import { EsquemaInicialCu0271789430400000 } from './migraciones/1789430400000-EsquemaInicialCu027';
 import { AdministracionCuentasCu027b1789516800000 } from './migraciones/1789516800000-AdministracionCuentasCu027b';
 import { RenovacionSesiones1789603200000 } from './migraciones/1789603200000-RenovacionSesiones';
+import { RolesPermisosCu0281794800000000 } from './migraciones/1794800000000-RolesPermisosCu028';
 
 export const ENTIDADES = [Rol, Usuario, UsuarioRol, Sesion, TokenCuenta, AuditoriaCuenta];
 
@@ -19,6 +20,7 @@ export const MIGRACIONES = [
   EsquemaInicialCu0271789430400000,
   AdministracionCuentasCu027b1789516800000,
   RenovacionSesiones1789603200000,
+  RolesPermisosCu0281794800000000,
 ];
 
 export function opcionesDataSource(config: ConfiguracionServicio): DataSourceOptions & { name: string } {
