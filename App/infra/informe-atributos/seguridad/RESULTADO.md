@@ -202,6 +202,37 @@ Publicación exclusivamente origin/feature/sebastian, PR #50 si continúa abiert
 sin merge/auto-merge. CI de publicación registrada en el PR y entrega final,
 separada de estas pruebas locales y sin atribuir corrección de SIGTERM.
 
+### CI de publicación: fallo conservado, 7/8
+
+[CI 43453200930](https://github.com/Emperador24/HEXACORE/actions/runs/43453200930)
+del commit **e017039** termina **7/8 trabajos aprobados**. Portales, Flutter,
+gateway, artefactos, integración de autenticación y transferencia histórica /
+instalación nueva aprueban. El trabajo de Backend aprueba tipos, **80 suites /
+1044 unitarias**, controles de resúmenes, correo y composición financiera, y
+falla en la primera integración de Boletería: **22/23**, una fallida. La segunda
+integración y las etapas posteriores, incluidas las dos regresiones HTTP nuevas
+de Logística, **no se ejecutan**; no se acreditan por los resultados locales.
+
+La aserción de `App/backend/test/boleteria/flujos.e2e-spec.ts:115` observa una
+fila sin marca de publicación donde espera cero, después de observar los dos QR.
+No es un timeout ni SIGTERM. Test y publicador no cambian en este bloque. En
+`App/backend/modulos/entradas/ventas/comun/eventos/bandeja-salida.service.ts`,
+el envío/confirmación AMQP precede a la actualización de la marca y al commit
+PostgreSQL; observar la proyección no garantiza por sí solo que esa marca ya
+sea visible. Esto demuestra que el orden de observación del test es insuficiente,
+pero **no prueba que esa fila concreta se haya vaciado después**. Su secuencia,
+tipo y estado posterior no quedaron en la evidencia disponible. No se atribuye
+el incidente a un SQL/DNS específico ni a estas correcciones de Seguridad.
+
+Acción concreta pendiente, en un bloque del arnés de Boletería: conservar el
+conteo/identificador técnico del pendiente y comprobar la convergencia de ambas
+condiciones dentro del **mismo límite existente**, sin quitar la aserción ni
+aumentar plazos. Si no converge, correlacionar confirmación y commit del mismo
+evento. No se cambia el producto ni se abre disponibilidad global aquí. No se
+relanza esta CI para buscar verde. El log completo se conserva privado; la
+publicación posterior de este diagnóstico es documental y no corrige la causa.
+Una CI posterior aprobada no sustituiría esa observación faltante.
+
 ## Historial de portales, dependencias y CSP conservado
 
 

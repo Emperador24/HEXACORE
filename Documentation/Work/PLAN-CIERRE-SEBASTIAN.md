@@ -64,6 +64,25 @@ DAST restante, firma AMQP/no repudio y CU-028; incertidumbre original F12 separa
 CI de publicación en PR #50; no equivale a cumplimiento RNF completo ni corrige
 causalmente SIGTERM. Solo origin/feature/sebastian, sin merge/auto-merge.
 
+**CI de publicación e017039:** [43453200930](https://github.com/Emperador24/HEXACORE/actions/runs/43453200930),
+**7/8**, conservada sin relanzar. Backend: tipos y **1044/1044 unitarias / 80
+suites** aprobados; primera integración de Boletería **22/23**, un fallo en
+`flujos.e2e-spec.ts:115`: tras observar dos QR, outbox pendiente esperado 0,
+observado 1. La segunda pasada y las etapas posteriores, incluidas las dos
+regresiones HTTP nuevas de Logística, no se ejecutan. Los otros siete trabajos
+(incluida transferencia histórica/instalación nueva) aprueban.
+
+Publicación AMQP precede a actualización/commit de la marca PostgreSQL: la
+proyección no garantiza la visibilidad de esa marca. No se dispone de estado
+posterior/secuencia del pendiente para demostrar convergencia; no se afirma
+corregida la causa ni se atribuye a SQL/DNS o SIGTERM. Test/publicador intactos.
+Pendiente acotado para el arnés Boletería: comprobar ambas convergencias con el
+límite existente y conservar conteo/ID técnico; si no converge, correlacionar
+confirmación/commit. Sin ampliar Seguridad a disponibilidad ni repetir buscando
+verde. El commit posterior solo registra el diagnóstico; su CI automática,
+si aprueba, no sería una corrección causal. Resultado final de esa publicación
+se registra por separado en el PR.
+
 
 ## Autorización por recurso y DAST — 13/11/2026, hito de corrección
 
