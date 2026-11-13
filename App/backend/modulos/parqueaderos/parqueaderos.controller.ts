@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Header, MessageEvent, Param, ParseUUIDPipe, Patch, Post, Put, Query, Req, Sse, UseGuards, UsePipes } from '@nestjs/common';
 import { Observable, catchError, exhaustMap, from, interval, map, of, startWith } from 'rxjs';
 import { validacionAlimentos as validacion } from '../../compartido/validacion';
-import { PeticionConSesion, RolesPermitidos, SesionValida } from './comun/autenticacion/sesion-valida.guard';
+import { ModuloPermisos, PeticionConSesion, RolesPermitidos, SesionValida } from './comun/autenticacion/sesion-valida.guard';
 import { AccesosService } from './accesos/accesos.service';
 import { AsignacionService } from './asignacion/asignacion.service';
 import { CobroService } from './cobro/cobro.service';
@@ -36,6 +36,7 @@ const INTERVALO_MS = 3000;
 @UsePipes(validacion)
 @UseGuards(SesionValida)
 @RolesPermitidos('Organizador', 'Administrador')
+@ModuloPermisos('parqueaderos')
 export class ParqueaderosController {
   constructor(
     private readonly cobro: CobroService,

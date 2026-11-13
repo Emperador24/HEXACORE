@@ -1,7 +1,8 @@
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, firstValueFrom, timeout } from 'rxjs';
-import { ROLES_DEL_PORTAL, Usuario } from './models';
+import { ROLES_DEL_PORTAL, ROLES_DEL_SISTEMA, Usuario } from './models';
+import type { NavItem } from './nav-items';
 import { Servidor } from './servidor';
 
 /** Error del Servicio de Administración, con el mensaje que manda el servidor. */
@@ -71,6 +72,16 @@ export class AuthService {
   /** Roles de quien está dentro. El menú lateral se calcula con esto. */
   readonly roles = computed(() => this._usuarioActual()?.roles ?? []);
 
+  /** Permisos de sus roles propios (CU-028), `modulo:accion`. */
+  readonly permisos = computed(() => this._usuarioActual()?.permisos ?? []);
+
+  /** Si una sección del menú es para quien está dentro: por rol, o por permiso de leer su módulo. */
+  puedeVer(item: Pick<NavItem, 'roles' | 'modulo'>): boolean {
+    const roles = this.roles();
+    if (item.roles.some((r) => roles.includes(r))) return true;
+    return !!item.modulo && this.permisos().includes(`${item.modulo}:leer`);
+  }
+
   /** Por qué se cerró la sesión sin que la persona lo pidiera. El login lo muestra y lo limpia. */
   readonly motivoCierre = signal<string | null>(null);
 
@@ -92,7 +103,7 @@ export class AuthService {
 
   // --- Sin sesión -------------------------------------------------------------
 
-  /** CU-027 pasos 8-9. Solo entran Administrador y Organizador. */
+  /** CU-027 pasos 8-9. Entran Administrador, Organizador, Personal y los roles propios con permisos (CU-028). */
   async iniciarSesion(correo: string, contrasena: string): Promise<void> {
     const sesion = await this.enviar(
       this.http.post<SesionDelServidor>(
@@ -107,8 +118,14 @@ export class AuthService {
       await this.cerrarSesion();
       throw new ErrorCuenta('SIN_ROL', SIN_PERMISO, 403);
     }
+    const permisos = await this.leerPermisos(sesion.token);
+    if (!sesion.usuario.roles.some((r) => ROLES_DEL_PORTAL.includes(r)) && permisos.length === 0) {
+      // Solo tiene roles propios, y ninguno con permisos: no hay nada que mostrarle.
+      await this.cerrarSesion();
+      throw new ErrorCuenta('SIN_ROL', SIN_PERMISO, 403);
+    }
     this.motivoCierre.set(null);
-    this._usuarioActual.set(this.aUsuario(sesion.usuario));
+    this._usuarioActual.set({ ...this.aUsuario(sesion.usuario), permisos });
   }
 
   // --- Con sesión -------------------------------------------------------------
@@ -205,7 +222,10 @@ export class AuthService {
         return false;
       }
       this.guardarAcceso(r.token, r.expiraEn);
-      this._usuarioActual.update((u) => (u ? { ...u, roles: r.roles } : u));
+      // Directo con el token nuevo, no con `conAcceso`: estamos dentro de la
+      // renovación, y un 401 aquí esperaría a esta misma renovación.
+      const permisos = await this.leerPermisos(r.token).catch(() => this._usuarioActual()?.permisos ?? []);
+      this._usuarioActual.update((u) => (u ? { ...u, roles: r.roles, permisos } : u));
       return true;
     } catch (error) {
       if (error instanceof ErrorCuenta && (error.estado === 401 || error.estado === 400)) {
@@ -224,17 +244,32 @@ export class AuthService {
     const u = await this.conAcceso((cabeceras) =>
       this.http.get<SesionDelServidor['usuario']>(this.url('sesiones/actual'), { headers: cabeceras })
     );
-    this._usuarioActual.set(this.aUsuario(u));
+    const permisos = this.token ? await this.leerPermisos(this.token) : [];
+    this._usuarioActual.set({ ...this.aUsuario(u), permisos });
+  }
+
+  /**
+   * Permisos vigentes de la cuenta (CU-028). Solo deciden qué se muestra: cada
+   * módulo los vuelve a comprobar en el servidor en cada petición.
+   */
+  private async leerPermisos(token: string): Promise<string[]> {
+    const r = await this.enviar(
+      this.http.get<{ permisos: { modulo: string; accion: string }[] }>(this.url('cuentas/permisos'), {
+        headers: this.cabeceras(token)
+      })
+    );
+    return r.permisos.map((p) => `${p.modulo}:${p.accion}`);
   }
 
   // --- Apoyo ------------------------------------------------------------------
 
+  /** Un rol del portal, o un rol propio (CU-028): sus permisos se miran después. */
   private puedeEntrar(roles: string[]): boolean {
-    return roles.some((rol) => ROLES_DEL_PORTAL.includes(rol));
+    return roles.some((rol) => ROLES_DEL_PORTAL.includes(rol) || !ROLES_DEL_SISTEMA.includes(rol));
   }
 
   private aUsuario(u: SesionDelServidor['usuario']): Usuario {
-    return { id: u.id, nombre: u.nombre, correo: u.email, roles: u.roles };
+    return { id: u.id, nombre: u.nombre, correo: u.email, roles: u.roles, permisos: [] };
   }
 
   /** El servidor dijo que la sesión ya no vale. */

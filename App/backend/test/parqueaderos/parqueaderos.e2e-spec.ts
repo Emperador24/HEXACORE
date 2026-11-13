@@ -5,6 +5,7 @@ import { DataSource } from 'typeorm';
 import { opcionesDataSource as opcionesEventos } from '../../modulos/eventos-recintos/persistencia/data-source';
 import { opcionesDataSource as opcionesParqueaderos } from '../../modulos/parqueaderos/persistencia/data-source';
 import { NucleoPrueba } from '../logistica/nucleo-prueba';
+import { primerMensajeSse } from '../sse';
 
 /**
  * CU-021 a CU-025 · Parqueaderos, contra el Núcleo compilado, con PostgreSQL,
@@ -457,5 +458,22 @@ describe('CU-021 a CU-025 · Parqueaderos (e2e)', () => {
     const [{ n }] = await parqueaderos.query(`SELECT count(*)::int AS n FROM estancias WHERE evento_id = $1`, [evento]);
     expect(n).toBe(2);
     expect((await panel(evento)).total).toMatchObject({ ocupados: 1, reservados: 0 });
+  });
+
+  it('CU-025: zonas, vehículos en el lote y el panel en vivo por Server-Sent Events', async () => {
+    const evento = await eventoEnCurso();
+    const z = await zona(evento, 'En vivo', 2);
+    const zonas = await request(nucleo.url).get(`${P}/eventos/${evento}/zonas`).set('Authorization', como(personal)).expect(200);
+    expect(zonas.body.map((x: { id: string }) => x.id)).toEqual([z.id]);
+    await entrar(evento, { placa: placa(), zonaId: z.id });
+    const enLote = await request(nucleo.url).get(`${P}/eventos/${evento}/vehiculos`).set('Authorization', como(personal)).expect(200);
+    expect(enLote.body).toHaveLength(1);
+    await request(nucleo.url).get(`${P}/eventos/${evento}/vehiculos?enLote=false`).set('Authorization', como(personal)).expect(200);
+
+    const flujo = await primerMensajeSse(`${nucleo.url}${P}/eventos/${evento}/ocupacion/flujo`, organizador.token);
+    expect(flujo).toContain('event: ocupacion');
+    expect(flujo).toContain('"ocupados":1');
+    const sinEvento = await primerMensajeSse(`${nucleo.url}${P}/eventos/${randomUUID()}/ocupacion/flujo`, organizador.token);
+    expect(sinEvento).toContain('event: error');
   });
 });

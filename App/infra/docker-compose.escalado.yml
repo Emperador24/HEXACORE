@@ -1,6 +1,11 @@
-# Quita puertos fijos para acceso por gateway. Boletería conserva su escalado.
-# Núcleo reúne Identidad y Alimentos; no se certifica aquí la ejecución del
-# sondeo de inventario entre réplicas. Mantener una réplica hasta comprobarla.
+# Quita los puertos fijos para que Núcleo y Boletería admitan réplicas detrás
+# del gateway (Docker no deja que dos contenedores publiquen el mismo puerto).
+#
+# Boletería se escala desde iniciar.sh --replicas N. El Núcleo se comprobó con
+# 2 réplicas el 12/11/2026: la demostración completa de CU-006 a CU-010,
+# CU-024 a CU-026 y CU-028 pasa contra él, y sus trabajos de fondo toman las
+# filas con SKIP LOCKED (ver App/infra/DEMOSTRACION-ATRIBUTOS.md). El sondeo de
+# inventario de Alimentos no se certificó aquí.
 services:
   boleteria:
     ports: !reset []

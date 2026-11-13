@@ -21,6 +21,9 @@ App/
     modulos/identidad/
     modulos/alimentos/
     modulos/personal-logistica/
+    modulos/eventos-recintos/   CU-026 y CU-029, dueño único del Evento
+    modulos/operacion/          CU-019 y CU-010, futuro programa Operación
+    modulos/parqueaderos/       CU-021 a CU-025
     modulos/entradas/
     modulos/finanzas/pagos/
     compartido/
@@ -33,7 +36,7 @@ App/
   PoCs/           evidencia histórica del stack
 ```
 
-Este es un paso hacia Núcleo, Boletería, Operación y Trabajador. Pagos es reutilizable sin servidor; Personal/Logística ya pertenece al Núcleo; Operación sigue pendiente; Trabajador ejecuta solo el correo ya implementado. Los dominios sin
+Este es un paso hacia Núcleo, Boletería, Operación y Trabajador. Pagos es reutilizable sin servidor; Personal/Logística ya pertenece al Núcleo; Operación existe como módulo del Núcleo (monitoreo CU-019 y evacuación CU-010) y aún no como programa aparte; Trabajador ejecuta solo el correo ya implementado. Los dominios sin
 backend o con pantallas simuladas siguen pendientes. No hay MongoDB desplegado
 ni se modifican aquí las bases habituales. La configuración activa usa una sola
 base que actualmente tiene once esquemas (ocho de la consolidación y tres posteriores), comprobada sobre instalaciones aisladas;

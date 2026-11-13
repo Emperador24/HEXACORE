@@ -29,6 +29,6 @@ const modulos=['identidad','alimentos','personal-logistica','entradas/ventas','e
     assert.deepEqual(actividad.map(x=>x.datname),[base]);
     fs.mkdirSync(resolve(__dirname,'../../.evidencia-e2e'),{recursive:true});
     fs.writeFileSync(resolve(__dirname,'../../.evidencia-e2e/lectura-transferida.json'),JSON.stringify({base,esquemas:GRUPOS_MIGRACIONES.map(g=>g.esquema),historias:GRUPOS_MIGRACIONES.reduce((n,g)=>n+g.migraciones.length,0),movimientos,publicas}),{mode:0o600});
-    console.log('Once conexiones/once historiales/34 migraciones reconocidos; lectura ORM de cuentas, pedidos, personal, compras, propietarios, QR, auditoría y libro; cero tablas public.');
+    console.log('Once conexiones/once historiales/36 migraciones reconocidos; lectura ORM de cuentas, pedidos, personal, compras, propietarios, QR, auditoría y libro; cero tablas public.');
   }finally{for(const d of fuentes)await d.destroy();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -34,7 +34,7 @@ function preparar(database, anterior = false) {
       const database = `${prefijo}_${tipo}`;
       await control.query(`CREATE DATABASE "${database}"`);
       const inicial = preparar(database, tipo === 'actualizacion');
-      assert.equal(inicial.migraciones, tipo === 'vacia' ? 35 : 30);
+      assert.equal(inicial.migraciones, tipo === 'vacia' ? 36 : 31);
       const c = new Client({ ...opciones, database }); await c.connect();
       try {
         if (tipo === 'actualizacion') {
@@ -59,7 +59,7 @@ function preparar(database, anterior = false) {
         assert.ok(Object.values(repetida.esquemas).every(g => g.aplicadas.length === 0));
         assert.equal((await c.query('SELECT count(*)::int n FROM migracion_control.procedencia')).rows[0].n, 18);
         assert.equal((await c.query("SELECT count(*)::int n FROM pg_tables WHERE schemaname='public'")).rows[0].n, 0);
-        console.log(`${tipo}: ${database}, 35 migraciones, repetición sin DDL y 18 procedencias conservadas; ${tipo === 'actualizacion' ? 'establecimiento/pedido/producto/detalle idénticos' : 'instalación sin semillas'}.`);
+        console.log(`${tipo}: ${database}, 36 migraciones, repetición sin DDL y 18 procedencias conservadas; ${tipo === 'actualizacion' ? 'establecimiento/pedido/producto/detalle idénticos' : 'instalación sin semillas'}.`);
       } finally { await c.end(); }
     }
   } finally { await control.end(); }

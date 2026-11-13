@@ -9,6 +9,7 @@
 #                                         servicios y gateway apuntando al A (computador B)
 #   ./iniciar.sh --registro develop       desde las imágenes que publicó el CD
 #   ./iniciar.sh --datos-demo             con datos de ejemplo (solo sobre instalación vacía)
+#   ./iniciar.sh --monitoreo              con Grafana (CPU, memoria y logs) en :8080/grafana/
 #   ./iniciar.sh --parar                  baja todo, conservando los datos
 #
 # Por qué existe: el atributo de **desplegabilidad** exige que el sistema
@@ -36,6 +37,7 @@ DATOS=""
 REPLICAS=1
 DEMO="no"
 PARAR="no"
+MONITOREO="no"
 # Etiqueta a desplegar desde el registro (develop, main, latest, sha-<SHA40>).
 # Vacío = compilar aquí, que es lo normal mientras se desarrolla.
 REGISTRO=""
@@ -46,7 +48,7 @@ gris()  { printf '\033[90m%s\033[0m\n' "$*"; }
 titulo(){ printf '\n\033[1m%s\033[0m\n' "$*"; }
 
 uso() {
-  sed -n '3,20p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+  sed -n '3,21p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
   exit "${1:-0}"
 }
 
@@ -61,6 +63,7 @@ while [[ $# -gt 0 ]]; do
     --datos-demo) DEMO="si"; shift; if [[ "${1:-}" == "npm" ]]; then shift; fi ;;
     --sin-demo)  DEMO="no"; shift ;;
     --parar)     PARAR="si"; shift ;;
+    --monitoreo) MONITOREO="si"; shift ;;
     -h|--help)   uso 0 ;;
     *)           rojo "Opción desconocida: $1"; uso 1 ;;
   esac
@@ -104,6 +107,12 @@ fi
 if [[ "$REPLICAS" -gt 1 ]]; then
   # Dos contenedores no pueden publicar el mismo puerto: el override lo quita.
   COMPOSE+=(-f docker-compose.escalado.yml)
+fi
+
+if [[ "$MONITOREO" == "si" ]]; then
+  # Exportador de Docker, Prometheus, Loki, Promtail y Grafana; sin perfil, así que suben
+  # con la capa de datos en cualquier rol que use este computador.
+  COMPOSE+=(-f docker-compose.monitoreo.yml)
 fi
 
 if [[ "$PARAR" == "si" ]]; then

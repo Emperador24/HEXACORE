@@ -5,7 +5,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import { validacionAlimentos as validacion } from '../../../compartido/validacion';
-import { PeticionConSesion, RolesPermitidos, SesionValida } from '../comun/autenticacion/sesion-valida.guard';
+import { ModuloPermisos, PeticionConSesion, RolesPermitidos, SesionValida } from '../comun/autenticacion/sesion-valida.guard';
 import { GuardarRecintoDto } from './dto/guardar-recinto.dto';
 import { ArchivoSubido, MAX_PLANO_BYTES, RecintosService } from './recintos.service';
 
@@ -18,6 +18,7 @@ import { ArchivoSubido, MAX_PLANO_BYTES, RecintosService } from './recintos.serv
 @UsePipes(validacion)
 @UseGuards(SesionValida)
 @RolesPermitidos('Organizador', 'Administrador')
+@ModuloPermisos('eventos')
 export class RecintosController {
   constructor(private readonly recintos: RecintosService) {}
 

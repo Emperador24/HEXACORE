@@ -10,7 +10,10 @@
  *    gateway le preguntaba en cada petición, y eso convertía al servicio que
  *    emite los tokens en un paso obligado de todo el tráfico, con su latencia
  *    y su caída.
- * 2. **Autoriza por rol**, si la ruta declara `$roles_requeridos`.
+ * 2. **Autoriza por rol**, si la ruta declara `$roles_requeridos`. Si además
+ *    declara `$modulo_permiso` y el token trae un rol propio (CU-028), deja
+ *    pasar: la matriz de ese rol cambia sin reemitir tokens, así que la decide
+ *    el Núcleo, que la lee en Redis en cada petición.
  * 3. **Gasta el turno de la Cola virtual**, si la ruta declara
  *    `$turno_requerido`. Es lo que impide comprar sin haber pasado por la fila.
  *
@@ -29,6 +32,9 @@ import fs from 'fs';
 const ARCHIVO_CLAVE = '/etc/nginx/claves/jwt-publica.pem';
 const EMISOR = 'hexacore-administracion';
 const ES_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+/** Los roles fijos (`compartido/seguridad/permisos.ts`). Cualquier otro es un rol propio de CU-028. */
+const ROLES_DEL_SISTEMA = ['Cliente', 'Personal', 'Organizador', 'Administrador'];
 
 /** La clave se importa una vez por proceso: importarla en cada petición es trabajo repetido. */
 let clave = null;
@@ -142,7 +148,8 @@ async function verificar(r) {
 
   const requeridos = r.variables.roles_requeridos;
   if (requeridos && !requeridos.split(',').some((rol) => sesion.roles.includes(rol))) {
-    return negar(r, 403, 'ROL_INSUFICIENTE');
+    const conRolPropio = sesion.roles.some((rol) => !ROLES_DEL_SISTEMA.includes(rol));
+    if (!r.variables.modulo_permiso || !conRolPropio) return negar(r, 403, 'ROL_INSUFICIENTE');
   }
 
   if (r.variables.turno_requerido === '1') {

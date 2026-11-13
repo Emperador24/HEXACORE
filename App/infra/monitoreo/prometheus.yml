@@ -1,0 +1,23 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  # CPU y memoria de cada contenedor (exportador-docker.mjs), con su servicio de
+  # Compose como etiqueta: así cada réplica de Núcleo o Boletería es una serie
+  # propia. Solo el sistema (hexacore-infra, o el nombre que fije App/infra/.env,
+  # hoy hexacore-adr16); no los proyectos de prueba e2e que corran a la vez.
+  - job_name: contenedores
+    # Cada 2 s: prueba-carga.py calcula la CPU de cada nivel (8-12 s) con las
+    # muestras que caen dentro, y con 5 s quedaban una o dos.
+    scrape_interval: 2s
+    static_configs:
+      - targets: ["exportador-docker:9338"]
+    metric_relabel_configs:
+      - source_labels: [container_label_com_docker_compose_project]
+        regex: hexacore-(infra|adr16)
+        action: keep
+
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
