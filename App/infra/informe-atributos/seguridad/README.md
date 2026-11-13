@@ -1,5 +1,12 @@
 # Reproducir Seguridad RNF-05 / RNF-06
 
+
+**Bloque actual: autorización por recurso y DAST activo de API**:
+[AUTORIZACION-DAST.md](AUTORIZACION-DAST.md), [cobertura](COBERTURA-RECURSOS.md),
+[matriz del curso](SECURITY-SAFETY.md) y [evidencia](RECURSOS-DAST-EVIDENCIA.json).
+Usar `finales-recursos.py` para este bloque, conservando los comandos históricos
+inferiores para sus alcances respectivos. No repetir matrices/Playwright ajenos.
+
 Ensayo local de Sebastián. Resultados y límites: [RESULTADO.md](RESULTADO.md),
 [INVENTARIO.md](INVENTARIO.md), [EVIDENCIA.json](EVIDENCIA.json).
 El informe del 28 de octubre es histórico; estos scripts no ejecutan su arnés

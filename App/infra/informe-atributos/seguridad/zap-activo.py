@@ -3,7 +3,7 @@
 Contextos exactos, URI/credenciales sin inyección y sin descubrimiento de rutas.
 No es un escaneo activo completo de todas las familias o de las 159 operaciones.
 """
-import collections, datetime, json, os, pathlib, re, subprocess, sys, time, urllib.parse, urllib.request, urllib.error
+import collections, datetime, json, os, pathlib, re, subprocess, sys, time, urllib.parse, urllib.request, urllib.error, uuid
 
 def interno():
     cfg = json.load(sys.stdin)
@@ -18,7 +18,8 @@ def interno():
         return d
     api('core', 'action', 'newSession', name='', overwrite='true')
     assert all(int(s['progress'])==100 for s in api('ascan', 'view', 'scans')['scans'])
-    politica = 'HEXACORE-recurso-' + cfg['fase']
+    # Nombre único: reutilizar el escáner en otra carpeta no colisiona con políticas anteriores.
+    politica = 'HEXACORE-recurso-' + cfg['fase'] + '-' + uuid.uuid4().hex[:8]
     api('ascan', 'action', 'addScanPolicy', scanPolicyName=politica, alertThreshold='MEDIUM', attackStrength='MEDIUM')
     # Política específica del ensayo definida ANTES de escanear. No modifica la
     # predeterminada ni filtros de alertas; las familias no elegidas se publican.
@@ -51,9 +52,9 @@ def interno():
     try:
         for i,(actor,metodo,ruta,token,cuerpo,esperado) in enumerate(planes):
             url='http://objetivo:8080'+ruta; path=urllib.parse.urlsplit(url).path
-            ctx=api('context','action','newContext',contextName=cfg['fase']+'-'+str(i))['contextId']
-            api('context','action','includeInContext',contextName=cfg['fase']+'-'+str(i),regex='^http://objetivo:8080'+re.escape(path)+r'(\?.*)?$')
-            api('context','action','setContextInScope',contextName=cfg['fase']+'-'+str(i),booleanInScope='true')
+            ctx=api('context','action','newContext',contextName=politica+'-'+str(i))['contextId']
+            api('context','action','includeInContext',contextName=politica+'-'+str(i),regex='^http://objetivo:8080'+re.escape(path)+r'(\?.*)?$')
+            api('context','action','setContextInScope',contextName=politica+'-'+str(i),booleanInScope='true')
             antes=None
             if token:
                 antes,_=enviar('GET','/api/v1/cuentas/perfil',token);assert antes==200

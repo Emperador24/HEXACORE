@@ -1,6 +1,70 @@
 # Cierre de Alimentos — Sebastián
 
 
+## Cierre de autorización por recurso y DAST — 13/11/2026
+
+**RNF-05/06 siguen parciales.** Referencia ec07de2 / CI 43426230483 8/8.
+Hitos **545e19c** (notificaciones/fichajes), **9a06ba8** (NUL/Cartelera) y
+**d402a89** (herramientas/matriz del curso). Finales sobre d402a89, imágenes y
+compilados verificados; no Angular/CSP/SIGTERM ni funciones financieras nuevas.
+
+- Logística: **8 fallos/16 antes → 16/16 después** en ambos canales. Cliente ya
+  no escribe fichajes; destinatario/supervisor ven notificación real, ajenos no.
+- NUL: DAST sin alerta observó un 500/PostgreSQL 22021. Se rechaza NUL en tres
+  filtros; unitarias **3 fallidas/2 aprobadas → 5/5**, HTTP **8/8** (válidos 200,
+  NUL 400), conservando Unicode/apóstrofos/vacíos y consultas parametrizadas.
+- Nueva cobertura **49/159 protegidas en ambas vías**, incluidas **41/41** sin
+  metadato originalmente (ahora 39). **110** siguen pendientes de ampliación
+  semántica. Contexto/guardas efectivos, recursos existentes y roles locales:
+  no se usan 400 ni inexistencia como autorización; cuatro 404 de ficha son
+  observaciones de contexto separadas. Organización opera globalmente por rol:
+  falta contrato de relación organización-evento; CU-028 Samuel pendiente.
+
+| Final UTC de matriz | Matriz + complemento | Filtros | DAST |
+|---|---|---|---|
+| 15:01:06.629 | **302/302 + 30/30** | **8/8** | 107 activas; 0 alertas/0 5xx |
+| 15:01:37.327 | **302/302 + 30/30** | **8/8** | 107 activas; 0 alertas/0 5xx |
+| 15:02:07.263 | **302/302 + 30/30** | **8/8** | 107 activas; 0 alertas/0 5xx |
+
+Por final: 332 observaciones, cuatro de contexto sin acreditar autorización;
+328 de acceso/contrato con repeticiones explícitas, no permisos distintos.
+DAST **3 operaciones/4 escenarios**, SQLi/XSS reflejado **2/53 reglas**,
+62 pasivas conservadas. Sin Administrador, arañas o rutas mutadoras generales;
+categoría propia fija, URI/IDs no inyectados. 53/53 activas autenticadas conservan
+Bearer; sesión 200 antes/durante/después. Estados 47×200/33×400/27×401 por final.
+No significa DAST/API o Seguridad completos. Exclusiones y 159 rutas enumeradas.
+
+Se conservan fallos de arnés: matriz inicial 296/302 (contratos 204/fechas),
+complemento corregido 18/18 y ampliado 30/30; inicio ZAP/ruta /tmp, 400 sin código
+original acreditado, filtro wildcard mal configurado (24 cambios de categoría,
+cero eventos ajenos retornados) y piloto 107 con un 500 aunque cero alertas.
+Hubo correcciones concretas antes de las finales, no reintentos buscando verde.
+
+[Security/Safety](../../App/infra/informe-atributos/seguridad/SECURITY-SAFETY.md):
+concepto y diapositiva → riesgo → control/ubicación → comprobación → pendiente.
+Interlocks actual: **7 acreditados**, uno de hash inicial no acreditado por fallo
+SQL del arnés. Se recupera la misma operación sin nueva compra/cobro; los 16/16
+anteriores y contratos financieros inciertos se reutilizan con fuentes intactas.
+Sin F12 ni recuperación global. No se repiten los conjuntos completos.
+
+Memoria VM KiB disponible antes→después: 880932→844104, 840044→852852,
+853944→812912. Serie/Redash detenido. Al finalizar CU-015/ZAP detenidos por scripts;
+siete IDs/montajes/imágenes Redash restaurados una vez, PG listo/Redis PONG,
+últimos HTTP 200/200, siete oom_kill=0; resets/timeout de arranque conservados.
+Docker Desktop apagado como al inicio, no promesa de Redash accesible ahora.
+El scheduler cerró 137/OOM=false al detenerlo: se conserva como incidente.
+
+Residuos anteriores sin reabrir: imágenes HTTP/HTTPS, Google Fonts/SRI (diez
+medias/cuatro informativas en la revisión anterior); no se aceptan unilateralmente.
+Pendientes además: 110 rutas y combinaciones semánticas, organización/kiosco,
+DAST restante, firma AMQP/no repudio y CU-028; incertidumbre original F12 separada.
+[Resultado](../../App/infra/informe-atributos/seguridad/RESULTADO.md),
+[cobertura](../../App/infra/informe-atributos/seguridad/COBERTURA-RECURSOS.md),
+[evidencia](../../App/infra/informe-atributos/seguridad/RECURSOS-DAST-EVIDENCIA.json).
+CI de publicación en PR #50; no equivale a cumplimiento RNF completo ni corrige
+causalmente SIGTERM. Solo origin/feature/sebastian, sin merge/auto-merge.
+
+
 ## Autorización por recurso y DAST — 13/11/2026, hito de corrección
 
 Inicio limpio únicamente feature/sebastian **ec07de2**, CI **43426230483, 8/8**;

@@ -1,0 +1,1748 @@
+{
+  "fecha": "2026-11-13",
+  "referencia": "ec07de2",
+  "ciReferencia": 43426230483,
+  "cumplimientoRNFCompleto": false,
+  "hallazgosAntes": {
+    "fechaUTC": "2026-11-13T14:15:59.665Z",
+    "controles": [
+      {
+        "ruta": "GET /api/v1/logistica/notificaciones",
+        "canal": "gateway",
+        "actor": "personal",
+        "estado": 200,
+        "esperadoVisible": true,
+        "visible": true,
+        "ok": true
+      },
+      {
+        "ruta": "GET /api/v1/logistica/notificaciones",
+        "canal": "gateway",
+        "actor": "jefe",
+        "estado": 200,
+        "esperadoVisible": true,
+        "visible": true,
+        "ok": true
+      },
+      {
+        "ruta": "GET /api/v1/logistica/notificaciones",
+        "canal": "gateway",
+        "actor": "cliente",
+        "estado": 200,
+        "esperadoVisible": false,
+        "visible": true,
+        "ok": false
+      },
+      {
+        "ruta": "GET /api/v1/logistica/notificaciones",
+        "canal": "gateway",
+        "actor": "otroPersonal",
+        "estado": 200,
+        "esperadoVisible": false,
+        "visible": true,
+        "ok": false
+      },
+      {
+        "ruta": "POST /api/v1/logistica/asistencia/entrada",
+        "canal": "gateway",
+        "actor": "cliente",
+        "estado": 201,
+        "esperado": 403,
+        "filasAgregadas": 1,
+        "ok": false
+      },
+      {
+        "ruta": "POST /api/v1/logistica/asistencia/entrada",
+        "canal": "gateway",
+        "actor": "personal",
+        "estado": 201,
+        "esperado": 201,
+        "ok": true
+      },
+      {
+        "ruta": "POST /api/v1/logistica/asistencia/salida",
+        "canal": "gateway",
+        "actor": "cliente",
+        "estado": 201,
+        "esperado": 403,
+        "filasAgregadas": 1,
+        "ok": false
+      },
+      {
+        "ruta": "POST /api/v1/logistica/asistencia/salida",
+        "canal": "gateway",
+        "actor": "personal",
+        "estado": 201,
+        "esperado": 201,
+        "ok": true
+      },
+      {
+        "ruta": "GET /api/v1/logistica/notificaciones",
+        "canal": "directo",
+        "actor": "personal",
+        "estado": 200,
+        "esperadoVisible": true,
+        "visible": true,
+        "ok": true
+      },
+      {
+        "ruta": "GET /api/v1/logistica/notificaciones",
+        "canal": "directo",
+        "actor": "jefe",
+        "estado": 200,
+        "esperadoVisible": true,
+        "visible": true,
+        "ok": true
+      },
+      {
+        "ruta": "GET /api/v1/logistica/notificaciones",
+        "canal": "directo",
+        "actor": "cliente",
+        "estado": 200,
+        "esperadoVisible": false,
+        "visible": true,
+        "ok": false
+      },
+      {
+        "ruta": "GET /api/v1/logistica/notificaciones",
+        "canal": "directo",
+        "actor": "otroPersonal",
+        "estado": 200,
+        "esperadoVisible": false,
+        "visible": true,
+        "ok": false
+      },
+      {
+        "ruta": "POST /api/v1/logistica/asistencia/entrada",
+        "canal": "directo",
+        "actor": "cliente",
+        "estado": 201,
+        "esperado": 403,
+        "filasAgregadas": 1,
+        "ok": false
+      },
+      {
+        "ruta": "POST /api/v1/logistica/asistencia/entrada",
+        "canal": "directo",
+        "actor": "personal",
+        "estado": 201,
+        "esperado": 201,
+        "ok": true
+      },
+      {
+        "ruta": "POST /api/v1/logistica/asistencia/salida",
+        "canal": "directo",
+        "actor": "cliente",
+        "estado": 201,
+        "esperado": 403,
+        "filasAgregadas": 1,
+        "ok": false
+      },
+      {
+        "ruta": "POST /api/v1/logistica/asistencia/salida",
+        "canal": "directo",
+        "actor": "personal",
+        "estado": 201,
+        "esperado": 201,
+        "ok": true
+      }
+    ],
+    "fallidos": 8
+  },
+  "hallazgosDespues": {
+    "fechaUTC": "2026-11-13T14:23:00.352Z",
+    "controles": [
+      {
+        "ruta": "GET /api/v1/logistica/notificaciones",
+        "canal": "gateway",
+        "actor": "personal",
+        "estado": 200,
+        "esperadoVisible": true,
+        "visible": true,
+        "ok": true
+      },
+      {
+        "ruta": "GET /api/v1/logistica/notificaciones",
+        "canal": "gateway",
+        "actor": "jefe",
+        "estado": 200,
+        "esperadoVisible": true,
+        "visible": true,
+        "ok": true
+      },
+      {
+        "ruta": "GET /api/v1/logistica/notificaciones",
+        "canal": "gateway",
+        "actor": "cliente",
+        "estado": 200,
+        "esperadoVisible": false,
+        "visible": false,
+        "ok": true
+      },
+      {
+        "ruta": "GET /api/v1/logistica/notificaciones",
+        "canal": "gateway",
+        "actor": "otroPersonal",
+        "estado": 200,
+        "esperadoVisible": false,
+        "visible": false,
+        "ok": true
+      },
+      {
+        "ruta": "POST /api/v1/logistica/asistencia/entrada",
+        "canal": "gateway",
+        "actor": "cliente",
+        "estado": 403,
+        "esperado": 403,
+        "filasAgregadas": 0,
+        "ok": true
+      },
+      {
+        "ruta": "POST /api/v1/logistica/asistencia/entrada",
+        "canal": "gateway",
+        "actor": "personal",
+        "estado": 201,
+        "esperado": 201,
+        "ok": true
+      },
+      {
+        "ruta": "POST /api/v1/logistica/asistencia/salida",
+        "canal": "gateway",
+        "actor": "cliente",
+        "estado": 403,
+        "esperado": 403,
+        "filasAgregadas": 0,
+        "ok": true
+      },
+      {
+        "ruta": "POST /api/v1/logistica/asistencia/salida",
+        "canal": "gateway",
+        "actor": "personal",
+        "estado": 201,
+        "esperado": 201,
+        "ok": true
+      },
+      {
+        "ruta": "GET /api/v1/logistica/notificaciones",
+        "canal": "directo",
+        "actor": "personal",
+        "estado": 200,
+        "esperadoVisible": true,
+        "visible": true,
+        "ok": true
+      },
+      {
+        "ruta": "GET /api/v1/logistica/notificaciones",
+        "canal": "directo",
+        "actor": "jefe",
+        "estado": 200,
+        "esperadoVisible": true,
+        "visible": true,
+        "ok": true
+      },
+      {
+        "ruta": "GET /api/v1/logistica/notificaciones",
+        "canal": "directo",
+        "actor": "cliente",
+        "estado": 200,
+        "esperadoVisible": false,
+        "visible": false,
+        "ok": true
+      },
+      {
+        "ruta": "GET /api/v1/logistica/notificaciones",
+        "canal": "directo",
+        "actor": "otroPersonal",
+        "estado": 200,
+        "esperadoVisible": false,
+        "visible": false,
+        "ok": true
+      },
+      {
+        "ruta": "POST /api/v1/logistica/asistencia/entrada",
+        "canal": "directo",
+        "actor": "cliente",
+        "estado": 403,
+        "esperado": 403,
+        "filasAgregadas": 0,
+        "ok": true
+      },
+      {
+        "ruta": "POST /api/v1/logistica/asistencia/entrada",
+        "canal": "directo",
+        "actor": "personal",
+        "estado": 201,
+        "esperado": 201,
+        "ok": true
+      },
+      {
+        "ruta": "POST /api/v1/logistica/asistencia/salida",
+        "canal": "directo",
+        "actor": "cliente",
+        "estado": 403,
+        "esperado": 403,
+        "filasAgregadas": 0,
+        "ok": true
+      },
+      {
+        "ruta": "POST /api/v1/logistica/asistencia/salida",
+        "canal": "directo",
+        "actor": "personal",
+        "estado": 201,
+        "esperado": 201,
+        "ok": true
+      }
+    ],
+    "fallidos": 0
+  },
+  "controlMatrizInicial": {
+    "total": 302,
+    "fallidos": 6,
+    "fallos": [
+      {
+        "etiqueta": "sesion-verificada",
+        "acreditaAutorizacion": true,
+        "canal": "gateway",
+        "ruta": "GET /sesiones/verificar",
+        "actor": "cliente",
+        "estado": 204,
+        "esperados": [
+          200
+        ],
+        "evidencia": true,
+        "ok": false
+      },
+      {
+        "etiqueta": "sesion-verificada",
+        "acreditaAutorizacion": true,
+        "canal": "gateway",
+        "ruta": "GET /sesiones/verificar",
+        "actor": "personal",
+        "estado": 204,
+        "esperados": [
+          200
+        ],
+        "evidencia": true,
+        "ok": false
+      },
+      {
+        "etiqueta": "ficha-jefe-activa",
+        "acreditaAutorizacion": true,
+        "canal": "gateway",
+        "ruta": "GET /logistica/zonas/:fixtureId/candidatos",
+        "actor": "jefe",
+        "estado": 400,
+        "esperados": [
+          200,
+          201
+        ],
+        "evidencia": true,
+        "ok": false
+      },
+      {
+        "etiqueta": "sesion-verificada",
+        "acreditaAutorizacion": true,
+        "canal": "directo",
+        "ruta": "GET /sesiones/verificar",
+        "actor": "cliente",
+        "estado": 204,
+        "esperados": [
+          200
+        ],
+        "evidencia": true,
+        "ok": false
+      },
+      {
+        "etiqueta": "sesion-verificada",
+        "acreditaAutorizacion": true,
+        "canal": "directo",
+        "ruta": "GET /sesiones/verificar",
+        "actor": "personal",
+        "estado": 204,
+        "esperados": [
+          200
+        ],
+        "evidencia": true,
+        "ok": false
+      },
+      {
+        "etiqueta": "ficha-jefe-activa",
+        "acreditaAutorizacion": true,
+        "canal": "directo",
+        "ruta": "GET /logistica/zonas/:fixtureId/candidatos",
+        "actor": "jefe",
+        "estado": 400,
+        "esperados": [
+          200,
+          201
+        ],
+        "evidencia": true,
+        "ok": false
+      }
+    ],
+    "causa": "Cuatro expectativas 200 frente a contrato 204 y dos consultas candidatos sin fechas requeridas. Errores del arnés conservados."
+  },
+  "finales": [
+    {
+      "fase": "final-1",
+      "fechaMatrizUTC": "2026-11-13T15:01:06.629Z",
+      "version": {
+        "sha": "d402a8936879a172c9598f67de14b0ec102b2714",
+        "imagenes": {
+          "postgres": {
+            "imagen": "sha256:ef738a34a8651d11b2bace81c55c7e2187f786b484add6c83070884340074368",
+            "revisionEtiqueta": null,
+            "fuenteModificada": null
+          },
+          "redis": {
+            "imagen": "sha256:ec4f171e9ff071bb2a1c936057d3be00206069b028b6c0d61df2477e1dd02c42",
+            "revisionEtiqueta": null,
+            "fuenteModificada": null
+          },
+          "rabbitmq": {
+            "imagen": "sha256:128fa025f555260135cadd602acbc454d65b639ee99a29ff1007244f271196af",
+            "revisionEtiqueta": null,
+            "fuenteModificada": null
+          },
+          "correo": {
+            "imagen": "sha256:12bb86346ec6eb4f44d047e272f8e82fcc27a5439ff6f84701ab89443b6508d9",
+            "revisionEtiqueta": "ab6ae5612f9ed740a228617c0536840a072e31d1",
+            "fuenteModificada": "no"
+          },
+          "pasarela": {
+            "imagen": "sha256:fb686416351dd2055be659f8e55c01b926ba8344a4357927fddcfeae3e74f133",
+            "revisionEtiqueta": "ab6ae5612f9ed740a228617c0536840a072e31d1",
+            "fuenteModificada": "no"
+          },
+          "nucleo": {
+            "imagen": "sha256:0b650a46578cd402e07af0dd097a194d28cf4f35c0f674813a915e426932d83e",
+            "revisionEtiqueta": "ec07de27f754487a98916544b1225d90b80ca457",
+            "fuenteModificada": "si"
+          },
+          "boleteria": {
+            "imagen": "sha256:81b9c6ea8b1f7fddeb57c07e5dc92b2ef884411406f9704186efed5563bebae0",
+            "revisionEtiqueta": "545e19c34e7b6cfaf8f45952c0fff7fa9a57cc59",
+            "fuenteModificada": "si"
+          },
+          "trabajador": {
+            "imagen": "sha256:7b6c1e7a5d266667bdc6c3adb5947cdd1a3bd3e6692e16431d7672d6672ac17a",
+            "revisionEtiqueta": "4aad53f9f6975067b2ba9ab40af37b2de80d3c81",
+            "fuenteModificada": "si"
+          },
+          "api-gateway": {
+            "imagen": "sha256:6b4afcd4892fb6624c4c2e2725b3eb4d3685b22b8bd16056cc18fc40626c1029",
+            "revisionEtiqueta": "ca413fcddf7a639d5627247aa096b75122333018",
+            "fuenteModificada": "si"
+          },
+          "portal-web-cliente": {
+            "imagen": "sha256:9a11f99348c6af8b86ac950d11018e2ad5a20649d9eb7dc67cd389e52e0fa359",
+            "revisionEtiqueta": "ca413fcddf7a639d5627247aa096b75122333018",
+            "fuenteModificada": "si"
+          },
+          "portal-web-admin": {
+            "imagen": "sha256:6835120c95f0a7f3d17661416147b21c09a34873b036b72d8d26d9790673f44c",
+            "revisionEtiqueta": "ca413fcddf7a639d5627247aa096b75122333018",
+            "fuenteModificada": "si"
+          }
+        },
+        "huellas": [
+          {
+            "programa": "nucleo",
+            "archivo": "modulos/personal-logistica/turnos-asistencia/notificaciones.controller.js",
+            "sha256": "e8c37ddf9f9e7e36669755b731ddaeab1997fc6755bd95603022b820d4e0ce79",
+            "coincideCompiladoLocal": true
+          },
+          {
+            "programa": "nucleo",
+            "archivo": "modulos/personal-logistica/turnos-asistencia/asistencia.controller.js",
+            "sha256": "16a2aa6f9caad66dd9bb4043b68d23b566546f0a242c33d39be331214ce7f3d3",
+            "coincideCompiladoLocal": true
+          },
+          {
+            "programa": "boleteria",
+            "archivo": "modulos/entradas/catalogo/cartelera/dto/cartelera.dto.js",
+            "sha256": "2c2978be80a69611efddb344ea1110356969a1bf82f3556ddcea1ad783c8efe6",
+            "coincideCompiladoLocal": true
+          }
+        ],
+        "nodeEjecutado": {
+          "nucleo": "v22.22.3",
+          "boleteria": "v22.22.3"
+        }
+      },
+      "matriz": 302,
+      "complemento": 30,
+      "contextoSinFichaSinAcreditarAutorizacion": 4,
+      "fallidos": 0,
+      "filtrosHttp": {
+        "fechaUTC": "2026-11-13T15:01:10.971Z",
+        "controles": [
+          {
+            "canal": "gateway",
+            "caso": "filtro-legitimo-propio",
+            "estado": 200,
+            "ok": true
+          },
+          {
+            "canal": "gateway",
+            "caso": "nul-categoria",
+            "estado": 400,
+            "ok": true
+          },
+          {
+            "canal": "gateway",
+            "caso": "nul-ciudad",
+            "estado": 400,
+            "ok": true
+          },
+          {
+            "canal": "gateway",
+            "caso": "nul-artista",
+            "estado": 400,
+            "ok": true
+          },
+          {
+            "canal": "directo",
+            "caso": "filtro-legitimo-propio",
+            "estado": 200,
+            "ok": true
+          },
+          {
+            "canal": "directo",
+            "caso": "nul-categoria",
+            "estado": 400,
+            "ok": true
+          },
+          {
+            "canal": "directo",
+            "caso": "nul-ciudad",
+            "estado": 400,
+            "ok": true
+          },
+          {
+            "canal": "directo",
+            "caso": "nul-artista",
+            "estado": 400,
+            "ok": true
+          }
+        ]
+      },
+      "dast": [
+        {
+          "actor": "publica",
+          "metodo": "GET",
+          "ruta": "/api/v1/cartelera",
+          "peticiones": 27,
+          "estados": {
+            "200": 23,
+            "400": 4
+          },
+          "bearerCorrecto": 0,
+          "sesionAntes": null,
+          "sesionDurante": [],
+          "sesionDespues": null,
+          "reglas": [
+            {
+              "nombre": "Cross Site Scripting (Reflected)",
+              "id": "40012",
+              "estado": "Complete",
+              "duracionMs": "18",
+              "peticiones": "5",
+              "alertas": "0"
+            },
+            {
+              "nombre": "SQL Injection",
+              "id": "40018",
+              "estado": "Complete",
+              "duracionMs": "103",
+              "peticiones": "22",
+              "alertas": "0"
+            }
+          ]
+        },
+        {
+          "actor": "protegida-sin-sesion",
+          "metodo": "PATCH",
+          "ruta": "/api/v1/cuentas/perfil",
+          "peticiones": 27,
+          "estados": {
+            "401": 27
+          },
+          "bearerCorrecto": 0,
+          "sesionAntes": null,
+          "sesionDurante": [],
+          "sesionDespues": null,
+          "reglas": [
+            {
+              "nombre": "Cross Site Scripting (Reflected)",
+              "id": "40012",
+              "estado": "Complete",
+              "duracionMs": "3",
+              "peticiones": "5",
+              "alertas": "0"
+            },
+            {
+              "nombre": "SQL Injection",
+              "id": "40018",
+              "estado": "Complete",
+              "duracionMs": "9",
+              "peticiones": "22",
+              "alertas": "0"
+            }
+          ]
+        },
+        {
+          "actor": "cliente",
+          "metodo": "PATCH",
+          "ruta": "/api/v1/cuentas/perfil",
+          "peticiones": 24,
+          "estados": {
+            "200": 21,
+            "400": 3
+          },
+          "bearerCorrecto": 24,
+          "sesionAntes": 200,
+          "sesionDurante": [
+            {
+              "estado": 200,
+              "scanActivo": true
+            },
+            {
+              "estado": 200,
+              "scanActivo": false
+            }
+          ],
+          "sesionDespues": 200,
+          "reglas": [
+            {
+              "nombre": "Cross Site Scripting (Reflected)",
+              "id": "40012",
+              "estado": "Complete",
+              "duracionMs": "63",
+              "peticiones": "2",
+              "alertas": "0"
+            },
+            {
+              "nombre": "SQL Injection",
+              "id": "40018",
+              "estado": "Complete",
+              "duracionMs": "58",
+              "peticiones": "22",
+              "alertas": "0"
+            }
+          ]
+        },
+        {
+          "actor": "personal",
+          "metodo": "GET",
+          "ruta": "/api/v1/pedidos/establecimientos/:establecimientoId/pedidos",
+          "peticiones": 29,
+          "estados": {
+            "400": 26,
+            "200": 3
+          },
+          "bearerCorrecto": 29,
+          "sesionAntes": 200,
+          "sesionDurante": [
+            {
+              "estado": 200,
+              "scanActivo": true
+            },
+            {
+              "estado": 200,
+              "scanActivo": false
+            }
+          ],
+          "sesionDespues": 200,
+          "reglas": [
+            {
+              "nombre": "Cross Site Scripting (Reflected)",
+              "id": "40012",
+              "estado": "Complete",
+              "duracionMs": "14",
+              "peticiones": "5",
+              "alertas": "0"
+            },
+            {
+              "nombre": "SQL Injection",
+              "id": "40018",
+              "estado": "Complete",
+              "duracionMs": "106",
+              "peticiones": "24",
+              "alertas": "0"
+            }
+          ]
+        }
+      ],
+      "memoria": {
+        "antes": {
+          "vmKiB": {
+            "MemAvailable": 880932,
+            "SwapFree": 453540
+          },
+          "swapHost": "vm.swapusage: total = 4096.00M  used = 2592.50M  free = 1503.50M  (encrypted)",
+          "presionHost": "System-wide memory free percentage: 38%"
+        },
+        "despues": {
+          "vmKiB": {
+            "MemAvailable": 844104,
+            "SwapFree": 454308
+          },
+          "swapHost": "vm.swapusage: total = 4096.00M  used = 2592.50M  free = 1503.50M  (encrypted)",
+          "presionHost": "System-wide memory free percentage: 47%"
+        }
+      },
+      "alertasDast": [],
+      "pasivasHabilitadas": 62
+    },
+    {
+      "fase": "final-2",
+      "fechaMatrizUTC": "2026-11-13T15:01:37.327Z",
+      "version": {
+        "sha": "d402a8936879a172c9598f67de14b0ec102b2714",
+        "imagenes": {
+          "postgres": {
+            "imagen": "sha256:ef738a34a8651d11b2bace81c55c7e2187f786b484add6c83070884340074368",
+            "revisionEtiqueta": null,
+            "fuenteModificada": null
+          },
+          "redis": {
+            "imagen": "sha256:ec4f171e9ff071bb2a1c936057d3be00206069b028b6c0d61df2477e1dd02c42",
+            "revisionEtiqueta": null,
+            "fuenteModificada": null
+          },
+          "rabbitmq": {
+            "imagen": "sha256:128fa025f555260135cadd602acbc454d65b639ee99a29ff1007244f271196af",
+            "revisionEtiqueta": null,
+            "fuenteModificada": null
+          },
+          "correo": {
+            "imagen": "sha256:12bb86346ec6eb4f44d047e272f8e82fcc27a5439ff6f84701ab89443b6508d9",
+            "revisionEtiqueta": "ab6ae5612f9ed740a228617c0536840a072e31d1",
+            "fuenteModificada": "no"
+          },
+          "pasarela": {
+            "imagen": "sha256:fb686416351dd2055be659f8e55c01b926ba8344a4357927fddcfeae3e74f133",
+            "revisionEtiqueta": "ab6ae5612f9ed740a228617c0536840a072e31d1",
+            "fuenteModificada": "no"
+          },
+          "nucleo": {
+            "imagen": "sha256:0b650a46578cd402e07af0dd097a194d28cf4f35c0f674813a915e426932d83e",
+            "revisionEtiqueta": "ec07de27f754487a98916544b1225d90b80ca457",
+            "fuenteModificada": "si"
+          },
+          "boleteria": {
+            "imagen": "sha256:81b9c6ea8b1f7fddeb57c07e5dc92b2ef884411406f9704186efed5563bebae0",
+            "revisionEtiqueta": "545e19c34e7b6cfaf8f45952c0fff7fa9a57cc59",
+            "fuenteModificada": "si"
+          },
+          "trabajador": {
+            "imagen": "sha256:7b6c1e7a5d266667bdc6c3adb5947cdd1a3bd3e6692e16431d7672d6672ac17a",
+            "revisionEtiqueta": "4aad53f9f6975067b2ba9ab40af37b2de80d3c81",
+            "fuenteModificada": "si"
+          },
+          "api-gateway": {
+            "imagen": "sha256:6b4afcd4892fb6624c4c2e2725b3eb4d3685b22b8bd16056cc18fc40626c1029",
+            "revisionEtiqueta": "ca413fcddf7a639d5627247aa096b75122333018",
+            "fuenteModificada": "si"
+          },
+          "portal-web-cliente": {
+            "imagen": "sha256:9a11f99348c6af8b86ac950d11018e2ad5a20649d9eb7dc67cd389e52e0fa359",
+            "revisionEtiqueta": "ca413fcddf7a639d5627247aa096b75122333018",
+            "fuenteModificada": "si"
+          },
+          "portal-web-admin": {
+            "imagen": "sha256:6835120c95f0a7f3d17661416147b21c09a34873b036b72d8d26d9790673f44c",
+            "revisionEtiqueta": "ca413fcddf7a639d5627247aa096b75122333018",
+            "fuenteModificada": "si"
+          }
+        },
+        "huellas": [
+          {
+            "programa": "nucleo",
+            "archivo": "modulos/personal-logistica/turnos-asistencia/notificaciones.controller.js",
+            "sha256": "e8c37ddf9f9e7e36669755b731ddaeab1997fc6755bd95603022b820d4e0ce79",
+            "coincideCompiladoLocal": true
+          },
+          {
+            "programa": "nucleo",
+            "archivo": "modulos/personal-logistica/turnos-asistencia/asistencia.controller.js",
+            "sha256": "16a2aa6f9caad66dd9bb4043b68d23b566546f0a242c33d39be331214ce7f3d3",
+            "coincideCompiladoLocal": true
+          },
+          {
+            "programa": "boleteria",
+            "archivo": "modulos/entradas/catalogo/cartelera/dto/cartelera.dto.js",
+            "sha256": "2c2978be80a69611efddb344ea1110356969a1bf82f3556ddcea1ad783c8efe6",
+            "coincideCompiladoLocal": true
+          }
+        ],
+        "nodeEjecutado": {
+          "nucleo": "v22.22.3",
+          "boleteria": "v22.22.3"
+        }
+      },
+      "matriz": 302,
+      "complemento": 30,
+      "contextoSinFichaSinAcreditarAutorizacion": 4,
+      "fallidos": 0,
+      "filtrosHttp": {
+        "fechaUTC": "2026-11-13T15:01:41.580Z",
+        "controles": [
+          {
+            "canal": "gateway",
+            "caso": "filtro-legitimo-propio",
+            "estado": 200,
+            "ok": true
+          },
+          {
+            "canal": "gateway",
+            "caso": "nul-categoria",
+            "estado": 400,
+            "ok": true
+          },
+          {
+            "canal": "gateway",
+            "caso": "nul-ciudad",
+            "estado": 400,
+            "ok": true
+          },
+          {
+            "canal": "gateway",
+            "caso": "nul-artista",
+            "estado": 400,
+            "ok": true
+          },
+          {
+            "canal": "directo",
+            "caso": "filtro-legitimo-propio",
+            "estado": 200,
+            "ok": true
+          },
+          {
+            "canal": "directo",
+            "caso": "nul-categoria",
+            "estado": 400,
+            "ok": true
+          },
+          {
+            "canal": "directo",
+            "caso": "nul-ciudad",
+            "estado": 400,
+            "ok": true
+          },
+          {
+            "canal": "directo",
+            "caso": "nul-artista",
+            "estado": 400,
+            "ok": true
+          }
+        ]
+      },
+      "dast": [
+        {
+          "actor": "publica",
+          "metodo": "GET",
+          "ruta": "/api/v1/cartelera",
+          "peticiones": 27,
+          "estados": {
+            "200": 23,
+            "400": 4
+          },
+          "bearerCorrecto": 0,
+          "sesionAntes": null,
+          "sesionDurante": [],
+          "sesionDespues": null,
+          "reglas": [
+            {
+              "nombre": "Cross Site Scripting (Reflected)",
+              "id": "40012",
+              "estado": "Complete",
+              "duracionMs": "9",
+              "peticiones": "5",
+              "alertas": "0"
+            },
+            {
+              "nombre": "SQL Injection",
+              "id": "40018",
+              "estado": "Complete",
+              "duracionMs": "96",
+              "peticiones": "22",
+              "alertas": "0"
+            }
+          ]
+        },
+        {
+          "actor": "protegida-sin-sesion",
+          "metodo": "PATCH",
+          "ruta": "/api/v1/cuentas/perfil",
+          "peticiones": 27,
+          "estados": {
+            "401": 27
+          },
+          "bearerCorrecto": 0,
+          "sesionAntes": null,
+          "sesionDurante": [],
+          "sesionDespues": null,
+          "reglas": [
+            {
+              "nombre": "Cross Site Scripting (Reflected)",
+              "id": "40012",
+              "estado": "Complete",
+              "duracionMs": "3",
+              "peticiones": "5",
+              "alertas": "0"
+            },
+            {
+              "nombre": "SQL Injection",
+              "id": "40018",
+              "estado": "Complete",
+              "duracionMs": "9",
+              "peticiones": "22",
+              "alertas": "0"
+            }
+          ]
+        },
+        {
+          "actor": "cliente",
+          "metodo": "PATCH",
+          "ruta": "/api/v1/cuentas/perfil",
+          "peticiones": 24,
+          "estados": {
+            "200": 21,
+            "400": 3
+          },
+          "bearerCorrecto": 24,
+          "sesionAntes": 200,
+          "sesionDurante": [
+            {
+              "estado": 200,
+              "scanActivo": true
+            },
+            {
+              "estado": 200,
+              "scanActivo": false
+            }
+          ],
+          "sesionDespues": 200,
+          "reglas": [
+            {
+              "nombre": "Cross Site Scripting (Reflected)",
+              "id": "40012",
+              "estado": "Complete",
+              "duracionMs": "45",
+              "peticiones": "2",
+              "alertas": "0"
+            },
+            {
+              "nombre": "SQL Injection",
+              "id": "40018",
+              "estado": "Complete",
+              "duracionMs": "107",
+              "peticiones": "22",
+              "alertas": "0"
+            }
+          ]
+        },
+        {
+          "actor": "personal",
+          "metodo": "GET",
+          "ruta": "/api/v1/pedidos/establecimientos/:establecimientoId/pedidos",
+          "peticiones": 29,
+          "estados": {
+            "400": 26,
+            "200": 3
+          },
+          "bearerCorrecto": 29,
+          "sesionAntes": 200,
+          "sesionDurante": [
+            {
+              "estado": 200,
+              "scanActivo": true
+            },
+            {
+              "estado": 200,
+              "scanActivo": false
+            }
+          ],
+          "sesionDespues": 200,
+          "reglas": [
+            {
+              "nombre": "Cross Site Scripting (Reflected)",
+              "id": "40012",
+              "estado": "Complete",
+              "duracionMs": "12",
+              "peticiones": "5",
+              "alertas": "0"
+            },
+            {
+              "nombre": "SQL Injection",
+              "id": "40018",
+              "estado": "Complete",
+              "duracionMs": "89",
+              "peticiones": "24",
+              "alertas": "0"
+            }
+          ]
+        }
+      ],
+      "memoria": {
+        "antes": {
+          "vmKiB": {
+            "MemAvailable": 840044,
+            "SwapFree": 454308
+          },
+          "swapHost": "vm.swapusage: total = 4096.00M  used = 2592.50M  free = 1503.50M  (encrypted)",
+          "presionHost": "System-wide memory free percentage: 45%"
+        },
+        "despues": {
+          "vmKiB": {
+            "MemAvailable": 852852,
+            "SwapFree": 454564
+          },
+          "swapHost": "vm.swapusage: total = 4096.00M  used = 2592.50M  free = 1503.50M  (encrypted)",
+          "presionHost": "System-wide memory free percentage: 43%"
+        }
+      },
+      "alertasDast": [],
+      "pasivasHabilitadas": 62
+    },
+    {
+      "fase": "final-3",
+      "fechaMatrizUTC": "2026-11-13T15:02:07.263Z",
+      "version": {
+        "sha": "d402a8936879a172c9598f67de14b0ec102b2714",
+        "imagenes": {
+          "postgres": {
+            "imagen": "sha256:ef738a34a8651d11b2bace81c55c7e2187f786b484add6c83070884340074368",
+            "revisionEtiqueta": null,
+            "fuenteModificada": null
+          },
+          "redis": {
+            "imagen": "sha256:ec4f171e9ff071bb2a1c936057d3be00206069b028b6c0d61df2477e1dd02c42",
+            "revisionEtiqueta": null,
+            "fuenteModificada": null
+          },
+          "rabbitmq": {
+            "imagen": "sha256:128fa025f555260135cadd602acbc454d65b639ee99a29ff1007244f271196af",
+            "revisionEtiqueta": null,
+            "fuenteModificada": null
+          },
+          "correo": {
+            "imagen": "sha256:12bb86346ec6eb4f44d047e272f8e82fcc27a5439ff6f84701ab89443b6508d9",
+            "revisionEtiqueta": "ab6ae5612f9ed740a228617c0536840a072e31d1",
+            "fuenteModificada": "no"
+          },
+          "pasarela": {
+            "imagen": "sha256:fb686416351dd2055be659f8e55c01b926ba8344a4357927fddcfeae3e74f133",
+            "revisionEtiqueta": "ab6ae5612f9ed740a228617c0536840a072e31d1",
+            "fuenteModificada": "no"
+          },
+          "nucleo": {
+            "imagen": "sha256:0b650a46578cd402e07af0dd097a194d28cf4f35c0f674813a915e426932d83e",
+            "revisionEtiqueta": "ec07de27f754487a98916544b1225d90b80ca457",
+            "fuenteModificada": "si"
+          },
+          "boleteria": {
+            "imagen": "sha256:81b9c6ea8b1f7fddeb57c07e5dc92b2ef884411406f9704186efed5563bebae0",
+            "revisionEtiqueta": "545e19c34e7b6cfaf8f45952c0fff7fa9a57cc59",
+            "fuenteModificada": "si"
+          },
+          "trabajador": {
+            "imagen": "sha256:7b6c1e7a5d266667bdc6c3adb5947cdd1a3bd3e6692e16431d7672d6672ac17a",
+            "revisionEtiqueta": "4aad53f9f6975067b2ba9ab40af37b2de80d3c81",
+            "fuenteModificada": "si"
+          },
+          "api-gateway": {
+            "imagen": "sha256:6b4afcd4892fb6624c4c2e2725b3eb4d3685b22b8bd16056cc18fc40626c1029",
+            "revisionEtiqueta": "ca413fcddf7a639d5627247aa096b75122333018",
+            "fuenteModificada": "si"
+          },
+          "portal-web-cliente": {
+            "imagen": "sha256:9a11f99348c6af8b86ac950d11018e2ad5a20649d9eb7dc67cd389e52e0fa359",
+            "revisionEtiqueta": "ca413fcddf7a639d5627247aa096b75122333018",
+            "fuenteModificada": "si"
+          },
+          "portal-web-admin": {
+            "imagen": "sha256:6835120c95f0a7f3d17661416147b21c09a34873b036b72d8d26d9790673f44c",
+            "revisionEtiqueta": "ca413fcddf7a639d5627247aa096b75122333018",
+            "fuenteModificada": "si"
+          }
+        },
+        "huellas": [
+          {
+            "programa": "nucleo",
+            "archivo": "modulos/personal-logistica/turnos-asistencia/notificaciones.controller.js",
+            "sha256": "e8c37ddf9f9e7e36669755b731ddaeab1997fc6755bd95603022b820d4e0ce79",
+            "coincideCompiladoLocal": true
+          },
+          {
+            "programa": "nucleo",
+            "archivo": "modulos/personal-logistica/turnos-asistencia/asistencia.controller.js",
+            "sha256": "16a2aa6f9caad66dd9bb4043b68d23b566546f0a242c33d39be331214ce7f3d3",
+            "coincideCompiladoLocal": true
+          },
+          {
+            "programa": "boleteria",
+            "archivo": "modulos/entradas/catalogo/cartelera/dto/cartelera.dto.js",
+            "sha256": "2c2978be80a69611efddb344ea1110356969a1bf82f3556ddcea1ad783c8efe6",
+            "coincideCompiladoLocal": true
+          }
+        ],
+        "nodeEjecutado": {
+          "nucleo": "v22.22.3",
+          "boleteria": "v22.22.3"
+        }
+      },
+      "matriz": 302,
+      "complemento": 30,
+      "contextoSinFichaSinAcreditarAutorizacion": 4,
+      "fallidos": 0,
+      "filtrosHttp": {
+        "fechaUTC": "2026-11-13T15:02:11.668Z",
+        "controles": [
+          {
+            "canal": "gateway",
+            "caso": "filtro-legitimo-propio",
+            "estado": 200,
+            "ok": true
+          },
+          {
+            "canal": "gateway",
+            "caso": "nul-categoria",
+            "estado": 400,
+            "ok": true
+          },
+          {
+            "canal": "gateway",
+            "caso": "nul-ciudad",
+            "estado": 400,
+            "ok": true
+          },
+          {
+            "canal": "gateway",
+            "caso": "nul-artista",
+            "estado": 400,
+            "ok": true
+          },
+          {
+            "canal": "directo",
+            "caso": "filtro-legitimo-propio",
+            "estado": 200,
+            "ok": true
+          },
+          {
+            "canal": "directo",
+            "caso": "nul-categoria",
+            "estado": 400,
+            "ok": true
+          },
+          {
+            "canal": "directo",
+            "caso": "nul-ciudad",
+            "estado": 400,
+            "ok": true
+          },
+          {
+            "canal": "directo",
+            "caso": "nul-artista",
+            "estado": 400,
+            "ok": true
+          }
+        ]
+      },
+      "dast": [
+        {
+          "actor": "publica",
+          "metodo": "GET",
+          "ruta": "/api/v1/cartelera",
+          "peticiones": 27,
+          "estados": {
+            "200": 23,
+            "400": 4
+          },
+          "bearerCorrecto": 0,
+          "sesionAntes": null,
+          "sesionDurante": [],
+          "sesionDespues": null,
+          "reglas": [
+            {
+              "nombre": "Cross Site Scripting (Reflected)",
+              "id": "40012",
+              "estado": "Complete",
+              "duracionMs": "11",
+              "peticiones": "5",
+              "alertas": "0"
+            },
+            {
+              "nombre": "SQL Injection",
+              "id": "40018",
+              "estado": "Complete",
+              "duracionMs": "35",
+              "peticiones": "22",
+              "alertas": "0"
+            }
+          ]
+        },
+        {
+          "actor": "protegida-sin-sesion",
+          "metodo": "PATCH",
+          "ruta": "/api/v1/cuentas/perfil",
+          "peticiones": 27,
+          "estados": {
+            "401": 27
+          },
+          "bearerCorrecto": 0,
+          "sesionAntes": null,
+          "sesionDurante": [],
+          "sesionDespues": null,
+          "reglas": [
+            {
+              "nombre": "Cross Site Scripting (Reflected)",
+              "id": "40012",
+              "estado": "Complete",
+              "duracionMs": "3",
+              "peticiones": "5",
+              "alertas": "0"
+            },
+            {
+              "nombre": "SQL Injection",
+              "id": "40018",
+              "estado": "Complete",
+              "duracionMs": "12",
+              "peticiones": "22",
+              "alertas": "0"
+            }
+          ]
+        },
+        {
+          "actor": "cliente",
+          "metodo": "PATCH",
+          "ruta": "/api/v1/cuentas/perfil",
+          "peticiones": 24,
+          "estados": {
+            "200": 21,
+            "400": 3
+          },
+          "bearerCorrecto": 24,
+          "sesionAntes": 200,
+          "sesionDurante": [
+            {
+              "estado": 200,
+              "scanActivo": true
+            },
+            {
+              "estado": 200,
+              "scanActivo": false
+            }
+          ],
+          "sesionDespues": 200,
+          "reglas": [
+            {
+              "nombre": "Cross Site Scripting (Reflected)",
+              "id": "40012",
+              "estado": "Complete",
+              "duracionMs": "12",
+              "peticiones": "2",
+              "alertas": "0"
+            },
+            {
+              "nombre": "SQL Injection",
+              "id": "40018",
+              "estado": "Complete",
+              "duracionMs": "65",
+              "peticiones": "22",
+              "alertas": "0"
+            }
+          ]
+        },
+        {
+          "actor": "personal",
+          "metodo": "GET",
+          "ruta": "/api/v1/pedidos/establecimientos/:establecimientoId/pedidos",
+          "peticiones": 29,
+          "estados": {
+            "400": 26,
+            "200": 3
+          },
+          "bearerCorrecto": 29,
+          "sesionAntes": 200,
+          "sesionDurante": [
+            {
+              "estado": 200,
+              "scanActivo": true
+            },
+            {
+              "estado": 200,
+              "scanActivo": false
+            }
+          ],
+          "sesionDespues": 200,
+          "reglas": [
+            {
+              "nombre": "Cross Site Scripting (Reflected)",
+              "id": "40012",
+              "estado": "Complete",
+              "duracionMs": "17",
+              "peticiones": "5",
+              "alertas": "0"
+            },
+            {
+              "nombre": "SQL Injection",
+              "id": "40018",
+              "estado": "Complete",
+              "duracionMs": "50",
+              "peticiones": "24",
+              "alertas": "0"
+            }
+          ]
+        }
+      ],
+      "memoria": {
+        "antes": {
+          "vmKiB": {
+            "MemAvailable": 853944,
+            "SwapFree": 454564
+          },
+          "swapHost": "vm.swapusage: total = 4096.00M  used = 2592.50M  free = 1503.50M  (encrypted)",
+          "presionHost": "System-wide memory free percentage: 45%"
+        },
+        "despues": {
+          "vmKiB": {
+            "MemAvailable": 812912,
+            "SwapFree": 455844
+          },
+          "swapHost": "vm.swapusage: total = 4096.00M  used = 2592.50M  free = 1503.50M  (encrypted)",
+          "presionHost": "System-wide memory free percentage: 44%"
+        }
+      },
+      "alertasDast": [],
+      "pasivasHabilitadas": 62
+    }
+  ],
+  "interlocks": {
+    "fechaUTC": "2026-11-13T14:53:38.141Z",
+    "controles": [
+      {
+        "control": "misma-operacion-en-replay",
+        "estado": 200,
+        "ok": true
+      },
+      {
+        "control": "pedido-cancelado-sin-qr-utilizable",
+        "estado": 200,
+        "ok": true
+      },
+      {
+        "control": "cancelado-no-prepara-con-version-actual",
+        "estado": 409,
+        "ok": true
+      },
+      {
+        "control": "qr-original-cancelado-no-entregable",
+        "estado": 409,
+        "ok": true
+      },
+      {
+        "control": "una-cancelacion-un-reembolso-un-intento",
+        "ok": true
+      },
+      {
+        "control": "cobro-conservado-durante-replay",
+        "ok": true
+      },
+      {
+        "control": "cobro-original-conservado",
+        "ok": null,
+        "observacion": "Hash previo no persistido en el fallo del arnés; no se acredita otra vez; referencia funcional histórica sin cambios"
+      },
+      {
+        "control": "reembolso-mostrado-con-evidencia",
+        "estadoReembolso": "APROBADO",
+        "estadoLibro": "APROBADO",
+        "ok": true
+      }
+    ],
+    "fallidos": 0,
+    "pendientes": 1
+  },
+  "filtroPiloto": {
+    "peticiones": 54,
+    "categoriaModificada": 24,
+    "aparicionesEventosFueraEnsayo": 0
+  },
+  "residuosPreviosSinReabrir": {
+    "CSPImagenesMedias": 2,
+    "SRIFuentesMedias": 8,
+    "informativasSPA": 4
+  },
+  "denominadores": {
+    "controladores": 178,
+    "protegidas": 159,
+    "expuestasIncluidaSaludGateway": 173,
+    "rutasNuevasEnAmbosCanales": 49,
+    "sinRolOriginales": 41,
+    "sinRolOriginalesConControlNuevo": 41,
+    "sinRolActuales": 39,
+    "operacionesDast": 3,
+    "escenariosDast": 4
+  },
+  "reglasActivas": [
+    {
+      "id": "6",
+      "name": "Path Traversal",
+      "enabled": "false"
+    },
+    {
+      "id": "7",
+      "name": "Remote File Inclusion",
+      "enabled": "false"
+    },
+    {
+      "id": "10045",
+      "name": "Source Code Disclosure - /WEB-INF Folder",
+      "enabled": "false"
+    },
+    {
+      "id": "10048",
+      "name": "Remote Code Execution - Shell Shock",
+      "enabled": "false"
+    },
+    {
+      "id": "20015",
+      "name": "Heartbleed OpenSSL Vulnerability",
+      "enabled": "false"
+    },
+    {
+      "id": "20017",
+      "name": "Source Code Disclosure - CVE-2012-1823",
+      "enabled": "false"
+    },
+    {
+      "id": "20018",
+      "name": "Remote Code Execution - CVE-2012-1823",
+      "enabled": "false"
+    },
+    {
+      "id": "20019",
+      "name": "External Redirect",
+      "enabled": "false"
+    },
+    {
+      "id": "40009",
+      "name": "Server Side Include",
+      "enabled": "false"
+    },
+    {
+      "id": "40012",
+      "name": "Cross Site Scripting (Reflected)",
+      "enabled": "true"
+    },
+    {
+      "id": "40014",
+      "name": "Cross Site Scripting (Persistent)",
+      "enabled": "false"
+    },
+    {
+      "id": "40018",
+      "name": "SQL Injection",
+      "enabled": "true"
+    },
+    {
+      "id": "40019",
+      "name": "SQL Injection - MySQL (Time Based)",
+      "enabled": "false"
+    },
+    {
+      "id": "40020",
+      "name": "SQL Injection - Hypersonic SQL (Time Based)",
+      "enabled": "false"
+    },
+    {
+      "id": "40021",
+      "name": "SQL Injection - Oracle (Time Based)",
+      "enabled": "false"
+    },
+    {
+      "id": "40022",
+      "name": "SQL Injection - PostgreSQL (Time Based)",
+      "enabled": "false"
+    },
+    {
+      "id": "40026",
+      "name": "Cross Site Scripting (DOM Based)",
+      "enabled": "false"
+    },
+    {
+      "id": "40027",
+      "name": "SQL Injection - MsSQL (Time Based)",
+      "enabled": "false"
+    },
+    {
+      "id": "40043",
+      "name": "Log4Shell",
+      "enabled": "false"
+    },
+    {
+      "id": "40045",
+      "name": "Spring4Shell",
+      "enabled": "false"
+    },
+    {
+      "id": "40048",
+      "name": "Remote Code Execution (React2Shell)",
+      "enabled": "false"
+    },
+    {
+      "id": "90019",
+      "name": "Server Side Code Injection",
+      "enabled": "false"
+    },
+    {
+      "id": "90020",
+      "name": "Remote OS Command Injection",
+      "enabled": "false"
+    },
+    {
+      "id": "90021",
+      "name": "XPath Injection",
+      "enabled": "false"
+    },
+    {
+      "id": "90023",
+      "name": "XML External Entity Attack",
+      "enabled": "false"
+    },
+    {
+      "id": "90024",
+      "name": "Generic Padding Oracle",
+      "enabled": "false"
+    },
+    {
+      "id": "90034",
+      "name": "Cloud Metadata Potentially Exposed",
+      "enabled": "false"
+    },
+    {
+      "id": "90035",
+      "name": "Server Side Template Injection",
+      "enabled": "false"
+    },
+    {
+      "id": "90036",
+      "name": "Server Side Template Injection (Blind)",
+      "enabled": "false"
+    },
+    {
+      "id": "90037",
+      "name": "Remote OS Command Injection (Time Based)",
+      "enabled": "false"
+    },
+    {
+      "id": "0",
+      "name": "Directory Browsing",
+      "enabled": "false"
+    },
+    {
+      "id": "10106",
+      "name": "HTTP Only Site",
+      "enabled": "false"
+    },
+    {
+      "id": "30001",
+      "name": "Buffer Overflow",
+      "enabled": "false"
+    },
+    {
+      "id": "30002",
+      "name": "Format String Error",
+      "enabled": "false"
+    },
+    {
+      "id": "40003",
+      "name": "CRLF Injection",
+      "enabled": "false"
+    },
+    {
+      "id": "40008",
+      "name": "Parameter Tampering",
+      "enabled": "false"
+    },
+    {
+      "id": "40028",
+      "name": "ELMAH Information Leak",
+      "enabled": "false"
+    },
+    {
+      "id": "40029",
+      "name": "Trace.axd Information Leak",
+      "enabled": "false"
+    },
+    {
+      "id": "40032",
+      "name": ".htaccess Information Leak",
+      "enabled": "false"
+    },
+    {
+      "id": "40034",
+      "name": ".env Information Leak",
+      "enabled": "false"
+    },
+    {
+      "id": "40035",
+      "name": "Hidden File Finder",
+      "enabled": "false"
+    },
+    {
+      "id": "40042",
+      "name": "Spring Actuator Information Leak",
+      "enabled": "false"
+    },
+    {
+      "id": "40044",
+      "name": "Exponential Entity Expansion (Billion Laughs Attack)",
+      "enabled": "false"
+    },
+    {
+      "id": "90017",
+      "name": "XSLT Injection",
+      "enabled": "false"
+    },
+    {
+      "id": "10047",
+      "name": "HTTPS Content Available via HTTP",
+      "enabled": "false"
+    },
+    {
+      "id": "10058",
+      "name": "GET for POST",
+      "enabled": "false"
+    },
+    {
+      "id": "10104",
+      "name": "User Agent Fuzzer",
+      "enabled": "false"
+    },
+    {
+      "id": "40016",
+      "name": "Cross Site Scripting (Persistent) - Prime",
+      "enabled": "false"
+    },
+    {
+      "id": "40017",
+      "name": "Cross Site Scripting (Persistent) - Spider",
+      "enabled": "false"
+    },
+    {
+      "id": "50000",
+      "name": "Script Active Scan Rules",
+      "enabled": "false"
+    },
+    {
+      "id": "90026",
+      "name": "SOAP Action Spoofing",
+      "enabled": "false"
+    },
+    {
+      "id": "90029",
+      "name": "SOAP XML Injection",
+      "enabled": "false"
+    },
+    {
+      "id": "100043",
+      "name": "Swagger UI Secret & Vulnerability Detector",
+      "enabled": "false"
+    }
+  ],
+  "referenciasCurso": [
+    {
+      "archivo": "11. Safety.pdf",
+      "diapositivas": 13,
+      "sha256": "ec7b4956d7c3933298201591f7dd6e90413a1f3b87c8101a7f27dea66837c46a"
+    },
+    {
+      "archivo": "12. Security.pptx",
+      "diapositivas": 30,
+      "sha256": "6718af1526e787b89f99e8f3fb40a257cc87e9228490b12d491dd820bf6a8026"
+    }
+  ],
+  "restauracion": {
+    "motorInicialApagado": true,
+    "motorFinalApagado": true,
+    "idsImagenesMontajesConservados": true,
+    "redashReanudados": 7,
+    "httpPrevioApagarMotor": [
+      {
+        "etapa": "server",
+        "ruta": "/ping",
+        "fechaUTC": "2026-11-13T15:06:38.223308+00:00",
+        "error": "ConnectionResetError"
+      },
+      {
+        "etapa": "server",
+        "ruta": "/login",
+        "fechaUTC": "2026-11-13T15:06:38.250517+00:00",
+        "error": "ConnectionResetError"
+      },
+      {
+        "etapa": "scheduler",
+        "ruta": "/ping",
+        "fechaUTC": "2026-11-13T15:06:38.514046+00:00",
+        "error": "ConnectionResetError"
+      },
+      {
+        "etapa": "scheduler",
+        "ruta": "/login",
+        "fechaUTC": "2026-11-13T15:06:38.515008+00:00",
+        "error": "ConnectionResetError"
+      },
+      {
+        "etapa": "worker",
+        "ruta": "/ping",
+        "fechaUTC": "2026-11-13T15:06:38.842687+00:00",
+        "error": "TimeoutError"
+      },
+      {
+        "etapa": "worker",
+        "ruta": "/login",
+        "fechaUTC": "2026-11-13T15:06:53.846834+00:00",
+        "estado": 200
+      },
+      {
+        "etapa": "adhoc_worker",
+        "ruta": "/ping",
+        "fechaUTC": "2026-11-13T15:06:57.940157+00:00",
+        "estado": 200
+      },
+      {
+        "etapa": "adhoc_worker",
+        "ruta": "/login",
+        "fechaUTC": "2026-11-13T15:06:57.960553+00:00",
+        "estado": 200
+      },
+      {
+        "etapa": "scheduled_worker",
+        "ruta": "/ping",
+        "fechaUTC": "2026-11-13T15:06:58.434522+00:00",
+        "estado": 200
+      },
+      {
+        "etapa": "scheduled_worker",
+        "ruta": "/login",
+        "fechaUTC": "2026-11-13T15:06:58.447620+00:00",
+        "estado": 200
+      }
+    ],
+    "postgresListo": true,
+    "redisPong": true,
+    "oomKillAlRestaurar": {
+      "server": 0,
+      "scheduled_worker": 0,
+      "scheduler": 0,
+      "adhoc_worker": 0,
+      "worker": 0,
+      "redis": 0,
+      "postgres": 0
+    }
+  }
+}

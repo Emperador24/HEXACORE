@@ -1,6 +1,16 @@
 # Alternar Redash y HEXACORE en este Mac
 
 
+**Última ventana — 13/11, autorización/DAST:** motor apagado al inicio y al final.
+CU-015/ZAP detenidos por scripts; siete IDs/imágenes/montajes Redash restaurados
+una vez, PG listo/Redis PONG, últimos `/ping` y `/login` **200**, siete cgroups
+sin oom_kill nuevos. Hubo resets/timeout en arranque, sin reinicios repetidos.
+El 200 corresponde al control previo a apagar Docker, no disponibilidad actual.
+Imágenes backend actualizadas solo por brechas demostradas (545e19c/9a06ba8);
+portales/CSP conservados. Scheduler volvió a cerrar 137/OOM=false al detenerlo,
+registrado sin ampliar investigación. [Resultado](../../App/infra/informe-atributos/seguridad/RESULTADO.md).
+
+
 **13/11/2026, bloque Angular/CSP:** Docker Desktop estaba apagado al inicio y se
 restauró **apagado** al terminar. Antes de apagarlo: CU-015 y ZAP detenidos por
 scripts; siete IDs/imágenes/montajes Redash originales restaurados una sola vez,

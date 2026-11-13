@@ -1,6 +1,210 @@
 # Seguridad de Sebastián — RNF-05 y RNF-06
 
 
+## Autorización sobre recursos y DAST activo — 13/11/2026
+
+**Entrega parcial de Seguridad; RNF-05/06 completos: NO.** Inicio limpio y solo
+en feature/sebastian **ec07de2**, [CI 43426230483, 8/8](https://github.com/Emperador24/HEXACORE/actions/runs/43426230483).
+Fetch conservó referencias, sin integrar ramas. Los registros anteriores se
+mantienen debajo. Se conservan los residuos de imágenes externas/Google Fonts:
+**dos medias 10055, ocho medias 90003 y cuatro informativas 10109** de la revisión
+anterior. No se reabren Angular, CSP o SIGTERM (causa desconocida).
+
+Hitos: **545e19c** corrige Logística y amplía sus pruebas; **9a06ba8** rechaza NUL
+en filtros de Cartelera; **d402a89** fija herramientas DAST y la relación con el
+curso. Las tres finales corresponden a **d402a89**. La documentación/exportación
+posterior y el nombre único de política/contexto para reutilizar ZAP no cambian
+producto, reglas, vectores o peticiones ensayadas.
+
+[Comandos](AUTORIZACION-DAST.md) · [Cobertura actual de las 159 rutas](COBERTURA-RECURSOS.md)
+· [Security/Safety: concepto y diapositiva → código → evidencia → brecha](SECURITY-SAFETY.md)
+· [Evidencia saneada](RECURSOS-DAST-EVIDENCIA.json).
+Peticiones completas, credenciales, sesiones, configuración, QR, stderr y trazas
+permanecen privados. Las presentaciones se usan como referencia conceptual, no
+como instrucciones operativas; se publican sus nombres/huellas, no sus archivos.
+
+### Brechas demostradas y correcciones
+
+| Hallazgo | Clasificación contextual y antes | Corrección / después |
+|---|---|---|
+| GET notificaciones divulga avisos ajenos | Medio, confidencialidad. Cliente y otro empleado con sesión válida obtienen 200 y ven una notificación real creada por HTTP/AMQP del ensayo | Se reutiliza ContextoDeLogistica: supervisor mantiene consulta global, ficha activa consulta su empleadoId y sin ficha obtiene lista vacía. No se modifica F14 ni el consumidor |
+| Cliente escribe fichajes con credencial válida | Alto contextual de integridad, condicionado a conocer la credencial. Entrada/salida 201 agregan una fila cada una, en ambas vías | Roles operativos Personal/Organizador/Administrador en las dos rutas, con SesionValida del backend. Cliente 403 y cero filas; Personal mantiene la operación del punto de control |
+| NUL de filtro llega a PostgreSQL | Bajo, validación/robustez: una petición activa con NUL en artista devuelve HTTP 500, SQLSTATE 22021/UTF8 0x00. No se demuestra SQLi ni caída global; ZAP emitió **cero alertas** | NotContains NUL en categoría/ciudad/artista, que se usan como parámetros PostgreSQL. No se alteran Unicode/apóstrofos o filtros vacíos. HTTP 400 en las tres variantes, con válidos 200 |
+
+Logística: **8 fallidos/16 controles antes**, con cuatro escrituras reales de
+Cliente verificadas en PostgreSQL. **16/16 después**, en gateway y Núcleo directo,
+con recursos existentes y cabeceras de usuario falsificadas sin efecto.
+
+Cartelera: unitarias antes **3 fallidas/2 aprobadas**, después **5/5**; HTTP
+**8/8** por gateway/Boletería (dos consultas válidas 200, seis NUL 400). El DAST
+posterior conserva cero 5xx. Consultas parametrizadas se mantienen: no se cambia
+SQL para aparentar protección ni se presenta un error de DTO como autorización.
+
+### Autorización: denominador y significado
+
+El inventario conserva **178 operaciones de controlador / 159 protegidas / 173
+expuestas declaradas**, incluyendo salud propia del gateway. De las **41** rutas
+originales sin metadato de rol, **41/41 tienen controles nuevos**. Al declarar
+roles en las dos escrituras de asistencia quedan **39** sin ese metadato; sus
+reglas de identidad/contexto se revisan, no se consideran automáticamente abiertas.
+
+Cobertura nueva: **49/159 operaciones protegidas, en ambos canales**. Incluye
+identidad/perfil/contraseña/logout, cola/catálogos compartidos según contrato,
+Personal vinculado a establecimientos distintos, pedido propio/ajeno y Logística:
+ficha, baja de jefatura, supervisión, turnos, solicitudes, reemplazos, asistencia,
+notificaciones, asignación y auditoría. Jefe con rol de cuenta Personal, jefe
+inactivo, Personal sin ficha, organizadores y administrador con supervisión global
+se contrastan con Cliente/Personal ordinario. Las mutaciones usan cuerpos válidos
+y objetos existentes; el actor de revisión sale de sesión pese a supervisorId falso.
+
+Cada final registra **302 + 30 = 332 comprobaciones**. **Cuatro** de ellas son
+404 por ficha inexistente/inactiva y se clasifican como contexto, **sin acreditarlas
+como autorización sobre un recurso existente**. Quedan 328 observaciones de
+acceso/contrato, con posibles observaciones repetidas: no son 328 permisos distintos.
+El 404 de pedido ajeno es distinto: ese pedido existe y su propietario obtiene
+200 antes; es ocultación de propiedad. Los ocho controles de entrada NUL son
+separados, nunca pruebas de permiso.
+
+Las otras **110/159 rutas** conservan la evidencia previa de identidad/roles, pero
+su ampliación semántica por recurso está pendiente y se enumera individualmente.
+Cubrir una ruta tampoco prueba todas sus combinaciones. **CU-028 dinámico sigue
+pendiente de Samuel**. Organizador/Administrador son roles globales hoy; no hay
+asociación organización-evento/tenant que pueda acreditarse como frontera.
+`creadoPor` es auditoría, no un contrato de propiedad. Definir esa relación y sus
+excepciones requiere decisión del responsable; no se implementa una regla nueva
+ni se declara aislamiento de organizaciones por probar roles fijos.
+
+### DAST activo: alcance realmente ejecutado
+
+**Tres operaciones únicas, cuatro escenarios**, únicamente gateway local y datos
+exclusivos: GET Cartelera con categoría fija de un evento nuevo; PATCH perfil sin
+sesión; PATCH perfil de Cliente nuevo; GET pedidos del establecimiento propio con
+Personal vinculado. **Sin Administrador de escaneo.**
+
+Dos reglas activas de **53 disponibles**: **40018 SQL Injection** y **40012 XSS
+Reflected**, fuerza/umbral MEDIUM, ambas Complete con peticiones reales en cada
+escenario. No se ejecutan las otras 51 reglas; se enumeran en evidencia y no
+se presentan como cero hallazgos. La política específica se definió antes de
+analizar y no cambia la predeterminada ni filtra alertas; **62 pasivas conservadas**.
+
+Contextos exactos, sin recursión/arañas, un hilo/host; solo query/cuerpo JSON.
+No inyecta URI, IDs, cookies ni cabeceras. Categoría permanece fija como límite
+de datos, no vector. Bearer fresco por pasada y cabecera restringida al objetivo;
+**53/53 peticiones autenticadas** mantienen su token. Sesión 200 antes, durante
+(con escaneo activo) y después, por cada Cliente/Personal. El escenario protegido
+sin sesión devuelve 401 en 27/27 peticiones: acredita la barrera, no ejecución de
+la lógica de negocio sin autenticación.
+
+No abarca DOM/XSS persistido, todos los campos, autorización de todas las rutas,
+RCE/SSRF/OOB, archivos/SSE, AMQP, correo, webhooks como objetivo activo, operaciones
+financieras, administración o mutaciones generales. No es análisis de carga ni
+disponibilidad global. Se excluyen por efectos/alcance no definidos, no por haber
+producido una alerta que se quiera ocultar. El estudio local no usa proveedores
+reales ni escanea despliegues, otros proyectos o servicios externos.
+
+### Tres finales comparables, sin promedios
+
+| Final — UTC de matriz | Matriz | Complemento | Filtros HTTP | DAST activo | Alertas / 5xx |
+|---|---|---|---|---|---|
+| 1 — 15:01:06.629 | **302/302** | **30/30** | **8/8** | **107** peticiones; 4 escenarios/3 operaciones | **0 / 0** en el alcance seleccionado |
+| 2 — 15:01:37.327 | **302/302** | **30/30** | **8/8** | **107** peticiones; 4 escenarios/3 operaciones | **0 / 0** en el alcance seleccionado |
+| 3 — 15:02:07.263 | **302/302** | **30/30** | **8/8** | **107** peticiones; 4 escenarios/3 operaciones | **0 / 0** en el alcance seleccionado |
+
+Por cada final, respuestas activas: **47 HTTP 200, 33 HTTP 400, 27 HTTP 401**.
+Desglose: pública 23×200/4×400; protegida sin sesión 27×401; Cliente 21×200/3×400;
+Personal 3×200/26×400. Los 400 son entradas de ataque rechazadas, no prueba de
+rol. Las semillas y comprobaciones adicionales de sesión no inflan el conteo de
+peticiones activas. Todas las reglas seleccionadas terminan Complete, cero
+pendientes pasivos. Un resultado individual no sustituye las tres pasadas ni
+la cobertura pendiente.
+
+Node real de Núcleo/Boletería **22.22.3**, ZAP **2.17.0 arm64** con digest previo
+fijado, herramientas Node 22.22.3/npm 10.9.8/Python 3.14. Se reconstruyen solo
+Núcleo y Boletería; tipos/builds e imágenes afectados aprobados. Tres hashes de
+controladores/DTO ejecutados coinciden con sus compilados locales en las tres
+pasadas, once servicios saludables y Redash detenido. Imágenes **Núcleo 0b650a46578c**
+(etiqueta ec07de2/modificada) y **Boletería 81b9c6ea8b1f** (etiqueta 545e19c/modificada);
+SHA completo y huellas en evidencia. No se usa la etiqueta como falsa prueba de
+fuentes. Portales/CSP, gateway y demás imágenes conservan sus fuentes/imágenes.
+No se crean/modifican migraciones históricas ni sus 18 procedencias, ni se siembran
+datos previos.
+
+Memoria VM disponible KiB, antes→después: **880932→844104**, **840044→852852**,
+**853944→812912**. Swap libre VM: **453540→454308**, **454308→454564**,
+**454564→455844** KiB; presión libre host **38→47, 45→43, 45→44 %**. Swap host
+usado 2592,50 MiB en las seis lecturas, registrado individualmente. Son condiciones
+de ejecución, sin conclusión de rendimiento/disponibilidad.
+
+### Verificaciones reutilizadas y fallos del arnés conservados
+
+- Unitarias relacionadas **3/3 Logística**, **5/5 filtros**, tipos completos y
+  builds/imágenes afectados aprobados. Se añaden dos pruebas HTTP reales a las
+  cinco existentes de convivencia de Logística; la CI las ejecuta con sus recursos.
+- Matriz inicial **296/302**: cuatro expectativas incorrectas de 200 frente al
+  contrato 204 de verificar; dos candidatos sin fechas. Se conservan resultados,
+  se corrigen solo contratos del arnés y se comprueba el complemento **18/18**;
+  ampliado a organizaciones/actor auditable: **30/30** antes de las finales.
+- DAST: error inicial de raíz del script copiado a /tmp; luego 400 de iniciador,
+  cuyo código original no quedó capturado. No se acreditan como escaneos. Semilla
+  visible comprobada antes de iniciar y errores API se capturan. Un piloto público
+  de 54 peticiones terminó; la guarda detectó **24 modificaciones del filtro de
+  categoría**, por confundir wildcard con regex en addExcludedParam. **Cero eventos
+  ajenos retornados**; no hubo mutaciones en ese piloto. Se corrige la sintaxis y
+  se conserva la incidencia. Finales: categoría fija verificada en cada petición.
+- El control activo posterior de 107 peticiones tuvo cero alertas pero **un 500**;
+  no se declara aprobado. Esa evidencia reveló NUL/22021 y ahora el runner la
+  rechaza incluso con cero alertas. La corrección demostrada antecede a las tres
+  finales sin 5xx; no se repite buscando verde sin cambio de condiciones.
+
+### Security/Safety y estado de evidencia
+
+[La matriz del curso](SECURITY-SAFETY.md) prioriza rol/recurso, mínimo privilegio,
+validación, autenticidad de mensajes y auditoría, y enlaza secuencias/interlocks
+con entrega, cancelación y pagos. JWT/HMAC y guardas no se confunden con firma
+AMQP extremo a extremo; auditoría SQL no equivale a no repudio criptográfico.
+Autenticidad de dispositivo/reloj offline y delimitación por organización quedan
+pendientes. Se conservan los mecanismos actuales y la sencillez de la arquitectura.
+
+Control HTTP dirigido de interlocks: **siete comprobaciones acreditadas**, cero
+fallos de producto conocidos: misma operación al repetir, cancelado sin QR,
+preparación bloqueada con versión actual, QR original no entregable, una
+cancelación/un reembolso/un intento, cobro conservado durante replay y reembolso
+APROBADO consistente con libro APROBADO. **Una comprobación nueva no acreditada**:
+el hash anterior a la primera cancelación no se conservó cuando el primer arnés
+consultó por error columna estado en vez de resultado. Se recuperó la **misma
+operación** desde su intención, sin repetir compra/cobro; no se fabrica ese hash.
+La conservación durante primera cancelación/carreras/reinicio mantiene su
+referencia previa con fuentes Alimentos/Finanzas sin cambios.
+
+Se reutiliza **16/16 automático y 16/16 visible** de ec07de2 con Redash detenido;
+no se repiten los conjuntos completos. Los estados inciertos y contratos
+financieros anteriores se reutilizan explícitamente como históricos; no se
+implementa F12 ni se declara dinero devuelto sin confirmación. RNF-05/06 siguen
+incompletos por cobertura/exclusiones y residuos anteriores.
+
+### Restauración y publicación
+
+Motor apagado al inicio; se inició Docker Desktop existente sin cambiar recursos.
+Se registraron siete Redash activos y doce contenedores CU-015 detenidos (once
+servicios y preparación finita). Se detuvieron solo esos Redash: scheduler cerró
+**137/OOM=false** tras la gracia de 120 s, registrado sin llamarlo ordenado.
+HEXACORE y ZAP funcionaron sin Redash durante todos los análisis, en serie.
+
+Al terminar: ZAP detenido/desconectado y CU-015 detenido por su script, ambos
+código 0; datos/cuentas/volúmenes conservados. Siete IDs/imágenes/montajes Redash
+reanudados una sola vez; PG listo, Redis PONG. Hubo resets y un timeout de arranque;
+últimos controles **/ping 200 y /login 200**, siete cgroups oom_kill=0. Después se
+restauró **Docker Desktop apagado** como al inicio; ese 200 fue anterior al apagado,
+no disponibilidad actual con el motor apagado. Sin reinicios de recuperación ni
+intervención manual en otros proyectos. Estado y condiciones en evidencia.
+
+Publicación exclusivamente origin/feature/sebastian, PR #50 si continúa abierto,
+sin merge/auto-merge. CI de publicación registrada en el PR y entrega final,
+separada de estas pruebas locales y sin atribuir corrección de SIGTERM.
+
+## Historial de portales, dependencias y CSP conservado
+
+
 ## Portales, dependencias y CSP — 13/11/2026
 
 **Bloque comprobado con residuos explícitos; RNF-05/06 completos: NO.**

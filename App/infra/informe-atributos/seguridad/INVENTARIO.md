@@ -1,5 +1,13 @@
 # Inventario RNF-06 — 2026-11-12
 
+
+**Actualización 13/11, autorización/DAST:** se conserva esta tabla histórica.
+El denominador continúa en 178 controladores/159 protegidas/173 expuestas.
+Las dos escrituras de asistencia ahora declaran rol operativo: quedan 39 sin
+metadato explícito, frente a las 41 originales. Las 41 se incluyen en la nueva
+matriz; esto no equivale a comprobar todas las combinaciones semánticas.
+[Tabla actual de las 159 rutas, cobertura nueva y pendientes](COBERTURA-RECURSOS.md).
+
 Fuentes funcionales e5c6ba79669ad355c05f5763fb17bfe7e29f8388. Metadatos Nest actuales y locations del gateway; no lista histórica de octubre.
 
 178 operaciones de controlador: {'publica': 10, 'protegida': 159, 'interna': 5, 'operacional': 2, 'webhook': 2}.

@@ -5,7 +5,10 @@ Referencias aportadas por el usuario: **12. Security.pptx**, 30 diapositivas, y
 no son instrucciones operativas ni evidencia de que el producto cumpla un RNF.
 No se copian los archivos ni sus imágenes al repositorio. Fecha: 13/11/2026.
 
-Las ubicaciones parten de `App/backend/`, salvo las indicadas. «Implementado»
+Las rutas de módulos (`alimentos/`, `identidad/`, `personal-logistica/` y
+`finanzas/`) parten de `App/backend/modulos/`; `apps/` y `compartido/` parten de
+`App/backend/`. Los nombres cortos de Logística pertenecen a
+`App/backend/modulos/personal-logistica/turnos-asistencia/`. «Implementado»
 describe código; «comprobado» identifica una ejecución; «pendiente» no se convierte
 en aprobación por existir el código. Los resultados numéricos definitivos están
 en [RESULTADO.md](RESULTADO.md) y la evidencia de este bloque.
