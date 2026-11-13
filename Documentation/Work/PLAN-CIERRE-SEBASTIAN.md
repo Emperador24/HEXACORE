@@ -27,6 +27,13 @@ con cuentas auxiliares exclusivas. No se cuentan 400 ni recursos inexistentes
 como autorización. Las contraseñas previas/demo no cambian; solo se cambia la de
 una cuenta auxiliar creada para comprobar ese contrato.
 
+El DAST de control no reportó alertas de SQLi/XSS, pero reveló **un HTTP 500**:
+NUL en artista llega como parámetro a PostgreSQL y genera **22021**. No es SQLi
+confirmada; se rechaza NUL en los tres filtros textuales que llegan a PostgreSQL,
+sin cambiar Unicode/apóstrofos ni filtros vacíos. Unitarias antes **3 fallidas/
+2 aprobadas**; después **5/5**. HTTP gateway/Boletería: **8/8**, casos válidos 200
+y NUL 400; tipos/build/imagen de Boletería aprobados. No cambia Angular/CSP.
+
 Las 41 rutas originalmente sin roles requieren reglas de identidad/contexto;
 se revisan expresamente. Organización sigue siendo rol global: no existe relación
 organización-evento ni un tenant que pueda probarse como frontera. No se inventa
