@@ -27,9 +27,40 @@ F12 o CU-028. **No se declara cumplimiento completo de RNF-05/06.**
   se cambió solo el arnés a pantalla visible/flujo activo. Aprobó sin cambiar
   producto o plazo. Los conjuntos de negocio no se repitieron por ese ajuste.
 
-Las tres mediciones comparables finales y la restauración se añaden en el hito
-de evidencia; permanecen los límites históricos y los hallazgos que no cubre
-este bloque. [Migración](../../App/infra/informe-atributos/seguridad/MIGRACION-ANGULAR.md).
+Las tres finales sobre **4487b16**, 12:21:47.528594 / 12:22:17.880301 /
+12:22:43.366687 UTC, aprobaron instalación/versión y control del bloque:
+**audit 0 producción/0 completo en ambos portales, en cada una**. Rangos
+originales contrastados: 154, cero coincidencias vulnerables. Imágenes Cliente
+9a11f99348c6/Admin 6835120c95f0/gateway 6b4afcd4892f, mismos hashes en las tres;
+versiones/etiquetas y sus límites en la evidencia.
+
+**ZAP por final: 0 altos, 10 medios, 4 informativos**; 23 solicitudes, tres 200
+autenticados fuera de login, 62 reglas activas/cero pendientes. Desaparecen 10003
+Angular (dos altos) y 10038 CSP ausente (cuatro medios). Persisten dos medias
+10055 por img-src Cliente HTTP/HTTPS y aparecen ocho medias 90003 por CSS externo
+Google Fonts sin SRI al dejar de insertarse en build. No se ocultan ni se declara
+cierre global; faltan decisión de hosts/proxy de imágenes y fuentes locales o
+recursos inmutables/SRI real. 13 rutas/13 renovaciones reales por final, sin
+CSP inesperadas/errores JS. Los dos bloqueos inline deliberados por portal se
+registran aparte. Assets iniciales 21→11 explican solicitudes ZAP 33→23 sin
+quitar rutas/reglas. Cobertura HTTP pasiva más navegación browser explícita,
+no DAST activo ni negocio completo de Reventa/Parqueadero.
+
+Memoria disponible VM antes→después (KiB): 955120→943008, 941068→923812,
+928744→924196; swap/presión de cada lectura registrados individualmente.
+Redash detenido en todas las pruebas. Scheduler cerró 137/OOM=false tras 120 s:
+se conserva como incidente de parada, sin presentarlo como ordenado. Al finalizar
+CU-015/ZAP detenidos por scripts, siete IDs/imágenes/montajes Redash restaurados
+una sola vez; PG listo/Redis PONG, últimos /ping y /login **200**, siete contadores
+oom_kill=0. Hubo resets/timeout durante arranque, conservados. Docker Desktop
+**apagado al final como al inicio**: HTTP 200 anterior al apagado, no promesa de
+servicio activo con motor apagado. Datos/volúmenes/cuentas conservados.
+
+[Resultado completo](../../App/infra/informe-atributos/seguridad/RESULTADO.md) y
+[evidencia saneada](../../App/infra/informe-atributos/seguridad/PORTALES-CSP-EVIDENCIA.json).
+La CI del commit de publicación se informa en PR #50; separada de estos resultados
+locales, sin atribuir corrección de SIGTERM. Permanecen los límites históricos
+y los hallazgos que no cubre este bloque. [Migración](../../App/infra/informe-atributos/seguridad/MIGRACION-ANGULAR.md).
 
 ## Seguimiento de publicación de Seguridad — 12/11/2026
 

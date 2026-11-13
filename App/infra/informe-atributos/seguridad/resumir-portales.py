@@ -22,6 +22,12 @@ def main():
     out = {'fecha': '2026-11-13', 'referencia': '7457e7b', 'cumplimientoRNFCompleto': False,
            'alcance': 'Dependencias portales/tooling y CSP; excluye ampliación semántica, DAST activo, F12 y CU-028',
            'dependencias': {}, 'finales': [], 'negocio': {}}
+    z = leer('zap-inicial.json')
+    out['zapReferencia'] = {'version': z['version'], 'solicitudes': len(z['solicitudes']), 'reglas': len(z['reglas']), 'alertas': {}}
+    for a in z['alertas']:
+        x = out['zapReferencia']['alertas'].setdefault(a['pluginId'], {'nombre': a['name'], 'riesgo': a['risk'], 'instancias': 0})
+        x['instancias'] += 1
+    out['navegadores'] = leer('versiones-navegadores.json')
     rangos = []
     for portal in ['cliente', 'admin']:
         carpeta = ROOT / 'App/frontend' / ('portal-web-' + portal)
@@ -59,6 +65,13 @@ console.log(JSON.stringify({comparaciones:datos.length,coincidenciasVulnerables:
     for i in range(1, 4):
         d = leer(f'portales-final-{i}.json')
         c = leer(f'csp-final-{i}.json')
+        d['memoria'] = {}
+        for momento in ['antes', 'despues']:
+            m = leer(f'memoria-final-{i}-{momento}.json')['muestras']
+            vm = {l.split(':')[0]: int(l.split()[1]) for l in m['vm']['salida'].splitlines() if l.startswith(('MemAvailable:', 'SwapFree:'))}
+            d['memoria'][momento] = {'vmKiB': vm, 'swapHost': m['swap']['salida'].strip(),
+                                     'presionHost': m['presion']['salida'].strip().splitlines()[-1]}
+
         d['csp'] = [{k: r[k] for k in ['portal', 'version', 'politicaPresente', 'politica', 'estilo',
                    'violacionesAlCargar', 'erroresJavaScript', 'consolaErrores', 'comprobaciones']} for r in c['resultados']]
         out['finales'].append(d)
@@ -72,6 +85,13 @@ console.log(JSON.stringify({comparaciones:datos.length,coincidenciasVulnerables:
         out['negocio'][nombre] = {'inicioUTC': d['stats']['startTime'], 'duracionMs': d['stats']['duration'],
             'aprobados': d['stats']['expected'], 'fallidos': d['stats']['unexpected'], 'omitidos': d['stats']['skipped'],
             'flaky': d['stats']['flaky'], 'trabajadores': d['config']['workers'], 'consola': conteos}
+    r = leer('restauracion-redash.json'); motor = leer('docker-restaurado.json')
+    assert motor['codigo'] == 0 and motor['redashIdsImagenesMontajesConservados'] and motor['hexacoreAntesDeApagar'] == 0
+    out['restauracion'] = {'dockerInicialApagado': True, 'dockerFinalApagado': True,
+        'redashAntesDeApagarDocker': sum(c['running'] for c in r['final']), 'hexacoreActivoAntesDeApagarDocker': 0,
+        'httpRedash': r['http'], 'postgresListo': r['postgresListo'], 'redisPong': r['redisPong'],
+        'oomKillAlRestaurar': {c['servicio']: int(next(l.split()[1] for l in c['cgroup'].splitlines() if l.startswith('oom_kill '))) for c in r['final']},
+        'idsImagenesMontajesRedashConservados': True, 'reiniciosDeRecuperacion': 0}
     (HERE / 'PORTALES-CSP-EVIDENCIA.json').write_text(json.dumps(out, indent=2, ensure_ascii=False) + '\n')
     print('Exportación saneada escrita. Revisar diff antes de publicar.')
 

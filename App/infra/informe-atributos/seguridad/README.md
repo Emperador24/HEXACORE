@@ -200,3 +200,11 @@ No ejecutar `finales.py` para este bloque: repetiría matrices ajenas al cambio.
 Al terminar detener/desconectar el scanner con `zap-entorno.py parar`, detener
 CU-015 por su script y restaurar únicamente los estados iniciales de Redash.
 Si Docker Desktop estaba apagado inicialmente, restaurar también ese estado.
+
+
+La exportación de esta sesión, que conserva también las pasadas fallidas y los
+advisories anteriores, se genera con `resumir-portales.py` a partir de los
+archivos privados originales. Publica exclusivamente campos seleccionados en
+`PORTALES-CSP-EVIDENCIA.json`; no reemplaza `EVIDENCIA.json` histórico. Las tres
+mediciones futuras de `portales-finales.py` son reproducibles por separado;
+no hace falta recrear los fallos históricos para comparar sus resultados.

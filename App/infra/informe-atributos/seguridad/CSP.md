@@ -60,8 +60,8 @@ set $csp_buzon "https://buzon-de-prueba.ejemplo.test";
 ```
 
 No introducir rutas, claves ni fuentes de script en esos valores. En producción
-no habilitar el buzón de pruebas: conservar la configuración de producto y omitir
-ese origen del archivo/política de despliegue. Validar `nginx -t`, cabecera final,
+no habilitar el buzón de pruebas: conservar la configuración de producto y usar
+`set $csp_buzon "";` para no autorizar ese origen (la variable debe estar definida). Validar `nginx -t`, cabecera final,
 nonce del documento y navegación después de configurar los orígenes.
 
 ## Evidencia
@@ -78,3 +78,14 @@ hereda el normal: un trabajador, cero reintentos, 120 s por caso/15 s por aserci
 Solo cambia los destinos privados de informes. No se toca el modo demo.
 
 Resultados exactos y alertas residuales: [RESULTADO.md](RESULTADO.md).
+
+
+En las tres finales de este bloque siguen dos instancias medias ZAP 10055 por
+las fuentes de imágenes Cliente. Aparecen ocho medias 90003 por las dos hojas
+externas de Google Fonts en HTML raíz/login de ambos portales: al desactivar su
+inserción en el build se vuelven visibles como enlaces. No son scripts ni se
+les concede ejecución, pero persiste confianza en CSS de terceros sin integridad.
+El CSS de Google varía por agente y URL; fijar un hash sin fijar el contenido
+rompería fuentes. Acción pendiente concreta: acordar y versionar fuentes locales
+con licencias/subconjuntos y validar representación, o fijar recursos inmutables
+con SRI real. No se añade un hash ficticio ni se suprime la alerta.

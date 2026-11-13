@@ -1,5 +1,179 @@
 # Seguridad de Sebastián — RNF-05 y RNF-06
 
+
+## Portales, dependencias y CSP — 13/11/2026
+
+**Bloque comprobado con residuos explícitos; RNF-05/06 completos: NO.**
+Referencia **7457e7b**, [CI 43214215628, 8/8](https://github.com/Emperador24/HEXACORE/actions/runs/43214215628).
+Inicio limpio en feature/sebastian, referencias remotas contrastadas; develop
+41ca881, PR #50 abierto, sin integrar ramas. Se conserva íntegro el registro del
+12/11 debajo. No se reabre SIGTERM: su causa sigue desconocida.
+
+Hitos: **ca413fc**, migración coordinada y resolución compatible; **4487b16**,
+CSP efectiva/configuración y regresión comprobada. Las tres finales usan **4487b16**.
+Las modificaciones posteriores de resumen/documentación no cambian fuentes de
+las aplicaciones ni justifican repetir negocio. Solo se publican fuentes y
+[evidencia saneada del bloque](PORTALES-CSP-EVIDENCIA.json); informes, sesiones,
+configuración local, capturas/QR y trazas quedan ignorados.
+
+### Versiones, exposición y comparación de dependencias
+
+Angular framework/core/compiler **22.2.6**; CLI/build-angular, Material/CDK
+**22.2.7**; TypeScript **6.0.3**. Node de herramientas/imágenes frontend conserva
+**22.22.3**, npm **10.9.8**. No se cambia el runtime ni las dependencias backend.
+Se elige la rama estable activa soportada y se ejecutan migraciones oficiales
+**19→20→21→22**, con versiones compatibles intermedias. Se conservan Zone.js,
+Jasmine/Karma y la detección anterior mediante `ChangeDetectionStrategy.Eager`.
+[Compatibilidad oficial](https://angular.dev/reference/versions),
+[soporte](https://angular.dev/reference/releases),
+[migraciones y cadenas concretas](MIGRACION-ANGULAR.md).
+
+| Portal | Producción inicial | Completo inicial (incluye producción) | Producción final, cada pasada | Completo final, cada pasada |
+|---|---|---|---|---|
+| Cliente | 4 altos + 4 moderados | 4 críticos + 32 altos + 29 moderados + 2 bajos = 67 | **0** | **0** |
+| Admin | 4 altos + 4 moderados | 4 críticos + 23 altos + 29 moderados + 2 bajos = 58 | **0** | **0** |
+
+Los 67/58 paquetes auditados se contrastaron con instalación y lock, sin nodos
+ausentes. La evidencia enumera advisories propios con ID/URL/rango, propagados,
+versiones instaladas y condición dev/producción. **154 comparaciones** de los
+rangos originales contra versiones finales: **cero coincidencias vulnerables**;
+no se depende solamente de que el registro siga publicando el mismo advisory.
+Son conteos de paquetes npm, no incidentes independientes ni demostraciones de
+explotación. Core/Common/Router tienen uso en navegador; compilador/AOT y
+funciones no usadas como SSR acotan exposición, sin justificar conservar una
+rama sin soporte. Los avisos dev del backend del 12/11 no se eliminan ni se
+reanotan como medidos en este bloque.
+
+Críticos de construcción/desarrollo corregidos por sus padres o rangos compatibles:
+piscina **4.8.0→5.3.2**, proxy-addr **2.0.7→2.0.8**, shell-quote
+**1.10.0→1.12.0**; tar **6.2.1** y su cadena antigua desaparecen. No queda tar en
+los locks finales. Puppeteer-core del Cliente **23.11.1→25.17.0** y transitivas
+Karma/HTTP se resuelven de forma dirigida. No hay `audit fix --force`, ignores u
+overrides. Nginx final no contiene Node/node_modules; eso no exime al tooling del
+build. Antes de resolver transitivas tras migrar: Cliente 16/Admin 6 avisos,
+conservados como etapa intermedia, sin presentarlos como resultado final.
+
+### CSP aplicada y hallazgos residuales
+
+Ambos portales envían **Content-Security-Policy efectiva**, sin Report-Only,
+unsafe-inline/unsafe-eval o comodines para ejecución/conexión. Nonce de 128 bits
+por respuesta, compartido con `ngCspNonce`; HTML no-store, nuevo nonce al recargar.
+Se desactiva CSS crítico/fuentes inline de build y se trasladan colores estáticos
+a clases, conservando el aspecto comprobado. Material/CDK usa nonce; estilos
+Angular dinámicos se comprueban en negocio. Gateway protege también sus errores
+propios. Orígenes API/buzón exactos por perfil, fuentes existentes y doble local
+de SDK/iframe de tokenización. [Política y despliegue](CSP.md).
+
+| Familia ZAP | Referencia Angular 19 | Cada final Angular 22 | Clasificación / acción |
+|---|---:|---:|---|
+| 10003, componente vulnerable | 2 altos | **0** | Angular soportado/corregido servido en ambos portales |
+| 10038, CSP ausente | 4 medios | **0** | Cabecera efectiva y bloqueo comprobado en navegador |
+| 10055, fuente amplia CSP | 0 | **2 medios** | `img-src` Cliente admite imágenes HTTP/HTTPS del contrato de eventos. No habilita scripts/conexiones. Acordar hosts o proxy antes de reducir esa amplitud |
+| 90003, falta SRI | 0 | **8 medios** | Dos hojas Google Fonts × raíz/login × dos portales. Se vuelven visibles al dejar de insertarse en build. Confianza residual en CSS externo: versionar fuentes locales/licencias o recursos inmutables con SRI real |
+| 10109, SPA moderna | 4 informativos | **4 informativos** | Detección estructural, no una aprobación ni vulnerabilidad demostrada |
+
+**Cero altos/críticos en estas finales ZAP; diez instancias medias y cuatro
+informativas permanecen.** No se suprime ninguna de las 62 reglas ni se añaden
+permisos para aparentar cierre. No se coloca SRI ficticio sobre CSS variable por
+agente. Los orígenes amplios de imágenes se documentan como residuo, no como CSP
+sin limitaciones. El doble del SDK prueba permiso de script/iframe y token opaco
+sintético; no acredita Stripe real, productos adicionales o todos sus dominios.
+No se activa Stripe/Gmail ni se escanean proveedores o despliegues remotos.
+
+### Tres mediciones finales comparables, sin promedios
+
+Playwright **1.65.0**, Chromium/headless-shell **158.0.8127.18**, revisión 1254
+(binarios comprobados); ZAP **2.17.0 arm64**, digest fijado anterior. Python
+**3.14.0**, Docker **29.7.2**. Cada pasada usa las mismas tres imágenes y huellas
+de todos los assets/Nginx. Cliente imagen **9a11f99348c6**, Admin **6835120c95f0**,
+gateway **6b4afcd4892f**; IDs completos y hashes en evidencia. Sus etiquetas dicen
+**ca413fc/fuente modificada=si** porque se construyeron antes del commit CSP;
+no se usan esas etiquetas como falsa prueba de correspondencia con 4487b16.
+Se contrastan Nginx ejecutado y fuentes, assets idénticos entre pasadas y versión
+Angular real del DOM. Backend conserva sus imágenes funcionales anteriores.
+
+| Final — inicio UTC | Audit producción/completo, Cliente y Admin | Navegación / renovación | ZAP | Resultado del bloque |
+|---|---|---|---|---|
+| 1 — 12:21:47.528594 | **0/0 en ambos** | 13 rutas / 13 renovaciones 200; cero CSP inesperadas/errores JS | 0 altos; 10 medios; 4 informativos | Con residuos, sin cumplimiento RNF completo |
+| 2 — 12:22:17.880301 | **0/0 en ambos** | 13 rutas / 13 renovaciones 200; cero CSP inesperadas/errores JS | 0 altos; 10 medios; 4 informativos | Con residuos, sin cumplimiento RNF completo |
+| 3 — 12:22:43.366687 | **0/0 en ambos** | 13 rutas / 13 renovaciones 200; cero CSP inesperadas/errores JS | 0 altos; 10 medios; 4 informativos | Con residuos, sin cumplimiento RNF completo |
+
+Por pasada: **23 solicitudes ZAP**, **tres 200 autenticados fuera de login**,
+62 reglas habilitadas y cero pendientes. Mismo alcance que referencia: cuatro
+HTML raíz/login, todas las referencias JS/CSS iniciales locales y ocho lecturas
+API con/sin sesión. Los assets iniciales pasan de 21 a 11 por el build nuevo;
+por eso cambia el total 33→23, no por quitar rutas/reglas. ZAP no ejecuta JS ni
+navega todos los chunks lazy; el control browser separado carga siete rutas
+Cliente y seis Admin, pero tampoco acredita negocio completo de todas ellas.
+DAST activo y ampliación semántica de autorización quedan separados.
+
+Las dos sondas inline se bloquean **por portal/pasada** y se registran aparte de
+las violaciones inesperadas. Cliente muestra 401 de renovación antes de login
+sin cookie (comportamiento inicial); después hay siete renovaciones 200. Admin
+registra seis 200. Consola y respuestas HTTP completas quedan privadas.
+
+Memoria VM KiB, antes→después: final 1 **955.120→943.008**, final 2
+**941.068→923.812**, final 3 **928.744→924.196** disponibles. Swap libre VM:
+**473.572→468.400**, **468.400→466.988**, **466.988→461.428** KiB. Porcentajes
+libres de memory_pressure host: **50→43, 42→45, 45→44**; swap host y fechas
+individuales se conservan en evidencia. Esto describe condiciones, no un ensayo
+de rendimiento/disponibilidad.
+
+### Instalación, regresión y fallos conservados
+
+- Ambos portales: `npm ci` reproducible; tipos app/spec; builds y nuevas imágenes
+  aprobados; `nginx -t` **3/3**. Unitarias **30/30 Cliente y 16/16 Admin** con
+  ChromeHeadless 157.0.0.0. Se conservan budgets y advertencias de tamaño/CommonJS.
+- Guarda infraestructura **14/14**, tipos E2E y sintaxis de herramientas aprobados.
+- Primera ejecución automática **15/16**, sin omisiones: CU-029 no muestra plano,
+  **tres violaciones img-src blob**. Causa comprobada: Object URLs existentes
+  del plano/previsualización. Se permite blob solamente en imágenes Admin, sin
+  tocar script/frame/worker. Nueva imagen Admin; CU-029 específico **1/1**.
+- Después de esa corrección: **16/16 automático**, 12:12:53.530 UTC, 132,066 s;
+  **16/16 visible**, 12:15:06.088 UTC, 151,574 s. **27 contextos en cada uno,
+  cero violaciones CSP y cero errores JavaScript**. 16 descubiertos en siete
+  archivos; un trabajador, cero reintentos, límites normales 120 s/15 s.
+  Incluye compra, preparación, cancelación, entrega, QR/avisos, recuperación,
+  cuentas y recintos. El modo demo y su presupuesto no se usan ni se cambian.
+- El control adicional inicialmente esperaba networkidle en Parqueaderos y
+  agotó 15 s por su SSE. Se corrige **solo el arnés**: pantalla visible y flujo
+  activo, mismo plazo. Aprobó; no se repite el negocio por esa modificación.
+- Primer ZAP de referencia encontró API aún sin escuchar al arrancar; se conserva
+  fallo privado. Tras comprobar disponibilidad se obtuvo referencia completa.
+  El helper ahora espera API hasta 30 s al arrancar, sin reintentar escaneos.
+- La prueba antigua de Reventa resembra y borra reservas: **no ejecutada**.
+  Lectura de Reventa/Entradas/Parqueadero bajo CSP sí comprobada; no se declara
+  aceptación de sus procesos completos ni renovación financiera global/F12.
+
+### Alternancia y restauración
+
+Docker Desktop estaba **apagado** al inicio. Tras iniciarlo sin cambiar recursos,
+se registraron CU-015 detenido y siete Redash activos. Se detuvieron solo esos
+siete: scheduler terminó **137/OOM=false** tras 120 s; no se presenta como cierre
+ordenado. Su marca no es el OOM histórico del worker; no se investigó ni reinició
+repetidamente. HEXACORE se reanudó con proveedores simulados; se reconstruyeron
+solo portales/gateway y se aplicó preparación idempotente sin semillas. Datos,
+cuentas, contraseñas, volúmenes y 18 procedencias históricas intactos.
+
+Al finalizar ZAP se detuvo/desconectó y CU-015 se detuvo por su script (código 0).
+Se reanudaron una sola vez los **siete IDs originales Redash**, primero PG/Redis,
+listos/PONG; durante arranque hubo resets y un timeout. Últimos controles con
+los siete activos: **/ping 200 y /login 200**, cgroup `oom_kill=0` en los siete.
+Se comprobaron imágenes y montajes iguales a los iniciales, sin reinicios de
+recuperación. Después **Docker Desktop se apagó correctamente para restaurar
+el estado inicial**. Por ello Redash no se ofrece activo al final con el motor
+apagado: el HTTP 200 corresponde al último control previo, no disponibilidad
+continua. No se intervienen otros proyectos o recursos globales.
+[Guía de alternancia](../../../../Documentation/Work/OPERACION-LOCAL-REDASH-HEXACORE.md).
+
+Pendientes: imágenes externas/SRI concretados arriba; cobertura semántica y DAST
+activo más amplios, CU-028 Samuel, correspondencia RNF-05/CU-024 y F12 separados.
+No se añaden funcionalidades ni se presenta este bloque como RNF-05/06 global
+aprobado. CI del nuevo commit se informa en PR #50, separada de estos resultados
+locales y de la intermitencia SIGTERM desconocida.
+
+## Registro histórico conservado — 12/11/2026
+
 **12/11/2026, UTC (Bogotá UTC−5). Cumplimiento completo: NO.** Se corrigen
 hallazgos demostrados y se publica evidencia reproducible; permanecen bloqueos
 de dependencias, CSP y cobertura semántica. No confundir una matriz de acceso

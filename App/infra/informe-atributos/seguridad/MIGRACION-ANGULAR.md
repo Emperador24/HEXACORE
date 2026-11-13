@@ -76,3 +76,34 @@ CommonJS cuando correspondan; no son hallazgos eliminados de audit.
 
 La validación de imágenes, CSP y recorridos con la nueva versión se registra en
 RESULTADO.md. Este hito no declara RNF-05/06 completamente aprobados.
+
+
+## Alcance de los advisories contrastados
+
+La evidencia de este bloque enumera **cada paquete afectado**, sus versiones
+realmente instaladas, los rangos/IDs/URLs de advisories propios y los avisos
+propagados desde dependencias. Se contrasta también el rango original contra
+las versiones finales, además de repetir audit; un advisory indirecto no se
+presenta como una vulnerabilidad independiente de código propio.
+
+Los ocho nodos de producción por portal pertenecían a Angular. Core/Common y
+Router se ejecutan en el navegador; DatePipe y RouterLink están presentes en las
+pantallas, por lo que no se descartan sus avisos por ser una SPA. Compiler y
+platform-browser-dynamic están declarados como producción, pero el arranque usa
+bootstrapApplication con compilación AOT; no se usa SSR/hidratación ni compilación
+de plantillas externas en ejecución. Esto acota la exposición de advisories de
+esas funciones; no demuestra que una versión vulnerable sea aceptable. No se
+realiza explotación activa de XSS/DoS sobre el producto en este bloque.
+
+Los cuatro críticos estaban **solo en desarrollo/construcción**: piscina bajo
+build-angular/@angular/build; proxy-addr bajo Express/webpack-dev-server;
+shell-quote bajo launch-editor/webpack-dev-server; tar 6.2.1 bajo pacote/CLI.
+Sus cadenas se sustituyen con CLI/builder 22 y resolución compatible. La imagen
+final Nginx no contiene Node ni node_modules. No se confunde esa separación con
+inmunidad del build: instalar/compilar sigue ejecutando tooling y justifica
+corregirlo. Puppeteer-core es conductor de pruebas, no JavaScript servido.
+
+El registro completo, incluidos avisos restantes de las etapas intermedias,
+permanece privado; se publica una comparación saneada y reproducible en
+PORTALES-CSP-EVIDENCIA.json. Los avisos históricos de backend/dev del 12/11
+permanecen fuera del alcance de corrección de este bloque.
