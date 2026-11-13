@@ -1,11 +1,11 @@
 const {randomUUID}=require('node:crypto');
 const c=require('./comun.cjs');
 async function main(){
- c.guarda();const fase=process.argv[2];c.assert(/^(control-contratos|final-[123])$/.test(fase));
+ c.guarda();const fase=process.argv[2];c.assert(/^(control-contratos|control-contexto|final-[123])$/.test(fase));
  c.assert(!c.fs.existsSync(c.path.join(c.privado(),'complemento-'+fase+'.json')));
  const f=c.leer('fixture.json'),tokens={},controles=[],auxiliares=[];const db=await c.conexion();
  async function login(a,clave=f.clave){const r=await c.peticion('/api/v1/sesiones',{metodo:'POST',cuerpo:{email:a.email,contrasena:clave}});c.assert.equal(r.estado,200);return r.datos.token;}
- for(const a of ['cliente','personal','jefe','ajeno'])tokens[a]=await login(f.actores[a]);
+ for(const a of ['cliente','personal','jefe','ajeno','organizador','organizadorB','admin'])tokens[a]=await login(f.actores[a]);
  async function cuenta(){
   const a={id:randomUUID(),email:`${f.codigo}-${randomUUID()}@example.test`.toLowerCase(),clave:f.clave};
   const {cifrarContrasena}=c.cargar(c.path.join(c.backend,'dist/modulos/identidad/comun/contrasenas'));
@@ -26,6 +26,14 @@ async function main(){
    const [z]=await db.ds.query('SELECT id FROM personal_logistica.zonas_evento WHERE "eventoId"=$1 AND nombre=$2 LIMIT 1',[f.evento,f.codigo]);c.assert(z,'Zona existente del control anterior');
    const inicio=new Date(Date.now()+86400000).toISOString(),fin=new Date(Date.now()+90000000).toISOString();
    await probar('candidatos-fechas-validas',`/logistica/zonas/${z.id}/candidatos?horaInicio=${encodeURIComponent(inicio)}&horaFin=${encodeURIComponent(fin)}`,'GET',tokens.jefe,undefined,200,d=>Array.isArray(d));
+   const emp=f.recursos.empleados.personal.id;
+   for(const a of ['organizador','admin']){
+    await probar('supervision-global-'+a,'/logistica/empleados/'+emp,'GET',tokens[a],undefined,200,d=>d.empleado.id===emp);
+    await probar('mutacion-global-'+a,'/logistica/empleados/'+emp,'PATCH',tokens[a],{nombre:'Ensayo Personal'},200,d=>d.id===emp);
+   }
+   await probar('otro-organizador-global','/logistica/asignaciones?eventoId='+f.evento,'GET',tokens.organizadorB,undefined,200,d=>d.some(t=>t.empleadoId===emp));
+   const [sol]=await db.ds.query('SELECT id FROM personal_logistica.solicitudes_cambio_turno WHERE "empleadoSolicitanteId"=$1 AND estado=$2 ORDER BY "fechaSolicitud" DESC LIMIT 1',[emp,'RECHAZADA']);c.assert(sol);
+   await probar('actor-auditoria-de-sesion',`/logistica/solicitudes-cambio/${sol.id}/historial`,'GET',tokens.jefe,undefined,200,d=>d.eventos.some(e=>e.accion==='CAMBIO_RECHAZADO'&&e.realizadoPor===f.actores.jefe.id));
    const a=await cuenta(),datos={usuarioId:a.id,nombre:'Ensayo Empleado',rol:f.codigo+' Entrada',credencial:f.codigo+'-'+randomUUID()};
    await probar('personal-no-crea-jefatura','/logistica/empleados','POST',tokens.personal,datos,403);
    await probar('jefe-crea-ficha-de-cuenta-existente','/logistica/empleados','POST',tokens.jefe,datos,201,d=>d.usuarioId===a.id);
