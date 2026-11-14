@@ -1,5 +1,8 @@
 # Reproducir autorización por recurso y DAST de API
 
+El corte vigente es [Compras y Reventa](AUTORIZACION-VENTAS.md): 19/19 nuevas,
+88/159 global, 71 pendientes. Esta entrega no amplía DAST ni repite sus escaneos.
+
 El bloque posterior de Alimentos está en [AUTORIZACION-ALIMENTOS.md](AUTORIZACION-ALIMENTOS.md):
 30/30 en el módulo, 69/159 global y 90 pendientes. Esta guía y sus cifras 49/159
 describen el ensayo DAST anterior; no se amplía ni se repite en la entrega posterior.

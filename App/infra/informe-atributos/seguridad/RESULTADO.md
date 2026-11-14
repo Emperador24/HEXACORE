@@ -1,5 +1,132 @@
 # Seguridad de Sebastián — RNF-05 y RNF-06
 
+## Autorización de Compras y Reventa — 13/11/2026, corte vigente
+
+**Compras 8/8, Reventa 11/11; global 88/159, quedan 71. RNF-05/06 parciales.**
+Las 19 operaciones antes pendientes coinciden exactamente por método/ruta con
+los controladores actuales. Inventario sin cambios: 178 declaradas, 173 expuestas,
+159 protegidas. Las 69 cubiertas antes, incluidas 30/30 Alimentos, se reutilizan
+con sus fuentes relevantes intactas; no son ejecuciones nuevas de este bloque.
+Los cortes inferiores 69/159 y 49/159 y sus fallos permanecen históricos.
+
+Inicio limpio, únicamente `feature/sebastian`, **62ffd7b** sincronizada con origin;
+develop **41ca881**, PR **#50 abierto** hacia develop y
+[CI 43523770155, 8/8](https://github.com/Emperador24/HEXACORE/actions/runs/43523770155)
+confirmados. Sin integrar ramas ni cambiar arquitectura. No se demuestra una
+brecha nueva de producto: solo preparador/arnés/procedencia/exportación y documentos.
+Controladores, servicios, guardas, contratos internos Ventas, estados, snapshots,
+historial, idempotencia y reglas financieras permanecen intactos.
+
+[Contratos y reproducción](AUTORIZACION-VENTAS.md) ·
+[19 rutas y cobertura global](COBERTURA-RECURSOS.md) ·
+[Evidencia nueva saneada](VENTAS-RECURSOS-EVIDENCIA.json).
+
+### Pruebas nuevas y alcance real
+
+Seis cuentas nuevas exclusivas, tres clientes distintos y roles fijos existentes;
+evento publicado a 30 días/localidad propia. Recinto/evento por API, cuentas y
+cupones de ensayo por SQL sin alterar datos previos. Gateway con turno real
+propio en cada POST Compras; Boletería directa con sesión verificada propia.
+No se usan errores de turno, DTO ni inexistencia para acreditar propiedad.
+
+Compras atribuye al comprador de sesión pese a cabeceras falsas; listado/detalle
+ocultan compras ajenas. Cupón, retirada y pago se rechazan antes de la primera
+mutación válida y el dueño opera después. Cotización/cancelación prueban compras
+ajenas y entradas existentes de otra compra, incluso del mismo propietario.
+La selección mixta respeta el contrato parcial: devuelve/cancela solo propias,
+enumera rechazadas y conserva la entrada ajena, con reembolso solo del monto propio.
+
+Reventa exige entrada propia/elegible; precio/retirada se prueban con publicación
+activa y sin checkout que oculte el permiso inicial. Mercado/detalle son lecturas
+compartidas legítimas; el listado omite las propias y no expone QR. Checkout
+deriva comprador/vendedor de sesión/publicación, ignorando body/cabeceras falsos;
+otros clientes y vendedor no leen, pagan ni cancelan el checkout ajeno.
+El dueño recupera el mismo checkout tras intento concurrente ajeno y lo cancela;
+otro checkout independiente paga y transfiere.
+
+Tras las **seis transferencias finales**: propietario nuevo, QR rotado, dos filas
+de historial y un cobro/un intento. Compra original omite entrada transferida y
+sus códigos; mis-entradas filtra propiedad vigente sin QR. El vendedor anterior
+no cancela/republica ni edita/retira el nuevo anuncio; el dueño actual lo publica
+y retira. Se comprueba negocio existente, sin implementar CU de otro integrante.
+
+Cada final tiene **68 rechazos** con capturas SQL/Redis iguales antes/después y
+`FOR UPDATE NOWAIT` disponible sobre compras/publicaciones del ensayo. SQL cubre
+compras, reservas/contadores de localidad, cupones/usos, entradas, historial,
+cancelaciones, publicaciones, checkouts y libro financiero asociado. Las claves
+reales de idempotencia (compra:intento/checkout/cancelación) no quedan consumidas
+por un actor ajeno. Redis compara titular y **vencimiento absoluto PEXPIRETIME**,
+no un TTL que decrece normalmente. Los cuerpos/versiones/estados son válidos;
+mutaciones incompatibles usan recursos distintos y se prueban antes de finalizarlas.
+
+### Expiración administrativa global
+
+Cliente/Personal/Organizador obtienen 403 y sesión ausente 401; la huella agregada
+SQL de todas las publicaciones permanece igual. El control inicial no ejecutó
+el positivo por cautela sobre datos conservados. La inspección posterior comprobó
+que **todas las ocho publicaciones entonces existentes eran nuevas de esta
+fixture**, sin anuncios/transacciones ajenos: el ámbito completo era descartable.
+
+Se agregan **seis positivos HTTP administrativos**, uno por canal/final. Antes,
+inmediatamente antes y después se comprueba toda la tabla de publicaciones y
+transacciones, evento/cuentas/entradas exclusivas y cero filas ajenas. Se crea
+un anuncio nuevo propio y se prepara solo su vencimiento. Cada respuesta: una
+revisada, una expirada y cero omitidas. Los otros anuncios quedan íntegros;
+QR, propiedad, historial, finanzas y Redis se conservan; la entrada vuelve a VALIDA.
+Ámbitos inmediatos de las seis ejecuciones: **13, 18, 23, 28, 33 y 38 anuncios**,
+todos propios, cero ajenos antes/después. No se borran datos para conseguirlo ni
+se añade filtro de producto. Si el ámbito deja de ser exclusivo en otra ventana,
+el arnés omite el positivo y registra 18/19 con limitación, nunca un falso aprobado.
+
+### Tres finales comparables, sin reintentos
+
+| Final, inicio UTC del 13/11 | Total | Autorización/contrato + rol/sesión | DTO / elegibilidad / concurrencia separadas | Rechazos sin cambios SQL/Redis | Duración |
+|---|---|---|---|---|---|
+| 23:55:46.428 | **150/150** | **134/134 + 8/8** | **4/4 + 2/2 + 2/2** | **68/68** | 10,880 s |
+| 23:56:01.822 | **150/150** | **134/134 + 8/8** | **4/4 + 2/2 + 2/2** | **68/68** | 13,469 s |
+| 23:56:19.061 | **150/150** | **134/134 + 8/8** | **4/4 + 2/2 + 2/2** | **68/68** | 14,924 s |
+
+Por final: 60×200, 22×201, 26×404, 18×409, 18×403, 4×400 y 2×401; cero 5xx.
+Los cuatro 400 son DTO separados, no permisos. Cada canal tiene positivos de
+**19/19 operaciones**; no significa todas sus combinaciones/carreras posibles.
+Mismas once imágenes/servicios saludables, **131 JS compilados relevantes**
+coincidentes con Boletería ejecutada, Node **22.22.3**, mismas fuentes/herramientas
+en las tres finales, Redash detenido. Árbol 62ffd7b más herramientas nuevas con
+hashes anteriores a publicar. HTTP 10 s/SQL 3 s/Redis 2 s, sin ampliar límites.
+Herramientas publicadas en **65a2b81**, con las mismas fuentes medidas.
+
+Memoria disponible VM KiB antes→después: **1360692→1359028**, **1350992→1347120**,
+**1331928→1341276**. Swap libre: **530796→530796**, **531052→531308**,
+**531308→531832**. No se intervienen otros proyectos ni se concluye disponibilidad global.
+
+Regresiones actuales **124/124 unitarias, seis suites**. Control previo **146/146**,
+18 rutas con positivo y administración solo negativa; se amplía después el
+positivo con el ámbito comprobado. **Sin fallos nuevos de producto/arnés en estas
+ejecuciones**; el historial anterior no se sobrescribe. Se reutilizan Boletería
+**23/23 × dos** de CI 43523770155/62ffd7b, con fuentes pertinentes intactas, y
+la aceptación anterior **16/16 automática y visible**, sin ejecutarla de nuevo.
+No se reabren preventivamente SIGTERM/outbox ni se atribuye corrección causal.
+
+Restauración **14/11 00:02:16 UTC (13/11, 19:02 Bogotá)**: Docker activo al inicio
+y final, mismos 92 IDs/imágenes/montajes y estados activo/detenido. CU-015/ZAP
+detenidos, siete Redash reanudados una sola vez; otros proyectos sin intervención.
+Cinco aplicaciones Redash cerraron 0; sus marcas OOMKilled históricas se conservan.
+CU-015 cerró por su script 0/143, sin OOM/SIGKILL, datos/volúmenes conservados.
+PostgreSQL necesitó una espera de disponibilidad tras arrancar (primer código 2,
+después 0, sin reinicio), Redis PONG. Ambos HTTP Redash agotan **15 s**; cgroups
+nuevos al control: **server oom_kill=2**, otros seis **0**, frente a cero al arrancar
+el servidor. Logs/estado privados. **Estados restaurados, HTTP bloqueado por
+capacidad documentada**, sin ciclos de recuperación ni cambios globales. El
+responsable debe liberar capacidad autorizada/revisar concurrencia y verificar
+HTTP; no se confunde con SIGTERM/outbox ni se intervienen otros proyectos.
+
+Publicación y CI nueva se registran con la evidencia y PR #50.
+Datos, claves/cuentas anteriores y volúmenes conservados, solo proveedores
+simulados. Solo origin/feature/sebastian; sin merge/auto-merge. Quedan **71 rutas**,
+combinaciones adicionales y límites RNF-05/06. F12, CU-028, nuevas funciones
+financieras, módulo Acceso QR independiente, DAST, fuentes/imágenes y ZeroTier
+quedan fuera de esta entrega.
+
 ## Autorización de Alimentos — 13/11/2026, entrega posterior
 
 **Alimentos 30/30; global 69/159; RNF-05/06 siguen parciales.** Se completan las

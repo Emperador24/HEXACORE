@@ -1,6 +1,12 @@
 # Referencias del curso aplicadas a HEXACORE
 
-Actualización posterior de Alimentos: **30/30 rutas en ambas vías, 69/159 global**;
+Actualización vigente: [Compras y Reventa](AUTORIZACION-VENTAS.md), **19/19** nuevas
+en ambas vías y **88/159 global**. Tres finales 150/150, con propiedad vigente,
+QR filtrado tras transferencia, bloqueos/idempotencia conservados y barrido
+global administrativo solo con todo su ámbito descartable comprobado. RNF-05/06
+siguen parciales; no se amplía DAST ni se certifica Safety física.
+
+Actualización anterior de Alimentos: **30/30 rutas en ambas vías, 69/159 global**;
 las tres finales nuevas y seis capturas anteriores a primera cancelación están
 en [AUTORIZACION-ALIMENTOS.md](AUTORIZACION-ALIMENTOS.md). Cierran ese control con
 pedidos nuevos; no reconstruyen el hash ausente histórico ni certifican RNF/Safety.

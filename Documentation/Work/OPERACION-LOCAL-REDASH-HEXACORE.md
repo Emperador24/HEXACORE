@@ -1,5 +1,20 @@
 # Alternar Redash y HEXACORE en este Mac
 
+**Última ventana — 13/11, Compras/Reventa:** motor **activo** al inicio y al final.
+Mismos 92 IDs/imágenes/montajes y estados activo/detenido; CU-015/ZAP detenidos,
+siete Redash reanudados una sola vez, otros proyectos sin intervención. Tres
+finales nuevas 150/150 con Redash detenido, datos/volúmenes/claves conservados.
+No se construyó ni resembró el entorno. CU-015 cerró 0/143 sin OOM/SIGKILL.
+
+Control **14/11 00:02:16 UTC (13/11 19:02 Bogotá)**: PG listo/Redis PONG;
+`/ping` y `/login` agotan 15 s. Nuevo cgroup del servidor **oom_kill=2**, otros
+seis 0 en ese control; el servidor tenía cero al arrancar. Se conservan marcas
+históricas separadas. PG requirió esperar disponibilidad inicial, sin reiniciarlo.
+**Estados restaurados, HTTP sigue bloqueado**; sin ciclos de recuperación.
+Requiere capacidad autorizada/revisión de concurrencia y comprobación HTTP del
+responsable, sin intervenir otros proyectos ni cambiar recursos globales.
+[Resultado](../../App/infra/informe-atributos/seguridad/RESULTADO.md).
+
 **Última ventana — 13/11, autorización de Alimentos:** Docker estaba **activo**
 al inicio y se deja **activo**. CU-015/ZAP detenidos; siete IDs/imágenes/montajes
 Redash reanudados una sola vez, estados originales conservados. Las tres finales

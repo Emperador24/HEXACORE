@@ -1,61 +1,65 @@
-# Cobertura por recurso — 13/11/2026, cierre de Alimentos
+# Cobertura por recurso — 13/11/2026, Compras y Reventa
 
-**69/159 operaciones protegidas** con ampliación semántica por gateway y backend
-directo; **90 pendientes**. Alimentos pasa de **10/30 a 30/30**: se agregan las
-20 pendientes y se reejecutan las otras diez. Las **39** cubiertas fuera de
-Alimentos se reutilizan de la entrega anterior, con sus fuentes relevantes sin
-cambios desde `7130d52`; no son ejecuciones nuevas de este bloque.
+**88/159 operaciones protegidas** con ampliación semántica en gateway/backend
+real; **71 pendientes**. Compras **8/8** y Reventa **11/11**: se agregan las
+**19** pendientes, contrastadas exactamente por método/ruta con controladores
+compilados. Inventario intacto: **178 declaradas / 173 expuestas / 159 protegidas**;
+HEAD implícito no duplica GET. Sin altas/bajas ni diferencias de denominador.
 
-El inventario actual sigue en **178 operaciones declaradas / 173 expuestas /
-159 protegidas**. Las 30 de Alimentos coinciden por método/ruta con los
-controladores compilados y con esta tabla: sin altas/bajas ni diferencias en el
-denominador. HEAD implícito no duplica GET. Las 41 originalmente sin metadato de
-rol mantienen su evidencia previa; actualmente hay 39 sin ese metadato.
+Las **69** cubiertas anteriormente se reutilizan, incluidas **30/30 Alimentos**,
+con fuentes relevantes sin cambios desde `62ffd7b`; no son ejecuciones nuevas.
+Las 41 originalmente sin metadato de rol conservan su evidencia; ahora son 39.
+[Resultado de Alimentos](ALIMENTOS-RECURSOS-EVIDENCIA.json) y
+[resultado anterior 49/159](RECURSOS-DAST-EVIDENCIA.json) permanecen intactos,
+con su historial de fallos. Esta tabla representa el corte actual.
 
-Tres finales nuevas, **278/278 por final**: 274 observaciones de autorización/
-contrato, dos de validación de identidad extra y dos de relación producto-pedido
-separadas. **142 rechazos** por final tienen capturas SQL/Redis iguales antes y
-después; incluyen esas cuatro observaciones separadas. Los 400 no se usan como
-prueba de autorización. Cada canal tiene controles positivos de **30/30** rutas;
-los 404 usan recursos existentes con acceso propio 200, y las mutaciones se
-prueban antes de completarlas. Administración es global por contrato, catálogos
-son compartidos y no se inventa una frontera organización-evento.
+Tres finales nuevas **150/150** cada una: 134 observaciones de autorización/
+contrato, ocho de rol/sesión administrativa, cuatro de DTO, dos de elegibilidad
+y dos de concurrencia separadas. **68 rechazos por final** conservan SQL/Redis
+(titular y vencimiento absoluto del bloqueo), con recursos existentes, controles
+positivos y bloqueos SQL disponibles. Los cuatro 400 no acreditan autorización.
+Pago/cupón/cancelación/checkout se prueban antes de su primera mutación válida.
+Las selecciones mixtas solo cancelan entradas propias según el contrato real.
 
-[Caso/contrato y reproducción](AUTORIZACION-ALIMENTOS.md) ·
-[Evidencia nueva saneada](ALIMENTOS-RECURSOS-EVIDENCIA.json).
-Las 90 pendientes conservan la evidencia previa de identidad/rol. Cubrir una
-operación no agota todas sus combinaciones, carreras o estados. RNF-05/06 siguen
-parciales; DAST no se amplía. [Historia 49/159](RECURSOS-DAST-EVIDENCIA.json):
-302 + 30 observaciones por final, cuatro 404 de ficha ausente separados, sin
-sobrescribir sus fallos o resultados. La columna distingue ampliación/reejecución
-de Alimentos y cobertura previa de las demás rutas.
+El mercado conserva lecturas compartidas; publicación/compra/checkout obtienen
+identidades de sesión y se comprueba el filtrado de entradas/QR tras transferir.
+La expiración administrativa es global: seis positivos con **todo** el ámbito de
+publicaciones y transacciones descartable y propio comprobado antes/después,
+sin filas ajenas y sin cambios en otros anuncios/QR/historial/finanzas/Redis.
+El arnés omite el positivo y registra una limitación si el ámbito deja de ser
+exclusivo. No añade filtros al producto ni barre publicaciones anteriores.
+
+[Reproducción](AUTORIZACION-VENTAS.md) · [Evidencia nueva](VENTAS-RECURSOS-EVIDENCIA.json).
+Cubrir una operación no agota todas sus combinaciones, carreras o estados.
+Las 71 pendientes mantienen identidad/roles anteriores; RNF-05/06 siguen
+parciales. No se amplía DAST ni se repiten los 16 recorridos completos.
 
 | Método | Ruta | Regla efectiva revisada | Prueba por gateway/directo | Ubicación |
 |---|---|---|---|---|
 |POST|`/api/v1/cola/eventos/:eventoId/turnos`|SesionValida; identidad/contexto del servicio|Sí; contexto probado, combinaciones limitadas|`App/backend/modulos/entradas/fila/cola/cola.controller.ts`|
 |GET|`/api/v1/cola/eventos/:eventoId`|SesionValida; identidad/contexto del servicio|Sí; contexto probado, combinaciones limitadas|`App/backend/modulos/entradas/fila/cola/cola.controller.ts`|
-|POST|`/api/v1/compras/:id/cancelacion/cotizacion`|SesionValida; Cliente|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/entradas/ventas/venta/compras.controller.ts`|
-|POST|`/api/v1/compras/:id/cancelaciones`|SesionValida; Cliente|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/entradas/ventas/venta/compras.controller.ts`|
-|DELETE|`/api/v1/compras/:id/cupon`|SesionValida; Cliente|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/entradas/ventas/venta/compras.controller.ts`|
-|PUT|`/api/v1/compras/:id/cupon`|SesionValida; Cliente|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/entradas/ventas/venta/compras.controller.ts`|
-|POST|`/api/v1/compras/:id/pagar`|SesionValida; Cliente|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/entradas/ventas/venta/compras.controller.ts`|
-|GET|`/api/v1/compras/:id`|SesionValida; Cliente|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/entradas/ventas/venta/compras.controller.ts`|
-|GET|`/api/v1/compras`|SesionValida; Cliente|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/entradas/ventas/venta/compras.controller.ts`|
-|POST|`/api/v1/compras`|SesionValida; Cliente|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/entradas/ventas/venta/compras.controller.ts`|
+|POST|`/api/v1/compras/:id/cancelacion/cotizacion`|SesionValida; Cliente|Sí; Compras/Reventa 3×150; ambas vías, con positivos|`App/backend/modulos/entradas/ventas/venta/compras.controller.ts`|
+|POST|`/api/v1/compras/:id/cancelaciones`|SesionValida; Cliente|Sí; Compras/Reventa 3×150; ambas vías, con positivos|`App/backend/modulos/entradas/ventas/venta/compras.controller.ts`|
+|DELETE|`/api/v1/compras/:id/cupon`|SesionValida; Cliente|Sí; Compras/Reventa 3×150; ambas vías, con positivos|`App/backend/modulos/entradas/ventas/venta/compras.controller.ts`|
+|PUT|`/api/v1/compras/:id/cupon`|SesionValida; Cliente|Sí; Compras/Reventa 3×150; ambas vías, con positivos|`App/backend/modulos/entradas/ventas/venta/compras.controller.ts`|
+|POST|`/api/v1/compras/:id/pagar`|SesionValida; Cliente|Sí; Compras/Reventa 3×150; ambas vías, con positivos|`App/backend/modulos/entradas/ventas/venta/compras.controller.ts`|
+|GET|`/api/v1/compras/:id`|SesionValida; Cliente|Sí; Compras/Reventa 3×150; ambas vías, con positivos|`App/backend/modulos/entradas/ventas/venta/compras.controller.ts`|
+|GET|`/api/v1/compras`|SesionValida; Cliente|Sí; Compras/Reventa 3×150; ambas vías, con positivos|`App/backend/modulos/entradas/ventas/venta/compras.controller.ts`|
+|POST|`/api/v1/compras`|SesionValida; Cliente|Sí; Compras/Reventa 3×150; ambas vías, con positivos|`App/backend/modulos/entradas/ventas/venta/compras.controller.ts`|
 |GET|`/api/v1/ingresos/eventos/:eventoId/cache`|SesionValida; Personal, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/entradas/acceso-qr/acceso/ingresos.controller.ts`|
 |POST|`/api/v1/ingresos/sincronizacion`|SesionValida; Personal, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/entradas/acceso-qr/acceso/ingresos.controller.ts`|
 |POST|`/api/v1/ingresos`|SesionValida; Personal, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/entradas/acceso-qr/acceso/ingresos.controller.ts`|
-|POST|`/api/v1/reventa/checkout/:id/pagar`|SesionValida; Cliente|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/entradas/postventa/postventa/reventa.controller.ts`|
-|DELETE|`/api/v1/reventa/checkout/:id`|SesionValida; Cliente|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/entradas/postventa/postventa/reventa.controller.ts`|
-|GET|`/api/v1/reventa/checkout/:id`|SesionValida; Cliente|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/entradas/postventa/postventa/reventa.controller.ts`|
-|POST|`/api/v1/reventa/mantenimiento/expirar-publicaciones`|SesionValida; Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/entradas/postventa/postventa/reventa.controller.ts`|
-|GET|`/api/v1/reventa/mis-entradas`|SesionValida; Cliente|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/entradas/postventa/postventa/reventa.controller.ts`|
-|POST|`/api/v1/reventa/publicaciones/:id/checkout`|SesionValida; Cliente|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/entradas/postventa/postventa/reventa.controller.ts`|
-|DELETE|`/api/v1/reventa/publicaciones/:id`|SesionValida; Cliente|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/entradas/postventa/postventa/reventa.controller.ts`|
-|GET|`/api/v1/reventa/publicaciones/:id`|SesionValida; Cliente|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/entradas/postventa/postventa/reventa.controller.ts`|
-|PATCH|`/api/v1/reventa/publicaciones/:id`|SesionValida; Cliente|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/entradas/postventa/postventa/reventa.controller.ts`|
-|GET|`/api/v1/reventa/publicaciones`|SesionValida; Cliente|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/entradas/postventa/postventa/reventa.controller.ts`|
-|POST|`/api/v1/reventa/publicaciones`|SesionValida; Cliente|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/entradas/postventa/postventa/reventa.controller.ts`|
+|POST|`/api/v1/reventa/checkout/:id/pagar`|SesionValida; Cliente|Sí; Compras/Reventa 3×150; ambas vías, con positivos|`App/backend/modulos/entradas/postventa/postventa/reventa.controller.ts`|
+|DELETE|`/api/v1/reventa/checkout/:id`|SesionValida; Cliente|Sí; Compras/Reventa 3×150; ambas vías, con positivos|`App/backend/modulos/entradas/postventa/postventa/reventa.controller.ts`|
+|GET|`/api/v1/reventa/checkout/:id`|SesionValida; Cliente|Sí; Compras/Reventa 3×150; ambas vías, con positivos|`App/backend/modulos/entradas/postventa/postventa/reventa.controller.ts`|
+|POST|`/api/v1/reventa/mantenimiento/expirar-publicaciones`|SesionValida; Administrador|Sí; Compras/Reventa 3×150; ambas vías, con positivos|`App/backend/modulos/entradas/postventa/postventa/reventa.controller.ts`|
+|GET|`/api/v1/reventa/mis-entradas`|SesionValida; Cliente|Sí; Compras/Reventa 3×150; ambas vías, con positivos|`App/backend/modulos/entradas/postventa/postventa/reventa.controller.ts`|
+|POST|`/api/v1/reventa/publicaciones/:id/checkout`|SesionValida; Cliente|Sí; Compras/Reventa 3×150; ambas vías, con positivos|`App/backend/modulos/entradas/postventa/postventa/reventa.controller.ts`|
+|DELETE|`/api/v1/reventa/publicaciones/:id`|SesionValida; Cliente|Sí; Compras/Reventa 3×150; ambas vías, con positivos|`App/backend/modulos/entradas/postventa/postventa/reventa.controller.ts`|
+|GET|`/api/v1/reventa/publicaciones/:id`|SesionValida; Cliente|Sí; Compras/Reventa 3×150; ambas vías, con positivos|`App/backend/modulos/entradas/postventa/postventa/reventa.controller.ts`|
+|PATCH|`/api/v1/reventa/publicaciones/:id`|SesionValida; Cliente|Sí; Compras/Reventa 3×150; ambas vías, con positivos|`App/backend/modulos/entradas/postventa/postventa/reventa.controller.ts`|
+|GET|`/api/v1/reventa/publicaciones`|SesionValida; Cliente|Sí; Compras/Reventa 3×150; ambas vías, con positivos|`App/backend/modulos/entradas/postventa/postventa/reventa.controller.ts`|
+|POST|`/api/v1/reventa/publicaciones`|SesionValida; Cliente|Sí; Compras/Reventa 3×150; ambas vías, con positivos|`App/backend/modulos/entradas/postventa/postventa/reventa.controller.ts`|
 |POST|`/api/v1/admin/cuentas/:id/activar`|SesionRequerida, AdministradorRequerido; Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/identidad/administracion-cuentas/administracion-cuentas.controller.ts`|
 |POST|`/api/v1/admin/cuentas/:id/desactivar`|SesionRequerida, AdministradorRequerido; Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/identidad/administracion-cuentas/administracion-cuentas.controller.ts`|
 |DELETE|`/api/v1/admin/cuentas/:id`|SesionRequerida, AdministradorRequerido; Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/identidad/administracion-cuentas/administracion-cuentas.controller.ts`|

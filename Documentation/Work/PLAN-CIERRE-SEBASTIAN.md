@@ -1,5 +1,69 @@
 # Cierre de Alimentos — Sebastián
 
+## Seguridad global: Compras y Reventa — 13 de noviembre de 2026
+
+**Compras 8/8 y Reventa 11/11. Global 88/159; 71 pendientes. RNF-05/06 parciales.**
+Se contrastan y amplían las 19 rutas pendientes, sin diferencias método/ruta
+ni cambios del inventario 178 declaradas / 173 expuestas / 159 protegidas.
+Las 69 cubiertas anteriores, incluidas 30/30 Alimentos, se reutilizan con fuentes
+relevantes intactas desde 62ffd7b; los cortes inferiores se conservan como historia.
+
+Inicio limpio y sincronizado, solo `feature/sebastian` **62ffd7b**. PR #50 abierto
+hacia develop 41ca881 y CI **43523770155, 8/8** comprobados. No se integran ramas.
+No se demuestra una brecha nueva de producto; solo herramientas y documentación.
+Guardas, estados, snapshots, historial, idempotencia y contratos internos/financieros
+de Ventas se conservan, sin arquitectura ni CU nuevos de otros integrantes.
+
+Tres clientes nuevos, Personal/Organizador/Administrador exclusivos. Evento
+publicado a 30 días y localidad propia, sin semillas ni cambios de claves previas.
+Cada canal/final crea compras/publicaciones/checkouts nuevos. Gateway recibe
+turno real; no se acredita propiedad por un 428, DTO o recurso inexistente.
+Compras prueba atribución, listas/detalle, cupones, pago y cancelación de recursos
+propios/ajenos. Selección mixta cancela solo propias según contrato. Reventa
+conserva mercado compartido, propiedad vigente, elegibilidad y comprador del
+checkout; se comprueban QR/propiedad/historial tras transferir y filtrado posterior.
+
+| Final UTC del 13/11 | Total | Autorización/contrato + rol | DTO / estado / concurrencia separados | SQL/Redis sin cambios en rechazos |
+|---|---|---|---|---|
+| 23:55:46.428 | **150/150**, 10,880 s | **134/134 + 8/8** | **4/4 + 2/2 + 2/2** | **68/68** |
+| 23:56:01.822 | **150/150**, 13,469 s | **134/134 + 8/8** | **4/4 + 2/2 + 2/2** | **68/68** |
+| 23:56:19.061 | **150/150**, 14,924 s | **134/134 + 8/8** | **4/4 + 2/2 + 2/2** | **68/68** |
+
+Cada canal acredita positivos de **19/19** operaciones; los cuatro 400 por final
+se separan. Rechazos con SQL/Redis iguales, titular/vencimiento absoluto del
+bloqueo y disponibilidad SQL NOWAIT. Se conservan claves financieras, reservas,
+cupones, publicaciones, propiedad, QR y libro asociado. Pago/cancelación se
+prueban antes de completarlos; recursos independientes para mutaciones incompatibles.
+Seis transferencias finales con QR rotado, historial de dos filas y un cobro/un intento.
+
+Expiración administrativa global: el control inicial **146/146** solo comprobó
+negativas y 18 rutas positivas. Se verificó después que las ocho publicaciones
+existentes eran nuevas del ensayo, sin transacciones ajenas. Las finales agregan
+**seis barridos positivos**, con todo el ámbito descartable comprobado antes,
+inmediatamente antes y después: 13/18/23/28/33/38 anuncios propios, cero ajenos;
+una revisada/expirada por barrido, otros anuncios/QR/historial/finanzas/Redis
+intactos. Sin filtro de producto ni borrado de datos. Si aparece un ámbito ajeno
+en otra ventana, el arnés omite el positivo y registra 18/19 con limitación.
+
+Serial, sin reintentos ni límites ampliados; mismas once imágenes saludables,
+131 compilados relevantes coincidentes, Node 22.22.3, Redash detenido. Memoria
+y procedencia en evidencia. **124/124 unitarias actuales, seis suites**.
+Se reutilizan Boletería **23/23 × dos** de CI 43523770155 y aceptación histórica
+**16/16 automática/visible**, con fuentes pertinentes sin cambios; no son nuevas
+ejecuciones. Sin fallos nuevos en las mediciones; fallos históricos conservados.
+Herramientas publicadas en **65a2b81**, con las mismas fuentes medidas.
+
+Restauración real, capacidad Redash y publicación/CI se registran en RESULTADO,
+evidencia y PR #50. No confundir estados restaurados con accesibilidad HTTP.
+Solo origin/feature/sebastian, sin merge/auto-merge. Fuera: F12, CU-028, funciones
+financieras nuevas, módulo Acceso QR independiente, DAST, fuentes/imágenes y
+ZeroTier. SIGTERM/outbox no se reabren preventivamente ni se declaran corregidos.
+
+[Resultado](../../App/infra/informe-atributos/seguridad/RESULTADO.md) ·
+[Cobertura](../../App/infra/informe-atributos/seguridad/COBERTURA-RECURSOS.md) ·
+[Reproducción](../../App/infra/informe-atributos/seguridad/AUTORIZACION-VENTAS.md) ·
+[Evidencia saneada](../../App/infra/informe-atributos/seguridad/VENTAS-RECURSOS-EVIDENCIA.json).
+
 ## Cierre de autorización de Alimentos — 13 de noviembre de 2026
 
 **Alimentos: 30/30. Global: 69/159; 90 pendientes. RNF-05/06 parciales.**

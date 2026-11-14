@@ -1,12 +1,16 @@
 # Reproducir Seguridad RNF-05 / RNF-06
 
-**Bloque posterior: cierre de autorización de Alimentos**, 30/30 rutas y 69/159
+**Bloque vigente: Compras 8/8 y Reventa 11/11**, global **88/159**, 71 pendientes:
+[AUTORIZACION-VENTAS.md](AUTORIZACION-VENTAS.md), `finales-ventas.py`.
+No repite recorridos completos ni amplía DAST; RNF-05/06 siguen parciales.
+
+**Bloque anterior: cierre de autorización de Alimentos**, 30/30 rutas y 69/159
 globales: [AUTORIZACION-ALIMENTOS.md](AUTORIZACION-ALIMENTOS.md).
 Usa `finales-alimentos.py`, sin ampliar DAST ni repetir los recorridos completos.
 Los comandos/resultados inferiores conservan sus alcances históricos.
 
 
-**Bloque actual: autorización por recurso y DAST activo de API**:
+**Bloque histórico: autorización por recurso y DAST activo de API**:
 [AUTORIZACION-DAST.md](AUTORIZACION-DAST.md), [cobertura](COBERTURA-RECURSOS.md),
 [matriz del curso](SECURITY-SAFETY.md) y [evidencia](RECURSOS-DAST-EVIDENCIA.json).
 Usar `finales-recursos.py` para este bloque, conservando los comandos históricos
