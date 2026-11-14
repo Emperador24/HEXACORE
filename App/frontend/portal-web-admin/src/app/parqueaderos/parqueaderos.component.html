@@ -5,8 +5,8 @@
   </div>
   @if (panel()) {
     <div class="acciones">
-      <span class="vivo" [class.activo]="enVivo()" [matTooltip]="enVivo() ? 'Recibiendo cada 3 s' : 'Reconectando el flujo en vivo'">
-        <span class="punto"></span>{{ enVivo() ? 'En vivo' : 'Reconectando' }} · {{ panel()!.actualizadoEn | date: 'HH:mm:ss' }}
+      <span class="vivo" [class.activo]="enVivo()" [matTooltip]="enVivo() ? 'Recibiendo cada 3 s' : 'El flujo está desconectado'">
+        <span class="punto"></span>{{ enVivo() ? 'En vivo' : 'Sin conexión' }} · {{ panel()!.actualizadoEn | date: 'HH:mm:ss' }}
       </span>
     </div>
   }

@@ -51,13 +51,13 @@ export class OcupacionService {
   ) {}
 
   /** Pasos 2-4 y 7: el panel completo de un evento. */
-  async panel(eventoId: string) {
+  async panel(eventoId: string, m: EntityManager = this.datos.manager) {
     const { evento } = await this.eventos.detalle(eventoId);
     const ahora = new Date();
-    const zonas = await this.estadoZonas(this.datos.manager, eventoId);
+    const zonas = await this.estadoZonas(m, eventoId);
     const [recomendacion, redirecciones] = await Promise.all([
-      this.recomendacion(this.datos.manager, eventoId, zonas),
-      this.redirecciones(eventoId),
+      this.recomendacion(m, eventoId, zonas),
+      this.redirecciones(eventoId, m),
     ]);
     const capacidad = zonas.reduce((n, z) => n + z.capacidad, 0);
     const ocupados = zonas.reduce((n, z) => n + z.ocupados, 0);
@@ -78,6 +78,14 @@ export class OcupacionService {
       umbrales: UMBRALES_PARQUEADERO,
       actualizadoEn: ahora,
     };
+  }
+
+  /** Límite solo de la lectura SSE; SET LOCAL no se filtra a otros usos del pool. */
+  panelParaFlujo(eventoId: string) {
+    return this.datos.transaction(async m => {
+      await m.query("SET LOCAL statement_timeout = '2000ms'");
+      return this.panel(eventoId, m);
+    });
   }
 
   /** Resumen para el panel del evento (CU-019), por interfaz local. */
@@ -168,8 +176,8 @@ export class OcupacionService {
   }
 
   /** Historial de redirecciones, con cuántos vehículos llegaron al destino mientras estuvo vigente. */
-  redirecciones(eventoId: string) {
-    return this.datos.query(
+  redirecciones(eventoId: string, m: EntityManager = this.datos.manager) {
+    return m.query(
       `SELECT r.id, r.zona_origen_id AS "zonaOrigenId", o.nombre AS "zonaOrigen", r.zona_destino_id AS "zonaDestinoId", d.nombre AS "zonaDestino",
               r.motivo, r.vigente, r.resultado, r.realizado_por AS "realizadoPor", r.fecha, r.terminada_en AS "terminadaEn",
               (SELECT count(*)::int FROM estancias e WHERE e.zona_id = r.zona_destino_id AND e.ingreso_en >= r.fecha

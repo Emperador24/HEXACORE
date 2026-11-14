@@ -69,6 +69,25 @@ export class SesionValida implements CanActivate {
       throw sinAutenticar('Necesitas iniciar sesión para hacer esto');
     }
 
+    const sesion = await this.validar(token);
+
+    const permitidos = this.reflector.getAllAndOverride<string[] | undefined>(ROLES_PERMITIDOS, [
+      contexto.getHandler(),
+      contexto.getClass(),
+    ]);
+    if (permitidos && !sesion.roles.some((rol) => permitidos.includes(rol))) {
+      throw new ForbiddenException({
+        codigo: 'ROL_INSUFICIENTE',
+        mensaje: `Esta operación es solo para: ${permitidos.join(', ')}`,
+      });
+    }
+
+    peticion.sesion = sesion;
+    return true;
+  }
+
+  /** La misma verificación para la conexión inicial y cada emisión del SSE. */
+  async validar(token: string): Promise<SesionVerificada> {
     const sesion = await this.verificar(token);
     if (!sesion) {
       throw sinAutenticar('Tu sesión no es válida o ya caducó. Inicia sesión de nuevo.');
@@ -88,19 +107,12 @@ export class SesionValida implements CanActivate {
       throw sinAutenticar('Tu sesión se cerró. Inicia sesión de nuevo.');
     }
 
-    const permitidos = this.reflector.getAllAndOverride<string[] | undefined>(ROLES_PERMITIDOS, [
-      contexto.getHandler(),
-      contexto.getClass(),
-    ]);
-    if (permitidos && !sesion.roles.some((rol) => permitidos.includes(rol))) {
-      throw new ForbiddenException({
-        codigo: 'ROL_INSUFICIENTE',
-        mensaje: `Esta operación es solo para: ${permitidos.join(', ')}`,
-      });
+    // La espera de Redis puede cruzar exp. Reutiliza el verificador, también
+    // justo antes de devolver una sesión que autorizará la emisión del SSE.
+    if (!await this.verificar(token)) {
+      throw sinAutenticar('Tu sesión no es válida o ya caducó. Inicia sesión de nuevo.');
     }
-
-    peticion.sesion = sesion;
-    return true;
+    return sesion;
   }
 
   private async verificar(token: string): Promise<SesionVerificada | null> {

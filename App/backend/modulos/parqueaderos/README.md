@@ -29,7 +29,7 @@ Sin entidades TypeORM: SQL explícito.
 | GET `eventos/:id/cache` · POST `…/sincronizacion` | Org, Admin, Personal | CU-022 offline-first: caché del punto de control y registros hechos sin red |
 | GET `eventos/:id/vehiculos` | Org, Admin, Personal | Vehículos en el lote |
 | GET `eventos/:id/recomendacion` | Org, Admin, Personal | CU-025, paso 7: zona que se indica a quien entra |
-| GET `eventos/:id/ocupacion` (+ `/flujo` SSE cada 3 s) | Org, Admin | CU-025, pasos 2-4 |
+| GET `eventos/:id/ocupacion` (+ `/flujo` SSE cada 3 s, revalida sesión) | Org, Admin | CU-025, pasos 2-4 |
 | POST / PATCH `eventos/:id/redirecciones[/:rid]` | Org, Admin | CU-025, pasos 6-8 |
 
 El gateway deja pasar al rol Cliente a `/parqueaderos/`; el Núcleo acota cada ruta por rol.
