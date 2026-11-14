@@ -3,7 +3,8 @@
 Playwright recorre en los portales reales los casos de uso de Samuel Emperador: abre Chrome,
 hace lo que haría una persona y deja un **video por caso de uso**, con un rótulo en pantalla que
 dice qué paso del caso de uso se está viendo. No incluye CU-027 ni CU-029. Los 8 casos duran
-unos 5 min 20 s.
+unos 3 min 30 s. Para presentarla en vivo, qué correr y qué decir en cada pantalla:
+[GUIA-DEMOSTRACION.md](GUIA-DEMOSTRACION.md).
 
 | Archivo | Caso de uso | Portal · cuenta |
 |---|---|---|
@@ -36,8 +37,8 @@ npm run demo:informe    # abre el informe con los videos y los pasos
 ```
 
 `DEMO_LENTO` (ms entre acciones) y `DEMO_PAUSA` (ms al final de cada paso y en cada pantalla
-nueva) ajustan el ritmo. Cada pantalla se queda **al menos 2 s**: `DEMO_PAUSA` puede alargarla,
-no acortarla.
+nueva) ajustan el ritmo. Cada pantalla se queda **como mucho 1,5 s**: `DEMO_PAUSA` puede
+acortarla, no alargarla.
 
 ## Qué prepara y qué no toca
 

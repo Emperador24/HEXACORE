@@ -72,6 +72,10 @@ test('CU-028 · Roles y permisos', async ({ page, browser }) => {
       await expect(supervisora.getByRole('alert')).toContainText(/permiso de leer en parqueaderos/);
     });
   } finally {
+    // Primero la página y después su contexto: si se cierra solo el contexto,
+    // la captura final de `screenshot: 'on'` busca la página ya cerrada y
+    // Playwright 1.56 imprime «Internal error: step id not found».
+    await supervisora.close();
     await otra.close();
   }
 

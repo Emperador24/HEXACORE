@@ -2,12 +2,12 @@ import { Page, expect, test } from '@playwright/test';
 import { ENTORNO } from './entorno';
 
 /**
- * Cuánto se queda cada pantalla del flujo después de su paso: al menos 2 s,
- * para que se alcance a leer en la presentación y en el video. `DEMO_PAUSA`
- * puede alargarla, nunca bajarla de ese mínimo.
+ * Cuánto se queda cada pantalla del flujo después de su paso: como mucho 1,5 s,
+ * para que la demostración quepa en el tiempo de la sustentación. `DEMO_PAUSA`
+ * puede acortarla, nunca subirla de ese máximo.
  */
-const PAUSA_MINIMA = 2000;
-export const PAUSA = Math.max(PAUSA_MINIMA, Number(process.env.DEMO_PAUSA ?? PAUSA_MINIMA));
+const PAUSA_MAXIMA = 1500;
+export const PAUSA = Math.min(PAUSA_MAXIMA, Number(process.env.DEMO_PAUSA ?? PAUSA_MAXIMA));
 
 /**
  * Un paso de la demostración: lo anuncia en pantalla (queda en el video) y en
