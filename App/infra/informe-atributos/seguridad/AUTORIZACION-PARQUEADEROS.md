@@ -1,5 +1,10 @@
 # Autorización por recurso de Parqueaderos — 13/11/2026 Bogotá
 
+**Corte histórico bb0c9c8.** La continuación del SSE tras revocar sesión descrita
+aquí se corrige y mide en [AUTORIZACION-SSE.md](AUTORIZACION-SSE.md). Se conserva
+esta evidencia de autorización inicial; no repetir el arnés 3×300 para ese cambio.
+Los comandos y la expectativa SSE inferiores pertenecen a este corte anterior.
+
 **25/25 operaciones por gateway y Núcleo directo; global 113/159, 46 pendientes.**
 El inventario conserva 178 declaradas / 173 expuestas / 159 protegidas. RNF-05/06
 siguen parciales. [Evidencia permitida](PARQUEADEROS-RECURSOS-EVIDENCIA.json) y

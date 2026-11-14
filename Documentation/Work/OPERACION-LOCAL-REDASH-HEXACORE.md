@@ -1,5 +1,29 @@
 # Alternar Redash y HEXACORE en este Mac
 
+**Última ventana — 13/11, revalidación SSE:** Docker **activo** al inicio/final;
+**95 IDs/imágenes/montajes/estados originales conservados**, CU-015/ZAP detenidos,
+otros proyectos sin intervención. Base/Redis/volumen/vhost nuevos, datos/credenciales
+anteriores intactos. Tres nuevos contenedores detenidos **0/0/0 sin OOM**, datos
+conservados. Imagen corregida solo del Núcleo de ensayo; originales intactas.
+Tres finales SSE aprobadas sin repetir los 300 ni los 16 recorridos. SIGTERM con
+dos flujos abiertos por pasada cerró proceso y conexiones en **246–272 ms**, límite
+existente **5 s**. No se amplían límites ni se reinterpreta el incidente anterior.
+
+Siete Redash reanudados una sola vez. Reset inicial y luego 200 durante la
+incorporación de servicios. Control posterior **14/11 03:16:49 UTC (13/11 22:16
+Bogotá)**: **/ping y /login agotan 15 s**, PostgreSQL listo/Redis PONG. Nuevo
+cgroup: oom_kill server **2**, worker **5**, adhoc_worker **1**, scheduled_worker
+**1**, scheduler/proveedores **0**. **Estados restaurados; HTTP bloqueado por
+capacidad/OOM**, sin ciclos manuales de recuperación. Los 200 anteriores no
+acreditan estabilidad. Requiere capacidad autorizada/revisión de concurrencia y
+comprobación del responsable, sin detener otros proyectos ni cambiar recursos globales.
+
+Contadores registrados aparte: gateway de otro proyecto ya estaba restarting
+**272→289**, scheduler **3→1** durante alternancia. No se intervienen para igualar
+contadores. Recursos Redis con fallo simulado fueron exclusivamente el nuevo
+contenedor del ensayo (CLIENT PAUSE con fin programado), nunca Redis compartido.
+[Resultado](../../App/infra/informe-atributos/seguridad/RESULTADO.md).
+
 **Última ventana — 13/11, Parqueaderos:** Docker **activo** al inicio/final;
 **92 IDs/imágenes/montajes/estados originales conservados**, CU-015/ZAP detenidos.
 Base original con cero tarifas intacta. Para los positivos globales se añadieron

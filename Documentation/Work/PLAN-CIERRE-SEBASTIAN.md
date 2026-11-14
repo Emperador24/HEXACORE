@@ -1,6 +1,81 @@
 # Cierre de Alimentos — Sebastián
 
-## Seguridad global: Parqueaderos — 13 de noviembre de 2026, corte vigente
+## Revalidación SSE Parqueaderos — 13/11/2026 Bogotá, corte vigente
+
+**Global 113/159, Parqueaderos 25/25, 46 pendientes; sin aumento. RNF-05/06 parciales.**
+Inicio limpio/sincronizado `feature/sebastian` **bb0c9c8**; develop **41ca881**,
+PR #50 abierto y CI **43540458703 8/8** comprobados. Sin integrar ramas ni reescribir
+historia. Inventario sin cambios: **178 declaradas / 173 expuestas / 159 protegidas**.
+
+Reproducción anterior nueva: después de revocar realmente la sesión, el SSE
+entrega capacidad/timestamp nuevos a los **3000,4 / 3018,1 ms** en gateway/Núcleo;
+nueva conexión 401. Causa: guarda solo inicial. Se reutiliza su validación JWT/
+Redis cada tres segundos y antes de emitir; JWT se verifica otra vez después de
+Redis para cubrir caducidad durante la espera. Sin reglas JWT duplicadas ni
+sistema de sesiones nuevo. Monitor activo durante consulta, una comprobación
+por conexión, sin consultas apiladas. Invalidación/fallo desuscribe/completa,
+descarta resultado tardío; desconexión/apagado liberan temporizadores/suscripciones.
+Panel acotado a 5 s y SQL de Parqueaderos a 2 s local a transacción, sin alterar
+pool de otras operaciones. Promesas externas no se cancelan arbitrariamente.
+
+Inicial: HTTP **401/403/503**. Iniciado: conserva **HTTP 200**, un evento saneado
+`sesion_finalizada` y EOF. Sin token/trazas/errores internos. Bearer exclusivamente
+en Authorization. Detección periódica hasta ciclo 3 s + coste Redis hasta 2 s
++ planificación/red; **sin promesa de revocación instantánea**.
+
+| Final del 14/11 UTC | Revocación G/N, ms | Tras exp G/N, ms | Redis G/N, ms | SIGTERM, ms |
+|---|---|---|---|---|
+| 03:10:08.983 | 3002,85 / 2994,77 | 1750 / 1339 | 4924,40 / 4903,24 | 245,92 |
+| 03:11:02.915 | 3000,37 / 3000,74 | 1731 / 1452 | 4912,38 / 4930,08 | 272,12 |
+| 03:11:56.887 | 2998,04 / 2999,21 | 1650 / 1316 | 4918,82 / 4915,49 | 266,28 |
+
+Tres finales aprobadas en ambos canales: continuidad, rechazos iniciales,
+revocación real, caducidad, fallo Redis, consulta en curso y desconexión;
+**cero datos posteriores**, terminal y EOF. Revocación durante SQL: LOCK en base
+exclusiva, liberar después de revocar, cierre **3,01–6,94 ms** sin emisión tardía.
+503 inicial con Redis no comprobable en **2004,98–2018,61 ms**. SIGTERM con dos
+flujos por pasada: proceso 0 sin OOM, **246–272 ms**, límite existente **5 s**.
+Mismo contenedor reanudado como parte prevista del caso. Sin reintentos ni
+ampliaciones; HTTP/SSE 10 s, Redis 2 s. **21 JS** coincidentes, Node 22.22.3,
+imagen/fuentes/arnés del servidor estables, memoria antes/después. Base medida
+bb0c9c8 + cambios locales identificados por huellas. No repetir los 300 ni los
+16 recorridos completos; evidencia anterior reutilizada con sus límites/fallos.
+
+Caducidad: emisión corta es fixture JWT firmado, con sesión propia real y HTTP/
+validador/Redis reales, sin cambiar reloj, filas o TTL productivo. Redis: CLIENT
+PAUSE 6500 ALL solo en nuevo contenedor, fin programado; sin fallos sobre Redis
+compartido. **20/20 unitarias backend**, cinco suites (siete previas + trece nuevas),
+dobles/tiempo virtual para carreras y recursos. **6/6 portal**, dobles en Chrome
+Headless. Build/lint/tipos app/spec aprobados. Regresión HTTP adicional para CI.
+CI publicada se comprueba por SHA y se registra en PR, separada de mediciones.
+
+Cliente: terminal libera reader/lock; 401 permite una renovación existente hasta
+recibir datos válidos, otro rechazo/403/503 detiene reconexiones; propaga el 401
+si obtener token falla antes de fetch. Evita reapertura tras destruir/cambiar
+evento. Renovación/backoff de transporte existentes conservados; móvil sin
+consumidor SSE no cambia. Monitoreo/Evacuación: riesgo equivalente identificado
+por lectura; fuera del cambio. Fallos conservados: tipos con tsconfig base sin
+Jasmine, corregido con app/spec; caso adicional del consumidor **5/6→6/6** al
+propagar ErrorCuenta. Complemento del cliente sin cambiar servidor medido;
+huellas finales del cliente separadas de las del corte de medición.
+
+Ámbito nuevo de base/Redis/volumen/vhost, siete cuentas/eventos/sesiones propios,
+solo proveedores simulados, sin semillas destructivas ni cambios de datos/claves
+previos. Docker activo inicial/final, **95 originales con mismos IDs/imágenes/
+montajes/estados**, tres nuevos detenidos **0/0/0 sin OOM**, datos retenidos.
+Redash reanudado una vez. Último control **03:16:49 UTC: /ping y /login timeout
+15 s**, PG listo/Redis PONG; oom_kill nuevos server 2 / worker 5 / adhoc_worker 1 /
+scheduled_worker 1, resto 0. Estados restaurados, HTTP bloqueado por OOM/capacidad;
+sin ciclos manuales ni intervenir otros proyectos. Contadores observados aparte
+(gateway ya restarting 272→289, scheduler 3→1). Outbox histórico no se reabre.
+
+[Resultado completo](../../App/infra/informe-atributos/seguridad/RESULTADO.md) ·
+[Contrato/reproducción](../../App/infra/informe-atributos/seguridad/AUTORIZACION-SSE.md) ·
+[Evidencia](../../App/infra/informe-atributos/seguridad/SSE-PARQUEADEROS-EVIDENCIA.json).
+Fuera otros SSE, CU-028/F12, nuevos casos de uso, DAST, fuentes/imágenes y
+ZeroTier. Solo origin/feature/sebastian, PR hacia develop, sin merge/auto-merge.
+
+## Seguridad global: Parqueaderos — 13 de noviembre de 2026, histórico bb0c9c8
 
 **Parqueaderos 25/25; global 113/159, 46 pendientes. RNF-05/06 parciales.**
 Inicio limpio/sincronizado en `feature/sebastian`, f5903a7; develop 41ca881,

@@ -24,9 +24,11 @@ espacios, QR y redirecciones conservan el contexto del evento y la auditoría.
 Roles operativos globales y disponibilidad compartida conforme al contrato;
 salida conserva liquidación actual sin nuevo pago electrónico. Tarifa positiva
 solo en base vacía/Redis/vhost nuevos, con la tarifa preexistente vacía intacta.
-SSE autoriza al conectar y emite un evento válido; flujo abierto sigue emitiendo
-tras revocar sesión y nueva conexión recibe 401. Se cierran recursos del flujo;
-no se acredita revocación continua de conexiones existentes.
+SSE conserva autorización inicial y ahora revalida en su ciclo de 3 s y antes
+de emitir; revocación/caducidad/fallo Redis cierran con evento saneado y EOF.
+[Tres finales SSE](SSE-PARQUEADEROS-EVIDENCIA.json) por gateway/Núcleo, sin datos
+posteriores y sin repetir los 300 controles. No se promete revocación instantánea
+ni aumenta la cobertura por esta corrección: **113/159**, 46 pendientes.
 
 [Contratos y reproducción](AUTORIZACION-PARQUEADEROS.md) ·
 [Evidencia nueva permitida](PARQUEADEROS-RECURSOS-EVIDENCIA.json) ·

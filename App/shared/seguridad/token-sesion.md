@@ -101,6 +101,25 @@ puede llamar al servicio directamente y poner la cabecera que quiera. Comprobado
 
 ## Implementaciones
 
+### Conexión SSE de ocupación de Parqueaderos
+
+Este endpoint revalida con su misma `SesionValida` en el ciclo de 3 s y antes
+de emitir datos. JWT caducado/revocado o Redis no comprobable termina el flujo.
+La detección es periódica: hasta ciclo + comprobación (Redis tiene límite de
+2 s), más planificación/red; no se promete revocación instantánea.
+
+Antes de abrir conserva 401/403/503. Una vez iniciado, HTTP sigue siendo 200:
+emite un único `event: sesion_finalizada` con `codigo` y mensaje fijo y cierra
+con EOF. Códigos: `SIN_AUTENTICAR` para caducidad/revocación,
+`SESIONES_NO_DISPONIBLES` para fallo de comprobación y `FLUJO_NO_DISPONIBLE` para
+fallo/timeout del panel. Sin token, trazas ni respuestas crudas en el evento.
+El consumidor web conserva Bearer, permite una renovación existente ante 401
+hasta recibir datos válidos y se detiene ante otro rechazo/403/503. Desconexión
+y apagado liberan suscripciones; resultados tardíos no se emiten.
+
+Este cambio no acredita ni modifica otros módulos SSE. Evidencia y límites:
+[AUTORIZACION-SSE.md](../../infra/informe-atributos/seguridad/AUTORIZACION-SSE.md).
+
 - Emisión: `backend/modulos/identidad/sesiones/`
 - Verificación: `backend/modulos/entradas/compartido/sesion-valida.guard.ts`
 - Prueba entre servicios: `backend/modulos/entradas/ventas/pruebas/rnf06-autenticacion.py`

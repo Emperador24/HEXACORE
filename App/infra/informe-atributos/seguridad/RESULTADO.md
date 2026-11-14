@@ -1,6 +1,120 @@
 # Seguridad de Sebastián — RNF-05 y RNF-06
 
-## Parqueaderos — 13/11/2026 Bogotá, corte vigente
+## Sesión durante el SSE de Parqueaderos — 13/11/2026 Bogotá, corte vigente
+
+**Global 113/159, Parqueaderos 25/25; 46 pendientes. Sin aumento por este cambio.
+RNF-05/06 siguen parciales.** Inicio limpio/sincronizado en `feature/sebastian`
+**bb0c9c8**; develop **41ca881**, PR **#50 abierto** y
+[CI 43540458703, 8/8](https://github.com/Emperador24/HEXACORE/actions/runs/43540458703)
+confirmados. Sin integrar ramas ni reescribir historia. Inventario nuevamente
+contrastado: **178 declaradas / 173 expuestas / 159 protegidas**, sin diferencias.
+
+La guarda se ejecutaba solo al conectar. Reproducción nueva con sesión/evento
+exclusivos: después de DELETE sesiones/actual y de crear una zona mediante otra
+sesión autorizada, el flujo abierto entrega capacidad/timestamp nuevos a los
+**3000,4 ms por gateway / 3018,1 ms por Núcleo**. Una conexión nueva recibe 401.
+El corte anterior y su evidencia se conservan debajo, sin reinterpretarlos.
+
+La conexión ahora reutiliza `SesionValida.validar`: comprobación JWT/Redis
+existente cada 3 s y antes de emitir; verifica nuevamente la vigencia tras
+esperar Redis. El monitor sigue activo mientras hay un panel pendiente,
+comparte una única comprobación en curso y no apila consultas. Invalidación o
+fallo completa/desuscribe el flujo, descarta resultados tardíos y libera su
+temporizador. Cierre del módulo completa conexiones abiertas. Panel acotado a
+5 s; SQL de Parqueaderos usa statement_timeout local de 2 s en transacción,
+sin cambiar el pool de otras operaciones. Las promesas externas no se cancelan
+arbitrariamente: el resultado tardío se descarta. Se conserva el servicio de Eventos.
+
+Antes de abrir: **401/403/503** según contrato. Una vez iniciado: **HTTP 200**,
+un evento saneado `sesion_finalizada` y EOF; código SIN_AUTENTICAR al caducar/
+revocar, SESIONES_NO_DISPONIBLES si falla la comprobación, FLUJO_NO_DISPONIBLE
+si falla/vence el panel. Mensajes fijos, sin token, trazas ni respuestas internas.
+Bearer permanece en Authorization. Detección periódica, **no instantánea**:
+ciclo de 3 s + comprobación Redis de hasta 2 s + planificación/transporte.
+
+### Tres mediciones finales del alcance SSE
+
+| Final, 14/11 UTC (13/11 Bogotá) | Revocación G/N, ms | Tras exp G/N, ms | Redis G/N, ms | SIGTERM, ms |
+|---|---|---|---|---|
+| 03:10:08.983 | 3002,85 / 2994,77 | 1750 / 1339 | 4924,40 / 4903,24 | 245,92 |
+| 03:11:02.915 | 3000,37 / 3000,74 | 1731 / 1452 | 4912,38 / 4930,08 | 272,12 |
+| 03:11:56.887 | 2998,04 / 2999,21 | 1650 / 1316 | 4918,82 / 4915,49 | 266,28 |
+
+Las tres aprobaron gateway y Núcleo directo: continuidad de dos paneles nuevos,
+rechazos iniciales, revocación real, caducidad, Redis no disponible, revocación
+durante SQL y desconexión. **Cero datos posteriores**, un terminal y EOF. Consulta
+en curso observada mediante LOCK exclusivo en la base nueva; cierre al liberar
+después de revocar en **3,01–6,94 ms**, sin emisión tardía. Redis antes de abrir:
+**503 en 2004,98–2018,61 ms**. SIGTERM con **dos conexiones abiertas por pasada**:
+EOF, proceso **0 sin OOM**, dentro de los **5 s existentes**; reanudación prevista
+del mismo contenedor, sin sustituir imagen ni ampliar el límite.
+
+Caducidad HTTP: token de ensayo firmado con exp de cinco segundos para una
+sesión real propia. **La emisión corta es fixture**; HTTP/validación/Redis reales.
+Sin modificar reloj, fila de sesión o TTL productivo. Redis nuevo exclusivamente
+se pausa con CLIENT PAUSE 6500 ALL y fin programado; no se detiene ni vacía Redis
+compartido. Control válido posterior a terminar el fallo. HTTP/SSE mantiene 10 s,
+Redis 2 s, SQL propio 2 s, panel 5 s, SIGTERM 5 s. Serial, sin reintentos.
+
+Mismas fuentes/imagen/arnés del servidor, Node **22.22.3**, **21 JS** coincidentes,
+gateway contrastado y memoria antes/después. Base medida **bb0c9c8 más cambios
+locales**, identificados por huellas; no se atribuye la corrección al commit previo.
+Las mediciones HTTP no usan el portal; las huellas de su corte y su versión final
+se separan. No se repiten los **300 controles** ni los **16 recorridos completos**.
+La cobertura anterior y sus fallos se reutilizan, con el cambio SSE descrito aquí.
+
+### Pruebas y consumidor
+
+Build/lint backend y tipos app/spec del portal aprobados. **20/20 unitarias
+backend, cinco suites**: siete anteriores y trece nuevas; dobles/tiempo virtual
+para consulta tardía, validación no solapada, fallos, desconexión y cierre del
+módulo; criptografía JWT real donde corresponde y Redis doble en unitarias.
+**6/6 del portal en Chrome Headless**, con dobles, no navegador contra HTTP real.
+Se agrega además una regresión HTTP a la suite Parqueaderos para CI; no se
+ejecuta localmente esa suite completa. CI de la publicación se comprueba por SHA
+y se registra en el PR, separada de estas mediciones.
+
+Portal reconoce terminal, cancela reader/lock y descarta frames posteriores.
+401 permite una renovación existente por cookie hasta recibir otro panel válido;
+un segundo rechazo detiene la reconexión. 403/503 terminales se detienen. El 401
+al obtener token antes de fetch conserva su estado. Generación de conexión evita
+reabrir tras destruir/cambiar evento; estado visual marca desconexión. Se conserva
+el backoff de transporte y la renovación existente. Móvil no consume este SSE y
+no cambia. Monitoreo/Evacuación tienen patrón equivalente de guarda inicial e
+intervalo; riesgo identificado por lectura, **sin corregir otros módulos SSE**.
+
+Fallos conservados: chequeo inicial de tipos del portal con tsconfig base sin
+Jasmine, corregido usando app/spec sin tocar configuración; regresión adicional
+del consumidor **5/6** por perder el 401 de tokenVigente, corregida propagando
+ErrorCuenta, **6/6** después. Este complemento del cliente no cambia el servidor
+de las tres mediciones HTTP. No hay finales SSE fallidas ni relanzamientos.
+
+### Entorno y límites
+
+Base/Redis/volumen/vhost nuevos, migraciones sin semillas, siete cuentas nuevas,
+eventos y sesiones exclusivos; solo proveedores simulados. Datos/configuración/
+cuentas/credenciales/volúmenes previos conservados. Núcleo original detenido;
+imagen corregida solo en etiqueta/contenedor de ensayo. Los **95 IDs/imágenes/
+montajes/estados originales** se conservan; tres contenedores nuevos detenidos,
+cierre **0/0/0 sin OOM**, datos nuevos retenidos. CU-015/ZAP detenidos, otros
+proyectos sin intervención. Docker **activo** al inicio/final.
+
+Siete Redash reanudados una sola vez: resets iniciales y después sondas 200.
+Control posterior **14/11 03:16:49 UTC (13/11 22:16 Bogotá)**: /ping y /login
+**agotan 15 s**, PG listo/Redis PONG. Cgroups nuevos: oom_kill server **2**, worker
+**5**, adhoc_worker **1**, scheduled_worker **1**, scheduler/proveedores **0**.
+**Estados restaurados, HTTP bloqueado por capacidad/OOM documentados**; sin
+ciclos manuales de recuperación ni cambios de recursos globales. Contadores
+separados: gateway ajeno ya restarting **272→289**, scheduler **3→1**, sin acciones
+para igualarlos. Conservados el resto de antecedentes, incluido outbox; no se
+reabre preventivamente ni se atribuye una corrección causal a esta entrega.
+
+[Contrato y reproducción](AUTORIZACION-SSE.md) ·
+[Mediciones permitidas](SSE-PARQUEADEROS-EVIDENCIA.json) ·
+[Cobertura sin aumento](COBERTURA-RECURSOS.md). Fuera CU-028/F12, nuevos casos de
+uso, otros SSE, DAST, fuentes/imágenes y ZeroTier. **RNF-05/06 no completos.**
+
+## Parqueaderos — 13/11/2026 Bogotá, corte histórico bb0c9c8
 
 **Parqueaderos 25/25. Global 113/159; 46 pendientes. RNF-05/06 parciales.**
 Se agregan exactamente las 25 rutas revisadas contra controladores compilados y

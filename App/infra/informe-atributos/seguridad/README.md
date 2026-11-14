@@ -1,6 +1,11 @@
 # Reproducir Seguridad RNF-05 / RNF-06
 
-**Bloque vigente: Parqueaderos 25/25**, global **113/159**, 46 pendientes:
+**Cambio vigente: revalidación del SSE de Parqueaderos**, sin ampliar cobertura:
+**113/159**, 46 pendientes. [AUTORIZACION-SSE.md](AUTORIZACION-SSE.md), `finales-sse.py`.
+Tres finales solo SSE; no repetir 300 controles ni 16 recorridos. Unitarias,
+dobles del cliente y HTTP reales se registran por separado.
+
+**Bloque anterior: Parqueaderos 25/25**, global **113/159**, 46 pendientes:
 [AUTORIZACION-PARQUEADEROS.md](AUTORIZACION-PARQUEADEROS.md), `finales-parqueaderos.py`.
 Base/Redis/vhost nuevos para tarifa positiva sin alterar configuración previa;
 SSE con cancelación explícita. RNF-05/06 siguen parciales.
