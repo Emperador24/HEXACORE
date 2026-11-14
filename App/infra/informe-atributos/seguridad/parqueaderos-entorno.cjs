@@ -52,7 +52,9 @@ async function main() {
     Object.assign(e, { POSTGRES_BD: m.base, REDIS_HOST: m.redis, RABBITMQ_URL: amqp.toString() });
     c.assert(Object.values(e).every(v => !String(v).includes('\n')));
     c.fs.writeFileSync(c.path.join(c.privado(), 'nucleo-descartable.env'), Object.entries(e).map(([k, v]) => k + '=' + v).join('\n') + '\n', { mode: 0o600 });
-    crearCore(m, n.Image); m.estado = 'CREADO'; c.guardar(archivo, m);
+    const imagenInicial = process.argv[3] ?? n.Image;
+    c.assert(imagenInicial === n.Image || imagenInicial.startsWith('hexacore-seg-parq-nucleo:'));
+    crearCore(m, imagenInicial); m.estado = 'CREADO'; c.guardar(archivo, m);
     docker(['start', c.proyecto + '-api-gateway-1']); console.log('Base vacía/migraciones, Redis y vhost exclusivos creados; Núcleo aislado usa gateway conservado.');
   } else if (accion === 'cambiar-imagen') {
     const m = c.leer(archivo); const imagen = process.argv[3]; c.assert(imagen?.startsWith('hexacore-seg-parq-nucleo:')); const actual = inspect(m.core); c.assert.equal(actual.Id, m.coreId);

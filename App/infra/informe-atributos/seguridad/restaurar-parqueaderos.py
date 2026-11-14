@@ -63,5 +63,5 @@ def main():
     assert all(all(x[k] for k in ['idIgual', 'imagenIgual', 'montajesIguales', 'estadoRestaurado']) for x in comparaciones)
     assert len(nuevos) == 3 and all(not c['State']['Running'] and not c['State']['OOMKilled'] and c['State']['ExitCode'] in [0, 143] for c in nuevos)
     assert all(c['Config']['Labels'].get('com.docker.compose.project') == 'hexacore-seguridad-parqueaderos-sebastian' for c in nuevos)
-    print('92 contenedores originales conservados/restaurados; tres de ensayo detenidos; Docker activo.', flush=True)
+    print(f'{len(comparaciones)} contenedores originales conservados/restaurados; tres de ensayo detenidos; Docker activo.', flush=True)
 if __name__ == '__main__': main()
