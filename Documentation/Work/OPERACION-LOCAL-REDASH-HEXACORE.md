@@ -1,5 +1,29 @@
 # Alternar Redash y HEXACORE en este Mac
 
+**Última ventana — 13/11, Parqueaderos:** Docker **activo** al inicio/final;
+**92 IDs/imágenes/montajes/estados originales conservados**, CU-015/ZAP detenidos.
+Base original con cero tarifas intacta. Para los positivos globales se añadieron
+base/Redis/volumen/vhost y Núcleo exclusivos; tres contenedores nuevos ahora
+detenidos, cierre **0/0/0 sin OOM**, datos conservados. No se reconstruyeron
+imágenes originales ni se cambiaron cuentas/claves/config previas. Tres finales
+nuevas **300/300**, Parqueaderos **25/25**, global **113/159**. Las guías inferiores
+sobre reanudación sin preparación siguen aplicando a los contenedores anteriores.
+
+Los siete Redash reanudados una sola vez. Primeras sondas del servidor tuvieron
+reset; las siguientes /ping y /login **200**. Control posterior **14/11 01:20:56
+UTC (13/11 20:20 Bogotá): ambas 200**, PG listo/Redis PONG. Cgroups del nuevo
+arranque: oom_kill server **3**, worker **4**, adhoc_worker **1**, scheduled_worker
+**2**, scheduler/proveedores **0**. El 200 puntual no elimina el bloqueo histórico
+por OOM/capacidad ni acredita disponibilidad sostenida; sin ciclos manuales de
+recuperación, sin intervenir otros proyectos ni modificar recursos globales.
+
+El primer chequeo de restauración falló por exigir contadores de reinicio
+idénticos pese a conservar estados. Auditoría posterior **solo lectura** confirmó
+los 92 originales; gateway de otro proyecto ya estaba restarting (147→175), sin
+intervención; scheduler 3→1 durante alternancia. Los contadores se conservan como
+observación, no se intentan restaurar. El arnés ya distingue ambas condiciones.
+[Resultado e historial](../../App/infra/informe-atributos/seguridad/RESULTADO.md).
+
 **Última ventana — 13/11, Compras/Reventa:** motor **activo** al inicio y al final.
 Mismos 92 IDs/imágenes/montajes y estados activo/detenido; CU-015/ZAP detenidos,
 siete Redash reanudados una sola vez, otros proyectos sin intervención. Tres

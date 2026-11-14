@@ -26,7 +26,8 @@ def main():
             'detalle': [{k: (uuid.sub(':id', x[k]) if isinstance(x[k], str) else x[k]) for k in ['canal', 'caso', 'categoria', 'estado', 'esperado', 'codigo', 'ok', 'conservado'] if k in x} for x in obs]})
     assert versiones[0] == versiones[1] == versiones[2]
     antes = leer('brecha-antes.json'); tarifa = leer('tarifa-original-conservada.json'); restauracion = leer('restauracion-parqueaderos.json')
-    assert tarifa['iguales'] and tarifa['filas'] == [] and all(all(v for k, v in x.items() if k != 'nombre') for x in restauracion['originales'])
+    assert tarifa['iguales'] and tarifa['filas'] == [] and all(all(x[k] for k in ['idIgual', 'imagenIgual', 'montajesIguales', 'estadoRestaurado']) for x in restauracion['originales'])
+    auditoria = leer('auditoria-restauracion.json')
     def oom(t): return int(dict(x.split() for x in t.splitlines())['oom_kill'])
     memoria = []
     for i in range(1, 4):
@@ -47,17 +48,19 @@ def main():
         'aislamiento': {'baseCreadaVacia': True, 'migracionesSinSemilla': True, 'redisNuevo': True, 'vhostNuevo': True,
             'cuentasNuevas': 7, 'tarifaOriginalVaciaConservada': True, 'sinPagosCorreoReales': True, 'datosAnterioresSinEscriturasDeEnsayo': True},
         'restauracion': {'inicioUTC': restauracion['inicio'], 'finUTC': restauracion['fin'], 'dockerActivoInicialFinal': True,
-            'contenedoresOriginalesConservados': len(restauracion['originales']), 'idsImagenesMontajesEstadosReiniciosIguales': True,
+            'contenedoresOriginalesConservados': len(restauracion['originales']), 'idsImagenesMontajesEstadosIguales': True,
             'contenedoresNuevosDetenidos': len(restauracion['nuevos']), 'cierresNuevos': [x['codigo'] for x in restauracion['nuevos']],
             'sinOomEnNuevos': not any(x['oom'] for x in restauracion['nuevos']), 'redashRestauraciones': 1, 'postgresListo': restauracion['postgresListo'], 'redisPong': restauracion['redisPong'],
             'httpPorEtapa': [{'servicio': x['servicio'], 'http': {k: {'codigoCurl': v['codigoCurl'], 'http': v['http']} for k, v in x['http'].items()}} for x in restauracion['pasos'] if 'http' in x],
             'oomKillAntesAlternar': {k: oom(v) for k, v in leer('redash-inicial-cgroups.json').items()},
-            'oomKillNuevoArranqueFinal': {k: oom(v) for k, v in restauracion['cgroupsFinales'].items()}},
+            'oomKillNuevoArranqueFinal': {k: oom(v) for k, v in auditoria['cgroups'].items()},
+            'controlPosteriorUTC': auditoria['fechaUTC'], 'httpPosterior': auditoria['http'], 'contadoresReinicioDistintos': auditoria['contadoresDistintos']},
         'memoria': memoria,
         'fallosConservados': [
             {'fase': 'desarrollo', 'resultado': 'FALLIDO antes de observaciones', 'causa': 'Snapshot financiero ordenaba por id; PK real es clave_idempotencia', 'correccion': 'Solo arnés, desarrollo-2 aprobado 296/296; finales añaden detalle confirmado y libro íntegro'},
             {'fase': 'unitaria nueva', 'resultado': 'TS2353 antes de ejecutar caso nuevo; seis existentes aprobadas', 'causa': 'Doble driverError no cumplía Error', 'correccion': 'Error con code/constraint; siete unitarias aprobadas y lint sin errores'},
-            {'fase': 'procedencia previa', 'resultado': 'Comparación gateway detenida antes de finales', 'causa': 'Se comparó configuración principal con archivo de rutas', 'correccion': 'Compara cada destino real; rutas contra archivo generado y fuente salvo CORS local'}],
+            {'fase': 'procedencia previa', 'resultado': 'Comparación gateway detenida antes de finales', 'causa': 'Se comparó configuración principal con archivo de rutas', 'correccion': 'Compara cada destino real; rutas contra archivo generado y fuente salvo CORS local'},
+            {'fase': 'restauración', 'resultado': 'Aserción final de contador de reinicios falló después de restaurar estados', 'causa': 'Gateway de otro proyecto ya reiniciaba antes; contador scheduler también cambia durante alternancia', 'correccion': 'Compara identidad/imagen/montajes/estado; conserva contadores como observación. Auditoría posterior solo lectura, sin repetir arranques'}],
         'limites': ['SSE autoriza al conectar: flujo abierto sigue emitiendo tras revocar sesión, nueva conexión 401; recursos cancelados explícitamente',
             'Sin autenticidad de dispositivo/reloj offline ni nueva atomicidad de lotes; cada registro conserva su resultado',
             'Roles operativos globales; disponibilidad compartida; salida conserva liquidación existente sin nuevo cobro electrónico',

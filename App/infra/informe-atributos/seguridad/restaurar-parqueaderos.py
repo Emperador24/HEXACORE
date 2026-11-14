@@ -53,12 +53,14 @@ def main():
         actual = porid[antes['id']]
         comparaciones.append({'nombre': antes['nombre'], 'idIgual': True, 'imagenIgual': actual['Image'] == antes['imagen'],
             'montajesIguales': montajes(actual['Mounts']) == montajes(antes['montajes']), 'estadoRestaurado': actual['State']['Running'] == antes['estado']['Running'],
-            'reiniciosIguales': actual['RestartCount'] == antes['reinicios']})
+            'reiniciosIguales': actual['RestartCount'] == antes['reinicios'], 'reiniciosAntes': antes['reinicios'], 'reiniciosDespues': actual['RestartCount']})
     registro['originales'] = comparaciones
     nuevos = [c for c in finales if c['Id'] not in {a['id'] for a in inicial['contenedores']}]
     registro['nuevos'] = [{'nombre': c['Name'], 'proyecto': c['Config']['Labels'].get('com.docker.compose.project'), 'activo': c['State']['Running'], 'codigo': c['State']['ExitCode'], 'oom': c['State']['OOMKilled']} for c in nuevos]
     registro['dockerActivo'] = True; registro['fin'] = datetime.datetime.now(datetime.timezone.utc).isoformat(); guardar()
-    assert all(all(v for k, v in x.items() if k != 'nombre') for x in comparaciones)
+    # Los contadores pueden avanzar automáticamente o reiniciarse al arrancar;
+    # se conservan como observación, sin intervenir otros proyectos.
+    assert all(all(x[k] for k in ['idIgual', 'imagenIgual', 'montajesIguales', 'estadoRestaurado']) for x in comparaciones)
     assert len(nuevos) == 3 and all(not c['State']['Running'] and not c['State']['OOMKilled'] and c['State']['ExitCode'] in [0, 143] for c in nuevos)
     assert all(c['Config']['Labels'].get('com.docker.compose.project') == 'hexacore-seguridad-parqueaderos-sebastian' for c in nuevos)
     print('92 contenedores originales conservados/restaurados; tres de ensayo detenidos; Docker activo.', flush=True)

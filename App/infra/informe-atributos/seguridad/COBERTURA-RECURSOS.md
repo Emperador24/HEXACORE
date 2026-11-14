@@ -1,38 +1,41 @@
-# Cobertura por recurso — 13/11/2026, Compras y Reventa
+# Cobertura por recurso — 13/11/2026, Parqueaderos
 
-**88/159 operaciones protegidas** con ampliación semántica en gateway/backend
-real; **71 pendientes**. Compras **8/8** y Reventa **11/11**: se agregan las
-**19** pendientes, contrastadas exactamente por método/ruta con controladores
-compilados. Inventario intacto: **178 declaradas / 173 expuestas / 159 protegidas**;
-HEAD implícito no duplica GET. Sin altas/bajas ni diferencias de denominador.
+**113/159 operaciones protegidas** con ampliación semántica real por gateway y
+backend; **46 pendientes**. Parqueaderos **25/25**, Compras **8/8**, Reventa **11/11**
+y Alimentos **30/30**. Se agregan exactamente las 25 pendientes de Parqueaderos,
+por método/ruta; inventario intacto **178 declaradas / 173 expuestas / 159 protegidas**.
+HEAD implícito no duplica GET. Las 88 cubiertas antes se reutilizan; sus fuentes
+relevantes no cambian en esta entrega. Los cortes históricos y sus fallos se conservan.
 
-Las **69** cubiertas anteriormente se reutilizan, incluidas **30/30 Alimentos**,
-con fuentes relevantes sin cambios desde `62ffd7b`; no son ejecuciones nuevas.
-Las 41 originalmente sin metadato de rol conservan su evidencia; ahora son 39.
-[Resultado de Alimentos](ALIMENTOS-RECURSOS-EVIDENCIA.json) y
-[resultado anterior 49/159](RECURSOS-DAST-EVIDENCIA.json) permanecen intactos,
-con su historial de fallos. Esta tabla representa el corte actual.
+Tres finales nuevas **300/300 cada una**, con positivos de las **25 rutas por
+cada canal**. Por final: 292 observaciones semánticas, dos DTO, dos temporales y
+cuatro de revocación SSE separadas. **116 comparaciones SQL/Redis** conservadas:
+102 rechazos HTTP de autorización/contexto, cuatro lotes semánticamente rechazados,
+dos temporales, dos DTO y seis reenvíos idempotentes autorizados. Los errores de
+DTO/tiempo no acreditan autorización; recursos existentes y controles positivos.
 
-Tres finales nuevas **150/150** cada una: 134 observaciones de autorización/
-contrato, ocho de rol/sesión administrativa, cuatro de DTO, dos de elegibilidad
-y dos de concurrencia separadas. **68 rechazos por final** conservan SQL/Redis
-(titular y vencimiento absoluto del bloqueo), con recursos existentes, controles
-positivos y bloqueos SQL disponibles. Los cuatro 400 no acreditan autorización.
-Pago/cupón/cancelación/checkout se prueban antes de su primera mutación válida.
-Las selecciones mixtas solo cancelan entradas propias según el contrato real.
+Brecha demostrada antes: IDs offline de ingreso/salida A reenviados bajo B
+exponían estancias de A como REPETIDO, en ambos canales. Se exige el evento
+original y se devuelve REGISTRO_LOCAL_INCOMPATIBLE sin mutaciones ni consumo de
+claves ajenas; idempotencia dentro de A intacta. Se cubre también la recuperación
+concurrente de ingreso. Reservas/pagos mantienen propietario de sesión; zonas,
+espacios, QR y redirecciones conservan el contexto del evento y la auditoría.
 
-El mercado conserva lecturas compartidas; publicación/compra/checkout obtienen
-identidades de sesión y se comprueba el filtrado de entradas/QR tras transferir.
-La expiración administrativa es global: seis positivos con **todo** el ámbito de
-publicaciones y transacciones descartable y propio comprobado antes/después,
-sin filas ajenas y sin cambios en otros anuncios/QR/historial/finanzas/Redis.
-El arnés omite el positivo y registra una limitación si el ámbito deja de ser
-exclusivo. No añade filtros al producto ni barre publicaciones anteriores.
+Roles operativos globales y disponibilidad compartida conforme al contrato;
+salida conserva liquidación actual sin nuevo pago electrónico. Tarifa positiva
+solo en base vacía/Redis/vhost nuevos, con la tarifa preexistente vacía intacta.
+SSE autoriza al conectar y emite un evento válido; flujo abierto sigue emitiendo
+tras revocar sesión y nueva conexión recibe 401. Se cierran recursos del flujo;
+no se acredita revocación continua de conexiones existentes.
 
-[Reproducción](AUTORIZACION-VENTAS.md) · [Evidencia nueva](VENTAS-RECURSOS-EVIDENCIA.json).
-Cubrir una operación no agota todas sus combinaciones, carreras o estados.
-Las 71 pendientes mantienen identidad/roles anteriores; RNF-05/06 siguen
-parciales. No se amplía DAST ni se repiten los 16 recorridos completos.
+[Contratos y reproducción](AUTORIZACION-PARQUEADEROS.md) ·
+[Evidencia nueva permitida](PARQUEADEROS-RECURSOS-EVIDENCIA.json) ·
+[Compras/Reventa anterior](VENTAS-RECURSOS-EVIDENCIA.json) ·
+[Alimentos anterior](ALIMENTOS-RECURSOS-EVIDENCIA.json) ·
+[49/159 histórico](RECURSOS-DAST-EVIDENCIA.json).
+Cubrir una operación no agota combinaciones/carreras/estados. Las 46 pendientes
+conservan identidad/roles anteriores; **RNF-05/06 siguen parciales**. No se amplía
+DAST ni se repiten localmente los 16 recorridos completos.
 
 | Método | Ruta | Regla efectiva revisada | Prueba por gateway/directo | Ubicación |
 |---|---|---|---|---|
@@ -129,31 +132,31 @@ parciales. No se amplía DAST ni se repiten los 16 recorridos completos.
 |GET|`/api/v1/monitoreo/eventos/:id/flujo`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/operacion/monitoreo/monitoreo.controller.ts`|
 |GET|`/api/v1/monitoreo/eventos/:id/panel`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/operacion/monitoreo/monitoreo.controller.ts`|
 |GET|`/api/v1/monitoreo/eventos`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/operacion/monitoreo/monitoreo.controller.ts`|
-|GET|`/api/v1/parqueaderos/eventos/:eventoId/asignaciones`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
-|GET|`/api/v1/parqueaderos/eventos/:eventoId/cache`|SesionValida; Organizador, Administrador, Personal|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
-|GET|`/api/v1/parqueaderos/eventos/:eventoId/disponibilidad`|SesionValida; Cliente, Organizador, Administrador, Personal|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/parqueaderos/reservas/reservas.controller.ts`|
-|PATCH|`/api/v1/parqueaderos/eventos/:eventoId/espacios/:espacioId`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
-|GET|`/api/v1/parqueaderos/eventos/:eventoId/espacios`|SesionValida; Organizador, Administrador, Personal|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
-|POST|`/api/v1/parqueaderos/eventos/:eventoId/ingresos`|SesionValida; Organizador, Administrador, Personal|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
-|GET|`/api/v1/parqueaderos/eventos/:eventoId/ocupacion/flujo`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
-|GET|`/api/v1/parqueaderos/eventos/:eventoId/ocupacion`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
-|GET|`/api/v1/parqueaderos/eventos/:eventoId/recomendacion`|SesionValida; Organizador, Administrador, Personal|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
-|PATCH|`/api/v1/parqueaderos/eventos/:eventoId/redirecciones/:redireccionId`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
-|POST|`/api/v1/parqueaderos/eventos/:eventoId/redirecciones`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
-|GET|`/api/v1/parqueaderos/eventos/:eventoId/reservas`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/parqueaderos/reservas/reservas.controller.ts`|
-|POST|`/api/v1/parqueaderos/eventos/:eventoId/reservas`|SesionValida; Cliente|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/parqueaderos/reservas/reservas.controller.ts`|
-|POST|`/api/v1/parqueaderos/eventos/:eventoId/salidas`|SesionValida; Organizador, Administrador, Personal|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
-|POST|`/api/v1/parqueaderos/eventos/:eventoId/sincronizacion`|SesionValida; Organizador, Administrador, Personal|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
-|GET|`/api/v1/parqueaderos/eventos/:eventoId/vehiculos`|SesionValida; Organizador, Administrador, Personal|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
-|DELETE|`/api/v1/parqueaderos/eventos/:eventoId/zonas/:zonaId`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
-|PATCH|`/api/v1/parqueaderos/eventos/:eventoId/zonas/:zonaId`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
-|GET|`/api/v1/parqueaderos/eventos/:eventoId/zonas`|SesionValida; Organizador, Administrador, Personal|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
-|POST|`/api/v1/parqueaderos/eventos/:eventoId/zonas`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
-|POST|`/api/v1/parqueaderos/reservas/:id/pagar`|SesionValida; Cliente|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/parqueaderos/reservas/reservas.controller.ts`|
-|GET|`/api/v1/parqueaderos/reservas/:id`|SesionValida; Cliente|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/parqueaderos/reservas/reservas.controller.ts`|
-|GET|`/api/v1/parqueaderos/reservas`|SesionValida; Cliente|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/parqueaderos/reservas/reservas.controller.ts`|
-|GET|`/api/v1/parqueaderos/tarifa`|SesionValida; Organizador, Administrador, Personal|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
-|PUT|`/api/v1/parqueaderos/tarifa`|SesionValida; Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
+|GET|`/api/v1/parqueaderos/eventos/:eventoId/asignaciones`|SesionValida; Organizador, Administrador|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
+|GET|`/api/v1/parqueaderos/eventos/:eventoId/cache`|SesionValida; Organizador, Administrador, Personal|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
+|GET|`/api/v1/parqueaderos/eventos/:eventoId/disponibilidad`|SesionValida; Cliente, Organizador, Administrador, Personal|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/reservas/reservas.controller.ts`|
+|PATCH|`/api/v1/parqueaderos/eventos/:eventoId/espacios/:espacioId`|SesionValida; Organizador, Administrador|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
+|GET|`/api/v1/parqueaderos/eventos/:eventoId/espacios`|SesionValida; Organizador, Administrador, Personal|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
+|POST|`/api/v1/parqueaderos/eventos/:eventoId/ingresos`|SesionValida; Organizador, Administrador, Personal|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
+|GET|`/api/v1/parqueaderos/eventos/:eventoId/ocupacion/flujo`|SesionValida; Organizador, Administrador|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
+|GET|`/api/v1/parqueaderos/eventos/:eventoId/ocupacion`|SesionValida; Organizador, Administrador|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
+|GET|`/api/v1/parqueaderos/eventos/:eventoId/recomendacion`|SesionValida; Organizador, Administrador, Personal|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
+|PATCH|`/api/v1/parqueaderos/eventos/:eventoId/redirecciones/:redireccionId`|SesionValida; Organizador, Administrador|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
+|POST|`/api/v1/parqueaderos/eventos/:eventoId/redirecciones`|SesionValida; Organizador, Administrador|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
+|GET|`/api/v1/parqueaderos/eventos/:eventoId/reservas`|SesionValida; Organizador, Administrador|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/reservas/reservas.controller.ts`|
+|POST|`/api/v1/parqueaderos/eventos/:eventoId/reservas`|SesionValida; Cliente|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/reservas/reservas.controller.ts`|
+|POST|`/api/v1/parqueaderos/eventos/:eventoId/salidas`|SesionValida; Organizador, Administrador, Personal|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
+|POST|`/api/v1/parqueaderos/eventos/:eventoId/sincronizacion`|SesionValida; Organizador, Administrador, Personal|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
+|GET|`/api/v1/parqueaderos/eventos/:eventoId/vehiculos`|SesionValida; Organizador, Administrador, Personal|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
+|DELETE|`/api/v1/parqueaderos/eventos/:eventoId/zonas/:zonaId`|SesionValida; Organizador, Administrador|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
+|PATCH|`/api/v1/parqueaderos/eventos/:eventoId/zonas/:zonaId`|SesionValida; Organizador, Administrador|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
+|GET|`/api/v1/parqueaderos/eventos/:eventoId/zonas`|SesionValida; Organizador, Administrador, Personal|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
+|POST|`/api/v1/parqueaderos/eventos/:eventoId/zonas`|SesionValida; Organizador, Administrador|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
+|POST|`/api/v1/parqueaderos/reservas/:id/pagar`|SesionValida; Cliente|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/reservas/reservas.controller.ts`|
+|GET|`/api/v1/parqueaderos/reservas/:id`|SesionValida; Cliente|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/reservas/reservas.controller.ts`|
+|GET|`/api/v1/parqueaderos/reservas`|SesionValida; Cliente|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/reservas/reservas.controller.ts`|
+|GET|`/api/v1/parqueaderos/tarifa`|SesionValida; Organizador, Administrador, Personal|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
+|PUT|`/api/v1/parqueaderos/tarifa`|SesionValida; Administrador|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
 |POST|`/api/v1/pedidos/:pedidoId/pagos`|SesionValida; Cliente|Sí; Alimentos 3×278, ambas vías; reejecutada|`App/backend/modulos/alimentos/pagos/pagos.controller.ts`|
 |PATCH|`/api/v1/pedidos/admin/establecimientos/:id/estado`|SesionValida; Organizador, Administrador|Sí; Alimentos 3×278, ambas vías; ampliada|`App/backend/modulos/alimentos/establecimientos/establecimientos.controller.ts`|
 |DELETE|`/api/v1/pedidos/admin/establecimientos/:id/personal/:usuarioId`|SesionValida; Organizador, Administrador|Sí; Alimentos 3×278, ambas vías; ampliada|`App/backend/modulos/alimentos/establecimientos/establecimientos.controller.ts`|

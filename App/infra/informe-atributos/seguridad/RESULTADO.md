@@ -1,6 +1,127 @@
 # Seguridad de Sebastián — RNF-05 y RNF-06
 
-## Autorización de Compras y Reventa — 13/11/2026, corte vigente
+## Parqueaderos — 13/11/2026 Bogotá, corte vigente
+
+**Parqueaderos 25/25. Global 113/159; 46 pendientes. RNF-05/06 parciales.**
+Se agregan exactamente las 25 rutas revisadas contra controladores compilados y
+gateway; inventario intacto 178 declaradas / 173 expuestas / 159 protegidas.
+Las 88 anteriores, incluidas Alimentos 30/30, Compras 8/8 y Reventa 11/11, se
+reutilizan con fuentes relevantes intactas. No son ejecuciones nuevas.
+
+Inicio limpio, `feature/sebastian` **f5903a7**, origin sincronizado; develop
+**41ca881**, PR **#50 abierto** y [CI 43532749576, 8/8](https://github.com/Emperador24/HEXACORE/actions/runs/43532749576)
+confirmados. Sin integrar ramas ni reescribir historia.
+
+### Brecha demostrada y corrección
+
+Con eventos A/B existentes, Personal autorizado globalmente y controles
+positivos independientes, reenviar en B los IDs offline de ingreso y salida de
+A devolvía las estancias de A como REPETIDO. **Dos asociaciones incorrectas por
+canal**, gateway y Núcleo directo; SQL intacto en esa reproducción anterior.
+
+**dd0ddad** exige coincidencia del evento al reconocer ambos IDs y también
+al recuperar el conflicto único concurrente de ingreso. Otro evento recibe
+`RECHAZADO / REGISTRO_LOCAL_INCOMPATIBLE`, sin estancia ajena ni escrituras.
+El evento original conserva reenvío idempotente. Se agregan una regresión HTTP
+con ambos IDs y una unitaria de la carrera entre lectura e inserción.
+No cambian DTO, índices, unicidad global, contratos/estados, temporalidad,
+atomicidad por registro, reglas de asignación/cobro ni límites financieros.
+
+### Verificación nueva
+
+| Final, 14/11 UTC (13/11 Bogotá) | Total | Semánticas / DTO / tiempo / observación SSE | SQL/Redis conservados | Duración |
+|---|---|---|---|---|
+| 01:14:40.091 | **300/300** | **292 / 2 / 2 / 4** | **116/116** | 20,272 s |
+| 01:15:03.719 | **300/300** | **292 / 2 / 2 / 4** | **116/116** | 19,396 s |
+| 01:15:26.328 | **300/300** | **292 / 2 / 2 / 4** | **116/116** | 19,375 s |
+
+Cada canal tiene positivos de **25/25** operaciones, con datos nuevos por
+final/canal. Misma imagen, fuentes/herramientas, Node 22.22.3, **20 JS** de
+Parqueaderos coincidentes con dist y cuatro archivos efectivos del gateway
+contrastados (CORS local generado). Redash detenido, servicios del ensayo sanos;
+memoria registrada antes/después, VM disponible 1.205.012–1.379.852 KiB y swap
+libre 544.904–545.928 KiB. Serial, sin reintentos ni ampliación de límites:
+HTTP/SSE 10 s, SQL 3 s, Redis 2 s. Base medida **f5903a7 más cambios locales**
+exactamente identificados por las huellas publicadas; no se atribuye ese código
+corregido al commit previo. **3174983** conserva herramientas de la medición.
+
+Por final las 116 igualdades comprenden 102 rechazos HTTP de autorización/
+contexto, cuatro lotes con rechazo semántico, dos temporales, dos DTO y seis
+reenvíos autorizados. SQL compara reservas/QR/espacios/estancias/asignaciones/
+redirecciones/tarifa/avisos de reserva/libro financiero asociado; Redis valor y
+vencimiento absoluto PEXPIRETIME. Los timestamps/intentos asíncronos de entrega
+de avisos se excluyen. DTO y temporalidad no acreditan autorización.
+
+Clientes distintos: propiedad de sesión ante query/cabeceras falsas, listado,
+detalle pendiente/confirmado y pago ajeno antes del primer cobro propio. Zonas,
+espacios, QR pagados, placas y redirecciones existentes de eventos distintos;
+controles válidos y auditoría por actor de sesión. Tarifa solo Administrador;
+Cliente denegado en operaciones reservadas. Roles operativos globales y
+disponibilidad compartida conservados, sin vínculos Personal-evento inventados.
+Salida prepagada sin cobro y ordinaria con liquidación existente; libro completo
+intacto tras ambas, sin nueva pasarela/captura de tarjeta.
+
+Offline: lote válido denegado a Cliente aplica luego con Personal y mismos IDs;
+orden cronológico, idempotencia propia, cruce A/B rechazado sin cambios, salida
+B con clave nueva. Zona/hora rechazadas no consumen ID: el mismo registro
+corregido aplica. Sin nueva autenticidad de dispositivos/relojes ni atomicidad.
+
+SSE: 403 para Cliente/Personal, conexión autorizada recibe ocupación del evento.
+**Después de revocar la sesión, el flujo abierto continúa; nueva conexión 401.**
+Se acredita autorización inicial, no revocación continua. AbortController,
+temporizador, reader y lock cerrados explícitamente, sin EOF/networkidle.
+
+Build/lint aprobados; unitarias pertinentes **7/7, tres suites**, incluidas seis
+existentes y una nueva. La regresión HTTP nueva también queda en la suite de
+Parqueaderos para CI; sus escenarios se ejecutaron en las seis mediciones de
+canal finales. CI de la publicación se comprueba por su SHA y se registra en el
+PR #50, separada de estas tres mediciones. No se repiten localmente los 16
+recorridos; la aceptación histórica 16/16 automática/visible se reutiliza.
+
+### Aislamiento, restauración y fallos conservados
+
+La base original tenía **cero tarifas**. Se comprueba vacía e idéntica al terminar.
+Se crea una base vacía, Redis/volumen y vhost RabbitMQ nuevos, con migraciones
+sin semillas. Siete cuentas nuevas, eventos/recintos/recursos propios. Núcleo
+descartable usa primero imagen anterior y luego etiqueta nueva; gateway original
+reanudado y Núcleo original detenido. Originales, cuentas/claves/datos/volúmenes
+previos conservados; solo proveedores simulados. Sin DROP/TRUNCATE/FLUSH/down/rm/prune.
+
+Docker **activo** al inicio/final. **92 IDs/imágenes/montajes/estados originales
+conservados**; CU-015/ZAP detenidos, otros proyectos sin intervención. Tres
+contenedores nuevos detenidos con cierre **0/0/0, sin OOM**; base/vhost/volumen
+y datos nuevos conservados. Los siete Redash se reanudan una sola vez.
+
+Primeras sondas Redash: reset HTTP al arrancar servidor, después **200/200**
+al incorporar los otros servicios. Control posterior **14/11 01:20:56 UTC
+(13/11 20:20 Bogotá): /ping y /login 200**, PostgreSQL listo/Redis PONG. Los
+cgroups nuevos muestran oom_kill: server **3**, worker **4**, adhoc_worker **1**,
+scheduled_worker **2**, scheduler/proveedores **0**. El 200 puntual **no elimina
+el bloqueo histórico por OOM/capacidad ni acredita estabilidad continua**.
+Sin ciclos manuales de recuperación ni cambios de recursos globales.
+
+Fallos de herramientas conservados: primer desarrollo falló antes de observar
+autorización al ordenar transacciones por `id` (PK real clave_idempotencia);
+solo arnés corregido, desarrollo-2 296/296 y finales añaden dos controles por
+canal. Unitaria nueva inicialmente TS2353 por doble driverError sin tipo Error;
+corregido, 7/7 y lint. Procedencia comparó principal Nginx con archivo de rutas;
+corregido antes de finales. Restauración restauró estados y después falló una
+aserción de contadores de reinicio; se corrige la comparación y audita por
+lectura, sin repetir arranques. Gateway de otro proyecto ya estaba restarting
+(contador 147→175), sin intervención; scheduler 3→1 durante alternancia. Los
+contadores se registran, no se presentan como estados idénticos ni se alteran.
+
+Se conservan CI **43531857405 / 51cd7fc, 7/8**, pendiente de outbox sin convergencia
+posterior acreditada, y **43532749576 / f5903a7, 8/8**, sin atribuirle corrección
+causal. No se reabren preventivamente outbox/SIGTERM. Fuera: CU-028/F12, DAST
+nuevo, fuentes/imágenes, ZeroTier, autenticidad offline y nuevos casos de uso.
+
+[Contratos/reproducción](AUTORIZACION-PARQUEADEROS.md) ·
+[Evidencia permitida](PARQUEADEROS-RECURSOS-EVIDENCIA.json) ·
+[Cobertura actual](COBERTURA-RECURSOS.md) ·
+[Guía de operación](../../../../Documentation/Work/OPERACION-LOCAL-REDASH-HEXACORE.md).
+
+## Autorización de Compras y Reventa — 13/11/2026, corte histórico 88/159
 
 **Compras 8/8, Reventa 11/11; global 88/159, quedan 71. RNF-05/06 parciales.**
 Las 19 operaciones antes pendientes coinciden exactamente por método/ruta con

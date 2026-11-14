@@ -1,6 +1,72 @@
 # Cierre de Alimentos — Sebastián
 
-## Seguridad global: Compras y Reventa — 13 de noviembre de 2026
+## Seguridad global: Parqueaderos — 13 de noviembre de 2026, corte vigente
+
+**Parqueaderos 25/25; global 113/159, 46 pendientes. RNF-05/06 parciales.**
+Inicio limpio/sincronizado en `feature/sebastian`, f5903a7; develop 41ca881,
+PR #50 abierto y CI 43532749576 **8/8** comprobados. Sin integrar ramas ni
+reescribir historia. Inventario intacto 178 declaradas / 173 expuestas / 159
+protegidas; las 25 nuevas coinciden por método/ruta. Se reutilizan las 88 previas,
+incluidas Alimentos 30/30, Compras 8/8 y Reventa 11/11, con fuentes pertinentes
+intactas. No se ejecutan otra vez los 16 recorridos locales completos.
+
+Brecha previa en ambos canales: reenvío de IDs offline de ingreso/salida A bajo
+B devuelve estancias de A como REPETIDO; dos asociaciones incorrectas por canal,
+con recursos existentes, positivos válidos y SQL intacto. **dd0ddad** exige el
+evento original también tras conflicto concurrente de ingreso; rechaza por
+registro REGISTRO_LOCAL_INCOMPATIBLE, conserva idempotencia propia, estados,
+unicidad global, temporalidad, historial y reglas financieras. Una regresión HTTP
+nueva y una unitaria de carrera; build/lint aprobados, **7/7 unitarias pertinentes**.
+**3174983** conserva herramientas; evidencia final identifica f5903a7 más cambios
+locales por huellas, no atribuye la corrección al commit anterior.
+
+| Final del 14/11 UTC (13/11 Bogotá) | Total | Semánticas / DTO / tiempo / observación SSE | SQL/Redis | Duración |
+|---|---|---|---|---|
+| 01:14:40.091 | **300/300** | **292 / 2 / 2 / 4** | **116/116** | 20,272 s |
+| 01:15:03.719 | **300/300** | **292 / 2 / 2 / 4** | **116/116** | 19,396 s |
+| 01:15:26.328 | **300/300** | **292 / 2 / 2 / 4** | **116/116** | 19,375 s |
+
+Positivos de **25/25 por canal** con recursos nuevos por final/canal; mismas
+fuentes/imagen, Node 22.22.3, 20 JS de Parqueaderos coincidentes y gateway
+contrastado. Redash detenido, memoria antes/después, sin reintentos ni límites
+ampliados. Cada final conserva 102 rechazos HTTP de autorización/contexto,
+cuatro lotes semánticos, dos temporales, dos DTO y seis reenvíos autorizados.
+SQL/Redis comparan propiedad/QR/espacios/historial/finanzas y bloqueo absoluto;
+se excluyen solo marcas asíncronas de entrega de avisos. DTO/tiempo no suman
+autorización. Roles operativos globales, disponibilidad compartida y salida con
+liquidación existente sin nueva pasarela. SSE autoriza al conectar: emite con
+sesión válida; abierto continúa tras revocar, nueva conexión 401; recursos
+cancelados explícitamente. No se acredita revocación continua del flujo.
+
+Tarifa positiva aislada: base original vacía conservada; base/Redis/volumen/vhost
+nuevos con migraciones sin semillas. Siete cuentas nuevas, recursos propios y
+proveedores simulados; originales sin cambiar configuración/datos/credenciales.
+Docker activo al inicio/final, mismos **92 IDs/imágenes/montajes/estados**, CU-015
+detenido, tres contenedores nuevos detenidos **0/0/0 sin OOM**, datos conservados.
+Redash reanudado una vez, otros proyectos sin intervención. Último control
+**01:20:56 UTC: /ping y /login 200**, PG listo/Redis PONG, pero nuevos oom_kill
+server 3 / worker 4 / adhoc_worker 1 / scheduled_worker 2; resto 0. Un 200 puntual
+no elimina el bloqueo histórico de capacidad ni certifica estabilidad. Sin
+ciclos manuales de recuperación ni cambios de recursos globales.
+
+Fallos de herramientas conservados: snapshot por PK incorrecta antes de observar
+autorización; desarrollo corregido 296/296; doble driverError TS2353 corregido;
+procedencia principal/rutas Nginx corregida antes de finales; aserción indebida
+de contadores de reinicio al final de restauración, corregida y auditada solo
+por lectura, sin repetir arranques. Gateway ajeno ya reiniciaba (147→175),
+scheduler 3→1; contadores separados de estados. CI de publicación se verifica
+por SHA y se registra en PR #50. Se conserva CI 43531857405 **7/8** y posterior
+43532749576 **8/8**, sin corrección causal acreditada de outbox ni SIGTERM.
+
+[Resultado completo](../../App/infra/informe-atributos/seguridad/RESULTADO.md) ·
+[Reproducción](../../App/infra/informe-atributos/seguridad/AUTORIZACION-PARQUEADEROS.md) ·
+[Evidencia](../../App/infra/informe-atributos/seguridad/PARQUEADEROS-RECURSOS-EVIDENCIA.json) ·
+[Cobertura](../../App/infra/informe-atributos/seguridad/COBERTURA-RECURSOS.md).
+Fuera CU-028/F12, DAST adicional, autenticidad de dispositivos/relojes, nuevos
+casos de uso, fuentes/imágenes, ZeroTier e investigación preventiva outbox/SIGTERM.
+Solo origin/feature/sebastian y PR hacia develop, sin merge ni auto-merge.
+
+## Seguridad global: Compras y Reventa — 13 de noviembre de 2026, histórico 88/159
 
 **Compras 8/8 y Reventa 11/11. Global 88/159; 71 pendientes. RNF-05/06 parciales.**
 Se contrastan y amplían las 19 rutas pendientes, sin diferencias método/ruta

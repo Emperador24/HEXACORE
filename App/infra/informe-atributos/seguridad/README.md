@@ -1,6 +1,11 @@
 # Reproducir Seguridad RNF-05 / RNF-06
 
-**Bloque vigente: Compras 8/8 y Reventa 11/11**, global **88/159**, 71 pendientes:
+**Bloque vigente: Parqueaderos 25/25**, global **113/159**, 46 pendientes:
+[AUTORIZACION-PARQUEADEROS.md](AUTORIZACION-PARQUEADEROS.md), `finales-parqueaderos.py`.
+Base/Redis/vhost nuevos para tarifa positiva sin alterar configuración previa;
+SSE con cancelación explícita. RNF-05/06 siguen parciales.
+
+**Bloque anterior: Compras 8/8 y Reventa 11/11**, global **88/159**, 71 pendientes:
 [AUTORIZACION-VENTAS.md](AUTORIZACION-VENTAS.md), `finales-ventas.py`.
 No repite recorridos completos ni amplía DAST; RNF-05/06 siguen parciales.
 
