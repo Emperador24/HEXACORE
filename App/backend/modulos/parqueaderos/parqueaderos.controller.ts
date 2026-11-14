@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Header, MessageEvent, Param, ParseUUIDPipe, Patch, Post, Put, Query, Req, Sse, UseGuards, UsePipes } from '@nestjs/common';
-import { Observable, catchError, exhaustMap, from, interval, map, of, startWith } from 'rxjs';
+import { Observable } from 'rxjs';
 import { validacionAlimentos as validacion } from '../../compartido/validacion';
 import { PeticionConSesion, RolesPermitidos, SesionValida } from './comun/autenticacion/sesion-valida.guard';
 import { AccesosService } from './accesos/accesos.service';
@@ -17,9 +17,7 @@ import {
   SincronizarDto,
 } from './dto/parqueaderos.dto';
 import { OcupacionService } from './ocupacion/ocupacion.service';
-
-/** Cada cuánto se empuja el panel de ocupación (RNF: casi en tiempo real). */
-const INTERVALO_MS = 3000;
+import { FlujoOcupacionService } from './ocupacion/flujo-ocupacion.service';
 
 /**
  * CU-022 (Ingreso y salida), CU-023 (Asignación de espacios), CU-024 (Cobro)
@@ -42,6 +40,7 @@ export class ParqueaderosController {
     private readonly ocupacion: OcupacionService,
     private readonly accesos: AccesosService,
     private readonly asignacion: AsignacionService,
+    private readonly flujoOcupacion: FlujoOcupacionService,
   ) {}
 
   // --- Tarifa (CU-024) ---------------------------------------------------------
@@ -152,16 +151,8 @@ export class ParqueaderosController {
 
   @Sse('eventos/:eventoId/ocupacion/flujo')
   @Header('X-Accel-Buffering', 'no')
-  flujo(@Param('eventoId', ParseUUIDPipe) eventoId: string): Observable<MessageEvent> {
-    return interval(INTERVALO_MS).pipe(
-      startWith(0),
-      exhaustMap(() =>
-        from(this.ocupacion.panel(eventoId)).pipe(
-          map((datos): MessageEvent => ({ type: 'ocupacion', data: datos })),
-          catchError((error: Error & { response?: unknown }) => of<MessageEvent>({ type: 'error', data: error.response ?? { mensaje: error.message } })),
-        ),
-      ),
-    );
+  flujo(@Param('eventoId', ParseUUIDPipe) eventoId: string, @Req() peticion: PeticionConSesion): Observable<MessageEvent> {
+    return this.flujoOcupacion.seguir(eventoId, peticion.headers.authorization!.split(' ')[1]);
   }
 
   /** Pasos 6-8. */

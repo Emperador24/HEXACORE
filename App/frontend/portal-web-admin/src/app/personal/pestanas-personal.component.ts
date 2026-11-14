@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { MatTabsModule } from '@angular/material/tabs';
 
@@ -19,6 +19,7 @@ import { MatTabsModule } from '@angular/material/tabs';
     </nav>
     <mat-tab-nav-panel #panel />
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `.pestanas { margin-bottom: 16px; border-bottom: 1px solid var(--hx-borde); }`
 })
 export class PestanasPersonalComponent {}

@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { BreakpointObserver } from '@angular/cdk/layout';
@@ -28,6 +28,7 @@ import { NAV_GRUPOS, NAV_ITEMS } from '../core/nav-items';
   standalone: true,
   imports: [RouterOutlet, RouterLink, RouterLinkActive, MatSidenavModule, MatIconModule, MatButtonModule, MatTooltipModule],
   templateUrl: './shell.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './shell.component.scss'
 })
 export class ShellComponent {

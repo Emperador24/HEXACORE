@@ -1,3 +1,4 @@
+import { referenciaStripe } from '../../../modulos/finanzas/pagos/pasarela-stripe.service';
 import {
   Controller,
   Get,
@@ -133,8 +134,8 @@ export function traducirEvento(evento: EventoStripe) {
     claveIdempotencia: clave,
     operacion,
     resultado,
-    referencia: objeto.id ?? null,
-    motivo: motivo?.slice(0, 120) ?? null,
+    referencia: referenciaStripe(objeto.id),
+    motivo: motivo ? 'Stripe rechazó la operación' : null,
   });
 
   switch (evento.type) {

@@ -1,3 +1,5 @@
+import { TOKEN_PAGO } from '../../../compartido/token-pago';
+import { Matches as CoincideToken } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
@@ -142,6 +144,7 @@ export class ReservarDto {
 /** CU-021, paso 5. RNF-05: solo el token opaco de la pasarela, nunca datos de tarjeta. */
 export class PagarReservaDto {
   @ApiProperty({ example: 'tok_ok_demo' }) @IsString() @Length(4, 200)
+  @CoincideToken(TOKEN_PAGO, { message: 'Usa un token opaco emitido por la pasarela' })
   token: string;
 }
 

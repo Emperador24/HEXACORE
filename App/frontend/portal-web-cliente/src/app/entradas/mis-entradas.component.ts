@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -31,6 +31,7 @@ import { COLOR } from '../shared/acentos';
     MatProgressSpinnerModule
   ],
   templateUrl: './mis-entradas.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './mis-entradas.component.scss'
 })
 export class MisEntradasComponent implements OnInit {

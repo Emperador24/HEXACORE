@@ -9,7 +9,7 @@
 # (`window.location.hostname` en `core/servidor.ts`), así que la misma imagen
 # sirve en `localhost` y en el computador de al lado.
 
-FROM node:22-alpine AS compilacion
+FROM node:22.22.3-alpine AS compilacion
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
@@ -26,14 +26,8 @@ COPY --from=compilacion /app/dist/portal-web-cliente/browser /usr/share/nginx/ht
 # index: `/cuenta/verificar` no es un archivo en disco, es una ruta que resuelve
 # el enrutador de Angular. Sin esto, recargar dentro de la aplicación da 404 —
 # y el enlace de verificación que llega por correo entra justo por ahí.
-RUN printf 'server {\n\
-  listen 4200;\n\
-  root /usr/share/nginx/html;\n\
-  index index.html;\n\
-  location / {\n\
-    try_files $uri $uri/ /index.html;\n\
-  }\n\
-}\n' > /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY origenes-csp.conf /etc/nginx/hexacore/origenes-csp.conf
 
 EXPOSE 4200
 

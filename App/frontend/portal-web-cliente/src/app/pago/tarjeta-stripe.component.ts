@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, OnDestroy, inject, signal, viewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnDestroy, inject, signal, viewChild, ChangeDetectionStrategy } from '@angular/core';
 import { StripeService, TarjetaMontada } from '../core/stripe.service';
 
 /**
@@ -16,6 +16,7 @@ import { StripeService, TarjetaMontada } from '../core/stripe.service';
     @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
     <p class="ayuda">Modo de prueba: 4242 4242 4242 4242, cualquier fecha futura y CVC.</p>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     .campo { padding: 12px; border: 1px solid rgba(0, 0, 0, 0.38); border-radius: 4px; background: #fff; }
     .ayuda { font-size: 12px; opacity: 0.7; margin: 6px 0 0; }

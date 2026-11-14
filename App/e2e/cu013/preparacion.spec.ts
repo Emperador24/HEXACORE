@@ -1,5 +1,5 @@
 import { presentar } from '../presentacion';
-import { APIRequestContext, expect, test } from '@playwright/test';
+import { APIRequestContext, expect, test } from '../csp.fixture';
 import { randomUUID } from 'node:crypto';
 import { adminURL, clienteURL, comprobarAislamiento, crearEvento, gateway, loginAPI, loginUI, nucleo, sql } from '../cu015/entorno';
 const { nucleo: controlarNucleo } = require('../../backend/test/cu012/entorno.cjs') as { nucleo(accion: 'parar' | 'iniciar'): void };

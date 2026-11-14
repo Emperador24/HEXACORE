@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 
 /**
  * Fondo con manchas de color difuminadas — AtmosphereBackground de la app.
@@ -19,6 +19,7 @@ import { Component } from '@angular/core';
     <div class="mancha m3"></div>
     <div class="mancha m4"></div>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     :host {
       position: fixed;

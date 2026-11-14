@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -10,7 +10,8 @@ import { DatosProducto, IntencionMenu, MenuApiService, OperacionMenu, ProductoMe
 
 @Component({ selector: 'app-menu', standalone: true,
   imports: [FormsModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatIconModule, MatProgressBarModule],
-  templateUrl: './menu.component.html', styleUrl: './menu.component.scss' })
+  templateUrl: './menu.component.html', changeDetection: ChangeDetectionStrategy.Eager,
+ styleUrl: './menu.component.scss' })
 export class MenuComponent {
   private readonly api = inject(MenuApiService);
   private readonly auth = inject(AuthService);

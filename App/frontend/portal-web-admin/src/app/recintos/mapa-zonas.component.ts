@@ -1,4 +1,4 @@
-import { Component, ElementRef, input, output, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, input, output, signal, viewChild, ChangeDetectionStrategy } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { ZonaEditable } from '../core/models';
 
@@ -43,6 +43,7 @@ type Arrastre = { indice: number; modo: 'mover' | 'redimensionar'; x0: number; y
       }
     </div>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     .lienzo {
       position: relative;

@@ -12,7 +12,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiConflictResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiHeader, ApiConflictResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { LlamadaInterna } from './llamada-interna.guard';
 import { EntradaIdDto, MarcarEnReventaDto, TransferenciaDto, TransferirDto } from './dto/interno.dto';
 import { EntradasInternasService, MotivoNoRevendible } from './entradas-internas.service';
@@ -22,11 +22,11 @@ import { EntradasInternasService, MotivoNoRevendible } from './entradas-internas
  *
  * La llama Postventa, que no puede tocar la tabla por su cuenta. Acceso QR ya
  * no (ADR-15): la puerta valida contra su propia copia de los QR, que le llega
- * por eventos. Autentica igual que todo lo demás: que solo sea alcanzable
+ * por eventos. Exige credencial de servicio: que solo sea alcanzable
  * desde dentro de la red no es un control de acceso (RNF-06).
  */
 @ApiTags('interno')
-@ApiBearerAuth()
+@ApiHeader({ name: 'X-Token-Servicio', required: true, description: 'Credencial interna de servicio, nunca un JWT de Cliente' })
 @UseGuards(LlamadaInterna)
 @Controller('interno/entradas')
 export class EntradasInternasController {

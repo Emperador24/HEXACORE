@@ -1,4 +1,4 @@
-import { expect, Page, test } from '@playwright/test';
+import { expect, Page, test } from '../csp.fixture';
 import { randomUUID } from 'node:crypto';
 import { presentar } from '../presentacion';
 import { adminURL, clienteURL, comprobarAislamiento, crearEvento, gateway, loginAPI, loginUI, nucleo, productoPropio, sql } from './entorno';

@@ -1,0 +1,659 @@
+{
+  "alcance": "Revalidación SSE de ocupación de Parqueaderos, RNF-05/06 parciales",
+  "baseMedida": "bb0c9c86f891722bfb0391c00bdffe6e9b93f271",
+  "cobertura": {
+    "global": "113/159",
+    "pendientes": 46,
+    "parqueaderos": "25/25",
+    "aumentoPorEsteCambio": 0,
+    "inventario": "178 declaradas / 173 expuestas / 159 protegidas"
+  },
+  "antes": [
+    {
+      "canal": "gateway",
+      "datosNuevosTrasRevocar": true,
+      "msTrasRevocar": 3000.415417,
+      "nuevaConexion": 401
+    },
+    {
+      "canal": "nucleo",
+      "datosNuevosTrasRevocar": true,
+      "msTrasRevocar": 3018.053333,
+      "nuevaConexion": 401
+    }
+  ],
+  "finales": [
+    {
+      "nombre": "final-1",
+      "inicioUTC": "2026-11-14T03:10:08.983Z",
+      "finUTC": "2026-11-14T03:10:55.735Z",
+      "segundos": 46.752,
+      "estado": "APROBADO",
+      "canales": [
+        {
+          "canal": "gateway",
+          "rechazosIniciales": [
+            {
+              "tipo": "sin",
+              "estado": 401
+            },
+            {
+              "tipo": "invalido",
+              "estado": 401
+            },
+            {
+              "tipo": "cliente",
+              "estado": 403
+            },
+            {
+              "tipo": "personal",
+              "estado": 403
+            }
+          ],
+          "valida": {
+            "eventos": 2,
+            "intervaloMs": 3023.580458,
+            "estado": 200
+          },
+          "desconexion": {
+            "transaccionesRetenidas": 0,
+            "readerCancelado": true
+          },
+          "revocacion": {
+            "cierreMs": 3002.8465830000005,
+            "datosPosteriores": 0,
+            "codigo": "SIN_AUTENTICAR",
+            "eof": true,
+            "nuevaConexion": 401
+          },
+          "caducidad": {
+            "fixtureJwtCorta": true,
+            "relojSinCambios": true,
+            "ttlProductivoSinCambios": true,
+            "cierreTrasExpMs": 1750,
+            "datosPosteriores": 0,
+            "eof": true
+          },
+          "consultaEnCurso": {
+            "bloqueadaRealmente": true,
+            "liberadaTrasRevocar": true,
+            "cierreMs": 3.0063330000011774,
+            "datosPosteriores": 0,
+            "codigo": "SIN_AUTENTICAR",
+            "eof": true
+          },
+          "redis": {
+            "nuevaConexion": 503,
+            "inicialMs": 2011.0412499999984,
+            "cierreMs": 4924.404208,
+            "datosPosteriores": 0,
+            "codigo": "SESIONES_NO_DISPONIBLES",
+            "eof": true,
+            "pausaMs": 6500,
+            "controlPosterior": 200
+          }
+        },
+        {
+          "canal": "nucleo",
+          "rechazosIniciales": [
+            {
+              "tipo": "sin",
+              "estado": 401
+            },
+            {
+              "tipo": "invalido",
+              "estado": 401
+            },
+            {
+              "tipo": "cliente",
+              "estado": 403
+            },
+            {
+              "tipo": "personal",
+              "estado": 403
+            }
+          ],
+          "valida": {
+            "eventos": 2,
+            "intervaloMs": 2996.171166999997,
+            "estado": 200
+          },
+          "desconexion": {
+            "transaccionesRetenidas": 0,
+            "readerCancelado": true
+          },
+          "revocacion": {
+            "cierreMs": 2994.7712920000013,
+            "datosPosteriores": 0,
+            "codigo": "SIN_AUTENTICAR",
+            "eof": true,
+            "nuevaConexion": 401
+          },
+          "caducidad": {
+            "fixtureJwtCorta": true,
+            "relojSinCambios": true,
+            "ttlProductivoSinCambios": true,
+            "cierreTrasExpMs": 1339,
+            "datosPosteriores": 0,
+            "eof": true
+          },
+          "consultaEnCurso": {
+            "bloqueadaRealmente": true,
+            "liberadaTrasRevocar": true,
+            "cierreMs": 5.040291999997862,
+            "datosPosteriores": 0,
+            "codigo": "SIN_AUTENTICAR",
+            "eof": true
+          },
+          "redis": {
+            "nuevaConexion": 503,
+            "inicialMs": 2010.744666999999,
+            "cierreMs": 4903.2432499999995,
+            "datosPosteriores": 0,
+            "codigo": "SESIONES_NO_DISPONIBLES",
+            "eof": true,
+            "pausaMs": 6500,
+            "controlPosterior": 200
+          }
+        }
+      ],
+      "shutdown": {
+        "conexiones": 2,
+        "eof": true,
+        "ms": 245.92458400000032,
+        "codigo": 0,
+        "oom": false,
+        "limiteMs": 5000
+      }
+    },
+    {
+      "nombre": "final-2",
+      "inicioUTC": "2026-11-14T03:11:02.915Z",
+      "finUTC": "2026-11-14T03:11:49.819Z",
+      "segundos": 46.904,
+      "estado": "APROBADO",
+      "canales": [
+        {
+          "canal": "gateway",
+          "rechazosIniciales": [
+            {
+              "tipo": "sin",
+              "estado": 401
+            },
+            {
+              "tipo": "invalido",
+              "estado": 401
+            },
+            {
+              "tipo": "cliente",
+              "estado": 403
+            },
+            {
+              "tipo": "personal",
+              "estado": 403
+            }
+          ],
+          "valida": {
+            "eventos": 2,
+            "intervaloMs": 3016.3001249999998,
+            "estado": 200
+          },
+          "desconexion": {
+            "transaccionesRetenidas": 0,
+            "readerCancelado": true
+          },
+          "revocacion": {
+            "cierreMs": 3000.367709,
+            "datosPosteriores": 0,
+            "codigo": "SIN_AUTENTICAR",
+            "eof": true,
+            "nuevaConexion": 401
+          },
+          "caducidad": {
+            "fixtureJwtCorta": true,
+            "relojSinCambios": true,
+            "ttlProductivoSinCambios": true,
+            "cierreTrasExpMs": 1731,
+            "datosPosteriores": 0,
+            "eof": true
+          },
+          "consultaEnCurso": {
+            "bloqueadaRealmente": true,
+            "liberadaTrasRevocar": true,
+            "cierreMs": 4.3840420000015,
+            "datosPosteriores": 0,
+            "codigo": "SIN_AUTENTICAR",
+            "eof": true
+          },
+          "redis": {
+            "nuevaConexion": 503,
+            "inicialMs": 2018.6051670000015,
+            "cierreMs": 4912.378584000002,
+            "datosPosteriores": 0,
+            "codigo": "SESIONES_NO_DISPONIBLES",
+            "eof": true,
+            "pausaMs": 6500,
+            "controlPosterior": 200
+          }
+        },
+        {
+          "canal": "nucleo",
+          "rechazosIniciales": [
+            {
+              "tipo": "sin",
+              "estado": 401
+            },
+            {
+              "tipo": "invalido",
+              "estado": 401
+            },
+            {
+              "tipo": "cliente",
+              "estado": 403
+            },
+            {
+              "tipo": "personal",
+              "estado": 403
+            }
+          ],
+          "valida": {
+            "eventos": 2,
+            "intervaloMs": 3011.925708999999,
+            "estado": 200
+          },
+          "desconexion": {
+            "transaccionesRetenidas": 0,
+            "readerCancelado": true
+          },
+          "revocacion": {
+            "cierreMs": 3000.7356249999975,
+            "datosPosteriores": 0,
+            "codigo": "SIN_AUTENTICAR",
+            "eof": true,
+            "nuevaConexion": 401
+          },
+          "caducidad": {
+            "fixtureJwtCorta": true,
+            "relojSinCambios": true,
+            "ttlProductivoSinCambios": true,
+            "cierreTrasExpMs": 1452,
+            "datosPosteriores": 0,
+            "eof": true
+          },
+          "consultaEnCurso": {
+            "bloqueadaRealmente": true,
+            "liberadaTrasRevocar": true,
+            "cierreMs": 3.238707999997132,
+            "datosPosteriores": 0,
+            "codigo": "SIN_AUTENTICAR",
+            "eof": true
+          },
+          "redis": {
+            "nuevaConexion": 503,
+            "inicialMs": 2004.9827080000032,
+            "cierreMs": 4930.075541999999,
+            "datosPosteriores": 0,
+            "codigo": "SESIONES_NO_DISPONIBLES",
+            "eof": true,
+            "pausaMs": 6500,
+            "controlPosterior": 200
+          }
+        }
+      ],
+      "shutdown": {
+        "conexiones": 2,
+        "eof": true,
+        "ms": 272.11658299999544,
+        "codigo": 0,
+        "oom": false,
+        "limiteMs": 5000
+      }
+    },
+    {
+      "nombre": "final-3",
+      "inicioUTC": "2026-11-14T03:11:56.887Z",
+      "finUTC": "2026-11-14T03:12:43.581Z",
+      "segundos": 46.694,
+      "estado": "APROBADO",
+      "canales": [
+        {
+          "canal": "gateway",
+          "rechazosIniciales": [
+            {
+              "tipo": "sin",
+              "estado": 401
+            },
+            {
+              "tipo": "invalido",
+              "estado": 401
+            },
+            {
+              "tipo": "cliente",
+              "estado": 403
+            },
+            {
+              "tipo": "personal",
+              "estado": 403
+            }
+          ],
+          "valida": {
+            "eventos": 2,
+            "intervaloMs": 3017.236875,
+            "estado": 200
+          },
+          "desconexion": {
+            "transaccionesRetenidas": 0,
+            "readerCancelado": true
+          },
+          "revocacion": {
+            "cierreMs": 2998.035250000001,
+            "datosPosteriores": 0,
+            "codigo": "SIN_AUTENTICAR",
+            "eof": true,
+            "nuevaConexion": 401
+          },
+          "caducidad": {
+            "fixtureJwtCorta": true,
+            "relojSinCambios": true,
+            "ttlProductivoSinCambios": true,
+            "cierreTrasExpMs": 1650,
+            "datosPosteriores": 0,
+            "eof": true
+          },
+          "consultaEnCurso": {
+            "bloqueadaRealmente": true,
+            "liberadaTrasRevocar": true,
+            "cierreMs": 6.9366660000014235,
+            "datosPosteriores": 0,
+            "codigo": "SIN_AUTENTICAR",
+            "eof": true
+          },
+          "redis": {
+            "nuevaConexion": 503,
+            "inicialMs": 2007.8290410000009,
+            "cierreMs": 4918.823625000001,
+            "datosPosteriores": 0,
+            "codigo": "SESIONES_NO_DISPONIBLES",
+            "eof": true,
+            "pausaMs": 6500,
+            "controlPosterior": 200
+          }
+        },
+        {
+          "canal": "nucleo",
+          "rechazosIniciales": [
+            {
+              "tipo": "sin",
+              "estado": 401
+            },
+            {
+              "tipo": "invalido",
+              "estado": 401
+            },
+            {
+              "tipo": "cliente",
+              "estado": 403
+            },
+            {
+              "tipo": "personal",
+              "estado": 403
+            }
+          ],
+          "valida": {
+            "eventos": 2,
+            "intervaloMs": 3016.6520420000015,
+            "estado": 200
+          },
+          "desconexion": {
+            "transaccionesRetenidas": 0,
+            "readerCancelado": true
+          },
+          "revocacion": {
+            "cierreMs": 2999.212875000001,
+            "datosPosteriores": 0,
+            "codigo": "SIN_AUTENTICAR",
+            "eof": true,
+            "nuevaConexion": 401
+          },
+          "caducidad": {
+            "fixtureJwtCorta": true,
+            "relojSinCambios": true,
+            "ttlProductivoSinCambios": true,
+            "cierreTrasExpMs": 1316,
+            "datosPosteriores": 0,
+            "eof": true
+          },
+          "consultaEnCurso": {
+            "bloqueadaRealmente": true,
+            "liberadaTrasRevocar": true,
+            "cierreMs": 4.644875000005413,
+            "datosPosteriores": 0,
+            "codigo": "SIN_AUTENTICAR",
+            "eof": true
+          },
+          "redis": {
+            "nuevaConexion": 503,
+            "inicialMs": 2007.550000000003,
+            "cierreMs": 4915.489792,
+            "datosPosteriores": 0,
+            "codigo": "SESIONES_NO_DISPONIBLES",
+            "eof": true,
+            "pausaMs": 6500,
+            "controlPosterior": 200
+          }
+        }
+      ],
+      "shutdown": {
+        "conexiones": 2,
+        "eof": true,
+        "ms": 266.2814999999973,
+        "codigo": 0,
+        "oom": false,
+        "limiteMs": 5000
+      }
+    }
+  ],
+  "diseno": {
+    "cicloMs": 3000,
+    "redisCommandTimeoutMsExistente": 2000,
+    "esperaPanelMs": 5000,
+    "sqlParqueaderosStatementTimeoutLocalMs": 2000,
+    "httpSseEnsayoMs": 10000,
+    "sigtermMsExistente": 5000,
+    "temporizadoresGlobales": false,
+    "comprobacionesSolapadasPorConexion": false,
+    "antesYDespuesDelPanel": true,
+    "eventoTerminal": "sesion_finalizada",
+    "sinCambiarHttpIniciado": true,
+    "sinTokensEnUrlEventosLogsNuevos": true
+  },
+  "version": {
+    "node": "v22.22.3",
+    "compiladosCoincidentes": {
+      "accesos/accesos.service.js": "bb3d25e5703c102d95da37841baf7075771acd740985c3ebba95e3f13d2263b4",
+      "asignacion/asignacion.service.js": "b3f9709c41b1cc0f02ff5cb7b65604e222ac3a47879c2a8fc5f06d7df2fd909d",
+      "cobro/cobro.service.js": "b5bb7de52d60d8d635275e33b2fa5c3327725bc6474ea2e8a5381543b35ab4d3",
+      "comun/autenticacion/sesion-valida.guard.js": "5d7c69dd658575e78e830af3df00524e793650412db2f3ad26cda1a77fc6a7d5",
+      "comun/config/config.module.js": "472d2983a8a6ef24c5a7f481cf70fe5857f211725e17363af8f79c39b1cc13f2",
+      "comun/config/configuracion.js": "d840cb7e606fbfb43bacffd61f404f345ab09d5392ad309fce66196e5eeacc0a",
+      "comun/vehiculos.js": "62cc0ea9df98e277781ea1f69d8782d7e9d4b42a7e726d99b94802cb57af4806",
+      "dto/parqueaderos.dto.js": "1bb75599efd3bbe2fee7667050e9144cc50637c74227ea436b89ecd66342f5da",
+      "ocupacion/flujo-ocupacion.service.js": "4594be9cb443ad610938c461fde2fd0f2f62ae6fb2d4a64ba63dd9e3491f19f9",
+      "ocupacion/ocupacion.service.js": "cb3c5575d8441c0f56a6c8b73407788e2f58b740697cc7e646c78cd2b5b521ea",
+      "parqueaderos.controller.js": "64913f0f4ad6f441cf6a39a492e9fd488639a582771fbcd1de66777b681f612e",
+      "parqueaderos.module.js": "6c8840b1b579528aa107b1635940ef9bde15bb19f1c16f04a2afe5c771ed0fef",
+      "persistencia/conexion.js": "51cb5a5d6b739d8edd49422e879a8b4c103fa6b92193f86eb50c2084c080abd0",
+      "persistencia/data-source.js": "0b55454e4c0cbbee96a9ee7a0a59d38894a9cd2820459ec9476f221798f28b2c",
+      "persistencia/migraciones/1794200000000-EsquemaParqueaderos.js": "789c97cdc7f9df514b85ca1bed52b361e3a10c264f4817f3a9b0984b038329d9",
+      "persistencia/migraciones/1794300000000-Cu021Cu023ReservasEspacios.js": "9ee364bab21af5234eb464d4e896ad8be9ca88d9af11e96b89425387932de126",
+      "persistencia/persistencia.module.js": "304b29569ccb8c19fc7682e41d3c43f3a99bf77b730ee239c38a3bb3dbfbf812",
+      "reservas/notificador-reservas.service.js": "20a56842b2898f94713616f61d01904f9e824d6e53de16f237a53a57d8b24109",
+      "reservas/reservas.controller.js": "8bed35195d6550493bc6f9fabbd34f7bb68e5efea868e7df40999c857c3a4ee4",
+      "reservas/reservas.service.js": "f694c03e4ba230957e306e39b96c6dd75e24f969eca7f339ad2635af5e102786",
+      "reservas/topologia.js": "28810f154dc79cc316bebdb7416238e7b413d280a84913b7e6ba974b24a46c08"
+    },
+    "fuentesDuranteMediciones": {
+      "App/backend/modulos/parqueaderos/accesos/accesos.service.ts": "a769947f210c76c43c3413ad427e12ce9e234c11dbf40cfc298012c8b1afa2f4",
+      "App/backend/modulos/parqueaderos/accesos/accesos.spec.ts": "43151e8b0641fc5f4bd0e6939c3134275bd0d9817dfb1c762aa8b5aec0b8ae31",
+      "App/backend/modulos/parqueaderos/asignacion/asignacion.service.ts": "3c2365bce77de3dbe5f80760371d66b7bab0e15e27c53250a53fb19b206dd4cf",
+      "App/backend/modulos/parqueaderos/asignacion/asignacion.spec.ts": "e97645180c63066734b36606d73d25b4e741ae6fc19215e7e12fc0f09d7dc859",
+      "App/backend/modulos/parqueaderos/cobro/cobro.service.ts": "0c9bc94a2becd08de73126bdd9aa203d6ddd62756ccb210c83d7107bed2cafce",
+      "App/backend/modulos/parqueaderos/cobro/cobro.spec.ts": "dc8ff478ab6ace717e359d2f3febcdc6d5737adb5858b020052be1544954e23c",
+      "App/backend/modulos/parqueaderos/comun/autenticacion/sesion-valida.guard.spec.ts": "16f569e29d26f34dc365efe1bea5491c9004a4f690cc880dbd15b82ea797b5f9",
+      "App/backend/modulos/parqueaderos/comun/autenticacion/sesion-valida.guard.ts": "92eff47f97f772b776b2bd3ab7278fc8cf41df349b2cbbff1d58b5d5492a06d1",
+      "App/backend/modulos/parqueaderos/comun/config/config.module.ts": "0bf68fb21a951a9bcdcc2742616873d7380095739f20c1e07e668a736b722bc1",
+      "App/backend/modulos/parqueaderos/comun/config/configuracion.ts": "3ef0734e7474b559a27d984843b96793ee580b288cbce4857d6ab9e16d092bb8",
+      "App/backend/modulos/parqueaderos/comun/vehiculos.ts": "a2ac8e29b552f31ee07878f05f8f48ef53e416dd940ff578b1e36156281a55ca",
+      "App/backend/modulos/parqueaderos/dto/parqueaderos.dto.ts": "f46c965d0f023afe2f5d35fe92a7c65ec03bb7cc29ff3d698f41e89c96266fcf",
+      "App/backend/modulos/parqueaderos/ocupacion/flujo-ocupacion.service.ts": "8e7d562248ff8b4a5794466f2ce09a23097c353ac021dfb2282e0a7e6492c635",
+      "App/backend/modulos/parqueaderos/ocupacion/flujo-ocupacion.spec.ts": "d525e83213d0882632c4d6caae0ef1ad9ac48f32690cfd568bdb265515fbad28",
+      "App/backend/modulos/parqueaderos/ocupacion/ocupacion.service.ts": "e9eec36b34dc47e66e9ffa56e7bd0db171fafdca33fd072be9b096f4f0874548",
+      "App/backend/modulos/parqueaderos/parqueaderos.controller.ts": "eca8d5a32bd0f4c978ca87aa1fe44acf6204059f0e6d6a5c0891bd3be4495c38",
+      "App/backend/modulos/parqueaderos/parqueaderos.module.ts": "c246130bda3a46bab9ff724179f8e083de24828cde9ad0ebc89c76f7667c461f",
+      "App/backend/modulos/parqueaderos/persistencia/conexion.ts": "e54f2bd12f1e0df86443054dac1c10bff668931cf041662705d4fd4afdbdff12",
+      "App/backend/modulos/parqueaderos/persistencia/data-source.ts": "6083797df819808395c3af843040885b427063967f091aeb99ff9182ffccefd6",
+      "App/backend/modulos/parqueaderos/persistencia/migraciones/1794200000000-EsquemaParqueaderos.ts": "e530d60564139149c7a73ec0bcec00c03996255cb005e136d1c95e1c431a6957",
+      "App/backend/modulos/parqueaderos/persistencia/migraciones/1794300000000-Cu021Cu023ReservasEspacios.ts": "fe5e3ecbf905e96e885787daf8a5767578e8d3518834dc4a7de84d2a8bc5afff",
+      "App/backend/modulos/parqueaderos/persistencia/persistencia.module.ts": "13b347d8bbbc6f73ea48c529be2af7ebe6e0b937b410f97150612d2edba6eaf3",
+      "App/backend/modulos/parqueaderos/reservas/notificador-reservas.service.ts": "a59dc99a74320095b89c69a953e4fca56086e5741722c92924fa89c951d17338",
+      "App/backend/modulos/parqueaderos/reservas/reservas.controller.ts": "87cc0dab0475a4e521ac74780c29713a8f5265e13d8b234cd83d7eec63ddbbcb",
+      "App/backend/modulos/parqueaderos/reservas/reservas.service.ts": "6dfe484aa9aff15f50247c1dd35d8738d3504d44a050c84f991ff071dc1c6cfe",
+      "App/backend/modulos/parqueaderos/reservas/topologia.ts": "26889dc2815c8b62dff962c2aacd79d6d2d7313f3a268c8ab20fdf90d1273092",
+      "App/backend/test/parqueaderos/parqueaderos.e2e-spec.ts": "eb7505fa78973484f77cc72ec6c79b5f2d12ff5c23c4f9b4744b3824eea040cc",
+      "App/gateway/nginx.conf": "da82913e60d661e58dd4cc9bdd0151d281736fb0d083f16f4ebf186f23a62564",
+      "App/infra/informe-atributos/seguridad/comun.cjs": "25e2d94aa38392d14a2bf23e3365f3cd56a504cb72f6d132739084d23207647a",
+      "App/infra/informe-atributos/seguridad/finales-parqueaderos.py": "42de56d94f3717ff7d646cb7873721eb31d00a492924d28752daf4bc7b533602",
+      "App/infra/informe-atributos/seguridad/inventario.cjs": "cba54de26c607649b94fec73a9ea91101836e059800e7fa38d38ee97e47cbb3d",
+      "App/infra/informe-atributos/seguridad/medir.py": "4b30c70966f3b72e30b33bbbd66d0729e1d089b87fadc7c41dab2701a5873516",
+      "App/infra/informe-atributos/seguridad/parqueaderos-comun.cjs": "7f367afadc8fddc8208a5aa2979c5bd0dc60ebd3b338d6d23a3828d0d1551d67",
+      "App/infra/informe-atributos/seguridad/parqueaderos-entorno.cjs": "b69a265edf5a3fd2b9582c7e163842e0b3b07d9e3d8fada4d0e67327bf0d215d",
+      "App/infra/informe-atributos/seguridad/parqueaderos-recursos.cjs": "22c6e633d9efa6be18033a2927e82c71e21b8fe82c57790605792278b89122c7",
+      "App/infra/informe-atributos/seguridad/preparar-parqueaderos.cjs": "d63a941d4417cec2585cac65987897d2a4c8702b7cf036707716f6163f9cb0e0",
+      "App/infra/informe-atributos/seguridad/procedencia-parqueaderos.py": "6cbde76b626957f858b57816fd2a19164583997914397ec02394dbc9cf00be0b",
+      "App/infra/informe-atributos/seguridad/sondear-parqueaderos.cjs": "1c6a376a02c2f431f080876b6e000a60108d4895e88f527a1823ace1cbdd0eb0",
+      "/etc/nginx/nginx.conf": "b65ef0cd3f616796230add06eb0248bf1d2dc80a312f9d7e8b02b62074eb8fca",
+      "/etc/nginx/conf.d/default.conf": "96e3c23ac30bc163a375f85a13e493fa78b2ed0e753539e6cc86cda53f97c3d4",
+      "/etc/nginx/hexacore/autenticar.conf": "d351d1dc92f7ada6e58889c381d54c7354d1e02f0917c73bfafcef8ab588b91e",
+      "/etc/nginx/njs/autenticacion.js": "d6001e18add1fe17a360dd8ff1d94cb4e74fdbc160aadb66b88567008a1015f6",
+      "App/infra/informe-atributos/seguridad/sse-comun.cjs": "07278c03139bfe56ed9bacdb0e5f0ebf1fadbff84b3192f5a695291d1b46e15a",
+      "App/infra/informe-atributos/seguridad/comprobar-sse.cjs": "e334ff1a8619a0a34725c7a0cda5a785690d9d8cfde2481878d0bda5fb3cb2b2",
+      "App/infra/informe-atributos/seguridad/sondear-sse.cjs": "3ba0b1d7220137ce2857453be7207656499e5c4f31cbf4b39d9231347684e9f2",
+      "App/infra/informe-atributos/seguridad/procedencia-sse.py": "fa88430f8409eb73cc45ecb20a2f813f32dbabe3065436fe78ddbba5ce633016",
+      "App/infra/informe-atributos/seguridad/finales-sse.py": "88dd2322b8458a87329965869f356a99a05d67fb5c0912d48d55bd8dd43775b6",
+      "App/frontend/portal-web-admin/src/app/parqueaderos/parqueaderos.component.html": "5d617c85a29fbe10e5017f6824170164508b291eee17bb3d3b2d9dce34aacdb0",
+      "App/frontend/portal-web-admin/src/app/parqueaderos/parqueaderos.component.scss": "9cd4bdd634167acd58c2cc0acc056dbdfe9b2b080740b5a7aca55c7a62c24335",
+      "App/frontend/portal-web-admin/src/app/parqueaderos/parqueaderos.component.ts": "0b252eb9538f987d616b270a108d10ffe74ea72070caccfabc66922416a1b3ce",
+      "App/frontend/portal-web-admin/src/app/parqueaderos/parqueaderos-flujo.spec.ts": "8db31a10cda5141d6ac1bfce44c7ad6c7a12b395068fd3bc30770e252cd1cc6d",
+      "App/frontend/portal-web-admin/src/app/core/flujo-sse.ts": "47d750c228e76fb2e5cc637166931188b5d0e46db1165bcf6fcfbf3e6bc930fe",
+      "App/frontend/portal-web-admin/src/app/core/flujo-sse.spec.ts": "b63a244b9afb1a8aa776fbc7bec2c7fcc436cfcc3fee09a28305d140f2345ccf",
+      "App/frontend/portal-web-admin/src/app/core/parqueaderos-api.service.ts": "de6ad55c5212f1201683e72f4b810c27caa28e201c00668c3820f7cc6886d375",
+      "App/frontend/portal-web-admin/src/app/core/auth.service.ts": "a4705bf7702da37e5d6dffea25be2a0bc356608619a03e6970148d00b68403bd"
+    },
+    "clienteMedidoPorUnitariasNoPorHttp": true,
+    "fuentesClienteFinales": {
+      "App/frontend/portal-web-admin/src/app/core/parqueaderos-api.service.ts": "de6ad55c5212f1201683e72f4b810c27caa28e201c00668c3820f7cc6886d375",
+      "App/frontend/portal-web-admin/src/app/core/flujo-sse.spec.ts": "1eaa834f8ff66de9b10965680974e8db3c127702992005e28157771811fdf0e6",
+      "App/frontend/portal-web-admin/src/app/core/flujo-sse.ts": "b1a348ee901fffb371b34744b27df1f8170a1e16da900654ca620a0023079d1f",
+      "App/frontend/portal-web-admin/src/app/parqueaderos/parqueaderos.component.html": "5d617c85a29fbe10e5017f6824170164508b291eee17bb3d3b2d9dce34aacdb0",
+      "App/frontend/portal-web-admin/src/app/parqueaderos/parqueaderos.component.scss": "9cd4bdd634167acd58c2cc0acc056dbdfe9b2b080740b5a7aca55c7a62c24335",
+      "App/frontend/portal-web-admin/src/app/parqueaderos/parqueaderos.component.ts": "0b252eb9538f987d616b270a108d10ffe74ea72070caccfabc66922416a1b3ce",
+      "App/frontend/portal-web-admin/src/app/parqueaderos/parqueaderos-flujo.spec.ts": "8db31a10cda5141d6ac1bfce44c7ad6c7a12b395068fd3bc30770e252cd1cc6d"
+    },
+    "imagenesEstables": [
+      "sha256:128fa025f555260135cadd602acbc454d65b639ee99a29ff1007244f271196af",
+      "sha256:12bb86346ec6eb4f44d047e272f8e82fcc27a5439ff6f84701ab89443b6508d9",
+      "sha256:2bf2e5b6bef9190b6d6aa7e8a3edb07649ecee7e1d7f0d518c09d80b1ba801a1",
+      "sha256:6b4afcd4892fb6624c4c2e2725b3eb4d3685b22b8bd16056cc18fc40626c1029",
+      "sha256:ec4f171e9ff071bb2a1c936057d3be00206069b028b6c0d61df2477e1dd02c42",
+      "sha256:ef738a34a8651d11b2bace81c55c7e2187f786b484add6c83070884340074368",
+      "sha256:fb686416351dd2055be659f8e55c01b926ba8344a4357927fddcfeae3e74f133"
+    ]
+  },
+  "aislamiento": {
+    "baseRedisVhostNuevos": true,
+    "soloProveedoresSimulados": true,
+    "sinCambiarTtlNiRelojProductivo": true,
+    "caducidadHttp": "JWT de ensayo firmado con exp corto para sesión propia real; validación/HTTP/Redis reales, emisión de vida corta es fixture",
+    "falloRedis": "CLIENT PAUSE 6500 ALL solo en Redis dedicado, con fin programado; sin stop/flush de Redis compartido",
+    "consultaEnCurso": "LOCK de tabla en base exclusiva, liberado tras revocación; SQL/HTTP reales"
+  },
+  "restauracion": {
+    "contenedoresOriginales": 95,
+    "idsImagenesMontajesEstadosConservados": true,
+    "nuevosDetenidos": 3,
+    "cierres": [
+      0,
+      0,
+      0
+    ],
+    "sinOomNuevos": true,
+    "dockerActivoInicialFinal": true,
+    "redashArranqueManualUnaVez": true,
+    "postgresListo": true,
+    "redisPong": true,
+    "controlPosteriorUTC": "2026-11-14T03:16:49.728408+00:00",
+    "httpPosterior": {
+      "ping": {
+        "codigoCurl": 28,
+        "http": "000"
+      },
+      "login": {
+        "codigoCurl": 28,
+        "http": "000"
+      }
+    },
+    "contadoresReinicioDistintos": [
+      {
+        "nombre": "/hexacore-gateway",
+        "antes": 272,
+        "despues": 289,
+        "estadoAntes": "restarting",
+        "estadoDespues": "restarting"
+      },
+      {
+        "nombre": "/redash-scheduler-1",
+        "antes": 3,
+        "despues": 1,
+        "estadoAntes": "running",
+        "estadoDespues": "running"
+      }
+    ],
+    "oomKillAntesAlternar": {
+      "server": 4,
+      "scheduled_worker": 7,
+      "scheduler": 0,
+      "adhoc_worker": 7,
+      "worker": 10,
+      "redis": 0,
+      "postgres": 0
+    },
+    "oomKillNuevoArranqueFinal": {
+      "server": 2,
+      "scheduled_worker": 1,
+      "scheduler": 0,
+      "adhoc_worker": 1,
+      "worker": 5,
+      "redis": 0,
+      "postgres": 0
+    }
+  },
+  "limites": [
+    "Detección periódica: hasta ciclo de 3 s más comprobación Redis de hasta 2 s y transporte/planificación; no revocación instantánea",
+    "La desuscripción descarta promesas tardías; no cancela arbitrariamente promesas externas. SQL de Parqueaderos usa límite local de 2 s y espera del panel limitada a 5 s",
+    "Backend unitario usa dobles/tiempo virtual para intercalaciones; frontend usa dobles en Chrome Headless, separados de HTTP real",
+    "No se ejecutan otra vez los 300 controles ni los 16 recorridos locales. Otros módulos SSE se identifican como riesgo equivalente sin modificarlos",
+    "HTTP Redash puntual no acredita estabilidad ni elimina antecedentes OOM/capacidad; sin ciclos manuales de recuperación"
+  ],
+  "fallosConservados": [
+    {
+      "fase": "tipos portal",
+      "causa": "Se invocó tsconfig base sin tipos Jasmine sobre archivos spec",
+      "correccion": "Usar tsconfig.app.json y tsconfig.spec.json; ambos aprobados, sin cambiar configuración"
+    },
+    {
+      "fase": "regresión adicional consumidor",
+      "resultadoPrevio": "5/6; 401 de tokenVigente se perdía antes de abrir fetch",
+      "correccion": "Propaga estado ErrorCuenta a la política de reconexión; seis pruebas finales, sin cambiar servidor de las tres mediciones HTTP"
+    }
+  ]
+}

@@ -209,7 +209,7 @@ def archivos():
                        f'    "http://{DOMINIO}:{PUERTO_ADMIN}" $http_origin;\n' + '}', original)
     exigir(n == 1, 'Cambió el mapa CORS del gateway: adaptar generación')
     # Escritura sobre el mismo inode: respeta montajes de contenedores ya creados.
-    for nombre, contenido in {'gateway.conf': nuevo, 'sonda-salud.sh': (CARPETA / 'sonda-salud.sh').read_text(), 'configuracion.js':
+    for nombre, contenido in {'origenes-csp.conf': f'set $csp_api "http://{DOMINIO}:{PUERTO_GATEWAY}";\nset $csp_buzon "http://{DOMINIO}:{PUERTO_CORREO}";\n', 'gateway.conf': nuevo, 'sonda-salud.sh': (CARPETA / 'sonda-salud.sh').read_text(), 'configuracion.js':
             'window.HEXACORE_CONFIGURACION = ' + json.dumps({'api': f'http://{DOMINIO}:{PUERTO_GATEWAY}/api/v1',
                 'buzonDesarrollo': f'http://{DOMINIO}:{PUERTO_CORREO}/correos'}) + ';\n'}.items():
         p = ESTADO / nombre

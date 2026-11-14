@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { AppComponent } from './app.component';
 
 describe('AppComponent', () => {
@@ -7,7 +7,7 @@ describe('AppComponent', () => {
     await TestBed.configureTestingModule({
       imports: [AppComponent],
       // AuthService usa HttpClient desde CU-027
-      providers: [provideHttpClient()]
+      providers: [provideHttpClient(withXhr())]
     }).compileComponents();
   });
 

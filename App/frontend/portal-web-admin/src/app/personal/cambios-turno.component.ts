@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -48,6 +48,7 @@ const ACCIONES: Record<string, string> = {
   standalone: true,
   imports: [DatePipe, DecimalPipe, FormsModule, MatButtonModule, MatIconModule, MatProgressBarModule, MatRadioModule, MatTooltipModule, PestanasPersonalComponent],
   templateUrl: './cambios-turno.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './cambios-turno.component.scss'
 })
 export class CambiosTurnoComponent implements OnInit {

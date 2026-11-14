@@ -89,6 +89,34 @@ describe('CU-021 a CU-025 · Parqueaderos (e2e)', () => {
 
   // --- CU-024 ---------------------------------------------------------------
 
+  it('Seguridad SSE: la revocación real cierra el flujo abierto y no entrega más paneles', async () => {
+    const e = await eventoEnCurso(), propia = await nucleo.cuenta(['Organizador']);
+    const abortar = new AbortController(), plazo = setTimeout(() => abortar.abort(), 10000);
+    let lector: ReadableStreamDefaultReader<Uint8Array> | undefined;
+    try {
+      const respuesta = await fetch(`${nucleo.url}${P}/eventos/${e}/ocupacion/flujo`, { headers: { Authorization: como(propia) }, signal: abortar.signal });
+      expect(respuesta.status).toBe(200); lector = respuesta.body!.getReader();
+      const decoder = new TextDecoder(); let buffer = '';
+      async function siguiente(): Promise<{ tipo: string; datos: { codigo?: string; evento?: { id: string } } } | null> {
+        for (;;) {
+          const i = buffer.indexOf('\n\n');
+          if (i >= 0) {
+            const frame = buffer.slice(0, i); buffer = buffer.slice(i + 2);
+            const tipo = /^event: (.+)$/m.exec(frame)?.[1], datos = frame.split('\n').filter(l => l.startsWith('data:')).map(l => l.slice(5).trim()).join('\n');
+            if (tipo && datos) return { tipo, datos: JSON.parse(datos) }; continue;
+          }
+          const r = await lector!.read(); if (r.done) return null;
+          buffer += decoder.decode(r.value, { stream: true }).replaceAll('\r\n', '\n');
+        }
+      }
+      expect(await siguiente()).toMatchObject({ tipo: 'ocupacion', datos: { evento: { id: e } } });
+      await request(nucleo.url).delete('/api/v1/sesiones/actual').set('Authorization', como(propia)).expect(200);
+      expect(await siguiente()).toMatchObject({ tipo: 'sesion_finalizada', datos: { codigo: 'SIN_AUTENTICAR' } });
+      expect(await siguiente()).toBeNull();
+      await request(nucleo.url).get(`${P}/eventos/${e}/ocupacion/flujo`).set('Authorization', como(propia)).expect(401);
+    } finally { clearTimeout(plazo); abortar.abort(); await lector?.cancel().catch(() => undefined); lector?.releaseLock(); }
+  });
+
   it('CU-024: el Administrador fija la tarifa; la salida cobra las horas redondeadas hacia arriba', async () => {
     await request(nucleo.url).put(`${P}/tarifa`).set('Authorization', como(organizador)).send({ valorHora: 5000 }).expect(403);
     await request(nucleo.url).put(`${P}/tarifa`).set('Authorization', como(administrador)).send({ valorHora: 0 }).expect(400);
@@ -403,6 +431,33 @@ describe('CU-021 a CU-025 · Parqueaderos (e2e)', () => {
     expect(porQr).toMatchObject({ repetida: false, permanenciaMinutos: 95, cobro: { prepagada: true }, estancia: { placa: p } });
     expect((await espacios(evento, z.id)).find((e) => e.codigo === reserva.espacio)).toMatchObject({ estado: 'LIBRE', placa: null });
     expect((await panel(evento)).total).toMatchObject({ ocupados: 2, disponibles: 1 });
+  });
+
+  it('Seguridad: los IDs offline de ingreso/salida no se pueden reenviar en otro evento', async () => {
+    const a = await eventoEnCurso(), b = await eventoEnCurso();
+    const za = await zona(a, 'Offline A', 3), zb = await zona(b, 'Offline B', 3);
+    const pa = placa(), pb = placa();
+    const hace = (min: number) => new Date(Date.now() - min * 60000).toISOString();
+    const lote = [
+      { id: randomUUID(), tipo: 'INGRESO', placa: pa, zonaId: za.id, ocurridoEn: hace(2) },
+      { id: randomUUID(), tipo: 'SALIDA', placa: pa, ocurridoEn: hace(1) },
+    ];
+    const sincronizar = (e: string, registros: unknown[]) => request(nucleo.url).post(`${P}/eventos/${e}/sincronizacion`)
+      .set('Authorization', como(personal)).send({ registros }).expect(201).then(r => r.body);
+    expect(await sincronizar(a, lote)).toMatchObject({ aplicados: 2, repetidos: 0, rechazados: 0 });
+    await entrar(b, { placa: pb, zonaId: zb.id });
+    const leer = () => parqueaderos.query('SELECT * FROM estancias WHERE evento_id = ANY($1) ORDER BY id', [[a, b]]);
+    const antes = await leer();
+    const rechazo = await sincronizar(b, lote.map(r => ({ ...r, placa: pb, ...(r.tipo === 'INGRESO' ? { zonaId: zb.id } : {}) })));
+    expect(rechazo).toMatchObject({ aplicados: 0, repetidos: 0, rechazados: 2 });
+    expect(rechazo.resultados).toEqual(lote.map(r => expect.objectContaining({ id: r.id, resultado: 'RECHAZADO', codigo: 'REGISTRO_LOCAL_INCOMPATIBLE' })));
+    expect(rechazo.resultados.every((r: { estanciaId?: string }) => r.estanciaId === undefined)).toBe(true);
+    expect(await leer()).toEqual(antes);
+    expect(await sincronizar(a, lote)).toMatchObject({ aplicados: 0, repetidos: 2, rechazados: 0 });
+    expect(await leer()).toEqual(antes);
+    // Una clave nueva del evento B conserva su capacidad de cerrar la estancia.
+    expect(await sincronizar(b, [{ id: randomUUID(), tipo: 'SALIDA', placa: pb, ocurridoEn: hace(0) }]))
+      .toMatchObject({ aplicados: 1, repetidos: 0, rechazados: 0 });
   });
 
   it('CU-022: el punto de control trabaja sin red con su caché y sincroniza después sin duplicar', async () => {

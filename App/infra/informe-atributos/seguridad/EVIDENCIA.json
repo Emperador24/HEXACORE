@@ -1,0 +1,1138 @@
+{
+  "fecha": "2026-11-12",
+  "fuentesFuncionales": "e5c6ba79669ad355c05f5763fb17bfe7e29f8388",
+  "cumplimientoCompleto": false,
+  "inventario": {
+    "totalControladores": 178,
+    "clases": {
+      "publica": 10,
+      "protegida": 159,
+      "interna": 5,
+      "operacional": 2,
+      "webhook": 2
+    },
+    "expuestasControladores": 172,
+    "expuestasConSaludGateway": 173,
+    "protegidas": 159,
+    "rolesIncorrectos": 117,
+    "rolesTodosPermitidos": 1,
+    "sinMetadatoRol": 41,
+    "CU028": "Pendiente Samuel"
+  },
+  "complementoSQL": [
+    {
+      "fechaUTC": "2026-11-12T11:33:39.365Z",
+      "esquemas": [
+        "alimentos",
+        "entradas_ventas",
+        "entradas_postventa",
+        "finanzas_pagos",
+        "parqueaderos"
+      ],
+      "propietarios": [
+        {
+          "conexion": "alimentos",
+          "esquema": "alimentos",
+          "historial": "migraciones"
+        },
+        {
+          "conexion": "entradas-ventas",
+          "esquema": "entradas_ventas",
+          "historial": "migraciones"
+        },
+        {
+          "conexion": "entradas-postventa",
+          "esquema": "entradas_postventa",
+          "historial": "migrations"
+        },
+        {
+          "conexion": "finanzas-pagos",
+          "esquema": "finanzas_pagos",
+          "historial": "migraciones"
+        },
+        {
+          "conexion": "parqueaderos",
+          "esquema": "parqueaderos",
+          "historial": "migraciones"
+        }
+      ],
+      "tablas": 43,
+      "filas": 6441,
+      "canarioPAN": 0,
+      "porEsquema": {
+        "alimentos": {
+          "tablas": 15,
+          "filas": 5826,
+          "canario": 0
+        },
+        "entradas_postventa": {
+          "tablas": 4,
+          "filas": 107,
+          "canario": 0
+        },
+        "entradas_ventas": {
+          "tablas": 13,
+          "filas": 247,
+          "canario": 0
+        },
+        "finanzas_pagos": {
+          "tablas": 2,
+          "filas": 259,
+          "canario": 0
+        },
+        "parqueaderos": {
+          "tablas": 9,
+          "filas": 2,
+          "canario": 0
+        }
+      },
+      "limite": "Búsqueda del canario sintético; no detector exhaustivo de tarjetas",
+      "condicion": "Solo PostgreSQL CU015 activo; aplicaciones detenidas, Redash detenido; mismas fuentes/datos del ensayo, sin escritores"
+    },
+    {
+      "fechaUTC": "2026-11-12T11:33:39.425Z",
+      "esquemas": [
+        "alimentos",
+        "entradas_ventas",
+        "entradas_postventa",
+        "finanzas_pagos",
+        "parqueaderos"
+      ],
+      "propietarios": [
+        {
+          "conexion": "alimentos",
+          "esquema": "alimentos",
+          "historial": "migraciones"
+        },
+        {
+          "conexion": "entradas-ventas",
+          "esquema": "entradas_ventas",
+          "historial": "migraciones"
+        },
+        {
+          "conexion": "entradas-postventa",
+          "esquema": "entradas_postventa",
+          "historial": "migrations"
+        },
+        {
+          "conexion": "finanzas-pagos",
+          "esquema": "finanzas_pagos",
+          "historial": "migraciones"
+        },
+        {
+          "conexion": "parqueaderos",
+          "esquema": "parqueaderos",
+          "historial": "migraciones"
+        }
+      ],
+      "tablas": 43,
+      "filas": 6441,
+      "canarioPAN": 0,
+      "porEsquema": {
+        "alimentos": {
+          "tablas": 15,
+          "filas": 5826,
+          "canario": 0
+        },
+        "entradas_postventa": {
+          "tablas": 4,
+          "filas": 107,
+          "canario": 0
+        },
+        "entradas_ventas": {
+          "tablas": 13,
+          "filas": 247,
+          "canario": 0
+        },
+        "finanzas_pagos": {
+          "tablas": 2,
+          "filas": 259,
+          "canario": 0
+        },
+        "parqueaderos": {
+          "tablas": 9,
+          "filas": 2,
+          "canario": 0
+        }
+      },
+      "limite": "Búsqueda del canario sintético; no detector exhaustivo de tarjetas",
+      "condicion": "Solo PostgreSQL CU015 activo; aplicaciones detenidas, Redash detenido; mismas fuentes/datos del ensayo, sin escritores"
+    },
+    {
+      "fechaUTC": "2026-11-12T11:33:39.471Z",
+      "esquemas": [
+        "alimentos",
+        "entradas_ventas",
+        "entradas_postventa",
+        "finanzas_pagos",
+        "parqueaderos"
+      ],
+      "propietarios": [
+        {
+          "conexion": "alimentos",
+          "esquema": "alimentos",
+          "historial": "migraciones"
+        },
+        {
+          "conexion": "entradas-ventas",
+          "esquema": "entradas_ventas",
+          "historial": "migraciones"
+        },
+        {
+          "conexion": "entradas-postventa",
+          "esquema": "entradas_postventa",
+          "historial": "migrations"
+        },
+        {
+          "conexion": "finanzas-pagos",
+          "esquema": "finanzas_pagos",
+          "historial": "migraciones"
+        },
+        {
+          "conexion": "parqueaderos",
+          "esquema": "parqueaderos",
+          "historial": "migraciones"
+        }
+      ],
+      "tablas": 43,
+      "filas": 6441,
+      "canarioPAN": 0,
+      "porEsquema": {
+        "alimentos": {
+          "tablas": 15,
+          "filas": 5826,
+          "canario": 0
+        },
+        "entradas_postventa": {
+          "tablas": 4,
+          "filas": 107,
+          "canario": 0
+        },
+        "entradas_ventas": {
+          "tablas": 13,
+          "filas": 247,
+          "canario": 0
+        },
+        "finanzas_pagos": {
+          "tablas": 2,
+          "filas": 259,
+          "canario": 0
+        },
+        "parqueaderos": {
+          "tablas": 9,
+          "filas": 2,
+          "canario": 0
+        }
+      },
+      "limite": "Búsqueda del canario sintético; no detector exhaustivo de tarjetas",
+      "condicion": "Solo PostgreSQL CU015 activo; aplicaciones detenidas, Redash detenido; mismas fuentes/datos del ensayo, sin escritores"
+    }
+  ],
+  "notaSQLOriginal": "Las consultas de las finales revisaron solo alimentos/parqueaderos (24 tablas); se conserva esa cobertura parcial. El complemento posterior usa los cinco esquemas registrados y el mismo helper de la matriz corregida.",
+  "restauracion": {
+    "fechaUTC": "2026-11-12T11:36:33.367326+00:00",
+    "redashActivos": 7,
+    "CU015Activos": 0,
+    "http": {
+      "ping": "TimeoutError",
+      "login": "TimeoutError"
+    }
+  },
+  "versiones": {
+    "node": "v22.22.3",
+    "npm": "10.9.8",
+    "python": "Python 3.14.0",
+    "docker": "29.7.2 / 29.7.2"
+  },
+  "imagenes": {
+    "nucleo": {
+      "imagen": "sha256:e1ee1d76807f1cc7c988f65781536dcca66770dc9e71305fcc9ea8b8606ff001",
+      "revision": "4aad53f9f6975067b2ba9ab40af37b2de80d3c81"
+    },
+    "boleteria": {
+      "imagen": "sha256:fe3f4361530b5a8d02b0f24fd79a2e64417a392951aae8b095da4cdc76fba964",
+      "revision": "e5c6ba79669ad355c05f5763fb17bfe7e29f8388"
+    },
+    "trabajador": {
+      "imagen": "sha256:7b6c1e7a5d266667bdc6c3adb5947cdd1a3bd3e6692e16431d7672d6672ac17a",
+      "revision": "4aad53f9f6975067b2ba9ab40af37b2de80d3c81"
+    },
+    "api-gateway": {
+      "imagen": "sha256:dfd49274e4ced0da6c2e3985262ac6c7212092151f3212ffe841481da2698cec",
+      "revision": "4aad53f9f6975067b2ba9ab40af37b2de80d3c81"
+    },
+    "portal-web-cliente": {
+      "imagen": "sha256:95d87b1a1c671a53abcf5bad5bfe8da21b9797dc1373672768b64a47a9c38a07",
+      "revision": "4aad53f9f6975067b2ba9ab40af37b2de80d3c81"
+    },
+    "portal-web-admin": {
+      "imagen": "sha256:b5285861d5ce18fd1bc8349cf2b719736a5227a676bbe3e404b482956242b54f",
+      "revision": "4aad53f9f6975067b2ba9ab40af37b2de80d3c81"
+    }
+  },
+  "huellas": [
+    {
+      "servicio": "nucleo",
+      "archivo": "App/backend/dist/modulos/alimentos/catalogo/catalogo.controller.js",
+      "sha256": "ec9da0b50f01bc64a20b61590e2ae87c0be9242ca41256ce3e46a0870cdf8988",
+      "coincideFuenteActual": true
+    },
+    {
+      "servicio": "nucleo",
+      "archivo": "App/backend/dist/modulos/finanzas/pagos/pasarela-http.service.js",
+      "sha256": "a278448aeb8cda1211c381a1b421fd155dc30c1198baabe3bae3898be93ad69b",
+      "coincideFuenteActual": true
+    },
+    {
+      "servicio": "boleteria",
+      "archivo": "App/backend/dist/modulos/entradas/ventas/venta/interno/llamada-interna.guard.js",
+      "sha256": "fec216e79cd0f9bcc74478b4a49c2869de338bc2d917a1997ec5cef79ed6d6e4",
+      "coincideFuenteActual": true
+    },
+    {
+      "servicio": "boleteria",
+      "archivo": "App/backend/dist/modulos/entradas/ventas/venta/interno/api-local.service.js",
+      "sha256": "a1eaf55c03170db6abe114e891ebc890fa2f8ddc2ed00206e1533ed08cadacc9",
+      "coincideFuenteActual": true
+    },
+    {
+      "servicio": "boleteria",
+      "archivo": "App/backend/dist/modulos/entradas/postventa/postventa/cliente-ventas.service.js",
+      "sha256": "c249992f1c7a776263b0817488bbb203ed72f65e970dda37efe7c74356fa7aa5",
+      "coincideFuenteActual": true
+    },
+    {
+      "servicio": "api-gateway",
+      "archivo": "App/gateway/autenticacion.js",
+      "sha256": "d6001e18add1fe17a360dd8ff1d94cb4e74fdbc160aadb66b88567008a1015f6",
+      "coincideFuenteActual": true
+    },
+    {
+      "servicio": "portal-web-cliente",
+      "archivo": "App/frontend/portal-web-cliente/nginx.conf",
+      "sha256": "f591b7391c1d23478964566dcedac5578d955dfb0e737a4f1b1aecbe8865b1f4",
+      "coincideFuenteActual": true
+    },
+    {
+      "servicio": "portal-web-admin",
+      "archivo": "App/frontend/portal-web-admin/nginx.conf",
+      "sha256": "96ffef73275f2ae56c3cd9b875f5bc2b2c1dee0626d95de2ed02a7c7c1d8dd8a",
+      "coincideFuenteActual": true
+    }
+  ],
+  "almacenamiento": {
+    "redis": {
+      "clavesPropias": 1,
+      "canarioPAN": 0
+    },
+    "logs": {
+      "nucleo": {
+        "canarioPAN": 0
+      },
+      "boleteria": {
+        "canarioPAN": 0
+      },
+      "trabajador": {
+        "canarioPAN": 0
+      },
+      "api-gateway": {
+        "canarioPAN": 0
+      },
+      "pasarela": {
+        "canarioPAN": 0
+      },
+      "correo": {
+        "canarioPAN": 0
+      }
+    },
+    "limite": "Canario y claves exclusivas del pedido/producto; no detector exhaustivo de tarjetas"
+  },
+  "finales": [
+    {
+      "ejecucion": "final-1",
+      "fechaUTC": "2026-11-12T11:15:51.926Z",
+      "sha": "e5c6ba79669ad355c05f5763fb17bfe7e29f8388",
+      "controles": 1760,
+      "aprobados": 1760,
+      "fallos": 0,
+      "porCaso": {
+        "sin": 318,
+        "invalido": 318,
+        "caducado": 318,
+        "revocado": 318,
+        "cabeceras-falsas": 159,
+        "head-sin-token": 73,
+        "rol-incorrecto": 234,
+        "interna-sin-credencial": 5,
+        "interna-no-publicada": 5,
+        "interna-jwt-cliente": 4,
+        "interna-jwt-admin": 4,
+        "interna-servicio-invalido": 4
+      },
+      "propiedad": {
+        "controles": 11,
+        "aprobados": 11
+      },
+      "PAN_HTTP": {
+        "controles": 8,
+        "aprobados": 8
+      },
+      "webhooks": [
+        {
+          "ruta": "/pagos/webhook",
+          "estado": 401,
+          "esperado": 401,
+          "ok": true
+        },
+        {
+          "ruta": "/pagos/webhook/stripe",
+          "estado": 404,
+          "esperado": 404,
+          "ok": true
+        }
+      ],
+      "cookies": {
+        "login": 200,
+        "httpOnly": true,
+        "sameSite": true,
+        "path": true,
+        "sinRefreshEnCuerpo": true,
+        "secureLocal": false,
+        "renovacion": 200,
+        "rotada": true,
+        "replay": 401,
+        "replayRevoca": 401,
+        "cookieNoEsBearer": 401
+      },
+      "baseDatos": {
+        "tablas": 24,
+        "filas": 5828,
+        "canarioPAN": 0,
+        "limite": "Búsqueda del canario sintético; no equivale a detectar todo PAN posible"
+      },
+      "audit": [
+        {
+          "paquete": "backend",
+          "tipo": "produccion",
+          "codigo": 0,
+          "vulnerabilidades": {
+            "info": 0,
+            "low": 0,
+            "moderate": 0,
+            "high": 0,
+            "critical": 0,
+            "total": 0
+          },
+          "error": null,
+          "lockSHA256": "196d5544b89cba9f3c375d86b7c247f2d4d80820b5e5a43cac097b9de6ff6159"
+        },
+        {
+          "paquete": "backend",
+          "tipo": "completo",
+          "codigo": 1,
+          "vulnerabilidades": {
+            "info": 0,
+            "low": 2,
+            "moderate": 20,
+            "high": 0,
+            "critical": 0,
+            "total": 22
+          },
+          "error": null,
+          "lockSHA256": "196d5544b89cba9f3c375d86b7c247f2d4d80820b5e5a43cac097b9de6ff6159"
+        },
+        {
+          "paquete": "cliente",
+          "tipo": "produccion",
+          "codigo": 1,
+          "vulnerabilidades": {
+            "info": 0,
+            "low": 0,
+            "moderate": 4,
+            "high": 4,
+            "critical": 0,
+            "total": 8
+          },
+          "error": null,
+          "lockSHA256": "fc6747bb3b3031cffbaa6e10edfd1aff3744f2e9c4124d466bef1e56126cdc75"
+        },
+        {
+          "paquete": "cliente",
+          "tipo": "completo",
+          "codigo": 1,
+          "vulnerabilidades": {
+            "info": 0,
+            "low": 2,
+            "moderate": 29,
+            "high": 32,
+            "critical": 4,
+            "total": 67
+          },
+          "error": null,
+          "lockSHA256": "fc6747bb3b3031cffbaa6e10edfd1aff3744f2e9c4124d466bef1e56126cdc75"
+        },
+        {
+          "paquete": "admin",
+          "tipo": "produccion",
+          "codigo": 1,
+          "vulnerabilidades": {
+            "info": 0,
+            "low": 0,
+            "moderate": 4,
+            "high": 4,
+            "critical": 0,
+            "total": 8
+          },
+          "error": null,
+          "lockSHA256": "91c42b877d1dcf06476bc40e775778e442f9824979f74a892918be3afdbb0717"
+        },
+        {
+          "paquete": "admin",
+          "tipo": "completo",
+          "codigo": 1,
+          "vulnerabilidades": {
+            "info": 0,
+            "low": 2,
+            "moderate": 29,
+            "high": 23,
+            "critical": 4,
+            "total": 58
+          },
+          "error": null,
+          "lockSHA256": "91c42b877d1dcf06476bc40e775778e442f9824979f74a892918be3afdbb0717"
+        },
+        {
+          "paquete": "e2e",
+          "tipo": "produccion",
+          "codigo": 0,
+          "vulnerabilidades": {
+            "info": 0,
+            "low": 0,
+            "moderate": 0,
+            "high": 0,
+            "critical": 0,
+            "total": 0
+          },
+          "error": null,
+          "lockSHA256": "b295f5f7844f4b118cb355731e197e6a3b9fc20e15667bf9220f5a39cb655256"
+        },
+        {
+          "paquete": "e2e",
+          "tipo": "completo",
+          "codigo": 0,
+          "vulnerabilidades": {
+            "info": 0,
+            "low": 0,
+            "moderate": 0,
+            "high": 0,
+            "critical": 0,
+            "total": 0
+          },
+          "error": null,
+          "lockSHA256": "b295f5f7844f4b118cb355731e197e6a3b9fc20e15667bf9220f5a39cb655256"
+        },
+        {
+          "paquete": "demo-samuel",
+          "tipo": "produccion",
+          "codigo": 0,
+          "vulnerabilidades": {
+            "info": 0,
+            "low": 0,
+            "moderate": 0,
+            "high": 0,
+            "critical": 0,
+            "total": 0
+          },
+          "error": null,
+          "lockSHA256": "16d56ea62634f7f79b38597b76c6ed4cddaaff4a31891ea9dbd27a46d56b07fd"
+        },
+        {
+          "paquete": "demo-samuel",
+          "tipo": "completo",
+          "codigo": 0,
+          "vulnerabilidades": {
+            "info": 0,
+            "low": 0,
+            "moderate": 0,
+            "high": 0,
+            "critical": 0,
+            "total": 0
+          },
+          "error": null,
+          "lockSHA256": "16d56ea62634f7f79b38597b76c6ed4cddaaff4a31891ea9dbd27a46d56b07fd"
+        }
+      ],
+      "zap": {
+        "version": "2.17.0",
+        "solicitudes": 33,
+        "autenticadas200": 3,
+        "alertas": {
+          "10038": {
+            "nombre": "Content Security Policy (CSP) Header Not Set",
+            "riesgo": "Medium",
+            "confianza": "High",
+            "instancias": 4
+          },
+          "10109": {
+            "nombre": "Modern Web Application",
+            "riesgo": "Informational",
+            "confianza": "Medium",
+            "instancias": 4
+          },
+          "10003": {
+            "nombre": "Vulnerable JS Library",
+            "riesgo": "High",
+            "confianza": "Medium",
+            "instancias": 2
+          }
+        },
+        "pendientes": 0,
+        "reglasPasivas": 62,
+        "reglasDesactivadas": [],
+        "activo": false
+      },
+      "memoria": {
+        "antes": {
+          "vm": {
+            "MemAvailable": "1273864 kB",
+            "SwapFree": "456876 kB"
+          },
+          "swapHost": "vm.swapusage: total = 5120.00M  used = 4061.75M  free = 1058.25M  (encrypted)",
+          "presionHost": "System-wide memory free percentage: 39%"
+        },
+        "despues": {
+          "vm": {
+            "MemAvailable": "968160 kB",
+            "SwapFree": "430812 kB"
+          },
+          "swapHost": "vm.swapusage: total = 5120.00M  used = 4051.88M  free = 1068.12M  (encrypted)",
+          "presionHost": "System-wide memory free percentage: 37%"
+        }
+      }
+    },
+    {
+      "ejecucion": "final-2",
+      "fechaUTC": "2026-11-12T11:16:34.227Z",
+      "sha": "e5c6ba79669ad355c05f5763fb17bfe7e29f8388",
+      "controles": 1760,
+      "aprobados": 1760,
+      "fallos": 0,
+      "porCaso": {
+        "sin": 318,
+        "invalido": 318,
+        "caducado": 318,
+        "revocado": 318,
+        "cabeceras-falsas": 159,
+        "head-sin-token": 73,
+        "rol-incorrecto": 234,
+        "interna-sin-credencial": 5,
+        "interna-no-publicada": 5,
+        "interna-jwt-cliente": 4,
+        "interna-jwt-admin": 4,
+        "interna-servicio-invalido": 4
+      },
+      "propiedad": {
+        "controles": 11,
+        "aprobados": 11
+      },
+      "PAN_HTTP": {
+        "controles": 8,
+        "aprobados": 8
+      },
+      "webhooks": [
+        {
+          "ruta": "/pagos/webhook",
+          "estado": 401,
+          "esperado": 401,
+          "ok": true
+        },
+        {
+          "ruta": "/pagos/webhook/stripe",
+          "estado": 404,
+          "esperado": 404,
+          "ok": true
+        }
+      ],
+      "cookies": {
+        "login": 200,
+        "httpOnly": true,
+        "sameSite": true,
+        "path": true,
+        "sinRefreshEnCuerpo": true,
+        "secureLocal": false,
+        "renovacion": 200,
+        "rotada": true,
+        "replay": 401,
+        "replayRevoca": 401,
+        "cookieNoEsBearer": 401
+      },
+      "baseDatos": {
+        "tablas": 24,
+        "filas": 5828,
+        "canarioPAN": 0,
+        "limite": "Búsqueda del canario sintético; no equivale a detectar todo PAN posible"
+      },
+      "audit": [
+        {
+          "paquete": "backend",
+          "tipo": "produccion",
+          "codigo": 0,
+          "vulnerabilidades": {
+            "info": 0,
+            "low": 0,
+            "moderate": 0,
+            "high": 0,
+            "critical": 0,
+            "total": 0
+          },
+          "error": null,
+          "lockSHA256": "196d5544b89cba9f3c375d86b7c247f2d4d80820b5e5a43cac097b9de6ff6159"
+        },
+        {
+          "paquete": "backend",
+          "tipo": "completo",
+          "codigo": 1,
+          "vulnerabilidades": {
+            "info": 0,
+            "low": 2,
+            "moderate": 20,
+            "high": 0,
+            "critical": 0,
+            "total": 22
+          },
+          "error": null,
+          "lockSHA256": "196d5544b89cba9f3c375d86b7c247f2d4d80820b5e5a43cac097b9de6ff6159"
+        },
+        {
+          "paquete": "cliente",
+          "tipo": "produccion",
+          "codigo": 1,
+          "vulnerabilidades": {
+            "info": 0,
+            "low": 0,
+            "moderate": 4,
+            "high": 4,
+            "critical": 0,
+            "total": 8
+          },
+          "error": null,
+          "lockSHA256": "fc6747bb3b3031cffbaa6e10edfd1aff3744f2e9c4124d466bef1e56126cdc75"
+        },
+        {
+          "paquete": "cliente",
+          "tipo": "completo",
+          "codigo": 1,
+          "vulnerabilidades": {
+            "info": 0,
+            "low": 2,
+            "moderate": 29,
+            "high": 32,
+            "critical": 4,
+            "total": 67
+          },
+          "error": null,
+          "lockSHA256": "fc6747bb3b3031cffbaa6e10edfd1aff3744f2e9c4124d466bef1e56126cdc75"
+        },
+        {
+          "paquete": "admin",
+          "tipo": "produccion",
+          "codigo": 1,
+          "vulnerabilidades": {
+            "info": 0,
+            "low": 0,
+            "moderate": 4,
+            "high": 4,
+            "critical": 0,
+            "total": 8
+          },
+          "error": null,
+          "lockSHA256": "91c42b877d1dcf06476bc40e775778e442f9824979f74a892918be3afdbb0717"
+        },
+        {
+          "paquete": "admin",
+          "tipo": "completo",
+          "codigo": 1,
+          "vulnerabilidades": {
+            "info": 0,
+            "low": 2,
+            "moderate": 29,
+            "high": 23,
+            "critical": 4,
+            "total": 58
+          },
+          "error": null,
+          "lockSHA256": "91c42b877d1dcf06476bc40e775778e442f9824979f74a892918be3afdbb0717"
+        },
+        {
+          "paquete": "e2e",
+          "tipo": "produccion",
+          "codigo": 0,
+          "vulnerabilidades": {
+            "info": 0,
+            "low": 0,
+            "moderate": 0,
+            "high": 0,
+            "critical": 0,
+            "total": 0
+          },
+          "error": null,
+          "lockSHA256": "b295f5f7844f4b118cb355731e197e6a3b9fc20e15667bf9220f5a39cb655256"
+        },
+        {
+          "paquete": "e2e",
+          "tipo": "completo",
+          "codigo": 0,
+          "vulnerabilidades": {
+            "info": 0,
+            "low": 0,
+            "moderate": 0,
+            "high": 0,
+            "critical": 0,
+            "total": 0
+          },
+          "error": null,
+          "lockSHA256": "b295f5f7844f4b118cb355731e197e6a3b9fc20e15667bf9220f5a39cb655256"
+        },
+        {
+          "paquete": "demo-samuel",
+          "tipo": "produccion",
+          "codigo": 0,
+          "vulnerabilidades": {
+            "info": 0,
+            "low": 0,
+            "moderate": 0,
+            "high": 0,
+            "critical": 0,
+            "total": 0
+          },
+          "error": null,
+          "lockSHA256": "16d56ea62634f7f79b38597b76c6ed4cddaaff4a31891ea9dbd27a46d56b07fd"
+        },
+        {
+          "paquete": "demo-samuel",
+          "tipo": "completo",
+          "codigo": 0,
+          "vulnerabilidades": {
+            "info": 0,
+            "low": 0,
+            "moderate": 0,
+            "high": 0,
+            "critical": 0,
+            "total": 0
+          },
+          "error": null,
+          "lockSHA256": "16d56ea62634f7f79b38597b76c6ed4cddaaff4a31891ea9dbd27a46d56b07fd"
+        }
+      ],
+      "zap": {
+        "version": "2.17.0",
+        "solicitudes": 33,
+        "autenticadas200": 3,
+        "alertas": {
+          "10038": {
+            "nombre": "Content Security Policy (CSP) Header Not Set",
+            "riesgo": "Medium",
+            "confianza": "High",
+            "instancias": 4
+          },
+          "10109": {
+            "nombre": "Modern Web Application",
+            "riesgo": "Informational",
+            "confianza": "Medium",
+            "instancias": 4
+          },
+          "10003": {
+            "nombre": "Vulnerable JS Library",
+            "riesgo": "High",
+            "confianza": "Medium",
+            "instancias": 2
+          }
+        },
+        "pendientes": 0,
+        "reglasPasivas": 62,
+        "reglasDesactivadas": [],
+        "activo": false
+      },
+      "memoria": {
+        "antes": {
+          "vm": {
+            "MemAvailable": "970632 kB",
+            "SwapFree": "430812 kB"
+          },
+          "swapHost": "vm.swapusage: total = 5120.00M  used = 4051.88M  free = 1068.12M  (encrypted)",
+          "presionHost": "System-wide memory free percentage: 38%"
+        },
+        "despues": {
+          "vm": {
+            "MemAvailable": "949632 kB",
+            "SwapFree": "421348 kB"
+          },
+          "swapHost": "vm.swapusage: total = 5120.00M  used = 4027.88M  free = 1092.12M  (encrypted)",
+          "presionHost": "System-wide memory free percentage: 44%"
+        }
+      }
+    },
+    {
+      "ejecucion": "final-3",
+      "fechaUTC": "2026-11-12T11:17:02.032Z",
+      "sha": "e5c6ba79669ad355c05f5763fb17bfe7e29f8388",
+      "controles": 1760,
+      "aprobados": 1760,
+      "fallos": 0,
+      "porCaso": {
+        "sin": 318,
+        "invalido": 318,
+        "caducado": 318,
+        "revocado": 318,
+        "cabeceras-falsas": 159,
+        "head-sin-token": 73,
+        "rol-incorrecto": 234,
+        "interna-sin-credencial": 5,
+        "interna-no-publicada": 5,
+        "interna-jwt-cliente": 4,
+        "interna-jwt-admin": 4,
+        "interna-servicio-invalido": 4
+      },
+      "propiedad": {
+        "controles": 11,
+        "aprobados": 11
+      },
+      "PAN_HTTP": {
+        "controles": 8,
+        "aprobados": 8
+      },
+      "webhooks": [
+        {
+          "ruta": "/pagos/webhook",
+          "estado": 401,
+          "esperado": 401,
+          "ok": true
+        },
+        {
+          "ruta": "/pagos/webhook/stripe",
+          "estado": 404,
+          "esperado": 404,
+          "ok": true
+        }
+      ],
+      "cookies": {
+        "login": 200,
+        "httpOnly": true,
+        "sameSite": true,
+        "path": true,
+        "sinRefreshEnCuerpo": true,
+        "secureLocal": false,
+        "renovacion": 200,
+        "rotada": true,
+        "replay": 401,
+        "replayRevoca": 401,
+        "cookieNoEsBearer": 401
+      },
+      "baseDatos": {
+        "tablas": 24,
+        "filas": 5828,
+        "canarioPAN": 0,
+        "limite": "Búsqueda del canario sintético; no equivale a detectar todo PAN posible"
+      },
+      "audit": [
+        {
+          "paquete": "backend",
+          "tipo": "produccion",
+          "codigo": 0,
+          "vulnerabilidades": {
+            "info": 0,
+            "low": 0,
+            "moderate": 0,
+            "high": 0,
+            "critical": 0,
+            "total": 0
+          },
+          "error": null,
+          "lockSHA256": "196d5544b89cba9f3c375d86b7c247f2d4d80820b5e5a43cac097b9de6ff6159"
+        },
+        {
+          "paquete": "backend",
+          "tipo": "completo",
+          "codigo": 1,
+          "vulnerabilidades": {
+            "info": 0,
+            "low": 2,
+            "moderate": 20,
+            "high": 0,
+            "critical": 0,
+            "total": 22
+          },
+          "error": null,
+          "lockSHA256": "196d5544b89cba9f3c375d86b7c247f2d4d80820b5e5a43cac097b9de6ff6159"
+        },
+        {
+          "paquete": "cliente",
+          "tipo": "produccion",
+          "codigo": 1,
+          "vulnerabilidades": {
+            "info": 0,
+            "low": 0,
+            "moderate": 4,
+            "high": 4,
+            "critical": 0,
+            "total": 8
+          },
+          "error": null,
+          "lockSHA256": "fc6747bb3b3031cffbaa6e10edfd1aff3744f2e9c4124d466bef1e56126cdc75"
+        },
+        {
+          "paquete": "cliente",
+          "tipo": "completo",
+          "codigo": 1,
+          "vulnerabilidades": {
+            "info": 0,
+            "low": 2,
+            "moderate": 29,
+            "high": 32,
+            "critical": 4,
+            "total": 67
+          },
+          "error": null,
+          "lockSHA256": "fc6747bb3b3031cffbaa6e10edfd1aff3744f2e9c4124d466bef1e56126cdc75"
+        },
+        {
+          "paquete": "admin",
+          "tipo": "produccion",
+          "codigo": 1,
+          "vulnerabilidades": {
+            "info": 0,
+            "low": 0,
+            "moderate": 4,
+            "high": 4,
+            "critical": 0,
+            "total": 8
+          },
+          "error": null,
+          "lockSHA256": "91c42b877d1dcf06476bc40e775778e442f9824979f74a892918be3afdbb0717"
+        },
+        {
+          "paquete": "admin",
+          "tipo": "completo",
+          "codigo": 1,
+          "vulnerabilidades": {
+            "info": 0,
+            "low": 2,
+            "moderate": 29,
+            "high": 23,
+            "critical": 4,
+            "total": 58
+          },
+          "error": null,
+          "lockSHA256": "91c42b877d1dcf06476bc40e775778e442f9824979f74a892918be3afdbb0717"
+        },
+        {
+          "paquete": "e2e",
+          "tipo": "produccion",
+          "codigo": 0,
+          "vulnerabilidades": {
+            "info": 0,
+            "low": 0,
+            "moderate": 0,
+            "high": 0,
+            "critical": 0,
+            "total": 0
+          },
+          "error": null,
+          "lockSHA256": "b295f5f7844f4b118cb355731e197e6a3b9fc20e15667bf9220f5a39cb655256"
+        },
+        {
+          "paquete": "e2e",
+          "tipo": "completo",
+          "codigo": 0,
+          "vulnerabilidades": {
+            "info": 0,
+            "low": 0,
+            "moderate": 0,
+            "high": 0,
+            "critical": 0,
+            "total": 0
+          },
+          "error": null,
+          "lockSHA256": "b295f5f7844f4b118cb355731e197e6a3b9fc20e15667bf9220f5a39cb655256"
+        },
+        {
+          "paquete": "demo-samuel",
+          "tipo": "produccion",
+          "codigo": 0,
+          "vulnerabilidades": {
+            "info": 0,
+            "low": 0,
+            "moderate": 0,
+            "high": 0,
+            "critical": 0,
+            "total": 0
+          },
+          "error": null,
+          "lockSHA256": "16d56ea62634f7f79b38597b76c6ed4cddaaff4a31891ea9dbd27a46d56b07fd"
+        },
+        {
+          "paquete": "demo-samuel",
+          "tipo": "completo",
+          "codigo": 0,
+          "vulnerabilidades": {
+            "info": 0,
+            "low": 0,
+            "moderate": 0,
+            "high": 0,
+            "critical": 0,
+            "total": 0
+          },
+          "error": null,
+          "lockSHA256": "16d56ea62634f7f79b38597b76c6ed4cddaaff4a31891ea9dbd27a46d56b07fd"
+        }
+      ],
+      "zap": {
+        "version": "2.17.0",
+        "solicitudes": 33,
+        "autenticadas200": 3,
+        "alertas": {
+          "10038": {
+            "nombre": "Content Security Policy (CSP) Header Not Set",
+            "riesgo": "Medium",
+            "confianza": "High",
+            "instancias": 4
+          },
+          "10109": {
+            "nombre": "Modern Web Application",
+            "riesgo": "Informational",
+            "confianza": "Medium",
+            "instancias": 4
+          },
+          "10003": {
+            "nombre": "Vulnerable JS Library",
+            "riesgo": "High",
+            "confianza": "Medium",
+            "instancias": 2
+          }
+        },
+        "pendientes": 0,
+        "reglasPasivas": 62,
+        "reglasDesactivadas": [],
+        "activo": false
+      },
+      "memoria": {
+        "antes": {
+          "vm": {
+            "MemAvailable": "948028 kB",
+            "SwapFree": "421348 kB"
+          },
+          "swapHost": "vm.swapusage: total = 5120.00M  used = 4027.88M  free = 1092.12M  (encrypted)",
+          "presionHost": "System-wide memory free percentage: 44%"
+        },
+        "despues": {
+          "vm": {
+            "MemAvailable": "940100 kB",
+            "SwapFree": "422116 kB"
+          },
+          "swapHost": "vm.swapusage: total = 5120.00M  used = 4060.69M  free = 1059.31M  (encrypted)",
+          "presionHost": "System-wide memory free percentage: 41%"
+        }
+      }
+    }
+  ]
+}

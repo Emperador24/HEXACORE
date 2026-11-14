@@ -119,6 +119,9 @@ async function gastarTurno(r, autorizacion) {
     return { motivo: 'COLA_NO_DISPONIBLE' };
   }
   if (respuesta.status === 204) return { eventoId: respuesta.headers.get('X-Turno-Evento') };
+  // Un JWT revocado puede pasar la firma local, pero Cola comprueba Redis.
+  // Conservar el 401: no es una caída del proveedor ni un turno inválido.
+  if (respuesta.status === 401) return { motivo: 'SIN_AUTENTICAR' };
   if (respuesta.status === 404) return { motivo: 'TURNO_INVALIDO' };
   // Sin Redis no hay fila: dejar pasar sería quitar justo la protección que la
   // cola es. Se falla cerrado.
@@ -147,7 +150,7 @@ async function verificar(r) {
 
   if (r.variables.turno_requerido === '1') {
     const turno = await gastarTurno(r, autorizacion);
-    if (turno.motivo) return negar(r, 403, turno.motivo);
+    if (turno.motivo) return negar(r, turno.motivo === 'SIN_AUTENTICAR' ? 401 : 403, turno.motivo);
     r.headersOut['X-Turno-Evento'] = turno.eventoId || '';
   }
 
