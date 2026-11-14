@@ -64,6 +64,27 @@ ZeroTier. SIGTERM/outbox no se reabren preventivamente ni se declaran corregidos
 [Reproducción](../../App/infra/informe-atributos/seguridad/AUTORIZACION-VENTAS.md) ·
 [Evidencia saneada](../../App/infra/informe-atributos/seguridad/VENTAS-RECURSOS-EVIDENCIA.json).
 
+### CI 51cd7fc: 7/8 y diagnóstico de la recurrencia
+
+[CI 43531857405](https://github.com/Emperador24/HEXACORE/actions/runs/43531857405)
+termina **7/8**, sin relanzar. Tipos y **1044/1044 unitarias / 80 suites**
+aprobados; primera Boletería **22/23**, fallo en `flujos.e2e-spec.ts:115`:
+pendientes de outbox esperado 0, observado 1 tras ver dos QR. Segunda pasada,
+Núcleo y etapas posteriores omitidas en Backend. Los otros siete trabajos
+aprueban, incluida autenticación y transferencia histórica/instalación nueva.
+
+Test y publicador no cambian desde 62ffd7b. Confirmar AMQP precede a actualizar/
+confirmar la marca SQL: esperar solo QR no garantiza verla ya. No hay ID/secuencia/
+estado posterior de la fila para demostrar convergencia; no se afirma causa
+corregida ni se atribuye a Seguridad, SQL/DNS o SIGTERM. No es una brecha de
+autorización demostrada; las tres finales nuevas 150/150 siguen separadas.
+Pendiente acotado: comprobar ambas convergencias con el límite existente y
+conservar el pendiente; si no converge, correlacionar confirmación/commit.
+
+El commit siguiente solo registra este fallo y diagnóstico; su CI automática
+se informa aparte en PR #50. No se relanza el trabajo ni se repiten recorridos.
+Una aprobación posterior no corrige causalmente outbox/SIGTERM ni completa RNF.
+
 ## Cierre de autorización de Alimentos — 13 de noviembre de 2026
 
 **Alimentos: 30/30. Global: 69/159; 90 pendientes. RNF-05/06 parciales.**

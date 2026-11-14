@@ -127,6 +127,38 @@ combinaciones adicionales y límites RNF-05/06. F12, CU-028, nuevas funciones
 financieras, módulo Acceso QR independiente, DAST, fuentes/imágenes y ZeroTier
 quedan fuera de esta entrega.
 
+### CI de publicación 51cd7fc: 7/8, recurrencia de outbox conservada
+
+[CI 43531857405](https://github.com/Emperador24/HEXACORE/actions/runs/43531857405)
+termina **7/8 trabajos aprobados**, sin relanzar. Tipos y **80 suites / 1044
+unitarias** aprueban; correo, identidad/trabajador y composición financiera previos
+también. Primera integración de Boletería **22/23**: `flujos.e2e-spec.ts:115`
+espera pendientes de outbox **0**, observa **1**, después de observar dos QR.
+La segunda pasada no se ejecuta; Núcleo, fronteras/imágenes y financieros/webhook
+posteriores quedan omitidos en ese trabajo. Los otros siete trabajos aprueban,
+incluida autenticación y transferencia histórica/instalación nueva.
+
+Es la misma aserción histórica, ahora observada de nuevo, no una brecha de
+autorización demostrada. Test y `bandeja-salida.service.ts` **sin diferencias
+desde 62ffd7b**. El publicador envía/confirma AMQP antes de actualizar la marca
+PostgreSQL y confirmar su transacción; el test solo espera la proyección QR y
+consulta inmediatamente la marca. Ese orden no garantiza que ambas condiciones
+sean visibles simultáneamente. No se conserva ID/secuencia/estado posterior
+de esa fila para acreditar convergencia en esta ejecución; el resumen CI solo
+incluye pasos/conteos, no esa observación. No se atribuye a Seguridad, SQL/DNS,
+SIGTERM ni a un cambio de producto que no existe.
+
+Pendiente acotado del arnés Boletería: observar ambas condiciones dentro del
+límite existente y conservar el pendiente; si no converge, correlacionar
+confirmación/commit. No se cambia aquí ese test/publicador ni se reabre la
+investigación global. Las tres finales locales 150/150 y su cobertura 88/159
+son evidencia separada; **la CI de 51cd7fc no está verde**.
+
+El siguiente commit solo conserva este resultado/diagnóstico en documentos.
+Su push genera la CI automática habitual, informada separadamente en el PR;
+no se relanzan jobs ni se repiten recorridos buscando verde. Si aprueba, no
+será corrección causal de outbox, SIGTERM ni cumplimiento completo RNF-05/06.
+
 ## Autorización de Alimentos — 13/11/2026, entrega posterior
 
 **Alimentos 30/30; global 69/159; RNF-05/06 siguen parciales.** Se completan las
