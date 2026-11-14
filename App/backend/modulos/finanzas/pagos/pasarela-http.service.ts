@@ -87,7 +87,8 @@ export class PasarelaHttp implements ProcesadorPagos {
         // formada por nuestra parte: la pasarela la entendió y no cobró, así
         // que es un rechazo con causa conocida. Un 5xx no dice nada sobre si
         // llegó a cobrarse.
-        const texto = await respuesta.text().catch(() => '');
+        // El cuerpo remoto puede repetir datos sensibles; nunca se registra.
+        await respuesta.body?.cancel();
 
         // 408 y 429 son 4xx pero no dicen nada sobre si hubo cargo: el primero
         // es un tiempo agotado y el segundo puede llegar con la petición ya en
@@ -95,14 +96,14 @@ export class PasarelaHttp implements ProcesadorPagos {
         const sinCerteza = respuesta.status === 408 || respuesta.status === 429;
 
         if (respuesta.status >= 400 && respuesta.status < 500 && !sinCerteza) {
-          this.log.warn(`La pasarela rechazó la petición (${respuesta.status}): ${texto}`);
+          this.log.warn(`La pasarela rechazó la petición (${respuesta.status})`);
           return {
             resultado: ResultadoCobro.RECHAZADO,
             referencia: null,
             motivo: `La pasarela rechazó la petición (${respuesta.status})`,
           };
         }
-        this.log.error(`La pasarela falló con ${respuesta.status}: ${texto}`);
+        this.log.error(`La pasarela falló con ${respuesta.status}`);
         return {
           resultado: ResultadoCobro.INDETERMINADO,
           referencia: null,
@@ -111,9 +112,10 @@ export class PasarelaHttp implements ProcesadorPagos {
       }
 
       const cuerpo = (await respuesta.json()) as CuerpoPasarela;
+      const referencia = typeof cuerpo.referencia === 'string' && /^(?:pas|ree)_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cuerpo.referencia) ? cuerpo.referencia : null;
 
       if (cuerpo.estado === 'APROBADO') {
-        if (!cuerpo.referencia) {
+        if (!referencia) {
           // Un cobro aprobado sin referencia no se puede conciliar después, y
           // la base lo rechazaría por su restricción CHECK. Mejor tratarlo como
           // indeterminado que guardar una aprobación que no se puede rastrear.
@@ -124,14 +126,14 @@ export class PasarelaHttp implements ProcesadorPagos {
             motivo: 'La pasarela aprobó el cobro sin devolver referencia',
           };
         }
-        return { resultado: ResultadoCobro.APROBADO, referencia: cuerpo.referencia, motivo: null };
+        return { resultado: ResultadoCobro.APROBADO, referencia, motivo: null };
       }
 
       if (cuerpo.estado === 'RECHAZADO') {
         return {
           resultado: ResultadoCobro.RECHAZADO,
-          referencia: cuerpo.referencia ?? null,
-          motivo: cuerpo.motivo ?? 'La pasarela rechazó el cobro',
+          referencia,
+          motivo: 'La pasarela rechazó la operación',
         };
       }
 
@@ -143,17 +145,17 @@ export class PasarelaHttp implements ProcesadorPagos {
       // el cobro acabara liquidándose, quedaría alguien pagando una entrada que
       // se vendió a otro. Es exactamente el error que esta clase existe para no
       // cometer.
-      this.log.error(`La pasarela devolvió un estado que no se reconoce: ${cuerpo.estado ?? '(ausente)'}`);
+      this.log.error('La pasarela devolvió un estado que no se reconoce');
       return {
         resultado: ResultadoCobro.INDETERMINADO,
-        referencia: cuerpo.referencia ?? null,
-        motivo: `Estado desconocido de la pasarela: ${cuerpo.estado ?? '(ausente)'}`,
+        referencia,
+        motivo: 'Estado desconocido de la pasarela',
       };
     } catch (error) {
       // Timeout, DNS, conexión rechazada, respuesta ilegible: en ninguno de
       // estos casos sabemos si el cargo se hizo. INDETERMINADO, nunca
       // RECHAZADO.
-      const causa = error instanceof Error ? `${error.name}: ${error.message}` : 'error desconocido';
+      const causa = error instanceof Error && error.name === 'TimeoutError' ? 'tiempo agotado' : 'fallo de comunicación';
       this.log.error(`No hubo respuesta de la pasarela (${causa})`);
       return {
         resultado: ResultadoCobro.INDETERMINADO,

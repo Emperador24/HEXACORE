@@ -1,0 +1,4150 @@
+{
+  "fecha": "2026-11-13",
+  "referencia": "7457e7b",
+  "cumplimientoRNFCompleto": false,
+  "alcance": "Dependencias portales/tooling y CSP; excluye ampliación semántica, DAST activo, F12 y CU-028",
+  "dependencias": {
+    "cliente": {
+      "antes": {
+        "produccion": {
+          "info": 0,
+          "low": 0,
+          "moderate": 4,
+          "high": 4,
+          "critical": 0,
+          "total": 8
+        },
+        "completo": {
+          "info": 0,
+          "low": 2,
+          "moderate": 29,
+          "high": 32,
+          "critical": 4,
+          "total": 67
+        }
+      },
+      "paquetesContrastados": [
+        {
+          "paquete": "@angular-devkit/build-angular",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "19.2.27"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "22.2.7"
+          ],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "@angular/build",
+            "@angular/compiler-cli",
+            "@babel/core",
+            "@ngtools/webpack",
+            "copy-webpack-plugin",
+            "esbuild",
+            "http-proxy-middleware",
+            "piscina",
+            "postcss",
+            "webpack-dev-middleware",
+            "webpack-dev-server"
+          ]
+        },
+        {
+          "paquete": "@angular/animations",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "19.2.25"
+          ],
+          "soloDevAntes": false,
+          "versionesInstaladasDespues": [
+            "22.2.6"
+          ],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "@angular/common",
+            "@angular/core"
+          ]
+        },
+        {
+          "paquete": "@angular/build",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "19.2.27"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "22.2.7"
+          ],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "@angular/compiler",
+            "@angular/compiler-cli",
+            "@babel/core",
+            "esbuild",
+            "piscina",
+            "vite"
+          ]
+        },
+        {
+          "paquete": "@angular/cli",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "19.2.27"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "22.2.7"
+          ],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "pacote"
+          ]
+        },
+        {
+          "paquete": "@angular/common",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "19.2.25"
+          ],
+          "soloDevAntes": false,
+          "versionesInstaladasDespues": [
+            "22.2.6"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1123497,
+              "url": "https://github.com/advisories/GHSA-48r7-hpm6-gfxm",
+              "rango": "<=19.2.25",
+              "severidad": "high"
+            },
+            {
+              "id": 1123501,
+              "url": "https://github.com/advisories/GHSA-39pv-4j6c-2g6v",
+              "rango": "<=19.2.25",
+              "severidad": "high"
+            },
+            {
+              "id": 1130677,
+              "url": "https://github.com/advisories/GHSA-jhpw-976m-542j",
+              "rango": "<=19.2.25",
+              "severidad": "high"
+            },
+            {
+              "id": 1204770,
+              "url": "https://github.com/advisories/GHSA-p297-fm68-3q8c",
+              "rango": "<=19.2.25",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1242668,
+              "url": "https://github.com/advisories/GHSA-jfgx-762w-99vr",
+              "rango": "<=19.2.25",
+              "severidad": "moderate"
+            }
+          ],
+          "propagadoDesde": [
+            "@angular/core"
+          ]
+        },
+        {
+          "paquete": "@angular/compiler",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "19.2.25"
+          ],
+          "soloDevAntes": false,
+          "versionesInstaladasDespues": [
+            "22.2.6"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1123505,
+              "url": "https://github.com/advisories/GHSA-58w9-8g37-x9v5",
+              "rango": "<=19.2.25",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1130697,
+              "url": "https://github.com/advisories/GHSA-jj27-h5hq-8x99",
+              "rango": "<=19.2.25",
+              "severidad": "high"
+            },
+            {
+              "id": 1204774,
+              "url": "https://github.com/advisories/GHSA-hh8m-fm6v-7cvg",
+              "rango": "<=19.2.25",
+              "severidad": "moderate"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "@angular/compiler-cli",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "19.2.25"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "22.2.6"
+          ],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "@angular/compiler",
+            "@babel/core"
+          ]
+        },
+        {
+          "paquete": "@angular/core",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "19.2.25"
+          ],
+          "soloDevAntes": false,
+          "versionesInstaladasDespues": [
+            "22.2.6"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1123560,
+              "url": "https://github.com/advisories/GHSA-rgjc-h3x7-9mwg",
+              "rango": "<=19.2.25",
+              "severidad": "high"
+            },
+            {
+              "id": 1130693,
+              "url": "https://github.com/advisories/GHSA-jj27-h5hq-8x99",
+              "rango": "<=19.2.25",
+              "severidad": "high"
+            },
+            {
+              "id": 1204775,
+              "url": "https://github.com/advisories/GHSA-hh8m-fm6v-7cvg",
+              "rango": "<=19.2.25",
+              "severidad": "moderate"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "@angular/forms",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "19.2.25"
+          ],
+          "soloDevAntes": false,
+          "versionesInstaladasDespues": [
+            "22.2.6"
+          ],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "@angular/common",
+            "@angular/core",
+            "@angular/platform-browser"
+          ]
+        },
+        {
+          "paquete": "@angular/platform-browser",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "19.2.25"
+          ],
+          "soloDevAntes": false,
+          "versionesInstaladasDespues": [
+            "22.2.6"
+          ],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "@angular/animations",
+            "@angular/common",
+            "@angular/core"
+          ]
+        },
+        {
+          "paquete": "@angular/platform-browser-dynamic",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "19.2.25"
+          ],
+          "soloDevAntes": false,
+          "versionesInstaladasDespues": [
+            "22.2.6"
+          ],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "@angular/common",
+            "@angular/compiler",
+            "@angular/core",
+            "@angular/platform-browser"
+          ]
+        },
+        {
+          "paquete": "@angular/router",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "19.2.25"
+          ],
+          "soloDevAntes": false,
+          "versionesInstaladasDespues": [
+            "22.2.6"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1240616,
+              "url": "https://github.com/advisories/GHSA-ff3f-86qr-9cv3",
+              "rango": "<=19.2.25",
+              "severidad": "high"
+            },
+            {
+              "id": 1242591,
+              "url": "https://github.com/advisories/GHSA-62vg-58rm-qff7",
+              "rango": "<=19.2.25",
+              "severidad": "high"
+            }
+          ],
+          "propagadoDesde": [
+            "@angular/common",
+            "@angular/core",
+            "@angular/platform-browser"
+          ]
+        },
+        {
+          "paquete": "@babel/core",
+          "severidadNpmAntes": "low",
+          "versionesInstaladasAntes": [
+            "7.26.10",
+            "7.26.9"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "7.29.13",
+            "8.0.1",
+            "8.0.5",
+            "8.1.2"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1123528,
+              "url": "https://github.com/advisories/GHSA-4x5r-pxfx-6jf8",
+              "rango": "<=7.29.0",
+              "severidad": "low"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "@ngtools/webpack",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "19.2.27"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "22.2.7"
+          ],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "@angular/compiler-cli"
+          ]
+        },
+        {
+          "paquete": "@npmcli/package-json",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "6.2.0"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "glob"
+          ]
+        },
+        {
+          "paquete": "@npmcli/run-script",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "9.1.0"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "@npmcli/package-json",
+            "node-gyp"
+          ]
+        },
+        {
+          "paquete": "@puppeteer/browsers",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "2.6.1"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "3.2.7"
+          ],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "extract-zip",
+            "proxy-agent"
+          ]
+        },
+        {
+          "paquete": "@sigstore/core",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "2.0.0"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [
+            {
+              "id": 1121792,
+              "url": "https://github.com/advisories/GHSA-jfc7-64v2-mr8c",
+              "rango": "<=3.2.0",
+              "severidad": "moderate"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "@sigstore/sign",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "3.1.0"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "@sigstore/core",
+            "make-fetch-happen"
+          ]
+        },
+        {
+          "paquete": "@sigstore/tuf",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "3.1.1"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "tuf-js"
+          ]
+        },
+        {
+          "paquete": "@sigstore/verify",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "2.1.1"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "@sigstore/core"
+          ]
+        },
+        {
+          "paquete": "@tufjs/models",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "3.0.1"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "minimatch"
+          ]
+        },
+        {
+          "paquete": "basic-ftp",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "5.3.1"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [
+            {
+              "id": 1240853,
+              "url": "https://github.com/advisories/GHSA-c475-qrg2-pj4r",
+              "rango": "<=6.2.0",
+              "severidad": "high"
+            },
+            {
+              "id": 1246355,
+              "url": "https://github.com/advisories/GHSA-5pm8-86m8-9m6r",
+              "rango": "<=6.2.3",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1246367,
+              "url": "https://github.com/advisories/GHSA-r4jh-29pc-gfqr",
+              "rango": "<=6.2.2",
+              "severidad": "moderate"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "body-parser",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "1.20.6"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "1.20.9",
+            "2.4.0"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1243073,
+              "url": "https://github.com/advisories/GHSA-27r3-jxmh-p828",
+              "rango": "<1.20.9",
+              "severidad": "high"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "brace-expansion",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "1.1.18",
+            "2.1.4"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "1.1.22"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1240100,
+              "url": "https://github.com/advisories/GHSA-q2hr-2g5m-vwhr",
+              "rango": "<1.1.21",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1240101,
+              "url": "https://github.com/advisories/GHSA-q2hr-2g5m-vwhr",
+              "rango": ">=2.0.0 <2.1.7",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1240104,
+              "url": "https://github.com/advisories/GHSA-qhr7-859c-m2p7",
+              "rango": "<1.1.20",
+              "severidad": "high"
+            },
+            {
+              "id": 1240105,
+              "url": "https://github.com/advisories/GHSA-qhr7-859c-m2p7",
+              "rango": ">=2.0.0 <2.1.6",
+              "severidad": "high"
+            },
+            {
+              "id": 1240108,
+              "url": "https://github.com/advisories/GHSA-6j4f-fj2g-mc7p",
+              "rango": "<1.1.19",
+              "severidad": "high"
+            },
+            {
+              "id": 1240109,
+              "url": "https://github.com/advisories/GHSA-6j4f-fj2g-mc7p",
+              "rango": ">=2.0.0 <2.1.5",
+              "severidad": "high"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "cacache",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "19.0.1"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "glob"
+          ]
+        },
+        {
+          "paquete": "chromium-bidi",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "0.11.0"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "157.0.8090-0"
+          ],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "zod"
+          ]
+        },
+        {
+          "paquete": "compression",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "1.8.1"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "1.8.2"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1241221,
+              "url": "https://github.com/advisories/GHSA-vc2v-76pw-4v95",
+              "rango": "<1.8.2",
+              "severidad": "high"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "copy-webpack-plugin",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "12.0.2"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "14.0.0"
+          ],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "serialize-javascript"
+          ]
+        },
+        {
+          "paquete": "engine.io",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "6.6.9"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "6.6.11"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1240112,
+              "url": "https://github.com/advisories/GHSA-2gc4-cqfq-p2gv",
+              "rango": ">=6.6.0 <6.6.10",
+              "severidad": "high"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "esbuild",
+          "severidadNpmAntes": "low",
+          "versionesInstaladasAntes": [
+            "0.28.0"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "0.28.2"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1120680,
+              "url": "https://github.com/advisories/GHSA-g7r4-m6w7-qqqr",
+              "rango": ">=0.27.3 <0.28.1",
+              "severidad": "low"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "extract-zip",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "2.0.1"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [
+            {
+              "id": 1139346,
+              "url": "https://github.com/advisories/GHSA-jmr9-qjv8-65gv",
+              "rango": "<=2.0.1",
+              "severidad": "high"
+            },
+            {
+              "id": 1193685,
+              "url": "https://github.com/advisories/GHSA-7pqw-9j4j-h8q3",
+              "rango": "<=2.0.1",
+              "severidad": "high"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "fast-uri",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "3.1.6"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "3.1.9"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1239943,
+              "url": "https://github.com/advisories/GHSA-qw65-cvwx-89v3",
+              "rango": ">=3.0.0 <3.1.7",
+              "severidad": "high"
+            },
+            {
+              "id": 1239946,
+              "url": "https://github.com/advisories/GHSA-58mr-gqgx-xq4g",
+              "rango": "=3.1.6",
+              "severidad": "high"
+            },
+            {
+              "id": 1240091,
+              "url": "https://github.com/advisories/GHSA-hrr3-gc8f-f4qj",
+              "rango": ">=3.0.0 <3.1.8",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1243098,
+              "url": "https://github.com/advisories/GHSA-w74x-v6f9-j3xg",
+              "rango": ">=3.0.0 <3.1.9",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1243101,
+              "url": "https://github.com/advisories/GHSA-xhq7-xmqj-769h",
+              "rango": ">=3.0.0 <3.1.9",
+              "severidad": "low"
+            },
+            {
+              "id": 1243104,
+              "url": "https://github.com/advisories/GHSA-wjr9-j795-jxcr",
+              "rango": ">=3.1.3 <3.1.9",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1243107,
+              "url": "https://github.com/advisories/GHSA-333x-w4r6-6crp",
+              "rango": ">=3.0.0 <3.1.9",
+              "severidad": "low"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "follow-redirects",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "1.16.0"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "1.16.3"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1242604,
+              "url": "https://github.com/advisories/GHSA-q3jh-wrc6-jgq8",
+              "rango": ">=1.16.0 <1.16.1",
+              "severidad": "high"
+            },
+            {
+              "id": 1242605,
+              "url": "https://github.com/advisories/GHSA-8r9p-f939-6h3c",
+              "rango": ">=1.16.0 <1.16.1",
+              "severidad": "high"
+            },
+            {
+              "id": 1244003,
+              "url": "https://github.com/advisories/GHSA-mrwp-f3q8-3g9p",
+              "rango": ">=1.16.0 <=1.16.1",
+              "severidad": "high"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "get-uri",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "6.0.5"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "basic-ftp"
+          ]
+        },
+        {
+          "paquete": "glob",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "10.5.0"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "7.2.3"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1244013,
+              "url": "https://github.com/advisories/GHSA-3g3m-2fjr-6pw4",
+              "rango": ">=9.0.0 <=14.0.1",
+              "severidad": "moderate"
+            }
+          ],
+          "propagadoDesde": [
+            "minimatch"
+          ]
+        },
+        {
+          "paquete": "http-proxy-middleware",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "3.0.5"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "4.2.0"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1121163,
+              "url": "https://github.com/advisories/GHSA-gcq2-9pq2-cxqm",
+              "rango": ">=3.0.4 <3.0.7",
+              "severidad": "high"
+            },
+            {
+              "id": 1121361,
+              "url": "https://github.com/advisories/GHSA-64mm-vxmg-q3vj",
+              "rango": ">=3.0.0 <3.0.6",
+              "severidad": "moderate"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "ignore-walk",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "7.0.0"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "minimatch"
+          ]
+        },
+        {
+          "paquete": "ip-address",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "10.7.0"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [
+            {
+              "id": 1240097,
+              "url": "https://github.com/advisories/GHSA-j6r3-76f7-8jcv",
+              "rango": "<=10.7.0",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1240098,
+              "url": "https://github.com/advisories/GHSA-h3mg-xc3c-68pw",
+              "rango": "<=10.7.0",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1242883,
+              "url": "https://github.com/advisories/GHSA-rxp7-6hxx-x8q5",
+              "rango": "<=10.7.3",
+              "severidad": "moderate"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "launch-editor",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "2.14.1"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "2.14.2"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1242627,
+              "url": "https://github.com/advisories/GHSA-698v-4r3x-3vcv",
+              "rango": "<=2.14.1",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1242656,
+              "url": "https://github.com/advisories/GHSA-r825-w8mm-5pxw",
+              "rango": "<=2.14.1",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1242663,
+              "url": "https://github.com/advisories/GHSA-587h-7wmj-h5pm",
+              "rango": "<=2.14.1",
+              "severidad": "high"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "make-fetch-happen",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "14.0.3"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "cacache"
+          ]
+        },
+        {
+          "paquete": "minimatch",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "9.0.9"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "3.1.5"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1244623,
+              "url": "https://github.com/advisories/GHSA-g3hv-75wg-m249",
+              "rango": ">=7.0.0 <11.0.1",
+              "severidad": "moderate"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "node-forge",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "1.4.0"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [
+            {
+              "id": 1240912,
+              "url": "https://github.com/advisories/GHSA-86w9-cpqp-85rv",
+              "rango": "<=1.4.0",
+              "severidad": "high"
+            },
+            {
+              "id": 1244014,
+              "url": "https://github.com/advisories/GHSA-4642-5mcj-2rqw",
+              "rango": "<=1.4.0",
+              "severidad": "low"
+            },
+            {
+              "id": 1244015,
+              "url": "https://github.com/advisories/GHSA-6wvx-3r32-xmcg",
+              "rango": "<=1.4.0",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1244016,
+              "url": "https://github.com/advisories/GHSA-525v-9gp9-w22h",
+              "rango": "<=1.4.0",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1244017,
+              "url": "https://github.com/advisories/GHSA-7wch-p9px-956x",
+              "rango": "<=1.4.0",
+              "severidad": "high"
+            },
+            {
+              "id": 1244018,
+              "url": "https://github.com/advisories/GHSA-h6cr-wjv9-3cpp",
+              "rango": "<=1.4.0",
+              "severidad": "low"
+            },
+            {
+              "id": 1244019,
+              "url": "https://github.com/advisories/GHSA-4487-j8r4-4g2f",
+              "rango": "<=1.4.0",
+              "severidad": "low"
+            },
+            {
+              "id": 1244020,
+              "url": "https://github.com/advisories/GHSA-5cwg-6vw7-rj6p",
+              "rango": "<=1.4.0",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1244021,
+              "url": "https://github.com/advisories/GHSA-jc66-7q78-782g",
+              "rango": "<=1.4.0",
+              "severidad": "high"
+            },
+            {
+              "id": 1244022,
+              "url": "https://github.com/advisories/GHSA-8hrf-8g6f-7xwp",
+              "rango": "<=1.4.0",
+              "severidad": "high"
+            },
+            {
+              "id": 1244023,
+              "url": "https://github.com/advisories/GHSA-hqq3-7jhf-c5jx",
+              "rango": "<=1.4.0",
+              "severidad": "high"
+            },
+            {
+              "id": 1244024,
+              "url": "https://github.com/advisories/GHSA-5x38-2vff-x55p",
+              "rango": "<=1.4.0",
+              "severidad": "high"
+            },
+            {
+              "id": 1245925,
+              "url": "https://github.com/advisories/GHSA-9wg5-mj3p-v49q",
+              "rango": "<=1.4.0",
+              "severidad": "low"
+            },
+            {
+              "id": 1245926,
+              "url": "https://github.com/advisories/GHSA-2vgq-wchc-25w7",
+              "rango": "<=1.4.0",
+              "severidad": "low"
+            },
+            {
+              "id": 1245927,
+              "url": "https://github.com/advisories/GHSA-h46v-rmh6-fq4f",
+              "rango": "<=1.4.0",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1245928,
+              "url": "https://github.com/advisories/GHSA-rhr8-3pm8-cq29",
+              "rango": "<=1.4.0",
+              "severidad": "high"
+            },
+            {
+              "id": 1245929,
+              "url": "https://github.com/advisories/GHSA-6qrw-m8cv-hcxf",
+              "rango": "<=1.4.0",
+              "severidad": "high"
+            },
+            {
+              "id": 1246031,
+              "url": "https://github.com/advisories/GHSA-6889-vf6x-f3g5",
+              "rango": "<=1.4.2",
+              "severidad": "low"
+            },
+            {
+              "id": 1246032,
+              "url": "https://github.com/advisories/GHSA-w4xr-hqv8-ch44",
+              "rango": "<=1.4.2",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1246033,
+              "url": "https://github.com/advisories/GHSA-6cv4-p8m7-4r25",
+              "rango": ">=0.1.2 <=1.4.2",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1246034,
+              "url": "https://github.com/advisories/GHSA-j8rw-jp99-435v",
+              "rango": "<=1.4.2",
+              "severidad": "moderate"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "node-gyp",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "11.5.0"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "make-fetch-happen"
+          ]
+        },
+        {
+          "paquete": "npm-packlist",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "9.0.0"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "ignore-walk"
+          ]
+        },
+        {
+          "paquete": "npm-registry-fetch",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "18.0.2"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "make-fetch-happen"
+          ]
+        },
+        {
+          "paquete": "pac-proxy-agent",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "7.2.0"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "get-uri"
+          ]
+        },
+        {
+          "paquete": "pacote",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "20.0.0"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [
+            {
+              "id": 1146559,
+              "url": "https://github.com/advisories/GHSA-w4pp-8pjf-rmxw",
+              "rango": ">=11.2.7 <21.5.1",
+              "severidad": "high"
+            }
+          ],
+          "propagadoDesde": [
+            "@npmcli/package-json",
+            "@npmcli/run-script",
+            "cacache",
+            "npm-packlist",
+            "npm-registry-fetch",
+            "sigstore",
+            "tar"
+          ]
+        },
+        {
+          "paquete": "piscina",
+          "severidadNpmAntes": "critical",
+          "versionesInstaladasAntes": [
+            "4.8.0"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "5.3.2"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1121167,
+              "url": "https://github.com/advisories/GHSA-x9g3-xrwr-cwfg",
+              "rango": "<=4.9.2",
+              "severidad": "high"
+            },
+            {
+              "id": 1240851,
+              "url": "https://github.com/advisories/GHSA-67c8-pqhq-4rmx",
+              "rango": "<4.9.4",
+              "severidad": "critical"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "postcss",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "8.5.12"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "8.5.28",
+            "8.5.32"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1130709,
+              "url": "https://github.com/advisories/GHSA-fxqj-rqcc-2cmp",
+              "rango": "<=8.5.22",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1139510,
+              "url": "https://github.com/advisories/GHSA-r28c-9q8g-f849",
+              "rango": "<=8.5.17",
+              "severidad": "high"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "postcss-selector-parser",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "7.1.5"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "7.2.1"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1243380,
+              "url": "https://github.com/advisories/GHSA-rj75-hqrm-r3gf",
+              "rango": ">=7.0.0 <7.1.6",
+              "severidad": "moderate"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "proxy-addr",
+          "severidadNpmAntes": "critical",
+          "versionesInstaladasAntes": [
+            "2.0.7"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "2.0.8"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1241210,
+              "url": "https://github.com/advisories/GHSA-jqcg-44mw-7w3h",
+              "rango": ">=1.1.0 <2.0.8",
+              "severidad": "critical"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "proxy-agent",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "6.5.0"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "pac-proxy-agent"
+          ]
+        },
+        {
+          "paquete": "puppeteer-core",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "23.11.1"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "25.17.0"
+          ],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "@puppeteer/browsers",
+            "chromium-bidi"
+          ]
+        },
+        {
+          "paquete": "qs",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "6.15.3"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "6.16.2",
+            "6.17.1"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1158506,
+              "url": "https://github.com/advisories/GHSA-x5fp-wj9c-mxmx",
+              "rango": ">=6.14.2 <=6.15.3",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1158507,
+              "url": "https://github.com/advisories/GHSA-4mjr-xmp4-gh2g",
+              "rango": ">=2.2.5 <6.16.0",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1243687,
+              "url": "https://github.com/advisories/GHSA-6pq8-jhm2-2vcw",
+              "rango": ">=6.7.0 <=6.16.0",
+              "severidad": "moderate"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "serialize-javascript",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "6.0.2"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "7.1.4"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1113686,
+              "url": "https://github.com/advisories/GHSA-5c6j-r48x-rmvq",
+              "rango": "<=7.0.2",
+              "severidad": "high"
+            },
+            {
+              "id": 1119440,
+              "url": "https://github.com/advisories/GHSA-qj8w-gfj5-8c6v",
+              "rango": ">=5.0.0 <7.0.5",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1243082,
+              "url": "https://github.com/advisories/GHSA-m5mm-p8h7-m29v",
+              "rango": "<7.1.3",
+              "severidad": "low"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "shell-quote",
+          "severidadNpmAntes": "critical",
+          "versionesInstaladasAntes": [
+            "1.10.0"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "1.12.0"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1241332,
+              "url": "https://github.com/advisories/GHSA-pqg4-j6r4-53mv",
+              "rango": ">=1.8.4 <1.11.0",
+              "severidad": "critical"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "sigstore",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "3.1.0"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [
+            {
+              "id": 1122163,
+              "url": "https://github.com/advisories/GHSA-52v5-jr5w-gjxr",
+              "rango": "<=4.1.0",
+              "severidad": "high"
+            }
+          ],
+          "propagadoDesde": [
+            "@sigstore/core",
+            "@sigstore/sign",
+            "@sigstore/tuf",
+            "@sigstore/verify"
+          ]
+        },
+        {
+          "paquete": "sockjs",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "0.3.24"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "uuid"
+          ]
+        },
+        {
+          "paquete": "source-map-js",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "1.2.1"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "1.2.2"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1241209,
+              "url": "https://github.com/advisories/GHSA-68fv-2mgg-jv7q",
+              "rango": ">=1.0.0 <1.2.2",
+              "severidad": "high"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "tar",
+          "severidadNpmAntes": "critical",
+          "versionesInstaladasAntes": [
+            "6.2.1"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [
+            {
+              "id": 1112659,
+              "url": "https://github.com/advisories/GHSA-34x7-hfp2-rc4v",
+              "rango": "<7.5.7",
+              "severidad": "high"
+            },
+            {
+              "id": 1113300,
+              "url": "https://github.com/advisories/GHSA-8qq5-rm4j-mr97",
+              "rango": "<=7.5.2",
+              "severidad": "high"
+            },
+            {
+              "id": 1113375,
+              "url": "https://github.com/advisories/GHSA-83g3-92jg-28cx",
+              "rango": "<7.5.8",
+              "severidad": "high"
+            },
+            {
+              "id": 1114200,
+              "url": "https://github.com/advisories/GHSA-qffp-2rhf-9h96",
+              "rango": "<=7.5.9",
+              "severidad": "high"
+            },
+            {
+              "id": 1114302,
+              "url": "https://github.com/advisories/GHSA-9ppj-qmqm-q256",
+              "rango": "<=7.5.10",
+              "severidad": "high"
+            },
+            {
+              "id": 1114680,
+              "url": "https://github.com/advisories/GHSA-r6q2-hw4h-h46w",
+              "rango": "<=7.5.3",
+              "severidad": "high"
+            },
+            {
+              "id": 1120782,
+              "url": "https://github.com/advisories/GHSA-vmf3-w455-68vh",
+              "rango": "<=7.5.15",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1123939,
+              "url": "https://github.com/advisories/GHSA-w8wr-v893-vjvp",
+              "rango": "<=7.5.17",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1123940,
+              "url": "https://github.com/advisories/GHSA-23hp-3jrh-7fpw",
+              "rango": "<=7.5.18",
+              "severidad": "critical"
+            },
+            {
+              "id": 1123941,
+              "url": "https://github.com/advisories/GHSA-8x88-c5mf-7j5w",
+              "rango": "<=7.5.17",
+              "severidad": "high"
+            },
+            {
+              "id": 1123942,
+              "url": "https://github.com/advisories/GHSA-gvwx-54wh-qm9j",
+              "rango": "<=7.5.16",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1145647,
+              "url": "https://github.com/advisories/GHSA-r292-9mhp-454m",
+              "rango": "<=7.5.20",
+              "severidad": "high"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "tuf-js",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "3.1.0"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "@tufjs/models",
+            "make-fetch-happen"
+          ]
+        },
+        {
+          "paquete": "uuid",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "8.3.2"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [
+            {
+              "id": 1119441,
+              "url": "https://github.com/advisories/GHSA-w5hq-g745-h8pq",
+              "rango": "<11.1.1",
+              "severidad": "moderate"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "vite",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "6.4.2",
+            "6.4.3"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "8.3.5"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1120784,
+              "url": "https://github.com/advisories/GHSA-v6wh-96g9-6wx3",
+              "rango": "<=6.4.2",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1242622,
+              "url": "https://github.com/advisories/GHSA-698v-4r3x-3vcv",
+              "rango": "<=6.4.3",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1242651,
+              "url": "https://github.com/advisories/GHSA-r825-w8mm-5pxw",
+              "rango": "<=6.4.3",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1242658,
+              "url": "https://github.com/advisories/GHSA-587h-7wmj-h5pm",
+              "rango": "<=6.4.3",
+              "severidad": "high"
+            },
+            {
+              "id": 1242724,
+              "url": "https://github.com/advisories/GHSA-9jrq-w75r-8gcw",
+              "rango": "<=6.4.3",
+              "severidad": "low"
+            },
+            {
+              "id": 1242730,
+              "url": "https://github.com/advisories/GHSA-rq7h-c2jc-7f22",
+              "rango": "<=6.4.3",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1243432,
+              "url": "https://github.com/advisories/GHSA-fx2h-pf6j-xcff",
+              "rango": "<=6.4.2",
+              "severidad": "moderate"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "webpack-dev-middleware",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "7.4.2"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "8.5.0"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1240027,
+              "url": "https://github.com/advisories/GHSA-g84c-rxfj-3j2c",
+              "rango": "<7.4.5",
+              "severidad": "high"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "webpack-dev-server",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "5.2.2"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "6.0.0"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1119074,
+              "url": "https://github.com/advisories/GHSA-79cf-xcqc-c78w",
+              "rango": "<=5.2.3",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1121087,
+              "url": "https://github.com/advisories/GHSA-mx8g-39q3-5c79",
+              "rango": "<5.2.5",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1123965,
+              "url": "https://github.com/advisories/GHSA-f5vj-f2hx-8m93",
+              "rango": "<=5.2.5",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1123966,
+              "url": "https://github.com/advisories/GHSA-m28w-2pqf-7qgj",
+              "rango": "<=5.2.5",
+              "severidad": "moderate"
+            }
+          ],
+          "propagadoDesde": [
+            "sockjs"
+          ]
+        },
+        {
+          "paquete": "zod",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "3.23.8"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "4.6.6",
+            "4.6.7"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1243066,
+              "url": "https://github.com/advisories/GHSA-mrhx-c7xc-m3w5",
+              "rango": "<4.6.6",
+              "severidad": "high"
+            }
+          ],
+          "propagadoDesde": []
+        }
+      ],
+      "cadenasCriticasAntes": [
+        [
+          "piscina@4.8.0",
+          "@angular-devkit/build-angular@19.2.27"
+        ],
+        [
+          "piscina@4.8.0",
+          "@angular/build@19.2.27",
+          "@angular-devkit/build-angular@19.2.27"
+        ],
+        [
+          "proxy-addr@2.0.7",
+          "express@4.22.2",
+          "webpack-dev-server@5.2.2",
+          "@angular-devkit/build-angular@19.2.27"
+        ],
+        [
+          "proxy-addr@2.0.7",
+          "express@4.22.2",
+          "webpack-dev-server@5.2.2",
+          "@angular-devkit/build-webpack@0.1902.27",
+          "@angular-devkit/build-angular@19.2.27"
+        ],
+        [
+          "shell-quote@1.10.0",
+          "launch-editor@2.14.1",
+          "webpack-dev-server@5.2.2",
+          "@angular-devkit/build-angular@19.2.27"
+        ],
+        [
+          "shell-quote@1.10.0",
+          "launch-editor@2.14.1",
+          "webpack-dev-server@5.2.2",
+          "@angular-devkit/build-webpack@0.1902.27",
+          "@angular-devkit/build-angular@19.2.27"
+        ],
+        [
+          "tar@7.5.22",
+          "cacache@19.0.1",
+          "make-fetch-happen@14.0.3",
+          "@sigstore/sign@3.1.0",
+          "sigstore@3.1.0",
+          "pacote@20.0.0",
+          "@angular/cli@19.2.27"
+        ],
+        [
+          "tar@7.5.22",
+          "cacache@19.0.1",
+          "make-fetch-happen@14.0.3",
+          "node-gyp@11.5.0",
+          "@npmcli/run-script@9.1.0",
+          "pacote@20.0.0",
+          "@angular/cli@19.2.27"
+        ],
+        [
+          "tar@7.5.22",
+          "cacache@19.0.1",
+          "make-fetch-happen@14.0.3",
+          "npm-registry-fetch@18.0.2",
+          "pacote@20.0.0",
+          "@angular/cli@19.2.27"
+        ],
+        [
+          "tar@7.5.22",
+          "cacache@19.0.1",
+          "make-fetch-happen@14.0.3",
+          "tuf-js@3.1.0",
+          "@sigstore/tuf@3.1.1",
+          "sigstore@3.1.0",
+          "pacote@20.0.0",
+          "@angular/cli@19.2.27"
+        ],
+        [
+          "tar@7.5.22",
+          "cacache@19.0.1",
+          "pacote@20.0.0",
+          "@angular/cli@19.2.27"
+        ],
+        [
+          "tar@7.5.22",
+          "node-gyp@11.5.0",
+          "@npmcli/run-script@9.1.0",
+          "pacote@20.0.0",
+          "@angular/cli@19.2.27"
+        ],
+        [
+          "tar@6.2.1",
+          "pacote@20.0.0",
+          "@angular/cli@19.2.27"
+        ]
+      ]
+    },
+    "admin": {
+      "antes": {
+        "produccion": {
+          "info": 0,
+          "low": 0,
+          "moderate": 4,
+          "high": 4,
+          "critical": 0,
+          "total": 8
+        },
+        "completo": {
+          "info": 0,
+          "low": 2,
+          "moderate": 29,
+          "high": 23,
+          "critical": 4,
+          "total": 58
+        }
+      },
+      "paquetesContrastados": [
+        {
+          "paquete": "@angular-devkit/build-angular",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "19.2.27"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "22.2.7"
+          ],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "@angular/build",
+            "@angular/compiler-cli",
+            "@babel/core",
+            "@ngtools/webpack",
+            "copy-webpack-plugin",
+            "esbuild",
+            "http-proxy-middleware",
+            "piscina",
+            "postcss",
+            "webpack-dev-middleware",
+            "webpack-dev-server"
+          ]
+        },
+        {
+          "paquete": "@angular/animations",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "19.2.25"
+          ],
+          "soloDevAntes": false,
+          "versionesInstaladasDespues": [
+            "22.2.6"
+          ],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "@angular/common",
+            "@angular/core"
+          ]
+        },
+        {
+          "paquete": "@angular/build",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "19.2.27"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "22.2.7"
+          ],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "@angular/compiler",
+            "@angular/compiler-cli",
+            "@babel/core",
+            "esbuild",
+            "piscina",
+            "vite"
+          ]
+        },
+        {
+          "paquete": "@angular/cli",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "19.2.27"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "22.2.7"
+          ],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "pacote"
+          ]
+        },
+        {
+          "paquete": "@angular/common",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "19.2.25"
+          ],
+          "soloDevAntes": false,
+          "versionesInstaladasDespues": [
+            "22.2.6"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1123497,
+              "url": "https://github.com/advisories/GHSA-48r7-hpm6-gfxm",
+              "rango": "<=19.2.25",
+              "severidad": "high"
+            },
+            {
+              "id": 1123501,
+              "url": "https://github.com/advisories/GHSA-39pv-4j6c-2g6v",
+              "rango": "<=19.2.25",
+              "severidad": "high"
+            },
+            {
+              "id": 1130677,
+              "url": "https://github.com/advisories/GHSA-jhpw-976m-542j",
+              "rango": "<=19.2.25",
+              "severidad": "high"
+            },
+            {
+              "id": 1204770,
+              "url": "https://github.com/advisories/GHSA-p297-fm68-3q8c",
+              "rango": "<=19.2.25",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1242668,
+              "url": "https://github.com/advisories/GHSA-jfgx-762w-99vr",
+              "rango": "<=19.2.25",
+              "severidad": "moderate"
+            }
+          ],
+          "propagadoDesde": [
+            "@angular/core"
+          ]
+        },
+        {
+          "paquete": "@angular/compiler",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "19.2.25"
+          ],
+          "soloDevAntes": false,
+          "versionesInstaladasDespues": [
+            "22.2.6"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1123505,
+              "url": "https://github.com/advisories/GHSA-58w9-8g37-x9v5",
+              "rango": "<=19.2.25",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1130697,
+              "url": "https://github.com/advisories/GHSA-jj27-h5hq-8x99",
+              "rango": "<=19.2.25",
+              "severidad": "high"
+            },
+            {
+              "id": 1204774,
+              "url": "https://github.com/advisories/GHSA-hh8m-fm6v-7cvg",
+              "rango": "<=19.2.25",
+              "severidad": "moderate"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "@angular/compiler-cli",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "19.2.25"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "22.2.6"
+          ],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "@angular/compiler",
+            "@babel/core"
+          ]
+        },
+        {
+          "paquete": "@angular/core",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "19.2.25"
+          ],
+          "soloDevAntes": false,
+          "versionesInstaladasDespues": [
+            "22.2.6"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1123560,
+              "url": "https://github.com/advisories/GHSA-rgjc-h3x7-9mwg",
+              "rango": "<=19.2.25",
+              "severidad": "high"
+            },
+            {
+              "id": 1130693,
+              "url": "https://github.com/advisories/GHSA-jj27-h5hq-8x99",
+              "rango": "<=19.2.25",
+              "severidad": "high"
+            },
+            {
+              "id": 1204775,
+              "url": "https://github.com/advisories/GHSA-hh8m-fm6v-7cvg",
+              "rango": "<=19.2.25",
+              "severidad": "moderate"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "@angular/forms",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "19.2.25"
+          ],
+          "soloDevAntes": false,
+          "versionesInstaladasDespues": [
+            "22.2.6"
+          ],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "@angular/common",
+            "@angular/core",
+            "@angular/platform-browser"
+          ]
+        },
+        {
+          "paquete": "@angular/platform-browser",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "19.2.25"
+          ],
+          "soloDevAntes": false,
+          "versionesInstaladasDespues": [
+            "22.2.6"
+          ],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "@angular/animations",
+            "@angular/common",
+            "@angular/core"
+          ]
+        },
+        {
+          "paquete": "@angular/platform-browser-dynamic",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "19.2.25"
+          ],
+          "soloDevAntes": false,
+          "versionesInstaladasDespues": [
+            "22.2.6"
+          ],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "@angular/common",
+            "@angular/compiler",
+            "@angular/core",
+            "@angular/platform-browser"
+          ]
+        },
+        {
+          "paquete": "@angular/router",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "19.2.25"
+          ],
+          "soloDevAntes": false,
+          "versionesInstaladasDespues": [
+            "22.2.6"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1240616,
+              "url": "https://github.com/advisories/GHSA-ff3f-86qr-9cv3",
+              "rango": "<=19.2.25",
+              "severidad": "high"
+            },
+            {
+              "id": 1242591,
+              "url": "https://github.com/advisories/GHSA-62vg-58rm-qff7",
+              "rango": "<=19.2.25",
+              "severidad": "high"
+            }
+          ],
+          "propagadoDesde": [
+            "@angular/common",
+            "@angular/core",
+            "@angular/platform-browser"
+          ]
+        },
+        {
+          "paquete": "@babel/core",
+          "severidadNpmAntes": "low",
+          "versionesInstaladasAntes": [
+            "7.26.10",
+            "7.26.9"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "7.29.13",
+            "8.0.1",
+            "8.0.5",
+            "8.1.2"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1123528,
+              "url": "https://github.com/advisories/GHSA-4x5r-pxfx-6jf8",
+              "rango": "<=7.29.0",
+              "severidad": "low"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "@ngtools/webpack",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "19.2.27"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "22.2.7"
+          ],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "@angular/compiler-cli"
+          ]
+        },
+        {
+          "paquete": "@npmcli/package-json",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "6.2.0"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "glob"
+          ]
+        },
+        {
+          "paquete": "@npmcli/run-script",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "9.1.0"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "@npmcli/package-json",
+            "node-gyp"
+          ]
+        },
+        {
+          "paquete": "@sigstore/core",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "2.0.0"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [
+            {
+              "id": 1121792,
+              "url": "https://github.com/advisories/GHSA-jfc7-64v2-mr8c",
+              "rango": "<=3.2.0",
+              "severidad": "moderate"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "@sigstore/sign",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "3.1.0"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "@sigstore/core",
+            "make-fetch-happen"
+          ]
+        },
+        {
+          "paquete": "@sigstore/tuf",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "3.1.1"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "tuf-js"
+          ]
+        },
+        {
+          "paquete": "@sigstore/verify",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "2.1.1"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "@sigstore/core"
+          ]
+        },
+        {
+          "paquete": "@tufjs/models",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "3.0.1"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "minimatch"
+          ]
+        },
+        {
+          "paquete": "body-parser",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "1.20.6"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "1.20.9",
+            "2.4.0"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1243073,
+              "url": "https://github.com/advisories/GHSA-27r3-jxmh-p828",
+              "rango": "<1.20.9",
+              "severidad": "high"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "brace-expansion",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "1.1.18",
+            "2.1.4"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "1.1.22"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1240100,
+              "url": "https://github.com/advisories/GHSA-q2hr-2g5m-vwhr",
+              "rango": "<1.1.21",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1240101,
+              "url": "https://github.com/advisories/GHSA-q2hr-2g5m-vwhr",
+              "rango": ">=2.0.0 <2.1.7",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1240104,
+              "url": "https://github.com/advisories/GHSA-qhr7-859c-m2p7",
+              "rango": "<1.1.20",
+              "severidad": "high"
+            },
+            {
+              "id": 1240105,
+              "url": "https://github.com/advisories/GHSA-qhr7-859c-m2p7",
+              "rango": ">=2.0.0 <2.1.6",
+              "severidad": "high"
+            },
+            {
+              "id": 1240108,
+              "url": "https://github.com/advisories/GHSA-6j4f-fj2g-mc7p",
+              "rango": "<1.1.19",
+              "severidad": "high"
+            },
+            {
+              "id": 1240109,
+              "url": "https://github.com/advisories/GHSA-6j4f-fj2g-mc7p",
+              "rango": ">=2.0.0 <2.1.5",
+              "severidad": "high"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "cacache",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "19.0.1"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "glob"
+          ]
+        },
+        {
+          "paquete": "compression",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "1.8.1"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "1.8.2"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1241221,
+              "url": "https://github.com/advisories/GHSA-vc2v-76pw-4v95",
+              "rango": "<1.8.2",
+              "severidad": "high"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "copy-webpack-plugin",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "12.0.2"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "14.0.0"
+          ],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "serialize-javascript"
+          ]
+        },
+        {
+          "paquete": "engine.io",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "6.6.9"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "6.6.11"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1240112,
+              "url": "https://github.com/advisories/GHSA-2gc4-cqfq-p2gv",
+              "rango": ">=6.6.0 <6.6.10",
+              "severidad": "high"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "esbuild",
+          "severidadNpmAntes": "low",
+          "versionesInstaladasAntes": [
+            "0.28.0"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "0.28.2"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1120680,
+              "url": "https://github.com/advisories/GHSA-g7r4-m6w7-qqqr",
+              "rango": ">=0.27.3 <0.28.1",
+              "severidad": "low"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "fast-uri",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "3.1.6"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "3.1.9"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1239943,
+              "url": "https://github.com/advisories/GHSA-qw65-cvwx-89v3",
+              "rango": ">=3.0.0 <3.1.7",
+              "severidad": "high"
+            },
+            {
+              "id": 1239946,
+              "url": "https://github.com/advisories/GHSA-58mr-gqgx-xq4g",
+              "rango": "=3.1.6",
+              "severidad": "high"
+            },
+            {
+              "id": 1240091,
+              "url": "https://github.com/advisories/GHSA-hrr3-gc8f-f4qj",
+              "rango": ">=3.0.0 <3.1.8",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1243098,
+              "url": "https://github.com/advisories/GHSA-w74x-v6f9-j3xg",
+              "rango": ">=3.0.0 <3.1.9",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1243101,
+              "url": "https://github.com/advisories/GHSA-xhq7-xmqj-769h",
+              "rango": ">=3.0.0 <3.1.9",
+              "severidad": "low"
+            },
+            {
+              "id": 1243104,
+              "url": "https://github.com/advisories/GHSA-wjr9-j795-jxcr",
+              "rango": ">=3.1.3 <3.1.9",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1243107,
+              "url": "https://github.com/advisories/GHSA-333x-w4r6-6crp",
+              "rango": ">=3.0.0 <3.1.9",
+              "severidad": "low"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "follow-redirects",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "1.16.0"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "1.16.3"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1242604,
+              "url": "https://github.com/advisories/GHSA-q3jh-wrc6-jgq8",
+              "rango": ">=1.16.0 <1.16.1",
+              "severidad": "high"
+            },
+            {
+              "id": 1242605,
+              "url": "https://github.com/advisories/GHSA-8r9p-f939-6h3c",
+              "rango": ">=1.16.0 <1.16.1",
+              "severidad": "high"
+            },
+            {
+              "id": 1244003,
+              "url": "https://github.com/advisories/GHSA-mrwp-f3q8-3g9p",
+              "rango": ">=1.16.0 <=1.16.1",
+              "severidad": "high"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "glob",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "10.5.0"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "7.2.3"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1244013,
+              "url": "https://github.com/advisories/GHSA-3g3m-2fjr-6pw4",
+              "rango": ">=9.0.0 <=14.0.1",
+              "severidad": "moderate"
+            }
+          ],
+          "propagadoDesde": [
+            "minimatch"
+          ]
+        },
+        {
+          "paquete": "http-proxy-middleware",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "3.0.5"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "4.2.0"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1121163,
+              "url": "https://github.com/advisories/GHSA-gcq2-9pq2-cxqm",
+              "rango": ">=3.0.4 <3.0.7",
+              "severidad": "high"
+            },
+            {
+              "id": 1121361,
+              "url": "https://github.com/advisories/GHSA-64mm-vxmg-q3vj",
+              "rango": ">=3.0.0 <3.0.6",
+              "severidad": "moderate"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "ignore-walk",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "7.0.0"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "minimatch"
+          ]
+        },
+        {
+          "paquete": "ip-address",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "10.7.0"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [
+            {
+              "id": 1240097,
+              "url": "https://github.com/advisories/GHSA-j6r3-76f7-8jcv",
+              "rango": "<=10.7.0",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1240098,
+              "url": "https://github.com/advisories/GHSA-h3mg-xc3c-68pw",
+              "rango": "<=10.7.0",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1242883,
+              "url": "https://github.com/advisories/GHSA-rxp7-6hxx-x8q5",
+              "rango": "<=10.7.3",
+              "severidad": "moderate"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "launch-editor",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "2.14.1"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "2.14.2"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1242627,
+              "url": "https://github.com/advisories/GHSA-698v-4r3x-3vcv",
+              "rango": "<=2.14.1",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1242656,
+              "url": "https://github.com/advisories/GHSA-r825-w8mm-5pxw",
+              "rango": "<=2.14.1",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1242663,
+              "url": "https://github.com/advisories/GHSA-587h-7wmj-h5pm",
+              "rango": "<=2.14.1",
+              "severidad": "high"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "make-fetch-happen",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "14.0.3"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "cacache"
+          ]
+        },
+        {
+          "paquete": "minimatch",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "9.0.9"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "3.1.5"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1244623,
+              "url": "https://github.com/advisories/GHSA-g3hv-75wg-m249",
+              "rango": ">=7.0.0 <11.0.1",
+              "severidad": "moderate"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "node-forge",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "1.4.0"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [
+            {
+              "id": 1240912,
+              "url": "https://github.com/advisories/GHSA-86w9-cpqp-85rv",
+              "rango": "<=1.4.0",
+              "severidad": "high"
+            },
+            {
+              "id": 1244014,
+              "url": "https://github.com/advisories/GHSA-4642-5mcj-2rqw",
+              "rango": "<=1.4.0",
+              "severidad": "low"
+            },
+            {
+              "id": 1244015,
+              "url": "https://github.com/advisories/GHSA-6wvx-3r32-xmcg",
+              "rango": "<=1.4.0",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1244016,
+              "url": "https://github.com/advisories/GHSA-525v-9gp9-w22h",
+              "rango": "<=1.4.0",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1244017,
+              "url": "https://github.com/advisories/GHSA-7wch-p9px-956x",
+              "rango": "<=1.4.0",
+              "severidad": "high"
+            },
+            {
+              "id": 1244018,
+              "url": "https://github.com/advisories/GHSA-h6cr-wjv9-3cpp",
+              "rango": "<=1.4.0",
+              "severidad": "low"
+            },
+            {
+              "id": 1244019,
+              "url": "https://github.com/advisories/GHSA-4487-j8r4-4g2f",
+              "rango": "<=1.4.0",
+              "severidad": "low"
+            },
+            {
+              "id": 1244020,
+              "url": "https://github.com/advisories/GHSA-5cwg-6vw7-rj6p",
+              "rango": "<=1.4.0",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1244021,
+              "url": "https://github.com/advisories/GHSA-jc66-7q78-782g",
+              "rango": "<=1.4.0",
+              "severidad": "high"
+            },
+            {
+              "id": 1244022,
+              "url": "https://github.com/advisories/GHSA-8hrf-8g6f-7xwp",
+              "rango": "<=1.4.0",
+              "severidad": "high"
+            },
+            {
+              "id": 1244023,
+              "url": "https://github.com/advisories/GHSA-hqq3-7jhf-c5jx",
+              "rango": "<=1.4.0",
+              "severidad": "high"
+            },
+            {
+              "id": 1244024,
+              "url": "https://github.com/advisories/GHSA-5x38-2vff-x55p",
+              "rango": "<=1.4.0",
+              "severidad": "high"
+            },
+            {
+              "id": 1245925,
+              "url": "https://github.com/advisories/GHSA-9wg5-mj3p-v49q",
+              "rango": "<=1.4.0",
+              "severidad": "low"
+            },
+            {
+              "id": 1245926,
+              "url": "https://github.com/advisories/GHSA-2vgq-wchc-25w7",
+              "rango": "<=1.4.0",
+              "severidad": "low"
+            },
+            {
+              "id": 1245927,
+              "url": "https://github.com/advisories/GHSA-h46v-rmh6-fq4f",
+              "rango": "<=1.4.0",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1245928,
+              "url": "https://github.com/advisories/GHSA-rhr8-3pm8-cq29",
+              "rango": "<=1.4.0",
+              "severidad": "high"
+            },
+            {
+              "id": 1245929,
+              "url": "https://github.com/advisories/GHSA-6qrw-m8cv-hcxf",
+              "rango": "<=1.4.0",
+              "severidad": "high"
+            },
+            {
+              "id": 1246031,
+              "url": "https://github.com/advisories/GHSA-6889-vf6x-f3g5",
+              "rango": "<=1.4.2",
+              "severidad": "low"
+            },
+            {
+              "id": 1246032,
+              "url": "https://github.com/advisories/GHSA-w4xr-hqv8-ch44",
+              "rango": "<=1.4.2",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1246033,
+              "url": "https://github.com/advisories/GHSA-6cv4-p8m7-4r25",
+              "rango": ">=0.1.2 <=1.4.2",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1246034,
+              "url": "https://github.com/advisories/GHSA-j8rw-jp99-435v",
+              "rango": "<=1.4.2",
+              "severidad": "moderate"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "node-gyp",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "11.5.0"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "make-fetch-happen"
+          ]
+        },
+        {
+          "paquete": "npm-packlist",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "9.0.0"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "ignore-walk"
+          ]
+        },
+        {
+          "paquete": "npm-registry-fetch",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "18.0.2"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "make-fetch-happen"
+          ]
+        },
+        {
+          "paquete": "pacote",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "20.0.0"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [
+            {
+              "id": 1146559,
+              "url": "https://github.com/advisories/GHSA-w4pp-8pjf-rmxw",
+              "rango": ">=11.2.7 <21.5.1",
+              "severidad": "high"
+            }
+          ],
+          "propagadoDesde": [
+            "@npmcli/package-json",
+            "@npmcli/run-script",
+            "cacache",
+            "npm-packlist",
+            "npm-registry-fetch",
+            "sigstore",
+            "tar"
+          ]
+        },
+        {
+          "paquete": "piscina",
+          "severidadNpmAntes": "critical",
+          "versionesInstaladasAntes": [
+            "4.8.0"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "5.3.2"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1121167,
+              "url": "https://github.com/advisories/GHSA-x9g3-xrwr-cwfg",
+              "rango": "<=4.9.2",
+              "severidad": "high"
+            },
+            {
+              "id": 1240851,
+              "url": "https://github.com/advisories/GHSA-67c8-pqhq-4rmx",
+              "rango": "<4.9.4",
+              "severidad": "critical"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "postcss",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "8.5.12"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "8.5.28",
+            "8.5.32"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1130709,
+              "url": "https://github.com/advisories/GHSA-fxqj-rqcc-2cmp",
+              "rango": "<=8.5.22",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1139510,
+              "url": "https://github.com/advisories/GHSA-r28c-9q8g-f849",
+              "rango": "<=8.5.17",
+              "severidad": "high"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "postcss-selector-parser",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "7.1.5"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "7.2.1"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1243380,
+              "url": "https://github.com/advisories/GHSA-rj75-hqrm-r3gf",
+              "rango": ">=7.0.0 <7.1.6",
+              "severidad": "moderate"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "proxy-addr",
+          "severidadNpmAntes": "critical",
+          "versionesInstaladasAntes": [
+            "2.0.7"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "2.0.8"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1241210,
+              "url": "https://github.com/advisories/GHSA-jqcg-44mw-7w3h",
+              "rango": ">=1.1.0 <2.0.8",
+              "severidad": "critical"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "qs",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "6.15.3"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "6.16.2",
+            "6.17.1"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1158506,
+              "url": "https://github.com/advisories/GHSA-x5fp-wj9c-mxmx",
+              "rango": ">=6.14.2 <=6.15.3",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1158507,
+              "url": "https://github.com/advisories/GHSA-4mjr-xmp4-gh2g",
+              "rango": ">=2.2.5 <6.16.0",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1243687,
+              "url": "https://github.com/advisories/GHSA-6pq8-jhm2-2vcw",
+              "rango": ">=6.7.0 <=6.16.0",
+              "severidad": "moderate"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "serialize-javascript",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "6.0.2"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "7.1.4"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1113686,
+              "url": "https://github.com/advisories/GHSA-5c6j-r48x-rmvq",
+              "rango": "<=7.0.2",
+              "severidad": "high"
+            },
+            {
+              "id": 1119440,
+              "url": "https://github.com/advisories/GHSA-qj8w-gfj5-8c6v",
+              "rango": ">=5.0.0 <7.0.5",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1243082,
+              "url": "https://github.com/advisories/GHSA-m5mm-p8h7-m29v",
+              "rango": "<7.1.3",
+              "severidad": "low"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "shell-quote",
+          "severidadNpmAntes": "critical",
+          "versionesInstaladasAntes": [
+            "1.10.0"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "1.12.0"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1241332,
+              "url": "https://github.com/advisories/GHSA-pqg4-j6r4-53mv",
+              "rango": ">=1.8.4 <1.11.0",
+              "severidad": "critical"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "sigstore",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "3.1.0"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [
+            {
+              "id": 1122163,
+              "url": "https://github.com/advisories/GHSA-52v5-jr5w-gjxr",
+              "rango": "<=4.1.0",
+              "severidad": "high"
+            }
+          ],
+          "propagadoDesde": [
+            "@sigstore/core",
+            "@sigstore/sign",
+            "@sigstore/tuf",
+            "@sigstore/verify"
+          ]
+        },
+        {
+          "paquete": "sockjs",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "0.3.24"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "uuid"
+          ]
+        },
+        {
+          "paquete": "source-map-js",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "1.2.1"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "1.2.2"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1241209,
+              "url": "https://github.com/advisories/GHSA-68fv-2mgg-jv7q",
+              "rango": ">=1.0.0 <1.2.2",
+              "severidad": "high"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "tar",
+          "severidadNpmAntes": "critical",
+          "versionesInstaladasAntes": [
+            "6.2.1"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [
+            {
+              "id": 1112659,
+              "url": "https://github.com/advisories/GHSA-34x7-hfp2-rc4v",
+              "rango": "<7.5.7",
+              "severidad": "high"
+            },
+            {
+              "id": 1113300,
+              "url": "https://github.com/advisories/GHSA-8qq5-rm4j-mr97",
+              "rango": "<=7.5.2",
+              "severidad": "high"
+            },
+            {
+              "id": 1113375,
+              "url": "https://github.com/advisories/GHSA-83g3-92jg-28cx",
+              "rango": "<7.5.8",
+              "severidad": "high"
+            },
+            {
+              "id": 1114200,
+              "url": "https://github.com/advisories/GHSA-qffp-2rhf-9h96",
+              "rango": "<=7.5.9",
+              "severidad": "high"
+            },
+            {
+              "id": 1114302,
+              "url": "https://github.com/advisories/GHSA-9ppj-qmqm-q256",
+              "rango": "<=7.5.10",
+              "severidad": "high"
+            },
+            {
+              "id": 1114680,
+              "url": "https://github.com/advisories/GHSA-r6q2-hw4h-h46w",
+              "rango": "<=7.5.3",
+              "severidad": "high"
+            },
+            {
+              "id": 1120782,
+              "url": "https://github.com/advisories/GHSA-vmf3-w455-68vh",
+              "rango": "<=7.5.15",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1123939,
+              "url": "https://github.com/advisories/GHSA-w8wr-v893-vjvp",
+              "rango": "<=7.5.17",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1123940,
+              "url": "https://github.com/advisories/GHSA-23hp-3jrh-7fpw",
+              "rango": "<=7.5.18",
+              "severidad": "critical"
+            },
+            {
+              "id": 1123941,
+              "url": "https://github.com/advisories/GHSA-8x88-c5mf-7j5w",
+              "rango": "<=7.5.17",
+              "severidad": "high"
+            },
+            {
+              "id": 1123942,
+              "url": "https://github.com/advisories/GHSA-gvwx-54wh-qm9j",
+              "rango": "<=7.5.16",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1145647,
+              "url": "https://github.com/advisories/GHSA-r292-9mhp-454m",
+              "rango": "<=7.5.20",
+              "severidad": "high"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "tuf-js",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "3.1.0"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [],
+          "propagadoDesde": [
+            "@tufjs/models",
+            "make-fetch-happen"
+          ]
+        },
+        {
+          "paquete": "uuid",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "8.3.2"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [],
+          "advisoriesPropios": [
+            {
+              "id": 1119441,
+              "url": "https://github.com/advisories/GHSA-w5hq-g745-h8pq",
+              "rango": "<11.1.1",
+              "severidad": "moderate"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "vite",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "6.4.2",
+            "6.4.3"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "8.3.5"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1120784,
+              "url": "https://github.com/advisories/GHSA-v6wh-96g9-6wx3",
+              "rango": "<=6.4.2",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1242622,
+              "url": "https://github.com/advisories/GHSA-698v-4r3x-3vcv",
+              "rango": "<=6.4.3",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1242651,
+              "url": "https://github.com/advisories/GHSA-r825-w8mm-5pxw",
+              "rango": "<=6.4.3",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1242658,
+              "url": "https://github.com/advisories/GHSA-587h-7wmj-h5pm",
+              "rango": "<=6.4.3",
+              "severidad": "high"
+            },
+            {
+              "id": 1242724,
+              "url": "https://github.com/advisories/GHSA-9jrq-w75r-8gcw",
+              "rango": "<=6.4.3",
+              "severidad": "low"
+            },
+            {
+              "id": 1242730,
+              "url": "https://github.com/advisories/GHSA-rq7h-c2jc-7f22",
+              "rango": "<=6.4.3",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1243432,
+              "url": "https://github.com/advisories/GHSA-fx2h-pf6j-xcff",
+              "rango": "<=6.4.2",
+              "severidad": "moderate"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "webpack-dev-middleware",
+          "severidadNpmAntes": "high",
+          "versionesInstaladasAntes": [
+            "7.4.2"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "8.5.0"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1240027,
+              "url": "https://github.com/advisories/GHSA-g84c-rxfj-3j2c",
+              "rango": "<7.4.5",
+              "severidad": "high"
+            }
+          ],
+          "propagadoDesde": []
+        },
+        {
+          "paquete": "webpack-dev-server",
+          "severidadNpmAntes": "moderate",
+          "versionesInstaladasAntes": [
+            "5.2.2"
+          ],
+          "soloDevAntes": true,
+          "versionesInstaladasDespues": [
+            "6.0.0"
+          ],
+          "advisoriesPropios": [
+            {
+              "id": 1119074,
+              "url": "https://github.com/advisories/GHSA-79cf-xcqc-c78w",
+              "rango": "<=5.2.3",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1121087,
+              "url": "https://github.com/advisories/GHSA-mx8g-39q3-5c79",
+              "rango": "<5.2.5",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1123965,
+              "url": "https://github.com/advisories/GHSA-f5vj-f2hx-8m93",
+              "rango": "<=5.2.5",
+              "severidad": "moderate"
+            },
+            {
+              "id": 1123966,
+              "url": "https://github.com/advisories/GHSA-m28w-2pqf-7qgj",
+              "rango": "<=5.2.5",
+              "severidad": "moderate"
+            }
+          ],
+          "propagadoDesde": [
+            "sockjs"
+          ]
+        }
+      ],
+      "cadenasCriticasAntes": [
+        [
+          "piscina@4.8.0",
+          "@angular-devkit/build-angular@19.2.27"
+        ],
+        [
+          "piscina@4.8.0",
+          "@angular/build@19.2.27",
+          "@angular-devkit/build-angular@19.2.27"
+        ],
+        [
+          "proxy-addr@2.0.7",
+          "express@4.22.2",
+          "webpack-dev-server@5.2.2",
+          "@angular-devkit/build-angular@19.2.27"
+        ],
+        [
+          "proxy-addr@2.0.7",
+          "express@4.22.2",
+          "webpack-dev-server@5.2.2",
+          "@angular-devkit/build-webpack@0.1902.27",
+          "@angular-devkit/build-angular@19.2.27"
+        ],
+        [
+          "shell-quote@1.10.0",
+          "launch-editor@2.14.1",
+          "webpack-dev-server@5.2.2",
+          "@angular-devkit/build-angular@19.2.27"
+        ],
+        [
+          "shell-quote@1.10.0",
+          "launch-editor@2.14.1",
+          "webpack-dev-server@5.2.2",
+          "@angular-devkit/build-webpack@0.1902.27",
+          "@angular-devkit/build-angular@19.2.27"
+        ],
+        [
+          "tar@7.5.22",
+          "cacache@19.0.1",
+          "make-fetch-happen@14.0.3",
+          "@sigstore/sign@3.1.0",
+          "sigstore@3.1.0",
+          "pacote@20.0.0",
+          "@angular/cli@19.2.27"
+        ],
+        [
+          "tar@7.5.22",
+          "cacache@19.0.1",
+          "make-fetch-happen@14.0.3",
+          "node-gyp@11.5.0",
+          "@npmcli/run-script@9.1.0",
+          "pacote@20.0.0",
+          "@angular/cli@19.2.27"
+        ],
+        [
+          "tar@7.5.22",
+          "cacache@19.0.1",
+          "make-fetch-happen@14.0.3",
+          "npm-registry-fetch@18.0.2",
+          "pacote@20.0.0",
+          "@angular/cli@19.2.27"
+        ],
+        [
+          "tar@7.5.22",
+          "cacache@19.0.1",
+          "make-fetch-happen@14.0.3",
+          "tuf-js@3.1.0",
+          "@sigstore/tuf@3.1.1",
+          "sigstore@3.1.0",
+          "pacote@20.0.0",
+          "@angular/cli@19.2.27"
+        ],
+        [
+          "tar@7.5.22",
+          "cacache@19.0.1",
+          "pacote@20.0.0",
+          "@angular/cli@19.2.27"
+        ],
+        [
+          "tar@7.5.22",
+          "node-gyp@11.5.0",
+          "@npmcli/run-script@9.1.0",
+          "pacote@20.0.0",
+          "@angular/cli@19.2.27"
+        ],
+        [
+          "tar@6.2.1",
+          "pacote@20.0.0",
+          "@angular/cli@19.2.27"
+        ]
+      ]
+    }
+  },
+  "finales": [
+    {
+      "fechaUTC": "2026-11-13T12:21:47.528594+00:00",
+      "sha": "4487b16315b44884d80a3d4eda6ca270f0c62438",
+      "imagenes": {
+        "portal-web-cliente": {
+          "imagen": "sha256:9a11f99348c6af8b86ac950d11018e2ad5a20649d9eb7dc67cd389e52e0fa359",
+          "revisionEtiqueta": "ca413fcddf7a639d5627247aa096b75122333018",
+          "fuenteModificadaAlConstruir": "si",
+          "sha256Assets": "04fc047ca8f4088a97478fbf56bc59d69b4235dd86abd7e07655f9f787351c04",
+          "sha256Nginx": "fbbd2d081d040f344a58165bde5c9a0e7bb82137bfdc76374e0b46c5ad9a9730"
+        },
+        "portal-web-admin": {
+          "imagen": "sha256:6835120c95f0a7f3d17661416147b21c09a34873b036b72d8d26d9790673f44c",
+          "revisionEtiqueta": "ca413fcddf7a639d5627247aa096b75122333018",
+          "fuenteModificadaAlConstruir": "si",
+          "sha256Assets": "37c7c311ed907c21cd96c19f96316f3ecc300bfe10e897c900dbd78de0055e23",
+          "sha256Nginx": "7ac60b018fd213b9cc0b24235aa0272aad2b84aa89ee3e547b6a32c71cc5fc7e"
+        },
+        "api-gateway": {
+          "imagen": "sha256:6b4afcd4892fb6624c4c2e2725b3eb4d3685b22b8bd16056cc18fc40626c1029",
+          "revisionEtiqueta": "ca413fcddf7a639d5627247aa096b75122333018",
+          "fuenteModificadaAlConstruir": "si"
+        }
+      },
+      "audits": {
+        "cliente": {
+          "sha256Lock": "bb851f54d94b6b093f3bf6355ac72a829d456a6c0128514f784492754b74a373",
+          "produccion": {
+            "info": 0,
+            "low": 0,
+            "moderate": 0,
+            "high": 0,
+            "critical": 0,
+            "total": 0
+          },
+          "completo": {
+            "info": 0,
+            "low": 0,
+            "moderate": 0,
+            "high": 0,
+            "critical": 0,
+            "total": 0
+          }
+        },
+        "admin": {
+          "sha256Lock": "fa6f9d2d1435101f2f4c969de24deea2ecbee249d9d450f18430d6735ef0dbfa",
+          "produccion": {
+            "info": 0,
+            "low": 0,
+            "moderate": 0,
+            "high": 0,
+            "critical": 0,
+            "total": 0
+          },
+          "completo": {
+            "info": 0,
+            "low": 0,
+            "moderate": 0,
+            "high": 0,
+            "critical": 0,
+            "total": 0
+          }
+        }
+      },
+      "zap": {
+        "version": "2.17.0",
+        "solicitudes": 23,
+        "reglas": 62,
+        "pendientes": 0,
+        "alertas": {
+          "10055": {
+            "nombre": "CSP: Wildcard Directive",
+            "riesgo": "Medium",
+            "instancias": 2
+          },
+          "10109": {
+            "nombre": "Modern Web Application",
+            "riesgo": "Informational",
+            "instancias": 4
+          },
+          "90003": {
+            "nombre": "Sub Resource Integrity Attribute Missing",
+            "riesgo": "Medium",
+            "instancias": 8
+          }
+        }
+      },
+      "memoria": {
+        "antes": {
+          "vmKiB": {
+            "MemAvailable": 955120,
+            "SwapFree": 473572
+          },
+          "swapHost": "vm.swapusage: total = 4096.00M  used = 2887.62M  free = 1208.38M  (encrypted)",
+          "presionHost": "System-wide memory free percentage: 50%"
+        },
+        "despues": {
+          "vmKiB": {
+            "MemAvailable": 943008,
+            "SwapFree": 468400
+          },
+          "swapHost": "vm.swapusage: total = 4096.00M  used = 3204.81M  free = 891.19M  (encrypted)",
+          "presionHost": "System-wide memory free percentage: 43%"
+        }
+      },
+      "csp": [
+        {
+          "portal": "cliente",
+          "version": "22.2.6",
+          "politicaPresente": true,
+          "politica": "default-src 'none'; script-src 'self' 'nonce-DINAMICO' https://js.stripe.com; script-src-attr 'none'; style-src 'self' 'nonce-DINAMICO' https://fonts.googleapis.com/css2 https://fonts.googleapis.com/icon; style-src-attr 'none'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: http: https:; connect-src 'self' http://cu015.localhost:18100 http://cu015.localhost:13138 https://api.stripe.com; frame-src https://js.stripe.com https://hooks.stripe.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; manifest-src 'self'; worker-src 'none'; media-src 'none'",
+          "estilo": {
+            "fuente": "Manrope, system-ui, sans-serif",
+            "color": "rgb(245, 243, 239)",
+            "fuenteBoton": "Manrope, sans-serif",
+            "colorBoton": "rgb(255, 255, 255)",
+            "radio": "999px"
+          },
+          "violacionesAlCargar": 0,
+          "erroresJavaScript": 0,
+          "consolaErrores": 4,
+          "comprobaciones": {
+            "violacionesControladas": [
+              {
+                "directiva": "script-src-elem",
+                "bloqueado": "inline",
+                "disposicion": "enforce"
+              },
+              {
+                "directiva": "style-src-attr",
+                "bloqueado": "inline",
+                "disposicion": "enforce"
+              }
+            ],
+            "inlineScriptBloqueado": true,
+            "atributoStyleBloqueado": true,
+            "scriptIframeStripeDoble": true,
+            "nonceUnicoPorRespuesta": true,
+            "rutasAutenticadas": [
+              "/perfil",
+              "/reventa",
+              "/entradas",
+              "/parqueadero",
+              "/pedidos",
+              "/mis-pedidos",
+              "/ajustes"
+            ],
+            "renovaciones200": 7,
+            "sinViolacionesEnRutas": true
+          }
+        },
+        {
+          "portal": "admin",
+          "version": "22.2.6",
+          "politicaPresente": true,
+          "politica": "default-src 'none'; script-src 'self' 'nonce-DINAMICO'; script-src-attr 'none'; style-src 'self' 'nonce-DINAMICO' https://fonts.googleapis.com/css2 https://fonts.googleapis.com/icon; style-src-attr 'none'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' http://cu015.localhost:18100 http://cu015.localhost:13138; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; manifest-src 'self'; worker-src 'none'; media-src 'none'",
+          "estilo": {
+            "fuente": "Manrope, system-ui, sans-serif",
+            "color": "rgb(245, 243, 239)",
+            "fuenteBoton": "Manrope, sans-serif",
+            "colorBoton": "rgba(245, 243, 239, 0.42)",
+            "radio": "999px"
+          },
+          "violacionesAlCargar": 0,
+          "erroresJavaScript": 0,
+          "consolaErrores": 2,
+          "comprobaciones": {
+            "violacionesControladas": [
+              {
+                "directiva": "script-src-elem",
+                "bloqueado": "inline",
+                "disposicion": "enforce"
+              },
+              {
+                "directiva": "style-src-attr",
+                "bloqueado": "inline",
+                "disposicion": "enforce"
+              }
+            ],
+            "inlineScriptBloqueado": true,
+            "atributoStyleBloqueado": true,
+            "nonceUnicoPorRespuesta": true,
+            "rutasAutenticadas": [
+              "/admin/inicio",
+              "/admin/eventos",
+              "/admin/personal",
+              "/admin/parqueaderos",
+              "/admin/cuentas",
+              "/admin/recintos"
+            ],
+            "renovaciones200": 6,
+            "sinViolacionesEnRutas": true
+          }
+        }
+      ]
+    },
+    {
+      "fechaUTC": "2026-11-13T12:22:17.880301+00:00",
+      "sha": "4487b16315b44884d80a3d4eda6ca270f0c62438",
+      "imagenes": {
+        "portal-web-cliente": {
+          "imagen": "sha256:9a11f99348c6af8b86ac950d11018e2ad5a20649d9eb7dc67cd389e52e0fa359",
+          "revisionEtiqueta": "ca413fcddf7a639d5627247aa096b75122333018",
+          "fuenteModificadaAlConstruir": "si",
+          "sha256Assets": "04fc047ca8f4088a97478fbf56bc59d69b4235dd86abd7e07655f9f787351c04",
+          "sha256Nginx": "fbbd2d081d040f344a58165bde5c9a0e7bb82137bfdc76374e0b46c5ad9a9730"
+        },
+        "portal-web-admin": {
+          "imagen": "sha256:6835120c95f0a7f3d17661416147b21c09a34873b036b72d8d26d9790673f44c",
+          "revisionEtiqueta": "ca413fcddf7a639d5627247aa096b75122333018",
+          "fuenteModificadaAlConstruir": "si",
+          "sha256Assets": "37c7c311ed907c21cd96c19f96316f3ecc300bfe10e897c900dbd78de0055e23",
+          "sha256Nginx": "7ac60b018fd213b9cc0b24235aa0272aad2b84aa89ee3e547b6a32c71cc5fc7e"
+        },
+        "api-gateway": {
+          "imagen": "sha256:6b4afcd4892fb6624c4c2e2725b3eb4d3685b22b8bd16056cc18fc40626c1029",
+          "revisionEtiqueta": "ca413fcddf7a639d5627247aa096b75122333018",
+          "fuenteModificadaAlConstruir": "si"
+        }
+      },
+      "audits": {
+        "cliente": {
+          "sha256Lock": "bb851f54d94b6b093f3bf6355ac72a829d456a6c0128514f784492754b74a373",
+          "produccion": {
+            "info": 0,
+            "low": 0,
+            "moderate": 0,
+            "high": 0,
+            "critical": 0,
+            "total": 0
+          },
+          "completo": {
+            "info": 0,
+            "low": 0,
+            "moderate": 0,
+            "high": 0,
+            "critical": 0,
+            "total": 0
+          }
+        },
+        "admin": {
+          "sha256Lock": "fa6f9d2d1435101f2f4c969de24deea2ecbee249d9d450f18430d6735ef0dbfa",
+          "produccion": {
+            "info": 0,
+            "low": 0,
+            "moderate": 0,
+            "high": 0,
+            "critical": 0,
+            "total": 0
+          },
+          "completo": {
+            "info": 0,
+            "low": 0,
+            "moderate": 0,
+            "high": 0,
+            "critical": 0,
+            "total": 0
+          }
+        }
+      },
+      "zap": {
+        "version": "2.17.0",
+        "solicitudes": 23,
+        "reglas": 62,
+        "pendientes": 0,
+        "alertas": {
+          "10055": {
+            "nombre": "CSP: Wildcard Directive",
+            "riesgo": "Medium",
+            "instancias": 2
+          },
+          "10109": {
+            "nombre": "Modern Web Application",
+            "riesgo": "Informational",
+            "instancias": 4
+          },
+          "90003": {
+            "nombre": "Sub Resource Integrity Attribute Missing",
+            "riesgo": "Medium",
+            "instancias": 8
+          }
+        }
+      },
+      "memoria": {
+        "antes": {
+          "vmKiB": {
+            "MemAvailable": 941068,
+            "SwapFree": 468400
+          },
+          "swapHost": "vm.swapusage: total = 4096.00M  used = 3204.81M  free = 891.19M  (encrypted)",
+          "presionHost": "System-wide memory free percentage: 42%"
+        },
+        "despues": {
+          "vmKiB": {
+            "MemAvailable": 923812,
+            "SwapFree": 466988
+          },
+          "swapHost": "vm.swapusage: total = 4096.00M  used = 3172.81M  free = 923.19M  (encrypted)",
+          "presionHost": "System-wide memory free percentage: 45%"
+        }
+      },
+      "csp": [
+        {
+          "portal": "cliente",
+          "version": "22.2.6",
+          "politicaPresente": true,
+          "politica": "default-src 'none'; script-src 'self' 'nonce-DINAMICO' https://js.stripe.com; script-src-attr 'none'; style-src 'self' 'nonce-DINAMICO' https://fonts.googleapis.com/css2 https://fonts.googleapis.com/icon; style-src-attr 'none'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: http: https:; connect-src 'self' http://cu015.localhost:18100 http://cu015.localhost:13138 https://api.stripe.com; frame-src https://js.stripe.com https://hooks.stripe.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; manifest-src 'self'; worker-src 'none'; media-src 'none'",
+          "estilo": {
+            "fuente": "Manrope, system-ui, sans-serif",
+            "color": "rgb(245, 243, 239)",
+            "fuenteBoton": "Manrope, sans-serif",
+            "colorBoton": "rgb(255, 255, 255)",
+            "radio": "999px"
+          },
+          "violacionesAlCargar": 0,
+          "erroresJavaScript": 0,
+          "consolaErrores": 4,
+          "comprobaciones": {
+            "violacionesControladas": [
+              {
+                "directiva": "script-src-elem",
+                "bloqueado": "inline",
+                "disposicion": "enforce"
+              },
+              {
+                "directiva": "style-src-attr",
+                "bloqueado": "inline",
+                "disposicion": "enforce"
+              }
+            ],
+            "inlineScriptBloqueado": true,
+            "atributoStyleBloqueado": true,
+            "scriptIframeStripeDoble": true,
+            "nonceUnicoPorRespuesta": true,
+            "rutasAutenticadas": [
+              "/perfil",
+              "/reventa",
+              "/entradas",
+              "/parqueadero",
+              "/pedidos",
+              "/mis-pedidos",
+              "/ajustes"
+            ],
+            "renovaciones200": 7,
+            "sinViolacionesEnRutas": true
+          }
+        },
+        {
+          "portal": "admin",
+          "version": "22.2.6",
+          "politicaPresente": true,
+          "politica": "default-src 'none'; script-src 'self' 'nonce-DINAMICO'; script-src-attr 'none'; style-src 'self' 'nonce-DINAMICO' https://fonts.googleapis.com/css2 https://fonts.googleapis.com/icon; style-src-attr 'none'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' http://cu015.localhost:18100 http://cu015.localhost:13138; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; manifest-src 'self'; worker-src 'none'; media-src 'none'",
+          "estilo": {
+            "fuente": "Manrope, system-ui, sans-serif",
+            "color": "rgb(245, 243, 239)",
+            "fuenteBoton": "Manrope, sans-serif",
+            "colorBoton": "rgba(245, 243, 239, 0.42)",
+            "radio": "999px"
+          },
+          "violacionesAlCargar": 0,
+          "erroresJavaScript": 0,
+          "consolaErrores": 2,
+          "comprobaciones": {
+            "violacionesControladas": [
+              {
+                "directiva": "script-src-elem",
+                "bloqueado": "inline",
+                "disposicion": "enforce"
+              },
+              {
+                "directiva": "style-src-attr",
+                "bloqueado": "inline",
+                "disposicion": "enforce"
+              }
+            ],
+            "inlineScriptBloqueado": true,
+            "atributoStyleBloqueado": true,
+            "nonceUnicoPorRespuesta": true,
+            "rutasAutenticadas": [
+              "/admin/inicio",
+              "/admin/eventos",
+              "/admin/personal",
+              "/admin/parqueaderos",
+              "/admin/cuentas",
+              "/admin/recintos"
+            ],
+            "renovaciones200": 6,
+            "sinViolacionesEnRutas": true
+          }
+        }
+      ]
+    },
+    {
+      "fechaUTC": "2026-11-13T12:22:43.366687+00:00",
+      "sha": "4487b16315b44884d80a3d4eda6ca270f0c62438",
+      "imagenes": {
+        "portal-web-cliente": {
+          "imagen": "sha256:9a11f99348c6af8b86ac950d11018e2ad5a20649d9eb7dc67cd389e52e0fa359",
+          "revisionEtiqueta": "ca413fcddf7a639d5627247aa096b75122333018",
+          "fuenteModificadaAlConstruir": "si",
+          "sha256Assets": "04fc047ca8f4088a97478fbf56bc59d69b4235dd86abd7e07655f9f787351c04",
+          "sha256Nginx": "fbbd2d081d040f344a58165bde5c9a0e7bb82137bfdc76374e0b46c5ad9a9730"
+        },
+        "portal-web-admin": {
+          "imagen": "sha256:6835120c95f0a7f3d17661416147b21c09a34873b036b72d8d26d9790673f44c",
+          "revisionEtiqueta": "ca413fcddf7a639d5627247aa096b75122333018",
+          "fuenteModificadaAlConstruir": "si",
+          "sha256Assets": "37c7c311ed907c21cd96c19f96316f3ecc300bfe10e897c900dbd78de0055e23",
+          "sha256Nginx": "7ac60b018fd213b9cc0b24235aa0272aad2b84aa89ee3e547b6a32c71cc5fc7e"
+        },
+        "api-gateway": {
+          "imagen": "sha256:6b4afcd4892fb6624c4c2e2725b3eb4d3685b22b8bd16056cc18fc40626c1029",
+          "revisionEtiqueta": "ca413fcddf7a639d5627247aa096b75122333018",
+          "fuenteModificadaAlConstruir": "si"
+        }
+      },
+      "audits": {
+        "cliente": {
+          "sha256Lock": "bb851f54d94b6b093f3bf6355ac72a829d456a6c0128514f784492754b74a373",
+          "produccion": {
+            "info": 0,
+            "low": 0,
+            "moderate": 0,
+            "high": 0,
+            "critical": 0,
+            "total": 0
+          },
+          "completo": {
+            "info": 0,
+            "low": 0,
+            "moderate": 0,
+            "high": 0,
+            "critical": 0,
+            "total": 0
+          }
+        },
+        "admin": {
+          "sha256Lock": "fa6f9d2d1435101f2f4c969de24deea2ecbee249d9d450f18430d6735ef0dbfa",
+          "produccion": {
+            "info": 0,
+            "low": 0,
+            "moderate": 0,
+            "high": 0,
+            "critical": 0,
+            "total": 0
+          },
+          "completo": {
+            "info": 0,
+            "low": 0,
+            "moderate": 0,
+            "high": 0,
+            "critical": 0,
+            "total": 0
+          }
+        }
+      },
+      "zap": {
+        "version": "2.17.0",
+        "solicitudes": 23,
+        "reglas": 62,
+        "pendientes": 0,
+        "alertas": {
+          "10055": {
+            "nombre": "CSP: Wildcard Directive",
+            "riesgo": "Medium",
+            "instancias": 2
+          },
+          "10109": {
+            "nombre": "Modern Web Application",
+            "riesgo": "Informational",
+            "instancias": 4
+          },
+          "90003": {
+            "nombre": "Sub Resource Integrity Attribute Missing",
+            "riesgo": "Medium",
+            "instancias": 8
+          }
+        }
+      },
+      "memoria": {
+        "antes": {
+          "vmKiB": {
+            "MemAvailable": 928744,
+            "SwapFree": 466988
+          },
+          "swapHost": "vm.swapusage: total = 4096.00M  used = 3164.81M  free = 931.19M  (encrypted)",
+          "presionHost": "System-wide memory free percentage: 45%"
+        },
+        "despues": {
+          "vmKiB": {
+            "MemAvailable": 924196,
+            "SwapFree": 461428
+          },
+          "swapHost": "vm.swapusage: total = 4096.00M  used = 3116.81M  free = 979.19M  (encrypted)",
+          "presionHost": "System-wide memory free percentage: 44%"
+        }
+      },
+      "csp": [
+        {
+          "portal": "cliente",
+          "version": "22.2.6",
+          "politicaPresente": true,
+          "politica": "default-src 'none'; script-src 'self' 'nonce-DINAMICO' https://js.stripe.com; script-src-attr 'none'; style-src 'self' 'nonce-DINAMICO' https://fonts.googleapis.com/css2 https://fonts.googleapis.com/icon; style-src-attr 'none'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: http: https:; connect-src 'self' http://cu015.localhost:18100 http://cu015.localhost:13138 https://api.stripe.com; frame-src https://js.stripe.com https://hooks.stripe.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; manifest-src 'self'; worker-src 'none'; media-src 'none'",
+          "estilo": {
+            "fuente": "Manrope, system-ui, sans-serif",
+            "color": "rgb(245, 243, 239)",
+            "fuenteBoton": "Manrope, sans-serif",
+            "colorBoton": "rgb(255, 255, 255)",
+            "radio": "999px"
+          },
+          "violacionesAlCargar": 0,
+          "erroresJavaScript": 0,
+          "consolaErrores": 4,
+          "comprobaciones": {
+            "violacionesControladas": [
+              {
+                "directiva": "script-src-elem",
+                "bloqueado": "inline",
+                "disposicion": "enforce"
+              },
+              {
+                "directiva": "style-src-attr",
+                "bloqueado": "inline",
+                "disposicion": "enforce"
+              }
+            ],
+            "inlineScriptBloqueado": true,
+            "atributoStyleBloqueado": true,
+            "scriptIframeStripeDoble": true,
+            "nonceUnicoPorRespuesta": true,
+            "rutasAutenticadas": [
+              "/perfil",
+              "/reventa",
+              "/entradas",
+              "/parqueadero",
+              "/pedidos",
+              "/mis-pedidos",
+              "/ajustes"
+            ],
+            "renovaciones200": 7,
+            "sinViolacionesEnRutas": true
+          }
+        },
+        {
+          "portal": "admin",
+          "version": "22.2.6",
+          "politicaPresente": true,
+          "politica": "default-src 'none'; script-src 'self' 'nonce-DINAMICO'; script-src-attr 'none'; style-src 'self' 'nonce-DINAMICO' https://fonts.googleapis.com/css2 https://fonts.googleapis.com/icon; style-src-attr 'none'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' http://cu015.localhost:18100 http://cu015.localhost:13138; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; manifest-src 'self'; worker-src 'none'; media-src 'none'",
+          "estilo": {
+            "fuente": "Manrope, system-ui, sans-serif",
+            "color": "rgb(245, 243, 239)",
+            "fuenteBoton": "Manrope, sans-serif",
+            "colorBoton": "rgba(245, 243, 239, 0.42)",
+            "radio": "999px"
+          },
+          "violacionesAlCargar": 0,
+          "erroresJavaScript": 0,
+          "consolaErrores": 2,
+          "comprobaciones": {
+            "violacionesControladas": [
+              {
+                "directiva": "script-src-elem",
+                "bloqueado": "inline",
+                "disposicion": "enforce"
+              },
+              {
+                "directiva": "style-src-attr",
+                "bloqueado": "inline",
+                "disposicion": "enforce"
+              }
+            ],
+            "inlineScriptBloqueado": true,
+            "atributoStyleBloqueado": true,
+            "nonceUnicoPorRespuesta": true,
+            "rutasAutenticadas": [
+              "/admin/inicio",
+              "/admin/eventos",
+              "/admin/personal",
+              "/admin/parqueaderos",
+              "/admin/cuentas",
+              "/admin/recintos"
+            ],
+            "renovaciones200": 6,
+            "sinViolacionesEnRutas": true
+          }
+        }
+      ]
+    }
+  ],
+  "negocio": {
+    "negocio-automatico-inicial": {
+      "inicioUTC": "2026-11-13T12:09:09.578Z",
+      "duracionMs": 148928.75400000002,
+      "aprobados": 15,
+      "fallidos": 1,
+      "omitidos": 0,
+      "flaky": 0,
+      "trabajadores": 1,
+      "consola": {
+        "contextos": 27,
+        "violacionesCSP": 3,
+        "erroresJavaScript": 0,
+        "entradasConsola": 38
+      }
+    },
+    "cu029-corregido": {
+      "inicioUTC": "2026-11-13T12:12:45.295Z",
+      "duracionMs": 7793.0650000000005,
+      "aprobados": 1,
+      "fallidos": 0,
+      "omitidos": 0,
+      "flaky": 0,
+      "trabajadores": 1,
+      "consola": {
+        "contextos": 1,
+        "violacionesCSP": 0,
+        "erroresJavaScript": 0,
+        "entradasConsola": 2
+      }
+    },
+    "negocio-automatico": {
+      "inicioUTC": "2026-11-13T12:12:53.530Z",
+      "duracionMs": 132065.84800000003,
+      "aprobados": 16,
+      "fallidos": 0,
+      "omitidos": 0,
+      "flaky": 0,
+      "trabajadores": 1,
+      "consola": {
+        "contextos": 27,
+        "violacionesCSP": 0,
+        "erroresJavaScript": 0,
+        "entradasConsola": 37
+      }
+    },
+    "negocio-visible": {
+      "inicioUTC": "2026-11-13T12:15:06.088Z",
+      "duracionMs": 151573.957,
+      "aprobados": 16,
+      "fallidos": 0,
+      "omitidos": 0,
+      "flaky": 0,
+      "trabajadores": 1,
+      "consola": {
+        "contextos": 27,
+        "violacionesCSP": 0,
+        "erroresJavaScript": 0,
+        "entradasConsola": 37
+      }
+    }
+  },
+  "zapReferencia": {
+    "version": "2.17.0",
+    "solicitudes": 33,
+    "reglas": 62,
+    "alertas": {
+      "10038": {
+        "nombre": "Content Security Policy (CSP) Header Not Set",
+        "riesgo": "Medium",
+        "instancias": 4
+      },
+      "10109": {
+        "nombre": "Modern Web Application",
+        "riesgo": "Informational",
+        "instancias": 4
+      },
+      "10003": {
+        "nombre": "Vulnerable JS Library",
+        "riesgo": "High",
+        "instancias": 2
+      }
+    }
+  },
+  "navegadores": {
+    "playwright": "1.65.0",
+    "chromium": "158.0.8127.18",
+    "revision": "1254",
+    "chromeUnitarias": "157.0.0.0"
+  },
+  "contrasteRangosOriginales": {
+    "comparaciones": 154,
+    "coincidenciasVulnerables": []
+  },
+  "restauracion": {
+    "dockerInicialApagado": true,
+    "dockerFinalApagado": true,
+    "redashAntesDeApagarDocker": 7,
+    "hexacoreActivoAntesDeApagarDocker": 0,
+    "httpRedash": [
+      {
+        "etapa": "server",
+        "ruta": "/ping",
+        "fechaUTC": "2026-11-13T12:25:35.421932+00:00",
+        "error": "ConnectionResetError"
+      },
+      {
+        "etapa": "server",
+        "ruta": "/login",
+        "fechaUTC": "2026-11-13T12:25:35.443923+00:00",
+        "error": "ConnectionResetError"
+      },
+      {
+        "etapa": "scheduler",
+        "ruta": "/ping",
+        "fechaUTC": "2026-11-13T12:25:35.686834+00:00",
+        "error": "ConnectionResetError"
+      },
+      {
+        "etapa": "scheduler",
+        "ruta": "/login",
+        "fechaUTC": "2026-11-13T12:25:35.687799+00:00",
+        "error": "ConnectionResetError"
+      },
+      {
+        "etapa": "worker",
+        "ruta": "/ping",
+        "fechaUTC": "2026-11-13T12:25:36.020935+00:00",
+        "error": "TimeoutError"
+      },
+      {
+        "etapa": "worker",
+        "ruta": "/login",
+        "fechaUTC": "2026-11-13T12:25:51.023362+00:00",
+        "estado": 200
+      },
+      {
+        "etapa": "adhoc_worker",
+        "ruta": "/ping",
+        "fechaUTC": "2026-11-13T12:25:56.743977+00:00",
+        "estado": 200
+      },
+      {
+        "etapa": "adhoc_worker",
+        "ruta": "/login",
+        "fechaUTC": "2026-11-13T12:25:56.759819+00:00",
+        "estado": 200
+      },
+      {
+        "etapa": "scheduled_worker",
+        "ruta": "/ping",
+        "fechaUTC": "2026-11-13T12:25:57.410087+00:00",
+        "estado": 200
+      },
+      {
+        "etapa": "scheduled_worker",
+        "ruta": "/login",
+        "fechaUTC": "2026-11-13T12:25:57.512646+00:00",
+        "estado": 200
+      }
+    ],
+    "postgresListo": true,
+    "redisPong": true,
+    "oomKillAlRestaurar": {
+      "server": 0,
+      "scheduled_worker": 0,
+      "scheduler": 0,
+      "adhoc_worker": 0,
+      "worker": 0,
+      "redis": 0,
+      "postgres": 0
+    },
+    "idsImagenesMontajesRedashConservados": true,
+    "reiniciosDeRecuperacion": 0
+  }
+}

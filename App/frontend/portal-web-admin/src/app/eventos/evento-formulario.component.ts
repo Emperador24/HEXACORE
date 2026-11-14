@@ -1,4 +1,4 @@
-import { Component, DestroyRef, OnInit, computed, inject, input, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, input, signal, ChangeDetectionStrategy } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -44,6 +44,7 @@ interface ValorLocalidad { id: string | null; nombre: string; precio: number; ca
     MatFormFieldModule, MatIconModule, MatInputModule, MatProgressBarModule, MatSelectModule, MatTooltipModule
   ],
   templateUrl: './evento-formulario.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './evento-formulario.component.scss'
 })
 export class EventoFormularioComponent implements OnInit {

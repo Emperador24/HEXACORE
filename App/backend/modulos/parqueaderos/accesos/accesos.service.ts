@@ -69,7 +69,7 @@ export class AccesosService {
     if (evento.fechaFin <= (d.ocurridoEn ?? new Date())) throw new ConflictException({ codigo: 'EVENTO_TERMINADO', mensaje: 'El evento ya terminó.' });
 
     if (d.registroLocalId) {
-      const previa = await this.porRegistroLocal(d.registroLocalId);
+      const previa = await this.porRegistroLocal(eventoId, d.registroLocalId);
       if (previa) return { ...(await this.respuestaIngreso(eventoId, previa, null)), repetida: true };
     }
 
@@ -79,7 +79,7 @@ export class AccesosService {
     } catch (error) {
       // El mismo registro llegó dos veces a la vez: gana el primero.
       if (d.registroLocalId && esUnico(error, 'UQ_estancias_registro_local')) {
-        return { ...(await this.respuestaIngreso(eventoId, (await this.porRegistroLocal(d.registroLocalId))!, null)), repetida: true };
+        return { ...(await this.respuestaIngreso(eventoId, (await this.porRegistroLocal(eventoId, d.registroLocalId))!, null)), repetida: true };
       }
       throw error;
     }
@@ -172,8 +172,8 @@ export class AccesosService {
       placa = reserva.placa;
     }
     if (d.salidaLocalId) {
-      const [previa] = await this.datos.query(`SELECT id FROM estancias WHERE salida_local_id = $1`, [d.salidaLocalId]);
-      if (previa) return this.respuestaSalida(previa.id, true);
+      const previa = await this.porRegistroLocal(eventoId, d.salidaLocalId, 'salida_local_id');
+      if (previa) return this.respuestaSalida(previa, true);
     }
 
     const resultado = await this.datos.transaction(async (m) => {
@@ -283,8 +283,13 @@ export class AccesosService {
 
   // --- Apoyo --------------------------------------------------------------------
 
-  private async porRegistroLocal(registroLocalId: string): Promise<string | null> {
-    const [fila] = await this.datos.query(`SELECT id FROM estancias WHERE registro_local_id = $1`, [registroLocalId]);
+  private async porRegistroLocal(eventoId: string, registroLocalId: string, columna: 'registro_local_id' | 'salida_local_id' = 'registro_local_id'): Promise<string | null> {
+    const [fila] = await this.datos.query(`SELECT id, evento_id AS "eventoId" FROM estancias WHERE ${columna} = $1`, [registroLocalId]);
+    // La clave sigue siendo única globalmente: otro evento no puede consumirla
+    // ni recibir la estancia original como si fuera un reenvío propio.
+    if (fila && fila.eventoId !== eventoId) {
+      throw new ConflictException({ codigo: 'REGISTRO_LOCAL_INCOMPATIBLE', mensaje: 'El registro local ya pertenece a otro evento.' });
+    }
     return fila?.id ?? null;
   }
 

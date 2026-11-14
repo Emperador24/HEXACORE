@@ -1,4 +1,4 @@
-import { Component, input, isDevMode } from '@angular/core';
+import { Component, input, isDevMode, ChangeDetectionStrategy } from '@angular/core';
 import { Servidor } from '../core/servidor';
 
 /**
@@ -16,6 +16,7 @@ import { Servidor } from '../core/servidor';
       </p>
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     .ayuda {
       margin: 18px 0 0;

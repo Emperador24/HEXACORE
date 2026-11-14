@@ -4,6 +4,14 @@ describe('Semilla de Pedidos', () => {
     const tablas = new Map<string, unknown[]>();
     tablas.set('migraciones', ['inicial', 'reservas']);
     const query = jest.fn(async (sql: string) => {
+      // PostgreSQL exige incluir las tablas que referencian al grupo truncado,
+      // aunque estén vacías. Modelar la FK que rechazó la instalación nueva.
+      const incluidas = new Set([...sql.matchAll(/"([a-z_]+)"/g)].map(m => m[1]));
+      for (const padre of ['historial_preparacion', 'pedidos', 'transacciones_pedido']) {
+        if (incluidas.has(padre) && !incluidas.has('cancelaciones_pedido')) {
+          throw new Error(`FK RESTRICT: cancelaciones_pedido referencia ${padre}`);
+        }
+      }
       expect(sql).toContain('"reservas_inventario"');
       expect(sql).not.toContain('"migraciones"');
       expect(sql).toContain('RESTRICT');

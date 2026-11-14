@@ -1,5 +1,5 @@
-import { DOCUMENT } from '@angular/common';
-import { Injectable, inject, signal } from '@angular/core';
+
+import { Injectable, inject, signal, DOCUMENT } from '@angular/core';
 
 const CLAVE = 'hx-admin-tema';
 

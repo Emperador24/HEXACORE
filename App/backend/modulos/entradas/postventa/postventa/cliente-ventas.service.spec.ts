@@ -66,8 +66,8 @@ describe('ClienteVentas', () => {
       await cliente().devolverDeReventa(ENTRADA, TOKEN);
 
       const cabeceras = ultimaLlamada()[1].headers as Record<string, string>;
-      expect(cabeceras.Authorization).toBe(`Bearer ${TOKEN}`);
-      expect(cabeceras['X-Token-Servicio']).toBeUndefined();
+      expect(cabeceras.Authorization).toBeUndefined();
+      expect(cabeceras['X-Token-Servicio']).toBe('secreto-compartido');
     });
 
     it('usa el credencial de servicio cuando no hay usuario', async () => {

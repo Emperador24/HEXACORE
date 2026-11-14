@@ -5,8 +5,8 @@
   </div>
   @if (panel()) {
     <div class="acciones">
-      <span class="vivo" [class.activo]="enVivo()" [matTooltip]="enVivo() ? 'Recibiendo cada 3 s' : 'Reconectando el flujo en vivo'">
-        <span class="punto"></span>{{ enVivo() ? 'En vivo' : 'Reconectando' }} · {{ panel()!.actualizadoEn | date: 'HH:mm:ss' }}
+      <span class="vivo" [class.activo]="enVivo()" [matTooltip]="enVivo() ? 'Recibiendo cada 3 s' : 'El flujo está desconectado'">
+        <span class="punto"></span>{{ enVivo() ? 'En vivo' : 'Sin conexión' }} · {{ panel()!.actualizadoEn | date: 'HH:mm:ss' }}
       </span>
     </div>
   }
@@ -50,13 +50,13 @@
       <p class="secundario">{{ p.total.ocupados }} de {{ p.total.capacidad }}{{ p.total.reservados ? ' · ' + p.total.reservados + ' reservados' : '' }} · {{ p.total.disponibles }} libres</p>
       <div class="medidor"><span [style.width.%]="p.total.porcentaje > 100 ? 100 : p.total.porcentaje"></span></div>
     </section>
-    <section class="panel kpi" style="--tinte: var(--hx-cian)">
+    <section class="panel kpi csp-hx-cian">
       <p class="etiqueta">Zona recomendada al ingreso</p>
       <p class="valor pequeno">{{ p.recomendacion.zona?.nombre ?? (p.zonas.length ? 'Sin espacio' : 'Sin zonas') }}</p>
       <p class="secundario">{{ p.recomendacion.motivo === 'REDIRECCION' ? 'Por redirección del supervisor' : p.recomendacion.motivo === 'MENOS_OCUPADA' ? 'La menos ocupada' : p.zonas.length ? 'Todas las zonas están llenas' : 'Agrega las zonas del evento abajo' }}
         @if (p.recomendacion.zona) { · {{ p.recomendacion.zona.disponibles }} libres }</p>
     </section>
-    <section class="panel kpi" style="--tinte: var(--hx-violeta)">
+    <section class="panel kpi csp-hx-violeta">
       <p class="etiqueta">Tarifa por hora</p>
       <p class="valor pequeno">{{ tarifa() ? (tarifa()!.valorHora | currency: 'COP' : 'symbol-narrow' : '1.0-0') : 'Sin definir' }}</p>
       @if (esAdministrador()) {

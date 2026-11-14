@@ -193,7 +193,8 @@ test('fallo de pasarela conserva INDETERMINADO y cuenta el reintento con la mism
     }
     const timeout = await pedir('/pagos', cobro('timeout', { token: 'tok_timeout_' + run }));
     assert.equal(timeout.body.resultado, 'INDETERMINADO');
-    assert.match(timeout.body.motivo, /TimeoutError/);
+    // RNF-05: mensaje propio; nunca se exige devolver la excepción remota.
+    assert.equal(timeout.body.motivo, 'No hubo respuesta de la pasarela (tiempo agotado)');
     assert.equal((await fila('timeout')).resultado, 'INDETERMINADO');
     assert.equal((await fila('timeout')).intentos, 1);
 });

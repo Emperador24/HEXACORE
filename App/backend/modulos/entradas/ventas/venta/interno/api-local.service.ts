@@ -46,10 +46,8 @@ export class ApiVentasLocal implements ApiVentas {
     cuerpo?: object,
   ): Promise<{ estadoHttp: number | null; cuerpo: T | null }> {
     try {
-      const comoServicio = token === '\u0000servicio';
-      const headers = comoServicio
-        ? { 'x-token-servicio': this.config.tokenServicios }
-        : { authorization: `Bearer ${token}` };
+      // El adaptador es del servidor; el actor ya se autorizó en Postventa.
+      const headers = { 'x-token-servicio': this.config.tokenServicios };
       const contexto = new ExecutionContextHost(
         [{ headers }],
         EntradasInternasController,

@@ -1,4 +1,4 @@
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { AuthService, ErrorCuenta } from './auth.service';
@@ -6,7 +6,7 @@ import { AuthService, ErrorCuenta } from './auth.service';
 describe('Mensajes del servidor con código de negocio', () => {
   for (const propiedad of ['message', 'mensaje']) {
     it(`conserva código y texto humano recibido en ${propiedad}`, async () => {
-      TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+      TestBed.configureTestingModule({ providers: [provideHttpClient(withXhr()), provideHttpClientTesting()] });
       const auth = TestBed.inject(AuthService), http = TestBed.inject(HttpTestingController);
       const peticion = auth.iniciarSesion('propio@example.test', 'clave de prueba');
       const comprobacion = expectAsync(peticion).toBeRejectedWith(jasmine.objectContaining<ErrorCuenta>({

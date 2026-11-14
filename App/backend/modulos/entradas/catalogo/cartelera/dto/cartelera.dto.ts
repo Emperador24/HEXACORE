@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import { IsBoolean, IsEnum, IsInt, IsISO8601, IsOptional, IsString, Max, MaxLength, Min, MinLength } from 'class-validator';
+import { IsBoolean, IsEnum, IsInt, IsISO8601, IsOptional, IsString, Max, MaxLength, Min, MinLength, NotContains } from 'class-validator';
 
 export enum OrdenCartelera {
   /** CU-005A: sin indicación, el listado va por fecha. */
@@ -41,6 +41,7 @@ export class ConsultarCarteleraDto {
   @Transform(recortar)
   @IsString()
   @MaxLength(60)
+  @NotContains('\u0000', { message: 'La categoría no admite el carácter NUL.' })
   categoria?: string;
 
   @ApiPropertyOptional({ example: 'Bogotá', description: 'Sin distinguir mayúsculas' })
@@ -48,6 +49,7 @@ export class ConsultarCarteleraDto {
   @Transform(recortar)
   @IsString()
   @MaxLength(120)
+  @NotContains('\u0000', { message: 'La ciudad no admite el carácter NUL.' })
   ciudad?: string;
 
   @ApiPropertyOptional({ example: 'shakira', description: 'Coincidencia parcial y sin distinguir mayúsculas' })
@@ -56,6 +58,7 @@ export class ConsultarCarteleraDto {
   @IsString()
   @MinLength(2)
   @MaxLength(100)
+  @NotContains('\u0000', { message: 'El artista no admite el carácter NUL.' })
   artista?: string;
 
   @ApiPropertyOptional({

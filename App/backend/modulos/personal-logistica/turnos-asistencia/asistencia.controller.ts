@@ -1,7 +1,7 @@
 import { UsePipes } from '@nestjs/common';
 import { validacionLogistica } from '../../../compartido/validacion';
 import { Body, Controller, Get, NotFoundException, Post, Query, Req, UseGuards } from '@nestjs/common';
-import { SesionValida } from '../comun/autenticacion/sesion-valida.guard';
+import { RolesPermitidos, SesionValida } from '../comun/autenticacion/sesion-valida.guard';
 import type { PeticionDeLogistica } from './autorizacion.guard';
 import { ContextoDeLogistica, SoloQuienSupervisa } from './autorizacion.guard';
 import { AsistenciaService } from './asistencia.service';
@@ -17,11 +17,13 @@ export class AsistenciaController {
   constructor(private readonly asistenciaService: AsistenciaService) {}
 
   @Post('entrada')
+  @RolesPermitidos('Personal', 'Organizador', 'Administrador')
   registrarEntrada(@Body() dto: RegistrarAsistenciaDto) {
     return this.asistenciaService.registrarEntrada(dto);
   }
 
   @Post('salida')
+  @RolesPermitidos('Personal', 'Organizador', 'Administrador')
   registrarSalida(@Body() dto: RegistrarAsistenciaDto) {
     return this.asistenciaService.registrarSalida(dto);
   }

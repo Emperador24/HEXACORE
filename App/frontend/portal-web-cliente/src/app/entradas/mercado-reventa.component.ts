@@ -1,4 +1,4 @@
-import { Component, DestroyRef, OnInit, computed, inject, signal, viewChild } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal, viewChild, ChangeDetectionStrategy } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -52,6 +52,7 @@ import {
     TarjetaStripeComponent
   ],
   templateUrl: './mercado-reventa.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './mercado-reventa.component.scss'
 })
 export class MercadoReventaComponent implements OnInit {

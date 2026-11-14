@@ -13,7 +13,7 @@
 # a la vez en la misma máquina, y el gateway ya acepta ambos como origen de
 # CORS (`nginx.conf`, mapa `$origen_permitido`).
 
-FROM node:22-alpine AS compilacion
+FROM node:22.22.3-alpine AS compilacion
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
@@ -29,14 +29,8 @@ COPY --from=compilacion /app/dist/portal-web-admin/browser /usr/share/nginx/html
 # Una aplicación de una sola página necesita que **cualquier** ruta devuelva el
 # index: `/admin/cuentas` no es un archivo en disco, es una ruta que resuelve el
 # enrutador de Angular. Sin esto, recargar dentro del portal da 404.
-RUN printf 'server {\n\
-  listen 4201;\n\
-  root /usr/share/nginx/html;\n\
-  index index.html;\n\
-  location / {\n\
-    try_files $uri $uri/ /index.html;\n\
-  }\n\
-}\n' > /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY origenes-csp.conf /etc/nginx/hexacore/origenes-csp.conf
 
 EXPOSE 4201
 

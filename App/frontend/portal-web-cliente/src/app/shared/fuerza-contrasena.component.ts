@@ -1,4 +1,4 @@
-import { Component, computed, input } from '@angular/core';
+import { Component, computed, input, ChangeDetectionStrategy } from '@angular/core';
 
 /**
  * Medidor de fuerza de la contraseña — PasswordStrengthMeter de la app, con la
@@ -18,6 +18,7 @@ import { Component, computed, input } from '@angular/core';
       </div>
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     .medidor {
       display: flex;

@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, computed, inject, input, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, inject, input, signal, ChangeDetectionStrategy } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -38,6 +38,7 @@ const MAX_PLANO = 1_500_000;
     MatProgressBarModule, MatSlideToggleModule, MatTooltipModule, MapaZonasComponent
   ],
   templateUrl: './recinto-formulario.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './recinto-formulario.component.scss'
 })
 export class RecintoFormularioComponent implements OnInit, OnDestroy {

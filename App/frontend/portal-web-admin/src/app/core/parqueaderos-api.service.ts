@@ -73,7 +73,7 @@ export class ParqueaderosApiService {
       this.http.patch<PanelParqueadero>(this.url(`/eventos/${eventoId}/redirecciones/${redireccionId}`), { resultado, terminar }, { headers: h }));
   }
 
-  seguir(eventoId: string, alRecibir: (p: PanelParqueadero) => void, alCaer: (motivo: string) => void): () => void {
+  seguir(eventoId: string, alRecibir: (p: PanelParqueadero) => void, alCaer: (motivo: string, estado?: number) => void): () => void {
     return seguirFlujo(this.url(`/eventos/${eventoId}/ocupacion/flujo`), () => this.auth.tokenVigente(), 'ocupacion', alRecibir, alCaer);
   }
 }

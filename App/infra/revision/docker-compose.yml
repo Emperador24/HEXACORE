@@ -141,6 +141,7 @@ services:
     build: *compilacion
     volumes:
       - ${REVISION_ESTADO:-./revision/.estado}/configuracion.js:/usr/share/nginx/html/configuracion.js:ro
+      - ${REVISION_ESTADO:-./revision/.estado}/origenes-csp.conf:/etc/nginx/hexacore/origenes-csp.conf:ro
     ports: !override ["127.0.0.1:${REVISION_PUERTO_14210:-14210}:4200"]
   portal-web-admin:
     labels: *etiquetas
@@ -149,6 +150,7 @@ services:
     build: *compilacion
     volumes:
       - ${REVISION_ESTADO:-./revision/.estado}/configuracion.js:/usr/share/nginx/html/configuracion.js:ro
+      - ${REVISION_ESTADO:-./revision/.estado}/origenes-csp.conf:/etc/nginx/hexacore/origenes-csp.conf:ro
     ports: !override ["127.0.0.1:${REVISION_PUERTO_14211:-14211}:4201"]
 
 networks:

@@ -1,4 +1,4 @@
-import { Component, inject, input, isDevMode, signal } from '@angular/core';
+import { Component, inject, input, isDevMode, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -14,6 +14,7 @@ import { TarjetaCuentaComponent } from '../shared/tarjeta-cuenta.component';
   standalone: true,
   imports: [FormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule, TarjetaCuentaComponent],
   templateUrl: './login.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './login.component.scss'
 })
 export class LoginComponent {

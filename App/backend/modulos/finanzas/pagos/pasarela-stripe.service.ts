@@ -128,7 +128,7 @@ export class PasarelaStripe implements ProcesadorPagos {
         body: new URLSearchParams(Object.entries(campos).map(([k, v]): [string, string] => [k, String(v)])).toString(),
       });
     } catch (error) {
-      const causa = error instanceof Error ? `${error.name}: ${error.message}` : 'error desconocido';
+      const causa = error instanceof Error && error.name === 'TimeoutError' ? 'tiempo agotado' : 'fallo de comunicación';
       this.log.error(`No hubo respuesta de Stripe (${causa})`);
       return { resultado: ResultadoCobro.INDETERMINADO, referencia: null, motivo: `No hubo respuesta de Stripe (${causa})` };
     }
@@ -141,38 +141,38 @@ export class PasarelaStripe implements ProcesadorPagos {
       // ejecutó. Los dos son "seguro que no hubo cargo". 429 y 5xx no lo son.
       if (respuesta.status === 402 || (respuesta.status >= 400 && respuesta.status < 500 && respuesta.status !== 408 && respuesta.status !== 429)) {
         if (respuesta.status === 401) this.log.error('Stripe rechazó la llave secreta (STRIPE_CLAVE_SECRETA)');
-        else this.log.warn(`Stripe rechazó la operación (${respuesta.status} ${e.code ?? e.type ?? ''}): ${e.message ?? ''}`);
+        else this.log.warn(`Stripe rechazó la operación (${respuesta.status})`);
         return {
           resultado: ResultadoCobro.RECHAZADO,
-          referencia: e.payment_intent?.id ?? null,
+          referencia: referenciaStripe(e.payment_intent?.id),
           motivo: motivoDe(e.decline_code ?? e.code, e.message),
         };
       }
-      this.log.error(`Stripe falló con ${respuesta.status}: ${e.message ?? ''}`);
+      this.log.error(`Stripe falló con ${respuesta.status}`);
       return { resultado: ResultadoCobro.INDETERMINADO, referencia: null, motivo: `Stripe respondió ${respuesta.status}` };
     }
 
     switch (cuerpo.status) {
       case 'succeeded':
-        if (!cuerpo.id) {
+        if (!referenciaStripe(cuerpo.id)) {
           return { resultado: ResultadoCobro.INDETERMINADO, referencia: null, motivo: 'Stripe aprobó sin devolver referencia' };
         }
-        return { resultado: ResultadoCobro.APROBADO, referencia: cuerpo.id, motivo: null };
+        return { resultado: ResultadoCobro.APROBADO, referencia: referenciaStripe(cuerpo.id), motivo: null };
       case 'requires_payment_method':
       case 'canceled':
       case 'failed':
         return {
           resultado: ResultadoCobro.RECHAZADO,
-          referencia: cuerpo.id ?? null,
+          referencia: referenciaStripe(cuerpo.id),
           motivo: motivoDe(cuerpo.last_payment_error?.decline_code ?? cuerpo.failure_reason ?? undefined, cuerpo.last_payment_error?.message),
         };
       case 'requires_action':
         // No hubo cargo: queda esperando una autenticación que este flujo no ofrece.
-        return { resultado: ResultadoCobro.RECHAZADO, referencia: cuerpo.id ?? null, motivo: 'La tarjeta pide autenticación 3-D Secure, que este portal no admite' };
+        return { resultado: ResultadoCobro.RECHAZADO, referencia: referenciaStripe(cuerpo.id), motivo: 'La tarjeta pide autenticación 3-D Secure, que este portal no admite' };
       default:
         // `processing`, `pending`… Stripe aún no sabe: lo resuelve el webhook.
-        this.log.warn(`Stripe dejó ${cuerpo.id ?? '(sin id)'} en "${cuerpo.status ?? '(sin estado)'}"; se resolverá por webhook`);
-        return { resultado: ResultadoCobro.INDETERMINADO, referencia: cuerpo.id ?? null, motivo: `Stripe dejó la operación en "${cuerpo.status ?? '(sin estado)'}"` };
+        this.log.warn('Stripe dejó la operación sin confirmar; se resolverá por webhook');
+        return { resultado: ResultadoCobro.INDETERMINADO, referencia: referenciaStripe(cuerpo.id), motivo: 'Stripe dejó la operación sin confirmar' };
     }
   }
 }
@@ -195,5 +195,10 @@ function motivoDe(codigo: string | undefined, mensaje: string | undefined): stri
     processing_error: 'El banco no pudo procesar la tarjeta',
     charge_already_refunded: 'El cobro ya estaba reembolsado',
   };
-  return (codigo && conocidos[codigo]) || (mensaje ?? 'Stripe rechazó la operación').slice(0, 120);
+  return (codigo && conocidos[codigo]) || 'Stripe rechazó la operación';
+}
+
+/** Solo identificadores del proveedor; nunca su cuerpo o mensaje arbitrario. */
+export function referenciaStripe(id: unknown): string | null {
+  return typeof id === 'string' && /^(?:pi|re|ch)_[A-Za-z0-9]{1,100}$/.test(id) ? id : null;
 }

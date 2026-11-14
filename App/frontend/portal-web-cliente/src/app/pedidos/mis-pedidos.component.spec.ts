@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { ComponentFixture, fakeAsync, flushMicrotasks, TestBed, tick } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
@@ -6,7 +6,8 @@ import { By } from '@angular/platform-browser';
 import { MisPedidosComponent } from './mis-pedidos.component';
 import { QrPedidoComponent } from './qr-pedido.component';
 import { PedidosService } from '../core/pedidos.service';
-@Component({selector:'app-qr-pedido',standalone:true,template:''})
+@Component({selector:'app-qr-pedido',standalone:true,changeDetection: ChangeDetectionStrategy.Eager,
+template:''})
 class QrPrueba { @Input() codigo = ''; }
 const pedido = { id: 'p', estado: 'CONFIRMADO', total: '1000.25', moneda: 'COP', establecimiento: 'Local cerrado', puntoEntrega: 'Puerta', creadoEn:'2026-11-07T12:00:00Z', confirmadoEn:null,
   codigoQr:'qr-persistido',pagoVerificado:true,productos:[],avisos:[{id:'op',mensaje:'Tu pedido está en preparación.',creadoEn:'2026-11-07T12:00:00Z'}],

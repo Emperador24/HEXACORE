@@ -8,7 +8,7 @@ import { EVENTOS, ESTABLECIMIENTOS, PRODUCTOS } from './datos-demo';
 /**
  * Prepara las dependencias de menú e inventario para probar CU-011.
  * Requiere la migración inicial aplicada. Se ejecuta con `npm run semilla`.
- * Cada ejecución borra los datos de las siete tablas de dominio, incluidas las
+ * Cada ejecución borra las tablas de dominio enumeradas, incluidas las
  * compras de desarrollo; la tabla de migraciones se conserva.
  */
 async function sembrar(): Promise<void> {
@@ -25,6 +25,7 @@ async function sembrar(): Promise<void> {
       // RESTRICT evita extender la limpieza a otras tablas mediante cascada.
       await gestor.query(`
         TRUNCATE TABLE
+          "cancelaciones_pedido",
           "entregas_pedido", "incidencias_preparacion", "historial_preparacion", "preparaciones_pedido",
           "operaciones_inventario",
           "personal_establecimiento",

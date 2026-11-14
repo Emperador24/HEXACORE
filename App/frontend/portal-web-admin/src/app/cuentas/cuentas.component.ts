@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -42,6 +42,7 @@ const POR_PAGINA = 20;
     MatTableModule
   ],
   templateUrl: './cuentas.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './cuentas.component.scss'
 })
 export class CuentasComponent {
