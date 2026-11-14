@@ -2,8 +2,11 @@
 \section{Vista de contenedores}
 \label{sec:contenedores}
 \textbf{Vigencia: ADR-16, integrada en develop.} Tres programas ejecutables:
-Núcleo, Boletería y Trabajador. Operación es el cuarto programa objetivo y sigue
-sin implementar. Los módulos ausentes no se presentan como servidores terminados.
+Núcleo, Boletería y Trabajador. Operación, que ADR-16 planteaba como cuarto
+programa, quedó como módulo del Núcleo (evacuación y panel en vivo), junto con
+Eventos-Recintos y Parqueaderos. Núcleo y Boletería escalan por réplicas detrás del
+gateway; un cuarto bloque, opcional, monitorea CPU, memoria y logs
+(SAD, sección «Atributos de calidad sobre la arquitectura vigente»).
 La configuración y las imágenes se validan en infraestructura aislada; el entorno
 habitual sigue pendiente de corte. Estado y ejecuciones reales en
 \texttt{ESTADO-MIGRACION.md}, apartados 23--24.
@@ -11,12 +14,13 @@ habitual sigue pendiente de corte. Estado y ejecuciones reales en
 Dos portales Angular y una app Flutter unificada para Cliente/Personal consumen el
 gateway. Sus pantallas o datos simulados no demuestran backend. Gateway verifica
 JWT con pública y consume el turno; los módulos autorizan y comprueban revocación.
-Identidad conserva firma/renovación. No existen servidores separados de Pagos,
+Identidad conserva firma/renovación y publica en Redis los roles y permisos (CU-028), que la guarda
+común del Núcleo lee en cada petición. No existen servidores separados de Pagos,
 Autenticación, Alimentos, Personal ni los cinco componentes de Boletería.
 
 \begin{figure}[H]\centering\HexContenedores
-\caption{Contenedores vigentes. Operación figura como objetivo pendiente; las relaciones del Núcleo con
-Redis, RabbitMQ y la pasarela se resumen en el texto.}
+\caption{Contenedores vigentes: Núcleo y Boletería replicables y monitoreo servido por el gateway en
+\texttt{/grafana/}. Las relaciones del Núcleo con Redis, RabbitMQ y la pasarela se resumen en el texto.}
 \label{fig:contenedores}\end{figure}
 
 \section{Vista de componentes}
@@ -25,14 +29,15 @@ Cada programa tiene bootstrap real en \texttt{App/backend/apps}. Las reglas tien
 una sola fuente en \texttt{modulos}; dependencias y lockfile comunes, Node 22.22.3,
 Nest 11/TypeScript 5.9. Los compiladores Angular están fuera del workspace.
 \begin{figure}[H]\centering\HexComponentesNucleo
-\caption{Componentes del Núcleo: controladores, servicios, webhook y módulo Pagos. Importar Pagos no
-publica cobros o reembolsos HTTP.}
+\caption{Componentes del Núcleo: siete módulos de dominio, la guarda común de sesión y permisos, el
+webhook y el módulo Pagos. Eventos-Recintos publica \texttt{eventos.gestion}.}
 \label{fig:componentes}\end{figure}
 \begin{figure}[H]\centering\HexComponentesBoleteria
 \caption{Componentes de Boletería: cinco componentes de Entradas, sus trabajos en segundo plano
-(cron, outbox, consumidores) y el módulo Pagos.}
+(cron, outbox, consumidores de \texttt{eventos.gestion} e ingresos) y el módulo Pagos.}
 \label{fig:componentes-boleteria}\end{figure}
-Núcleo reúne cuentas, sesiones, administración, pedidos y logística; Boletería reúne
+Núcleo reúne cuentas, sesiones, roles y permisos, pedidos, logística, eventos y
+recintos, evacuación y panel en vivo, y parqueaderos; Boletería reúne
 cartelera, fila, compras, reventa e ingresos. Se conservan rutas \texttt{/api/v1}, DTO,
 estados, errores, cookies, RS256 y reglas previas. El único webhook financiero es
 \texttt{POST /api/v1/pagos/webhook} en Núcleo, con rawBody/HMAC de bytes originales.
@@ -58,10 +63,16 @@ Correo pendiente & Identidad / Núcleo; Comunicaciones / Trabajador & Cinco corr
 intentos/deduplicación en memoria.\\
 Compra, entrada e ingreso & Ventas y Acceso QR / Boletería & Proyecciones y outbox conservados;
 no consistencia inmediata nueva.\\
-Cambio/asignación de turno & Personal-Logística / Núcleo & Notificación persistida; listado global F14.\\
+Cambio/asignación de turno & Personal-Logística / Núcleo & Notificación persistida; cada empleado ve
+solo sus avisos (F14 corregido).\\
+Evento publicado, editado o cancelado & Eventos-Recintos / Núcleo & \texttt{eventos.gestion} por outbox;
+lo consumen Catálogo, Ventas, Postventa y Acceso QR.\\
 Resultado financiero & Webhook / Núcleo & Libro y publicación; finalizar pendientes sigue F12.\\
 Pedido confirmado & Alimentos / Núcleo & Publicación existente; recepción final pendiente.\\
-Evacuación y alertas & Operación, pendiente & No hay consumidor o caso terminado que migrar.\\
+Evacuación & Operación / Núcleo & Avisos por cola de prioridad con reintento; sin canales push
+ni SMS reales.\\
+Ingreso registrado & Acceso QR / Boletería $\rightarrow$ Operación / Núcleo & Alimenta el panel en vivo
+(CU-019).\\
 \bottomrule\caption{Mensajería vigente; no todo publicador tiene outbox.}\label{tab:eventos}
 \end{longtable}\end{center}
 Cron de reservas/publicaciones, sondeo de alimentos y consumidores de logística/
@@ -72,14 +83,16 @@ el correo en vuelo conserva su posible reentrega (F15).
 \section{Vista física}
 \label{sec:fisica}
 \begin{figure}[H]\centering\HexDespliegue
-\caption{Despliegue con Docker Compose: perfiles servicios y datos, réplicas de Boletería e imágenes
-de GHCR. No representa un entorno habitual ya cortado.}\label{fig:despliegue}\end{figure}
+\caption{Despliegue con Docker Compose: perfiles servicios y datos, réplicas de Núcleo y Boletería,
+monitoreo e imágenes de GHCR.}\label{fig:despliegue}\end{figure}
 Docker Compose ejecuta los tres programas, gateway, PostgreSQL, Redis, RabbitMQ,
 dos proveedores simulados y dos portales. \texttt{preparacion-base} es una tarea
 sin listener: ejecuta las migraciones antes de habilitar ambas apps. No es un cuarto
-servidor. El override remoto separa datos y procesos; escalado replica Boletería;
+servidor. El override remoto separa datos y procesos; escalado replica Núcleo y
+Boletería; monitoreo agrega exportador, Prometheus, Promtail, Loki y Grafana;
 registro reutiliza la misma imagen Núcleo en preparación. Configuración válida
-no demuestra arranque en dos máquinas ni capacidad, redundancia o RNF-15.
+no demuestra arranque en dos máquinas ni RNF-15; capacidad y redundancia se
+miden en el SAD, sección «Atributos de calidad sobre la arquitectura vigente».
 No hay Kubernetes, MongoDB, buscador ni réplica SQL desplegados por esta migración.
 Los diagramas de clúster anteriores son históricos, no evidencia de implementación.
 
@@ -90,21 +103,25 @@ siguen nombradas. Cada pool tiene solo su esquema, pg\_catalog y extensiones en
 search\_path. No se mezclan propietarios por semejanza de tablas.
 \begin{center}\begin{longtable}{p{4cm}p{4.8cm}p{4.5cm}}
 \toprule Conexión & Esquema & Historial / migraciones\\\midrule\endhead
-identidad & identidad & migraciones / 3\\
-alimentos & alimentos & migraciones / 2\\
-personal-logistica & personal\_logistica & migraciones / 2\\
-entradas-ventas & entradas\_ventas & migraciones / 5\\
-entradas-catalogo & entradas\_catalogo & migraciones / 1\\
-entradas-postventa & entradas\_postventa & migrations / 1\\
-entradas-acceso-qr & entradas\_acceso\_qr & migraciones / 3\\
+identidad & identidad & migraciones / 4\\
+alimentos & alimentos & migraciones / 7\\
+personal-logistica & personal\_logistica & migraciones / 4\\
+eventos-recintos & eventos\_recintos & migraciones / 2\\
+operacion & operacion & migraciones / 2\\
+parqueaderos & parqueaderos & migraciones / 2\\
+entradas-ventas & entradas\_ventas & migraciones / 6\\
+entradas-catalogo & entradas\_catalogo & migraciones / 2\\
+entradas-postventa & entradas\_postventa & migrations / 2\\
+entradas-acceso-qr & entradas\_acceso\_qr & migraciones / 4\\
 finanzas-pagos & finanzas\_pagos & migraciones / 1\\
-\bottomrule\caption{Ocho esquemas e historiales; 18 fuentes originales conservadas.}
+\bottomrule\caption{Once esquemas e historiales, 36 migraciones; las 18 fuentes originales de la
+transferencia se conservan.}
 \end{longtable}\end{center}
 Ambos programas usan \texttt{finanzas\_pagos.transacciones\_pago}, sin claves por
 proceso ni duplicación del libro. Extensiones compartidas en \texttt{extensiones};
 procedencia/SHA en \texttt{migracion\_control}. synchronize/migrationsRun=false.
-Una preparación serializada reconoce la transferencia sin reaplicar DDL o instala
-las 18 migraciones en vacío. El mapa tabla por tabla está en la guía de consolidación.
+Una preparación serializada reconoce las 18 migraciones de la transferencia sin
+reaplicar su DDL y aplica solo las pendientes; en una base vacía instala las 36. El mapa tabla por tabla está en la guía de consolidación.
 La copia transferida y la base vacía se prueban por separado; no se escribe sobre
 las bases habituales. Respaldos independientes son coherentes entre dominios solo
 tras inmovilizar conjuntamente escritores/callbacks/consumidores, no por ser pg\_dump.

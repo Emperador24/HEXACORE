@@ -84,14 +84,14 @@
     {
       "id": "nucleo",
       "type": "backend",
-      "label": "nucleo",
-      "sublabel": "1 réplica · :3002",
+      "label": "nucleo × N",
+      "sublabel": "iniciar.sh --replicas N · :3002",
       "pos": [
-        340,
+        330,
         380
       ],
       "size": [
-        220,
+        240,
         70
       ]
     },
@@ -115,11 +115,11 @@
       "label": "trabajador",
       "sublabel": "1 réplica · sin puertos",
       "pos": [
-        920,
+        1180,
         380
       ],
       "size": [
-        240,
+        230,
         70
       ]
     },
@@ -178,6 +178,20 @@
         260,
         70
       ]
+    },
+    {
+      "id": "monitoreo",
+      "type": "cloud",
+      "label": "monitoreo",
+      "sublabel": "exportador · prometheus · loki · grafana",
+      "pos": [
+        900,
+        380
+      ],
+      "size": [
+        250,
+        70
+      ]
     }
   ],
   "boundaries": [
@@ -190,7 +204,8 @@
         "preparacion",
         "nucleo",
         "boleteria",
-        "trabajador"
+        "trabajador",
+        "monitoreo"
       ],
       "pad": 26
     },
@@ -252,7 +267,7 @@
       "id": "prep-pg",
       "from": "preparacion",
       "to": "postgres",
-      "label": "18 migraciones",
+      "label": "36 migraciones",
       "fromSide": "bottom",
       "toSide": "top",
       "variant": "dashed"
@@ -286,6 +301,15 @@
       "label": "HTTP correo",
       "fromSide": "right",
       "toSide": "top"
+    },
+    {
+      "id": "gw-monitoreo",
+      "from": "gateway",
+      "to": "monitoreo",
+      "label": "/grafana/",
+      "fromSide": "right",
+      "toSide": "top",
+      "variant": "dashed"
     }
   ],
   "cards": [
@@ -294,7 +318,7 @@
       "title": "Orden de arranque",
       "items": [
         "postgres, redis, rabbitmq y simuladores sanos",
-        "preparacion-base aplica las 18 migraciones y termina con 0",
+        "preparacion-base aplica las 36 migraciones y termina con 0",
         "nucleo y boleteria arrancan después; el gateway espera a ambos"
       ]
     },
@@ -303,7 +327,8 @@
       "title": "Variantes de Compose",
       "items": [
         "docker-compose.remoto.yml separa el perfil datos en otra máquina",
-        "docker-compose.escalado.yml quita puertos fijos para réplicas de Boletería",
+        "docker-compose.escalado.yml quita los puertos fijos para replicar Núcleo y Boletería",
+        "docker-compose.monitoreo.yml agrega el tablero de CPU, memoria y logs (iniciar.sh --monitoreo)",
         "docker-compose.registro.yml usa las imágenes de GHCR en vez de compilar"
       ]
     },
@@ -312,7 +337,8 @@
       "title": "Relaciones resumidas",
       "items": [
         "Núcleo y Boletería usan postgres, redis, rabbitmq y la pasarela",
-        "No hay Kubernetes, MongoDB ni réplica SQL en esta migración"
+        "Monitoreo lee la API de Docker y la salida de todos los contenedores",
+        "Si una réplica muere, restart: unless-stopped la relanza y el gateway la retoma"
       ]
     }
   ]

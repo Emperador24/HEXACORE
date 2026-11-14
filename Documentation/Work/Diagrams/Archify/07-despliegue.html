@@ -5030,21 +5030,22 @@
         <rect width="100%" height="100%" fill="url(#grid)" />
 
         <!-- Boundaries (behind everything) -->
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="0" data-composition-frame-label="Host de aplicaciones · perfil servicios" x="54" y="174" width="1132" height="296" rx="12" class="c-region" stroke-width="1"/>
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="0" data-composition-frame-label="Host de aplicaciones · perfil servicios" x="54" y="174" width="1382" height="296" rx="12" class="c-region" stroke-width="1"/>
 
         <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="1" data-composition-frame-label="Host de datos · perfil datos (modo remoto; en local, el mismo host)" x="54" y="654" width="1412" height="116" rx="12" class="c-region" stroke-width="1"/>
 
         <!-- Connection paths (before components for correct z-order) -->
         <path data-edge-from="navegador" data-edge-to="portales" data-edge-label="SPA" data-edge-key="0" data-edge-id="nav-portales" data-composition-points="190,80;190,140;210,140;210,200" d="M 190 80 L 190 132 Q 190 140 198 140 L 202 140 Q 210 140 210 148 L 210 200" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         <path data-edge-from="navegador" data-edge-to="gateway" data-edge-label="HTTPS /api/v1" data-edge-key="1" data-edge-id="nav-gw" data-composition-points="320,50;710,50;710,200" d="M 320 50 L 702 50 Q 710 50 710 58 L 710 200" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="ghcr" data-edge-to="trabajador" data-edge-label="pull de las 8 imágenes" data-edge-key="2" data-edge-id="ghcr-trabajador" data-composition-points="1250,80;1250,230;1040,230;1040,380" d="M 1250 80 L 1250 222 Q 1250 230 1242 230 L 1048 230 Q 1040 230 1040 238 L 1040 380" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        <path data-edge-from="gateway" data-edge-to="nucleo" data-edge-key="3" data-edge-id="gw-nucleo" data-composition-points="703,264;703,322;450,322;450,380" d="M 703 264 L 703 314 Q 703 322 695 322 L 458 322 Q 450 322 450 330 L 450 380" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="gateway" data-edge-to="boleteria" data-edge-key="4" data-edge-id="gw-boleteria" data-composition-points="717,264;717,322;740,322;740,380" d="M 717 264 L 717 314 Q 717 322 725 322 L 732 322 Q 740 322 740 330 L 740 380" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="preparacion" data-edge-to="postgres" data-edge-label="18 migraciones" data-edge-key="5" data-edge-id="prep-pg" data-composition-points="190,450;190,565;313,565;313,680" d="M 190 450 L 190 557 Q 190 565 198 565 L 305 565 Q 313 565 313 573 L 313 680" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        <path data-edge-from="nucleo" data-edge-to="postgres" data-edge-key="6" data-edge-id="nucleo-pg" data-composition-points="450,450;450,565;327,565;327,680" d="M 450 450 L 450 557 Q 450 565 442 565 L 335 565 Q 327 565 327 573 L 327 680" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="ghcr" data-edge-to="trabajador" data-edge-label="pull de las 8 imágenes" data-edge-key="2" data-edge-id="ghcr-trabajador" data-composition-points="1250,80;1250,230;1295,230;1295,380" d="M 1250 80 L 1250 222 Q 1250 230 1258 230 L 1287 230 Q 1295 230 1295 238 L 1295 380" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="gateway" data-edge-to="nucleo" data-edge-key="3" data-edge-id="gw-nucleo" data-composition-points="576,264;576,322;450,322;450,380" d="M 576 264 L 576 314 Q 576 322 568 322 L 458 322 Q 450 322 450 330 L 450 380" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="gateway" data-edge-to="boleteria" data-edge-key="4" data-edge-id="gw-boleteria" data-composition-points="844,264;844,322;740,322;740,380" d="M 844 264 L 844 314 Q 844 322 836 322 L 748 322 Q 740 322 740 330 L 740 380" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="preparacion" data-edge-to="postgres" data-edge-label="36 migraciones" data-edge-key="5" data-edge-id="prep-pg" data-composition-points="190,450;190,565;96,565;96,680" d="M 190 450 L 190 557 Q 190 565 182 565 L 104 565 Q 96 565 96 573 L 96 680" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="nucleo" data-edge-to="postgres" data-edge-key="6" data-edge-id="nucleo-pg" data-composition-points="450,450;450,565;544,565;544,680" d="M 450 450 L 450 557 Q 450 565 458 565 L 536 565 Q 544 565 544 573 L 544 680" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         <path data-edge-from="boleteria" data-edge-to="redis" data-edge-key="7" data-edge-id="boleteria-redis" data-composition-points="740,450;740,565;720,565;720,680" d="M 740 450 L 740 557 Q 740 565 732 565 L 728 565 Q 720 565 720 573 L 720 680" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="trabajador" data-edge-to="rabbitmq" data-edge-label="AMQP" data-edge-key="8" data-edge-id="trabajador-rabbit" data-composition-points="1040,450;1040,565;1000,565;1000,680" d="M 1040 450 L 1040 557 Q 1040 565 1032 565 L 1008 565 Q 1000 565 1000 573 L 1000 680" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="trabajador" data-edge-to="simuladores" data-edge-label="HTTP correo" data-edge-key="9" data-edge-id="trabajador-sim" data-composition-points="1160,415;1310,415;1310,680" d="M 1160 415 L 1302 415 Q 1310 415 1310 423 L 1310 680" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="trabajador" data-edge-to="rabbitmq" data-edge-label="AMQP" data-edge-key="8" data-edge-id="trabajador-rabbit" data-composition-points="1295,450;1295,565;1000,565;1000,680" d="M 1295 450 L 1295 557 Q 1295 565 1287 565 L 1008 565 Q 1000 565 1000 573 L 1000 680" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="trabajador" data-edge-to="simuladores" data-edge-label="HTTP correo" data-edge-key="9" data-edge-id="trabajador-sim" data-composition-points="1410,415;1434,415;1434,656;1310,656;1310,680" d="M 1410 415 L 1426 415 Q 1434 415 1434 423 L 1434 648 Q 1434 656 1426 656 L 1318 656 Q 1310 656 1310 664 L 1310 680" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="gateway" data-edge-to="monitoreo" data-edge-label="/grafana/" data-edge-key="10" data-edge-id="gw-monitoreo" data-composition-points="860,232;1025,232;1025,380" d="M 860 232 L 1017 232 Q 1025 232 1025 240 L 1025 380" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
 
         <!-- Components -->
         <g id="node-navegador" data-node-id="navegador" data-node-label="Navegador o app móvil" tabindex="0" role="button" aria-label="Focus Navegador o app móvil, usuario final, Architecture component" aria-pressed="false" data-node-kind="external" data-node-sublabel="usuario final" data-node-context="Architecture component">
@@ -5107,15 +5108,15 @@
         <text data-detail="context" x="190" y="429" class="t-muted" font-size="9" text-anchor="middle">tarea única · sale con 0</text>
         </g>
 
-        <g id="node-nucleo" data-node-id="nucleo" data-node-label="nucleo" tabindex="0" role="button" aria-label="Focus nucleo, 1 réplica · :3002, Host de aplicaciones · perfil servicios" aria-pressed="false" data-node-kind="backend" data-node-sublabel="1 réplica · :3002" data-node-context="Host de aplicaciones · perfil servicios">
-          <title>nucleo · 1 réplica · :3002 · Host de aplicaciones · perfil servicios</title>
-          <rect x="340" y="380" width="220" height="70" rx="6" class="c-mask"/>
-          <rect x="340" y="380" width="220" height="70" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(346 386) scale(0.6875)">
+        <g id="node-nucleo" data-node-id="nucleo" data-node-label="nucleo × N" tabindex="0" role="button" aria-label="Focus nucleo × N, iniciar.sh --replicas N · :3002, Host de aplicaciones · perfil servicios" aria-pressed="false" data-node-kind="backend" data-node-sublabel="iniciar.sh --replicas N · :3002" data-node-context="Host de aplicaciones · perfil servicios">
+          <title>nucleo × N · iniciar.sh --replicas N · :3002 · Host de aplicaciones · perfil servicios</title>
+          <rect x="330" y="380" width="240" height="70" rx="6" class="c-mask"/>
+          <rect x="330" y="380" width="240" height="70" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(336 386) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="450" y="413" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">nucleo</text>
-        <text data-detail="context" x="450" y="429" class="t-muted" font-size="9" text-anchor="middle">1 réplica · :3002</text>
+          <text data-node-label="" data-detail-anchor="" x="450" y="413" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">nucleo × N</text>
+        <text data-detail="context" x="450" y="429" class="t-muted" font-size="9" text-anchor="middle">iniciar.sh --replicas N · :3002</text>
         </g>
 
         <g id="node-boleteria" data-node-id="boleteria" data-node-label="boleteria × N" tabindex="0" role="button" aria-label="Focus boleteria × N, iniciar.sh --replicas N · :3001, Host de aplicaciones · perfil servicios" aria-pressed="false" data-node-kind="backend" data-node-sublabel="iniciar.sh --replicas N · :3001" data-node-context="Host de aplicaciones · perfil servicios">
@@ -5131,13 +5132,13 @@
 
         <g id="node-trabajador" data-node-id="trabajador" data-node-label="trabajador" tabindex="0" role="button" aria-label="Focus trabajador, 1 réplica · sin puertos, Host de aplicaciones · perfil servicios" aria-pressed="false" data-node-kind="backend" data-node-sublabel="1 réplica · sin puertos" data-node-context="Host de aplicaciones · perfil servicios">
           <title>trabajador · 1 réplica · sin puertos · Host de aplicaciones · perfil servicios</title>
-          <rect x="920" y="380" width="240" height="70" rx="6" class="c-mask"/>
-          <rect x="920" y="380" width="240" height="70" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(926 386) scale(0.6875)">
+          <rect x="1180" y="380" width="230" height="70" rx="6" class="c-mask"/>
+          <rect x="1180" y="380" width="230" height="70" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(1186 386) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="1040" y="413" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">trabajador</text>
-        <text data-detail="context" x="1040" y="429" class="t-muted" font-size="9" text-anchor="middle">1 réplica · sin puertos</text>
+          <text data-node-label="" data-detail-anchor="" x="1295" y="413" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">trabajador</text>
+        <text data-detail="context" x="1295" y="429" class="t-muted" font-size="9" text-anchor="middle">1 réplica · sin puertos</text>
         </g>
 
         <g id="node-postgres" data-node-id="postgres" data-node-label="postgres 16" tabindex="0" role="button" aria-label="Focus postgres 16, volumen postgres-datos, Host de datos · perfil datos (modo remoto; en local, el mismo host)" aria-pressed="false" data-node-kind="database" data-node-sublabel="volumen postgres-datos" data-node-context="Host de datos · perfil datos (modo remoto; en local, el mismo host)">
@@ -5190,6 +5191,17 @@
         <text data-detail="context" x="1310" y="729" class="t-muted" font-size="9" text-anchor="middle">simuladores :3099 / :3098</text>
         </g>
 
+        <g id="node-monitoreo" data-node-id="monitoreo" data-node-label="monitoreo" tabindex="0" role="button" aria-label="Focus monitoreo, exportador · prometheus · loki · grafana, Host de aplicaciones · perfil servicios" aria-pressed="false" data-node-kind="cloud" data-node-sublabel="exportador · prometheus · loki · grafana" data-node-context="Host de aplicaciones · perfil servicios">
+          <title>monitoreo · exportador · prometheus · loki · grafana · Host de aplicaciones · perfil servicios</title>
+          <rect x="900" y="380" width="250" height="70" rx="6" class="c-mask"/>
+          <rect x="900" y="380" width="250" height="70" rx="6" class="c-cloud" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="cloud" class="semantic-sigil s-cloud" transform="translate(906 386) scale(0.6875)">
+            <path d="M4.3 12.5h7.3a2.4 2.4 0 0 0 .2-4.8 4 4 0 0 0-7.5-1.3A3.1 3.1 0 0 0 4.3 12.5Z"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="1025" y="413" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">monitoreo</text>
+        <text data-detail="context" x="1025" y="429" class="t-muted" font-size="9" text-anchor="middle">exportador · prometheus · loki · grafana</text>
+        </g>
+
         <!-- Connection labels -->
         <g data-detail="context" data-edge-from="navegador" data-edge-to="portales" data-edge-label="SPA" data-edge-key="0" data-edge-id="nav-portales">
           <rect x="185" y="120" width="30" height="14" rx="3" class="c-mask"/>
@@ -5200,24 +5212,28 @@
           <text x="710" y="115" class="t-backend" font-size="8" text-anchor="middle">HTTPS /api/v1</text>
         </g>
         <g data-detail="context" data-edge-from="ghcr" data-edge-to="trabajador" data-edge-label="pull de las 8 imágenes" data-edge-key="2" data-edge-id="ghcr-trabajador">
-          <rect x="1087.2" y="210" width="115.6" height="14" rx="3" class="c-mask"/>
-          <text x="1145" y="220" class="t-messagebus" font-size="8" text-anchor="middle">pull de las 8 imágenes</text>
+          <rect x="1214.7" y="210" width="115.6" height="14" rx="3" class="c-mask"/>
+          <text x="1272.5" y="220" class="t-messagebus" font-size="8" text-anchor="middle">pull de las 8 imágenes</text>
         </g>
 
 
-        <g data-detail="context" data-edge-from="preparacion" data-edge-to="postgres" data-edge-label="18 migraciones" data-edge-key="5" data-edge-id="prep-pg">
-          <rect x="212.9" y="545" width="77.2" height="14" rx="3" class="c-mask"/>
-          <text x="251.5" y="555" class="t-messagebus" font-size="8" text-anchor="middle">18 migraciones</text>
+        <g data-detail="context" data-edge-from="preparacion" data-edge-to="postgres" data-edge-label="36 migraciones" data-edge-key="5" data-edge-id="prep-pg">
+          <rect x="104.4" y="545" width="77.2" height="14" rx="3" class="c-mask"/>
+          <text x="143" y="555" class="t-messagebus" font-size="8" text-anchor="middle">36 migraciones</text>
         </g>
 
 
         <g data-detail="context" data-edge-from="trabajador" data-edge-to="rabbitmq" data-edge-label="AMQP" data-edge-key="8" data-edge-id="trabajador-rabbit">
-          <rect x="1005" y="545" width="30" height="14" rx="3" class="c-mask"/>
-          <text x="1020" y="555" class="t-muted" font-size="8" text-anchor="middle">AMQP</text>
+          <rect x="1132.5" y="545" width="30" height="14" rx="3" class="c-mask"/>
+          <text x="1147.5" y="555" class="t-muted" font-size="8" text-anchor="middle">AMQP</text>
         </g>
         <g data-detail="context" data-edge-from="trabajador" data-edge-to="simuladores" data-edge-label="HTTP correo" data-edge-key="9" data-edge-id="trabajador-sim">
-          <rect x="1278.6" y="527.5" width="62.8" height="14" rx="3" class="c-mask"/>
-          <text x="1310" y="537.5" class="t-muted" font-size="8" text-anchor="middle">HTTP correo</text>
+          <rect x="1402.6" y="515.5" width="62.8" height="14" rx="3" class="c-mask"/>
+          <text x="1434" y="525.5" class="t-muted" font-size="8" text-anchor="middle">HTTP correo</text>
+        </g>
+        <g data-detail="context" data-edge-from="gateway" data-edge-to="monitoreo" data-edge-label="/grafana/" data-edge-key="10" data-edge-id="gw-monitoreo">
+          <rect x="998.4" y="286" width="53.199999999999996" height="14" rx="3" class="c-mask"/>
+          <text x="1025" y="296" class="t-messagebus" font-size="8" text-anchor="middle">/grafana/</text>
         </g>
 
         <!-- Boundary labels (foreground masks keep routes out of titles) -->
@@ -5456,7 +5472,7 @@
         </div>
         <ul>
           <li>&bull; postgres, redis, rabbitmq y simuladores sanos</li>
-          <li>&bull; preparacion-base aplica las 18 migraciones y termina con 0</li>
+          <li>&bull; preparacion-base aplica las 36 migraciones y termina con 0</li>
           <li>&bull; nucleo y boleteria arrancan después; el gateway espera a ambos</li>
         </ul>
       </div>
@@ -5468,7 +5484,8 @@
         </div>
         <ul>
           <li>&bull; docker-compose.remoto.yml separa el perfil datos en otra máquina</li>
-          <li>&bull; docker-compose.escalado.yml quita puertos fijos para réplicas de Boletería</li>
+          <li>&bull; docker-compose.escalado.yml quita los puertos fijos para replicar Núcleo y Boletería</li>
+          <li>&bull; docker-compose.monitoreo.yml agrega el tablero de CPU, memoria y logs (iniciar.sh --monitoreo)</li>
           <li>&bull; docker-compose.registro.yml usa las imágenes de GHCR en vez de compilar</li>
         </ul>
       </div>
@@ -5480,7 +5497,8 @@
         </div>
         <ul>
           <li>&bull; Núcleo y Boletería usan postgres, redis, rabbitmq y la pasarela</li>
-          <li>&bull; No hay Kubernetes, MongoDB ni réplica SQL en esta migración</li>
+          <li>&bull; Monitoreo lee la API de Docker y la salida de todos los contenedores</li>
+          <li>&bull; Si una réplica muere, restart: unless-stopped la relanza y el gateway la retoma</li>
         </ul>
       </div>
     </div>

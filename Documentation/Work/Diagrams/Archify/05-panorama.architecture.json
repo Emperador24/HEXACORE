@@ -18,11 +18,11 @@
       "sublabel": "Sistema Integral de Gestión de Eventos",
       "pos": [
         20,
-        230
+        56
       ],
       "size": [
         300,
-        90
+        392
       ]
     },
     {
@@ -60,7 +60,7 @@
       "sublabel": "propuesto · sin integración",
       "pos": [
         640,
-        330
+        280
       ],
       "size": [
         280,
@@ -74,7 +74,7 @@
       "sublabel": "propuesto · sin integración",
       "pos": [
         640,
-        450
+        400
       ],
       "size": [
         280,
@@ -88,11 +88,11 @@
       "sublabel": "propuesto · sin integración",
       "pos": [
         1020,
-        390
+        296
       ],
       "size": [
         240,
-        64
+        152
       ]
     }
   ],
@@ -102,31 +102,27 @@
       "from": "sistema",
       "to": "pasarela",
       "label": "cobros, reembolsos y webhook",
-      "variant": "emphasis",
-      "labelSegment": 2
+      "variant": "emphasis"
     },
     {
       "id": "sistema-correo",
       "from": "sistema",
       "to": "correo",
-      "label": "verificación y recuperación",
-      "labelSegment": 2
+      "label": "verificación y recuperación"
     },
     {
       "id": "sistema-contabilidad",
       "from": "sistema",
       "to": "contabilidad",
       "label": "ventas y reembolsos",
-      "variant": "dashed",
-      "labelSegment": 2
+      "variant": "dashed"
     },
     {
       "id": "sistema-crm",
       "from": "sistema",
       "to": "crm",
       "label": "clientes e historial",
-      "variant": "dashed",
-      "labelSegment": 2
+      "variant": "dashed"
     },
     {
       "id": "crm-bi",

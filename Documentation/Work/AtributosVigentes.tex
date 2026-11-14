@@ -1,0 +1,450 @@
+% Diseño, implementación y medición de desempeño, disponibilidad y monitoreo
+% sobre la arquitectura vigente (ADR-16). Responsable: Samuel Emperador.
+% Lo incluye DescripcionArquitecturaSoftware.tex con \input. Las cifras salen
+% de App/infra/informe-atributos/ y el guion en vivo de
+% App/infra/DEMOSTRACION-ATRIBUTOS.md.
+
+\section{Atributos de calidad sobre la arquitectura vigente}
+\label{sec:atributos-vigentes}
+
+Esta sección cubre los tres atributos que se demuestran en vivo sobre la arquitectura de ADR-16:
+\textbf{desempeño}, \textbf{disponibilidad} y \textbf{monitoreo y logs}. Para cada uno da el
+escenario de calidad, las tácticas con el mecanismo que las implementa, cómo se prueba y lo que
+se midió. A diferencia de la sección \ref{sec:tacticas}, que conserva las mediciones de versiones
+anteriores, estas cifras son de la arquitectura actual: Núcleo, Boletería y Trabajador detrás del
+API Gateway, con un PostgreSQL de un esquema por módulo.
+
+\medskip
+\noindent\textbf{Dónde y cómo se midió.} El 12/11/2026, en un portátil de 11 núcleos con Docker
+Desktop, en el entorno local habitual. El generador de carga, el gateway, los programas y
+PostgreSQL comparten esa CPU, así que las cifras son un \textbf{piso}: en máquinas separadas cada
+componente tendría su propia CPU. Entre corridas seguidas el p95 varía alrededor de $\pm$30\%; por
+eso se comparan tendencias (dónde se satura y qué componente), no milisegundos. Todo se reproduce
+con tres órdenes:
+
+\begin{center}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{6.2cm}|>{\raggedright\arraybackslash}p{7.4cm}|}
+\hline
+\textbf{Orden (desde \texttt{App/infra})} & \textbf{Qué hace}\\
+\hline
+\texttt{./iniciar.sh -{}-monitoreo} & Levanta el sistema y el tablero de Grafana en
+\texttt{/grafana/}, por el mismo gateway.\\
+\hline
+\texttt{./prueba-carga.py} (\texttt{-{}-rapida} en vivo) & Prueba de carga con informe e
+interpretación en \texttt{informe-atributos/CARGA.md}.\\
+\hline
+\texttt{./demo-disponibilidad.sh} & Escala, muestra el balanceo, tumba una réplica y espera a que
+Docker la recupere. Con \texttt{SERVICIO=nucleo} hace lo mismo con el Núcleo.\\
+\hline
+\end{tabular}
+\end{center}
+
+% ------------------------------------------------------------------
+\subsection{Desempeño}
+\label{sec:desempeno-vigente}
+
+\begin{center}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{3.2cm}|>{\raggedright\arraybackslash}p{10.4cm}|}
+\hline
+\multicolumn{2}{|l|}{\textbf{Escenario de calidad · Desempeño (RNF-07, RNF-10)}}\\
+\hline
+Fuente & Clientes y organizadores en la apertura de un evento.\\
+\hline
+Estímulo & Hasta 200 usuarios simultáneos pidiendo sin pausa las lecturas más consultadas de
+CU-006, CU-025 y CU-026.\\
+\hline
+Artefacto & Boletería (CU-006) y Núcleo (CU-025, CU-026), detrás del API Gateway.\\
+\hline
+Entorno & Operación normal, con 1 réplica y después con 2 réplicas del Núcleo.\\
+\hline
+Respuesta & Se atiende cada petición sin errores. Al agregar réplicas, la capacidad crece.\\
+\hline
+Medida & p95 $\leq$ 500 ms y 0 fallos (RNF-07). Al duplicar instancias, rendimiento
+$\geq$ 1,7$\times$ (RNF-10).\\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{center}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{2.8cm}|>{\raggedright\arraybackslash}p{6.7cm}|>{\raggedright\arraybackslash}p{3.8cm}|}
+\caption{Tácticas de desempeño en la arquitectura vigente.}\label{tab:desempeno-vigente}\\
+\hline
+\textbf{Táctica} & \textbf{Mecanismo} & \textbf{Dónde}\\
+\hline
+\endfirsthead
+\hline
+\textbf{Táctica} & \textbf{Mecanismo} & \textbf{Dónde}\\
+\hline
+\endhead
+Introducir concurrencia &
+Varias réplicas de Núcleo o Boletería detrás del gateway. Cada réplica es un proceso Node con su
+propio núcleo de CPU. &
+\texttt{docker-compose.\allowbreak escalado.yml}\\
+\hline
+Planificar recursos (balanceo) &
+Nginx reparte por turnos entre las réplicas. Resuelve el nombre del servicio en el DNS de Docker
+cada 5 s (\texttt{server nucleo:3002 resolve}), así que una réplica nueva entra al reparto sin
+recargar el gateway. &
+\texttt{App/gateway/\allowbreak nginx.conf}\\
+\hline
+Acotar la demanda de recursos &
+Cada programa tiene un pool de conexiones limitado y una espera máxima a la base. Un pico no agota
+las conexiones de PostgreSQL. &
+\texttt{POSTGRES\_MAX\_\allowbreak CONEXIONES}\\
+\hline
+Reducir la sobrecarga &
+Ninguna petición le pregunta a Identidad si la sesión vale. El gateway y la guarda del Núcleo
+verifican la firma del token con la clave pública, en local. La revocación y los permisos se leen
+de Redis en una sola ida (\texttt{MULTI}). &
+\texttt{autenticacion.js}, \texttt{sesion-valida.\allowbreak guard.ts}\\
+\hline
+\end{longtable}
+\end{center}
+
+\paragraph{Cómo se prueba.} \texttt{prueba-carga.py} toma, de cada caso de uso, la lectura que más
+gente hace a la vez:
+\begin{itemize}[nosep]
+\item \textbf{CU-006}: catálogo de reventa;
+\item \textbf{CU-026}: eventos del organizador;
+\item \textbf{CU-025}: panel de ocupación del parqueadero.
+\end{itemize}
+Cada nivel son 1, 10, 50, 100 o 200 usuarios pidiendo sin pausa durante 12 s, siempre a través del
+gateway. Durante cada nivel, la prueba lee en Prometheus la CPU de cada contenedor (una muestra
+cada 2 s). Así el informe dice qué se saturó, además de cuánto tardó. La CPU de Prometheus se
+contrastó con \texttt{docker stats} en un nivel de 200 usuarios: Boletería 107\% y Núcleo 104\%.
+
+\begin{center}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{3.0cm}|>{\raggedleft\arraybackslash}p{1.5cm}|>{\raggedleft\arraybackslash}p{1.5cm}|>{\raggedleft\arraybackslash}p{1.5cm}|>{\raggedleft\arraybackslash}p{1.5cm}|>{\raggedright\arraybackslash}p{3.3cm}|}
+\caption{Resultados con una réplica de cada programa (\texttt{CARGA-1-replica.md}). CPU en \% de
+un núcleo, con 200 usuarios.}\label{tab:carga-1}\\
+\hline
+\textbf{Escenario} & \textbf{p95, 50 us.} & \textbf{p95, 200 us.} & \textbf{Máx. pet/s} &
+\textbf{Fallos} & \textbf{CPU}\\
+\hline
+\endfirsthead
+\hline
+\textbf{Escenario} & \textbf{p95, 50 us.} & \textbf{p95, 200 us.} & \textbf{Máx. pet/s} &
+\textbf{Fallos} & \textbf{CPU}\\
+\hline
+\endhead
+CU-006 Catálogo de reventa & 38 ms & 150 ms & 1\,906 & 0 & Boletería \textbf{101}, gateway 279,
+PostgreSQL 60\\
+\hline
+CU-026 Eventos del organizador & 85 ms & 355 ms & 760 & 0 & Núcleo \textbf{103}, gateway 72,
+PostgreSQL 31\\
+\hline
+CU-025 Panel de ocupación & 93 ms & 311 ms & 759 & 0 & Núcleo \textbf{104}, PostgreSQL 131,
+gateway 90\\
+\hline
+\end{longtable}
+\end{center}
+
+\begin{center}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{3.0cm}|>{\raggedleft\arraybackslash}p{1.5cm}|>{\raggedleft\arraybackslash}p{1.5cm}|>{\raggedright\arraybackslash}p{2.8cm}|>{\raggedright\arraybackslash}p{3.6cm}|}
+\caption{Resultados con dos réplicas del Núcleo (\texttt{CARGA-nucleo-2-replicas.md}).}
+\label{tab:carga-2}\\
+\hline
+\textbf{Escenario} & \textbf{p95, 200 us.} & \textbf{Máx. pet/s} & \textbf{Frente a 1 réplica} &
+\textbf{CPU con 200 us.}\\
+\hline
+\endfirsthead
+\hline
+\textbf{Escenario} & \textbf{p95, 200 us.} & \textbf{Máx. pet/s} & \textbf{Frente a 1 réplica} &
+\textbf{CPU con 200 us.}\\
+\hline
+\endhead
+CU-026 Eventos del organizador & 315 ms & 1\,196 & 1,57$\times$ de capacidad & Núcleo
+\textbf{106 y 104}, PostgreSQL 65\\
+\hline
+CU-025 Panel de ocupación & 208 ms & 1\,385 & 1,82$\times$ de capacidad; p95 $-$33\% & Núcleo
+\textbf{102 y 102}, PostgreSQL \textbf{325}\\
+\hline
+\end{longtable}
+\end{center}
+
+\paragraph{Interpretación.}
+\begin{itemize}
+\item \textbf{Los tres casos de uso cumplen p95 $\leq$ 500 ms en todos los niveles.} No falló
+ninguna de las más de 100\,000 peticiones de la corrida.
+\item \textbf{El rendimiento se topa pronto.} CU-026 y CU-025 se quedan en unas 750 peticiones/s
+desde 10 usuarios, y CU-006 en unas 1\,900 desde 50. A partir de ahí, más usuarios solo es más
+espera. Es la Ley de Little: usuarios en el sistema = rendimiento $\times$ tiempo de respuesta.
+Con el rendimiento fijo, cuadruplicar los usuarios cuadruplica la espera: el p95 de CU-026 va de
+85 ms con 50 usuarios a 355 ms con 200.
+\item \textbf{El cuello de botella es el proceso Node de cada programa.} Con 200 usuarios cada uno
+está entre 101\% y 106\% de un núcleo y no sube más, aunque la máquina tenga 11. Node ejecuta el
+código de la aplicación en un solo hilo, así que un núcleo es su techo. Por eso replicar ataca
+justo el límite: con dos réplicas del Núcleo, CU-025 atiende 82\% más.
+\item \textbf{El siguiente límite ya se ve.} Con dos réplicas, PostgreSQL llega a 325\% en
+CU-025, porque el panel agrega las estancias de cada zona y es la lectura más cara de las tres.
+Todavía no es el límite: PostgreSQL atiende cada conexión en un proceso propio y usa varios
+núcleos. Pero si se sigue escalando el Núcleo, será lo próximo en saturarse. El gateway también
+pesa: 279\% con 1\,900 peticiones/s, porque verifica la firma RS256 de cada token.
+\item \textbf{Una conclusión que hubo que corregir.} La primera versión del informe decía que
+PostgreSQL limitaba CU-025 y que más réplicas no ayudarían. Venía de un error de medición: tomaba
+muestras de CPU cada 5 s, en los bordes del nivel. Las dos réplicas la desmintieron. Se corrigieron
+la medición (muestras cada 2 s, dentro del nivel) y la regla de interpretación.
+\end{itemize}
+
+\paragraph{Frente a los RNF.}
+\begin{itemize}
+\item \textbf{RNF-07: cumple hasta 200 usuarios, no verificado en 2\,000.} El umbral del RNF está
+definido para 2\,000 usuarios concurrentes. En un solo portátil, el generador de carga compite por
+la CPU con lo que mide, así que el resultado solo es válido hasta 200.
+\item \textbf{RNF-10: se cumple en CU-025 y no en CU-026.} El RNF pide rendimiento
+$\geq$ 1,7$\times$ al duplicar instancias. CU-025 llegó a 1,82$\times$ y CU-026 a 1,57$\times$.
+Las dos réplicas comparten la CPU del portátil con PostgreSQL y el gateway, así que no es una
+duplicación limpia. El RNF habla del servicio de Entradas (Boletería), pero el escalado se midió
+con el Núcleo. Con Boletería replicada se probó la disponibilidad, no la capacidad.
+\end{itemize}
+
+\paragraph{Qué se haría para mejorar.} Más réplicas de Núcleo y Boletería, hasta que PostgreSQL o
+el gateway sean el límite. Para CU-025, guardar el panel calculado unos segundos en Redis: lo leen
+muchos a la vez y cambia poco, así que bajaría la carga de PostgreSQL antes de que sea el cuello.
+
+% ------------------------------------------------------------------
+\subsection{Disponibilidad}
+\label{sec:disponibilidad-vigente}
+
+\begin{center}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{3.2cm}|>{\raggedright\arraybackslash}p{10.4cm}|}
+\hline
+\multicolumn{2}{|l|}{\textbf{Escenario de calidad · Disponibilidad (RNF-03, RNF-04)}}\\
+\hline
+Fuente & Falla interna: el proceso de una réplica muere.\\
+\hline
+Estímulo & \texttt{kill -9} a una réplica de Boletería (de 3) o del Núcleo (de 2), con tráfico en
+curso.\\
+\hline
+Artefacto & Réplicas de Boletería y Núcleo, el API Gateway y el motor de Docker.\\
+\hline
+Entorno & Operación normal con carga constante.\\
+\hline
+Respuesta & Las réplicas restantes absorben el tráfico; la caída se detecta y la réplica vuelve
+sola al reparto.\\
+\hline
+Medida & 0 peticiones fallidas durante la caída. Recuperación sin intervención en $\leq$ 30 s
+(RNF-04).\\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{center}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{2.8cm}|>{\raggedright\arraybackslash}p{6.7cm}|>{\raggedright\arraybackslash}p{3.8cm}|}
+\caption{Tácticas de disponibilidad en la arquitectura vigente.}\label{tab:disponibilidad-vigente}\\
+\hline
+\textbf{Táctica} & \textbf{Mecanismo} & \textbf{Dónde}\\
+\hline
+\endfirsthead
+\hline
+\textbf{Táctica} & \textbf{Mecanismo} & \textbf{Dónde}\\
+\hline
+\endhead
+Redundancia activa &
+Varias réplicas atienden a la vez, todas con el mismo estado compartido (PostgreSQL y Redis). Ninguna
+guarda sesión en memoria. &
+\texttt{docker-compose.\allowbreak escalado.yml}\\
+\hline
+Reintento &
+Si una réplica cae sin responder, nginx reintenta la petición en otra
+(\texttt{proxy\_next\_upstream error timeout}, por omisión, solo para métodos idempotentes). El
+cliente recibe 200. &
+\texttt{App/gateway/\allowbreak nginx.conf}\\
+\hline
+Detección (\textit{ping/echo}) &
+Sonda de salud en cada contenedor (\texttt{/api/v1/salud} cada 10 s). El gateway espera a que el
+Núcleo y Boletería estén sanos antes de arrancar. &
+\texttt{docker-compose.yml}\\
+\hline
+Reintroducción automática &
+\texttt{restart: unless-stopped}: Docker relanza el contenedor muerto. El DNS de Docker vuelve a
+publicar la réplica y el gateway la retoma en $\leq$ 5 s. &
+\texttt{docker-compose.yml}\\
+\hline
+Concurrencia segura entre réplicas &
+Los trabajos de fondo del Núcleo toman sus filas con \texttt{FOR UPDATE SKIP LOCKED}. Dos réplicas
+no publican dos veces el mismo aviso: bandejas de evacuación, reservas, eventos y vencimientos. &
+Módulos del Núcleo\\
+\hline
+\end{longtable}
+\end{center}
+
+\paragraph{Cómo se prueba.} \texttt{demo-disponibilidad.sh} hace cuatro pasos:
+\begin{enumerate}[nosep]
+\item escala Boletería a 3 réplicas (o el Núcleo a 2);
+\item manda 30 peticiones y cuenta qué réplica atendió cada una, con la cabecera
+\texttt{X-Servidor};
+\item mata una réplica con \texttt{kill -9} mientras manda tráfico durante 8 s, y cuenta fallos y
+reintentos;
+\item espera a que Docker la reinicie, a que su sonda la dé por sana y a que vuelva a recibir
+tráfico.
+\end{enumerate}
+
+\begin{center}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{6.4cm}|>{\raggedright\arraybackslash}p{3.4cm}|>{\raggedright\arraybackslash}p{3.4cm}|}
+\caption{Resultados de \texttt{demo-disponibilidad.sh}.}\label{tab:disponibilidad-resultados}\\
+\hline
+\textbf{Medida} & \textbf{Boletería, 3 réplicas} & \textbf{Núcleo, 2 réplicas}\\
+\hline
+\endfirsthead
+\hline
+\textbf{Medida} & \textbf{Boletería, 3 réplicas} & \textbf{Núcleo, 2 réplicas}\\
+\hline
+\endhead
+Reparto de 30 peticiones (\texttt{X-Servidor}) & 10 / 10 / 10 & 15 / 15\\
+\hline
+Peticiones en los 8 s siguientes al \texttt{kill -9} & 484, \textbf{0 fallidas} & 509,
+\textbf{0 fallidas}\\
+\hline
+Reintentadas por el gateway en otra réplica & 1 & 1\\
+\hline
+Tiempo hasta que Docker la reinicia y está sana & 8--13 s & 8 s\\
+\hline
+Vuelve a recibir tráfico & Sí, reparto parejo & Sí, reparto parejo\\
+\hline
+\end{longtable}
+\end{center}
+
+\paragraph{Interpretación.}
+\begin{itemize}
+\item \textbf{Ningún cliente ve la caída.} La petición que la réplica no alcanzó a responder se
+reintenta en otra, y las demás ya van a las réplicas vivas.
+\item \textbf{La recuperación es automática y cabe en RNF-04}: entre 8 y 13 s frente a los 30 s
+que concede. Casi todo ese tiempo es el arranque del proceso y la primera sonda de salud.
+\item \textbf{El Núcleo también se puede replicar.} Antes de tumbarlo en vivo se comprobó que la
+demostración completa de los casos de uso (8 de 8 con Playwright) pasa contra dos réplicas. Los
+paneles en vivo (SSE) consultan la base en cada intervalo y no dependen de qué réplica los
+atiende.
+\item \textbf{RNF-03 (99,9\% mensual) no se mide en una demostración.} Lo que se muestra es su
+mecanismo: con una instancia caída, el servicio no se interrumpe.
+\end{itemize}
+
+\paragraph{Límites conocidos.} El gateway puede tardar hasta 5 s en incluir una réplica nueva (lo
+que dura la caché del DNS). Una petición no idempotente (\texttt{POST}) en curso en la réplica que
+muere no se reintenta, para no duplicar una escritura: el cliente recibe el error y decide. El
+sondeo de inventario de Alimentos (CU-011) no se certificó con réplicas. PostgreSQL, Redis y
+RabbitMQ siguen siendo una sola instancia: su caída se trata con degradación elegante
+(sección \ref{sec:tacticas}), no con redundancia.
+
+% ------------------------------------------------------------------
+\subsection{Monitoreo y logs}
+\label{sec:monitoreo-vigente}
+
+\begin{center}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{3.2cm}|>{\raggedright\arraybackslash}p{10.4cm}|}
+\hline
+\multicolumn{2}{|l|}{\textbf{Escenario de calidad · Monitoreo y logs (RNF-19)}}\\
+\hline
+Fuente & El equipo de operación durante un evento.\\
+\hline
+Estímulo & Necesita saber cuánta CPU y memoria usa cada instancia, cuántas réplicas están vivas y
+qué dicen los logs, sobre todo durante una prueba de carga o la caída de una réplica.\\
+\hline
+Artefacto & Todos los contenedores del sistema y el API Gateway.\\
+\hline
+Entorno & Operación normal, carga y falla.\\
+\hline
+Respuesta & Un tablero muestra métricas y logs de todas las instancias, desde el mismo punto de
+entrada que la API.\\
+\hline
+Medida & CPU y memoria por instancia, réplicas vivas y logs filtrables en un solo tablero, en
+\texttt{/grafana/} del gateway. Muestras cada 2 s y refresco cada 5 s.\\
+\hline
+\end{tabular}
+\end{center}
+
+\paragraph{Diseño.} \texttt{docker-compose.monitoreo.yml} agrega cuatro piezas al sistema y se
+sirve por el gateway que ya existía. No modifica los programas: ninguno tuvo que instrumentarse.
+
+\begin{center}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{3.2cm}|>{\raggedright\arraybackslash}p{10.4cm}|}
+\caption{Piezas del monitoreo.}\label{tab:monitoreo-piezas}\\
+\hline
+\textbf{Pieza} & \textbf{Qué hace}\\
+\hline
+\endfirsthead
+\hline
+\textbf{Pieza} & \textbf{Qué hace}\\
+\hline
+\endhead
+Exportador de Docker & Lee CPU y memoria de cada contenedor de la API de Docker y las publica con
+los nombres de métricas de cAdvisor (\texttt{container\_cpu\_usage\_seconds\_total},
+\texttt{container\_memory\_working\_set\_bytes}).\\
+\hline
+Prometheus 2.55 & Guarda las métricas, con una muestra cada 2 s y 2 días de retención. Solo
+conserva los contenedores del proyecto.\\
+\hline
+Promtail 3.2 $\rightarrow$ Loki 3.2 & Promtail recoge la salida de todos los contenedores, la
+etiqueta por servicio y la envía a Loki, que la guarda y la deja consultable.\\
+\hline
+Grafana 11.3 & Tablero «HEXACORE · Instancias y logs», provisionado desde el repositorio (no se
+configura a mano).\\
+\hline
+API Gateway & Sirve Grafana en \texttt{/grafana/}: las métricas y los logs entran por el mismo punto
+que la API. Además, su log de acceso registra qué réplica atendió (\texttt{upstream=}) y cuánto
+tardó (\texttt{rt=}).\\
+\hline
+\end{longtable}
+\end{center}
+
+El tablero tiene siete paneles:
+\begin{itemize}[nosep]
+\item instancias vivas de gateway, Núcleo, Boletería y Trabajador;
+\item CPU por instancia y memoria por instancia: cada réplica es una serie propia;
+\item peticiones por réplica, sacadas del log del gateway;
+\item respuestas por código HTTP;
+\item latencia p95 del gateway;
+\item logs de todos los servicios, filtrables por servicio.
+\end{itemize}
+
+\paragraph{Táctica y decisión.} Es la táctica de \textbf{monitorear} (detección de fallas y de
+saturación). Las métricas de infraestructura salen de Docker y las de tráfico del log del gateway,
+así que ningún módulo carga código de observabilidad. La propuesta inicial era usar cAdvisor, pero
+no ve los contenedores con el almacén de imágenes de containerd de Docker Desktop: las versiones
+0.49.1 y 0.52.1 fallan con «failed to identify the read-write layer ID» y solo informan del total
+de la máquina. Por eso se escribió un exportador pequeño que lee lo mismo de la API
+de Docker y publica las mismas métricas. En un Linux se puede volver a cAdvisor sin cambiar el
+tablero.
+
+\paragraph{Cómo se usa en la demostración.} El monitoreo es la evidencia visual de los otros dos
+atributos:
+\begin{itemize}[nosep]
+\item durante la prueba de carga se ve cómo la CPU de la réplica sube hasta un núcleo y se queda
+ahí;
+\item al tumbar una réplica, «instancias vivas» baja, «peticiones por réplica» pasa a las réplicas
+restantes, y las dos se recuperan cuando Docker la reinicia;
+\item el panel de logs muestra, en el mismo lugar, el arranque de la réplica nueva.
+\end{itemize}
+La propia prueba de carga lee la CPU de Prometheus para su interpretación.
+
+\paragraph{Límites conocidos.} No hay alertas automáticas: alguien tiene que mirar el tablero. La
+retención es de 2 días y todo corre en un nodo, así que si la máquina cae, el monitoreo cae con
+ella. Las métricas de tráfico salen del log del gateway y no de cada programa: no distinguen qué
+caso de uso dentro del Núcleo consume la CPU.
+
+% ------------------------------------------------------------------
+\subsection{Trazabilidad}
+
+\begin{center}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{2.6cm}|>{\raggedright\arraybackslash}p{2.2cm}|>{\raggedright\arraybackslash}p{4.4cm}|>{\raggedright\arraybackslash}p{4.4cm}|}
+\caption{Del atributo a su evidencia.}\label{tab:atributos-trazabilidad}\\
+\hline
+\textbf{Atributo} & \textbf{RNF} & \textbf{Implementación} & \textbf{Evidencia}\\
+\hline
+\endfirsthead
+\hline
+\textbf{Atributo} & \textbf{RNF} & \textbf{Implementación} & \textbf{Evidencia}\\
+\hline
+\endhead
+Desempeño & RNF-07, RNF-10 & Réplicas, balanceo con descubrimiento por DNS, pools acotados &
+\texttt{prueba-carga.py}, \texttt{informe-atributos/\allowbreak CARGA-*.md}\\
+\hline
+Disponibilidad & RNF-03, RNF-04 & Redundancia activa, reintento en el gateway, sondas de salud,
+reinicio automático & \texttt{demo-\allowbreak disponibilidad.sh}, guion en
+\texttt{DEMOSTRACION-\allowbreak ATRIBUTOS.md}\\
+\hline
+Monitoreo y logs & RNF-19 & Exportador, Prometheus, Promtail, Loki y Grafana tras el gateway &
+\texttt{docker-compose.\allowbreak monitoreo.yml}, tablero \texttt{monitoreo/\allowbreak grafana/\allowbreak tableros/\allowbreak hexacore.json}\\
+\hline
+\end{longtable}
+\end{center}
