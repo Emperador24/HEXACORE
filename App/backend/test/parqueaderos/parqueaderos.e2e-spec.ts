@@ -405,6 +405,33 @@ describe('CU-021 a CU-025 · Parqueaderos (e2e)', () => {
     expect((await panel(evento)).total).toMatchObject({ ocupados: 2, disponibles: 1 });
   });
 
+  it('Seguridad: los IDs offline de ingreso/salida no se pueden reenviar en otro evento', async () => {
+    const a = await eventoEnCurso(), b = await eventoEnCurso();
+    const za = await zona(a, 'Offline A', 3), zb = await zona(b, 'Offline B', 3);
+    const pa = placa(), pb = placa();
+    const hace = (min: number) => new Date(Date.now() - min * 60000).toISOString();
+    const lote = [
+      { id: randomUUID(), tipo: 'INGRESO', placa: pa, zonaId: za.id, ocurridoEn: hace(2) },
+      { id: randomUUID(), tipo: 'SALIDA', placa: pa, ocurridoEn: hace(1) },
+    ];
+    const sincronizar = (e: string, registros: unknown[]) => request(nucleo.url).post(`${P}/eventos/${e}/sincronizacion`)
+      .set('Authorization', como(personal)).send({ registros }).expect(201).then(r => r.body);
+    expect(await sincronizar(a, lote)).toMatchObject({ aplicados: 2, repetidos: 0, rechazados: 0 });
+    await entrar(b, { placa: pb, zonaId: zb.id });
+    const leer = () => parqueaderos.query('SELECT * FROM estancias WHERE evento_id = ANY($1) ORDER BY id', [[a, b]]);
+    const antes = await leer();
+    const rechazo = await sincronizar(b, lote.map(r => ({ ...r, placa: pb, ...(r.tipo === 'INGRESO' ? { zonaId: zb.id } : {}) })));
+    expect(rechazo).toMatchObject({ aplicados: 0, repetidos: 0, rechazados: 2 });
+    expect(rechazo.resultados).toEqual(lote.map(r => expect.objectContaining({ id: r.id, resultado: 'RECHAZADO', codigo: 'REGISTRO_LOCAL_INCOMPATIBLE' })));
+    expect(rechazo.resultados.every((r: { estanciaId?: string }) => r.estanciaId === undefined)).toBe(true);
+    expect(await leer()).toEqual(antes);
+    expect(await sincronizar(a, lote)).toMatchObject({ aplicados: 0, repetidos: 2, rechazados: 0 });
+    expect(await leer()).toEqual(antes);
+    // Una clave nueva del evento B conserva su capacidad de cerrar la estancia.
+    expect(await sincronizar(b, [{ id: randomUUID(), tipo: 'SALIDA', placa: pb, ocurridoEn: hace(0) }]))
+      .toMatchObject({ aplicados: 1, repetidos: 0, rechazados: 0 });
+  });
+
   it('CU-022: el punto de control trabaja sin red con su caché y sincroniza después sin duplicar', async () => {
     const ahora = Date.now();
     const hace = (min: number) => new Date(ahora - min * 60_000).toISOString();
