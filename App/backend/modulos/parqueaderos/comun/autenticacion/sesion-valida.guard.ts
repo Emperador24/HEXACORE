@@ -12,4 +12,4 @@ export {
   SesionValida,
   tienePermiso,
 } from '../../../../compartido/seguridad/sesion-valida.guard';
-export type { PeticionConSesion, SesionVerificada } from '../../../../compartido/seguridad/sesion-valida.guard';
+export type { AccesoRequerido, PeticionConSesion, SesionVerificada } from '../../../../compartido/seguridad/sesion-valida.guard';

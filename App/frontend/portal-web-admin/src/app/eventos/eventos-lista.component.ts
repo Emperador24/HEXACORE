@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -24,6 +24,7 @@ import { acento } from '../compartido/acentos';
     DatePipe, DecimalPipe, FormsModule, RouterLink, MatButtonModule, MatFormFieldModule, MatIconModule, MatInputModule,
     MatProgressBarModule, MatSelectModule, MatTableModule, MatTooltipModule
   ],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './eventos-lista.component.html'
 })
 export class EventosListaComponent {

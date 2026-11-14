@@ -29,10 +29,26 @@ La primera CI de esta publicación encontró dos widgets Flutter fallidos por
 un doble antiguo sin `pendienteCancelacion()`. Se reprodujeron y corrigieron
 solo en el doble; dirigido local **2/2**. No cambia la aplicación ni invalida la
 fuente de aceptación anterior; la nueva CI se registra aparte en el PR.
+La instalación nueva de CI detectó además una FK omitida de la limpieza explícita
+de la semilla: se añadió `cancelaciones_pedido` manteniendo RESTRICT. Regresión
+del script **1/1**; no se ejecutó ninguna semilla contra los datos locales.
+PR #49 fue integrado externamente hasta e4310a5 durante la entrega. Un nuevo PR
+publica las correcciones de instalación/lectura vacía y su documentación; conserva
+esta aceptación sin repetir los recorridos. CI previa e4310a5: **6/8**, con los
+dos fallos de instalación diagnosticados en el plan. La CI nueva es independiente.
 
-Estado restaurado: **HEXACORE detenido, Redash siete running** con sus datos,
-pero `/ping` y `/login` no recuperados por presión/OOM nuevos. PostgreSQL y Redis
-responden; el responsable debe revisar capacidad. No repetir ciclos de reinicio.
+PR #50, bd40eaf: CI **7/8**, instalación/transferencia corregidas aprobadas;
+Flutter **78/78**, unitarias backend **1.010/1.010**, Boletería **23/23 dos veces**.
+Falló la primera pasada Núcleo **121/122** por cierre SIGTERM que excedió sus
+5 s; no se ejecutó la segunda. Causa raíz aún no aislada, sin atribuirla al Mac
+o relajar tiempos; hace falta observar hooks/handles en ese control. El registro
+documental posterior no sustituye ese resultado. La aceptación local **16/16
+por modalidad** sigue separada; no se declara CI remota verde.
+
+Estado final comprobado a las **01:50 UTC**: **HEXACORE detenido, Redash siete
+running y `/ping`/`/login` 200**. Antes hubo presión/OOM nuevos y timeouts, que
+se conservan en el plan. No se hicieron más reinicios tras el único escalonado;
+la sonda posterior acredita acceso, sin garantizar estabilidad sostenida.
 Alternancia y diagnóstico:
 [guía local](../../Documentation/Work/OPERACION-LOCAL-REDASH-HEXACORE.md) y
 [plan con resultados e historial](../../Documentation/Work/PLAN-CIERRE-SEBASTIAN.md).
@@ -768,3 +784,13 @@ Cliente autenticado → `/pedidos?eventoId=UUID` → establecimientos disponible
 → checkout → pago → QR. Un menú abierto antes del cierre informa el rechazo sin
 crear un pedido nuevo. Sebastián documenta estas pantallas; Daniel consolida la
 validación global de Usabilidad. No se afirma cumplimiento global RNF con este recorrido.
+
+
+### Validación CSP de imágenes de portales
+
+Existe un config optativo de diagnóstico: `playwright.csp.config.ts`, que hereda
+los límites normales y los 16 casos, y añade captura de consola/CSP en todos los
+contextos. Requiere `HEXACORE_COMPROBAR_CSP=1` y `SEGURIDAD_SALIDA` privada e
+ignorada. [Comandos y alcance](../infra/informe-atributos/seguridad/README.md#bloque-portales-y-csp--13112026).
+Normal, CI y demo conservan sus opciones. No habilitar el indicador para las
+sondas negativas CSP: estas se ejecutan aparte con `csp-portales.cjs`.

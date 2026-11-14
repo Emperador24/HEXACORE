@@ -1,4 +1,4 @@
-import { Component, effect, inject } from '@angular/core';
+import { Component, effect, inject, ChangeDetectionStrategy } from '@angular/core';
 import { Router, RouterOutlet } from '@angular/router';
 import { AuthService } from './core/auth.service';
 import { FondoAtmosferaComponent } from './shared/fondo-atmosfera.component';
@@ -6,6 +6,7 @@ import { FondoAtmosferaComponent } from './shared/fondo-atmosfera.component';
 @Component({
   selector: 'app-root',
   imports: [RouterOutlet, FondoAtmosferaComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <app-fondo-atmosfera />
     <router-outlet />

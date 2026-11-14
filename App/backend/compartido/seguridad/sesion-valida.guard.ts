@@ -47,6 +47,17 @@ export interface PeticionConSesion extends Request {
   sesion?: SesionVerificada;
 }
 
+/**
+ * Qué exige una ruta: alguno de `roles` o, con un rol propio, el permiso de
+ * `accion` en `modulo` (CU-028). Lo arma la guarda con los decoradores; un SSE
+ * lo vuelve a pasar a `validar` en cada emisión.
+ */
+export interface AccesoRequerido {
+  roles?: string[];
+  modulo?: ModuloPermiso;
+  accion: Accion;
+}
+
 const ROLES_PERMITIDOS = 'roles-permitidos';
 const MODULO_PERMISO = 'modulo-permiso';
 const ACCION_PERMISO = 'accion-permiso';
@@ -112,6 +123,21 @@ export class SesionValida implements CanActivate {
       throw sinAutenticar('Necesitas iniciar sesión para hacer esto');
     }
 
+    const objetivos = [contexto.getHandler(), contexto.getClass()];
+    peticion.sesion = await this.validar(token, {
+      roles: this.reflector.getAllAndOverride<string[] | undefined>(ROLES_PERMITIDOS, objetivos),
+      modulo: this.reflector.getAllAndOverride<ModuloPermiso | undefined>(MODULO_PERMISO, objetivos),
+      accion: this.reflector.get<Accion | undefined>(ACCION_PERMISO, contexto.getHandler()) ?? accionDeMetodo(peticion.method),
+    });
+    return true;
+  }
+
+  /**
+   * La misma verificación para la petición inicial y para cada emisión de un
+   * SSE: un flujo abierto se corta cuando la sesión se cierra, caduca o, con
+   * `acceso`, cuando pierde el rol o el permiso (CU-028B).
+   */
+  async validar(token: string, acceso?: AccesoRequerido): Promise<SesionVerificada> {
     const verificada = await this.verificar(token);
     if (!verificada) {
       throw sinAutenticar('Tu sesión no es válida o ya caducó. Inicia sesión de nuevo.');
@@ -119,25 +145,25 @@ export class SesionValida implements CanActivate {
 
     const sesion = await this.vigente(verificada);
 
-    const objetivos = [contexto.getHandler(), contexto.getClass()];
-    const permitidos = this.reflector.getAllAndOverride<string[] | undefined>(ROLES_PERMITIDOS, objetivos);
-    if (permitidos && !sesion.roles.some((rol) => permitidos.includes(rol))) {
-      const modulo = this.reflector.getAllAndOverride<ModuloPermiso | undefined>(MODULO_PERMISO, objetivos);
-      const accion =
-        this.reflector.get<Accion | undefined>(ACCION_PERMISO, contexto.getHandler()) ??
-        accionDeMetodo(peticion.method);
-      if (!modulo || !sesion.permisos.includes(permiso(modulo, accion))) {
-        throw new ForbiddenException({
-          codigo: 'ROL_INSUFICIENTE',
-          mensaje: modulo
-            ? `Esta operación es solo para: ${permitidos.join(', ')}, o para un rol con permiso de ${accion} en ${modulo}`
-            : `Esta operación es solo para: ${permitidos.join(', ')}`,
-        });
-      }
+    // La espera de Redis puede cruzar exp: se vuelve a verificar justo antes
+    // de devolver una sesión que autorizará la petición o la emisión del SSE.
+    if (!(await this.verificar(token))) {
+      throw sinAutenticar('Tu sesión no es válida o ya caducó. Inicia sesión de nuevo.');
     }
 
-    peticion.sesion = sesion;
-    return true;
+    if (acceso) this.autorizar(sesion, acceso);
+    return sesion;
+  }
+
+  private autorizar(sesion: SesionVerificada, { roles, modulo, accion }: AccesoRequerido): void {
+    if (!roles || sesion.roles.some((rol) => roles.includes(rol))) return;
+    if (modulo && sesion.permisos.includes(permiso(modulo, accion))) return;
+    throw new ForbiddenException({
+      codigo: 'ROL_INSUFICIENTE',
+      mensaje: modulo
+        ? `Esta operación es solo para: ${roles.join(', ')}, o para un rol con permiso de ${accion} en ${modulo}`
+        : `Esta operación es solo para: ${roles.join(', ')}`,
+    });
   }
 
   private async vigente(token: Omit<SesionVerificada, 'permisos'>): Promise<SesionVerificada> {

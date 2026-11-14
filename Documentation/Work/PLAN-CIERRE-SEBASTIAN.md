@@ -1,6 +1,809 @@
 # Cierre de Alimentos — Sebastián
 
+## Revalidación SSE Parqueaderos — 13/11/2026 Bogotá, corte vigente
+
+**Global 113/159, Parqueaderos 25/25, 46 pendientes; sin aumento. RNF-05/06 parciales.**
+Inicio limpio/sincronizado `feature/sebastian` **bb0c9c8**; develop **41ca881**,
+PR #50 abierto y CI **43540458703 8/8** comprobados. Sin integrar ramas ni reescribir
+historia. Inventario sin cambios: **178 declaradas / 173 expuestas / 159 protegidas**.
+
+Reproducción anterior nueva: después de revocar realmente la sesión, el SSE
+entrega capacidad/timestamp nuevos a los **3000,4 / 3018,1 ms** en gateway/Núcleo;
+nueva conexión 401. Causa: guarda solo inicial. Se reutiliza su validación JWT/
+Redis cada tres segundos y antes de emitir; JWT se verifica otra vez después de
+Redis para cubrir caducidad durante la espera. Sin reglas JWT duplicadas ni
+sistema de sesiones nuevo. Monitor activo durante consulta, una comprobación
+por conexión, sin consultas apiladas. Invalidación/fallo desuscribe/completa,
+descarta resultado tardío; desconexión/apagado liberan temporizadores/suscripciones.
+Panel acotado a 5 s y SQL de Parqueaderos a 2 s local a transacción, sin alterar
+pool de otras operaciones. Promesas externas no se cancelan arbitrariamente.
+
+Inicial: HTTP **401/403/503**. Iniciado: conserva **HTTP 200**, un evento saneado
+`sesion_finalizada` y EOF. Sin token/trazas/errores internos. Bearer exclusivamente
+en Authorization. Detección periódica hasta ciclo 3 s + coste Redis hasta 2 s
++ planificación/red; **sin promesa de revocación instantánea**.
+
+| Final del 14/11 UTC | Revocación G/N, ms | Tras exp G/N, ms | Redis G/N, ms | SIGTERM, ms |
+|---|---|---|---|---|
+| 03:10:08.983 | 3002,85 / 2994,77 | 1750 / 1339 | 4924,40 / 4903,24 | 245,92 |
+| 03:11:02.915 | 3000,37 / 3000,74 | 1731 / 1452 | 4912,38 / 4930,08 | 272,12 |
+| 03:11:56.887 | 2998,04 / 2999,21 | 1650 / 1316 | 4918,82 / 4915,49 | 266,28 |
+
+Tres finales aprobadas en ambos canales: continuidad, rechazos iniciales,
+revocación real, caducidad, fallo Redis, consulta en curso y desconexión;
+**cero datos posteriores**, terminal y EOF. Revocación durante SQL: LOCK en base
+exclusiva, liberar después de revocar, cierre **3,01–6,94 ms** sin emisión tardía.
+503 inicial con Redis no comprobable en **2004,98–2018,61 ms**. SIGTERM con dos
+flujos por pasada: proceso 0 sin OOM, **246–272 ms**, límite existente **5 s**.
+Mismo contenedor reanudado como parte prevista del caso. Sin reintentos ni
+ampliaciones; HTTP/SSE 10 s, Redis 2 s. **21 JS** coincidentes, Node 22.22.3,
+imagen/fuentes/arnés del servidor estables, memoria antes/después. Base medida
+bb0c9c8 + cambios locales identificados por huellas. No repetir los 300 ni los
+16 recorridos completos; evidencia anterior reutilizada con sus límites/fallos.
+
+Caducidad: emisión corta es fixture JWT firmado, con sesión propia real y HTTP/
+validador/Redis reales, sin cambiar reloj, filas o TTL productivo. Redis: CLIENT
+PAUSE 6500 ALL solo en nuevo contenedor, fin programado; sin fallos sobre Redis
+compartido. **20/20 unitarias backend**, cinco suites (siete previas + trece nuevas),
+dobles/tiempo virtual para carreras y recursos. **6/6 portal**, dobles en Chrome
+Headless. Build/lint/tipos app/spec aprobados. Regresión HTTP adicional para CI.
+CI publicada se comprueba por SHA y se registra en PR, separada de mediciones.
+
+Cliente: terminal libera reader/lock; 401 permite una renovación existente hasta
+recibir datos válidos, otro rechazo/403/503 detiene reconexiones; propaga el 401
+si obtener token falla antes de fetch. Evita reapertura tras destruir/cambiar
+evento. Renovación/backoff de transporte existentes conservados; móvil sin
+consumidor SSE no cambia. Monitoreo/Evacuación: riesgo equivalente identificado
+por lectura; fuera del cambio. Fallos conservados: tipos con tsconfig base sin
+Jasmine, corregido con app/spec; caso adicional del consumidor **5/6→6/6** al
+propagar ErrorCuenta. Complemento del cliente sin cambiar servidor medido;
+huellas finales del cliente separadas de las del corte de medición.
+
+Ámbito nuevo de base/Redis/volumen/vhost, siete cuentas/eventos/sesiones propios,
+solo proveedores simulados, sin semillas destructivas ni cambios de datos/claves
+previos. Docker activo inicial/final, **95 originales con mismos IDs/imágenes/
+montajes/estados**, tres nuevos detenidos **0/0/0 sin OOM**, datos retenidos.
+Redash reanudado una vez. Último control **03:16:49 UTC: /ping y /login timeout
+15 s**, PG listo/Redis PONG; oom_kill nuevos server 2 / worker 5 / adhoc_worker 1 /
+scheduled_worker 1, resto 0. Estados restaurados, HTTP bloqueado por OOM/capacidad;
+sin ciclos manuales ni intervenir otros proyectos. Contadores observados aparte
+(gateway ya restarting 272→289, scheduler 3→1). Outbox histórico no se reabre.
+
+[Resultado completo](../../App/infra/informe-atributos/seguridad/RESULTADO.md) ·
+[Contrato/reproducción](../../App/infra/informe-atributos/seguridad/AUTORIZACION-SSE.md) ·
+[Evidencia](../../App/infra/informe-atributos/seguridad/SSE-PARQUEADEROS-EVIDENCIA.json).
+Fuera otros SSE, CU-028/F12, nuevos casos de uso, DAST, fuentes/imágenes y
+ZeroTier. Solo origin/feature/sebastian, PR hacia develop, sin merge/auto-merge.
+
+## Seguridad global: Parqueaderos — 13 de noviembre de 2026, histórico bb0c9c8
+
+**Parqueaderos 25/25; global 113/159, 46 pendientes. RNF-05/06 parciales.**
+Inicio limpio/sincronizado en `feature/sebastian`, f5903a7; develop 41ca881,
+PR #50 abierto y CI 43532749576 **8/8** comprobados. Sin integrar ramas ni
+reescribir historia. Inventario intacto 178 declaradas / 173 expuestas / 159
+protegidas; las 25 nuevas coinciden por método/ruta. Se reutilizan las 88 previas,
+incluidas Alimentos 30/30, Compras 8/8 y Reventa 11/11, con fuentes pertinentes
+intactas. No se ejecutan otra vez los 16 recorridos locales completos.
+
+Brecha previa en ambos canales: reenvío de IDs offline de ingreso/salida A bajo
+B devuelve estancias de A como REPETIDO; dos asociaciones incorrectas por canal,
+con recursos existentes, positivos válidos y SQL intacto. **dd0ddad** exige el
+evento original también tras conflicto concurrente de ingreso; rechaza por
+registro REGISTRO_LOCAL_INCOMPATIBLE, conserva idempotencia propia, estados,
+unicidad global, temporalidad, historial y reglas financieras. Una regresión HTTP
+nueva y una unitaria de carrera; build/lint aprobados, **7/7 unitarias pertinentes**.
+**3174983** conserva herramientas; evidencia final identifica f5903a7 más cambios
+locales por huellas, no atribuye la corrección al commit anterior.
+
+| Final del 14/11 UTC (13/11 Bogotá) | Total | Semánticas / DTO / tiempo / observación SSE | SQL/Redis | Duración |
+|---|---|---|---|---|
+| 01:14:40.091 | **300/300** | **292 / 2 / 2 / 4** | **116/116** | 20,272 s |
+| 01:15:03.719 | **300/300** | **292 / 2 / 2 / 4** | **116/116** | 19,396 s |
+| 01:15:26.328 | **300/300** | **292 / 2 / 2 / 4** | **116/116** | 19,375 s |
+
+Positivos de **25/25 por canal** con recursos nuevos por final/canal; mismas
+fuentes/imagen, Node 22.22.3, 20 JS de Parqueaderos coincidentes y gateway
+contrastado. Redash detenido, memoria antes/después, sin reintentos ni límites
+ampliados. Cada final conserva 102 rechazos HTTP de autorización/contexto,
+cuatro lotes semánticos, dos temporales, dos DTO y seis reenvíos autorizados.
+SQL/Redis comparan propiedad/QR/espacios/historial/finanzas y bloqueo absoluto;
+se excluyen solo marcas asíncronas de entrega de avisos. DTO/tiempo no suman
+autorización. Roles operativos globales, disponibilidad compartida y salida con
+liquidación existente sin nueva pasarela. SSE autoriza al conectar: emite con
+sesión válida; abierto continúa tras revocar, nueva conexión 401; recursos
+cancelados explícitamente. No se acredita revocación continua del flujo.
+
+Tarifa positiva aislada: base original vacía conservada; base/Redis/volumen/vhost
+nuevos con migraciones sin semillas. Siete cuentas nuevas, recursos propios y
+proveedores simulados; originales sin cambiar configuración/datos/credenciales.
+Docker activo al inicio/final, mismos **92 IDs/imágenes/montajes/estados**, CU-015
+detenido, tres contenedores nuevos detenidos **0/0/0 sin OOM**, datos conservados.
+Redash reanudado una vez, otros proyectos sin intervención. Último control
+**01:20:56 UTC: /ping y /login 200**, PG listo/Redis PONG, pero nuevos oom_kill
+server 3 / worker 4 / adhoc_worker 1 / scheduled_worker 2; resto 0. Un 200 puntual
+no elimina el bloqueo histórico de capacidad ni certifica estabilidad. Sin
+ciclos manuales de recuperación ni cambios de recursos globales.
+
+Fallos de herramientas conservados: snapshot por PK incorrecta antes de observar
+autorización; desarrollo corregido 296/296; doble driverError TS2353 corregido;
+procedencia principal/rutas Nginx corregida antes de finales; aserción indebida
+de contadores de reinicio al final de restauración, corregida y auditada solo
+por lectura, sin repetir arranques. Gateway ajeno ya reiniciaba (147→175),
+scheduler 3→1; contadores separados de estados. CI de publicación se verifica
+por SHA y se registra en PR #50. Se conserva CI 43531857405 **7/8** y posterior
+43532749576 **8/8**, sin corrección causal acreditada de outbox ni SIGTERM.
+
+[Resultado completo](../../App/infra/informe-atributos/seguridad/RESULTADO.md) ·
+[Reproducción](../../App/infra/informe-atributos/seguridad/AUTORIZACION-PARQUEADEROS.md) ·
+[Evidencia](../../App/infra/informe-atributos/seguridad/PARQUEADEROS-RECURSOS-EVIDENCIA.json) ·
+[Cobertura](../../App/infra/informe-atributos/seguridad/COBERTURA-RECURSOS.md).
+Fuera CU-028/F12, DAST adicional, autenticidad de dispositivos/relojes, nuevos
+casos de uso, fuentes/imágenes, ZeroTier e investigación preventiva outbox/SIGTERM.
+Solo origin/feature/sebastian y PR hacia develop, sin merge ni auto-merge.
+
+## Seguridad global: Compras y Reventa — 13 de noviembre de 2026, histórico 88/159
+
+**Compras 8/8 y Reventa 11/11. Global 88/159; 71 pendientes. RNF-05/06 parciales.**
+Se contrastan y amplían las 19 rutas pendientes, sin diferencias método/ruta
+ni cambios del inventario 178 declaradas / 173 expuestas / 159 protegidas.
+Las 69 cubiertas anteriores, incluidas 30/30 Alimentos, se reutilizan con fuentes
+relevantes intactas desde 62ffd7b; los cortes inferiores se conservan como historia.
+
+Inicio limpio y sincronizado, solo `feature/sebastian` **62ffd7b**. PR #50 abierto
+hacia develop 41ca881 y CI **43523770155, 8/8** comprobados. No se integran ramas.
+No se demuestra una brecha nueva de producto; solo herramientas y documentación.
+Guardas, estados, snapshots, historial, idempotencia y contratos internos/financieros
+de Ventas se conservan, sin arquitectura ni CU nuevos de otros integrantes.
+
+Tres clientes nuevos, Personal/Organizador/Administrador exclusivos. Evento
+publicado a 30 días y localidad propia, sin semillas ni cambios de claves previas.
+Cada canal/final crea compras/publicaciones/checkouts nuevos. Gateway recibe
+turno real; no se acredita propiedad por un 428, DTO o recurso inexistente.
+Compras prueba atribución, listas/detalle, cupones, pago y cancelación de recursos
+propios/ajenos. Selección mixta cancela solo propias según contrato. Reventa
+conserva mercado compartido, propiedad vigente, elegibilidad y comprador del
+checkout; se comprueban QR/propiedad/historial tras transferir y filtrado posterior.
+
+| Final UTC del 13/11 | Total | Autorización/contrato + rol | DTO / estado / concurrencia separados | SQL/Redis sin cambios en rechazos |
+|---|---|---|---|---|
+| 23:55:46.428 | **150/150**, 10,880 s | **134/134 + 8/8** | **4/4 + 2/2 + 2/2** | **68/68** |
+| 23:56:01.822 | **150/150**, 13,469 s | **134/134 + 8/8** | **4/4 + 2/2 + 2/2** | **68/68** |
+| 23:56:19.061 | **150/150**, 14,924 s | **134/134 + 8/8** | **4/4 + 2/2 + 2/2** | **68/68** |
+
+Cada canal acredita positivos de **19/19** operaciones; los cuatro 400 por final
+se separan. Rechazos con SQL/Redis iguales, titular/vencimiento absoluto del
+bloqueo y disponibilidad SQL NOWAIT. Se conservan claves financieras, reservas,
+cupones, publicaciones, propiedad, QR y libro asociado. Pago/cancelación se
+prueban antes de completarlos; recursos independientes para mutaciones incompatibles.
+Seis transferencias finales con QR rotado, historial de dos filas y un cobro/un intento.
+
+Expiración administrativa global: el control inicial **146/146** solo comprobó
+negativas y 18 rutas positivas. Se verificó después que las ocho publicaciones
+existentes eran nuevas del ensayo, sin transacciones ajenas. Las finales agregan
+**seis barridos positivos**, con todo el ámbito descartable comprobado antes,
+inmediatamente antes y después: 13/18/23/28/33/38 anuncios propios, cero ajenos;
+una revisada/expirada por barrido, otros anuncios/QR/historial/finanzas/Redis
+intactos. Sin filtro de producto ni borrado de datos. Si aparece un ámbito ajeno
+en otra ventana, el arnés omite el positivo y registra 18/19 con limitación.
+
+Serial, sin reintentos ni límites ampliados; mismas once imágenes saludables,
+131 compilados relevantes coincidentes, Node 22.22.3, Redash detenido. Memoria
+y procedencia en evidencia. **124/124 unitarias actuales, seis suites**.
+Se reutilizan Boletería **23/23 × dos** de CI 43523770155 y aceptación histórica
+**16/16 automática/visible**, con fuentes pertinentes sin cambios; no son nuevas
+ejecuciones. Sin fallos nuevos en las mediciones; fallos históricos conservados.
+Herramientas publicadas en **65a2b81**, con las mismas fuentes medidas.
+
+Restauración real, capacidad Redash y publicación/CI se registran en RESULTADO,
+evidencia y PR #50. No confundir estados restaurados con accesibilidad HTTP.
+Solo origin/feature/sebastian, sin merge/auto-merge. Fuera: F12, CU-028, funciones
+financieras nuevas, módulo Acceso QR independiente, DAST, fuentes/imágenes y
+ZeroTier. SIGTERM/outbox no se reabren preventivamente ni se declaran corregidos.
+
+[Resultado](../../App/infra/informe-atributos/seguridad/RESULTADO.md) ·
+[Cobertura](../../App/infra/informe-atributos/seguridad/COBERTURA-RECURSOS.md) ·
+[Reproducción](../../App/infra/informe-atributos/seguridad/AUTORIZACION-VENTAS.md) ·
+[Evidencia saneada](../../App/infra/informe-atributos/seguridad/VENTAS-RECURSOS-EVIDENCIA.json).
+
+### CI 51cd7fc: 7/8 y diagnóstico de la recurrencia
+
+[CI 43531857405](https://github.com/Emperador24/HEXACORE/actions/runs/43531857405)
+termina **7/8**, sin relanzar. Tipos y **1044/1044 unitarias / 80 suites**
+aprobados; primera Boletería **22/23**, fallo en `flujos.e2e-spec.ts:115`:
+pendientes de outbox esperado 0, observado 1 tras ver dos QR. Segunda pasada,
+Núcleo y etapas posteriores omitidas en Backend. Los otros siete trabajos
+aprueban, incluida autenticación y transferencia histórica/instalación nueva.
+
+Test y publicador no cambian desde 62ffd7b. Confirmar AMQP precede a actualizar/
+confirmar la marca SQL: esperar solo QR no garantiza verla ya. No hay ID/secuencia/
+estado posterior de la fila para demostrar convergencia; no se afirma causa
+corregida ni se atribuye a Seguridad, SQL/DNS o SIGTERM. No es una brecha de
+autorización demostrada; las tres finales nuevas 150/150 siguen separadas.
+Pendiente acotado: comprobar ambas convergencias con el límite existente y
+conservar el pendiente; si no converge, correlacionar confirmación/commit.
+
+El commit siguiente solo registra este fallo y diagnóstico; su CI automática
+se informa aparte en PR #50. No se relanza el trabajo ni se repiten recorridos.
+Una aprobación posterior no corrige causalmente outbox/SIGTERM ni completa RNF.
+
+## Cierre de autorización de Alimentos — 13 de noviembre de 2026
+
+**Alimentos: 30/30. Global: 69/159; 90 pendientes. RNF-05/06 parciales.**
+Se amplían las 20 rutas pendientes y se reejecutan las otras diez de Alimentos;
+las 39 cubiertas fuera de este módulo se reutilizan, sin fuentes relevantes
+modificadas desde `7130d52`. El inventario sigue en 178 operaciones declaradas,
+173 expuestas y 159 protegidas; las 30 rutas de Alimentos coinciden por método/
+ruta con los controladores, sin cambios del denominador.
+
+Inicio limpio y sincronizado únicamente en `feature/sebastian` **7130d52**;
+develop **41ca881** y PR **#50 abierto** comprobados. CI previa **43454519623,
+8/8** confirmada. No se integran ramas ni se corrigen producto o arquitectura:
+las pruebas no demuestran una brecha nueva. Se conservan estados, snapshots,
+autorización, historial, idempotencia y límites financieros.
+
+Las pruebas usan siete cuentas nuevas, clientes distintos y Personal A/B
+vinculado a locales diferentes. Cada canal/pasada crea locales/productos/pedidos
+nuevos. Checkout/consultas/pago usan comprador de sesión; productos, ajustes,
+operaciones, preparación, incidencias, QR, entrega y cancelación cruzan recursos
+existentes con cuerpos válidos y controles positivos. Se comprueba antes de la
+primera mutación autorizada, con versión actual. Organizador/Administrador
+conservan administración global; catálogos permanecen compartidos por contrato.
+
+| Final, inicio UTC | Total | Autorización/contrato | Validación / relación separadas | SQL/Redis iguales en rechazos |
+|---|---|---|---|---|
+| 22:48:47.727 | **278/278**, 22,726 s | **274/274** | **2/2 + 2/2** | **142/142** |
+| 22:49:13.971 | **278/278**, 22,914 s | **274/274** | **2/2 + 2/2** | **142/142** |
+| 22:49:40.370 | **278/278**, 24,318 s | **274/274** | **2/2 + 2/2** | **142/142** |
+
+Tres finales seriales, mismo producto/herramientas/imágenes, sin reintentos ni
+relajar límites; **30/30 controles positivos en cada canal**. Los cuatro 400
+por final están separados de autorización. SQL/Redis incluyen inventario,
+reservas, preparación/historial/incidencias, entrega, cancelación y movimientos
+financieros enlazados al ensayo. Sin 5xx ni alteraciones en rechazos. Node
+22.22.3; 83 compilados Alimentos coinciden con el contenedor, once servicios
+saludables y Redash detenido. Fuentes/herramientas nuevas guardadas por hash
+sobre árbol 7130d52 antes de publicar; detalle en evidencia.
+Herramientas publicadas en **8ee59fb**, sin corrección de producto.
+
+**Hash previo: seis de seis pedidos nuevos**, uno por canal/final. Captura
+persistida y releída antes de la primera cancelación; si falla no se cancela.
+Los seis conservan cobro Alimentos/libro Finanzas, detalles/snapshots y acuerdo
+del pedido; se exceptúan únicamente estado, motivo/fecha de cancelación y fecha
+de actualización. Se verifica restitución, actor y un reembolso aprobado con
+un intento. El hash histórico ausente sigue ausente; no se reconstruye.
+
+Regresiones actuales **210/210 unitarias, ocho suites**. Se reutiliza **16/16
+automático y 16/16 visible** de ec07de2, con diff vacío en Alimentos/Finanzas y
+contratos compartidos relevantes. No se repiten los conjuntos completos.
+Fallos del arnés conservados: 104/105 del control por estado inexistente corregido
+a CERRADO; serie con 139/139 gateway pero clasificador cuentas-personal/:id contó
+29/30; siguiente carpeta detenida por alta 409 debido a nombres reutilizados.
+Se corrigen clasificador y unicidad de recursos antes de las tres finales,
+sin cambiar producto, peticiones ni límites. No se ocultan series interrumpidas.
+
+La restauración conserva el estado real inicial: Docker activo y Redash siete
+servicios activos, CU-015/ZAP detenidos; otros proyectos fuera de intervención.
+Controles Redash por etapa 200/200; control posterior con timeout HTTP y OOM nuevos,
+conservados sin ciclos de reinicio. PostgreSQL listo y Redis PONG; el acceso HTTP
+queda pendiente de capacidad del responsable. Datos, volúmenes, cuentas y claves
+previas conservados, solo proveedores simulados. Diagnóstico en RESULTADO.
+
+[Resultado y restauración](../../App/infra/informe-atributos/seguridad/RESULTADO.md) ·
+[Cobertura vigente](../../App/infra/informe-atributos/seguridad/COBERTURA-RECURSOS.md) ·
+[Reproducción](../../App/infra/informe-atributos/seguridad/AUTORIZACION-ALIMENTOS.md) ·
+[Evidencia saneada](../../App/infra/informe-atributos/seguridad/ALIMENTOS-RECURSOS-EVIDENCIA.json).
+Publicación solo `origin/feature/sebastian`, PR #50 hacia develop, sin merge ni
+auto-merge; CI de publicación separada en el PR. Los cortes 49/159 y 110 pendientes
+de las secciones inferiores son históricos. SIGTERM/outbox conservan causa
+pendiente. Fuera: CU-028/Samuel, F12, sustituciones, DAST adicional, imágenes/
+Google Fonts, arquitectura y ZeroTier. Este último solo queda como futura prueba
+compartida con un servidor HEXACORE y varios clientes, sin instalar/configurar.
+
+
+## Cierre de autorización por recurso y DAST — 13/11/2026
+
+**RNF-05/06 siguen parciales.** Referencia ec07de2 / CI 43426230483 8/8.
+Hitos **545e19c** (notificaciones/fichajes), **9a06ba8** (NUL/Cartelera) y
+**d402a89** (herramientas/matriz del curso). Finales sobre d402a89, imágenes y
+compilados verificados; no Angular/CSP/SIGTERM ni funciones financieras nuevas.
+
+- Logística: **8 fallos/16 antes → 16/16 después** en ambos canales. Cliente ya
+  no escribe fichajes; destinatario/supervisor ven notificación real, ajenos no.
+- NUL: DAST sin alerta observó un 500/PostgreSQL 22021. Se rechaza NUL en tres
+  filtros; unitarias **3 fallidas/2 aprobadas → 5/5**, HTTP **8/8** (válidos 200,
+  NUL 400), conservando Unicode/apóstrofos/vacíos y consultas parametrizadas.
+- Nueva cobertura **49/159 protegidas en ambas vías**, incluidas **41/41** sin
+  metadato originalmente (ahora 39). **110** siguen pendientes de ampliación
+  semántica. Contexto/guardas efectivos, recursos existentes y roles locales:
+  no se usan 400 ni inexistencia como autorización; cuatro 404 de ficha son
+  observaciones de contexto separadas. Organización opera globalmente por rol:
+  falta contrato de relación organización-evento; CU-028 Samuel pendiente.
+
+| Final UTC de matriz | Matriz + complemento | Filtros | DAST |
+|---|---|---|---|
+| 15:01:06.629 | **302/302 + 30/30** | **8/8** | 107 activas; 0 alertas/0 5xx |
+| 15:01:37.327 | **302/302 + 30/30** | **8/8** | 107 activas; 0 alertas/0 5xx |
+| 15:02:07.263 | **302/302 + 30/30** | **8/8** | 107 activas; 0 alertas/0 5xx |
+
+Por final: 332 observaciones, cuatro de contexto sin acreditar autorización;
+328 de acceso/contrato con repeticiones explícitas, no permisos distintos.
+DAST **3 operaciones/4 escenarios**, SQLi/XSS reflejado **2/53 reglas**,
+62 pasivas conservadas. Sin Administrador, arañas o rutas mutadoras generales;
+categoría propia fija, URI/IDs no inyectados. 53/53 activas autenticadas conservan
+Bearer; sesión 200 antes/durante/después. Estados 47×200/33×400/27×401 por final.
+No significa DAST/API o Seguridad completos. Exclusiones y 159 rutas enumeradas.
+
+Se conservan fallos de arnés: matriz inicial 296/302 (contratos 204/fechas),
+complemento corregido 18/18 y ampliado 30/30; inicio ZAP/ruta /tmp, 400 sin código
+original acreditado, filtro wildcard mal configurado (24 cambios de categoría,
+cero eventos ajenos retornados) y piloto 107 con un 500 aunque cero alertas.
+Hubo correcciones concretas antes de las finales, no reintentos buscando verde.
+
+[Security/Safety](../../App/infra/informe-atributos/seguridad/SECURITY-SAFETY.md):
+concepto y diapositiva → riesgo → control/ubicación → comprobación → pendiente.
+Interlocks actual: **7 acreditados**, uno de hash inicial no acreditado por fallo
+SQL del arnés. Se recupera la misma operación sin nueva compra/cobro; los 16/16
+anteriores y contratos financieros inciertos se reutilizan con fuentes intactas.
+Sin F12 ni recuperación global. No se repiten los conjuntos completos.
+
+Memoria VM KiB disponible antes→después: 880932→844104, 840044→852852,
+853944→812912. Serie/Redash detenido. Al finalizar CU-015/ZAP detenidos por scripts;
+siete IDs/montajes/imágenes Redash restaurados una vez, PG listo/Redis PONG,
+últimos HTTP 200/200, siete oom_kill=0; resets/timeout de arranque conservados.
+Docker Desktop apagado como al inicio, no promesa de Redash accesible ahora.
+El scheduler cerró 137/OOM=false al detenerlo: se conserva como incidente.
+
+Residuos anteriores sin reabrir: imágenes HTTP/HTTPS, Google Fonts/SRI (diez
+medias/cuatro informativas en la revisión anterior); no se aceptan unilateralmente.
+Pendientes además: 110 rutas y combinaciones semánticas, organización/kiosco,
+DAST restante, firma AMQP/no repudio y CU-028; incertidumbre original F12 separada.
+[Resultado](../../App/infra/informe-atributos/seguridad/RESULTADO.md),
+[cobertura](../../App/infra/informe-atributos/seguridad/COBERTURA-RECURSOS.md),
+[evidencia](../../App/infra/informe-atributos/seguridad/RECURSOS-DAST-EVIDENCIA.json).
+CI de publicación en PR #50; no equivale a cumplimiento RNF completo ni corrige
+causalmente SIGTERM. Solo origin/feature/sebastian, sin merge/auto-merge.
+
+**CI de publicación e017039:** [43453200930](https://github.com/Emperador24/HEXACORE/actions/runs/43453200930),
+**7/8**, conservada sin relanzar. Backend: tipos y **1044/1044 unitarias / 80
+suites** aprobados; primera integración de Boletería **22/23**, un fallo en
+`flujos.e2e-spec.ts:115`: tras observar dos QR, outbox pendiente esperado 0,
+observado 1. La segunda pasada y las etapas posteriores, incluidas las dos
+regresiones HTTP nuevas de Logística, no se ejecutan. Los otros siete trabajos
+(incluida transferencia histórica/instalación nueva) aprueban.
+
+Publicación AMQP precede a actualización/commit de la marca PostgreSQL: la
+proyección no garantiza la visibilidad de esa marca. No se dispone de estado
+posterior/secuencia del pendiente para demostrar convergencia; no se afirma
+corregida la causa ni se atribuye a SQL/DNS o SIGTERM. Test/publicador intactos.
+Pendiente acotado para el arnés Boletería: comprobar ambas convergencias con el
+límite existente y conservar conteo/ID técnico; si no converge, correlacionar
+confirmación/commit. Sin ampliar Seguridad a disponibilidad ni repetir buscando
+verde. El commit posterior solo registra el diagnóstico; su CI automática,
+si aprueba, no sería una corrección causal. Resultado final de esa publicación
+se registra por separado en el PR.
+
+
+## Autorización por recurso y DAST — 13/11/2026, hito de corrección
+
+Inicio limpio únicamente feature/sebastian **ec07de2**, CI **43426230483, 8/8**;
+fetch mantiene las referencias, sin integrar ramas. Se conservan historia y
+residuos Angular/CSP (dos medias de imágenes, ocho SRI y cuatro informativas).
+No se reabren Angular, CSP o SIGTERM. Se leen INVENTARIO/RESULTADO y los materiales
+Security (30 diapositivas) y Safety (13 páginas), como referencia conceptual.
+
+Dos brechas demostradas con objetos nuevos exclusivos, en gateway y Núcleo:
+Cliente/empleado ajeno leen notificaciones de otro; Cliente registra entrada y
+salida con credencial válida. **8 fallos / 16 controles antes**, incluyendo
+cuatro escrituras reales comprobadas en PostgreSQL. Se reutiliza ContextoDeLogistica
+para filtrar destinatario o permitir supervisión; asistencia exige roles
+Personal/Organizador/Administrador sin cambiar la credencial del empleado escaneado.
+**16/16 después**, cero filas añadidas por Cliente. Tipos/build/imagen Núcleo y
+**3/3 unitarias** relacionadas aprobados. Se añaden dos regresiones HTTP reales
+al arnés CI existente, sin quitar las cinco anteriores.
+
+Matriz ampliada inicial: **296/302**, con seis fallos del arnés (cuatro esperaban
+200 en verificar, cuyo contrato es 204; dos candidatos omitían fechas requeridas).
+Se preserva la pasada fallida, se corrigen expectativas/DTO a sus contratos y el
+control adicional aprueba **18/18**: los seis corregidos y ficha/contraseña/logout
+con cuentas auxiliares exclusivas. No se cuentan 400 ni recursos inexistentes
+como autorización. Las contraseñas previas/demo no cambian; solo se cambia la de
+una cuenta auxiliar creada para comprobar ese contrato.
+
+El DAST de control no reportó alertas de SQLi/XSS, pero reveló **un HTTP 500**:
+NUL en artista llega como parámetro a PostgreSQL y genera **22021**. No es SQLi
+confirmada; se rechaza NUL en los tres filtros textuales que llegan a PostgreSQL,
+sin cambiar Unicode/apóstrofos ni filtros vacíos. Unitarias antes **3 fallidas/
+2 aprobadas**; después **5/5**. HTTP gateway/Boletería: **8/8**, casos válidos 200
+y NUL 400; tipos/build/imagen de Boletería aprobados. No cambia Angular/CSP.
+
+Las 41 rutas originalmente sin roles requieren reglas de identidad/contexto;
+se revisan expresamente. Organización sigue siendo rol global: no existe relación
+organización-evento ni un tenant que pueda probarse como frontera. No se inventa
+esa regla ni se declara cubierta por creadoPor (auditoría). CU-028 dinámico sigue
+pendiente de Samuel. Finales comparables, DAST activo acotado, cobertura y matriz
+del curso se incorporan en los siguientes hitos, sin declarar RNF completo.
+
+
+## Portales, tooling y CSP — 13/11/2026, hito de implementación
+
+Referencia limpia local/remota **7457e7b**, CI **43214215628, 8/8**; solo
+feature/sebastian, sin integrar ramas. La historia RNF-05/06 inferior se conserva.
+No se investiga SIGTERM (causa desconocida) ni se amplía semántica, DAST activo,
+F12 o CU-028. **No se declara cumplimiento completo de RNF-05/06.**
+
+- **ca413fc**: migraciones oficiales Angular 19→20→21→22; core/compiler 22.2.6,
+  CLI/Material/CDK 22.2.7, TypeScript 6.0.3. Node frontend conserva 22.22.3;
+  backend intacto. Instalaciones limpias, tipos/builds y unitarias **30/30 Cliente,
+  16/16 Admin**. Audit compatible completo: cero en ambos, frente a 67/58 iniciales.
+- CSP efectiva con nonce por respuesta y no-store HTML; no unsafe-inline/eval.
+  Colores estáticos trasladados a CSS; orígenes API/buzón concretos por perfil.
+  [Decisiones de CSP](../../App/infra/informe-atributos/seguridad/CSP.md).
+- Primera regresión automática **15/16**, CU-029 falló: tres bloqueos `img-src`
+  para Object URLs del plano. Se conserva evidencia privada; permitir `blob:`
+  solo en imágenes Admin corrigió el contrato existente. CU-029 aislado **1/1**,
+  conjunto corregido **16/16 automático (132,066 s) y 16/16 visible (151,574 s)**,
+  27 contextos por conjunto, cero violaciones CSP/cero errores JavaScript.
+  Un trabajador, cero reintentos, 120 s/15 s; sin modo demo ni cambios de límites.
+- Control adicional: nonce/recarga, bloqueo de inline, SDK/iframe sintéticos,
+  siete rutas Cliente y seis Admin con 13 renovaciones reales 200. Su primer
+  intento esperaba networkidle en Parqueaderos y agotó 15 s por el SSE existente;
+  se cambió solo el arnés a pantalla visible/flujo activo. Aprobó sin cambiar
+  producto o plazo. Los conjuntos de negocio no se repitieron por ese ajuste.
+
+Las tres finales sobre **4487b16**, 12:21:47.528594 / 12:22:17.880301 /
+12:22:43.366687 UTC, aprobaron instalación/versión y control del bloque:
+**audit 0 producción/0 completo en ambos portales, en cada una**. Rangos
+originales contrastados: 154, cero coincidencias vulnerables. Imágenes Cliente
+9a11f99348c6/Admin 6835120c95f0/gateway 6b4afcd4892f, mismos hashes en las tres;
+versiones/etiquetas y sus límites en la evidencia.
+
+**ZAP por final: 0 altos, 10 medios, 4 informativos**; 23 solicitudes, tres 200
+autenticados fuera de login, 62 reglas activas/cero pendientes. Desaparecen 10003
+Angular (dos altos) y 10038 CSP ausente (cuatro medios). Persisten dos medias
+10055 por img-src Cliente HTTP/HTTPS y aparecen ocho medias 90003 por CSS externo
+Google Fonts sin SRI al dejar de insertarse en build. No se ocultan ni se declara
+cierre global; faltan decisión de hosts/proxy de imágenes y fuentes locales o
+recursos inmutables/SRI real. 13 rutas/13 renovaciones reales por final, sin
+CSP inesperadas/errores JS. Los dos bloqueos inline deliberados por portal se
+registran aparte. Assets iniciales 21→11 explican solicitudes ZAP 33→23 sin
+quitar rutas/reglas. Cobertura HTTP pasiva más navegación browser explícita,
+no DAST activo ni negocio completo de Reventa/Parqueadero.
+
+Memoria disponible VM antes→después (KiB): 955120→943008, 941068→923812,
+928744→924196; swap/presión de cada lectura registrados individualmente.
+Redash detenido en todas las pruebas. Scheduler cerró 137/OOM=false tras 120 s:
+se conserva como incidente de parada, sin presentarlo como ordenado. Al finalizar
+CU-015/ZAP detenidos por scripts, siete IDs/imágenes/montajes Redash restaurados
+una sola vez; PG listo/Redis PONG, últimos /ping y /login **200**, siete contadores
+oom_kill=0. Hubo resets/timeout durante arranque, conservados. Docker Desktop
+**apagado al final como al inicio**: HTTP 200 anterior al apagado, no promesa de
+servicio activo con motor apagado. Datos/volúmenes/cuentas conservados.
+
+[Resultado completo](../../App/infra/informe-atributos/seguridad/RESULTADO.md) y
+[evidencia saneada](../../App/infra/informe-atributos/seguridad/PORTALES-CSP-EVIDENCIA.json).
+La CI del commit de publicación se informa en PR #50; separada de estos resultados
+locales, sin atribuir corrección de SIGTERM. Permanecen los límites históricos
+y los hallazgos que no cubre este bloque. [Migración](../../App/infra/informe-atributos/seguridad/MIGRACION-ANGULAR.md).
+
+## Seguimiento de publicación de Seguridad — 12/11/2026
+
+**3c9e0b4** publicó scripts/resultados y actualizó el PR #50. La
+[CI 43211225540](https://github.com/Emperador24/HEXACORE/actions/runs/43211225540)
+aprobó siete trabajos y falló el octavo en contratos financieros: **12/13** en
+primera pasada, segunda sin ejecutar. Causa identificada: una expectativa buscaba
+`TimeoutError`; el saneamiento RNF-05 devuelve el mensaje propio exacto “No hubo
+respuesta de la pasarela (tiempo agotado)”. La respuesta real y el código lo
+confirman; INDETERMINADO/contadores permanecen correctos. Se adapta la expectativa
+con igualdad exacta y se conservan todos los controles financieros, límites y
+reintentos. No cambia producto ni fuentes funcionales e5c6ba7.
+
+Comprobaciones adicionales acotadas: **1/1** del Error de timeout en el contexto
+Jest y **1/1** con DOMException nativo en Node real, ambos con PAN/CVV sintéticos
+que no aparecen en resultados/logs. Se preserva el primer fallo del doble nativo
+entre contextos V8 de Jest; el caso se comprueba también en Node, sin modificar
+producto por ese artefacto. No se repiten matrices, ZAP, Playwright o negocio.
+
+En la CI fallida también aprobaron **1.038/1.038 unitarias**, Boletería
+**23/23 × dos pasadas**, Núcleo **122/122 × dos pasadas**, portales/Flutter/gateway/
+histórico. No se interpreta como corrección causal de SIGTERM. La CI del nuevo
+commit de prueba se informa por separado en PR/final; los bloqueos audit/ZAP y
+el estado operativo local consignados debajo permanecen vigentes.
+
+## Seguridad RNF-05 / RNF-06 — 12/11/2026
+
+**Entrega parcial con correcciones comprobadas; NO se declara cumplimiento
+completo.** [Resultado y comandos](../../App/infra/informe-atributos/seguridad/RESULTADO.md),
+[inventario](../../App/infra/informe-atributos/seguridad/INVENTARIO.md) y
+[evidencia saneada](../../App/infra/informe-atributos/seguridad/EVIDENCIA.json).
+Se conservan todos los registros históricos inferiores.
+
+Inicio limpio en feature/sebastian, local/remoto 82bac77 (GitHub 43144806561,
+8/8); fetch mantuvo develop 41ca881. No se integraron ramas. La aceptación
+funcional **16/16 automático y 16/16 visible con Redash detenido** es referencia
+independiente y no se repitió. El informe de octubre es histórico y no se usa
+como prueba de esta arquitectura. SIGTERM conserva causa desconocida: no se
+reabrió su investigación ni se cambiaron hooks, cinco segundos o arnés.
+
+Hitos funcionales:
+
+- **4aad53f:** guarda propia del catálogo Alimentos; rechazo de PAN/JSON/CVV en
+  los cinco DTO de cobro; mensajes/referencias remotos acotados antes de logs/libro.
+  Actualización dirigida Nest 11/Multer/Swagger y Nodemailer 10.5 con tipos propios.
+  Backend producción pasa de 3 altos + 2 moderados a cero avisos de npm audit.
+- **e5c6ba7:** cuatro rutas internas de Ventas exigen credencial de servicio,
+  ya disponible; Postventa HTTP/local se adapta. Un Cliente ajeno obtenía 200
+  directo con su JWT; ahora Cliente/Administrador no suplantan a un servicio.
+  Conserva 401 de sesión revocada durante consumo de turno (antes gateway 503).
+  Cabeceras defensivas en portales/gateway comprobadas antes/después con ZAP.
+- Fuentes ejecutadas: e5c6ba7; ocho hashes contrastados con contenedores coinciden.
+  La etiqueta de imagen sola no acredita el contenido: revisiones y hashes en
+  evidencia. Solo se reconstruyeron componentes afectados, sin semillas, cambios
+  de contraseñas, nuevas migraciones o recursos globales.
+
+Inventario actual: **178 operaciones de controlador**, 159 protegidas, 10 públicas
+justificadas, cinco internas, dos webhooks y dos de salud. **173 expuestas
+incluyendo salud propia del gateway**; preflight OPTIONS se documenta aparte.
+No se cierra login/registro/recuperación/cartelera para conseguir cero abiertas.
+
+Tres finales comparables sobre e5c6ba7, con Redash detenido, en serie:
+
+| Matriz — UTC 12/11 | Acceso | Propiedad / PAN HTTP | ZAP | Resultado de Seguridad |
+|---|---|---|---|---|
+| 1 — 11:15:51.926 | **1.760/1.760** | **11/11; 8/8** | 2 altos + 4 medios + 4 informativos | **No aprobado**, dependencias/CSP pendientes |
+| 2 — 11:16:34.227 | **1.760/1.760** | **11/11; 8/8** | 2 altos + 4 medios + 4 informativos | **No aprobado**, mismos pendientes |
+| 3 — 11:17:02.032 | **1.760/1.760** | **11/11; 8/8** | 2 altos + 4 medios + 4 informativos | **No aprobado**, mismos pendientes |
+
+Por pasada: 159 rutas × sin/inválido/caducado/revocado × gateway/directo;
+159 cabeceras falsas, 73 HEAD, 234 controles de rol fijo incorrecto, diez de
+internas sin credencial/publicación y doce de credenciales internas falsas/JWT.
+Cero rutas protegidas accesibles en esas condiciones: **0/159**, sin esconder
+las públicas. Cookies/refresh/replay/revocación aprobados. Roles incorrectos
+cubren **117/159**; una ruta admite los cuatro roles y otras 41 requieren sesión/
+contexto u organización/supervisión, enumeradas sin declararlas cubiertas por
+el control de rol. La propiedad comprobada es de Alimentos, no de todo el sistema.
+**CU-028 dinámico continúa pendiente de Samuel.**
+
+RNF-05: DTO, delegación al proveedor, persistencia y logs de Alimentos, Entradas,
+reventa y reservas Parqueaderos revisados con datos sintéticos. CU-024 liquida
+horas/tarifa: no se afirma un pago con tarjeta adicional que no implementa.
+La consulta SQL inicial de las finales solo revisó Alimentos/Parqueaderos
+(24 tablas, 5.828 filas, cero canarios) por nombres antiguos en el arnés. **Se
+conserva como parcial**. Se corrigió el helper compartido para derivar propietarios
+actuales y exigir cinco esquemas; complemento **3/3** con aplicaciones detenidas,
+solo PostgreSQL propio activo y Redash detenido: **43 tablas / 6.441 filas / cero
+coincidencias** en cada lectura, incluyendo entradas_ventas, entradas_postventa y
+finanzas_pagos. También cero en la clave Redis fixture/logs propios inspeccionados.
+No es detector exhaustivo ni certificación de todos los históricos/encodings.
+
+ZAP 2.17.0 aislado sin salida, 62 reglas pasivas habilitadas, ninguna suprimida;
+33 solicitudes por final y tres lecturas de negocio autenticadas 200 fuera de
+login. Pasivo de HTML/assets iniciales de ambos portales y API con/sin sesión;
+no navegación JS completa ni scanner activo ZAP. Pruebas activas de autorización
+acotadas a fixture propia. Stripe/Gmail/remotos/Redash no se escanearon.
+
+Pendientes/bloqueos explícitos:
+
+- Angular 19.2.25 vulnerable servido en ambos portales: producción 4 altos + 4
+  moderados por portal; migración coordinada de framework/CLI/Material y análisis
+  de cada advisory/sink. SSR/hidratación no se usa; no se inventa explotación ni
+  se elimina por ello el aviso de componente vulnerable.
+- Tooling dev: Cliente 4 críticos/28 altos/25 moderados/2 bajos; Admin 4 críticos/
+  19 altos/25 moderados/2 bajos. Críticos: piscina/proxy-addr/shell-quote/tar. No se
+  sirven en Nginx, sí afectan construcción/desarrollo; corregir padres/overrides
+  compatibles y validar builds. Backend dev 20 moderados/2 bajos. Las cifras dev
+  se clasificaron por paths del lock; no se suman a los totales completos.
+- CSP ausente, ampliar DAST/autorizaciones de organización y otras propiedades;
+  CU-028 Samuel y correspondencia de RNF-05 con CU-024 pendientes. Ningún alto/
+  crítico remanente se oculta ni se declara aprobado.
+
+Regresiones necesarias: **267/267** (16 suites), **87/87** internas/Postventa
+(cuatro suites), **4/4** cookie/webhook (dos suites), gateway **1/1**, correo real
+en memoria **1/1**, comparación DTO de referencia **5/5**, tipos y builds afectados
+aprobados. Se preserva el fallo inicial 266/267 por cambio deliberado del mensaje
+remoto, corregido en el contrato de prueba. Sin repetir Playwright ni suites
+Angular/Flutter ajenas a lógica modificada. Scripts Python/Node con sintaxis válida.
+
+Alternancia/restauración: siete Redash pararon ordenadamente (código 0), pruebas
+con CU-015 y proveedores simulados. Dos ventanas, segunda solo de lectura SQL;
+no se mantuvieron ambos proyectos activos. Al terminar ZAP/CU-015 detenidos,
+siete IDs Redash originales activos y montajes conservados. PG listo/Redis PONG;
+tras arranque escalonado hubo HTTP 200, pero **última comprobación 11:36:33 UTC:
+/ping y /login agotan 10 s**, OOM nuevos server 2 / scheduled_worker 1 en los cgroups
+del último arranque. Estados restaurados, **acceso Redash bloqueado**. No se hacen
+reinicios adicionales ni diagnóstico ampliado: requiere capacidad autorizada/
+revisión de concurrencia y verificar HTTP; no intervenir otros proyectos.
+
+Publicación solo origin/feature/sebastian; actualizar PR #50 abierto, sin merge
+ni auto-merge. La CI de publicación se informa separada de los ensayos de Seguridad;
+un eventual 8/8 no elimina los bloqueos de audit/ZAP. No se publica configuración,
+credenciales, sesiones, cookies, QR, trazas o informes privados. Sin F12, nuevas
+funciones, cambios históricos o Seguridad ajena a RNF-05/06.
+
+
+## Publicación del diagnóstico de apagado — 11/11/2026 (12/11 UTC)
+
+**Se publica instrumentación de diagnóstico, no una corrección de SIGTERM. La
+causa sigue desconocida.** Permanecen sin reemplazar la CI **43133728869 7/8**
+y la posterior **43137450806 8/8** descritas debajo. Un nuevo aprobado no
+demuestra que la intermitencia haya desaparecido ni convierte el fallo previo
+en aprobado. La aceptación CU-011F **16/16 automático y 16/16 visible** se
+reutiliza; no se repiten sus recorridos.
+
+Se revisó el trabajo local sobre **feature/sebastian**, HEAD 333b4c9; fetch sin
+cambios de referencias: origin/feature/sebastian 333b4c9 y develop 41ca881.
+PR #50 continúa abierto. Solo cambian el arnés CU-011, el observador y sus
+comprobaciones/documentación, un paso CI que las ejecuta y este plan. **Main,
+hooks y comportamiento de producto intactos**, sin dependencias nuevas,
+recursos globales, cambio de plazo o aserciones del control real.
+
+El preload se carga en el hijo del test que ya ejecuta CI; registra fases
+abiertas, duración y cantidades de tareas, HTTP, PostgreSQL, Redis, AMQP y tipos
+de handles. La escucha de SIGTERM es de un solo uso. Se mantienen **5.000 ms**
+en el arnés, hasta ocho muestras cada 500 ms y 256 registros totales. Si el
+watchdog hace fallar el control, el error conserva los registros de diagnóstico
+emitidos antes del cierre forzado. Se evita volcar la salida ordinaria del hijo
+en ese error; el log completo sigue privado. No se incorporan datos
+de negocio, credenciales, consultas, argumentos, mensajes o identidades a esos
+registros, ni se publican informes privados como artefactos CI.
+
+Comprobación adicional necesaria: fixture Nest/HTTP **sin proveedores externos**,
+con una tarea artificial retenida. Verifica ocho muestras, fase abierta con
+espera de al menos 3,5 s y última muestra antes de 5 s, una tarea y una solicitud/
+socket HTTP pendientes. Después libera esa tarea exclusivamente de la fixture y
+exige SIGTERM sin watchdog; un cierre forzado sería fallo. Comprueba que no se
+filtren los marcadores privados artificiales de URL, cabecera y tarea. Resultado
+**1/1**, salida 0, **02:50:08.460862–02:50:13.404776 UTC**. No es una reproducción
+del bloqueo de Núcleo ni una corrección del producto. CI ejecutará el conjunto
+de **siete comprobaciones del observador** antes de levantar sus proveedores.
+
+Se reutilizan sin repetir el control real **31,23 ms / 1 aprobado**, las **5/5**
+comprobaciones previas del observador y el build aprobado. Además de la captura
+controlada **1/1**, se ejecutan el reporte acotado de timeout **1/1**, la guarda
+directamente afectada por el workflow **1/1** y tipos backend tras el cambio del
+reporte en el arnés, todos aprobados. No se cambian
+sus artefactos permitidos, los límites de CI o los dos controles Núcleo existentes.
+Esta publicación no opera Docker ni repite diagnóstico de memoria/Redash.
+
+Límite de observación: si el event loop del hijo se congela, no puede emitir
+muestras nuevas. Quedan el último inicio/muestra y la señal/tiempo del padre;
+no se promete una fotografía reciente de un proceso que no ejecuta JavaScript.
+Sigue faltando una captura instrumentada durante una **ocurrencia real** del
+fallo que permita clasificar producto/arnés/entorno. No se intenta reproducir
+indefinidamente ni se amplía a otras funciones.
+
+Publicación autorizada únicamente en origin/feature/sebastian, como diagnóstico,
+y actualización del PR #50, sin merge o auto-merge. El resultado de la CI de ese
+commit se registra en el PR y se informa por separado: **no es evidencia de una
+corrección causal**. El registro de la entrega local anterior se conserva debajo.
+
+## Investigación acotada de SIGTERM — 11/11/2026 (12/11 UTC)
+
+**El bloqueo no se reprodujo en el único control dirigido. No hay corrección
+causal de producto demostrada ni se declara resuelta la intermitencia.** Se
+conservan ambos resultados remotos, sin convertir el anterior en aprobado:
+
+| Referencia GitHub | Resultado comprobado |
+|---|---|
+| [43133728869](https://github.com/Emperador24/HEXACORE/actions/runs/43133728869), bd40eaf | **7/8 trabajos**; primera pasada Núcleo **121/122**, fallo SIGTERM tras 5 s y SIGKILL del arnés; segunda no ejecutada |
+| [43137450806](https://github.com/Emperador24/HEXACORE/actions/runs/43137450806), 333b4c9 | **8/8 trabajos**; Núcleo **122/122 en cada una de dos pasadas**, 11/11 suites por pasada |
+
+Entre bd40eaf y 333b4c9 solo hay documentación. Main, hooks y control CU-011
+eran idénticos: la aprobación posterior no acredita una corrección. Se revisaron
+el test exacto, `enableShutdownHooks`, el manejador de Nest instalado y sus
+fases reales: `callDestroyHook` → `callBeforeShutdownHook` → `dispose` (HTTP) →
+`callShutdownHook` (liberación de proveedores) → señal final de Nest.
+
+### Instrumentación local y alcance
+
+Rama **feature/sebastian**, HEAD inicial **333b4c9**, árbol inicialmente limpio;
+fetch mantuvo origin/feature/sebastian en esa referencia y develop en 41ca881.
+PR #50 seguía abierto al consultar. Los cambios de esta investigación son solo
+el arnés CU-011, el preload/controles de observación y documentación; no cambian
+main, hooks de producto, lógica financiera, funciones, dependencias o recursos
+globales. No se repitieron aceptación CU-011F (16/16 por modalidad), recorridos
+de negocio ni diagnóstico de memoria/Redash.
+
+Se añade [observador de cierre](../../App/backend/test/apagado/README.md),
+cargado exclusivamente en el hijo E2E. Registra inicio/final/duración por hook y
+fase, contadores de tareas, HTTP, PG, Redis y AMQP; tipos de handles, no destinos
+ni contenido. Un máximo de ocho muestras de recursos cada 500 ms y 256 registros
+totales. No emite claves, SQL, comandos, mensajes, identidades ni excepciones.
+El arnés añade duración monótona hasta `exit`, señal/código y disparo del
+watchdog. Conserva sus **5.000 ms**, aserciones y rechazo de cierre forzado.
+No se añadió process.exit/SIGKILL de producto ni se absorbe la señal final.
+
+El smoke inicial del preload detectó un subpath privado de amqplib no exportado;
+se sustituyó por observación mediante su API pública `connect` y creación de
+canales. Se añadió el smoke a las pruebas del observador; no se confundió ese
+error de instrumentación con el bloqueo de Núcleo.
+
+### Entorno y ejecución única
+
+Se registraron IDs/estados iniciales: **Redash 7 activos**, CU-015 y el entorno
+E2E `hexacore-base-unica-e2e` detenidos. Redash se detuvo por sus etiquetas,
+aplicaciones primero y proveedores después, con gracia de 120 s, sin down,
+recreaciones o volúmenes nuevos. Solo se arrancaron los cinco proveedores E2E
+existentes (PostgreSQL, Redis, RabbitMQ, pasarela y correo simulados), todos
+saludables; ni sus imágenes de aplicaciones ni CU-015 se arrancaron.
+
+La base exclusiva E2E estaba aún en las 18 migraciones originales (Alimentos 2).
+Se ejecutó una vez la preparación registrada actual desde el build, **18 → 35**,
+con sus 17 migraciones posteriores; salida 0, **sin semillas**, sin modificar
+fuentes históricas o limpiar datos. Esto actualiza el esquema del recurso de
+prueba existente; no se revierte al restaurar los estados de contenedores.
+El entorno CU-015 de la aceptación conservó su base/servicios detenidos intactos.
+El control crea y limpia únicamente sus fixtures originales de beforeAll/afterAll.
+
+Comando ejecutado desde App/backend, con Node **22.22.3**, después de tipos y build:
+
+```bash
+node --experimental-vm-modules node_modules/jest/bin/jest.js --config test/jest-e2e.json --runInBand --runTestsByPath test/cu011.e2e-spec.ts --testNamePattern='SIGTERM cierra el único proceso'
+```
+
+Ventana **02:18:16.112432–02:18:24.946550 UTC**. **Un control aprobado**, salida
+0; los otros ocho no se ejecutaron por el filtro. No es un 9/9 ni una aceptación
+de negocio. El hijo terminó por **SIGTERM en 31,23 ms**; exitCode null,
+watchdog false y ninguna solicitud SIGKILL. Se recogieron **85 registros**:
+
+| Fase observada | Duración / evidencia |
+|---|---|
+| Tareas y hooks onModuleDestroy | **9,67 ms**; sin fases abiertas al terminar |
+| beforeApplicationShutdown | **1,21 ms** |
+| HTTP dispose | **0,24 ms**; sin escucha, solicitudes o sockets HTTP al final |
+| PostgreSQL | **7 pools cerrados**, total/libres/en espera 0 y siete DataSource desinicializados; destroy 0,04–0,35 ms por fuente |
+| Redis compartido | quit **1,06 ms**; ambos clientes Redis terminaron end y sin comandos/cola sin conexión |
+| AMQP | canal **8,84 ms**, conexión **0,85 ms**, hook total **9,77 ms**; cero canales/conexiones al final |
+| Fase liberar proveedores completa | **12,78 ms**; registro completo a **25,93 ms** desde la señal |
+
+Las fases anidadas se solapan; no se suman como tiempos independientes. Quedaban
+dos TCPSocketWrap y un SimpleShutdownWrap en la muestra previa a la señal final,
+con todos los proveedores cerrados; no se declaran cero handles del proceso.
+El hijo salió normalmente por señal y las comprobaciones externas originales
+de PostgreSQL, Redis y RabbitMQ aprobaron.
+
+Comprobaciones relacionadas: **observador 5/5** (carga con dependencias reales,
+promesas/callback/this/error, pendientes y límites sin datos privados), tipos
+backend y build Núcleo aprobados. No se ejecutó ninguna suite ajena ni un
+segundo control SIGTERM para buscar verde.
+
+### Diagnóstico, límite y siguiente observación
+
+En este control local **no había una espera bloqueada**: todas las fases
+terminaron. No permite determinar qué esperaba el hijo de la CI fallida ni
+clasificar definitivamente producto/arnés/entorno. La CI 43133728869 solo conserva
+los últimos logs de tareas/AMQP antes de agotar el plazo; no contiene la fase
+abierta, recursos pendientes, duración monótona o señal real de salida del hijo.
+Además, el filtro local ejecuta el beforeAll original sin los ocho casos API
+previos de la CI: no se afirma equivalencia de carga/historia o runner.
+
+**Observación concreta faltante:** una captura instrumentada de un SIGTERM que
+exceda 5 s en esas condiciones, con inicio sin final del hook/fase responsable,
+sus recursos pendientes y el evento exit del padre. Esa evidencia permitirá
+distinguir una espera de HTTP/PG/Redis/AMQP/tarea de una demora del arnés/entorno.
+El observador está preparado localmente para capturarla sin relajar el control.
+Sin reproducción o causa demostrada no se modifica el producto. Se conserva
+el trabajo local para revisión; **no se hace commit/push como corrección** al no
+cumplirse esa condición de la entrega. No se modifica ni se declara resuelto
+el PR #50. Logs, JSON por fases y ambos resultados CI permanecen privados en
+`App/e2e/.evidencia/sigterm-2026-11-12T02-08-34Z/`.
+
+Restauración registrada **02:21:50.436 UTC**: **los mismos siete IDs Redash
+running, cero activos E2E y cero CU-015**, igual que al inicio. No se alteraron
+otros proyectos, imágenes, configuración, montajes o volúmenes. No se repitió
+el diagnóstico de memoria ni se amplía a F12 o Seguridad. La comparación final
+de **29 contenedores a las 02:26:19.574 UTC** confirmó los mismos IDs, estados,
+imágenes, configuración y conjuntos de montajes. Docker devolvió algunos
+montajes en otro orden; se compararon por su contenido, sin diferencias reales.
+
 ## Entrega CU-011F — 11 de noviembre de 2026 (12/11 UTC)
+
+**Comprobación final de Redash, 01:50:36.571–01:50:38.617 UTC:** sus siete
+IDs iniciales siguen `running`, CU-015 tiene cero servicios activos y **`/ping`
+y `/login` responden 200**. No hubo otra intervención después del único
+escalonado. Esta sonda posterior supera el bloqueo HTTP observado a las 00:55,
+que se conserva abajo; no borra los OOM del arranque ni demuestra estabilidad
+sostenida o convivencia de proyectos. Evidencia privada:
+`comprobacion-final-publicacion.json` en la carpeta de esta entrega.
 
 **Implementada la cancelación por Personal del establecimiento, con reembolso
 durable y seguimiento web/Flutter. Aceptación actual: 16/16 automático normal
@@ -13,8 +816,8 @@ no representa los cambios CU-011F ni estos resultados locales.
 
 Trabajo exclusivamente en `feature/sebastian`, desde d5cb490. Se conservaron y
 versionaron primero los documentos locales de recuperación anteriores en
-dc8d40b. Las referencias remotas comprobadas al inicio y antes de publicar
-mantienen `origin/develop` en 6e5e7fa y Samuel en 5c641a8; no se integraron ramas,
+dc8d40b. Las referencias remotas comprobadas inicialmente y durante la preparación
+estaban en `origin/develop` 6e5e7fa y Samuel 5c641a8; no se integraron ramas,
 actualizaron dependencias ni modificaron migraciones históricas.
 
 Se leyeron las fichas CU-011/013/014 de `CU_eventos_completo.xlsx`, los requisitos
@@ -153,7 +956,7 @@ scheduler, sin reiniciar PostgreSQL/Redis/server: servidor solo respondió
 worker y adhoc_worker. Tras incorporar scheduled_worker, ambos agotaron 5 s a
 las 00:53:53 y en las sondas finales. No se repitió otro ciclo.
 
-Estado final registrado **00:55:49 UTC**: **Redash 7 running, CU-015 0 activos**;
+Estado intermedio registrado **00:55:49 UTC**: **Redash 7 running, CU-015 0 activos**;
 PostgreSQL listo y Redis PONG, pero **Redash HTTP no recuperado**. Memoria VM
 disponible 180,21 MiB, swap libre 0,32 MiB, PSI some/full avg10 31,21/24,42 %.
 El contador server aumentó de 4 a 8; hubo nuevos OOM también en workers tras
@@ -170,6 +973,50 @@ a certificar disponibilidad HTTP.
 
 ### Hitos y pendientes
 
+**CI del nuevo PR #50, fuente bd40eaf:**
+[43133728869](https://github.com/Emperador24/HEXACORE/actions/runs/43133728869)
+terminó **7/8 trabajos aprobados**. Instalación demo, transferencia histórica y
+lector vacío corregidos aprobaron con SQL real; este último confirmó 85 tablas,
+35 historiales y 18 procedencias completas. Flutter **78/78** y analyze sin
+incidencias; unitarias backend **1.010/1.010 en 74 suites**; Boletería **23/23 en
+cada una de sus dos pasadas**. Los dos portales, gateway y guardas aprobaron.
+
+Falló otro control: primera pasada de Núcleo **121/122, 10/11 suites**; la
+segunda no se ejecutó al fallar la primera. En CU-011, `SIGTERM cierra el único
+proceso…`, el hijo no terminó dentro de los **5 s existentes** y el arnés lo
+cerró con SIGKILL. Ventana del hijo: arranque **01:24:12–13 UTC**, solicitud de
+cierre **01:24:17**, fallo **01:24:22**. Antes del bloqueo registró «Sondeo de
+reservas detenido», «Consumidor de logística detenido», «Outbox Eventos
+detenido» y «Consumos AMQP detenidos; pendientes=0». No aparece después un error
+SQL/DNS ni un hook concreto responsable en su log. Los errores SQL de unicidad y
+los cierres AMQP forzados anteriores pertenecen a negativos de otras pruebas;
+no se usan como explicación de este cierre. No se atribuye al Redash de este Mac.
+
+**Causa inmediata conocida: cierre excedió 5 s; causa raíz y clasificación
+producto/test/entorno aún no aisladas.** Los hooks, main y el test CU-011 son
+idénticos entre e4310a5 y bd40eaf; e4310a5 aprobó sus dos pasadas. Ese contraste
+no demuestra que sea solo fluctuación del runner ni exculpa el cierre. No se
+relajó el límite, ocultó el caso, cambió producto o reejecutó para obtener verde.
+Evidencia privada: `ci-130903896238-privado.log` junto a los informes de esta
+entrega. Siguiente diagnóstico concreto: instrumentar por fase el cierre del
+hijo (hooks, cierre HTTP/PG/Redis/AMQP y handles pendientes), y ejecutar solo ese
+control con los mismos 5 s. Sin esa observabilidad no hay una corrección causal
+demostrada para aplicar. **No se declara CI verde ni disponibilidad global.**
+
+Este registro es documental: no cambia las fuentes de aplicación aceptadas ni
+requiere otros recorridos. El push inicia la CI automática habitual; no se
+solicita un rerun manual ni se sustituye el resultado 7/8 por una ejecución
+documental posterior. Su estado se comunica en el PR por separado.
+
+**Cambio remoto durante la entrega:** PR #49 fue integrado externamente a las
+**01:05:46 UTC del 12/11**, hasta **e4310a5**. El fetch posterior confirmó
+`origin/develop` **41ca881b1248970b226aef789efec353f41feecf**, cuyo único commit
+posterior a e4310a5 es ese merge. El agente no lo realizó ni habilitó auto-merge.
+La funcionalidad CU-011F ya está integrada allí; lo que se entrega en un **nuevo
+PR hacia develop** son **b167261** (semilla explícita), **96cffd9** (lector de
+base vacía) y esta actualización documental. Se continúa únicamente en
+`feature/sebastian`, sin integración adicional ni reescritura de historia.
+
 La publicación documental **0d44a2e** inició la
 [CI GitHub 43131313630](https://github.com/Emperador24/HEXACORE/actions/runs/43131313630).
 Flutter analyze y ambos builds web aprobaron; widgets reportó **76 aprobados,
@@ -183,18 +1030,47 @@ esa corrección de test y documentación; no requiere repetir los 16 recorridos
 de negocio ni reconstruir aplicaciones. El resultado remoto posterior se
 informa en el PR, separado de esta aceptación local.
 
+La CI siguiente de **e4310a5**, ejecución
+[43131655958](https://github.com/Emperador24/HEXACORE/actions/runs/43131655958),
+terminó con **6/8 trabajos aprobados**: Flutter, portales, gateway, guardas y
+backend completo (incluidas dos pasadas de Boletería/Núcleo e imágenes).
+Encontró otro fallo durante la semilla de la instalación nueva:
+PostgreSQL **0A000**, `cancelaciones_pedido` referencia `historial_preparacion`
+y no figuraba en el grupo explícito TRUNCATE. Se incorpora únicamente esa tabla
+al grupo de la semilla, conservando **RESTRICT**, sin CASCADE ni cambios de FK o
+migración. La regresión del script con DataSource simulado reproduce la FK
+incompleta (**1/1 fallido**, 01:07:26–01:07:29 UTC) y aprueba después de corregir
+la lista (**1/1 aprobado**, 01:07:34.924598–01:07:36.925183 UTC). **No se ejecutó
+la semilla en este Mac ni se alteraron sus datos**; la instalación nueva se
+comprueba en el runner aislado de GitHub. Este ajuste del script de fixtures no
+cambia las aplicaciones aceptadas ni requiere repetir sus recorridos de negocio.
+
+En esa misma ejecución, transferencia histórica aprobó la copia/lectura y sus
+aplicaciones; falló después la comprobación de instalación vacía al comparar
+**85 tablas reales frente a 84 esperadas** (`lectura-vacia.cjs`). CU-011F añade
+exactamente `alimentos.cancelaciones_pedido` y un registro de migración: el
+ensayo PostgreSQL local anterior ya comprobó 85 tablas y 39 registros de sistema.
+Se actualiza ese control a **85 / 35 historiales + cuatro roles**, exigiendo
+además el nombre/esquema de la tabla, nombres/timestamps en el historial de cada
+propietario y las 18 procedencias completas (conexión, esquema, historial, fuente,
+origen y SHA). No se modifican las fuentes históricas ni sus registros. Sintaxis
+de los dos lectores aprobada; la ejecución SQL de ese lector actualizado queda
+a cargo de la siguiente CI aislada, sin arrancar otro entorno local.
+
 Commits comprobados: **dc8d40b** conservación documental previa; **5edafb7**
 backend/migración/política; **bbb0195** web/Flutter; **b4a9fba** negocio/carreras;
 **fa6873f** recuperación financiera y navegación; **6d29617** vigencia de QR del
 comprobante; **c3d3386** salud pública después del reinicio. La documentación de
 esta entrega se publica después, sin repetir suites por ese cambio documental.
-Publicación únicamente a `origin/feature/sebastian`, en PR **#49** hacia develop,
-sin merge ni auto-merge. La CI nueva se informa por separado de la aceptación
+Publicación únicamente a `origin/feature/sebastian`: PR **#49** actualizado hasta
+su integración externa y nuevo PR de las correcciones posteriores hacia develop,
+sin merge ni auto-merge por el agente. La CI nueva se informa por separado de la aceptación
 local; no se heredan sus resultados históricos como nuevos.
 
 Pendientes: **CU-028 Samuel**, recuperador global de pagos inciertos **F12**,
 conciliación financiera de operaciones inciertas sin garantía de reenvío y
-capacidad/disponibilidad de Redash/gateway durante reinicios. No se amplía esta
+capacidad/disponibilidad de Redash/gateway durante reinicios; diagnóstico del
+cierre SIGTERM de CI antes de considerar verde la entrega remota. No se amplía esta
 entrega a esos trabajos. Demo nueva, tras reanudar CU-015 con Redash detenido:
 
 ```bash

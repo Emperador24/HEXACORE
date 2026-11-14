@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -66,6 +66,7 @@ export interface DatosReasignacion {
       </button>
     </mat-dialog-actions>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     .horario { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 8px; }
     .candidatos { display: flex; flex-direction: column; gap: 2px; margin-top: 8px; }

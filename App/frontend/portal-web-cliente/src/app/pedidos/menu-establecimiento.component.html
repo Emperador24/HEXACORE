@@ -30,7 +30,7 @@
     @let pedido = checkout()!;
     <div class="distribucion">
       <section class="panel hxc-vidrio" aria-live="polite">
-        <span class="hxc-badge" style="--tinte: var(--hxc-ambar)">Pendiente de pago</span>
+        <span class="hxc-badge csp-hxc-ambar">Pendiente de pago</span>
         <h2>Revisa tu pedido</h2>
         <ul class="detalle">
           @for (detalle of pedido.detalles; track detalle.productoId) {
@@ -57,7 +57,7 @@
           <article class="producto hxc-vidrio" [class.agotado]="!producto.activo || (producto.cantidadDisponible ?? 0) === 0">
             <div><h3>{{ producto.nombre }}</h3>@if (producto.descripcion) { <p class="descripcion">{{ producto.descripcion }}</p> }<p class="descripcion">{{ producto.restriccionesAlimentarias?.join(', ') }}</p><p class="precio">${{ producto.precio | number: '1.2-2' }} <small>COP</small></p></div>
             @if (!producto.activo || (producto.cantidadDisponible ?? 0) === 0) {
-              <span class="hxc-badge" style="--tinte: var(--hxc-ambar)">{{ producto.cantidadDisponible === null ? 'Disponibilidad por confirmar' : 'Agotado' }}</span>
+              <span class="hxc-badge csp-hxc-ambar">{{ producto.cantidadDisponible === null ? 'Disponibilidad por confirmar' : 'Agotado' }}</span>
             } @else {
               <div class="contador">
                 <button mat-icon-button (click)="cambiar(producto, -1)" [disabled]="!cantidadDe(producto) || enviando() || resultadoIncierto()" [attr.aria-label]="'Quitar ' + producto.nombre"><mat-icon>remove</mat-icon></button>

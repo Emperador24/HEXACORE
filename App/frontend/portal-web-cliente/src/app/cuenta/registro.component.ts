@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -67,6 +67,7 @@ import { TarjetaCuentaComponent } from '../shared/tarjeta-cuenta.component';
       <a routerLink="/login" class="centrado">¿Ya tienes cuenta? Inicia sesión</a>
     </app-tarjeta-cuenta>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     .campo { display: block; width: 100%; }
     .principal { width: 100%; height: 48px; margin-top: 16px; }

@@ -6,7 +6,7 @@
 </div>
 
 <div class="cifras">
-  <section class="panel cifra" style="--tinte: var(--hx-primario)">
+  <section class="panel cifra csp-hx-primario">
     <span class="badge-icono"><mat-icon>event_available</mat-icon></span>
     <div>
       <p class="etiqueta">Eventos publicados</p>
@@ -14,7 +14,7 @@
       @else { <p class="valor">{{ eventos()?.length ?? '…' }}</p> }
     </div>
   </section>
-  <section class="panel cifra" style="--tinte: var(--hx-verde)">
+  <section class="panel cifra csp-hx-verde">
     <span class="badge-icono"><mat-icon>badge</mat-icon></span>
     <div>
       <p class="etiqueta">Personal activo</p>
@@ -22,7 +22,7 @@
       @else { <p class="valor">{{ empleados() ? activos() : '…' }}</p> }
     </div>
   </section>
-  <section class="panel cifra" style="--tinte: var(--hx-ambar)">
+  <section class="panel cifra csp-hx-ambar">
     <span class="badge-icono"><mat-icon>assignment_late</mat-icon></span>
     <div>
       <p class="etiqueta">Fichas incompletas</p>

@@ -5,8 +5,8 @@ import { Controller, Get, Req, UseGuards } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { SesionValida } from '../comun/autenticacion/sesion-valida.guard';
-import { ContextoDeLogistica, PeticionDeLogistica } from './autorizacion.guard';
 import { Notificacion } from './entities/notificacion.entity';
+import { ContextoDeLogistica, PeticionDeLogistica } from './autorizacion.guard';
 
 /**
  * Expone la evidencia de mensajes procesados por el consumidor de
@@ -26,9 +26,10 @@ export class NotificacionesController {
   ) {}
 
   @Get()
-  async listar(@Req() peticion: PeticionDeLogistica) {
+  listar(@Req() peticion: PeticionDeLogistica) {
+    // Igual que turnos/solicitudes/asistencia: sin ficha nunca se consulta todo.
     if (peticion.supervisa) return this.notificaciones.find({ order: { recibidoEn: 'DESC' } });
-    if (!peticion.empleado) return [];
+    if (!peticion.empleado) return Promise.resolve([]);
     return this.notificaciones.find({ where: { empleadoId: peticion.empleado.id }, order: { recibidoEn: 'DESC' } });
   }
 }

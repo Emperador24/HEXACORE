@@ -1,6 +1,7 @@
+import { SesionValida } from '../comun/autenticacion/sesion-valida.guard';
 import { UsePipes } from '@nestjs/common';
 import { validacionAlimentos } from '../../../compartido/validacion';
-import { Controller, Get, Param, ParseUUIDPipe } from '@nestjs/common';
+import { Controller, Get, Param, ParseUUIDPipe, UseGuards } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiNotFoundResponse, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CatalogoService } from './catalogo.service';
 import { EstablecimientoDto } from './dto/establecimiento.dto';
@@ -8,6 +9,8 @@ import { ProductoDto } from './dto/producto.dto';
 
 @ApiTags('catálogo de pedidos')
 @UsePipes(validacionAlimentos)
+// Mismo contrato que gateway: requiere sesión; el catálogo no restringe rol.
+@UseGuards(SesionValida)
 @Controller('pedidos')
 export class CatalogoController {
   constructor(private readonly catalogo: CatalogoService) {}

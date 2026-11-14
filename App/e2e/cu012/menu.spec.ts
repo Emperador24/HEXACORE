@@ -1,5 +1,5 @@
 import { presentar } from '../presentacion';
-import { APIResponse, expect, Page, test } from '@playwright/test';
+import { APIResponse, expect, Page, test } from '../csp.fixture';
 import { randomUUID } from 'node:crypto';
 import { adminURL, clienteURL, comprobarAislamiento, crearEvento, gateway, loginAPI, loginUI, nucleo, sql } from '../cu015/entorno';
 

@@ -222,9 +222,7 @@ export class ClienteVentas {
         signal: AbortSignal.timeout(this.timeoutMs),
         redirect: 'error',
         headers: {
-          ...(tokenSesion === SIN_USUARIO
-            ? { 'X-Token-Servicio': this.tokenServicios }
-            : { Authorization: `Bearer ${tokenSesion}` }),
+          'X-Token-Servicio': this.tokenServicios,
           ...(cuerpo === undefined ? {} : { 'Content-Type': 'application/json' }),
         },
         body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo),

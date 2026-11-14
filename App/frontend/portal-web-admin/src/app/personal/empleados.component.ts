@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -39,6 +39,7 @@ type FiltroEstado = 'activos' | 'inactivos' | 'todos';
     MatTooltipModule,
     PestanasPersonalComponent
   ],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './empleados.component.html'
 })
 export class EmpleadosComponent {

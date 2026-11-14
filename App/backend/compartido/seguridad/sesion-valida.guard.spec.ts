@@ -156,6 +156,25 @@ describe('SesionValida (Núcleo, CU-028)', () => {
     expect((await estado(guard.canActivate(contexto(token, Controlador, 'leer').ctx))).status).toBe(200);
   });
 
+  it('validar(): un SSE pierde la sesión al perder el permiso, y el token se verifica otra vez tras Redis', async () => {
+    const token = await firmar(['Supervisor']);
+    const acceso = { roles: ['Organizador'], modulo: 'eventos' as const, accion: 'leer' as const };
+    redis.conjuntos.set('permisos-rol:Supervisor', ['eventos:leer']);
+    await expect(guard.validar(token, acceso)).resolves.toMatchObject({ permisos: ['eventos:leer'] });
+    redis.conjuntos.set('permisos-rol:Supervisor', []);
+    expect(await estado(guard.validar(token, acceso))).toEqual({ status: 403, codigo: 'ROL_INSUFICIENTE' });
+    // Sin `acceso` solo exige sesión.
+    expect((await estado(guard.validar(token))).status).toBe(200);
+    expect(await estado(guard.validar(token, { roles: ['Organizador'], accion: 'leer' }))).toEqual({ status: 403, codigo: 'ROL_INSUFICIENTE' });
+
+    // El token caduca mientras se espera a Redis: la segunda verificación lo rechaza.
+    const contenido = verificador.decode(token) as Record<string, unknown>;
+    const caduca = { verifyAsync: jest.fn().mockResolvedValueOnce(contenido).mockRejectedValueOnce(new Error('jwt expired')) };
+    const conEspera = new SesionValida(caduca as unknown as JwtService, new Reflector(), redis as unknown as Redis);
+    expect((await estado(conEspera.validar(token))).status).toBe(401);
+    expect(caduca.verifyAsync).toHaveBeenCalledTimes(2);
+  });
+
   it('una ruta sin roles declarados solo exige sesión', async () => {
     expect((await estado(guard.canActivate(contexto(await firmar(['Cliente']), Abierto, 'leer').ctx))).status).toBe(200);
   });

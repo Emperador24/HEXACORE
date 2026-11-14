@@ -1,5 +1,134 @@
 # Alternar Redash y HEXACORE en este Mac
 
+**Última ventana — 13/11, revalidación SSE:** Docker **activo** al inicio/final;
+**95 IDs/imágenes/montajes/estados originales conservados**, CU-015/ZAP detenidos,
+otros proyectos sin intervención. Base/Redis/volumen/vhost nuevos, datos/credenciales
+anteriores intactos. Tres nuevos contenedores detenidos **0/0/0 sin OOM**, datos
+conservados. Imagen corregida solo del Núcleo de ensayo; originales intactas.
+Tres finales SSE aprobadas sin repetir los 300 ni los 16 recorridos. SIGTERM con
+dos flujos abiertos por pasada cerró proceso y conexiones en **246–272 ms**, límite
+existente **5 s**. No se amplían límites ni se reinterpreta el incidente anterior.
+
+Siete Redash reanudados una sola vez. Reset inicial y luego 200 durante la
+incorporación de servicios. Control posterior **14/11 03:16:49 UTC (13/11 22:16
+Bogotá)**: **/ping y /login agotan 15 s**, PostgreSQL listo/Redis PONG. Nuevo
+cgroup: oom_kill server **2**, worker **5**, adhoc_worker **1**, scheduled_worker
+**1**, scheduler/proveedores **0**. **Estados restaurados; HTTP bloqueado por
+capacidad/OOM**, sin ciclos manuales de recuperación. Los 200 anteriores no
+acreditan estabilidad. Requiere capacidad autorizada/revisión de concurrencia y
+comprobación del responsable, sin detener otros proyectos ni cambiar recursos globales.
+
+Contadores registrados aparte: gateway de otro proyecto ya estaba restarting
+**272→289**, scheduler **3→1** durante alternancia. No se intervienen para igualar
+contadores. Recursos Redis con fallo simulado fueron exclusivamente el nuevo
+contenedor del ensayo (CLIENT PAUSE con fin programado), nunca Redis compartido.
+[Resultado](../../App/infra/informe-atributos/seguridad/RESULTADO.md).
+
+**Última ventana — 13/11, Parqueaderos:** Docker **activo** al inicio/final;
+**92 IDs/imágenes/montajes/estados originales conservados**, CU-015/ZAP detenidos.
+Base original con cero tarifas intacta. Para los positivos globales se añadieron
+base/Redis/volumen/vhost y Núcleo exclusivos; tres contenedores nuevos ahora
+detenidos, cierre **0/0/0 sin OOM**, datos conservados. No se reconstruyeron
+imágenes originales ni se cambiaron cuentas/claves/config previas. Tres finales
+nuevas **300/300**, Parqueaderos **25/25**, global **113/159**. Las guías inferiores
+sobre reanudación sin preparación siguen aplicando a los contenedores anteriores.
+
+Los siete Redash reanudados una sola vez. Primeras sondas del servidor tuvieron
+reset; las siguientes /ping y /login **200**. Control posterior **14/11 01:20:56
+UTC (13/11 20:20 Bogotá): ambas 200**, PG listo/Redis PONG. Cgroups del nuevo
+arranque: oom_kill server **3**, worker **4**, adhoc_worker **1**, scheduled_worker
+**2**, scheduler/proveedores **0**. El 200 puntual no elimina el bloqueo histórico
+por OOM/capacidad ni acredita disponibilidad sostenida; sin ciclos manuales de
+recuperación, sin intervenir otros proyectos ni modificar recursos globales.
+
+El primer chequeo de restauración falló por exigir contadores de reinicio
+idénticos pese a conservar estados. Auditoría posterior **solo lectura** confirmó
+los 92 originales; gateway de otro proyecto ya estaba restarting (147→175), sin
+intervención; scheduler 3→1 durante alternancia. Los contadores se conservan como
+observación, no se intentan restaurar. El arnés ya distingue ambas condiciones.
+[Resultado e historial](../../App/infra/informe-atributos/seguridad/RESULTADO.md).
+
+**Última ventana — 13/11, Compras/Reventa:** motor **activo** al inicio y al final.
+Mismos 92 IDs/imágenes/montajes y estados activo/detenido; CU-015/ZAP detenidos,
+siete Redash reanudados una sola vez, otros proyectos sin intervención. Tres
+finales nuevas 150/150 con Redash detenido, datos/volúmenes/claves conservados.
+No se construyó ni resembró el entorno. CU-015 cerró 0/143 sin OOM/SIGKILL.
+
+Control **14/11 00:02:16 UTC (13/11 19:02 Bogotá)**: PG listo/Redis PONG;
+`/ping` y `/login` agotan 15 s. Nuevo cgroup del servidor **oom_kill=2**, otros
+seis 0 en ese control; el servidor tenía cero al arrancar. Se conservan marcas
+históricas separadas. PG requirió esperar disponibilidad inicial, sin reiniciarlo.
+**Estados restaurados, HTTP sigue bloqueado**; sin ciclos de recuperación.
+Requiere capacidad autorizada/revisión de concurrencia y comprobación HTTP del
+responsable, sin intervenir otros proyectos ni cambiar recursos globales.
+[Resultado](../../App/infra/informe-atributos/seguridad/RESULTADO.md).
+
+**Última ventana — 13/11, autorización de Alimentos:** Docker estaba **activo**
+al inicio y se deja **activo**. CU-015/ZAP detenidos; siete IDs/imágenes/montajes
+Redash reanudados una sola vez, estados originales conservados. Las tres finales
+de Alimentos aprobaron 278/278 cada una, con Redash detenido; otros proyectos no
+se intervinieron. No se reconstruyó ni resiembra el entorno.
+
+PG listo y Redis PONG; `/ping` y `/login` dieron 200 en cada etapa, con siete
+cgroups sin oom_kill entonces. Control posterior **22:53:57 UTC**: ambas rutas
+agotan 15 s. **OOM nuevos posteriores**: server 3, worker 8, adhoc_worker 3,
+scheduled_worker 2; proveedores/scheduler 0. VM disponible 140780 KiB y swap libre
+3268 KiB. No se hicieron reinicios de recuperación. **Estados restaurados;
+disponibilidad HTTP pendiente**. El responsable debe liberar capacidad autorizada
+o revisar concurrencia de Redash y verificar HTTP; no intervenir otros proyectos.
+Las marcas OOMKilled históricas no se confunden con esos contadores nuevos.
+Detalles y fallos de arnés en [RESULTADO](../../App/infra/informe-atributos/seguridad/RESULTADO.md).
+
+Los registros de motor apagado inferiores describen ventanas anteriores.
+
+
+**Última ventana — 13/11, autorización/DAST:** motor apagado al inicio y al final.
+CU-015/ZAP detenidos por scripts; siete IDs/imágenes/montajes Redash restaurados
+una vez, PG listo/Redis PONG, últimos `/ping` y `/login` **200**, siete cgroups
+sin oom_kill nuevos. Hubo resets/timeout en arranque, sin reinicios repetidos.
+El 200 corresponde al control previo a apagar Docker, no disponibilidad actual.
+Imágenes backend actualizadas solo por brechas demostradas (545e19c/9a06ba8);
+portales/CSP conservados. Scheduler volvió a cerrar 137/OOM=false al detenerlo,
+registrado sin ampliar investigación. [Resultado](../../App/infra/informe-atributos/seguridad/RESULTADO.md).
+
+
+**13/11/2026, bloque Angular/CSP:** Docker Desktop estaba apagado al inicio y se
+restauró **apagado** al terminar. Antes de apagarlo: CU-015 y ZAP detenidos por
+scripts; siete IDs/imágenes/montajes Redash originales restaurados una sola vez,
+PG listo/Redis PONG, controles finales `/ping` y `/login` **200**, cgroups sin
+nuevos oom_kill. Hubo resets/timeout de arranque y se conservan; no hubo ciclos
+de reinicios. Al estar el motor apagado, no se afirma Redash accesible ahora.
+Para otra sesión, iniciar Docker Desktop existente y volver a registrar/alternar
+según estas instrucciones; no asumir estados a partir de este informe.
+
+Imágenes actuales propias: Angular 22.2.6/CSP efectiva (4487b16), Node frontend
+22.22.3. Aceptación con imágenes nuevas y Redash detenido: **16/16 automático y
+16/16 visible**, un trabajador/cero reintentos/límites normales. Primera pasada
+15/16 por img-src blob de CU-029, corregida; historial y residuos de Seguridad en
+[RESULTADO.md](../../App/infra/informe-atributos/seguridad/RESULTADO.md).
+
+Los registros inferiores se conservan como historia; no describen el motor
+actual apagado.
+
+**Estado posterior a Seguridad, 12/11/2026 11:36 UTC:** siete IDs Redash
+originales activos, CU-015 y ZAP detenidos; montajes/datos conservados. Tras el
+arranque por etapas hubo 200 en `/ping` y `/login`, pero el último control agotó
+10 s en ambos. Cgroups del último arranque: server 2 / scheduled_worker 1
+`oom_kill`, incidentes nuevos; no confundirlos con las marcas históricas de abajo.
+No se hicieron reinicios de recuperación. Estados restaurados; acceso HTTP
+bloqueado al último control. Requiere capacidad autorizada/revisión de concurrencia
+Redash y verificación HTTP; no detener otros proyectos ni cambiar recursos globales.
+La ventana adicional solo leyó PostgreSQL propio para corregir cobertura del arnés
+RNF-05; no repitió recorridos funcionales ni diagnóstico SIGTERM. Detalles en
+[RESULTADO.md](../../App/infra/informe-atributos/seguridad/RESULTADO.md).
+
+
+**Comprobación posterior, 12/11 a las 01:50 UTC:** `/ping` y `/login` volvieron
+a responder 200, con los siete IDs iniciales Redash activos y CU-015 detenido.
+No se hicieron más reinicios después del único escalonado. Se deja Redash
+accesible; la sonda no elimina los OOM del arranque ni certifica estabilidad
+continua. El diagnóstico de las 00:55 se conserva como condición intermedia.
+
 Estado posterior a CU-011F, **12 de noviembre de 2026, 00:55 UTC** (11/11 en
 Bogotá): siete contenedores Redash activos; `hexacore-cu015-sebastian` detenido
 mediante su script, con datos y volúmenes conservados. **Redash HTTP pendiente**:

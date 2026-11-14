@@ -1,4 +1,4 @@
-import { Component, EventEmitter, inject, Input, OnChanges, OnDestroy, Output, SimpleChanges, signal } from '@angular/core';
+import { Component, EventEmitter, inject, Input, OnChanges, OnDestroy, Output, SimpleChanges, signal, ChangeDetectionStrategy } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -21,7 +21,8 @@ import { EntregasApiService, IntencionEntrega, ResultadoEntrega, RevisionEntrega
   <p>Listo para entregar. Confirma solo después de revisar el pedido y entregarlo al cliente.</p>
   <button mat-flat-button (click)="confirmar()" [disabled]="ocupado() || inactivo">Confirmar entrega</button></section>}
   @if(resultado(); as r){<p role="status">Pedido entregado en {{r.entrega.puntoEntrega}} · {{r.entrega.entregadoEn | date:'short'}}. El código ya no permite otra entrega.</p>}
-  </section>`, styles: [`.panel{padding:1.2rem;border:1px solid var(--hxc-borde, #777);border-radius:16px;margin:1rem 0}mat-form-field{width:min(100%,40rem)}p{overflow-wrap:anywhere}[role=alert]{color:var(--hxc-rojo,#d33)}`] })
+  </section>`, changeDetection: ChangeDetectionStrategy.Eager,
+ styles: [`.panel{padding:1.2rem;border:1px solid var(--hxc-borde, #777);border-radius:16px;margin:1rem 0}mat-form-field{width:min(100%,40rem)}p{overflow-wrap:anywhere}[role=alert]{color:var(--hxc-rojo,#d33)}`] })
 export class EntregaPedidoComponent implements OnChanges, OnDestroy {
   @Input() local = ''; @Input() inactivo = false;
   @Output() ocupacion = new EventEmitter<boolean>(); @Output() pendienteChange = new EventEmitter<boolean>(); @Output() entregada = new EventEmitter<void>();

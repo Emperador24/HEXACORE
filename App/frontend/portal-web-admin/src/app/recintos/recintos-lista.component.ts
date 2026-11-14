@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -19,6 +19,7 @@ import { acento } from '../compartido/acentos';
   standalone: true,
   imports: [DecimalPipe, FormsModule, RouterLink, MatButtonModule, MatFormFieldModule, MatIconModule, MatInputModule, MatProgressBarModule, MatTooltipModule],
   templateUrl: './recintos-lista.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './recintos-lista.component.scss'
 })
 export class RecintosListaComponent {

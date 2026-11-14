@@ -70,7 +70,7 @@
         <div class="medidor" role="progressbar" [attr.aria-valuenow]="p.aforo.porcentaje" aria-valuemin="0" aria-valuemax="100"><span [style.width.%]="p.aforo.porcentaje > 100 ? 100 : p.aforo.porcentaje"></span></div>
       </div>
     </section>
-    <section class="panel kpi" style="--tinte: var(--hx-cian)">
+    <section class="panel kpi csp-hx-cian">
       <span class="badge-icono"><mat-icon>login</mat-icon></span>
       <div class="cuerpo">
         <p class="etiqueta">Flujo de ingreso</p>
@@ -78,7 +78,7 @@
         <p class="secundario">{{ p.accesos.ultimos5min }} en los últimos 5 min</p>
       </div>
     </section>
-    <section class="panel kpi" style="--tinte: var(--hx-violeta)">
+    <section class="panel kpi csp-hx-violeta">
       <span class="badge-icono"><mat-icon>badge</mat-icon></span>
       <div class="cuerpo">
         <p class="etiqueta">Personal presente</p>

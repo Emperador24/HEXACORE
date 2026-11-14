@@ -1,5 +1,5 @@
 import { presentar } from '../presentacion';
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../csp.fixture';
 import { randomUUID, createHash } from 'node:crypto';
 import { writeFileSync } from 'node:fs';
 import { adminURL, clienteURL, comprobarAislamiento, gateway, loginAPI, loginUI, nucleo, sql } from '../cu015/entorno';

@@ -226,9 +226,8 @@ export function cargarConfiguracion(): ConfiguracionServicio {
     },
     reventa,
     venta,
-    // En producción es obligatorio: sin él, la API interna solo aceptaría
-    // tokens de usuario y el trabajo de expiración de Postventa no podría
-    // liberar ninguna entrada. En desarrollo tiene un valor fijo y conocido
+    // En producción es obligatorio: sin él, Postventa no puede usar
+    // la API interna. Los JWT de usuarios no acreditan a un servicio. En desarrollo tiene un valor fijo y conocido
     // para que `docker compose up` funcione sin configurar nada.
     tokenServicios:
       entorno === 'production' ? requerido('TOKEN_SERVICIOS') : texto('TOKEN_SERVICIOS', 'hexacore-servicios-dev'),

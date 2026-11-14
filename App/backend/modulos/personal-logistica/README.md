@@ -117,8 +117,14 @@ no puede pedir cambios ajenos ni aprobarlos. La asistencia desde un punto de
 control se decide por credencial escaneada, como antes. La revocación se consulta
 en el Redis común de Identidad.
 
-Las notificaciones mantienen su listado global para cualquier sesión válida,
-sin filtro de destinatario (F14, deuda previa detectada). La deduplicación y los
+La revisión de Seguridad por recurso corrigió el listado de notificaciones:
+quien supervisa conserva la consulta global; cada ficha activa ve solo las
+notificaciones cuyo empleadoId le corresponde; sin ficha, lista vacía. Se
+reutiliza ContextoDeLogistica, sin nueva ACL o mecanismo de entrega F14.
+Los puntos de control de asistencia exigen rol Personal/Organizador/Administrador:
+una cuenta Cliente no puede escribir fichajes aunque conozca una credencial.
+La credencial sigue identificando al empleado escaneado, no al operador.
+La deduplicación y los
 reintentos del consumidor siguen en memoria; no se presentan como outbox o
 procesamiento exactamente una vez. Se conserva cola/DLQ/prefijo, con una conexión
 compartida; el cierre cancela al consumidor y espera su trabajo antes de cerrar.

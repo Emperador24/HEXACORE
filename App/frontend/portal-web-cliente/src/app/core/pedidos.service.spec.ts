@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpHeaders, provideHttpClient } from '@angular/common/http';
+import { HttpHeaders, provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from './auth.service';
@@ -10,7 +10,7 @@ describe('PedidosService HTTP', () => {
   let servicio: PedidosService;
   let http: HttpTestingController;
   beforeEach(() => {
-    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting(), {
+    TestBed.configureTestingModule({ providers: [provideHttpClient(withXhr()), provideHttpClientTesting(), {
       provide: AuthService, useValue: { conAcceso: (peticion: any) => firstValueFrom(peticion(new HttpHeaders({ Authorization: 'Bearer prueba' }))) }
     }] });
     servicio = TestBed.inject(PedidosService);

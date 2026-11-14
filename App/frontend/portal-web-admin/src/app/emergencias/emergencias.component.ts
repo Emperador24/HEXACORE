@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -54,6 +54,7 @@ const BITACORA: Record<string, string> = {
     MatProgressBarModule, MatSelectModule, MatTooltipModule
   ],
   templateUrl: './emergencias.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './emergencias.component.scss'
 })
 export class EmergenciasComponent implements OnInit, OnDestroy {

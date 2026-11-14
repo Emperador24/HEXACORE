@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CurrencyPipe, DatePipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -52,6 +52,7 @@ export const TIPOS_VEHICULO: { valor: TipoVehiculo; etiqueta: string; icono: str
     MatProgressBarModule, MatSelectModule, MatTooltipModule
   ],
   templateUrl: './parqueaderos.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './parqueaderos.component.scss'
 })
 export class ParqueaderosComponent implements OnInit, OnDestroy {
@@ -106,6 +107,8 @@ export class ParqueaderosComponent implements OnInit, OnDestroy {
   private cortar: (() => void) | null = null;
   private reintento: ReturnType<typeof setTimeout> | null = null;
   private espera = 2000;
+  private renovacionFlujoIntentada = false;
+  private generacion = 0;
 
   async ngOnInit(): Promise<void> {
     try {
@@ -126,6 +129,7 @@ export class ParqueaderosComponent implements OnInit, OnDestroy {
 
   elegirEvento(id: string): void {
     this.detener();
+    this.renovacionFlujoIntentada = false;
     this.eventoId.set(id);
     this.panel.set(null);
     this.ultimaSalida.set(null);
@@ -275,19 +279,36 @@ export class ParqueaderosComponent implements OnInit, OnDestroy {
 
   private conectar(): void {
     const id = this.eventoId();
+    const generacion = this.generacion;
     this.cortar = this.api.seguir(
       id,
       (p) => {
-        if (id !== this.eventoId()) return;
+        if (id !== this.eventoId() || generacion !== this.generacion) return;
+        this.renovacionFlujoIntentada = false;
         this.panel.set(p);
         this.enVivo.set(true);
         this.espera = 2000;
         // El mapa de espacios solo se vuelve a pedir si algo entró, salió o se reservó.
         if (p.total.ocupados + p.total.reservados !== this.comprometidos) void this.cargarDetalle();
       },
-      () => {
-        if (id !== this.eventoId()) return;
+      (motivo, estado) => {
+        if (id !== this.eventoId() || generacion !== this.generacion) return;
         this.enVivo.set(false);
+        if (estado === 401) {
+          this.error.set(motivo);
+          if (!this.renovacionFlujoIntentada) {
+            this.renovacionFlujoIntentada = true;
+            // Cookie/renovación existentes, una vez hasta volver a recibir datos.
+            void this.auth.renovar().then(ok => {
+              if (ok && id === this.eventoId() && generacion === this.generacion) {
+                if (this.error() === motivo) this.error.set(null);
+                this.conectar();
+              }
+            }).catch(() => undefined);
+          }
+          return;
+        }
+        if (estado === 403 || estado === 503) { this.error.set(motivo); return; }
         this.reintento = setTimeout(() => this.conectar(), this.espera);
         this.espera = Math.min(this.espera * 2, 30_000);
       }
@@ -295,6 +316,7 @@ export class ParqueaderosComponent implements OnInit, OnDestroy {
   }
 
   private detener(): void {
+    this.generacion++;
     this.cortar?.();
     this.cortar = null;
     if (this.reintento) clearTimeout(this.reintento);
