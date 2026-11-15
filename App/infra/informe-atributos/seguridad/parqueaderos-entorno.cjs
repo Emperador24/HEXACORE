@@ -63,8 +63,9 @@ async function main() {
     crearCore(m, imagen); console.log('Solo Núcleo descartable actualizado; instancia anterior detenida y conservada.');
   } else if (accion === 'parar') {
     const m = c.leer(archivo);
-    for (const nombre of [m.core, m.redis]) {
+    for (const nombre of [m.gatewayEnsayo?.nombre, m.core, m.redis].filter(Boolean)) {
       const actual = inspect(nombre); c.assert.equal(actual.Config.Labels['com.docker.compose.project'], proyecto);
+      if (nombre === m.gatewayEnsayo?.nombre) c.assert.equal(actual.Id, m.gatewayEnsayo.id);
       if (actual.State.Running) docker(['stop', '--time', '30', nombre]);
       const parado = inspect(nombre); c.assert([0, 143].includes(parado.State.ExitCode) && !parado.State.OOMKilled);
     }

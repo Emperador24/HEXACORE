@@ -33,6 +33,8 @@ async function inventario(){
       const ruta='/api/v1/'+[base,sub].filter(Boolean).join('/').replace(/^\/+|\/+$/g,'');
       const guards=[...(Reflect.getMetadata(GUARDS_METADATA,C)??[]),...(Reflect.getMetadata(GUARDS_METADATA,fn)??[])].map(g=>g.name??g.constructor.name);
       const roles=Reflect.getMetadata('roles-permitidos',fn)??Reflect.getMetadata('roles-permitidos',C)??[];
+      const moduloPermiso=Reflect.getMetadata('modulo-permiso',fn)??Reflect.getMetadata('modulo-permiso',C)??null;
+      const accionPermiso=Reflect.getMetadata('accion-permiso',fn)??(['GET','HEAD'].includes(RequestMethod[verbo])?'leer':['PUT','PATCH'].includes(RequestMethod[verbo])?'actualizar':RequestMethod[verbo]==='DELETE'?'eliminar':'crear');
       const rolAdmin=guards.some(g=>/Administrador|AdminRequerido/.test(g));
       const loc=borde(ruta);let clase=guards.length?'protegida':'sin-clasificar';let razon=null;
       if(ruta.includes('/interno/')){clase='interna';razon='Contrato entre componentes; no se enruta públicamente';}
@@ -42,7 +44,7 @@ async function inventario(){
        clase='publica';razon=ruta.includes('cartelera')?'Cartelera pública CU-005':'Selección pública del proveedor, sin clave privada';
       }else if(!guards.length&&(['/api/v1/sesiones','/api/v1/sesiones/renovar','/api/v1/cuentas/registro','/api/v1/cuentas/verificar','/api/v1/cuentas/recuperacion','/api/v1/cuentas/restablecer'].includes(ruta))){clase='publica';razon='Emisión/recuperación de identidad; requiere su credencial específica';}
       const metodoHttp=RequestMethod[verbo];
-      rutas.push({programa,metodo:metodoHttp,ruta,controlador:C.name,accion:metodo,fuente:fuente(C),guards,roles:rolAdmin?['Administrador']:roles,clase,razon,gateway:loc?{location:loc.ruta,exacta:loc.exacta,protegida:loc.protegida,roles:loc.roles,upstream:loc.upstream,solo:loc.solo}:null});
+      rutas.push({programa,metodo:metodoHttp,ruta,controlador:C.name,accion:metodo,fuente:fuente(C),guards,roles:rolAdmin?['Administrador']:roles,moduloPermiso,accionPermiso,clase,razon,gateway:loc?{location:loc.ruta,exacta:loc.exacta,protegida:loc.protegida,roles:loc.roles,upstream:loc.upstream,solo:loc.solo}:null});
      }
     }
    }
