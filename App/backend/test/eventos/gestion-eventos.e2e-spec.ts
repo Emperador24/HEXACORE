@@ -92,6 +92,18 @@ describe('CU-026 · Gestión de eventos (e2e)', () => {
     await request(nucleo.url).get(RUTA).expect(401);
   });
 
+  it('Seguridad: crear genera localidades nuevas aunque el DTO incluya un id existente', async () => {
+    const r = await recinto(), a = (await crear(datos(r.id))).body.evento;
+    const originales = () => eventos.query('SELECT * FROM localidades WHERE evento_id=$1 ORDER BY id', [a.id]);
+    const antes = await originales();
+    const b = (await crear(datos(r.id, { localidades: [{ id: a.localidades[0].id, nombre: 'Nueva', precio: 1000, cantidad: 1 }] }))).body.evento;
+    expect(b.localidades).toHaveLength(1); expect(b.localidades[0].id).not.toBe(a.localidades[0].id);
+    expect(await originales()).toEqual(antes);
+    const detalle = (await request(nucleo.url).get(`${RUTA}/${a.id}`).set('Authorization', como(organizador)).expect(200)).body;
+    expect(detalle.evento).toEqual(a); expect(detalle.historial).toHaveLength(1);
+    expect(detalle.historial[0]).toMatchObject({ accion: 'CREADO', version: 1 });
+  });
+
   it('CU-026A: guardar sin publicar deja un borrador con historial y sin mensaje para Boletería', async () => {
     const r = await recinto(800);
     const res = await crear(datos(r.id));

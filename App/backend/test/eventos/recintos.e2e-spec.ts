@@ -53,6 +53,14 @@ describe('CU-029 · Gestión de recintos y zonas (e2e)', () => {
     await crear(datos(), personal, 403);
   });
 
+  it('Seguridad: crear no reasigna una zona existente, también como Administrador', async () => {
+    const a = (await crear(datos())).body.recinto;
+    const b = (await crear(datos({ zonas: [{ id: a.zonas[0].id, nombre: 'Nueva', capacidad: 500 }] }), administrador)).body.recinto;
+    expect(b.zonas).toHaveLength(1); expect(b.zonas[0].id).not.toBe(a.zonas[0].id);
+    const despues = (await request(nucleo.url).get(`${R}/${a.id}`).set('Authorization', como(organizador)).expect(200)).body;
+    expect(despues.recinto).toEqual(a); expect(despues.eventos).toEqual([]); expect(despues.plano).toBeNull();
+  });
+
   it('paso 4 y CU-029A: rechaza zonas que suman más que el recinto, zonas repetidas, posiciones incompletas y duplicados', async () => {
     const exceso = await crear(datos({ capacidad: 800 }), organizador, 400);
     expect(exceso.body).toMatchObject({ codigo: 'CAPACIDAD_ZONAS_EXCEDIDA', suma: 900, capacidad: 800 });

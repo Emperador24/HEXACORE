@@ -111,7 +111,9 @@ export class EventosService {
           creadoPor: realizadoPor,
         }),
       );
-      evento.localidades = await m.save(dto.localidades.map((l, i) => m.create(Localidad, this.localidadDe(l, evento.id, i))));
+      // Los ids del DTO conservan localidades al editar. Una alta siempre
+      // crea identidades nuevas y no puede reasignar una localidad existente.
+      evento.localidades = await m.save(dto.localidades.map((l, i) => m.create(Localidad, this.localidadDe({ ...l, id: undefined }, evento.id, i))));
       await this.registrar(m, evento, 'CREADO', realizadoPor, null, {});
       return { id: evento.id, disponibilidad: await this.consultarDisponibilidad(m, recinto.id, horario, evento.id) };
     });
