@@ -4,6 +4,7 @@ import { EventosRecintosModule } from '../eventos-recintos/eventos-recintos.modu
 import { ParqueaderosModule } from '../parqueaderos/parqueaderos.module';
 import { PersonalLogisticaModule } from '../personal-logistica/personal-logistica.module';
 import { SesionValida } from './comun/autenticacion/sesion-valida.guard';
+import { FlujoOperacionService } from './comun/flujo-operacion.service';
 import { CONFIGURACION_OPERACION, ConfiguracionOperacion } from './comun/config/configuracion';
 import { EvacuacionController } from './evacuacion/evacuacion.controller';
 import { EvacuacionService } from './evacuacion/evacuacion.service';
@@ -36,6 +37,6 @@ import { PersistenciaOperacionModule } from './persistencia/persistencia.module'
     }),
   ],
   controllers: [MonitoreoController, EvacuacionController],
-  providers: [SesionValida, PanelService, ConsumidorIngresosMonitoreo, EvacuacionService, NotificadorEvacuacion],
+  providers: [SesionValida, FlujoOperacionService, PanelService, ConsumidorIngresosMonitoreo, EvacuacionService, NotificadorEvacuacion],
 })
 export class OperacionModule {}

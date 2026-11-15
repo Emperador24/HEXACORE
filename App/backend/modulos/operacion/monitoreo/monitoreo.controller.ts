@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Header, MessageEvent, Param, ParseUUIDPipe, Patch, Post, Req, Sse, UseGuards, UsePipes } from '@nestjs/common';
-import { Observable, catchError, exhaustMap, from, interval, map, of, startWith } from 'rxjs';
+import { Observable } from 'rxjs';
+import { FlujoOperacionService } from '../comun/flujo-operacion.service';
 import { validacionAlimentos as validacion } from '../../../compartido/validacion';
 import { ModuloPermisos, PeticionConSesion, RolesPermitidos, SesionValida } from '../comun/autenticacion/sesion-valida.guard';
 import { RegistrarDecisionDto, ResultadoDecisionDto } from './dto/decision.dto';
@@ -18,7 +19,7 @@ const INTERVALO_MS = 3000;
 @RolesPermitidos('Organizador', 'Administrador')
 @ModuloPermisos('reportes')
 export class MonitoreoController {
-  constructor(private readonly panel: PanelService) {}
+  constructor(private readonly flujos: FlujoOperacionService, private readonly panel: PanelService) {}
 
   @Get('eventos')
   eventos() {
@@ -33,21 +34,15 @@ export class MonitoreoController {
 
   /**
    * Paso 2 en tiempo real: Server-Sent Events con el panel completo cada
-   * `INTERVALO_MS`. `exhaustMap` evita apilar cálculos si uno tarda más que el
-   * intervalo; un error se envía como evento y el flujo sigue.
+   * `INTERVALO_MS`. La sesión y el permiso se revalidan durante la conexión
+   * y antes de emitir. Un fallo saneado termina el flujo.
    */
   @Sse('eventos/:id/flujo')
   @Header('X-Accel-Buffering', 'no') // que el gateway no retenga los eventos
-  flujo(@Param('id', ParseUUIDPipe) id: string): Observable<MessageEvent> {
-    return interval(INTERVALO_MS).pipe(
-      startWith(0),
-      exhaustMap(() =>
-        from(this.panel.panel(id)).pipe(
-          map((datos): MessageEvent => ({ type: 'panel', data: datos })),
-          catchError((error: Error & { response?: unknown }) => of<MessageEvent>({ type: 'error', data: error.response ?? { mensaje: error.message } })),
-        ),
-      ),
-    );
+  flujo(@Param('id', ParseUUIDPipe) id: string, @Req() peticion: PeticionConSesion): Observable<MessageEvent> {
+    const token = peticion.headers.authorization!.split(' ')[1];
+    return this.flujos.seguir(() => this.panel.panelParaFlujo(id), token,
+      { roles: ['Organizador', 'Administrador'], modulo: 'reportes', accion: 'leer' }, INTERVALO_MS, 'panel');
   }
 
   @Get('eventos/:id/alertas')

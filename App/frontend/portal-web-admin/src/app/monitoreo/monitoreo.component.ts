@@ -11,7 +11,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { firstValueFrom } from 'rxjs';
-import { ErrorCuenta } from '../core/auth.service';
+import { AuthService, ErrorCuenta } from '../core/auth.service';
 import { AlertaPanel, DecisionPanel, EventoMonitoreable, PanelMonitoreo, PuntoAccesoPanel } from '../core/models';
 import { MonitoreoApiService } from '../core/monitoreo-api.service';
 import { DatosConfirmacion, DialogoConfirmacionComponent } from '../compartido/dialogo-confirmacion.component';
@@ -48,6 +48,7 @@ const ETIQUETAS_DECISION: Record<string, string> = {
 })
 export class MonitoreoComponent implements OnInit, OnDestroy {
   private readonly api = inject(MonitoreoApiService);
+  private readonly auth = inject(AuthService);
   private readonly dialogo = inject(MatDialog);
   private readonly router = inject(Router);
   private readonly ruta = inject(ActivatedRoute);
@@ -70,6 +71,8 @@ export class MonitoreoComponent implements OnInit, OnDestroy {
   private sondeo: ReturnType<typeof setInterval> | null = null;
   private renovacion: ReturnType<typeof setInterval> | null = null;
   private espera = 2000;
+  private generacion = 0;
+  private renovacionFlujoIntentada = false;
 
   readonly lugares = computed(() => {
     const p = this.panel();
@@ -138,23 +141,39 @@ export class MonitoreoComponent implements OnInit, OnDestroy {
 
   private conectar(): void {
     const id = this.eventoId();
-    this.cortar = this.api.seguir(
-      id,
-      (p) => {
-        if (id !== this.eventoId()) return;
+    const generacion = this.generacion;
+    this.cortar = this.api.seguir(id, (p) => {
+        if (id !== this.eventoId() || generacion !== this.generacion) return;
+        this.renovacionFlujoIntentada = false;
         this.panel.set(p);
         this.enVivo.set(true);
         this.espera = 2000;
+        if (!this.renovacion) this.renovacion = setInterval(() => { if (generacion === this.generacion) this.reconectar(); }, 10 * 60_000);
         this.pararSondeo();
-      },
-      () => {
-        if (id !== this.eventoId()) return;
+      }, (motivo, estado) => {
+        if (id !== this.eventoId() || generacion !== this.generacion) return;
         this.enVivo.set(false);
+        if (estado === 401 || estado === 403 || estado === 503) {
+        if (this.reintento) clearTimeout(this.reintento);
+        if (this.renovacion) clearInterval(this.renovacion);
+        this.renovacion = null;
+        this.pararSondeo();
+          this.error.set(motivo);
+          if (estado === 401 && !this.renovacionFlujoIntentada) {
+            this.renovacionFlujoIntentada = true;
+            void this.auth.renovar().then(ok => {
+              if (ok && id === this.eventoId() && generacion === this.generacion) {
+                if (this.error() === motivo) this.error.set(null);
+                this.conectar();
+              }
+            }).catch(() => undefined);
+          }
+          return;
+        }
         this.iniciarSondeo();
-        this.reintento = setTimeout(() => this.conectar(), this.espera);
+        this.reintento = setTimeout(() => { if (generacion === this.generacion) this.conectar(); }, this.espera);
         this.espera = Math.min(this.espera * 2, 30_000);
-      }
-    );
+      });
   }
 
   private reconectar(): void {
@@ -172,10 +191,13 @@ export class MonitoreoComponent implements OnInit, OnDestroy {
   }
 
   private detener(): void {
+    this.generacion++;
+    this.renovacionFlujoIntentada = false;
     this.cortar?.();
     this.cortar = null;
     if (this.reintento) clearTimeout(this.reintento);
     if (this.renovacion) clearInterval(this.renovacion);
+    this.renovacion = null;
     this.pararSondeo();
     this.enVivo.set(false);
   }

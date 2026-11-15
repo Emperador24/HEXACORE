@@ -60,6 +60,34 @@ describe('CU-019 · Monitorear el evento (e2e)', () => {
 
   const panel = (id: string) => request(nucleo.url).get(`${M}/eventos/${id}/panel`).set('Authorization', como(organizador)).expect(200).then((r) => r.body);
 
+  it('Seguridad SSE: la revocación real cierra el flujo abierto y no entrega más paneles', async () => {
+    const e = await eventoEnCurso(100), propia = await nucleo.cuenta(['Organizador']);
+    const abortar = new AbortController(), plazo = setTimeout(() => abortar.abort(), 10000);
+    let lector: ReadableStreamDefaultReader<Uint8Array> | undefined;
+    try {
+      const respuesta = await fetch(`${nucleo.url}${M}/eventos/${e}/flujo`, { headers: { Authorization: como(propia) }, signal: abortar.signal });
+      expect(respuesta.status).toBe(200); lector = respuesta.body!.getReader();
+      const decoder = new TextDecoder(); let buffer = '';
+      async function siguiente(): Promise<{ tipo: string; datos: { codigo?: string; evento?: { id: string } } } | null> {
+        for (;;) {
+          const i = buffer.indexOf('\n\n');
+          if (i >= 0) {
+            const frame = buffer.slice(0, i); buffer = buffer.slice(i + 2);
+            const tipo = /^event: (.+)$/m.exec(frame)?.[1], datos = frame.split('\n').filter(l => l.startsWith('data:')).map(l => l.slice(5).trim()).join('\n');
+            if (tipo && datos) return { tipo, datos: JSON.parse(datos) }; continue;
+          }
+          const r = await lector!.read(); if (r.done) return null;
+          buffer += decoder.decode(r.value, { stream: true }).replaceAll('\r\n', '\n');
+        }
+      }
+      expect(await siguiente()).toMatchObject({ tipo: 'panel', datos: { evento: { id: e } } });
+      await request(nucleo.url).delete('/api/v1/sesiones/actual').set('Authorization', como(propia)).expect(200);
+      expect(await siguiente()).toMatchObject({ tipo: 'sesion_finalizada', datos: { codigo: 'SIN_AUTENTICAR' } });
+      expect(await siguiente()).toBeNull();
+      await request(nucleo.url).get(`${M}/eventos/${e}/flujo`).set('Authorization', como(propia)).expect(401);
+    } finally { clearTimeout(plazo); abortar.abort(); await lector?.cancel().catch(() => undefined); lector?.releaseLock(); }
+  });
+
   it('pasos 1-3: el panel muestra aforo, accesos por punto y por minuto; un ingreso repetido no cuenta dos veces', async () => {
     const id = await eventoEnCurso(100);
     const repetido = randomUUID();

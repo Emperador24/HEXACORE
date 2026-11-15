@@ -12,7 +12,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { firstValueFrom } from 'rxjs';
-import { ErrorCuenta } from '../core/auth.service';
+import { AuthService, ErrorCuenta } from '../core/auth.service';
 import { DatosActivacion, EmergenciasApiService } from '../core/emergencias-api.service';
 import { AlertaEvacuacion, DetalleEvacuacion, Evacuacion, EventoEmergencia, PlanEvacuacion, SalidaEmergencia, TIPOS_EMERGENCIA, ZonaEvacuacion } from '../core/models';
 import { DatosConfirmacion, DialogoConfirmacionComponent } from '../compartido/dialogo-confirmacion.component';
@@ -59,6 +59,7 @@ const BITACORA: Record<string, string> = {
 })
 export class EmergenciasComponent implements OnInit, OnDestroy {
   private readonly api = inject(EmergenciasApiService);
+  private readonly auth = inject(AuthService);
   private readonly dialogo = inject(MatDialog);
   private readonly router = inject(Router);
   private readonly ruta = inject(ActivatedRoute);
@@ -101,6 +102,8 @@ export class EmergenciasComponent implements OnInit, OnDestroy {
   private cortar: (() => void) | null = null;
   private reintento: ReturnType<typeof setTimeout> | null = null;
   private espera = 2000;
+  private generacion = 0;
+  private renovacionFlujoIntentada = false;
 
   async ngOnInit(): Promise<void> {
     this.cargando.set(true);
@@ -315,24 +318,40 @@ export class EmergenciasComponent implements OnInit, OnDestroy {
   // --- Flujo en vivo -------------------------------------------------------------------
 
   private conectar(id: string): void {
-    this.cortar = this.api.seguir(
-      id,
-      (d) => {
-        if (d.evacuacion.id !== this.detalle()?.evacuacion.id) return;
-        this.mostrar(d);
+    const generacion = this.generacion;
+    this.cortar = this.api.seguir(id, (p) => {
+        if (id !== this.detalle()?.evacuacion.id || generacion !== this.generacion) return;
+        this.renovacionFlujoIntentada = false;
+        this.mostrar(p);
         this.enVivo.set(true);
         this.espera = 2000;
-      },
-      () => {
+
+      }, (motivo, estado) => {
+        if (id !== this.detalle()?.evacuacion.id || generacion !== this.generacion) return;
         this.enVivo.set(false);
+        if (estado === 401 || estado === 403 || estado === 503) {
+        if (this.reintento) clearTimeout(this.reintento);
+          this.error.set(motivo);
+          if (estado === 401 && !this.renovacionFlujoIntentada) {
+            this.renovacionFlujoIntentada = true;
+            void this.auth.renovar().then(ok => {
+              if (ok && id === this.detalle()?.evacuacion.id && generacion === this.generacion) {
+                if (this.error() === motivo) this.error.set(null);
+                this.conectar(id);
+              }
+            }).catch(() => undefined);
+          }
+          return;
+        }
         if (!this.abierta()) return;
-        this.reintento = setTimeout(() => this.conectar(id), this.espera);
+        this.reintento = setTimeout(() => { if (generacion === this.generacion) this.conectar(id); }, this.espera);
         this.espera = Math.min(this.espera * 2, 30_000);
-      }
-    );
+      });
   }
 
   private detener(): void {
+    this.generacion++;
+    this.renovacionFlujoIntentada = false;
     this.cortar?.();
     this.cortar = null;
     if (this.reintento) clearTimeout(this.reintento);

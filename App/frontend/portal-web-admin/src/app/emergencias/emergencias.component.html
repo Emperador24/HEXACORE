@@ -5,8 +5,8 @@
   </div>
   <div class="acciones">
     @if (abierta()) {
-      <span class="vivo" [class.activo]="enVivo()" [matTooltip]="enVivo() ? 'Recibiendo cada 2 s' : 'Reconectando el flujo en vivo'">
-        <span class="punto"></span>{{ enVivo() ? 'En vivo' : 'Reconectando' }} · {{ detalle()!.actualizadoEn | date: 'HH:mm:ss' }}
+      <span class="vivo" [class.activo]="enVivo()" [matTooltip]="enVivo() ? 'Recibiendo cada 2 s' : error() ? 'Conexión detenida. Revisa el aviso.' : 'Reconectando el flujo en vivo'">
+        <span class="punto"></span>{{ enVivo() ? 'En vivo' : error() ? 'Desconectado' : 'Reconectando' }} · {{ detalle()!.actualizadoEn | date: 'HH:mm:ss' }}
       </span>
     }
     <mat-button-toggle-group [value]="vista()" (change)="vista.set($event.value)" aria-label="Vista">

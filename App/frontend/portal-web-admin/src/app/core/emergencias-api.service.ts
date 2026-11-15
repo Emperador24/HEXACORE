@@ -87,7 +87,7 @@ export class EmergenciasApiService {
     return this.auth.conAcceso((h) => this.http.get<Record<string, unknown>>(this.url(`/evacuaciones/${id}/reporte`), { headers: h }));
   }
 
-  seguir(id: string, alRecibir: (d: DetalleEvacuacion) => void, alCaer: (motivo: string) => void): () => void {
+  seguir(id: string, alRecibir: (d: DetalleEvacuacion) => void, alCaer: (motivo: string, estado?: number) => void): () => void {
     return seguirFlujo(this.url(`/evacuaciones/${id}/flujo`), () => this.auth.tokenVigente(), 'evacuacion', alRecibir, alCaer);
   }
 

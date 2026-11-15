@@ -2,6 +2,25 @@ import { seguirFlujo } from './flujo-sse';
 import { ErrorCuenta } from './auth.service';
 
 describe('Consumidor SSE de Parqueaderos', () => {
+  for (const tipo of ['panel', 'evacuacion', 'ocupacion']) it('respeta terminal de permiso y descarta frames posteriores de ' + tipo, async () => {
+    const recibir = jasmine.createSpy('recibir'), caer = jasmine.createSpy('caer');
+    const body = new ReadableStream<Uint8Array>({ start(c) {
+      c.enqueue(new TextEncoder().encode('event: sesion_finalizada\ndata: {"codigo":"ROL_INSUFICIENTE"}\n\nevent: ' + tipo + '\ndata: {"tardio":true}\n\n'));
+    } });
+    spyOn(globalThis, 'fetch').and.resolveTo(new Response(body));
+    seguirFlujo('/fixture', async () => 'fixture', tipo, recibir, caer);
+    await new Promise(r => setTimeout(r, 0)); expect(caer).toHaveBeenCalledOnceWith('No se puede mantener el flujo en este momento.', 403);
+    expect(recibir).not.toHaveBeenCalled(); expect(body.locked).toBeFalse();
+  });
+  it('cancelar desde un callback descarta los otros frames ya recibidos', async () => {
+    const recibir = jasmine.createSpy('recibir'), caer = jasmine.createSpy('caer');
+    const body = new ReadableStream<Uint8Array>({ start(c) {
+      c.enqueue(new TextEncoder().encode('event: panel\ndata: {"primero":true}\n\nevent: panel\ndata: {"tardio":true}\n\n'));
+    } });
+    spyOn(globalThis, 'fetch').and.resolveTo(new Response(body));
+    const cortar = seguirFlujo('/fixture', async () => 'fixture', 'panel', datos => { recibir(datos); cortar(); }, caer);
+    await new Promise(r => setTimeout(r, 0)); expect(recibir).toHaveBeenCalledTimes(1); expect(caer).not.toHaveBeenCalled(); expect(body.locked).toBeFalse();
+  });
   it('conserva el 401 si obtener el token falla antes de abrir HTTP', async () => {
     const caer = jasmine.createSpy('caer'), fetchSpy = spyOn(globalThis, 'fetch');
     seguirFlujo('/fixture', async () => { throw new ErrorCuenta('SIN_SESION', 'Tu sesión terminó.', 401); }, 'ocupacion', () => fail('no hay datos'), caer);
