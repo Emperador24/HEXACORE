@@ -38,9 +38,13 @@ cuerpo sino en una cookie `hxc_renovacion` (`HttpOnly`, `SameSite=Strict`,
 `Path=/api/v1/sesiones`), y el portal guarda el token de acceso solo en memoria. Ver
 `backend/modulos/identidad/DECISIONES.md` §22.
 
-Consecuencia para los verificadores: un cambio de roles llega como mucho cuando caduca el token de
-acceso vigente (15 minutos). Si una operación no puede esperar tanto, debe consultar los roles a
-Administración, como hace su propia administración de cuentas.
+El JWT conserva los roles de su emisión. Los módulos del Núcleo cubiertos por
+CU-028 consultan roles/matriz vigentes en Redis en cada petición y aplican la
+asignación o retirada sin renovar ese JWT; el gateway delega esas rutas después
+de comprobar su firma. Administración de cuentas/roles exige además autoridad
+administrativa activa en SQL. Esto no concede permisos dinámicos a Ingreso QR
+ni a otros módulos de Boletería: conservan sus roles fijos y revocación. Ver
+[permisos.md](permisos.md) para el alcance y el rechazo de datos ilegibles.
 
 ## Claves
 

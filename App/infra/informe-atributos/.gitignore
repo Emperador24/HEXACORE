@@ -8,3 +8,4 @@
 
 # Lista permitida: resumen de Seguridad saneado, sin instantáneas o sesiones crudas.
 !seguridad/OPERACION-EVIDENCIA.json
+!seguridad/CIERRE-EVIDENCIA.json

@@ -1,4 +1,27 @@
-# Cobertura por recurso — 15/11/2026 Bogotá, Operación
+# Cobertura por recurso — 15/11/2026 Bogotá, cierre del inventario
+
+## Cierre de las 16 pendientes — corte vigente
+
+**167/167 protegidas; cero operaciones pendientes del inventario. RNF-05/06
+siguen parciales.** Nuevas: cuentas5, roles/permisos8 y QR3; cada método/ruta
+por gateway y servicio directo con recursos/estados válidos y positivos.
+Inventario sin cambios **186 declaradas / 181 expuestas / 167 protegidas**.
+Las 151 anteriores conservan su evidencia y combinaciones; no se repiten sus
+matrices ni se acredita toda combinación de permisos, estado o consumidor.
+
+Dos brechas demostradas: asignaciones nuevas bloqueadas en gateway por JWT
+anterior y recuperación del privilegio antiguo ante roles Redis ilegibles.
+Corregidas en **8eae8b9**. Tres finales de cierre **560/560**, **346 conservaciones
+de 76 tablas/planos/secuencias/Redis por final**, 236 rechazos de autorización.
+Datos/DTO/estado/contexto/dependencia/carreras se separan. Las carreras de último
+administrador admiten una mutación válida y rechazan la segunda; no se cuentan
+como igualdad global. Evidencia previa y todos los fallos del arnés conservados.
+
+[Contrato y pendientes](AUTORIZACION-CIERRE.md) · [Evidencia saneada](CIERRE-EVIDENCIA.json) ·
+[Resultado](RESULTADO.md). El plan de dos servidores y un cliente es documental;
+no añade cobertura ni ejecuta VPN/caídas.
+
+## Corte anterior — Evacuación/Monitoreo
 
 **151/167 protegidas; 16 pendientes. RNF-05/06 parciales.** Se agregan las
 **22/22 de Evacuación/Monitoreo** (16/6) por gateway y Núcleo, incluidos dos SSE.
@@ -105,9 +128,9 @@ DAST ni se repiten localmente los 16 recorridos completos.
 |GET|`/api/v1/compras/:id`|SesionValida; Cliente|Sí; Compras/Reventa 3×150; ambas vías, con positivos|`App/backend/modulos/entradas/ventas/venta/compras.controller.ts`|
 |GET|`/api/v1/compras`|SesionValida; Cliente|Sí; Compras/Reventa 3×150; ambas vías, con positivos|`App/backend/modulos/entradas/ventas/venta/compras.controller.ts`|
 |POST|`/api/v1/compras`|SesionValida; Cliente|Sí; Compras/Reventa 3×150; ambas vías, con positivos|`App/backend/modulos/entradas/ventas/venta/compras.controller.ts`|
-|GET|`/api/v1/ingresos/eventos/:eventoId/cache`|SesionValida; Personal, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/entradas/acceso-qr/acceso/ingresos.controller.ts`|
-|POST|`/api/v1/ingresos/sincronizacion`|SesionValida; Personal, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/entradas/acceso-qr/acceso/ingresos.controller.ts`|
-|POST|`/api/v1/ingresos`|SesionValida; Personal, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/entradas/acceso-qr/acceso/ingresos.controller.ts`|
+|GET|`/api/v1/ingresos/eventos/:eventoId/cache`|SesionValida; Personal, Administrador|Sí; Cierre 3×560; gateway/directo, positivos y conservación|`App/backend/modulos/entradas/acceso-qr/acceso/ingresos.controller.ts`|
+|POST|`/api/v1/ingresos/sincronizacion`|SesionValida; Personal, Administrador|Sí; Cierre 3×560; gateway/directo, positivos y conservación|`App/backend/modulos/entradas/acceso-qr/acceso/ingresos.controller.ts`|
+|POST|`/api/v1/ingresos`|SesionValida; Personal, Administrador|Sí; Cierre 3×560; gateway/directo, positivos y conservación|`App/backend/modulos/entradas/acceso-qr/acceso/ingresos.controller.ts`|
 |POST|`/api/v1/reventa/checkout/:id/pagar`|SesionValida; Cliente|Sí; Compras/Reventa 3×150; ambas vías, con positivos|`App/backend/modulos/entradas/postventa/postventa/reventa.controller.ts`|
 |DELETE|`/api/v1/reventa/checkout/:id`|SesionValida; Cliente|Sí; Compras/Reventa 3×150; ambas vías, con positivos|`App/backend/modulos/entradas/postventa/postventa/reventa.controller.ts`|
 |GET|`/api/v1/reventa/checkout/:id`|SesionValida; Cliente|Sí; Compras/Reventa 3×150; ambas vías, con positivos|`App/backend/modulos/entradas/postventa/postventa/reventa.controller.ts`|
@@ -119,22 +142,22 @@ DAST ni se repiten localmente los 16 recorridos completos.
 |PATCH|`/api/v1/reventa/publicaciones/:id`|SesionValida; Cliente|Sí; Compras/Reventa 3×150; ambas vías, con positivos|`App/backend/modulos/entradas/postventa/postventa/reventa.controller.ts`|
 |GET|`/api/v1/reventa/publicaciones`|SesionValida; Cliente|Sí; Compras/Reventa 3×150; ambas vías, con positivos|`App/backend/modulos/entradas/postventa/postventa/reventa.controller.ts`|
 |POST|`/api/v1/reventa/publicaciones`|SesionValida; Cliente|Sí; Compras/Reventa 3×150; ambas vías, con positivos|`App/backend/modulos/entradas/postventa/postventa/reventa.controller.ts`|
-|POST|`/api/v1/admin/cuentas/:id/activar`|SesionRequerida, AdministradorRequerido; Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/identidad/administracion-cuentas/administracion-cuentas.controller.ts`|
-|POST|`/api/v1/admin/cuentas/:id/desactivar`|SesionRequerida, AdministradorRequerido; Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/identidad/administracion-cuentas/administracion-cuentas.controller.ts`|
-|DELETE|`/api/v1/admin/cuentas/:id`|SesionRequerida, AdministradorRequerido; Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/identidad/administracion-cuentas/administracion-cuentas.controller.ts`|
-|GET|`/api/v1/admin/cuentas/:id`|SesionRequerida, AdministradorRequerido; Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/identidad/administracion-cuentas/administracion-cuentas.controller.ts`|
-|GET|`/api/v1/admin/cuentas`|SesionRequerida, AdministradorRequerido; Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/identidad/administracion-cuentas/administracion-cuentas.controller.ts`|
-|DELETE|`/api/v1/admin/roles/:id/usuarios/:usuarioId`|SesionRequerida, AdministradorRequerido; Administrador|Pendiente semántica; operación nueva CU-028 integrada|`App/backend/modulos/identidad/roles-permisos/roles-permisos.controller.ts`|
-|POST|`/api/v1/admin/roles/:id/usuarios`|SesionRequerida, AdministradorRequerido; Administrador|Pendiente semántica; operación nueva CU-028 integrada|`App/backend/modulos/identidad/roles-permisos/roles-permisos.controller.ts`|
-|DELETE|`/api/v1/admin/roles/:id`|SesionRequerida, AdministradorRequerido; Administrador|Pendiente semántica; operación nueva CU-028 integrada|`App/backend/modulos/identidad/roles-permisos/roles-permisos.controller.ts`|
-|GET|`/api/v1/admin/roles/:id`|SesionRequerida, AdministradorRequerido; Administrador|Pendiente semántica; operación nueva CU-028 integrada|`App/backend/modulos/identidad/roles-permisos/roles-permisos.controller.ts`|
-|PUT|`/api/v1/admin/roles/:id`|SesionRequerida, AdministradorRequerido; Administrador|Pendiente semántica; operación nueva CU-028 integrada|`App/backend/modulos/identidad/roles-permisos/roles-permisos.controller.ts`|
-|GET|`/api/v1/admin/roles`|SesionRequerida, AdministradorRequerido; Administrador|Pendiente semántica; operación nueva CU-028 integrada|`App/backend/modulos/identidad/roles-permisos/roles-permisos.controller.ts`|
-|POST|`/api/v1/admin/roles`|SesionRequerida, AdministradorRequerido; Administrador|Pendiente semántica; operación nueva CU-028 integrada|`App/backend/modulos/identidad/roles-permisos/roles-permisos.controller.ts`|
+|POST|`/api/v1/admin/cuentas/:id/activar`|SesionRequerida, AdministradorRequerido; Administrador|Sí; Cierre 3×560; gateway/directo, positivos y conservación|`App/backend/modulos/identidad/administracion-cuentas/administracion-cuentas.controller.ts`|
+|POST|`/api/v1/admin/cuentas/:id/desactivar`|SesionRequerida, AdministradorRequerido; Administrador|Sí; Cierre 3×560; gateway/directo, positivos y conservación|`App/backend/modulos/identidad/administracion-cuentas/administracion-cuentas.controller.ts`|
+|DELETE|`/api/v1/admin/cuentas/:id`|SesionRequerida, AdministradorRequerido; Administrador|Sí; Cierre 3×560; gateway/directo, positivos y conservación|`App/backend/modulos/identidad/administracion-cuentas/administracion-cuentas.controller.ts`|
+|GET|`/api/v1/admin/cuentas/:id`|SesionRequerida, AdministradorRequerido; Administrador|Sí; Cierre 3×560; gateway/directo, positivos y conservación|`App/backend/modulos/identidad/administracion-cuentas/administracion-cuentas.controller.ts`|
+|GET|`/api/v1/admin/cuentas`|SesionRequerida, AdministradorRequerido; Administrador|Sí; Cierre 3×560; gateway/directo, positivos y conservación|`App/backend/modulos/identidad/administracion-cuentas/administracion-cuentas.controller.ts`|
+|DELETE|`/api/v1/admin/roles/:id/usuarios/:usuarioId`|SesionRequerida, AdministradorRequerido; Administrador|Sí; Cierre 3×560; gateway/directo, positivos y conservación|`App/backend/modulos/identidad/roles-permisos/roles-permisos.controller.ts`|
+|POST|`/api/v1/admin/roles/:id/usuarios`|SesionRequerida, AdministradorRequerido; Administrador|Sí; Cierre 3×560; gateway/directo, positivos y conservación|`App/backend/modulos/identidad/roles-permisos/roles-permisos.controller.ts`|
+|DELETE|`/api/v1/admin/roles/:id`|SesionRequerida, AdministradorRequerido; Administrador|Sí; Cierre 3×560; gateway/directo, positivos y conservación|`App/backend/modulos/identidad/roles-permisos/roles-permisos.controller.ts`|
+|GET|`/api/v1/admin/roles/:id`|SesionRequerida, AdministradorRequerido; Administrador|Sí; Cierre 3×560; gateway/directo, positivos y conservación|`App/backend/modulos/identidad/roles-permisos/roles-permisos.controller.ts`|
+|PUT|`/api/v1/admin/roles/:id`|SesionRequerida, AdministradorRequerido; Administrador|Sí; Cierre 3×560; gateway/directo, positivos y conservación|`App/backend/modulos/identidad/roles-permisos/roles-permisos.controller.ts`|
+|GET|`/api/v1/admin/roles`|SesionRequerida, AdministradorRequerido; Administrador|Sí; Cierre 3×560; gateway/directo, positivos y conservación|`App/backend/modulos/identidad/roles-permisos/roles-permisos.controller.ts`|
+|POST|`/api/v1/admin/roles`|SesionRequerida, AdministradorRequerido; Administrador|Sí; Cierre 3×560; gateway/directo, positivos y conservación|`App/backend/modulos/identidad/roles-permisos/roles-permisos.controller.ts`|
 |PUT|`/api/v1/cuentas/perfil/contrasena`|SesionRequerida; identidad/contexto del servicio|Sí; contexto probado, combinaciones limitadas|`App/backend/modulos/identidad/cuentas/perfil.controller.ts`|
 |GET|`/api/v1/cuentas/perfil`|SesionRequerida; identidad/contexto del servicio|Sí; contexto probado, combinaciones limitadas|`App/backend/modulos/identidad/cuentas/perfil.controller.ts`|
 |PATCH|`/api/v1/cuentas/perfil`|SesionRequerida; identidad/contexto del servicio|Sí; contexto probado, combinaciones limitadas|`App/backend/modulos/identidad/cuentas/perfil.controller.ts`|
-|GET|`/api/v1/cuentas/permisos`|SesionRequerida; identidad/contexto del servicio|Pendiente semántica; operación nueva CU-028 integrada|`App/backend/modulos/identidad/roles-permisos/roles-permisos.controller.ts`|
+|GET|`/api/v1/cuentas/permisos`|SesionRequerida; identidad/contexto del servicio|Sí; Cierre 3×560; gateway/directo, positivos y conservación|`App/backend/modulos/identidad/roles-permisos/roles-permisos.controller.ts`|
 |POST|`/api/v1/emergencias/evacuaciones/:id/confirmar`|SesionValida; Organizador, Administrador; o permiso emergencias:actualizar|Sí; Operación 3×510 + SSE, ambas vías, positivos Org/Admin|`App/backend/modulos/operacion/evacuacion/evacuacion.controller.ts`|
 |POST|`/api/v1/emergencias/evacuaciones/:id/descartar`|SesionValida; Organizador, Administrador; o permiso emergencias:actualizar|Sí; Operación 3×510 + SSE, ambas vías, positivos Org/Admin|`App/backend/modulos/operacion/evacuacion/evacuacion.controller.ts`|
 |POST|`/api/v1/emergencias/evacuaciones/:id/finalizar`|SesionValida; Organizador, Administrador; o permiso emergencias:actualizar|Sí; Operación 3×510 + SSE, ambas vías, positivos Org/Admin|`App/backend/modulos/operacion/evacuacion/evacuacion.controller.ts`|

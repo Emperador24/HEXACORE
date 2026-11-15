@@ -1,6 +1,35 @@
 # Alternar Redash y HEXACORE en este Mac
 
-**Última ventana — 15/11 Bogotá, Evacuación/Monitoreo:** Docker **activo** al
+
+**Última ventana — 15/11 Bogotá, cierre de las 16 operaciones:** registro de
+**105 contenedores originales**, Docker activo, once CU-015 y siete Redash activos;
+preparación-base inactiva. Parada única por etapas, gracia 120 s: scheduler137,
+OOMKilled=false, logs conservados sin certificar cierre ordenado. Otros cuatro
+OOMKilled=true ya estaban en el estado inicial. Seis aplicaciones CU-015 cierran
+0/143, sin OOM. Base, Redis/volumen, vhost, ocho cuentas iniciales y recursos
+posteriores exclusivos; originales intactos y solo proveedores simulados.
+
+Restauración única **21:45:10–21:46:21 UTC**: **105 mismos IDs/imágenes/montajes/
+estados**, once CU-015 y siete Redash activos; preparación-base inactiva. Seis
+nuevos detenidos **0/0/0/143/0/0 sin OOM**; todos los datos retenidos. Docker activo.
+Los metadatos incluyen Núcleo/gateway anteriores conservados y Boletería propia;
+no asumir siempre tres o cuatro contenedores nuevos. Se restauran las imágenes y
+configuraciones originales, sin reconstruir/preparar/sembrar al reanudar.
+
+Auditoría **21:48:03 UTC (16:48 Bogotá)**: /ping y /login timeout15s, curl28/HTTP000.
+PostgreSQL listo y Redis PONG durante la restauración. Cgroups nuevos oom_kill:
+server4, scheduled_worker2, adhoc_worker4, worker2; scheduler/Redis/PG0. Los200
+puntuales del arranque escalonado no acreditan estabilidad sostenida. **Estados
+restaurados; HTTP Redash bloqueado/inestable con OOM**, sin ciclos de recuperación,
+limpiezas globales ni intervención de otros proyectos. Se requiere revisión de
+capacidad/concurrencia por el responsable, no cambios globales desde esta entrega.
+[Resultado y límites](../../App/infra/informe-atributos/seguridad/AUTORIZACION-CIERRE.md).
+
+La preparación de [dos servidores y un cliente](PLAN-DEMO-ZEROTIER.md) fue solo
+documental. No se instaló/configuró VPN ni se ejecutaron caídas entre computadores.
+
+
+**Ventana anterior — 15/11 Bogotá, Evacuación/Monitoreo:** Docker **activo** al
 inicio; registro de **101 originales**,11 CU-015 y 7 Redash activos. Redash se
 detuvo una vez por etapas según la guía, gracia 120 s. Scheduler cerró137 con
 OOMKilled=false, causa interna no aislada; logs/estado conservados, sin repetir

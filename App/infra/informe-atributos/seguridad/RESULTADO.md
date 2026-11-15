@@ -1,6 +1,66 @@
 # Seguridad de Sebastián — RNF-05 y RNF-06
 
-## Evacuación/Monitoreo y acciones visibles — 15/11/2026 Bogotá, corte vigente
+## Cierre de las 16 pendientes — 15/11/2026 Bogotá, corte vigente
+
+**16/16 nuevas; global 167/167 protegidas, cero operaciones pendientes del
+inventario. RNF-05/06 siguen parciales.** Cuentas 5, CU-028 integrado 8 e ingreso
+QR 3, por gateway y Núcleo/Boletería directos. Inventario sin cambios: 186
+declaradas / 181 expuestas / 167 protegidas. Las 151 anteriores conservan sus
+combinaciones acreditadas; no se repiten sus matrices ni se agotan las nuevas.
+
+**8eae8b9** corrige dos brechas reproducidas antes: la asignación de un rol a
+una sesión abierta daba 403 en gateway y 200 directo; roles Redis ilegibles o
+vacíos recuperaban el privilegio del JWT anterior tras retirarlo por API. El
+borde delega solo módulos dinámicos después de validar JWT; Núcleo rechaza los
+roles ilegibles con 503. Rutas sensibles e ingreso QR conservan sus roles fijos.
+
+Tres finales de cierre, **560/560 cada una**, UTC 15/11:
+**21:41:29.164–21:42:27.898**, **21:42:30.879–21:43:31.349** y
+**21:43:34.233–21:44:38.540**; **58,734 / 60,470 / 64,307 s**. Cada una tiene
+236 rechazos de autorización y **346 conservaciones completas de 76 tablas**,
+planos, secuencias y Redis. Estado, DTO, contexto, dependencia y concurrencia
+se distinguen de autorización. Son 412 respuestas del wrapper más 148
+comprobaciones/observaciones compuestas, no 560 casos de uso independientes.
+
+**2.076 gzip / 1.038 pares**, 1.514.018.764 bytes JSON verificados por SHA-256.
+Expiraciones naturales **0/4/0**; candados de cron existentes incluidos en
+ambas capturas y precisión temporal al milisegundo, sin filtros de claves ni
+gracia para borrados anticipados. HTTP 10 s, precondición 3 s y reintentos cero.
+Producto, imágenes, 65 fuentes/JS y arnés estables en las tres finales. Las
+series interrumpidas y sus diagnósticos se conservan íntegramente.
+
+**85/85 backend** (12 nuevas + 73 anteriores), nueve suites; build/tipos
+aprobados. Comparador **8/8** (dos nuevas), una regresión HTTP añadida a CI y
+**12/12 SSE HTTP** sobre tres flujos y ambos canales: revocación real y roles
+ilegibles, terminal/EOF sin datos posteriores. Evacuación: 1,983–1,993 s;
+Monitoreo/Parqueaderos: 2,977–3,008 s. Evidencia anterior de caducidad, clientes y
+SIGTERM reutilizada; sin reabrir apagado ni repetir los 16 recorridos o DAST.
+
+Restauración única **21:45:10–21:46:21 UTC**: **105 originales con mismos
+IDs/imágenes/montajes/estados**, seis nuevos detenidos 0/0/0/143/0/0 sin OOM,
+Docker activo. Once CU-015 y siete Redash activos; preparación-base inactiva.
+Datos nuevos y anteriores retenidos. Scheduler Redash cerró 137 tras gracia
+120 s, OOMKilled=false, causa no aislada. Control **21:48:03 UTC**: /ping y
+/login timeout 15 s; nuevos OOM server 4 / scheduled 2 / adhoc 4 / worker 2.
+**Estados restaurados; HTTP Redash bloqueado/inestable**, sin recuperación
+repetida ni intervención de otros proyectos. Originales conservan sus imágenes.
+
+**Pendientes RNF-05/06:** DAST autenticado y combinaciones adicionales;
+residuos CSP de imágenes externas/Google Fonts-SRI, revalidación de dependencias
+y otros canales/límites de datos y financieros. Hallazgo funcional separado:
+QR sin puntoAcceso registra QR/Ventas, pero no se proyecta a Monitoreo; queda
+diagnosticado, sin cambio de producto. No se conoce evasión abierta dentro de
+los casos probados; eso no aprueba Seguridad global.
+[Contrato, fallos y reproducción](AUTORIZACION-CIERRE.md) ·
+[Evidencia saneada](CIERRE-EVIDENCIA.json).
+
+**34c8420**, [plan de dos servidores y un cliente](../../../../Documentation/Work/PLAN-DEMO-ZEROTIER.md),
+commit documental separado con CI 43759947154 aprobada 8/8. A conserva gateway y
+datos; B será apagable; A sigue siendo punto único de fallo. Sin instalar o
+configurar VPN, firewalls, destinos remotos, réplicas o caídas. Demo 500/1500 ms
+intacta. CI final por SHA en PR #53, sin merge/auto-merge, solo origin/feature/sebastian.
+
+## Evacuación/Monitoreo y acciones visibles — 15/11/2026 Bogotá, corte anterior
 
 **22/22 nuevas; global 151/167, 16 pendientes. RNF-05/06 parciales.** Inicio
 limpio en `feature/sebastian` **7d0b2c9**, fast-forward a **36998aa**, develop

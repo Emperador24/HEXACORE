@@ -1,5 +1,50 @@
 # Cierre de Alimentos — Sebastián
 
+## Cierre de autorización del inventario — 15/11/2026 Bogotá, corte vigente
+
+**16/16 nuevas; global 167/167, cero operaciones pendientes del inventario.
+RNF-05/06 parciales.** Cuentas 5, CU-028 integrado 8 e ingreso QR 3, gateway y
+servicio directo. Inventario sin cambios: 186 declaradas / 181 expuestas / 167
+protegidas. Las 151 anteriores se reutilizan con sus combinaciones probadas.
+
+**8eae8b9** corrige asignaciones nuevas bloqueadas por el JWT anterior en el
+gateway y recuperación de privilegios antiguos ante roles Redis ilegibles.
+Ambas se reprodujeron antes. JWT se verifica y solo módulos dinámicos delegan;
+dato ilegible produce 503. Sensibles/QR conservan roles fijos, sin nuevo CU-028.
+
+Tres finales **560/560**, **58,734 / 60,470 / 64,307 s**, el 15/11 entre
+21:41:29.164 y 21:44:38.540 UTC. **346 conservaciones completas de 76 tablas por
+final**, 236 rechazos de autorización; estado/DTO/contexto/dependencia/carreras
+separados. Último administrador: dos actores exclusivos y una sola mutación
+válida por carrera de desactivación/eliminación; la otra petición da 422.
+**2.076 instantáneas gzip**, SHA-256 verificados; expiraciones naturales 0/4/0.
+Candados existentes incluidos, sin trabajo vencido y sin ocultar valores/TTL.
+Precisión temporal corregida con regresiones. Fallos previos conservados;
+sin reintentos automáticos ni límites mayores. Fuentes/imágenes/arnés estables.
+
+**85 unitarias backend** (12 nuevas + 73 anteriores), **8 del comparador**
+(dos nuevas), una regresión HTTP para CI y **12 SSE HTTP** acotados. Build/tipos
+aprobados. Evidencia previa de clientes/caducidad/SIGTERM reutilizada, sin
+repetir los 16 recorridos, matrices históricas, DAST ni apagado preventivo.
+
+Restauración única: **105 originales con mismos IDs/imágenes/montajes/estados**;
+seis nuevos detenidos 0/0/0/143/0/0 sin OOM. Docker activo, once CU-015 y siete
+Redash activos; preparación-base inactiva. Base/Redis/volumen/vhost retenidos.
+Scheduler Redash 137 tras gracia 120 s, causa no aislada. Control 21:48 UTC:
+/ping y /login timeout 15 s, nuevos OOM 4/2/4/2. **Estados restaurados; HTTP
+bloqueado/inestable**, sin recuperación repetida ni intervención ajena.
+[Resultado](../../App/infra/informe-atributos/seguridad/RESULTADO.md) ·
+[Contrato, fallos y pendientes](../../App/infra/informe-atributos/seguridad/AUTORIZACION-CIERRE.md) ·
+[Evidencia](../../App/infra/informe-atributos/seguridad/CIERRE-EVIDENCIA.json).
+
+Pendientes: DAST autenticado/combinaciones adicionales, residuos CSP de imágenes/
+Google Fonts-SRI y revalidación de dependencias y otros canales/límites RNF-05/06.
+Ingreso QR sin punto opcional no se proyecta a Monitoreo: hallazgo funcional
+registrado, sin corregirlo para facilitar la matriz. Seguridad global parcial.
+Publicar solo origin/feature/sebastian y PR #53 con CI por SHA, sin merge/auto-merge.
+El plan ZeroTier separado de 34c8420 permanece documental; sin VPN o caídas
+entre computadores. La demo conserva 500/1500 ms y variantes normales.
+
 ## Preparación documental de dos servidores y un cliente — 15/11/2026
 
 [PLAN-DEMO-ZEROTIER.md](PLAN-DEMO-ZEROTIER.md) reemplaza la propuesta anterior
@@ -10,9 +55,10 @@ punto único de fallo: no se afirma continuidad si cae A. Se revisan Compose,
 destinos/DNS del gateway, sesiones, TLS y tareas de fondo; se documentan cambios
 mínimos pendientes y pasos por equipo. Solo documentación, sin instalar VPN,
 alterar configuraciones/firewalls, arrancar servicios o probar caídas.
-Sin aumento de cobertura: **151/167, 16 pendientes; RNF-05/06 parciales**.
+Al preparar solo ese documento: **151/167, 16 pendientes**; la revisión posterior
+se registra arriba. El plan no aporta cobertura; **RNF-05/06 siguen parciales**.
 
-## Evacuación/Monitoreo y acciones de demo — 15/11/2026 Bogotá, corte vigente
+## Evacuación/Monitoreo y acciones de demo — 15/11/2026 Bogotá, corte anterior
 
 **22/22 nuevas, global 151/167, 16 pendientes; RNF-05/06 parciales.** Inicio
 7d0b2c9 limpio, fast-forward a develop 36998aa: PR #51 y #52 ya integrados. Se
