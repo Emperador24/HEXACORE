@@ -1,4 +1,4 @@
-"""Restauración única de los siete Redash iniciales. No recupera HTTP mediante reinicios."""
+"""Restaura una vez los estados iniciales CU-015/Redash; sin recuperación por reinicios."""
 import datetime, json, os, pathlib, subprocess, time
 ROOT = pathlib.Path(__file__).resolve().parents[4]
 def main():
@@ -11,10 +11,10 @@ def main():
     def docker(*a): return subprocess.check_output(['docker', *a], text=True)
     def todos(): return json.loads(docker('inspect', *docker('ps', '-aq').split()))
     actuales = todos()
-    assert not any(c['State']['Running'] for c in actuales if c['Config']['Labels'].get('com.docker.compose.project') in ['hexacore-cu015-sebastian', 'hexacore-seguridad-parqueaderos-sebastian'])
+    assert not any(c['State']['Running'] for c in actuales if (c['Config']['Labels'] or {}).get('com.docker.compose.project') == 'hexacore-seguridad-parqueaderos-sebastian')
     redash = [c for c in inicial['contenedores'] if c['proyecto'] == 'redash']
     assert len(redash) == 7 and all(c['estado']['Running'] for c in redash)
-    registro = {'inicio': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'pasos': [], 'reintentos': 0}
+    registro = {'inicio': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'pasos': [], 'cu015': [], 'reintentos': 0}
     def guardar(): (p / 'restauracion-parqueaderos.json').write_text(json.dumps(registro, indent=2))
     guardar()
     def iniciar(servicio):
@@ -31,6 +31,29 @@ def main():
             r = subprocess.run(['curl', '--silent', '--show-error', '--max-time', '15', '--output', '/dev/null', '--write-out', '%{http_code}', 'http://127.0.0.1:5001/' + ruta], capture_output=True, text=True)
             resultado[ruta] = {'codigoCurl': r.returncode, 'http': r.stdout, 'error': r.stderr.strip()}
         return resultado
+    # Una ventana puede comenzar con CU-015 activo, incluso si Redash también
+    # estaba activo. Restaurar solo los servicios presentes/activos del registro;
+    # nunca ejecutar preparacion-base, semillas, reconstrucciones o servicios nuevos.
+    propios = {c['servicio']: c for c in inicial['contenedores'] if c['proyecto'] == 'hexacore-cu015-sebastian'}
+    orden = ['postgres', 'redis', 'rabbitmq', 'correo', 'pasarela', 'nucleo', 'boleteria', 'trabajador', 'api-gateway', 'portal-web-cliente', 'portal-web-admin']
+    for servicio in orden:
+        previo = propios.get(servicio)
+        if not previo: continue
+        actual = json.loads(docker('inspect', previo['id']))[0]
+        assert actual['Image'] == previo['imagen'] and actual['Config']['Labels']['hexacore.uso'] == 'cu015'
+        if not previo['estado']['Running']:
+            assert not actual['State']['Running'], 'Detener primero el servicio que solo se usó en el ensayo: ' + servicio
+            continue
+        iniciado = not actual['State']['Running']
+        if iniciado: docker('start', previo['id'])
+        registro['cu015'].append({'servicio': servicio, 'reanudado': iniciado, 'activoInicial': True}); guardar()
+        if iniciado and actual['Config'].get('Healthcheck'):
+            limite = time.monotonic() + 30
+            while True:
+                actual = json.loads(docker('inspect', previo['id']))[0]
+                if actual['State'].get('Health', {}).get('Status') == 'healthy' or time.monotonic() >= limite: break
+                time.sleep(.2)
+            registro['cu015'][-1]['saludTrasArranque'] = actual['State'].get('Health', {}).get('Status'); guardar()
     iniciar('postgres'); iniciar('redis')
     limite = time.monotonic() + 30
     while True:

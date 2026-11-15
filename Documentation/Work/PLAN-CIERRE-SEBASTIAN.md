@@ -1,6 +1,62 @@
 # Cierre de Alimentos — Sebastián
 
-## Revalidación SSE Parqueaderos — 13/11/2026 Bogotá, corte vigente
+## Eventos/Recintos y demo — 14/11/2026 Bogotá, corte vigente
+
+**Eventos/Recintos 16/16; global 129/159, 30 pendientes. RNF-05/06 parciales.**
+Rama `feature/sebastian`: inicio limpio 56c0fca, fast-forward a develop 66f9d6e
+(PR #50 integrado, árbol idéntico). PR #51 de Samuel seguía abierto: no se integra.
+Inventario intacto 178 declaradas / 173 expuestas / 159 protegidas. Las 113 previas
+se reutilizan, con corrección SSE conservada; sin repetir 300 ni 16 recorridos.
+
+Semilla ya reparada en **b167261**, TRUNCATE explícito con cancelaciones y RESTRICT.
+Fuentes/datos/prueba/cargador intactos, 1/1 unitaria con doble; instalación vacía
+CI **43650863470** reutilizada (1 evento, 3 establecimientos, 12 productos).
+Checkout CI 50c6364 es merge de prueba de PR #51: reutilización limitada a esas
+fuentes/procedimiento intactos, no integración de Samuel. Imagen original actual
+833267f contiene compilado corregido. Sin semilla destructiva local ni cambio nuevo.
+
+**5668ecc** conecta los `:visible` de App/e2e a demo: **1500 ms por etapa lista,
+slowMo=0**, sin pausa de 5 s o sesión acumulada, incluidas sesiones explícitas de
+navegador. `:visible:normal` conserva aceptación normal; informes separados y
+observador CU-028/salida 2 intactos. Tipos, descubrimiento (2 CU-015/16 total),
+configuración efectiva y Chromium visible acotado aprobados: 1/1 demo + 1/1
+normal; lecturas 1502/1503 ms y acciones 117,889/64,051 ms. Páginas sintéticas,
+sin aceptación completa nueva. Fallo inicial del arnés retries corregido y conservado.
+
+**90f0d02** corrige dos brechas demostradas en gateway/Núcleo: altas con ids de
+zona/localidad existentes movían esas filas. Crear genera nuevas identidades;
+editar conserva ids. Dos regresiones HTTP, build/lint aprobados; matriz verifica
+ambos canales. Roles globales intactos, Admin solo consulta Eventos y ambos roles
+gestionan Recintos. Sin inventar propiedad por creadoPor u organizaciones.
+
+Tres finales normalizadas **218/218**: **15/11 03:54:41.270, 03:54:48.042,
+03:54:55.246 UTC** (14/11 Bogotá), **4,240/4,641/4,629 s**. Cada una: 206
+semánticas + 8 contexto + 2 DTO + 2 estado, 76 rechazos de autorización y **88
+conservaciones completas de 74 tablas/planos/secuencias/Redis**, 16 positivos por
+canal. HTTP 10 s, sin reintentos automáticos ni límites mayores. Primera serie
+conservada: 218/218 y fallo tras 199 por orden de UNION ALL; datos iguales por
+tabla. Se corrige solo comparación y se mide nueva serie completa. Node 22.22.3,
+26 JS Eventos + 21 Parqueaderos/SSE, imágenes/fuentes estables. Base medida 5668ecc
+más cambios locales por huellas, luego confirmados en 90f0d02. Outbox propio excluye
+solo acuse publicado_en; no se exige convergencia ni se reabre fallo histórico.
+
+Docker activo al inicio/final. Esta ventana comenzó con CU-015/Redash activos;
+primera preparación bloqueada por guarda de Núcleo original activo antes de crear
+base. Tras aislamiento nuevo sin semillas y cinco cuentas nuevas, restauración
+única: **98 originales mismos ids/imágenes/montajes/estados**, 11 CU-015 + 7 Redash
+activos, tres nuevos detenidos 0/0/0 sin OOM. Datos/volúmenes/claves preservados.
+Control **15/11 04:03:44 UTC**: /ping timeout 15 s, /login vacío; PG listo/Redis PONG;
+oom_kill server 6 / worker 5 / adhoc 4 / scheduled 4. Estados restaurados, HTTP Redash
+bloqueado/inestable; sin recuperación repetida ni intervenir otros proyectos.
+
+[Resultado y límites](../../App/infra/informe-atributos/seguridad/RESULTADO.md) ·
+[Contrato/reproducción](../../App/infra/informe-atributos/seguridad/AUTORIZACION-EVENTOS.md) ·
+[Evidencia](../../App/infra/informe-atributos/seguridad/EVENTOS-RECINTOS-EVIDENCIA.json).
+Publicar solo origin/feature/sebastian, nuevo PR a develop y comprobar CI por SHA;
+sin merge/auto-merge. CU-028/F12, sustituciones, DAST, fuentes/imágenes, otros SSE,
+ZeroTier y nuevos casos de uso fuera del cambio. **RNF-05/06 siguen parciales.**
+
+## Revalidación SSE Parqueaderos — 13/11/2026 Bogotá, histórico 56c0fca
 
 **Global 113/159, Parqueaderos 25/25, 46 pendientes; sin aumento. RNF-05/06 parciales.**
 Inicio limpio/sincronizado `feature/sebastian` **bb0c9c8**; develop **41ca881**,

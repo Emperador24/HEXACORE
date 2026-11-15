@@ -1,5 +1,11 @@
 # Demostraciones CU-011F, CU-012–015, CU-027 y CU-029; CU-028 bloqueado
 
+**14/11/2026 — velocidad visible vigente:** `test:cu015:visible` y los demás
+`:visible` usan demo de **1500 ms por etapa lista, slowMo=0**. Aceptación
+explícita sin pausas: `:visible:normal`. Configuración y comprobación acotada
+[en la sección Demo visible](#demo-visible-15-segundos-por-pantalla); los ritmos
+anteriores inferiores se conservan como historia.
+
 ## Entrega y aceptación CU-011F — 11/11 de 2026 (12/11 UTC)
 
 **16/16 automático normal y 16/16 visible normal**, por separado, con Redash
@@ -133,62 +139,50 @@ Condiciones, tabla completa de casos y evidencias privadas separadas:
 [PLAN-CIERRE-SEBASTIAN.md](../../Documentation/Work/PLAN-CIERRE-SEBASTIAN.md).
 Los resultados del 8 de noviembre se conservan debajo como referencia histórica.
 
-## Demo visual con velocidad configurable
+## Demo visible: 1,5 segundos por pantalla
 
-Desde la raíz, abre el navegador con **800 ms entre operaciones de Playwright**
-y **cinco segundos para leer las etapas relevantes**:
-
-```bash
-npm --prefix App/e2e run demo
-```
-
-El modo demo carga `App/e2e/.env.local` si existe, incluida la `CU015_CLAVE_DEMO`
-configurada localmente; las variables ya exportadas tienen prioridad. El archivo
-es privado e ignorado por Git. No cambia contraseñas ni vuelve a sembrar datos.
-Requiere el entorno CU-015 existente activo y Chromium instalado.
-
-Para cambiar la velocidad o elegir un recorrido visual:
+Los comandos habituales `:visible` abren la demo directamente, sin parámetros
+ni variables de velocidad:
 
 ```bash
-CU015_DEMO_MS=2000 npm --prefix App/e2e run demo
-CU015_DEMO_MS=2000 npm --prefix App/e2e run demo -- cu011f --grep 'por interfaces'
-CU015_DEMO_MS=2000 npm --prefix App/e2e run demo -- cu015 --grep 'por portales'
-CU015_DEMO_MS=2000 CU015_DEMO_PAUSA_MS=8000 npm --prefix App/e2e run demo -- cu015 --grep 'por portales'
+npm --prefix App/e2e run test:cu015:visible
+npm --prefix App/e2e run test:implementados:visible
+npm --prefix App/e2e run test:completo:visible
 ```
 
-`CU015_DEMO_MS` y `CU015_DEMO_PAUSA_MS` aceptan enteros desde cero; valores
-inválidos fallan explícitamente. El primero configura `slowMo` al lanzar el
-navegador; los contextos creados explícitamente con `browser.newContext()`
-comparten ese navegador y esa demora. Ningún recorrido crea un navegador con
-`launch()` independiente. Las llamadas API/SQL no reciben esa pausa.
-Sin filtros se descubren los dieciséis casos implementados; algunos son
-comprobaciones API sin interfaz visible.
+`playwright.demo.config.ts` fija **slowMo=0** y **1500 ms por etapa relevante**,
+después de sus esperas de contenido. No espera entre cada clic, escritura o
+aserción. Las variables antiguas CU015_DEMO_MS/CU015_DEMO_PAUSA_MS ya no cambian
+estos valores. `presentar()` enfoca la página y pausa una vez en el punto marcado;
+se elimina la pausa genérica después de login para no sumarla a la siguiente
+etapa. Los contextos explícitos usan el mismo navegador, también sin slowMo.
 
-`slowMo` separa operaciones, pero no mantiene una pantalla después de una
-respuesta o antes de cambiar de actor. `presentar()` añade puntos de lectura
-en los recorridos CU-011F/012/013/014/015/027/029 y sus accesos: trae la página activa
-al frente, muestra la etapa en el informe y espera `CU015_DEMO_PAUSA_MS` (5.000 por
-defecto). Permite leer registro/validaciones, edición, compra/pago/QR, preparación,
-entrega, cuentas y recintos. En normal/CI la función retorna sin enfocar páginas,
-crear etapas, esperar ni adjuntar datos. No modifica las aserciones ni reintenta
-peticiones fallidas; los tiempos y vencimientos reales del negocio siguen activos.
+Sigue cargando `.env.local` privada para las cuentas existentes. No cambia claves
+ni siembra datos. `npm --prefix App/e2e run demo -- cu015` usa la misma presentación.
+Este es **App/e2e**, distinto de `App/frontend/demo-playwright`.
 
-Este modo usa una configuración separada y se rechaza en CI. Mantiene un
-trabajador, cero reintentos y 15 s por aserción. **Solo demo** dispone de hasta
-quince minutos totales por caso para la presentación; una acción/navegación
-individual sigue limitada a 120 s. No se amplían las esperas HTTP del producto.
-Normal/CI conservan 120 s totales y su velocidad original. Los errores HTTP,
-aserciones fallidas y timeouts conservan la salida de error. Elegir otro ritmo
-o recorrido para una presentación no cambia la aceptación registrada.
+Automático/CI permanecen a velocidad normal, con 120 s por caso, 15 s por aserción,
+un trabajador y cero reintentos. Aceptación visible normal explícita:
 
-Sus resultados e informes quedan separados en una sola carpeta
-`.evidencia/demo-FECHA/` por ejecución, con marca DEMO y trazas de todos los
-contextos incluso cuando pasan. Cada punto de lectura adjunta contexto/navegador
-y duración, sin URL, credenciales ni QR en esos metadatos. Las trazas completas
-siguen siendo privadas. No se sobrescriben los informes de aceptación. Los comandos normales,
-`:visible`, CI y el diagnóstico CU-028 de `test:completo` mantienen su velocidad
-y límites actuales. **Un demo aprobado no sustituye la aceptación automática ni
-declara aprobado CU-028.**
+```bash
+npm --prefix App/e2e run test:cu015:visible:normal
+npm --prefix App/e2e run test:implementados:visible:normal
+npm --prefix App/e2e run test:completo:visible:normal
+```
+
+Cada `:visible` tiene su variante `:visible:normal`. Demo conserva su presupuesto
+separado de presentación (15 min por caso; acción/navegación 120 s), sin ampliar
+esperas del producto. Informes privados `demo-FECHA` y `conjunto-demo-FECHA`,
+separados de aceptación. El observador completo mantiene diagnóstico CU-028,
+`completo:false` y salida **2** aunque Playwright apruebe; la demo no acredita aceptación.
+
+**Comprobación acotada, 14/11 Bogotá:** tipos y descubrimiento aprobados (16 casos,
+dos CU-015). Navegador visible con páginas sintéticas listas, sin API de negocio:
+lectura del helper **1502/1503 ms**, acciones completas **118/64 ms**, contextos
+predeterminado y explícito; modo normal **sin pausas ni adjuntos demo**. No se
+repiten los 16 recorridos. El primer ensayo falló por usar `config.retries` en
+el arnés; corregido a `project.retries`, se conservan logs y trazas originales.
+Los resultados históricos siguientes describen la configuración anterior.
 
 ### Verificación de presentación — 11 de noviembre de 2026
 

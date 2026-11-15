@@ -4,23 +4,15 @@ import { resolve } from 'node:path';
 import { loadEnvFile } from 'node:process';
 import normal from './playwright.config';
 
-// Solo se activa con el comando demo; la configuración normal no importa este archivo.
+// demo y los comandos :visible; aceptación normal y CI no importan este archivo.
 if (process.env.CI) throw new Error('El modo demo es local. En CI utiliza test:implementados o test:completo.');
 
 const entornoLocal = resolve(__dirname, '.env.local');
 if (existsSync(entornoLocal)) loadEnvFile(entornoLocal);
 
-const valor = process.env.CU015_DEMO_MS ?? '800';
-const demora = Number(valor);
-if (!/^\d+$/.test(valor) || !Number.isSafeInteger(demora)) {
-  throw new Error('CU015_DEMO_MS debe ser un entero mayor o igual a cero, expresado en milisegundos.');
-}
-
-const valorPausa = process.env.CU015_DEMO_PAUSA_MS ?? '5000';
-const pausa = Number(valorPausa);
-if (!/^\d+$/.test(valorPausa) || !Number.isSafeInteger(pausa)) {
-  throw new Error('CU015_DEMO_PAUSA_MS debe ser un entero mayor o igual a cero.');
-}
+// Velocidad definida aquí, también si .env.local conserva variables antiguas.
+const demora = 0;
+const pausa = 1500;
 // Cada worker vuelve a leer esta configuración: conservar una carpeta por ejecución.
 const sello = process.env.CU015_DEMO_SESION ?? new Date().toISOString().replace(/[:.]/g, '-');
 if (!/^[\dTZ-]+$/.test(sello)) throw new Error('Identificador de sesión demo inválido.');

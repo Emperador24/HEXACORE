@@ -1,6 +1,129 @@
 # Seguridad de Sebastián — RNF-05 y RNF-06
 
-## Sesión durante el SSE de Parqueaderos — 13/11/2026 Bogotá, corte vigente
+## Eventos/Recintos y demo visible — 14/11/2026 Bogotá, corte vigente
+
+**Eventos/Recintos 16/16; global 129/159, 30 pendientes. RNF-05/06 parciales.**
+Inicio limpio en `feature/sebastian` **56c0fca**, actualizado por fast-forward a
+`origin/develop` **66f9d6e** (PR #50 ya integrado; árbol idéntico). PR #51 de Samuel
+abierto/no integrado al comprobar; no se incorpora su rama. Inventario vigente
+sin cambios: **178 declaradas / 173 expuestas / 159 protegidas**. Se reutilizan las
+113 anteriores, incluyendo Alimentos 30/30, Compras 8/8, Reventa 11/11,
+Parqueaderos 25/25 y su corrección SSE. Sin repetir 300 controles ni 16 recorridos.
+
+### Semilla ya corregida y presentación
+
+El fallo 0A000 de CI 43619370875 ya estaba corregido en **b167261**:
+`cancelaciones_pedido` pertenece al TRUNCATE explícito con **RESTRICT**. Código,
+datos, prueba y cargador coinciden byte a byte entre ese commit, esta entrega y
+el checkout de [CI 43650863470](https://github.com/Emperador24/HEXACORE/actions/runs/43650863470).
+Se reutiliza su instalación vacía `iniciar.sh --datos-demo npm`, semilla aprobada
+con **1 evento / 3 establecimientos / 12 productos** y ocho trabajos correctos.
+Ese checkout **50c6364** es un merge de prueba de PR #51; la evidencia se limita
+a fuentes/carga intactas, no acredita integración ni contratos de ese PR.
+`iniciar.sh` difiere por monitoreo opcional no utilizado. El perfil `datos-demo`
+compila `Dockerfile.herramientas` (Node/ts-node) y ejecuta `datos-demo.sh`; no es la
+imagen final podada de Núcleo. Compilado de semilla de la imagen original actual
+**833267f** también incluye cancelaciones/RESTRICT y coincide con dist local.
+**1/1 unitaria local con DataSource doble**, ninguna semilla destructiva local,
+sin corrección nueva, CASCADE, retirada de FK ni cambios en 18 migraciones históricas.
+
+**5668ecc:** scripts habituales `App/e2e` `:visible` abren la configuración demo
+con **1500 ms por etapa lista y slowMo=0**, sin variables de velocidad adicionales.
+Se retiran pausas de 5000 ms y una pausa genérica de sesión que se acumulaba;
+login espera contenido listo. Contextos predeterminados y explícitos heredan la
+misma configuración. Aceptación visible normal disponible con `:visible:normal`;
+normal/CI conservan límites, aserciones y cero reintentos. Informes demo separados;
+observador completo conserva CU-028 pendiente, `completo:false` y salida 2.
+
+Tipos aprobados; descubrimiento **2 CU-015 / 16 implementados**, sin ejecutarlos.
+Configuración efectiva normal/demo: un trabajador, cero reintentos, **120/900 s**
+por caso (límites existentes); normal pausa 0, demo 1500, ambos slowMo=0.
+Prueba acotada real en Chromium visible sobre páginas estáticas sintéticas:
+**1/1 demo y 1/1 normal**, contexto predeterminado y explícito. Lectura demo
+**1502/1503 ms**, acciones agrupadas **117,889/64,051 ms**; normal sin pausa ni
+adjuntos demo. No representa aceptación de los recorridos de negocio.
+Primer arnés falló al consultar `config.retries` en vez de `project.retries`;
+se conserva y corrige solo el arnés, sin aumentar su límite de 15 s.
+`App/frontend/demo-playwright` permanece intacto.
+
+### Dos brechas y tres finales del bloque nuevo
+
+Reproducción previa en ambos canales, actor permitido, cuerpos válidos e ids
+existentes: crear recinto con `zonas[].id` de A movía la zona al recinto nuevo;
+crear evento con `localidades[].id` de A movía la localidad. TypeORM `save`
+actualizaba esas filas a través del DTO compartido con edición. **90f0d02** ignora
+esos ids en altas, generando identidades nuevas; edición conserva ids. Dos
+regresiones HTTP nuevas comprueban original, identidad e historial. Build/lint
+backend aprobados; regresiones HTTP nuevas ejecutadas dentro de la matriz en
+ambos canales y añadidas a las suites de CI, sin repetir localmente todo Núcleo.
+
+Roles globales: Organizador muta Eventos, Administrador los consulta; ambos
+gestionan Recintos/plano. Otro Organizador puede operar recursos nuevos de A;
+creadoPor es auditoría. Cliente/Personal rechazados con cuerpos/estado/versiones
+válidos y cabeceras de identidad falsas. Contextos recinto/evento/zona, ids de
+edición, disponibilidad, historial, versiones y bytes/metadatos del plano revisados.
+
+| Final normalizada, 15/11 UTC (14/11 Bogotá) | Resultado | Semántica / contexto / DTO / estado | Conservaciones | Duración |
+|---|---|---|---|---|
+| 03:54:41.270 | **218/218** | 206 / 8 / 2 / 2 | **88/88** | 4,240 s |
+| 03:54:48.042 | **218/218** | 206 / 8 / 2 / 2 | **88/88** | 4,641 s |
+| 03:54:55.246 | **218/218** | 206 / 8 / 2 / 2 | **88/88** | 4,629 s |
+
+Cada final: positivos de **16 rutas por canal**, 44 conservaciones por canal y
+**76 rechazos de autorización** (74×403, 2×401). 400 de contexto/DTO y 409 obsoleto
+se separan; no se cuentan inexistentes. Cada comparación cubre las **74 tablas**
+de once esquemas de negocio de la base nueva, planos SHA-256/metadatos,
+historial/versiones, secuencias y Redis DUMP/expiración absoluta. Outbox propio
+conserva contenido/clave/secuencia/creación; solo excluye `publicado_en` asíncrono.
+Se comprueban dos mensajes propios publicar/cancelar; sin exigir convergencia
+en Boletería ni reabrir su fallo histórico. Eventos/compras anteriores preservados.
+
+Desarrollo previo 218/218. Primera serie final conservada: final 1 **218/218**;
+final 2 interrumpido tras **199 observaciones**, HTTP 403 correcto pero comparador
+falló por orden de UNION ALL con Parallel Append. Diagnóstico por nombre de tabla:
+las 74 tablas, planos, secuencias y Redis eran iguales. No se ejecutó final 3.
+Se ordenan las tablas en el arnés; después se miden las tres finales normalizadas
+completas, sin cambios de producto/imagen/límites y sin reintentos automáticos.
+
+Node **22.22.3**, HTTP 10 s; **26 JS Eventos y 21 JS Parqueaderos/SSE** coinciden
+con dist, imágenes/gateway/fuentes estables antes/después. Base medida **5668ecc
+más cambios locales**, identificados por hashes; corrección posteriormente
+confirmada en 90f0d02. No se atribuye la imagen corregida al commit base.
+
+### Restauración y límites de esta ventana
+
+Al inicio Docker activo y **CU-015 (11 servicios) y Redash (7) activos**.
+Redash se detuvo una vez. Primera preparación rechazada por Núcleo original
+activo, antes de crear base; se conservan sus logs y los ENOENT dependientes.
+Se validaron ids/imágenes y detuvieron seis aplicaciones CU-015 (0/143, sin OOM),
+conservando proveedores; después se preparó base/Redis/volumen/vhost nuevos y
+cinco cuentas nuevas, sin semillas, solo proveedores simulados.
+
+Restauración única terminada **15/11 03:59:22 UTC**: **98 originales con mismos
+ids/imágenes/montajes/estados**, once CU-015 y siete Redash activos de nuevo;
+preparacion-base inicialmente inactiva sigue inactiva, sin ejecutarla. Tres
+contenedores nuevos detenidos **0/0/0 sin OOM**, datos retenidos. Docker activo
+inicial/final, otros proyectos intactos. El restaurador ahora admite CU-015 activo
+al inicio y reanuda solo esos servicios, sin preparar/reconstruir/resembrar.
+
+Control posterior **15/11 04:03:44 UTC (14/11 23:03 Bogotá)**: `/ping` agota 15 s
+(curl 28), `/login` respuesta vacía (curl 52), ambos HTTP 000; PG listo/Redis PONG.
+Nuevos cgroups oom_kill: server **6**, worker **5**, adhoc_worker **4**,
+scheduled_worker **4**, scheduler/proveedores **0**. Contadores aparte: gateway de
+otro proyecto ya restarting **89→127**, scheduler **40→2**. **Estados restaurados;
+HTTP Redash bloqueado/inestable con OOM**, sin ciclos de recuperación o cambios
+globales. No se confunde running con disponibilidad o estabilidad sostenida.
+
+[Contrato/reproducción](AUTORIZACION-EVENTOS.md) ·
+[Evidencia permitida](EVENTOS-RECINTOS-EVIDENCIA.json) ·
+[Cobertura por método/ruta](COBERTURA-RECURSOS.md).
+Trazas, respuestas, identidades, sesiones, SQL y planos crudos privados fuera de
+Git. CI publicada se comprobará por SHA y se registrará en el PR; distinta de
+estas mediciones locales. Solo origin/feature/sebastian, nuevo PR hacia develop,
+sin merge/auto-merge. Fuera CU-028/F12, sustituciones, DAST, nuevos casos de uso,
+fuentes/imágenes, otros SSE y ZeroTier. **30 pendientes; RNF-05/06 parciales.**
+
+## Sesión durante el SSE de Parqueaderos — 13/11/2026 Bogotá, histórico 56c0fca
 
 **Global 113/159, Parqueaderos 25/25; 46 pendientes. Sin aumento por este cambio.
 RNF-05/06 siguen parciales.** Inicio limpio/sincronizado en `feature/sebastian`

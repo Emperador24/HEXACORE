@@ -85,7 +85,8 @@ export class RecintosService {
     const id = await this.conUnicidad(() =>
       this.datos.transaction(async (m) => {
         const recinto = await m.save(m.create(Recinto, { ...this.camposDe(dto), actualizadoPor: realizadoPor }));
-        await m.save(dto.zonas.map((z) => m.create(ZonaRecinto, this.zonaDe(z, recinto.id))));
+        // El id se usa al editar; crear no debe mover una zona de otro recinto.
+        await m.save(dto.zonas.map((z) => m.create(ZonaRecinto, this.zonaDe({ ...z, id: undefined }, recinto.id))));
         return recinto.id;
       }),
     );

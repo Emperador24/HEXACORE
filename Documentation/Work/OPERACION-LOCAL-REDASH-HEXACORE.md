@@ -1,6 +1,32 @@
 # Alternar Redash y HEXACORE en este Mac
 
-**Última ventana — 13/11, revalidación SSE:** Docker **activo** al inicio/final;
+**Última ventana — 14/11 Bogotá, Eventos/Recintos:** Docker **activo** al
+inicio/final. El registro inicial tenía **CU-015 (11 servicios) y Redash (7)
+activos**; no asumir el estado detenido de ventanas anteriores. Se detuvo Redash
+una vez antes de probar. La guarda bloqueó la primera preparación por Núcleo
+original activo, antes de crear base. Se detuvieron solo las seis aplicaciones
+CU-015 necesarias, validando ids/imágenes; proveedores conservados. Base/Redis/
+volumen/vhost y cinco cuentas nuevos; sin semillas destructivas.
+
+Tres finales normalizadas 218/218 con Redash detenido. Restauración única
+terminada **15/11 03:59:22 UTC (14/11 Bogotá)**: **98 originales con mismos ids,
+imágenes, montajes y estados**, once CU-015 y siete Redash activos otra vez;
+preparacion-base inactiva, sin ejecutarla. Solo se reanudan los servicios activos
+en el registro inicial; sin preparar, reconstruir o sembrar al restaurar.
+Tres contenedores nuevos detenidos **0/0/0 sin OOM**, datos conservados. Otros
+proyectos sin intervención; no se cambian límites globales ni se limpia Docker.
+
+Control posterior **15/11 04:03:44 UTC (14/11 23:03 Bogotá)**: `/ping` timeout
+15 s (curl28), `/login` respuesta vacía (curl52), HTTP000; PostgreSQL listo y
+Redis PONG. Nuevos cgroups oom_kill: server **6**, worker **5**, adhoc_worker
+**4**, scheduled_worker **4**, scheduler/proveedores **0**. **Estados restaurados;
+HTTP bloqueado/inestable y estabilidad sostenida pendiente.** No se hicieron
+ciclos de recuperación. Requiere capacidad autorizada/revisión del responsable;
+sin detener otros proyectos ni alterar recursos globales. Contadores aparte:
+gateway ajeno ya restarting **89→127**, scheduler **40→2**; no se restauran
+contadores mediante intervenciones. [Resultado y evidencia](../../App/infra/informe-atributos/seguridad/RESULTADO.md).
+
+**Ventana anterior — 13/11, revalidación SSE:** Docker **activo** al inicio/final;
 **95 IDs/imágenes/montajes/estados originales conservados**, CU-015/ZAP detenidos,
 otros proyectos sin intervención. Base/Redis/volumen/vhost nuevos, datos/credenciales
 anteriores intactos. Tres nuevos contenedores detenidos **0/0/0 sin OOM**, datos
