@@ -6,6 +6,14 @@ existe, se registra dentro del Núcleo. Esquema propio `operacion`; migraciones
 
 ## CU-019 · Monitorear el evento
 
+Seguridad SSE de CU-019 y CU-010: se conserva el ciclo de **3 s / 2 s**, con
+revalidación JWT/Redis y permisos dinámicos antes de cada emisión y durante la
+consulta. Invalidación o fallo termina con un evento saneado `sesion_finalizada`
+y EOF; HTTP inicial conserva 401/403/503. Desconexión y apagado liberan la
+suscripción. Consultas propias del SSE limitadas a 2 s SQL / 5 s estado, sin
+cambiar HTTP normal. La detección es periódica, no instantánea. Contratos y
+mediciones: [Seguridad de Operación](../../../infra/informe-atributos/seguridad/AUTORIZACION-OPERACION.md).
+
 | Ruta `/api/v1/monitoreo` | Qué |
 |---|---|
 | GET `eventos` | Eventos publicados que se pueden monitorear, primero los que están en curso |

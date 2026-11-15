@@ -1,6 +1,114 @@
 # Cierre de Alimentos — Sebastián
 
-## Eventos/Recintos y demo — 14/11/2026 Bogotá, corte vigente
+## Evacuación/Monitoreo y acciones de demo — 15/11/2026 Bogotá, corte vigente
+
+**22/22 nuevas, global 151/167, 16 pendientes; RNF-05/06 parciales.** Inicio
+7d0b2c9 limpio, fast-forward a develop 36998aa: PR #51 y #52 ya integrados. Se
+revisa guarda común/permisos dinámicos; no se integra feature/samuel directamente.
+Inventario actual 186 declaradas/181 expuestas/167 protegidas. Ocho nuevas de
+CU-028 quedan pendientes, además de Acceso QR 3/Admin cuentas 5. Las 129 previas
+conservan sus combinaciones/evidencia, sin atribuirlas a toda la matriz dinámica.
+Semilla ya corregida, sin cambios ni ejecuciones nuevas; sin repetir 16/300.
+
+Demo **0e29a13**: 500 ms entre acciones, primer plano antes de actuar y1500ms de
+lectura. Helper en 237 puntos UI, normales/CI sin demora, límites/aserciones/
+cero reintentos e informes/observador intactos. Chromium visible acotado1/1
+demo+1/1normal, dos actores con campos/selección/clic y regreso: separaciones
+DOM512–551 ms, lecturas1503/1503 ms, regreso tras lectura 57 ms sin pausa extra.
+Tipos, incluido CU-015 explícito, y descubrimiento2/16 aprobados. Fallo del
+contador de selección conservado; no aceptación completa nueva.
+
+Dos SSE reproducidos tras revocación real: estado nuevo en Evacuación2009/1999 ms,
+Monitoreo3001/3006 ms por gateway/Núcleo; nueva conexión401. Se adapta Parqueaderos
+con sesión/permisos vigentes, ciclos 2/3 s y validación antes de emitir, sin solapar
+validaciones ni apilar estados. Monitor activo durante consulta. Terminal
+saneado+EOF, recursos por conexión/apagado liberados y resultados tardíos
+descartados. SQL SSE propio2s y estado 5 s, sin cambiar HTTP normal/pools externos.
+Detección periódica, no instantánea: ciclo+Redis 2 s+transporte. SIGTERM 5 s intacto.
+Consumidores con una renovación legítima401 hasta datos nuevos; otro rechazo/
+403/503 termina sondeo/reconexiones, reader/lock liberados, callbacks tardíos
+ignorados y estado visual de desconexión. Transporte mantiene backoff.
+
+Tres finales seriales: **510/510 cada una**, categorías470 semánticas/32 contexto/
+4 DTO/4 estado; **256 comparaciones de 76 tablas**, avisos/historial/outbox,
+planos/secuencias/Redis. **216 rechazos de autorización**, positivos22 para
+cada supervisor por canal y Personal en sus tres operaciones declaradas, sin
+asignación inventada. Roles globales, no propietario por creadoPor. Permisos
+propios actuales leer/crear/actualizar y retirada de leer por API con sesión
+abierta, sin ampliar cobertura CU-028. Capturas completas gzip con huellas;
+Redis atómico, DUMP binario y reloj servidor. Solo expiraciones cuyo plazo ya
+venció se registran aparte; seis regresiones rechazan borrado temprano/cambio
+valor/TTL/clave nueva/SQL. DTO/contexto/estado no acreditan autorización.
+
+| Final, inicio UTC 15/11 (Bogotá −5 h) | Matriz | Conservaciones | SSE canal/flujo | SIGTERM, 4 conexiones |
+|---|---|---|---|---|
+| 19:37:50.881 | **510/510** | **256/256** | **4/4** | 329,88 ms |
+| 19:40:37.505 | **510/510** | **256/256** | **4/4** | 261,36 ms |
+| 19:43:27.840 | **510/510** | **256/256** | **4/4** | 284,09 ms |
+
+Revocación: Evacuación1993–2005ms / Monitoreo2993–3003ms; Redis3887–3914 /
+4877–4922ms; caducidad tras exp1231–1755 /1063–1862ms. Sin datos tardíos,
+terminal+EOF; SQL pendiente sin transacciones retenidas tras liberar.
+Expiraciones naturales0/2/0 registradas;768 pares íntegros gzip verificados
+por hash. Corrección52ed82d, fuentes medidas0e29a13+local identificadas por hashes.
+
+
+53/53 unitarias backend, 7 suites (20 nuevas + 33 pertinentes previas), build/lint
+y tipos/plantillas Angular aprobados;22/22 cliente en Chrome Headless con dobles,
+incluidas regresiones del lector/renovación de Parqueaderos. Dos nuevas HTTP
+para CI, sin ejecutar localmente todo Núcleo. Cuatro casos SSE por final:
+continuidad, revocación, expJWT fixture 5 s, permiso retirado, fallo Redis finito,
+consulta SQL pendiente, desconexión y SIGTERM con 4 flujos; dos regresiones HTTP del
+SSE anterior por final. JWT no cambia TTL/reloj; Redis solo nuevo, SQL solo base
+nueva; sin certificar RNF-17. Servidor: Node 22.22.3,24 JS Operación+21 Parqueaderos
++3 seguridad común, imágenes/fuentes contrastadas. Base medida 0e29a13 más cambios
+locales identificados por huellas; no se atribuye corrección al commit previo.
+
+Fallos conservados: fixture descripción/search_path y sondeo dependiente0
+observaciones; tipado MessageEvent; desarrollo: 4 observaciones por render de
+gateway anterior (lector403 allí/directo200), resuelto con gateway actual
+exclusivo sin cambiar original; desarrollo 2 tras 423 por login SSE concurrente,
+luego orquestación serial. Serie inicial: 510+SSE aprobados y segunda tras 248 por
+acuse de Eventos; se espera en precondición 3 s sin ocultarlo. Serie normalizada:
+exportación JSON gigante excedió cadena V8; proceso arnés detenido, conexiones
+cerradas robustamente y pares completos gzip, sin ampliar memoria/tiempos.
+Serie compacta: primera aprobada, segunda tras 236 por expiración natural de
+una clave antigua; se incorpora reloj/lectura atómica y se mide cierre-final-1–3.
+No hay reintentos automáticos ni cambios de producto/imagen para esos fallos.
+
+Docker activo,101 originales y 11 CU-015 + 7 Redash activos al inicio. Parada
+Redash una vez, scheduler 137 tras gracia 120 s/OOM=false, causa interna no aislada;
+no se presenta como ordenado ni se reinicia para recuperarlo. Datos/credenciales/
+volúmenes previos preservados. Base/Redis/volumen/vhost nuevos y 9 cuentas propias,
+sin semillas; avisos solo por cola simulada propia, sin destinatarios anteriores
+o canales reales. Gateway final exclusivo actual; original intacto.
+
+Restauración única terminada **2026-11-15T19:50:16 UTC**: **101 originales con
+mismos ids/imágenes/montajes/estados**, once CU-015 y siete Redash activos otra
+vez. Preparacion-base inicialmente inactiva sigue inactiva, sin ejecutarla.
+**Cuatro nuevos detenidos, cierres 0/0/0/0 sin OOM**, datos/base/vhost/volúmenes
+retenidos. Gateway original reanudado con su misma configuración; el actual de
+ensayo queda detenido. Docker activo inicial/final; otros proyectos intactos.
+
+Control posterior **15/11 19:53:00 UTC (14:53 Bogotá)**: `/ping` y `/login`
+agotan **15 s**, curl28/HTTP000; PG listo y RedisPONG. Tras el arranque escalonado
+hubo reset56 inicial y luego200, que no acreditan estabilidad sostenida. Nuevos
+cgroups oom_kill: server **3**, scheduled_worker **2**, adhoc_worker **2**,
+worker **2**, scheduler/Redis/PG **0**. Contadores aparte: gateway ajeno ya
+restarting **29→109**, scheduler **2→1**. **Estados restaurados; HTTP Redash
+bloqueado/inestable con OOM**, sin ciclos de recuperación, limpiezas o cambios
+globales. No se intervienen otros proyectos para igualar contadores.
+
+
+[Resultado/mediciones/incidencias](../../App/infra/informe-atributos/seguridad/RESULTADO.md) ·
+[Guía específica](../../App/infra/informe-atributos/seguridad/AUTORIZACION-OPERACION.md) ·
+[Evidencia](../../App/infra/informe-atributos/seguridad/OPERACION-EVIDENCIA.json).
+Publicar únicamente origin/feature/sebastian, nuevo PR hacia develop, sin
+merge/auto-merge; verificar CI por SHA y registrar resultado en PR. Fuera F12,
+desarrollo CU-028, nuevos casos de uso, DAST, arquitectura, fuentes/imágenes
+gráficas y ZeroTier. **RNF-05/06 siguen parciales.**
+
+## Eventos/Recintos y demo — 14/11/2026 Bogotá, histórico 7d0b2c9
 
 **Eventos/Recintos 16/16; global 129/159, 30 pendientes. RNF-05/06 parciales.**
 Rama `feature/sebastian`: inicio limpio 56c0fca, fast-forward a develop 66f9d6e
