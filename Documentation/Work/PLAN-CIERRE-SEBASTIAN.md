@@ -45,6 +45,12 @@ Publicar solo origin/feature/sebastian y PR #53 con CI por SHA, sin merge/auto-m
 El plan ZeroTier separado de 34c8420 permanece documental; sin VPN o caídas
 entre computadores. La demo conserva 500/1500 ms y variantes normales.
 
+CI 43766560632/f945e7a: 7/8, con 1.168 unitarias y 141 aserciones de Núcleo
+aprobadas; la suite rechazaba al cerrar dos ERROR deliberados de la nueva
+inyección. Ajuste posterior solo de pruebas, con patrón/cantidad/ventana y cinco
+regresiones aprobadas: logs crudos y errores inesperados preservados, límite de
+5 s intacto. Nueva CI por SHA en la PR; sin repetir negocio ni alterar producto.
+
 ## Preparación documental de dos servidores y un cliente — 15/11/2026
 
 [PLAN-DEMO-ZEROTIER.md](PLAN-DEMO-ZEROTIER.md) reemplaza la propuesta anterior

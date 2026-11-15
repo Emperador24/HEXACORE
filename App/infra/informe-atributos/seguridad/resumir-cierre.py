@@ -57,6 +57,9 @@ def main():
     salida['restauracion']={'originales':105,'mismosIdsImagenesMontajesEstados':True,'nuevos':6,'nuevosDetenidos':all(not c['activo']for c in restauracion['nuevos']),
       'cierresNuevos':[c['codigo']for c in restauracion['nuevos']],'oomNuevos':[c['oom']for c in restauracion['nuevos']],'dockerActivo':restauracion['dockerActivo'],'inicioUTC':restauracion['inicio'],'finUTC':restauracion['fin']}
     if (p/'auditoria-restauracion.json').exists():salida['restauracion']['auditoria']=leer('auditoria-restauracion.json')
+    if (p/'diagnostico-ci-error-esperado.json').exists():
+        ci=leer('diagnostico-ci-error-esperado.json')
+        salida['ajustePosteriorCI']={k:ci[k] for k in ['sha','run','job','trabajosAprobados','trabajosFallidos','unitariasAprobadas','nucleoAsercionesAprobadas','causa','unitariasNuevasDelArnes','unitariasNuevasDelArnesAprobadas','tiposAprobados']}
     # Nunca copiar respuestas o mensajes de error: pueden incluir IDs, códigos QR o valores Redis.
     texto=json.dumps(salida,ensure_ascii=False,indent=2)+'\n'
     (ROOT/'App/infra/informe-atributos/seguridad/CIERRE-EVIDENCIA.json').write_text(texto)

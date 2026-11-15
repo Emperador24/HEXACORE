@@ -164,11 +164,17 @@ describe('CU-028 · Roles y permisos (e2e)', () => {
     const valor = (await redis.get(clave))!;
     const expira = Number(await redis.call('PEXPIRETIME', clave));
     try {
-      for (const roto of ['', '{no es json']) {
-        await redis.set(clave, roto, 'PXAT', expira);
-        const r = await request(nucleo.url).get('/api/v1/eventos').set('Authorization', como(cuenta)).expect(503);
-        expect(r.body.codigo).toBe('SESIONES_NO_DISPONIBLES');
-      }
+      await nucleo.conErroresEsperados(
+        /^\[Nest\] \d+\s+- .*\sERROR\s+\[SesionValida\] No se pudo comprobar la sesión en Redis: Roles vigentes con formato inválido en Redis$/,
+        2,
+        async () => {
+          for (const roto of ['', '{no es json']) {
+            await redis.set(clave, roto, 'PXAT', expira);
+            const r = await request(nucleo.url).get('/api/v1/eventos').set('Authorization', como(cuenta)).expect(503);
+            expect(r.body.codigo).toBe('SESIONES_NO_DISPONIBLES');
+          }
+        },
+      );
     } finally {
       await redis.set(clave, valor, 'PXAT', expira);
     }

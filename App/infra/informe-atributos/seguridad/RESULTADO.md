@@ -54,6 +54,13 @@ los casos probados; eso no aprueba Seguridad global.
 [Contrato, fallos y reproducción](AUTORIZACION-CIERRE.md) ·
 [Evidencia saneada](CIERRE-EVIDENCIA.json).
 
+CI **43766560632**, SHA f945e7a: 7/8; 1.168 unitarias y 141 aserciones HTTP de
+Núcleo aprobadas, fallo de suite al cerrar por dos ERROR esperados de la inyección.
+Se corrige solo el arnés con patrón/cantidad/ventana exactos y cinco pruebas
+adicionales aprobadas, sin ocultar errores inesperados ni cambiar el límite de
+apagado. Logs originales conservados; no se repiten las tres matrices locales.
+La nueva CI por SHA se comprueba en PR #53; el fallo anterior no se borra.
+
 **34c8420**, [plan de dos servidores y un cliente](../../../../Documentation/Work/PLAN-DEMO-ZEROTIER.md),
 commit documental separado con CI 43759947154 aprobada 8/8. A conserva gateway y
 datos; B será apagable; A sigue siendo punto único de fallo. Sin instalar o

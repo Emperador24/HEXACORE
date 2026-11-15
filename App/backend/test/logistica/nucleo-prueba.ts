@@ -11,6 +11,7 @@ import { opcionesDataSource as opcionesAlimentos } from '../../modulos/alimentos
 import { cargarConfiguracion as configurarAlimentos } from '../../modulos/alimentos/comun/config/configuracion';
 import { opcionesDataSource as opcionesLogistica } from '../../modulos/personal-logistica/persistencia/data-source';
 import { cifrarContrasena } from '../../modulos/identidad/comun/contrasenas';
+import { ErrorEsperado, sinColores, sinErroresEsperados } from './errores-esperados';
 
 export async function esperar(condicion: () => boolean | Promise<boolean>, limiteMs = 10000): Promise<void> {
   const limite = Date.now() + limiteMs;
@@ -28,6 +29,7 @@ export class NucleoPrueba {
   readonly datos = new DataSource(opcionesLogistica());
   private proceso?: ChildProcess;
   private salida = '';
+  private readonly erroresEsperados: ErrorEsperado[] = [];
   private readonly previos = new Map<string, Set<string>>();
   private readonly cuentas: string[] = [];
   private readonly tablas = ['auditoria_personal', 'notificaciones', 'registros_asistencia', 'solicitudes_cambio_turno', 'turnos', 'zonas_evento', 'empleados'];
@@ -104,6 +106,16 @@ export class NucleoPrueba {
     return ((await respuesta.json()) as { consumers: number }).consumers;
   }
 
+  async conErroresEsperados(patron: RegExp, cantidad: number, accion: () => Promise<void>): Promise<void> {
+    expect(patron.global || patron.sticky).toBe(false);
+    const desde = sinColores(this.salida).length;
+    await accion();
+    await esperar(() => sinColores(this.salida).slice(desde).split('\n').filter((linea) => patron.test(linea)).length >= cantidad);
+    const ventana = { desde, hasta: sinColores(this.salida).length, patron, cantidad };
+    sinErroresEsperados(this.salida, [ventana]);
+    this.erroresEsperados.push(ventana);
+  }
+
   async cerrar(): Promise<void> {
     try {
       if (this.proceso) {
@@ -117,7 +129,7 @@ export class NucleoPrueba {
         expect(this.proceso.signalCode === 'SIGTERM' || this.proceso.exitCode === 0).toBe(true);
         expect(this.salida).toContain('Consumidor de logística detenido');
         expect(this.salida).toContain('Sondeo de reservas detenido');
-        expect(this.salida).not.toMatch(/ERROR|UnknownElementException|Cierre de RabbitMQ con incidencias/);
+        expect(sinErroresEsperados(this.salida, this.erroresEsperados)).not.toMatch(/ERROR|UnknownElementException|Cierre de RabbitMQ con incidencias/);
         const [{ total }] = await this.datos.query(`SELECT count(*)::int AS total FROM pg_stat_activity
           WHERE application_name IN ('nucleo-identidad','nucleo-alimentos','nucleo-personal-logistica','finanzas-pagos:nucleo')`);
         expect(total).toBe(0);

@@ -164,6 +164,24 @@ administrador fue 132/132, separada de las finales completas.
 
 ## Reproducción y entorno
 
+### Ajuste posterior del arnés de CI, sin cambio de producto
+
+[CI 43766560632](https://github.com/Emperador24/HEXACORE/actions/runs/43766560632),
+SHA `f945e7a`: siete trabajos aprobados; backend falló al cerrar la suite CU-028.
+Pasaron **1.168 unitarias y las 141 aserciones HTTP** de la primera pasada de
+Núcleo, pero `NucleoPrueba.cerrar` rechazó las **dos líneas ERROR intencionales**
+de la nueva inyección de roles ilegibles. El cierre conserva sus señales,
+verificaciones de recursos y límite de **5 s**; no era un fallo de apagado.
+
+El arnés ahora declara patrón completo, cantidad exacta y ventana de esa prueba.
+Los logs crudos se conservan sin alterar. Cualquier otro ERROR, incluso dentro
+de la ventana, o el mismo mensaje fuera de ella, sigue fallando; también falla
+una cantidad distinta de dos. **Cinco pruebas nuevas del arnés aprobadas** y
+tipos verificados. Se contrasta el patrón contra las dos líneas reales de CI.
+Esta corrección solo afecta pruebas; las tres finales, producto e imágenes
+anteriores siguen válidos y no se reejecutan matrices o servicios locales.
+La nueva CI por SHA se registra en la PR sin reintentar el run fallido.
+
 Usar las guardas/alternancia de
 [OPERACION-LOCAL-REDASH-HEXACORE.md](../../../../Documentation/Work/OPERACION-LOCAL-REDASH-HEXACORE.md).
 Registrar estados antes de intervenir; solo un ámbito nuevo con SQL preparado

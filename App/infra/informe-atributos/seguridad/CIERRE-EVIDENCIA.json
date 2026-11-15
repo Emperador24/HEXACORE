@@ -6885,5 +6885,18 @@
       "dockerActivo": true,
       "estabilidadSostenidaAcreditada": false
     }
+  },
+  "ajustePosteriorCI": {
+    "sha": "f945e7a40db3b8caf6de19b33007ef3c61da0759",
+    "run": 43766560632,
+    "job": 132972892298,
+    "trabajosAprobados": 7,
+    "trabajosFallidos": 1,
+    "unitariasAprobadas": 1168,
+    "nucleoAsercionesAprobadas": 141,
+    "causa": "NucleoPrueba.cerrar rechazó dos ERROR intencionales de roles ilegibles; las aserciones HTTP pasaron. El registro ahora exige patrón/cantidad/ventana y conserva logs crudos y todo error inesperado. Sin modificar producto, límite de SIGTERM o aserciones de cierre.",
+    "unitariasNuevasDelArnes": 5,
+    "unitariasNuevasDelArnesAprobadas": 5,
+    "tiposAprobados": true
   }
 }
