@@ -59,7 +59,7 @@ function comparar(antes, despues) {
   c.assert(antes.relojRedis.finMs <= despues.relojRedis.finMs, 'Reloj Redis no retrocede');
   const actuales = new Map(despues.redis.map(x => [x.clave, x]));
   const expiradas = antes.redis.filter(x => !actuales.has(x.clave) && x.expiraEn > 0
-    && x.expiraEn >= antes.relojRedis.inicioMs && x.expiraEn <= despues.relojRedis.finMs);
+    && x.expiraEn >= Math.floor(antes.relojRedis.inicioMs) && x.expiraEn <= despues.relojRedis.finMs);
   const naturales = new Set(expiradas.map(x => x.clave));
   const { relojRedis: relojAntes, ...a } = antes, { relojRedis: relojDespues, ...b } = despues;
   // Solo la desaparición al vencer el TTL es esperable. Valores, TTL futuros,

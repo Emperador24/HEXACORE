@@ -8,6 +8,13 @@ test('una expiración dentro del intervalo se registra con el plazo absoluto obs
 test('no admite borrar antes de vencer el TTL', () => {
   assert.throws(() => comparar(estado([key()], 1000, 1100), estado([], 1200, 1400)));
 });
+test('conserva la granularidad de milisegundos de PEXPIRETIME frente a TIME', () => {
+  const a=estado([key(1500)],1500.874,1500.874),b=estado([],1550.854,1550.854);
+  assert.deepEqual(comparar(a,b),[{clave:'fixture',expiraEn:1500,observadaHastaMs:1550.854}]);
+});
+test('la precisión fraccional no permite borrar una clave vencida antes del milisegundo capturado', () => {
+  assert.throws(()=>comparar(estado([key(1499)],1500.874,1500.874),estado([],1550.854,1550.854)));
+});
 test('no admite borrar una clave sin caducidad', () => {
   assert.throws(() => comparar(estado([key(-1)], 1000, 1100), estado([], 1600, 1700)));
 });

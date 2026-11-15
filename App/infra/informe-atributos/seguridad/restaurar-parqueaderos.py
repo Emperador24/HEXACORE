@@ -88,6 +88,8 @@ def main():
     esperados = {meta['coreId'], meta['redisId']}
     if meta.get('coreAntes'): esperados.add(meta['coreAntes']['id'])
     if meta.get('gatewayEnsayo'): esperados.add(meta['gatewayEnsayo']['id'])
+    if meta.get('gatewayAntes'): esperados.add(meta['gatewayAntes']['id'])
+    if meta.get('boleteriaEnsayo'): esperados.add(meta['boleteriaEnsayo']['id'])
     assert {c['Id'] for c in nuevos} == esperados
     assert all(not c['State']['Running'] and not c['State']['OOMKilled'] and c['State']['ExitCode'] in [0, 143] for c in nuevos)
     assert all(c['Config']['Labels'].get('com.docker.compose.project') == 'hexacore-seguridad-parqueaderos-sebastian' for c in nuevos)

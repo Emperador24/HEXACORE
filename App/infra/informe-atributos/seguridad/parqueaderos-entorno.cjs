@@ -55,7 +55,8 @@ async function main() {
     const imagenInicial = process.argv[3] ?? n.Image;
     c.assert(imagenInicial === n.Image || imagenInicial.startsWith('hexacore-seg-parq-nucleo:'));
     crearCore(m, imagenInicial); m.estado = 'CREADO'; c.guardar(archivo, m);
-    docker(['start', c.proyecto + '-api-gateway-1']); console.log('Base vacía/migraciones, Redis y vhost exclusivos creados; Núcleo aislado usa gateway conservado.');
+    if (!process.argv.includes('--sin-gateway-original')) docker(['start', c.proyecto + '-api-gateway-1']);
+    console.log('Base vacía/migraciones, Redis y vhost exclusivos creados; original intacto.');
   } else if (accion === 'cambiar-imagen') {
     const m = c.leer(archivo); const imagen = process.argv[3]; c.assert(imagen?.startsWith('hexacore-seg-parq-nucleo:')); const actual = inspect(m.core); c.assert.equal(actual.Id, m.coreId);
     docker(['stop', '--time', '30', m.core]); const parado = inspect(m.core); c.assert([0, 143].includes(parado.State.ExitCode) && !parado.State.OOMKilled);
@@ -63,9 +64,10 @@ async function main() {
     crearCore(m, imagen); console.log('Solo Núcleo descartable actualizado; instancia anterior detenida y conservada.');
   } else if (accion === 'parar') {
     const m = c.leer(archivo);
-    for (const nombre of [m.gatewayEnsayo?.nombre, m.core, m.redis].filter(Boolean)) {
+    for (const nombre of [m.gatewayEnsayo?.nombre, m.boleteriaEnsayo?.nombre, m.core, m.redis].filter(Boolean)) {
       const actual = inspect(nombre); c.assert.equal(actual.Config.Labels['com.docker.compose.project'], proyecto);
       if (nombre === m.gatewayEnsayo?.nombre) c.assert.equal(actual.Id, m.gatewayEnsayo.id);
+      if (nombre === m.boleteriaEnsayo?.nombre) c.assert.equal(actual.Id, m.boleteriaEnsayo.id);
       if (actual.State.Running) docker(['stop', '--time', '30', nombre]);
       const parado = inspect(nombre); c.assert([0, 143].includes(parado.State.ExitCode) && !parado.State.OOMKilled);
     }
