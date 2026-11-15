@@ -822,8 +822,11 @@ Publicación se registra en PR #50. Datos, cuentas/claves anteriores y volúmene
 destructivas ni proveedores reales. Publicación solo `origin/feature/sebastian`,
 sin merge/auto-merge. Permanecen **90 rutas**, combinaciones adicionales, residuos
 previos CSP/DAST, CU-028 de Samuel y límites RNF-05/06. CU-028, F12, sustituciones,
-arquitectura, Google Fonts/imágenes y ampliación DAST quedan fuera. ZeroTier solo
-queda como futura prueba con un servidor HEXACORE y varios clientes, sin instalación.
+arquitectura, Google Fonts/imágenes y ampliación DAST quedan fuera. La nota de
+ZeroTier de un servidor con varios clientes queda actualizada por el
+[plan de dos servidores y un cliente](../../../../Documentation/Work/PLAN-DEMO-ZEROTIER.md).
+Solo preparación documental: VPN, configuración entre hosts y pruebas de caída
+siguen pendientes; esta actualización no aporta cobertura de Seguridad.
 
 
 ## Autorización sobre recursos y DAST activo — 13/11/2026

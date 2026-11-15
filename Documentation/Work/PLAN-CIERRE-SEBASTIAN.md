@@ -1,5 +1,17 @@
 # Cierre de Alimentos — Sebastián
 
+## Preparación documental de dos servidores y un cliente — 15/11/2026
+
+[PLAN-DEMO-ZEROTIER.md](PLAN-DEMO-ZEROTIER.md) reemplaza la propuesta anterior
+de un servidor con varios clientes. A conserva gateway/HTTPS, datos compartidos
+y una instancia de Núcleo/Boletería; B aloja las otras instancias y será el
+computador que podrá apagarse; C mide desde una URL estable. A sigue siendo
+punto único de fallo: no se afirma continuidad si cae A. Se revisan Compose,
+destinos/DNS del gateway, sesiones, TLS y tareas de fondo; se documentan cambios
+mínimos pendientes y pasos por equipo. Solo documentación, sin instalar VPN,
+alterar configuraciones/firewalls, arrancar servicios o probar caídas.
+Sin aumento de cobertura: **151/167, 16 pendientes; RNF-05/06 parciales**.
+
 ## Evacuación/Monitoreo y acciones de demo — 15/11/2026 Bogotá, corte vigente
 
 **22/22 nuevas, global 151/167, 16 pendientes; RNF-05/06 parciales.** Inicio
@@ -460,8 +472,10 @@ Publicación solo `origin/feature/sebastian`, PR #50 hacia develop, sin merge ni
 auto-merge; CI de publicación separada en el PR. Los cortes 49/159 y 110 pendientes
 de las secciones inferiores son históricos. SIGTERM/outbox conservan causa
 pendiente. Fuera: CU-028/Samuel, F12, sustituciones, DAST adicional, imágenes/
-Google Fonts, arquitectura y ZeroTier. Este último solo queda como futura prueba
-compartida con un servidor HEXACORE y varios clientes, sin instalar/configurar.
+Google Fonts, arquitectura y ZeroTier. La nota original de un servidor con
+varios clientes queda sustituida por el requisito de dos servidores y un
+cliente en [PLAN-DEMO-ZEROTIER.md](PLAN-DEMO-ZEROTIER.md); implementación de
+VPN y demostración de caída siguen pendientes, sin instalar/configurar aquí.
 
 
 ## Cierre de autorización por recurso y DAST — 13/11/2026
