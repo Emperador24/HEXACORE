@@ -1,5 +1,17 @@
 # Cierre de Alimentos — Sebastián
 
+## Preparación documental para sustentación — 15/11/2026
+
+[CIERRE-RUBRICA.md](CIERRE-RUBRICA.md) contrasta SAD, requisitos, código y
+evidencias; contiene quince fichas de atributos, responsables confirmados y guion
+propuesto de 54 min (arquitectura 10, prototipo 10). Falta confirmar temario,
+reparto restante y demos. SAD/Presentacion incorporan Seguridad 167/167 y sus
+límites; RNF-05/06 siguen parciales. CI de referencia **9bc1ee5**,
+[43768177312](https://github.com/Emperador24/HEXACORE/actions/runs/43768177312),
+aprobada 8/8, separada del fallo previo conservado. Revisión documental sin
+recorridos, matrices, operación Docker/Redash ni implementación funcional.
+El ensayo [dos servidores y cliente](PLAN-DEMO-ZEROTIER.md) sigue pendiente.
+
 ## Cierre de autorización del inventario — 15/11/2026 Bogotá, corte vigente
 
 **16/16 nuevas; global 167/167, cero operaciones pendientes del inventario.
