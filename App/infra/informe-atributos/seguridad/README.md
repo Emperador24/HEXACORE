@@ -1,6 +1,15 @@
 # Reproducir Seguridad RNF-05 / RNF-06
 
-**Cambio vigente: revalidación del SSE de Parqueaderos**, sin ampliar cobertura:
+**Bloque vigente: Eventos/Recintos 16/16**, global **129/159**, 30 pendientes:
+[AUTORIZACION-EVENTOS.md](AUTORIZACION-EVENTOS.md), `finales-eventos.py` y
+[evidencia](EVENTOS-RECINTOS-EVIDENCIA.json). Tres finales normalizadas de 218/218;
+dos reasignaciones de ids al crear corregidas, con regresiones HTTP. Demo de
+App/e2e visible por defecto a 1500 ms por etapa, slowMo=0; semilla ya corregida
+en b167261, sin nueva ejecución destructiva. RNF-05/06 siguen parciales.
+Los comandos generales inferiores describen sus bloques históricos; para este
+bloque usar la guía específica y restaurar los estados iniciales registrados.
+
+**Cambio anterior: revalidación del SSE de Parqueaderos**, sin ampliar cobertura:
 **113/159**, 46 pendientes. [AUTORIZACION-SSE.md](AUTORIZACION-SSE.md), `finales-sse.py`.
 Tres finales solo SSE; no repetir 300 controles ni 16 recorridos. Unitarias,
 dobles del cliente y HTTP reales se registran por separado.

@@ -19,6 +19,9 @@ Esquema propio `eventos_recintos`, el noveno de la base `hexacore`; migración
 
 ## Reglas
 
+- **Identidades al crear.** Las altas de recinto/evento generan zonas/localidades
+  nuevas aunque el DTO compartido incluya ids existentes. Esos ids se conservan
+  únicamente al editar; un alta no reasigna filas de otro recurso.
 - **Aforo (paso 4, CU-026B).** Aforo máximo ≤ capacidad del recinto; suma de cupos ≤ aforo
   máximo; suma de cupos de cada zona ≤ capacidad de la zona. El error nombra la zona.
 - **Traslape (paso 5, CU-026C).** Ningún evento publicado puede solaparse con otro publicado en

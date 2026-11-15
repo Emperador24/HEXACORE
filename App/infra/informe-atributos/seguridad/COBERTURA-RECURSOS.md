@@ -1,4 +1,27 @@
-# Cobertura por recurso — 13/11/2026, Parqueaderos
+# Cobertura por recurso — 14/11/2026 Bogotá, Eventos/Recintos
+
+**129/159 operaciones protegidas; 30 pendientes. RNF-05/06 parciales.** Se
+agregan las **16/16 de Eventos/Recintos**, por gateway y Núcleo directo, sin
+cambiar el inventario: **178 declaradas / 173 expuestas / 159 protegidas**.
+Las 113 anteriores se reutilizan, incluida la corrección SSE de Parqueaderos;
+sus fallos y límites se conservan. No se repiten 300 controles ni 16 recorridos.
+
+Tres finales normalizadas **218/218** cada una: 206 semánticas, ocho contexto,
+dos DTO y dos estado. Positivos de 16 métodos/rutas por canal, 76 rechazos de
+autorización y 88 comparaciones completas de 74 tablas/planos/secuencias/Redis.
+Administrador consulta Eventos, Organizador los muta; ambos gestionan Recintos.
+Roles globales, creadoPor es auditoría. Dos reasignaciones al crear con ids de
+zona/localidad existentes demostradas y corregidas, con regresiones HTTP.
+Errores DTO, versión e inexistencia no acreditan autorización. El fallo de la
+primera serie por orden de tablas se conserva separado de las tres finales.
+
+[Contrato y reproducción](AUTORIZACION-EVENTOS.md) ·
+[Evidencia nueva](EVENTOS-RECINTOS-EVIDENCIA.json) · [Resultado](RESULTADO.md).
+Cubrir una operación no agota combinaciones, carreras ni estados. Las 30
+pendientes conservan las comprobaciones anteriores de identidad/rol; no se
+declaran RNF-05/06 completos ni se amplía DAST.
+
+## Corte anterior conservado — 13/11/2026, Parqueaderos
 
 **113/159 operaciones protegidas** con ampliación semántica real por gateway y
 backend; **46 pendientes**. Parqueaderos **25/25**, Compras **8/8**, Reventa **11/11**
@@ -38,6 +61,8 @@ ni aumenta la cobertura por esta corrección: **113/159**, 46 pendientes.
 Cubrir una operación no agota combinaciones/carreras/estados. Las 46 pendientes
 conservan identidad/roles anteriores; **RNF-05/06 siguen parciales**. No se amplía
 DAST ni se repiten localmente los 16 recorridos completos.
+
+## Inventario vigente por método y ruta — 129/159
 
 | Método | Ruta | Regla efectiva revisada | Prueba por gateway/directo | Ubicación |
 |---|---|---|---|---|
@@ -89,14 +114,14 @@ DAST ni se repiten localmente los 16 recorridos completos.
 |GET|`/api/v1/emergencias/eventos`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/operacion/evacuacion/evacuacion.controller.ts`|
 |GET|`/api/v1/emergencias/recintos/:recintoId/plan`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/operacion/evacuacion/evacuacion.controller.ts`|
 |PUT|`/api/v1/emergencias/recintos/:recintoId/plan`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/operacion/evacuacion/evacuacion.controller.ts`|
-|POST|`/api/v1/eventos/:id/cancelar`|SesionValida; Organizador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/eventos-recintos/eventos/eventos.controller.ts`|
-|POST|`/api/v1/eventos/:id/publicar`|SesionValida; Organizador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/eventos-recintos/eventos/eventos.controller.ts`|
-|DELETE|`/api/v1/eventos/:id`|SesionValida; Organizador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/eventos-recintos/eventos/eventos.controller.ts`|
-|GET|`/api/v1/eventos/:id`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/eventos-recintos/eventos/eventos.controller.ts`|
-|PUT|`/api/v1/eventos/:id`|SesionValida; Organizador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/eventos-recintos/eventos/eventos.controller.ts`|
-|GET|`/api/v1/eventos/disponibilidad`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/eventos-recintos/eventos/eventos.controller.ts`|
-|GET|`/api/v1/eventos`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/eventos-recintos/eventos/eventos.controller.ts`|
-|POST|`/api/v1/eventos`|SesionValida; Organizador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/eventos-recintos/eventos/eventos.controller.ts`|
+|POST|`/api/v1/eventos/:id/cancelar`|SesionValida; Organizador|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/eventos/eventos.controller.ts`|
+|POST|`/api/v1/eventos/:id/publicar`|SesionValida; Organizador|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/eventos/eventos.controller.ts`|
+|DELETE|`/api/v1/eventos/:id`|SesionValida; Organizador|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/eventos/eventos.controller.ts`|
+|GET|`/api/v1/eventos/:id`|SesionValida; Organizador, Administrador|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/eventos/eventos.controller.ts`|
+|PUT|`/api/v1/eventos/:id`|SesionValida; Organizador|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/eventos/eventos.controller.ts`|
+|GET|`/api/v1/eventos/disponibilidad`|SesionValida; Organizador, Administrador|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/eventos/eventos.controller.ts`|
+|GET|`/api/v1/eventos`|SesionValida; Organizador, Administrador|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/eventos/eventos.controller.ts`|
+|POST|`/api/v1/eventos`|SesionValida; Organizador|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/eventos/eventos.controller.ts`|
 |GET|`/api/v1/logistica/asignaciones`|SesionValida, ContextoDeLogistica, SoloQuienSupervisa; identidad/contexto del servicio|Sí; contexto probado, combinaciones limitadas|`App/backend/modulos/personal-logistica/turnos-asistencia/gestion-personal.controller.ts`|
 |POST|`/api/v1/logistica/asistencia/entrada`|SesionValida, ContextoDeLogistica; Personal, Organizador, Administrador|Sí; contexto probado, combinaciones limitadas|`App/backend/modulos/personal-logistica/turnos-asistencia/asistencia.controller.ts`|
 |GET|`/api/v1/logistica/asistencia/estado`|SesionValida, ContextoDeLogistica; identidad/contexto del servicio|Sí; contexto probado, combinaciones limitadas|`App/backend/modulos/personal-logistica/turnos-asistencia/asistencia.controller.ts`|
@@ -189,14 +214,14 @@ DAST ni se repiten localmente los 16 recorridos completos.
 |GET|`/api/v1/pedidos/mis-establecimientos`|SesionValida; Personal|Sí; Alimentos 3×278, ambas vías; ampliada|`App/backend/modulos/alimentos/establecimientos/establecimientos.controller.ts`|
 |GET|`/api/v1/pedidos/mis-pedidos/:pedidoId`|SesionValida; Cliente|Sí; Alimentos 3×278, ambas vías; reejecutada|`App/backend/modulos/alimentos/recepcion/recepcion.controller.ts`|
 |GET|`/api/v1/pedidos/mis-pedidos`|SesionValida; Cliente|Sí; Alimentos 3×278, ambas vías; ampliada|`App/backend/modulos/alimentos/recepcion/recepcion.controller.ts`|
-|DELETE|`/api/v1/recintos/:id/plano`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/eventos-recintos/recintos/recintos.controller.ts`|
-|GET|`/api/v1/recintos/:id/plano`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/eventos-recintos/recintos/recintos.controller.ts`|
-|PUT|`/api/v1/recintos/:id/plano`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/eventos-recintos/recintos/recintos.controller.ts`|
-|DELETE|`/api/v1/recintos/:id`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/eventos-recintos/recintos/recintos.controller.ts`|
-|GET|`/api/v1/recintos/:id`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/eventos-recintos/recintos/recintos.controller.ts`|
-|PUT|`/api/v1/recintos/:id`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/eventos-recintos/recintos/recintos.controller.ts`|
-|GET|`/api/v1/recintos`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/eventos-recintos/recintos/recintos.controller.ts`|
-|POST|`/api/v1/recintos`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/eventos-recintos/recintos/recintos.controller.ts`|
+|DELETE|`/api/v1/recintos/:id/plano`|SesionValida; Organizador, Administrador|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/recintos/recintos.controller.ts`|
+|GET|`/api/v1/recintos/:id/plano`|SesionValida; Organizador, Administrador|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/recintos/recintos.controller.ts`|
+|PUT|`/api/v1/recintos/:id/plano`|SesionValida; Organizador, Administrador|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/recintos/recintos.controller.ts`|
+|DELETE|`/api/v1/recintos/:id`|SesionValida; Organizador, Administrador|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/recintos/recintos.controller.ts`|
+|GET|`/api/v1/recintos/:id`|SesionValida; Organizador, Administrador|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/recintos/recintos.controller.ts`|
+|PUT|`/api/v1/recintos/:id`|SesionValida; Organizador, Administrador|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/recintos/recintos.controller.ts`|
+|GET|`/api/v1/recintos`|SesionValida; Organizador, Administrador|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/recintos/recintos.controller.ts`|
+|POST|`/api/v1/recintos`|SesionValida; Organizador, Administrador|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/recintos/recintos.controller.ts`|
 |DELETE|`/api/v1/sesiones/actual`|SesionRequerida; identidad/contexto del servicio|Sí; contexto probado, combinaciones limitadas|`App/backend/modulos/identidad/sesiones/sesiones.controller.ts`|
 |GET|`/api/v1/sesiones/actual`|SesionRequerida; identidad/contexto del servicio|Sí; contexto probado, combinaciones limitadas|`App/backend/modulos/identidad/sesiones/sesiones.controller.ts`|
 |GET|`/api/v1/sesiones/verificar`|SesionRequerida; identidad/contexto del servicio|Sí; contexto probado, combinaciones limitadas|`App/backend/modulos/identidad/sesiones/sesiones.controller.ts`|
