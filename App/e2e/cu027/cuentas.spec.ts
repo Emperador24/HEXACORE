@@ -5,7 +5,7 @@ import { adminURL, clienteURL, clave, comprobarAislamiento, gateway, loginAPI, l
 test.beforeAll(comprobarAislamiento);
 const h=(token:string)=>({Authorization:`Bearer ${token}`});
 async function entrar(page:Page,email:string,contrasena:string,estado=200){
- await page.goto(`${clienteURL}/login`);await presentar(page,'Acceso al portal cliente');await page.getByLabel('Correo',{exact:true}).fill(email);await page.getByLabel('Contraseña',{exact:true}).fill(contrasena);
+ await page.goto(`${clienteURL}/login`);await expect(page.getByLabel('Correo',{exact:true})).toBeVisible();await presentar(page,'Acceso al portal cliente');await page.getByLabel('Correo',{exact:true}).fill(email);await page.getByLabel('Contraseña',{exact:true}).fill(contrasena);
  const respuesta=page.waitForResponse(r=>r.url().endsWith('/sesiones')&&r.request().method()==='POST');await page.getByRole('button',{name:'Ingresar',exact:true}).click();const r=await respuesta;expect(r.status()).toBe(estado);
  if(estado===200)await expect(page).not.toHaveURL(/\/login(?:\?|$)/);else await expect(page.getByRole('alert')).toBeVisible();return r.json();
 }

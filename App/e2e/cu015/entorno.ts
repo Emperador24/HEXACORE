@@ -32,12 +32,14 @@ export async function loginAPI(api: APIRequestContext, email: string): Promise<{
 
 export async function loginUI(page: Page, url: string, email: string): Promise<void> {
   await page.goto(`${url}/login`);
+  await expect(page.getByLabel('Correo', { exact: true })).toBeVisible();
   await presentar(page, url === adminURL ? 'Acceso al portal administrativo' : 'Acceso al portal cliente');
   await page.getByLabel('Correo', { exact: true }).fill(email);
   await page.getByLabel('Contraseña', { exact: true }).fill(clave()!);
   await page.getByRole('button', { name: 'Ingresar', exact: true }).click();
   await expect(page).not.toHaveURL(/\/login(?:\?|$)/);
-  await presentar(page, 'Sesión abierta en el portal');
+  // La siguiente etapa se presenta cuando su contenido específico esté listo;
+  // no sumar otra pausa genérica a la del recorrido que llama a este helper.
 }
 
 export async function crearEvento(api: APIRequestContext, token: string, nombre: string) {
