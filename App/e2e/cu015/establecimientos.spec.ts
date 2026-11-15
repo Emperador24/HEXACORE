@@ -1,17 +1,17 @@
 import { expect, Page, test } from '../csp.fixture';
 import { randomUUID } from 'node:crypto';
-import { presentar } from '../presentacion';
+import { actuar, presentar } from '../presentacion';
 import { adminURL, clienteURL, comprobarAislamiento, crearEvento, gateway, loginAPI, loginUI, nucleo, productoPropio, sql } from './entorno';
 
 test.beforeAll(() => comprobarAislamiento());
 
 async function llenar(page: Page, nombre: string, contacto = 'Contacto CU015 · 3001234567') {
-  await page.getByLabel('Nombre', { exact: true }).fill(nombre);
-  await page.getByLabel('Contacto', { exact: true }).fill(contacto);
-  await page.getByLabel('Punto de entrega', { exact: true }).fill('Puerta de prueba CU015');
-  await page.getByLabel('Apertura', { exact: true }).fill('00:00');
-  await page.getByLabel('Cierre', { exact: true }).fill('00:00');
-  await page.getByLabel('Zona horaria', { exact: true }).fill('America/Bogota');
+  await actuar(page.getByLabel('Nombre', { exact: true }), objetivo => objetivo.fill(nombre));
+  await actuar(page.getByLabel('Contacto', { exact: true }), objetivo => objetivo.fill(contacto));
+  await actuar(page.getByLabel('Punto de entrega', { exact: true }), objetivo => objetivo.fill('Puerta de prueba CU015'));
+  await actuar(page.getByLabel('Apertura', { exact: true }), objetivo => objetivo.fill('00:00'));
+  await actuar(page.getByLabel('Cierre', { exact: true }), objetivo => objetivo.fill('00:00'));
+  await actuar(page.getByLabel('Zona horaria', { exact: true }), objetivo => objetivo.fill('America/Bogota'));
 }
 
 test('CU-015 por portales: registrar, persistir, editar, validar y operar; regresión de pago CU-011', async ({ page, browser, request }, info) => {
@@ -22,44 +22,44 @@ test('CU-015 por portales: registrar, persistir, editar, validar y operar; regre
   let pedidoId = '';
   await test.step('Login administrativo y registro para el evento creado por CU-026', async () => {
     await loginUI(page, adminURL, 'organizador@hexacore.com');
-    await page.getByRole('navigation').getByRole('link', { name: 'Establecimientos', exact: true }).click();
-    await page.getByLabel('Evento', { exact: true }).selectOption(evento.id);
-    await page.getByRole('button', { name: 'Nuevo establecimiento' }).click();
+    await actuar(page.getByRole('navigation').getByRole('link', { name: 'Establecimientos', exact: true }), objetivo => objetivo.click());
+    await actuar(page.getByLabel('Evento', { exact: true }), objetivo => objetivo.selectOption(evento.id));
+    await actuar(page.getByRole('button', { name: 'Nuevo establecimiento' }), objetivo => objetivo.click());
     await expect(page.getByRole('button', { name: 'Guardar establecimiento' })).toBeDisabled();
     await llenar(page, nombre);
     const creada = page.waitForResponse(r => r.url().endsWith('/pedidos/admin/establecimientos') && r.request().method() === 'POST');
-    await page.getByRole('button', { name: 'Guardar establecimiento' }).click();
+    await actuar(page.getByRole('button', { name: 'Guardar establecimiento' }), objetivo => objetivo.click());
     const r = await creada;
     expect(r.status()).toBe(201); localId = (await r.json()).id;
     await expect(page.getByRole('status')).toHaveText('Establecimiento registrado.');
-    await page.reload();
+    await actuar(page, objetivo => objetivo.reload());
     await expect(page.getByRole('row').filter({ hasText: nombre })).toContainText('Recibe pedidos');
     await presentar(page, 'Organizador: establecimiento registrado y persistido');
   });
 
   await test.step('Duplicado e información inválida se rechazan sin mutar el registro', async () => {
-    await page.getByRole('button', { name: 'Nuevo establecimiento' }).click();
+    await actuar(page.getByRole('button', { name: 'Nuevo establecimiento' }), objetivo => objetivo.click());
     await llenar(page, `  ${nombre.toUpperCase()}  `);
-    await page.getByRole('button', { name: 'Guardar establecimiento' }).click();
+    await actuar(page.getByRole('button', { name: 'Guardar establecimiento' }), objetivo => objetivo.click());
     await expect(page.getByRole('alert')).toContainText('ya está registrado');
     await presentar(page, 'Organizador: rechazo del establecimiento duplicado');
     await llenar(page, `${nombre} inválido`);
-    await page.getByLabel('Zona horaria', { exact: true }).fill('Planeta/Inexistente');
-    await page.getByRole('button', { name: 'Guardar establecimiento' }).click();
+    await actuar(page.getByLabel('Zona horaria', { exact: true }), objetivo => objetivo.fill('Planeta/Inexistente'));
+    await actuar(page.getByRole('button', { name: 'Guardar establecimiento' }), objetivo => objetivo.click());
     await expect(page.getByRole('alert')).toContainText('zona horaria IANA');
     await presentar(page, 'Organizador: validación de la zona horaria');
-    await page.getByRole('button', { name: 'Cancelar', exact: true }).click();
+    await actuar(page.getByRole('button', { name: 'Cancelar', exact: true }), objetivo => objetivo.click());
     expect(sql(`SELECT count(*) FROM alimentos.establecimientos WHERE evento_id='${evento.id}';`)).toBe('1');
   });
 
   const editado = `${nombre} editado`;
   await test.step('Editar nombre, contacto y entrega y comprobarlos tras recargar', async () => {
-    await page.getByRole('row').filter({ hasText: nombre }).getByRole('button', { name: 'Editar', exact: true }).click();
+    await actuar(page.getByRole('row').filter({ hasText: nombre }).getByRole('button', { name: 'Editar', exact: true }), objetivo => objetivo.click());
     await llenar(page, editado, 'Contacto actualizado CU015');
-    await page.getByLabel('Punto de entrega', { exact: true }).fill('Puerta actualizada CU015');
-    await page.getByRole('button', { name: 'Guardar establecimiento' }).click();
+    await actuar(page.getByLabel('Punto de entrega', { exact: true }), objetivo => objetivo.fill('Puerta actualizada CU015'));
+    await actuar(page.getByRole('button', { name: 'Guardar establecimiento' }), objetivo => objetivo.click());
     await expect(page.getByRole('status')).toHaveText('Establecimiento actualizado.');
-    await page.reload();
+    await actuar(page, objetivo => objetivo.reload());
     await expect(page.getByRole('row').filter({ hasText: editado })).toContainText('Contacto actualizado CU015');
     await expect(page.getByRole('row').filter({ hasText: editado })).toContainText('Puerta actualizada CU015');
     await presentar(page, 'Organizador: edición conservada después de recargar');
@@ -71,14 +71,14 @@ test('CU-015 por portales: registrar, persistir, editar, validar y operar; regre
   try {
     await test.step('Cliente compra con reservas, pago y QR reales', async () => {
       await loginUI(comprador, clienteURL, 'cliente@hexacore.com');
-      await comprador.goto(`${clienteURL}/pedidos?eventoId=${evento.id}`);
-      await comprador.getByRole('link').filter({ hasText: editado }).click();
-      await comprador.getByRole('button', { name: 'Agregar Producto CU015', exact: true }).click();
+      await actuar(comprador, objetivo => objetivo.goto(`${clienteURL}/pedidos?eventoId=${evento.id}`));
+      await actuar(comprador.getByRole('link').filter({ hasText: editado }), objetivo => objetivo.click());
+      await actuar(comprador.getByRole('button', { name: 'Agregar Producto CU015', exact: true }), objetivo => objetivo.click());
       await presentar(comprador, 'Cliente: menú y carrito antes del checkout');
       const checkout = comprador.waitForResponse(r => r.url().endsWith('/pedidos/checkout'));
-      await comprador.getByRole('button', { name: 'Continuar', exact: true }).click();
+      await actuar(comprador.getByRole('button', { name: 'Continuar', exact: true }), objetivo => objetivo.click());
       const creado = await checkout; expect(creado.status()).toBe(201); pedidoId = (await creado.json()).id;
-      await comprador.getByRole('button', { name: 'Pagar pedido', exact: true }).click();
+      await actuar(comprador.getByRole('button', { name: 'Pagar pedido', exact: true }), objetivo => objetivo.click());
       await expect(comprador.getByRole('heading', { name: '¡Tu pedido está confirmado!' })).toBeVisible();
       await expect(comprador.getByAltText('Código QR del pedido confirmado')).toBeVisible();
       expect(sql(`SELECT estado||'|'||total||'|'||moneda||'|'||(codigo_qr IS NOT NULL) FROM alimentos.pedidos WHERE id='${pedidoId}';`)).toBe('CONFIRMADO|1000.00|COP|true');
@@ -87,23 +87,23 @@ test('CU-015 por portales: registrar, persistir, editar, validar y operar; regre
 
     const historial = sql(`SELECT row_to_json(p) FROM alimentos.pedidos p WHERE id='${pedidoId}';`);
     await test.step('Deshabilitar bloquea un checkout desde un menú ya abierto y oculta el catálogo', async () => {
-      await comprador.goto(`${clienteURL}/pedidos?eventoId=${evento.id}`);
-      await comprador.getByRole('link').filter({ hasText: editado }).click();
-      await comprador.getByRole('button', { name: 'Agregar Producto CU015', exact: true }).click();
+      await actuar(comprador, objetivo => objetivo.goto(`${clienteURL}/pedidos?eventoId=${evento.id}`));
+      await actuar(comprador.getByRole('link').filter({ hasText: editado }), objetivo => objetivo.click());
+      await actuar(comprador.getByRole('button', { name: 'Agregar Producto CU015', exact: true }), objetivo => objetivo.click());
       await presentar(page, 'Organizador: deshabilitar el establecimiento con un menú cliente abierto');
-      await page.getByRole('row').filter({ hasText: editado }).getByRole('button', { name: 'Deshabilitar', exact: true }).click();
+      await actuar(page.getByRole('row').filter({ hasText: editado }).getByRole('button', { name: 'Deshabilitar', exact: true }), objetivo => objetivo.click());
       await expect(page.getByRole('status')).toContainText('deshabilitado');
       await presentar(page, 'Organizador: establecimiento deshabilitado');
       await presentar(comprador, 'Cliente: intentar checkout desde el menú anterior');
       const rechazo = comprador.waitForResponse(r => r.url().endsWith('/pedidos/checkout'));
-      await comprador.getByRole('button', { name: 'Continuar', exact: true }).click();
+      await actuar(comprador.getByRole('button', { name: 'Continuar', exact: true }), objetivo => objetivo.click());
       expect((await rechazo).status()).toBe(409);
       await expect(comprador.getByRole('alert')).toContainText('no está disponible');
       await presentar(comprador, 'Cliente: checkout rechazado por cierre');
-      await comprador.goto(`${clienteURL}/pedidos?eventoId=${evento.id}`);
+      await actuar(comprador, objetivo => objetivo.goto(`${clienteURL}/pedidos?eventoId=${evento.id}`));
       await expect(comprador.getByText('Aún no hay establecimientos disponibles')).toBeVisible();
       await presentar(comprador, 'Cliente: catálogo sin establecimientos disponibles');
-      await page.reload();
+      await actuar(page, objetivo => objetivo.reload());
       await expect(page.getByRole('row').filter({ hasText: editado })).toContainText('DESHABILITADO');
       expect(sql(`SELECT row_to_json(p) FROM alimentos.pedidos p WHERE id='${pedidoId}';`)).toBe(historial);
     });
@@ -111,26 +111,26 @@ test('CU-015 por portales: registrar, persistir, editar, validar y operar; regre
     await test.step('Habilitar recupera el catálogo; un horario cerrado vuelve a bloquearlo', async () => {
       const fila = page.getByRole('row').filter({ hasText: editado });
       await presentar(page, 'Organizador: volver a habilitar el establecimiento');
-      await fila.getByRole('button', { name: 'Habilitar', exact: true }).click();
+      await actuar(fila.getByRole('button', { name: 'Habilitar', exact: true }), objetivo => objetivo.click());
       await expect(page.getByRole('status')).toContainText('habilitado');
-      await comprador.reload();
+      await actuar(comprador, objetivo => objetivo.reload());
       await expect(comprador.getByRole('link').filter({ hasText: editado })).toBeVisible();
       await presentar(comprador, 'Cliente: catálogo recuperado al habilitar');
       await presentar(page, 'Organizador: configurar un horario cerrado');
-      await fila.getByRole('button', { name: 'Editar', exact: true }).click();
+      await actuar(fila.getByRole('button', { name: 'Editar', exact: true }), objetivo => objetivo.click());
       // Ventana de un minuto en UTC, doce horas después de ahora: siempre cerrada al ejecutar.
       const abre = new Date(Date.now() + 43_200_000).toISOString().slice(11, 16);
       const cierra = new Date(Date.now() + 43_260_000).toISOString().slice(11, 16);
-      await page.getByLabel('Apertura', { exact: true }).fill(abre);
-      await page.getByLabel('Cierre', { exact: true }).fill(cierra);
-      await page.getByLabel('Zona horaria', { exact: true }).fill('UTC');
-      await page.getByRole('button', { name: 'Guardar establecimiento' }).click();
+      await actuar(page.getByLabel('Apertura', { exact: true }), objetivo => objetivo.fill(abre));
+      await actuar(page.getByLabel('Cierre', { exact: true }), objetivo => objetivo.fill(cierra));
+      await actuar(page.getByLabel('Zona horaria', { exact: true }), objetivo => objetivo.fill('UTC'));
+      await actuar(page.getByRole('button', { name: 'Guardar establecimiento' }), objetivo => objetivo.click());
       await expect(page.getByRole('status')).toContainText('actualizado');
-      await page.reload();
+      await actuar(page, objetivo => objetivo.reload());
       await expect(fila).toContainText(`${abre} – ${cierra}`);
       await expect(fila).toContainText('No recibe pedidos');
       await presentar(page, 'Organizador: horario cerrado persistido');
-      await comprador.reload();
+      await actuar(comprador, objetivo => objetivo.reload());
       await expect(comprador.getByText('Aún no hay establecimientos disponibles')).toBeVisible();
       const sesion = await loginAPI(request, 'cliente@hexacore.com');
       const intento = await request.post(`${gateway}/pedidos/checkout`, { headers: { Authorization: `Bearer ${sesion.token}` }, data: {

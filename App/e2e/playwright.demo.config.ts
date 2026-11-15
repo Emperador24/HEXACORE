@@ -11,7 +11,7 @@ const entornoLocal = resolve(__dirname, '.env.local');
 if (existsSync(entornoLocal)) loadEnvFile(entornoLocal);
 
 // Velocidad definida aquí, también si .env.local conserva variables antiguas.
-const demora = 0;
+const demora = 500;
 const pausa = 1500;
 // Cada worker vuelve a leer esta configuración: conservar una carpeta por ejecución.
 const sello = process.env.CU015_DEMO_SESION ?? new Date().toISOString().replace(/[:.]/g, '-');
@@ -19,7 +19,7 @@ if (!/^[\dTZ-]+$/.test(sello)) throw new Error('Identificador de sesión demo in
 process.env.CU015_DEMO_SESION = sello;
 const salida = resolve(__dirname, '.evidencia', `demo-${sello}`);
 if (process.env.TEST_WORKER_INDEX === undefined) {
-  console.log(`DEMO VISUAL — slowMo ${demora} ms; etapas ${pausa} ms. No sustituye la aceptación automática. Informe privado: ${salida}`);
+  console.log(`DEMO VISUAL — acciones ${demora} ms; etapas ${pausa} ms. No sustituye la aceptación automática. Informe privado: ${salida}`);
 }
 
 export default defineConfig({
@@ -28,7 +28,7 @@ export default defineConfig({
   timeout: 15 * 60_000,
   outputDir: resolve(salida, 'resultados'),
   reporter: [['list'], ['html', { outputFolder: resolve(salida, 'informe'), open: 'never' }]],
-  metadata: { ...normal.metadata, modo: 'DEMO visual (no aceptación)', demo: true, slowMoMs: demora, pausaMs: pausa },
+  metadata: { ...normal.metadata, modo: 'DEMO visual (no aceptación)', demo: true, accionMs: demora, slowMoMs: 0, pausaMs: pausa },
   use: {
     ...normal.use,
     headless: false,
@@ -36,6 +36,8 @@ export default defineConfig({
     // Una acción sin respuesta no debe consumir los quince minutos de presentación.
     actionTimeout: normal.timeout,
     navigationTimeout: normal.timeout,
-    launchOptions: { ...normal.use?.launchOptions, slowMo: demora },
+    // actuar() aplica la demora entre acciones y enfoca al actor antes de actuar.
+    // slowMo nativo añadiría otra demora a bringToFront y a las comprobaciones.
+    launchOptions: { ...normal.use?.launchOptions, slowMo: 0 },
   },
 });
