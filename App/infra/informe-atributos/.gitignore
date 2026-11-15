@@ -5,3 +5,6 @@
 
 # Datos crudos de prueba-carga.py; el informe en Markdown sí se versiona.
 *.json
+
+# Lista permitida: resumen de Seguridad saneado, sin instantáneas o sesiones crudas.
+!seguridad/OPERACION-EVIDENCIA.json
