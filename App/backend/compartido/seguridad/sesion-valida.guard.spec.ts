@@ -141,7 +141,7 @@ describe('SesionValida (Núcleo, CU-028)', () => {
     expect((await estado(guard.canActivate(contexto(token, Controlador, 'leer').ctx))).status).toBe(403);
   });
 
-  it('los roles vigentes en Redis mandan sobre los del token; un valor roto se ignora', async () => {
+  it('los roles vigentes en Redis mandan sobre los del token', async () => {
     const token = await firmar(['Organizador']);
     redis.cadenas.set(`roles-usuario:${USUARIO}`, JSON.stringify(['Cliente']));
     expect((await estado(guard.canActivate(contexto(token, Controlador, 'leer').ctx))).status).toBe(403);
@@ -152,8 +152,17 @@ describe('SesionValida (Núcleo, CU-028)', () => {
     expect(peticion.sesion).toMatchObject({ roles: ['Cliente', 'Taquilla'], permisos: ['eventos:leer'] });
     expect(tienePermiso(peticion, 'eventos')).toBe(true);
     expect(tienePermiso(peticion, 'eventos', 'eliminar')).toBe(false);
-    redis.cadenas.set(`roles-usuario:${USUARIO}`, '{no es json');
-    expect((await estado(guard.canActivate(contexto(token, Controlador, 'leer').ctx))).status).toBe(200);
+  });
+
+  it.each(['{no es json', '', 'null', '{}', '["Cliente",1]'])('no recupera un privilegio retirado si los roles vigentes son ilegibles: %j', async (roto) => {
+    const token = await firmar(['Organizador']);
+    redis.cadenas.set(`roles-usuario:${USUARIO}`, JSON.stringify(['Cliente']));
+    expect((await estado(guard.canActivate(contexto(token, Controlador, 'leer').ctx))).status).toBe(403);
+    redis.cadenas.set(`roles-usuario:${USUARIO}`, roto);
+    expect(await estado(guard.canActivate(contexto(token, Controlador, 'leer').ctx)))
+      .toEqual({ status: 503, codigo: 'SESIONES_NO_DISPONIBLES' });
+    expect(await estado(guard.validar(token, { roles: ['Organizador'], modulo: 'eventos', accion: 'leer' })))
+      .toEqual({ status: 503, codigo: 'SESIONES_NO_DISPONIBLES' });
   });
 
   it('validar(): un SSE pierde la sesión al perder el permiso, y el token se verifica otra vez tras Redis', async () => {

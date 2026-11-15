@@ -154,6 +154,29 @@ describe('CU-028 · Roles y permisos (e2e)', () => {
     await request(nucleo.url).delete(`${A}/${rol.id}/usuarios/${personal.id}`).set('Authorization', como(admin)).expect(200);
   });
 
+  it('un rol retirado no reaparece si la clave vigente de Redis queda ilegible', async () => {
+    const rol = await crearRol(`Formato ${randomUUID().slice(0, 8)}`, [{ modulo: 'eventos', accion: 'leer' }]);
+    const cuenta = await nucleo.cuenta(['Cliente', rol.nombre]);
+    const clave = `roles-usuario:${cuenta.id}`;
+    await request(nucleo.url).get('/api/v1/eventos').set('Authorization', como(cuenta)).expect(200);
+    await request(nucleo.url).delete(`${A}/${rol.id}/usuarios/${cuenta.id}`).set('Authorization', como(admin)).expect(200);
+    await request(nucleo.url).get('/api/v1/eventos').set('Authorization', como(cuenta)).expect(403);
+    const valor = (await redis.get(clave))!;
+    const expira = Number(await redis.call('PEXPIRETIME', clave));
+    try {
+      for (const roto of ['', '{no es json']) {
+        await redis.set(clave, roto, 'PXAT', expira);
+        const r = await request(nucleo.url).get('/api/v1/eventos').set('Authorization', como(cuenta)).expect(503);
+        expect(r.body.codigo).toBe('SESIONES_NO_DISPONIBLES');
+      }
+    } finally {
+      await redis.set(clave, valor, 'PXAT', expira);
+    }
+    await request(nucleo.url).get('/api/v1/eventos').set('Authorization', como(cuenta)).expect(403);
+    await request(nucleo.url).delete('/api/v1/sesiones/actual').set('Authorization', como(cuenta)).expect(200);
+    await redis.del(clave);
+  });
+
   it('asignar y retirar: solo cuentas activas, nunca dejar una cuenta sin roles, y reasignar a un rol que exista', async () => {
     const rol = await crearRol(`Bodega ${randomUUID().slice(0, 8)}`, [{ modulo: 'eventos', accion: 'leer' }]);
 
