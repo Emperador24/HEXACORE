@@ -1142,9 +1142,13 @@ empaquetado y no una reescritura del dominio.
 
 
 % ==================== Tácticas arquitectónicas ====================
+% Desempeño, disponibilidad y monitoreo medidos sobre ADR-16.
+\input{AtributosVigentes}
+
 \section{Tácticas y mediciones históricas por atributo de calidad}
-\textbf{Historia, no evidencia de ADR-16.} Los resultados que siguen pertenecen a versiones
-anteriores. No se han repetido para certificar rendimiento/disponibilidad de la arquitectura
+\textbf{Historia, no evidencia de ADR-16.} Las mediciones actuales de desempeño, disponibilidad
+y monitoreo están en la sección \ref{sec:atributos-vigentes}. Los resultados que siguen pertenecen
+a versiones anteriores. No se han repetido para certificar rendimiento/disponibilidad de la arquitectura
 actual. Sus guiones pueden alterar datos o pausar contenedores; usar las pruebas aisladas
 y consultar ESTADO-MIGRACION, sin ejecutarlos sobre el entorno habitual.
 
@@ -1603,9 +1607,10 @@ Significant Requirement}).
 autorización de las solicitudes al backend.
 \item \textbf{Microservicio:} servicio backend independiente, responsable de un dominio de
 negocio, con su propia base de datos. Estilo de ADR-01/14, sustituido por ADR-16.
-\item \textbf{Núcleo, Boletería, Trabajador, Operación:} programas del backend vigente (ADR-16).
-Núcleo y Boletería agrupan módulos de dominio; Trabajador ejecuta trabajos técnicos (correo);
-Operación es el programa objetivo de CU-010/019/020, aún sin implementar.
+\item \textbf{Núcleo, Boletería, Trabajador:} programas del backend vigente (ADR-16).
+Núcleo y Boletería agrupan módulos de dominio y escalan por réplicas; Trabajador ejecuta trabajos
+técnicos (correo). Operación, que ADR-16 planteaba como programa propio, es un módulo del Núcleo
+(CU-010 y CU-019; CU-020 sigue pendiente).
 \item \textbf{Módulo de dominio:} carpeta de \texttt{App/backend/modulos} con las reglas de un
 dominio, su conexión nombrada y su esquema PostgreSQL.
 \item \textbf{Redis:} base de datos en memoria usada como caché y para bloqueos distribuidos.

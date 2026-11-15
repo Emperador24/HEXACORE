@@ -43,7 +43,10 @@ import sys
 import time
 
 INFRA = pathlib.Path(__file__).resolve().parent
-SERVICIOS = INFRA.parent / 'services'
+BACKEND = INFRA.parent / 'backend'
+# Las suites de desempeño, seguridad y concurrencia nacieron en el servicio de
+# Ventas; con ADR-16 viven en el módulo de Postventa de Boletería.
+POSTVENTA = BACKEND / 'modulos' / 'entradas' / 'postventa'
 SALIDA = INFRA / 'informe-atributos'
 
 VERDE, ROJO, GRIS, NEGRITA, FIN = '\033[32m', '\033[31m', '\033[90m', '\033[1m', '\033[0m'
@@ -62,7 +65,7 @@ MEDICIONES = [
         'atributo': 'Desempeño',
         'rnf': 'RNF-07, RNF-08',
         'escenario': 'Consulta de catálogo durante la apertura de venta',
-        'carpeta': SERVICIOS / 'ventas',
+        'carpeta': POSTVENTA,
         'suite': 'pruebas/rnf07-desempeno.py',
         'cifras': lambda t: [
             ('Peor p95 bajo carga', extraer(t, r'Peor p95 medido:\s*(.+?)\s*\(umbral'), 'umbral 500 ms'),
@@ -74,7 +77,7 @@ MEDICIONES = [
         'atributo': 'Disponibilidad',
         'rnf': 'RNF-03, RNF-04',
         'escenario': 'El login sigue atendiendo con una dependencia caída, y se recupera solo',
-        'carpeta': SERVICIOS.parent / 'backend',
+        'carpeta': BACKEND,
         'suite': 'modulos/identidad/pruebas/cu027-disponibilidad.py',
         'cifras': lambda t: [
             ('Recuperación tras kill -9', extraer(t, r'atendiendo logins de nuevo en\s*(.+)'), 'exigido ≤ 30 s'),
@@ -87,7 +90,7 @@ MEDICIONES = [
         'atributo': 'Seguridad',
         'rnf': 'RNF-05, RNF-06',
         'escenario': 'Toda petición llega autenticada y autorizada por rol desde el gateway',
-        'carpeta': SERVICIOS / 'ventas',
+        'carpeta': POSTVENTA,
         'suite': 'pruebas/rnf06-autenticacion.py',
         'cifras': lambda t: [
             ('Rutas de negocio abiertas', extraer(t, r'RNF-06:\s*(.+)'), 'exigido 0 %'),
@@ -101,8 +104,11 @@ MEDICIONES = [
         'atributo': 'Consistencia',
         'rnf': 'RNF-01, RNF-02',
         'escenario': 'Ninguna entrada publicada puede venderse a dos compradores',
-        'carpeta': SERVICIOS / 'ventas',
+        'carpeta': POSTVENTA,
         'suite': 'pruebas/rnf01-concurrencia.py',
+        # Vuelve a sembrar Ventas (TRUNCATE de eventos, localidades, entradas y
+        # compras): borra lo que hubiera en esa base. Solo con --destructivas.
+        'destructiva': True,
         'cifras': lambda t: [
             ('50 compradores a la vez', f"{extraer(t, r'checkouts abiertos\s*:\s*(\d+)')} checkout, "
                                         f"{extraer(t, r'rechazados\s*:\s*(\d+)')} rechazados", 'exigido exactamente 1'),
@@ -151,6 +157,8 @@ def main():
     argumentos = argparse.ArgumentParser(description=__doc__.split('\n')[1])
     argumentos.add_argument('--desplegabilidad', action='store_true',
                             help='mide también el arranque de cero (BORRA los datos; pide confirmación)')
+    argumentos.add_argument('--destructivas', action='store_true',
+                            help='incluye las suites que vuelven a sembrar datos (Consistencia reinicia la base de Ventas)')
     opciones = argumentos.parse_args()
 
     # Sin sistema levantado no hay nada que medir, y es mejor decirlo ahora que
@@ -169,6 +177,9 @@ def main():
 
     resultados = []
     for medicion in MEDICIONES:
+        if medicion.get('destructiva') and not opciones.destructivas:
+            print(f'  {medicion["atributo"]:16s} {GRIS}omitida: reinicia datos de Ventas (--destructivas para incluirla){FIN}')
+            continue
         print(f'  {medicion["atributo"]:16s} ', end='', flush=True)
         ok, salida, segundos = correr(medicion)
         nombre = pathlib.Path(medicion['suite']).stem

@@ -150,6 +150,29 @@ describe('CU-007 · Gestión de personal para eventos (e2e)', () => {
     expect(reasignado.body.turno).toMatchObject({ empleadoId: sustituto.id, estado: 'ASIGNADO', confirmacion: 'PENDIENTE', motivoRechazo: null });
   });
 
+  it('F14: cada empleado ve solo sus avisos; quien supervisa los ve todos', async () => {
+    const rol = `rol-${sufijo()}`;
+    const destinatario = await nucleo.cuenta(), ajeno = await nucleo.cuenta();
+    const ficha = (await alta({ rol, usuarioId: destinatario.id })).body;
+    await alta({ rol, usuarioId: ajeno.id });
+    const z = await zona(rol);
+    const turno = (await request(nucleo.url).post(`${RUTA}/zonas/${z.id}/asignaciones`).set('Authorization', como(organizador))
+      .send({ empleadoId: ficha.id, ...ventana() }).expect(201)).body.turno;
+    await esperar(async () => (await nucleo.datos.query(`SELECT id FROM notificaciones WHERE "turnoId"=$1`, [turno.id])).length > 0);
+
+    const delTurno = (lista: { turnoId: string }[]) => lista.filter((n) => n.turnoId === turno.id);
+    const propios = (await request(nucleo.url).get(`${RUTA}/notificaciones`).set('Authorization', como(destinatario)).expect(200)).body;
+    expect(delTurno(propios).length).toBeGreaterThan(0);
+    expect(propios.every((n: { empleadoId: string }) => n.empleadoId === ficha.id)).toBe(true);
+    const deOtro = (await request(nucleo.url).get(`${RUTA}/notificaciones`).set('Authorization', como(ajeno)).expect(200)).body;
+    expect(delTurno(deOtro)).toEqual([]);
+    const visitante = await nucleo.cuenta();
+    const sinFicha = (await request(nucleo.url).get(`${RUTA}/notificaciones`).set('Authorization', como(visitante)).expect(200)).body;
+    expect(sinFicha).toEqual([]);
+    const todos = (await request(nucleo.url).get(`${RUTA}/notificaciones`).set('Authorization', como(organizador)).expect(200)).body;
+    expect(delTurno(todos).length).toBe(delTurno(propios).length);
+  });
+
   it('CU-007A: desactivar cancela sus turnos futuros, impide cambiar el rol con asignaciones y se puede revertir', async () => {
     const rol = `rol-${sufijo()}`;
     const empleado = (await alta({ rol })).body, z = await zona(rol);

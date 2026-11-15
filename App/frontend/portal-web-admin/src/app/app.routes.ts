@@ -110,7 +110,7 @@ export const routes: Routes = [
       },
       {
         path: 'roles',
-        loadComponent: () => import('./placeholder/placeholder.component').then((m) => m.PlaceholderComponent),
+        loadComponent: () => import('./roles/roles.component').then((m) => m.RolesComponent),
         data: { titulo: 'Roles y permisos', casoDeUso: 'CU-028' }
       },
       // CU-029: recintos, zonas y plano.

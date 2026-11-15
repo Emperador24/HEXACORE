@@ -540,6 +540,67 @@ de cada servicio hablan directo con él.
 
 ---
 
+## 24. CU-028: roles propios con matriz por módulo, aplicada desde Redis en cada petición
+
+El CU-028 pide que el administrador cree roles, marque permisos (*"crear, leer, actualizar,
+eliminar"*) por módulo, y que restringir uno alcance a las sesiones abiertas *"sin necesidad de
+reiniciar sesión"* (CU-028B). El sistema ya tenía cuatro roles con reglas escritas en cada ruta
+(`@RolesPermitidos`) y en el gateway.
+
+**Lo que se descartó:**
+
+- **Reescribir todas las reglas como permisos y hacer editables los cuatro roles del sistema.** Son
+  decenas de rutas en cinco módulos y tres programas, y una casilla mal desmarcada dejaría sin
+  registro (`Cliente`) o sin nadie que administre (`Administrador`). Se conservan fijos: se ven en
+  la pantalla, pero no se editan ni se eliminan, y la base les niega matriz con un disparador.
+- **Meter los permisos en el token.** Dura 15 minutos: CU-028B no se cumpliría hasta que caducara.
+- **Que el gateway pregunte a Identidad en cada petición**, como sugiere la ficha. Es justo lo que
+  ADR-15 quitó (§23 ya no describe el gateway actual): convierte al emisor de tokens en paso
+  obligado de todo el tráfico.
+
+**Decisión:**
+
+- Los **roles propios** suman permisos sobre las reglas fijas. Una ruta cerrada a los roles del
+  sistema se abre a quien tenga un rol propio con el permiso `modulo:accion`. El módulo lo declara
+  el controlador (`@ModuloPermisos`). La acción sale del método HTTP, salvo que la ruta declare
+  otra (`@AccionPermiso`; publicar un evento es POST, pero es `actualizar`).
+- **Módulos ofrecidos:** eventos, personal, parqueaderos, emergencias y reportes. Pagos, cuentas
+  y datos personales no se ofrecen: es el *"menor privilegio"* de la ficha.
+- **Propagación por Redis**, con el mismo patrón que las revocaciones (§16):
+  - `permisos-rol:<nombre>` es un conjunto con la matriz del rol. Se reconstruye desde la base al
+    arrancar.
+  - `roles-usuario:<id>` tiene los roles de quien acaba de cambiar. Vive 16 minutos, lo que puede
+    vivir un token emitido antes del cambio.
+  - Se publican **dentro** de la transacción: si Redis no responde, el cambio no se guarda.
+  - La guarda común del Núcleo (`compartido/seguridad/sesion-valida.guard.ts`) lee la clave de roles
+    en el mismo viaje en que comprueba la revocación. Solo hace un segundo viaje, para las matrices,
+    si la cuenta tiene roles propios.
+- **El gateway** deja pasar al Núcleo un token con un rol propio en las rutas que declaran
+  `$modulo_permiso`. Esas rutas siguen pasando por la guarda, que decide con la matriz vigente.
+- **Concurrencia:** editar y eliminar exigen la `version` que se vio. Si otro administrador guardó
+  antes, la respuesta es 409 con la versión vigente.
+- **Nombres:**
+  - Se comparan sin distinguir mayúsculas.
+  - El nombre de un rol propio **no se cambia** después de crearlo: es lo que llevan los tokens
+    emitidos y la clave de su matriz.
+
+**CU-028A:** un rol con cuentas activas no se elimina sin `reasignarA`. Las cuentas pasan al rol de
+destino en la misma transacción, y sus roles vigentes se publican al momento.
+
+**Límites conocidos:**
+
+- **Conceder un rol a alguien con sesión abierta.**
+  - En el Núcleo se aplica en la petición siguiente.
+  - En el gateway, en cambio, se aplica cuando su token se renueve (≤ 15 min), porque el gateway
+    solo ve los roles del token.
+  - Restringir sí es inmediato en todo el Núcleo, que es lo que exige CU-028B.
+- **Un flujo SSE ya abierto** (monitoreo, ocupación) no se corta al restringir. La próxima
+  conexión ya se rechaza.
+- **Boletería y Alimentos no ofrecen módulos en la matriz.** Sus guardas siguen leyendo los roles
+  del token.
+
+---
+
 ## 7. Los tokens se firman con RS256, no con un secreto compartido
 
 *Revisada en el paso 7.* Al principio se firmaban con HS256 y un secreto (`AUTH_JWT_SECRETO`). Eso

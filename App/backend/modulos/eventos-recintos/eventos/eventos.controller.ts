@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, ParseUUIDPipe, Post, Put, Query, Req, UseGuards, UsePipes } from '@nestjs/common';
 import { validacionAlimentos as validacion } from '../../../compartido/validacion';
-import { PeticionConSesion, RolesPermitidos, SesionValida } from '../comun/autenticacion/sesion-valida.guard';
+import { AccionPermiso, ModuloPermisos, PeticionConSesion, RolesPermitidos, SesionValida } from '../comun/autenticacion/sesion-valida.guard';
 import { CancelarEventoDto, GuardarEventoDto, VersionDto } from './dto/guardar-evento.dto';
 import { EventosService } from './eventos.service';
 
@@ -18,6 +18,7 @@ const ADMINISTRADOR = 'Administrador';
 @UsePipes(validacion)
 @UseGuards(SesionValida)
 @RolesPermitidos(ORGANIZADOR, ADMINISTRADOR)
+@ModuloPermisos('eventos')
 export class EventosController {
   constructor(private readonly eventos: EventosService) {}
 
@@ -55,6 +56,7 @@ export class EventosController {
   }
 
   @Post(':id/publicar')
+  @AccionPermiso('actualizar')
   @HttpCode(200)
   @RolesPermitidos(ORGANIZADOR)
   publicar(@Param('id', ParseUUIDPipe) id: string, @Body() dto: VersionDto, @Req() peticion: PeticionConSesion) {
@@ -62,6 +64,7 @@ export class EventosController {
   }
 
   @Post(':id/cancelar')
+  @AccionPermiso('actualizar')
   @HttpCode(200)
   @RolesPermitidos(ORGANIZADOR)
   cancelar(@Param('id', ParseUUIDPipe) id: string, @Body() dto: CancelarEventoDto, @Req() peticion: PeticionConSesion) {

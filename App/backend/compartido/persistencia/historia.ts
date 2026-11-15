@@ -6,6 +6,7 @@ import { GestionEstablecimientosCu0151794300000000 } from '../../modulos/aliment
 import { EsquemaInicialCu0271789430400000 } from '../../modulos/identidad/persistencia/migraciones/1789430400000-EsquemaInicialCu027';
 import { AdministracionCuentasCu027b1789516800000 } from '../../modulos/identidad/persistencia/migraciones/1789516800000-AdministracionCuentasCu027b';
 import { RenovacionSesiones1789603200000 } from '../../modulos/identidad/persistencia/migraciones/1789603200000-RenovacionSesiones';
+import { RolesPermisosCu0281794800000000 } from '../../modulos/identidad/persistencia/migraciones/1794800000000-RolesPermisosCu028';
 import { EsquemaInicialCu0111789902006180 } from '../../modulos/alimentos/persistencia/migraciones/1789902006180-EsquemaInicialCu011';
 import { ReservasInventarioCu0111790000000000 } from '../../modulos/alimentos/persistencia/migraciones/1790000000000-ReservasInventarioCu011';
 import { EsquemaInicialCu0181789718400000 } from '../../modulos/personal-logistica/persistencia/migraciones/1789718400000-EsquemaInicialCu018';
@@ -35,7 +36,7 @@ import { VersionEvento1794400000003 } from '../../modulos/entradas/acceso-qr/per
 import { EsquemaPagos1790380800000 } from '../../modulos/finanzas/pagos/persistencia/migraciones/1790380800000-EsquemaPagos';
 
 export const GRUPOS_MIGRACIONES = [
-  { conexion: 'identidad' as const, esquema: 'identidad', historial: 'migraciones', migraciones: [EsquemaInicialCu0271789430400000, AdministracionCuentasCu027b1789516800000, RenovacionSesiones1789603200000] },
+  { conexion: 'identidad' as const, esquema: 'identidad', historial: 'migraciones', migraciones: [EsquemaInicialCu0271789430400000, AdministracionCuentasCu027b1789516800000, RenovacionSesiones1789603200000, RolesPermisosCu0281794800000000] },
   { conexion: 'alimentos' as const, esquema: 'alimentos', historial: 'migraciones', migraciones: [EsquemaInicialCu0111789902006180, ReservasInventarioCu0111790000000000, GestionEstablecimientosCu0151794300000000, MenuInventarioCu0121794400000000, PreparacionCu0131794500000000, EntregaCu0141794600000000, CancelacionCu011F1794700000000] },
   { conexion: 'personal-logistica' as const, esquema: 'personal_logistica', historial: 'migraciones', migraciones: [EsquemaInicialCu0181789718400000, Cu017PersonalOperativo1789750000000, Cu007GestionPersonal1793664000000, Cu008Cu009CambiosAsistencia1794000000000] },
   { conexion: 'entradas-ventas' as const, esquema: 'entradas_ventas', historial: 'migraciones', migraciones: [EsquemaInicialCu0061789257600000, SecuenciaNumeroTransaccion1789344000000, CarteleraCu0051789776000000, VentaPrimariaCu001a0041789862400000, BandejaSalida1790553600000, VersionEvento1794400000000] },

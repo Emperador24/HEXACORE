@@ -15,7 +15,7 @@ Se conservan las dos migraciones históricas y se añaden
 `PreparacionCu0131794500000000`, `EntregaCu0141794600000000` y
 `CancelacionCu011F1794700000000`
 a la preparación central. POSTGRES_BD_PEDIDOS se rechaza. La preparación se
-ejecuta una vez para los once esquemas (35 migraciones; 18 procedencias intactas).
+ejecuta una vez para los once esquemas (36 migraciones; 18 procedencias intactas).
 El cliente Redis de inventario conserva sus opciones específicas.
 Ver [inventario](inventario/README.md) y [pruebas aisladas](../../test/README.md).
 

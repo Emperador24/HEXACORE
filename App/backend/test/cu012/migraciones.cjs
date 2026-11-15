@@ -22,7 +22,7 @@ const {conectar,backend}=require('./entorno.cjs');
     for(const modo of ['vacia','actualizacion']) {
       const base=`cu012_${sufijo}_${modo}`;
       await control.query(`CREATE DATABASE "${base}"`);
-      assert.equal(preparar(base,modo==='actualizacion').migraciones,modo==='vacia'?35:31);
+      assert.equal(preparar(base,modo==='actualizacion').migraciones,modo==='vacia'?36:32);
       const c=new Client({...comunes,database:base});await c.connect();
       try {
         if(modo==='actualizacion') {
@@ -48,7 +48,7 @@ const {conectar,backend}=require('./entorno.cjs');
         assert.ok(Object.values(preparar(base).esquemas).every(g=>g.aplicadas.length===0));
         assert.equal((await c.query('SELECT count(*)::int n FROM migracion_control.procedencia')).rows[0].n,18);
         assert.equal((await c.query("SELECT count(*)::int n FROM pg_tables WHERE schemaname='public'")).rows[0].n,0);
-        console.log(`${modo}: ${base}, 35 migraciones, repetición sin DDL, 18 procedencias; productos/reservas/pedidos previos conservados.`);
+        console.log(`${modo}: ${base}, 36 migraciones, repetición sin DDL, 18 procedencias; productos/reservas/pedidos previos conservados.`);
       } finally { await c.end(); }
     }
   } finally { await control.end();await entorno.cerrar(); }

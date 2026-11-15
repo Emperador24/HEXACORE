@@ -1,0 +1,169 @@
+<div class="pagina-encabezado">
+  <div>
+    <h1>Roles y permisos <span class="referencia-cu">CU-028</span></h1>
+    <p class="descripcion">
+      Crea roles con permisos por módulo y asígnalos a cuentas. Un cambio se aplica en la siguiente acción de cada sesión
+      abierta, sin volver a iniciar sesión. Los roles del sistema tienen permisos fijos.
+    </p>
+  </div>
+  <div class="acciones">
+    <button mat-flat-button (click)="nuevo()" data-prueba="nuevo-rol"><mat-icon>add</mat-icon>Nuevo rol</button>
+  </div>
+</div>
+
+@if (error()) {
+  <div class="mensaje error" role="alert">
+    <mat-icon>error_outline</mat-icon><span>{{ error() }}</span>
+    <button class="cerrar" (click)="error.set(null)" aria-label="Cerrar"><mat-icon>close</mat-icon></button>
+  </div>
+}
+@if (aviso()) {
+  <div class="mensaje exito" role="status">
+    <mat-icon>check_circle</mat-icon><span>{{ aviso() }}</span>
+    <button class="cerrar" (click)="aviso.set(null)" aria-label="Cerrar"><mat-icon>close</mat-icon></button>
+  </div>
+}
+
+<div class="distribucion">
+  <section class="panel lista">
+    <div class="panel-cabecera"><h2>Roles</h2><span class="detalle">{{ roles().length }}</span></div>
+    @if (cargando()) { <mat-progress-bar mode="indeterminate" /> }
+
+    <p class="grupo">Propios</p>
+    @for (r of propios(); track r.id) {
+      <button class="rol" [class.activo]="borrador()?.id === r.id" (click)="abrir(r)" [attr.data-rol]="r.nombre">
+        <span class="nombre">{{ r.nombre }}</span>
+        <span class="secundario">{{ resumen(r) }}</span>
+        <span class="usuarios"><mat-icon>group</mat-icon>{{ r.usuarios }}</span>
+      </button>
+    } @empty {
+      <p class="secundario sin-propios">Todavía no hay roles propios.</p>
+    }
+
+    <p class="grupo">Del sistema</p>
+    @for (r of delSistema(); track r.id) {
+      <button class="rol" [class.activo]="borrador()?.id === r.id" (click)="abrir(r)" [attr.data-rol]="r.nombre">
+        <span class="nombre">{{ r.nombre }} <mat-icon class="candado">lock</mat-icon></span>
+        <span class="secundario">{{ resumen(r) }}</span>
+        <span class="usuarios"><mat-icon>group</mat-icon>{{ r.usuarios }}</span>
+      </button>
+    }
+  </section>
+
+  @if (borrador(); as b) {
+    <section class="panel editor">
+      <div class="panel-cabecera">
+        <h2>{{ b.id ? b.nombre : 'Nuevo rol' }}</h2>
+        @if (b.id) { <span class="detalle">versión {{ b.version }}</span> }
+      </div>
+      <div class="panel-cuerpo">
+        @if (b.delSistema) {
+          <p class="mensaje info"><mat-icon>lock</mat-icon>
+            <span>Rol del sistema: sus permisos los fija cada módulo y no se editan aquí.</span></p>
+        } @else {
+          <div class="campos">
+            @if (!b.id) {
+              <mat-form-field>
+                <mat-label>Nombre del rol</mat-label>
+                <input matInput name="nombre" maxlength="40" [ngModel]="b.nombre" (ngModelChange)="actualizarTexto('nombre', $event)" data-prueba="nombre-rol" />
+              </mat-form-field>
+            }
+            <mat-form-field class="ancho">
+              <mat-label>Descripción</mat-label>
+              <input matInput name="descripcion" maxlength="200" [ngModel]="b.descripcion" (ngModelChange)="actualizarTexto('descripcion', $event)" />
+            </mat-form-field>
+          </div>
+
+          <table class="matriz" aria-label="Matriz de permisos">
+            <thead>
+              <tr>
+                <th>Módulo</th>
+                @for (a of catalogo().acciones; track a) { <th>{{ etiquetaAccion(a) }}</th> }
+              </tr>
+            </thead>
+            <tbody>
+              @for (m of catalogo().modulos; track m.id) {
+                <tr>
+                  <td>{{ m.nombre }}</td>
+                  @for (a of catalogo().acciones; track a) {
+                    <td>
+                      <mat-checkbox [checked]="marcado(m.id, a)" (change)="alternar(m.id, a)"
+                        [attr.data-permiso]="m.id + ':' + a" [aria-label]="m.nombre + ': ' + etiquetaAccion(a)" />
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+          <p class="secundario">Pagos y datos personales no se ofrecen: ningún rol propio tiene acceso a ellos.</p>
+
+          <div class="botones">
+            <button mat-flat-button (click)="guardar()" [disabled]="guardando() || cuentaMarcados() === 0 || (!b.id && b.nombre.trim().length < 3)" data-prueba="guardar-rol">
+              {{ b.id ? 'Guardar permisos' : 'Crear rol' }}
+            </button>
+            <button mat-button (click)="cerrar()">Cancelar</button>
+            @if (cuentaMarcados() === 0) { <span class="secundario">Marca al menos un permiso.</span> }
+          </div>
+        }
+
+        @if (b.id && detalle(); as d) {
+          <h3>Cuentas con este rol <span class="secundario">({{ d.usuarios }} activas)</span></h3>
+          @if (!b.delSistema) {
+            <form class="asignar" (ngSubmit)="asignar()">
+              <mat-form-field>
+                <mat-label>Correo de la cuenta</mat-label>
+                <input matInput name="correo" type="email" [(ngModel)]="correoAsignar" data-prueba="correo-asignar" />
+              </mat-form-field>
+              <button mat-stroked-button type="submit" [disabled]="!correoAsignar.trim()" data-prueba="asignar">Asignar</button>
+            </form>
+          }
+          <ul class="asignados">
+            @for (u of d.asignados; track u.id) {
+              <li>
+                <span><strong>{{ u.nombre }}</strong> <span class="secundario">{{ u.email }}</span></span>
+                @if (!b.delSistema) {
+                  <button mat-button class="boton-peligro" (click)="retirar(u)">Retirar</button>
+                }
+              </li>
+            } @empty {
+              <li class="secundario">Nadie tiene este rol.</li>
+            }
+          </ul>
+
+          @if (!b.delSistema) {
+            <h3>Eliminar el rol</h3>
+            <div class="eliminar">
+              @if (d.usuarios > 0) {
+                <mat-form-field>
+                  <mat-label>Reasignar sus usuarios a</mat-label>
+                  <mat-select [(ngModel)]="reasignarA" name="reasignarA" data-prueba="reasignar">
+                    @for (r of destinos(); track r.id) { <mat-option [value]="r.id">{{ r.nombre }}</mat-option> }
+                  </mat-select>
+                </mat-form-field>
+              }
+              <button mat-stroked-button class="boton-peligro" (click)="eliminar()" data-prueba="eliminar-rol">Eliminar rol</button>
+            </div>
+          }
+
+          <h3>Historial</h3>
+          <ul class="historial">
+            @for (a of d.auditoria; track $index) {
+              <li>
+                <span class="secundario">{{ a.fecha | date: 'd MMM, HH:mm:ss' }}</span>
+                <strong>{{ etiquetaAuditoria(a.accion) }}</strong>
+                <span>{{ a.realizadaPor }}</span>
+                <span class="secundario mono">{{ detalleAuditoria(a.detalle) }}</span>
+              </li>
+            } @empty {
+              <li class="secundario">Sin cambios registrados.</li>
+            }
+          </ul>
+        }
+      </div>
+    </section>
+  } @else {
+    <section class="panel editor">
+      <div class="vacio"><mat-icon>admin_panel_settings</mat-icon><p>Elige un rol para ver su matriz, o crea uno nuevo.</p></div>
+    </section>
+  }
+</div>

@@ -1,4 +1,4 @@
-import { ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
+import { ForbiddenException, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { FlujoOcupacionService } from './flujo-ocupacion.service';
 import { SesionValida } from '../comun/autenticacion/sesion-valida.guard';
 import { OcupacionService } from './ocupacion.service';
@@ -28,6 +28,15 @@ describe('SSE Parqueaderos: revalidación y ciclo de vida (dobles, tiempo virtua
     expect(f.completo).toHaveBeenCalledTimes(1); expect(f.datos).toHaveLength(2);
     expect(JSON.stringify(f.datos)).not.toMatch(/dato secreto|detalle interno|token-en-cabecera/);
     await jest.advanceTimersByTimeAsync(9000); expect(panel).toHaveBeenCalledTimes(1);
+  });
+  it('pasa el acceso exigido y cierra si se pierde el permiso (CU-028B)', async () => {
+    const acceso = { roles: ['Organizador'], modulo: 'parqueaderos' as const, accion: 'leer' as const };
+    const datos: unknown[] = []; const completo = jest.fn();
+    servicio.seguir('evento-propio', 'token-en-cabecera', acceso).subscribe({ next: v => datos.push(v), complete: completo });
+    await jest.advanceTimersByTimeAsync(0); expect(validar).toHaveBeenCalledWith('token-en-cabecera', acceso);
+    validar.mockRejectedValue(new ForbiddenException()); await jest.advanceTimersByTimeAsync(3000);
+    expect(datos.at(-1)).toMatchObject({ type: 'sesion_finalizada', data: { codigo: 'ROL_INSUFICIENTE' } });
+    expect(completo).toHaveBeenCalledTimes(1);
   });
   it('descarta el panel pendiente cuando una comprobación periódica detecta revocación', async () => {
     const consulta = diferida(); panel.mockReturnValue(consulta.promesa); const f = abrir(); await jest.advanceTimersByTimeAsync(0);

@@ -10,8 +10,19 @@ describe('Validación reutilizada por SSE', () => {
     publicKey: claves.publicKey.export({ type: 'spki', format: 'pem' }).toString(),
     signOptions: { algorithm: 'RS256', issuer: 'hexacore-administracion' }, verifyOptions: { algorithms: ['RS256'], issuer: 'hexacore-administracion' } });
   const contenido = { sub: randomUUID(), roles: ['Organizador'], jti: randomUUID() };
-  let redis: { exists: jest.Mock }, guard: SesionValida;
-  beforeEach(() => { redis = { exists: jest.fn().mockResolvedValue(0) }; guard = new SesionValida(jwt, new Reflector(), redis as unknown as Redis); });
+  // La guarda común lee revocación y roles vigentes en un solo MULTI (CU-028);
+  // `exists` registra la clave consultada y da el resultado de la revocación.
+  let redis: { exists: jest.Mock; multi: () => unknown }, guard: SesionValida;
+  beforeEach(() => {
+    const exists = jest.fn().mockResolvedValue(0);
+    redis = { exists, multi: () => {
+      let clave = '';
+      const lote = { exists: (k: string) => { clave = k; return lote; }, get: () => lote,
+        exec: async () => [[null, await exists(clave)], [null, null]] };
+      return lote;
+    } };
+    guard = new SesionValida(jwt, new Reflector(), redis as unknown as Redis);
+  });
   it('verifica criptografía real y Redis con el contrato existente', async () => {
     await expect(guard.validar(jwt.sign(contenido, { expiresIn: 900 }))).resolves.toMatchObject({ usuarioId: contenido.sub });
     expect(redis.exists).toHaveBeenCalledWith('sesion-revocada:' + contenido.jti);

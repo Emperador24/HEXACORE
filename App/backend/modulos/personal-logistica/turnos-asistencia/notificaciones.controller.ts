@@ -11,6 +11,10 @@ import { ContextoDeLogistica, PeticionDeLogistica } from './autorizacion.guard';
 /**
  * Expone la evidencia de mensajes procesados por el consumidor de
  * "turnos.cambios" — para demostrar en vivo la latencia publicación→consumo.
+ *
+ * **F14:** cada aviso tiene un destinatario (`empleadoId`). Quien supervisa
+ * ve todos, como antes; un empleado, solo los suyos. Antes cualquier sesión
+ * válida recibía la lista completa, con turnos y nombres de los demás.
  */
 @UsePipes(validacionLogistica)
 @Controller('logistica/notificaciones')

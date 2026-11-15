@@ -1,0 +1,102 @@
+.distribucion {
+  display: grid;
+  grid-template-columns: minmax(260px, 340px) 1fr;
+  gap: 18px;
+  align-items: start;
+
+  @media (max-width: 960px) { grid-template-columns: 1fr; }
+}
+
+.lista { padding-bottom: 8px; }
+
+.grupo {
+  margin: 14px 20px 6px;
+  color: var(--hx-texto-3);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sin-propios { margin: 0 20px; }
+
+.rol {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 10px;
+  width: 100%;
+  padding: 10px 20px;
+  border: 0;
+  background: transparent;
+  color: var(--hx-texto);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+
+  &:hover { background: var(--hx-hover); }
+  &.activo { background: var(--hx-acento-suave); }
+
+  .nombre { font-weight: 700; display: flex; align-items: center; gap: 4px; }
+  .secundario { grid-column: 1; }
+  .usuarios {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: center;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--hx-texto-2);
+    font-size: 0.8rem;
+    mat-icon { font-size: 16px; width: 16px; height: 16px; }
+  }
+  .candado { font-size: 14px; width: 14px; height: 14px; color: var(--hx-texto-3); }
+}
+
+.campos {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  mat-form-field { width: 240px; }
+  mat-form-field.ancho { flex: 1; min-width: 240px; }
+}
+
+.matriz {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 4px 0 8px;
+
+  th, td { padding: 6px 8px; border-bottom: 1px solid var(--hx-linea); text-align: center; }
+  th:first-child, td:first-child { text-align: left; }
+  th { color: var(--hx-texto-3); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.4px; }
+}
+
+.botones { display: flex; align-items: center; gap: 8px; margin: 12px 0 4px; flex-wrap: wrap; }
+
+h3 { margin: 22px 0 8px; font-size: 0.95rem; }
+
+.asignar, .eliminar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  mat-form-field { width: 280px; }
+  .mat-mdc-form-field-subscript-wrapper { display: none; }
+}
+
+.asignados, .historial {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+
+  li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--hx-linea);
+    flex-wrap: wrap;
+  }
+}
+
+.historial li { justify-content: flex-start; }

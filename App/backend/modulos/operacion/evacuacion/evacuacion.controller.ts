@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Header, MessageEvent, Param, ParseUUIDPipe, Patch, Post, Put, Req, Sse, UseGuards, UsePipes } from '@nestjs/common';
 import { Observable, catchError, exhaustMap, from, interval, map, of, startWith } from 'rxjs';
 import { validacionAlimentos as validacion } from '../../../compartido/validacion';
-import { PeticionConSesion, RolesPermitidos, SesionValida } from '../comun/autenticacion/sesion-valida.guard';
+import { AccionPermiso, ModuloPermisos, PeticionConSesion, RolesPermitidos, SesionValida } from '../comun/autenticacion/sesion-valida.guard';
 import {
   ActivarEvacuacionDto,
   BloqueoSalidaDto,
@@ -30,6 +30,7 @@ const INTERVALO_MS = 2000;
 @UsePipes(validacion)
 @UseGuards(SesionValida)
 @RolesPermitidos('Organizador', 'Administrador')
+@ModuloPermisos('emergencias')
 export class EvacuacionController {
   constructor(private readonly evacuacion: EvacuacionService) {}
 
@@ -87,11 +88,13 @@ export class EvacuacionController {
 
   /** Paso 7. */
   @Post('evacuaciones/:id/confirmar')
+  @AccionPermiso('actualizar')
   confirmar(@Param('id', ParseUUIDPipe) id: string, @Req() peticion: PeticionConSesion) {
     return this.evacuacion.confirmar(id, peticion.sesion!.usuarioId);
   }
 
   @Post('evacuaciones/:id/descartar')
+  @AccionPermiso('actualizar')
   descartar(@Param('id', ParseUUIDPipe) id: string, @Req() peticion: PeticionConSesion) {
     return this.evacuacion.descartar(id, peticion.sesion!.usuarioId);
   }
@@ -110,6 +113,7 @@ export class EvacuacionController {
 
   /** CU-010B. */
   @Post('evacuaciones/:id/zonas/:zonaId/ruta')
+  @AccionPermiso('actualizar')
   cambiarRuta(
     @Param('id', ParseUUIDPipe) id: string,
     @Param('zonaId', ParseUUIDPipe) zonaId: string,
@@ -121,6 +125,7 @@ export class EvacuacionController {
 
   /** CU-010A. */
   @Post('evacuaciones/:id/salidas/:salidaId/bloqueo')
+  @AccionPermiso('actualizar')
   @RolesPermitidos('Organizador', 'Administrador', 'Personal')
   bloqueo(
     @Param('id', ParseUUIDPipe) id: string,
@@ -133,12 +138,14 @@ export class EvacuacionController {
 
   /** CU-010D. */
   @Post('evacuaciones/:id/nivel')
+  @AccionPermiso('actualizar')
   nivel(@Param('id', ParseUUIDPipe) id: string, @Body() dto: CambiarNivelDto, @Req() peticion: PeticionConSesion) {
     return this.evacuacion.escalar(id, dto.nivel, dto.motivo, dto.zonasIds, peticion.sesion!.usuarioId);
   }
 
   /** Pasos 12-13. */
   @Post('evacuaciones/:id/finalizar')
+  @AccionPermiso('actualizar')
   finalizar(@Param('id', ParseUUIDPipe) id: string, @Body() dto: FinalizarEvacuacionDto, @Req() peticion: PeticionConSesion) {
     return this.evacuacion.finalizar(id, dto.observaciones, peticion.sesion!.usuarioId);
   }

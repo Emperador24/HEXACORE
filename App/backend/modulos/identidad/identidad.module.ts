@@ -4,6 +4,7 @@ import { AdministracionCuentasModule } from './administracion-cuentas/administra
 import { CuentasModule } from './cuentas/cuentas.module';
 import { NotificacionesModule } from './notificaciones/notificaciones.module';
 import { PersistenciaModule } from './persistencia/persistencia.module';
+import { RolesPermisosModule } from './roles-permisos/roles-permisos.module';
 import { SesionesModule } from './sesiones/sesiones.module';
 
 /** API pública de identidad en Núcleo. Conserva su base y sus reglas actuales. */
@@ -15,6 +16,7 @@ import { SesionesModule } from './sesiones/sesiones.module';
     CuentasModule,
     SesionesModule,
     AdministracionCuentasModule,
+    RolesPermisosModule,
   ],
 })
 export class IdentidadModule {}

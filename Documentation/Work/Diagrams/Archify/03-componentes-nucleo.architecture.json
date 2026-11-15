@@ -6,8 +6,8 @@
     "output": "03-componentes-nucleo.html",
     "quality_profile": "standard",
     "viewBox": [
-      1580,
-      860
+      1980,
+      920
     ]
   },
   "components": [
@@ -15,139 +15,139 @@
       "id": "gateway",
       "type": "security",
       "label": "API Gateway",
-      "sublabel": "JWT RS256 público",
+      "sublabel": "JWT RS256 público · permisos por ruta",
       "pos": [
-        580,
-        10
+        159,
+        30
       ],
       "size": [
-        360,
+        1532.0,
         60
       ]
     },
     {
-      "id": "identidad_api",
+      "id": "identidad",
       "type": "backend",
-      "label": "Identidad · controladores",
-      "sublabel": "/cuentas, /cuentas/perfil, /sesiones, /admin/cuentas",
+      "label": "Identidad",
+      "sublabel": "cuentas · sesiones · roles y permisos",
       "pos": [
         60,
-        180
+        200
       ],
       "size": [
-        320,
-        72
+        230,
+        76
       ]
     },
     {
-      "id": "logistica_api",
+      "id": "logistica",
       "type": "backend",
-      "label": "Personal/Logística · controladores",
-      "sublabel": "/logistica: personal, turnos, asistencia, notificaciones",
+      "label": "Personal/Logística",
+      "sublabel": "personal · turnos · asistencia · avisos",
       "pos": [
-        410,
-        180
+        310,
+        200
       ],
       "size": [
-        320,
-        72
+        230,
+        76
       ]
     },
     {
-      "id": "alimentos_api",
+      "id": "eventos",
       "type": "backend",
-      "label": "Alimentos · controladores",
-      "sublabel": "/pedidos: establecimientos, menú, checkout, pagos, recepción",
+      "label": "Eventos-Recintos",
+      "sublabel": "eventos · recintos · zonas · outbox",
       "pos": [
-        760,
-        180
+        560,
+        200
       ],
       "size": [
-        330,
-        72
+        230,
+        76
+      ]
+    },
+    {
+      "id": "operacion",
+      "type": "backend",
+      "label": "Operación",
+      "sublabel": "evacuación · panel en vivo (SSE)",
+      "pos": [
+        810,
+        200
+      ],
+      "size": [
+        230,
+        76
+      ]
+    },
+    {
+      "id": "parqueaderos",
+      "type": "backend",
+      "label": "Parqueaderos",
+      "sublabel": "tarifa · cobro · ocupación · reservas",
+      "pos": [
+        1060,
+        200
+      ],
+      "size": [
+        230,
+        76
+      ]
+    },
+    {
+      "id": "alimentos",
+      "type": "backend",
+      "label": "Alimentos",
+      "sublabel": "pedidos · menú · inventario en Redis",
+      "pos": [
+        1310,
+        200
+      ],
+      "size": [
+        230,
+        76
       ]
     },
     {
       "id": "webhook",
       "type": "security",
       "label": "Webhook de pagos",
-      "sublabel": "POST /pagos/webhook · rawBody + HMAC",
+      "sublabel": "POST /pagos/webhook · HMAC",
       "pos": [
-        1180,
-        180
+        1560,
+        200
       ],
       "size": [
-        330,
-        72
+        230,
+        76
       ]
     },
     {
-      "id": "identidad_svc",
-      "type": "backend",
-      "label": "Cuentas, sesiones y autenticación",
-      "sublabel": "firma RS256 · renovación · revocación · correo pendiente",
+      "id": "guarda",
+      "type": "security",
+      "label": "Guarda común",
+      "sublabel": "SesionValida · verifica JWT y permisos",
       "pos": [
         60,
-        400
+        430
       ],
       "size": [
-        320,
-        72
-      ]
-    },
-    {
-      "id": "logistica_svc",
-      "type": "backend",
-      "label": "Turnos y asistencia",
-      "sublabel": "asignación · cambios · publicador y consumidor turnos.cambios",
-      "pos": [
-        410,
-        400
-      ],
-      "size": [
-        320,
-        72
-      ]
-    },
-    {
-      "id": "alimentos_svc",
-      "type": "backend",
-      "label": "Checkout, reservas e inventario",
-      "sublabel": "reserva en Redis · cron de expiración · publica pedido confirmado",
-      "pos": [
-        760,
-        400
-      ],
-      "size": [
-        330,
-        72
+        230,
+        76
       ]
     },
     {
       "id": "pagos",
       "type": "backend",
       "label": "Módulo Pagos",
-      "sublabel": "PagosService · idempotencia · adaptador de pasarela",
+      "sublabel": "idempotencia · adaptador de pasarela",
       "pos": [
-        1180,
-        400
+        1560,
+        430
       ],
       "size": [
-        330,
-        72
-      ]
-    },
-    {
-      "id": "postgres",
-      "type": "database",
-      "label": "PostgreSQL · base hexacore",
-      "sublabel": "esquemas identidad, personal_logistica, alimentos, finanzas_pagos",
-      "pos": [
-        60,
-        640
-      ],
-      "size": [
-        500,
+        230,
         76
       ]
     },
@@ -155,27 +155,27 @@
       "id": "redis",
       "type": "database",
       "label": "Redis",
-      "sublabel": "revocación · inventario",
+      "sublabel": "revocación · permisos-rol · roles-usuario",
       "pos": [
-        600,
-        640
+        60,
+        660
       ],
       "size": [
         230,
-        72
+        76
       ]
     },
     {
       "id": "rabbitmq",
       "type": "messagebus",
       "label": "RabbitMQ",
-      "sublabel": "cuentas · pedidos · turnos · pagos",
+      "sublabel": "eventos.gestion · turnos.cambios · evacuación · ingresos · pedidos · correo",
       "pos": [
-        870,
-        640
+        325,
+        660
       ],
       "size": [
-        250,
+        700,
         72
       ]
     },
@@ -185,27 +185,42 @@
       "label": "Pasarela de pagos",
       "sublabel": "externa",
       "pos": [
-        1180,
-        640
+        1560,
+        660
       ],
       "size": [
-        330,
-        72
+        230,
+        76
+      ]
+    },
+    {
+      "id": "postgres",
+      "type": "database",
+      "label": "PostgreSQL · base hexacore",
+      "sublabel": "un esquema por módulo: identidad, personal_logistica, eventos_recintos, operacion, parqueaderos, alimentos, finanzas_pagos",
+      "pos": [
+        60,
+        810
+      ],
+      "size": [
+        1730,
+        64
       ]
     }
   ],
   "boundaries": [
     {
       "kind": "region",
-      "label": "Núcleo · NestJS :3002 · un proceso",
+      "label": "Núcleo :3002",
       "wraps": [
-        "identidad_api",
-        "logistica_api",
-        "alimentos_api",
+        "identidad",
+        "logistica",
+        "eventos",
+        "operacion",
+        "parqueaderos",
+        "alimentos",
         "webhook",
-        "identidad_svc",
-        "logistica_svc",
-        "alimentos_svc",
+        "guarda",
         "pagos"
       ],
       "pad": 24
@@ -215,21 +230,42 @@
     {
       "id": "gw-identidad",
       "from": "gateway",
-      "to": "identidad_api",
+      "to": "identidad",
       "fromSide": "bottom",
       "toSide": "top"
     },
     {
       "id": "gw-logistica",
       "from": "gateway",
-      "to": "logistica_api",
+      "to": "logistica",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "gw-eventos",
+      "from": "gateway",
+      "to": "eventos",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "gw-operacion",
+      "from": "gateway",
+      "to": "operacion",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "gw-parqueaderos",
+      "from": "gateway",
+      "to": "parqueaderos",
       "fromSide": "bottom",
       "toSide": "top"
     },
     {
       "id": "gw-alimentos",
       "from": "gateway",
-      "to": "alimentos_api",
+      "to": "alimentos",
       "fromSide": "bottom",
       "toSide": "top"
     },
@@ -242,25 +278,42 @@
       "variant": "security"
     },
     {
-      "id": "identidad-svc",
-      "from": "identidad_api",
-      "to": "identidad_svc",
+      "id": "identidad-guarda",
+      "from": "identidad",
+      "to": "guarda",
+      "label": "publica la matriz",
       "fromSide": "bottom",
-      "toSide": "top"
+      "toSide": "top",
+      "labelAt": [
+        175,
+        353
+      ]
     },
     {
-      "id": "logistica-svc",
-      "from": "logistica_api",
-      "to": "logistica_svc",
+      "id": "guarda-redis",
+      "from": "guarda",
+      "to": "redis",
+      "label": "lee en cada petición",
       "fromSide": "bottom",
-      "toSide": "top"
+      "toSide": "top",
+      "variant": "security",
+      "labelAt": [
+        175,
+        583
+      ]
     },
     {
-      "id": "alimentos-svc",
-      "from": "alimentos_api",
-      "to": "alimentos_svc",
+      "id": "eventos-rabbit",
+      "from": "eventos",
+      "to": "rabbitmq",
+      "label": "eventos.gestion",
       "fromSide": "bottom",
-      "toSide": "top"
+      "toSide": "top",
+      "variant": "emphasis",
+      "labelAt": [
+        675,
+        468
+      ]
     },
     {
       "id": "webhook-pagos",
@@ -270,48 +323,9 @@
       "fromSide": "bottom",
       "toSide": "top",
       "labelAt": [
-        1345,
-        326
+        1675,
+        353
       ]
-    },
-    {
-      "id": "alimentos-pagos",
-      "from": "alimentos_svc",
-      "to": "pagos",
-      "label": "cobro local",
-      "fromSide": "right",
-      "toSide": "left",
-      "variant": "emphasis"
-    },
-    {
-      "id": "identidad-pg",
-      "from": "identidad_svc",
-      "to": "postgres",
-      "fromSide": "bottom",
-      "toSide": "top"
-    },
-    {
-      "id": "logistica-pg",
-      "from": "logistica_svc",
-      "to": "postgres",
-      "fromSide": "bottom",
-      "toSide": "top"
-    },
-    {
-      "id": "alimentos-redis",
-      "from": "alimentos_svc",
-      "to": "redis",
-      "label": "reservas",
-      "fromSide": "bottom",
-      "toSide": "top"
-    },
-    {
-      "id": "alimentos-rabbit",
-      "from": "alimentos_svc",
-      "to": "rabbitmq",
-      "label": "pedidos.eventos",
-      "fromSide": "bottom",
-      "toSide": "top"
     },
     {
       "id": "pagos-pasarela",
@@ -322,35 +336,38 @@
       "toSide": "top",
       "variant": "emphasis",
       "labelAt": [
-        1345,
-        560
+        1675,
+        583
       ]
     }
   ],
   "cards": [
     {
       "dot": "cyan",
-      "title": "Un proceso, tres dominios",
+      "title": "Un proceso, siete módulos",
       "items": [
-        "Cada dominio tiene su conexión nombrada y su esquema; no comparten repositorios",
-        "Identidad es el único que firma tokens; los demás solo verifican y consultan la revocación en Redis"
+        "Un solo proceso NestJS por réplica; todas las réplicas son iguales",
+        "Cada módulo tiene su conexión nombrada y su esquema; no comparten repositorios",
+        "Identidad es el único que firma tokens; la guarda común verifica la firma y lee revocación y permisos (CU-028) de Redis en cada petición"
       ]
     },
     {
       "dot": "amber",
       "title": "Mensajería",
       "items": [
-        "Identidad publica el correo pendiente (lo envía el Trabajador)",
-        "Logística publica y consume turnos.cambios",
-        "El webhook publica pagos.eventos; nadie lo consume aún (F12)"
+        "Eventos-Recintos publica eventos.gestion por outbox; lo consumen los cuatro módulos de Boletería",
+        "Logística publica turnos.cambios; Parqueaderos, avisos de reservas; Alimentos, pedidos.eventos",
+        "Operación consume los ingresos de Acceso QR y publica los avisos de evacuación con prioridad",
+        "Las bandejas toman filas con SKIP LOCKED: dos réplicas no publican dos veces"
       ]
     },
     {
       "dot": "slate",
       "title": "Relaciones no dibujadas",
       "items": [
-        "Alimentos y Pagos también escriben en sus esquemas",
-        "Identidad usa Redis (revocación) y RabbitMQ (correo)"
+        "Todos los módulos escriben en su esquema de PostgreSQL",
+        "Alimentos cobra por el módulo Pagos y reserva inventario en Redis",
+        "Identidad envía el correo pendiente por RabbitMQ (lo envía el Trabajador)"
       ]
     }
   ]

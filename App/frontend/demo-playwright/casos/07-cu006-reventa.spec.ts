@@ -1,7 +1,7 @@
 import { Page, expect, test } from '@playwright/test';
 import { llamar, sesion } from '../apoyo/api';
 import { ENTORNO } from '../apoyo/entorno';
-import { paso } from '../apoyo/portal';
+import { PAUSA, abrir, paso } from '../apoyo/portal';
 
 interface EntradaPropia { id: string; numeroTicket: string; eventoNombre: string; puedePublicarse: boolean; precioOriginal: number; precioMaximo: number | null }
 
@@ -35,11 +35,12 @@ async function entradaPublicable(): Promise<EntradaPropia> {
 
 async function entrarCliente(page: Page, correo: string) {
   await page.context().clearCookies();
-  await page.goto(`${ENTORNO.portalCliente}/login`);
+  await abrir(page, `${ENTORNO.portalCliente}/login`);
   await page.locator('[data-prueba="login-correo"]').fill(correo);
   await page.locator('[data-prueba="login-contrasena"]').fill(ENTORNO.contrasena);
   await page.locator('[data-prueba="login-ingresar"]').click();
   await expect(page).not.toHaveURL(/\/login/);
+  await page.waitForTimeout(PAUSA);
 }
 
 const pesos = (n: number) => new RegExp(`\\$\\s?${Math.floor(n / 1000)}[.,]${String(n % 1000).padStart(3, '0')}(?!\\d)`);
@@ -54,7 +55,7 @@ test('CU-006 · Gestión del mercado secundario de entradas', async ({ page }) =
 
   await paso(page, 'CU-006 · Mercado secundario', `${ENTORNO.cuentas.vendedora} tiene la entrada ${entrada.numeroTicket} de «${entrada.eventoNombre}».`, async () => {
     await entrarCliente(page, ENTORNO.cuentas.vendedora);
-    await page.goto(`${ENTORNO.portalCliente}/entradas`);
+    await abrir(page, `${ENTORNO.portalCliente}/entradas`);
     await expect(tarjeta).toBeVisible();
   });
 
@@ -82,7 +83,7 @@ test('CU-006 · Gestión del mercado secundario de entradas', async ({ page }) =
 
   await paso(page, 'Pasos 5-6 · Reservar', 'Bruno la encuentra y la reserva: queda bloqueada para los demás mientras paga.', async () => {
     await entrarCliente(page, ENTORNO.cuentas.comprador);
-    await page.goto(`${ENTORNO.portalCliente}/reventa`);
+    await abrir(page, `${ENTORNO.portalCliente}/reventa`);
     await publicacion.locator('[data-prueba="reventa-comprar"]').click();
     await expect(page.getByText('Reservada para ti')).toBeVisible();
     await expect(page.getByText(/comisión/i).first()).toBeVisible();
@@ -107,7 +108,7 @@ test('CU-006 · Gestión del mercado secundario de entradas', async ({ page }) =
   });
 
   await paso(page, 'Resultado', `${entrada.numeroTicket} ya es de ${ENTORNO.cuentas.comprador}, con un código QR nuevo.`, async () => {
-    await page.goto(`${ENTORNO.portalCliente}/entradas`);
+    await abrir(page, `${ENTORNO.portalCliente}/entradas`);
     await expect(page.locator('mat-card').filter({ hasText: entrada.numeroTicket })).toBeVisible();
   });
 });

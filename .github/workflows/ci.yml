@@ -121,7 +121,9 @@ jobs:
   nucleo:
     name: Backend (Núcleo, Boletería y Trabajador reales)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # Las e2e del Núcleo corren dos veces (136 pruebas, ~8 min); con 15 min no
+    # alcanzaba para construir y arrancar las imágenes al final.
+    timeout-minutes: 25
     defaults:
       run:
         working-directory: App/backend

@@ -6,7 +6,7 @@
     "output": "01-contexto.html",
     "quality_profile": "standard",
     "viewBox": [
-      1240,
+      1660,
       560
     ]
   },
@@ -17,7 +17,7 @@
       "label": "Cliente",
       "sublabel": "persona · portal web y app",
       "pos": [
-        0,
+        200,
         0
       ],
       "size": [
@@ -31,7 +31,7 @@
       "label": "Personal operativo",
       "sublabel": "persona · app móvil",
       "pos": [
-        250,
+        450,
         0
       ],
       "size": [
@@ -45,7 +45,7 @@
       "label": "Administrador",
       "sublabel": "persona · portal admin",
       "pos": [
-        500,
+        700,
         0
       ],
       "size": [
@@ -57,9 +57,9 @@
       "id": "organizador",
       "type": "external",
       "label": "Organizador",
-      "sublabel": "persona · CU-026 pendiente",
+      "sublabel": "persona · portal admin",
       "pos": [
-        750,
+        950,
         0
       ],
       "size": [
@@ -71,9 +71,9 @@
       "id": "supervisor",
       "type": "external",
       "label": "Supervisor de emergencia",
-      "sublabel": "persona · Operación pendiente",
+      "sublabel": "persona · portal admin",
       "pos": [
-        1000,
+        1200,
         0
       ],
       "size": [
@@ -87,11 +87,11 @@
       "label": "HEXACORE",
       "sublabel": "Núcleo, Boletería y Trabajador",
       "pos": [
-        420,
+        294,
         230
       ],
       "size": [
-        380,
+        1032,
         90
       ]
     },
@@ -101,7 +101,7 @@
       "label": "Pasarela de pagos",
       "sublabel": "externa · simulada en pruebas",
       "pos": [
-        150,
+        20,
         470
       ],
       "size": [
@@ -115,7 +115,7 @@
       "label": "Proveedor de correo",
       "sublabel": "externo · simulado en pruebas",
       "pos": [
-        800,
+        1420,
         470
       ],
       "size": [
@@ -133,7 +133,7 @@
       "variant": "emphasis",
       "fromSide": "bottom",
       "toSide": "top",
-      "labelSegment": 0
+      "labelDy": 100
     },
     {
       "id": "personal-sistema",
@@ -141,38 +141,35 @@
       "to": "sistema",
       "label": "turnos, asistencia, ingreso QR",
       "fromSide": "bottom",
-      "toSide": "top"
+      "toSide": "top",
+      "labelDy": 100
     },
     {
       "id": "admin-sistema",
       "from": "administrador",
       "to": "sistema",
-      "label": "administración de cuentas",
+      "label": "cuentas, roles y permisos",
       "fromSide": "bottom",
       "toSide": "top",
-      "labelAt": [
-        610,
-        110
-      ]
+      "labelDy": 100
     },
     {
       "id": "organizador-sistema",
       "from": "organizador",
       "to": "sistema",
-      "label": "gestión de eventos",
-      "variant": "dashed",
+      "label": "eventos, personal, parqueadero",
       "fromSide": "bottom",
-      "toSide": "top"
+      "toSide": "top",
+      "labelDy": 100
     },
     {
       "id": "supervisor-sistema",
       "from": "supervisor",
       "to": "sistema",
-      "label": "evacuación y alertas",
-      "variant": "dashed",
+      "label": "evacuación y panel en vivo",
       "fromSide": "bottom",
       "toSide": "top",
-      "labelSegment": 0
+      "labelDy": 100
     },
     {
       "id": "sistema-pasarela",
@@ -204,19 +201,21 @@
   "cards": [
     {
       "dot": "cyan",
-      "title": "Roles con funcionalidad migrada",
+      "title": "Roles y lo que hacen",
       "items": [
-        "Cliente: Identidad, cartelera, compra con turno, reventa y pedidos de alimentos",
+        "Cliente: cuenta, cartelera, compra con turno, reventa y pedidos de alimentos",
         "Personal: turnos, cambios, asistencia e ingreso por QR",
-        "Administrador: cuentas y roles"
+        "Organizador: eventos, recintos, personal, cambios de turno y parqueadero",
+        "Supervisor: evacuación y panel en vivo del evento",
+        "Administrador: cuentas, roles propios con permisos por módulo (CU-028) y tarifa del parqueadero"
       ]
     },
     {
       "dot": "amber",
-      "title": "Pendiente (línea discontinua)",
+      "title": "Pendiente",
       "items": [
-        "Organizador: CU-026 sin backend",
-        "Supervisor: evacuación y alertas esperan el programa Operación"
+        "Incidentes (CU-020): el panel en vivo los muestra sin fuente",
+        "Avisos push o SMS reales: hoy se entregan a la app y quedan registrados"
       ]
     },
     {

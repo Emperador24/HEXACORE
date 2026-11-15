@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Header, MessageEvent, Param, ParseUUIDPipe, Patch, Post, Put, Query, Req, Sse, UseGuards, UsePipes } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { validacionAlimentos as validacion } from '../../compartido/validacion';
-import { PeticionConSesion, RolesPermitidos, SesionValida } from './comun/autenticacion/sesion-valida.guard';
+import { ModuloPermisos, PeticionConSesion, RolesPermitidos, SesionValida } from './comun/autenticacion/sesion-valida.guard';
 import { AccesosService } from './accesos/accesos.service';
 import { AsignacionService } from './asignacion/asignacion.service';
 import { CobroService } from './cobro/cobro.service';
@@ -34,6 +34,7 @@ import { FlujoOcupacionService } from './ocupacion/flujo-ocupacion.service';
 @UsePipes(validacion)
 @UseGuards(SesionValida)
 @RolesPermitidos('Organizador', 'Administrador')
+@ModuloPermisos('parqueaderos')
 export class ParqueaderosController {
   constructor(
     private readonly cobro: CobroService,
@@ -152,7 +153,12 @@ export class ParqueaderosController {
   @Sse('eventos/:eventoId/ocupacion/flujo')
   @Header('X-Accel-Buffering', 'no')
   flujo(@Param('eventoId', ParseUUIDPipe) eventoId: string, @Req() peticion: PeticionConSesion): Observable<MessageEvent> {
-    return this.flujoOcupacion.seguir(eventoId, peticion.headers.authorization!.split(' ')[1]);
+    // Lo mismo que exige la ruta (decoradores de la clase), comprobado en cada emisión.
+    return this.flujoOcupacion.seguir(eventoId, peticion.headers.authorization!.split(' ')[1], {
+      roles: ['Organizador', 'Administrador'],
+      modulo: 'parqueaderos',
+      accion: 'leer',
+    });
   }
 
   /** Pasos 6-8. */

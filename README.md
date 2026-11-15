@@ -101,7 +101,8 @@ registro): [App/infra/README.md](App/infra/README.md).
 [guía por integrante](Documentation/Work/GUIA-EQUIPO-MIGRACION.md),
 [estado y verificaciones](Documentation/Work/ESTADO-MIGRACION.md),
 [corte/reversión pendientes](Documentation/Work/CORTE-Y-REVERSION.md).
-Núcleo, Boletería y Trabajador ejecutan lo existente; Operación y CU ausentes siguen
+Núcleo, Boletería y Trabajador ejecutan lo existente; Operación corre como módulo del
+Núcleo (CU-019 y CU-010) hasta separarse en su propio programa, y los CU ausentes siguen
 pendientes. La migración está integrada en develop (PR #44); el entorno habitual
 todavía no se cortó.
 

@@ -6,7 +6,7 @@
     "output": "02-contenedores.html",
     "quality_profile": "standard",
     "viewBox": [
-      1480,
+      1780,
       900
     ],
     "views": [
@@ -37,7 +37,7 @@
           "rabbitmq",
           "pasarela"
         ],
-        "note": "Identidad, Alimentos, Personal/Logística y el único webhook financiero."
+        "note": "Identidad, roles y permisos, Alimentos, Personal, Eventos, Operación, Parqueaderos y el webhook financiero."
       },
       {
         "id": "correo",
@@ -49,6 +49,18 @@
           "correo"
         ],
         "note": "Identidad publica el correo pendiente; el Trabajador lo envía."
+      },
+      {
+        "id": "monitoreo",
+        "label": "Monitoreo",
+        "focus": [
+          "gateway",
+          "monitoreo",
+          "nucleo",
+          "boleteria",
+          "trabajador"
+        ],
+        "note": "CPU, memoria y logs de cada instancia, servidos por el mismo gateway en /grafana/."
       }
     ]
   },
@@ -59,7 +71,7 @@
       "label": "Portal Web Cliente",
       "sublabel": "Angular · Nginx",
       "pos": [
-        40,
+        340,
         20
       ],
       "size": [
@@ -73,7 +85,7 @@
       "label": "Portal Web Admin",
       "sublabel": "Angular · Nginx",
       "pos": [
-        330,
+        630,
         20
       ],
       "size": [
@@ -87,11 +99,11 @@
       "label": "App móvil",
       "sublabel": "Flutter · Cliente y Personal",
       "pos": [
-        620,
+        920,
         20
       ],
       "size": [
-        240,
+        230,
         64
       ]
     },
@@ -101,7 +113,7 @@
       "label": "Pasarela de pagos",
       "sublabel": "externa · simulada en pruebas",
       "pos": [
-        1180,
+        1480,
         20
       ],
       "size": [
@@ -115,21 +127,21 @@
       "label": "API Gateway",
       "sublabel": "Nginx/njs :8080 · JWT RS256 público · gasta el turno",
       "pos": [
-        330,
+        439,
         180
       ],
       "size": [
-        530,
+        612,
         72
       ]
     },
     {
       "id": "nucleo",
       "type": "backend",
-      "label": "Núcleo",
-      "sublabel": "NestJS :3002 · Identidad, Alimentos, Personal/Logística, webhook Pagos",
+      "label": "Núcleo × N",
+      "sublabel": "NestJS :3002 · Identidad, Alimentos, Personal, Eventos, Operación, Parqueaderos",
       "pos": [
-        20,
+        320,
         360
       ],
       "size": [
@@ -140,10 +152,10 @@
     {
       "id": "boleteria",
       "type": "backend",
-      "label": "Boletería",
-      "sublabel": "NestJS :3001 · Ventas, Catálogo, Fila, Postventa, Acceso QR · replicable",
+      "label": "Boletería × N",
+      "sublabel": "NestJS :3001 · Ventas, Catálogo, Fila, Postventa, Acceso QR",
       "pos": [
-        600,
+        900,
         360
       ],
       "size": [
@@ -152,26 +164,26 @@
       ]
     },
     {
-      "id": "operacion",
-      "type": "backend",
-      "label": "Operación (pendiente)",
-      "sublabel": "CU-010/019/020 · sin implementar",
+      "id": "monitoreo",
+      "type": "cloud",
+      "label": "Monitoreo",
+      "sublabel": "Prometheus · Loki · Grafana",
       "pos": [
-        1180,
-        360
+        20,
+        180
       ],
       "size": [
         260,
-        80
+        72
       ]
     },
     {
       "id": "preparacion",
       "type": "backend",
       "label": "preparacion-base",
-      "sublabel": "tarea única · 18 migraciones",
+      "sublabel": "tarea única · 36 migraciones",
       "pos": [
-        20,
+        320,
         560
       ],
       "size": [
@@ -185,7 +197,7 @@
       "label": "Trabajador",
       "sublabel": "NestJS · solo correo · sin SQL ni Redis",
       "pos": [
-        1180,
+        1480,
         560
       ],
       "size": [
@@ -197,9 +209,9 @@
       "id": "postgres",
       "type": "database",
       "label": "PostgreSQL 16",
-      "sublabel": "base hexacore · 8 esquemas · libro único",
+      "sublabel": "base hexacore · 11 esquemas · libro único",
       "pos": [
-        20,
+        320,
         760
       ],
       "size": [
@@ -211,9 +223,9 @@
       "id": "redis",
       "type": "database",
       "label": "Redis 7",
-      "sublabel": "reservas, fila, bloqueos, revocación",
+      "sublabel": "reservas, fila, revocación, permisos",
       "pos": [
-        470,
+        770,
         760
       ],
       "size": [
@@ -227,7 +239,7 @@
       "label": "RabbitMQ 3.13",
       "sublabel": "eventos de dominio y correo",
       "pos": [
-        840,
+        1140,
         760
       ],
       "size": [
@@ -241,7 +253,7 @@
       "label": "Proveedor de correo",
       "sublabel": "externo · simulado en pruebas",
       "pos": [
-        1180,
+        1480,
         760
       ],
       "size": [
@@ -257,7 +269,8 @@
       "to": "gateway",
       "label": "HTTPS /api/v1",
       "fromSide": "bottom",
-      "toSide": "top"
+      "toSide": "top",
+      "labelDy": 61
     },
     {
       "id": "admin-gw",
@@ -265,7 +278,8 @@
       "to": "gateway",
       "label": "HTTPS",
       "fromSide": "bottom",
-      "toSide": "top"
+      "toSide": "top",
+      "labelDy": 61
     },
     {
       "id": "movil-gw",
@@ -273,13 +287,14 @@
       "to": "gateway",
       "label": "HTTPS",
       "fromSide": "bottom",
-      "toSide": "top"
+      "toSide": "top",
+      "labelDy": 61
     },
     {
       "id": "gw-nucleo",
       "from": "gateway",
       "to": "nucleo",
-      "label": "cuentas, sesiones, pedidos, logística",
+      "label": "cuentas, eventos, personal, operación, parqueaderos",
       "fromSide": "bottom",
       "toSide": "top",
       "variant": "emphasis"
@@ -314,13 +329,9 @@
       "id": "nucleo-postgres",
       "from": "nucleo",
       "to": "postgres",
-      "label": "4 pools",
+      "label": "7 pools",
       "fromSide": "bottom",
-      "toSide": "top",
-      "labelAt": [
-        290,
-        520
-      ]
+      "toSide": "top"
     },
     {
       "id": "prep-postgres",
@@ -370,10 +381,16 @@
       "label": "HTTP",
       "fromSide": "bottom",
       "toSide": "top",
-      "labelAt": [
-        1312,
-        696
-      ]
+      "labelDy": 77
+    },
+    {
+      "id": "gw-monitoreo",
+      "from": "gateway",
+      "to": "monitoreo",
+      "label": "/grafana/",
+      "fromSide": "left",
+      "toSide": "right",
+      "variant": "dashed"
     }
   ],
   "cards": [
@@ -381,8 +398,8 @@
       "dot": "cyan",
       "title": "Tres programas en marcha",
       "items": [
-        "Núcleo y Boletería reciben todo el tráfico por el gateway",
-        "Boletería escala por réplicas; el Núcleo se mantiene en una",
+        "Núcleo y Boletería reciben todo el tráfico por el gateway y escalan por réplicas",
+        "El gateway descubre las réplicas en el DNS de Docker y reintenta en otra si una cae",
         "Trabajador solo consume la cola de correo"
       ]
     },
@@ -390,15 +407,16 @@
       "dot": "amber",
       "title": "Relaciones resumidas",
       "items": [
-        "El Núcleo también usa Redis (revocación, inventario), RabbitMQ (correo, pedidos, turnos, pagos) y la pasarela (cobros de alimentos)",
-        "Operación es el programa objetivo de evacuación, monitoreo e incidentes"
+        "El Núcleo también usa Redis (revocación, permisos de CU-028, inventario) y la pasarela (cobros de alimentos)",
+        "El Núcleo publica eventos.gestion por RabbitMQ; lo consumen Catálogo, Ventas, Postventa y Acceso QR",
+        "Monitoreo lee CPU y memoria de Docker y los logs de todos los contenedores"
       ]
     },
     {
       "dot": "slate",
       "title": "Datos",
       "items": [
-        "Una base con un esquema por conexión; finanzas_pagos es el libro compartido",
+        "Una base con un esquema por módulo (11); finanzas_pagos es el libro compartido",
         "Compartir base no da atomicidad entre módulos"
       ]
     }

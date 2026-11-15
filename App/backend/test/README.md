@@ -66,8 +66,8 @@ cerrar. Para volver a ellas:
 node test/base-unica/compose.cjs imagenes stop gateway nucleo boleteria trabajador
 ```
 
-El preparador central es el único que aplica 34 migraciones (18 consolidadas + CU-007, CU-026,
-CU-029, CU-019, CU-008/009, CU-010, CU-024/025, CU-021/023, CU-015, CU-012, CU-013, CU-014 y la versión del evento en las cuatro copias de Boletería); los helpers reconocen historias existentes. Se conservan los datos anteriores en 84 tablas en once esquemas, sin tablas de
+El preparador central es el único que aplica 36 migraciones (18 consolidadas + CU-007, CU-026,
+CU-029, CU-019, CU-008/009, CU-010, CU-024/025, CU-021/023, CU-015, CU-012, CU-013, CU-014, CU-011F, CU-028 y la versión del evento en las cuatro copias de Boletería); los helpers reconocen historias existentes. Se conservan los datos anteriores en 87 tablas en once esquemas, sin tablas de
 negocio public. Cada corrida añade UUID propios, sin TRUNCATE/FLUSH/purge,
 sin borrar mensajes anteriores ni modificar TTL. El inventario del fixture se
 prepara antes de habilitar sus compras; no se usa semilla de desarrollo.
@@ -91,3 +91,23 @@ F13 se observa con `python3 test/observar-recursos.py --segundos 100` o el
 observador de boleteria; guarda consultas, pg_blocking_pids, locks, conexiones y
 recursos propios. No aumentar límites para presentar el fallo como resuelto.
 Resultados y fallos, incluidos intentos no aprobados, en ESTADO-MIGRACION §23.
+
+## Cobertura total (unitarias + e2e del Núcleo + e2e de Boletería)
+
+```bash
+npm run test:infra        # base, Redis y RabbitMQ de prueba
+npm run test:cov:total    # deja coverage/total/RESUMEN.md
+node test/cobertura-total.cjs modulos/parqueaderos   # solo esos módulos
+```
+
+Cada corrida se mide con la herramienta que ve el código que de verdad se ejecutó:
+- las unitarias, con la cobertura de Jest (proveedor `v8`);
+- las e2e, con c8 sobre `dist/` y sus source maps.
+
+`test/cobertura-total.cjs` las une **por línea**: una línea cuenta como cubierta si alguna prueba
+pasó por ella. No se mezclan contadores entre herramientas, porque cada una deriva un mapa de
+sentencias distinto del mismo archivo y la suma da cifras falsas. Los archivos que solo declaran
+tipos no cuentan: no existen en tiempo de ejecución.
+
+Se excluyen las pruebas, las migraciones, las semillas y los guiones de `scripts/` (semillas y carga
+de desarrollo).

@@ -6,7 +6,7 @@
     "output": "04-componentes-boleteria.html",
     "quality_profile": "standard",
     "viewBox": [
-      1600,
+      1780,
       880
     ]
   },
@@ -17,11 +17,11 @@
       "label": "Redis",
       "sublabel": "fila · candados con testigo · revocación",
       "pos": [
-        60,
+        20,
         10
       ],
       "size": [
-        280,
+        300,
         64
       ]
     },
@@ -31,11 +31,11 @@
       "label": "API Gateway",
       "sublabel": "JWT RS256 público · exige turno en /compras",
       "pos": [
-        600,
+        414,
         10
       ],
       "size": [
-        420,
+        1192,
         64
       ]
     },
@@ -45,7 +45,7 @@
       "label": "Catálogo",
       "sublabel": "/cartelera · eventos y localidades",
       "pos": [
-        60,
+        590,
         200
       ],
       "size": [
@@ -59,7 +59,7 @@
       "label": "Fila virtual",
       "sublabel": "/cola · /interno/cola/turnos",
       "pos": [
-        350,
+        300,
         200
       ],
       "size": [
@@ -73,11 +73,11 @@
       "label": "Ventas",
       "sublabel": "/compras · promociones · cancelación · QR",
       "pos": [
-        640,
+        880,
         200
       ],
       "size": [
-        280,
+        260,
         72
       ]
     },
@@ -87,11 +87,11 @@
       "label": "Postventa",
       "sublabel": "/reventa · publicación y checkout",
       "pos": [
-        1020,
+        1170,
         200
       ],
       "size": [
-        250,
+        260,
         72
       ]
     },
@@ -101,11 +101,11 @@
       "label": "Acceso QR",
       "sublabel": "/ingresos · validación en puerta",
       "pos": [
-        1300,
+        1460,
         200
       ],
       "size": [
-        250,
+        260,
         72
       ]
     },
@@ -115,7 +115,7 @@
       "label": "Módulo Pagos",
       "sublabel": "API local · usado por Ventas y Postventa",
       "pos": [
-        350,
+        300,
         420
       ],
       "size": [
@@ -129,11 +129,11 @@
       "label": "Ventas · segundo plano",
       "sublabel": "outbox · cron de reservas · consume ingresos",
       "pos": [
-        640,
+        880,
         420
       ],
       "size": [
-        280,
+        260,
         72
       ]
     },
@@ -143,11 +143,11 @@
       "label": "Postventa · segundo plano",
       "sublabel": "cron de expiración · liquidaciones",
       "pos": [
-        1020,
+        1170,
         420
       ],
       "size": [
-        250,
+        260,
         72
       ]
     },
@@ -157,11 +157,11 @@
       "label": "Acceso QR · segundo plano",
       "sublabel": "proyección de QR · outbox de ingresos",
       "pos": [
-        1300,
+        1460,
         420
       ],
       "size": [
-        250,
+        260,
         72
       ]
     },
@@ -169,13 +169,13 @@
       "id": "postgres",
       "type": "database",
       "label": "PostgreSQL · base hexacore",
-      "sublabel": "entradas_ventas, _catalogo, _postventa, _acceso_qr y finanzas_pagos",
+      "sublabel": "un esquema y una conexión por componente: entradas_ventas, _catalogo, _postventa, _acceso_qr y finanzas_pagos",
       "pos": [
-        60,
+        300,
         680
       ],
       "size": [
-        460,
+        480,
         76
       ]
     },
@@ -185,7 +185,7 @@
       "label": "Pasarela de pagos",
       "sublabel": "externa",
       "pos": [
-        560,
+        20,
         680
       ],
       "size": [
@@ -197,13 +197,13 @@
       "id": "rabbitmq",
       "type": "messagebus",
       "label": "RabbitMQ",
-      "sublabel": "ventas.eventos · reventa.eventos · acceso.eventos",
+      "sublabel": "ventas.eventos · reventa.eventos · acceso.eventos · eventos.gestion",
       "pos": [
-        880,
+        994,
         680
       ],
       "size": [
-        660,
+        612,
         72
       ]
     }
@@ -241,7 +241,8 @@
       "label": "gasta el turno",
       "fromSide": "bottom",
       "toSide": "top",
-      "variant": "security"
+      "variant": "security",
+      "labelDy": 76
     },
     {
       "id": "gw-ventas",
@@ -279,7 +280,8 @@
       "to": "ventas",
       "label": "API local",
       "fromSide": "left",
-      "toSide": "right"
+      "toSide": "right",
+      "labelDy": -30
     },
     {
       "id": "ventas-pagos",
@@ -312,14 +314,6 @@
       "toSide": "top"
     },
     {
-      "id": "catalogo-pg",
-      "from": "catalogo",
-      "to": "postgres",
-      "label": "una conexión por componente",
-      "fromSide": "bottom",
-      "toSide": "top"
-    },
-    {
       "id": "pagos-pasarela",
       "from": "pagos",
       "to": "pasarela",
@@ -333,7 +327,8 @@
       "to": "rabbitmq",
       "label": "compra.*, entrada.actualizada",
       "fromSide": "bottom",
-      "toSide": "top"
+      "toSide": "top",
+      "labelDy": 107
     },
     {
       "id": "postventa-rabbit",
@@ -341,7 +336,8 @@
       "to": "rabbitmq",
       "label": "entrada transferida",
       "fromSide": "bottom",
-      "toSide": "top"
+      "toSide": "top",
+      "labelDy": 107
     },
     {
       "id": "acceso-rabbit",
@@ -349,7 +345,8 @@
       "to": "rabbitmq",
       "label": "ingreso.registrado",
       "fromSide": "bottom",
-      "toSide": "top"
+      "toSide": "top",
+      "labelDy": 107
     }
   ],
   "cards": [
@@ -358,7 +355,8 @@
       "title": "Cinco componentes, un proceso",
       "items": [
         "Cada uno conserva su conexión, su esquema y sus reglas",
-        "Ventas es la autoridad de la entrada y su QR; Acceso QR mantiene una proyección"
+        "Ventas es la autoridad de la entrada y su QR; Acceso QR mantiene una proyección",
+        "Boletería escala por réplicas detrás del gateway; ninguna guarda estado en memoria"
       ]
     },
     {
@@ -367,6 +365,7 @@
       "items": [
         "Dos outbox (Ventas y Acceso QR) publican después de confirmar la transacción",
         "Acceso QR consume compra.confirmada y entrada.actualizada; Ventas consume ingreso.registrado",
+        "Catálogo, Ventas, Postventa y Acceso QR consumen eventos.gestion del Núcleo: un evento publicado, editado o cancelado llega a su copia local",
         "Compartir proceso no vuelve atómicas esas operaciones"
       ]
     },

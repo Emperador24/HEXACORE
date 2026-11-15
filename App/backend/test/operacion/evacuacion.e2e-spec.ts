@@ -4,6 +4,7 @@ import request from 'supertest';
 import { DataSource } from 'typeorm';
 import { opcionesDataSource } from '../../modulos/eventos-recintos/persistencia/data-source';
 import { NucleoPrueba, esperar } from '../logistica/nucleo-prueba';
+import { primerMensajeSse } from '../sse';
 
 /**
  * CU-010 · Gestionar evacuación ante emergencias, contra el Núcleo compilado.
@@ -197,6 +198,32 @@ describe('CU-010 · Gestionar evacuación ante emergencias (e2e)', () => {
     // Durante la evacuación no se cambia el plan.
     const bloqueo = await request(nucleo.url).put(`${E}/recintos/${recinto}/plan`).set('Authorization', como(supervisor)).send({ salidas: [], rutas: [] }).expect(409);
     expect(bloqueo.body.codigo).toBe('EVACUACION_EN_CURSO');
+  });
+
+  it('consultas: plan, eventos operables, vista previa del reporte, flujo en vivo y una sola evacuación abierta', async () => {
+    const { recinto, evento, zonas } = await escenario(10);
+    await plan(recinto, zonas);
+    const guardado = (await request(nucleo.url).get(`${E}/recintos/${recinto}/plan`).set('Authorization', como(supervisor)).expect(200)).body;
+    expect(guardado.completo).toBe(true);
+    const operables = (await request(nucleo.url).get(`${E}/eventos`).set('Authorization', como(supervisor)).expect(200)).body;
+    expect(operables.find((e: { id: string }) => e.id === evento)).toMatchObject({ enCurso: true, evacuacion: null });
+
+    // Dos supervisores proponen a la vez: solo una queda abierta.
+    const proponer = () => request(nucleo.url).post(`${E}/eventos/${evento}/evacuaciones`).set('Authorization', como(supervisor))
+      .send({ tipo: 'INCENDIO', ubicacion: 'Cocina', nivel: 1, alcance: 'PARCIAL', zonaOrigenId: zonas.A });
+    const respuestas = await Promise.all([proponer(), proponer()]);
+    expect(respuestas.map((r) => r.status).sort()).toEqual([201, 409]);
+    expect(respuestas.find((r) => r.status === 409)!.body.codigo).toBe('EVACUACION_ABIERTA');
+    const id = respuestas.find((r) => r.status === 201)!.body.evacuacion.id as string;
+
+    const conAbierta = (await request(nucleo.url).get(`${E}/eventos`).set('Authorization', como(supervisor)).expect(200)).body;
+    expect(conAbierta.find((e: { id: string }) => e.id === evento).evacuacion).toMatchObject({ id, estado: 'PROPUESTA' });
+    const previa = (await request(nucleo.url).get(`${E}/evacuaciones/${id}/reporte`).set('Authorization', como(supervisor)).expect(200)).body;
+    expect(previa.final).toBe(false);
+    const flujo = await primerMensajeSse(`${nucleo.url}${E}/evacuaciones/${id}/flujo`, supervisor.token);
+    expect(flujo).toContain('event: evacuacion');
+    expect(await primerMensajeSse(`${nucleo.url}${E}/evacuaciones/${randomUUID()}/flujo`, supervisor.token)).toContain('event: error');
+    await request(nucleo.url).post(`${E}/evacuaciones/${id}/descartar`).set('Authorization', como(supervisor)).expect(201);
   });
 
   it('precondición 1: sin plan completo no se activa; el plan valida salidas y zonas', async () => {
