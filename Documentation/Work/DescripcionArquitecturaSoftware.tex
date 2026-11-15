@@ -63,8 +63,8 @@
 {\LARGE \textbf{Descripción de la Arquitectura del Software (SAD)}}\\[0.4cm]
 {\Large Sistema Integral de Gestión de Eventos}\\[1.5cm]
 {\Large Equipo Hexacore}\\[2cm]
-{\large Versión: 2.0 -- ADR-16}\\[0.5cm]
-{\large Revisión técnica: 02/11/2026}\\[2cm]
+{\large Versión: 2.1 -- ADR-16 y Seguridad vigente}\\[0.5cm]
+{\large Revisión documental: 15/11/2026}\\[2cm]
 {\large Autores:}\\
 {\large Daniel Cristancho}\\
 {\large Samuel Emperador}\\
@@ -156,6 +156,13 @@ esquemas}. Las vistas vigentes pasan a \texttt{ArquitecturaVigente.tex}; las ant
 \texttt{Historico/}. Los ADR-01, 06, 12, 14 y 15 se marcan con su vigencia actual. La migración se
 integró en \texttt{develop} (PR \#44); el corte del entorno habitual sigue pendiente.
 & Equipo Hexacore (vía asistente) \\
+\hline
+15/11/2026 & Versión 2.1: bloque de Seguridad vigente con trazabilidad a código y
+evidencias del cierre 167/167 operaciones protegidas, alcance real y RNF-05/06
+parciales. Preparación de sustentación: rúbrica, responsables confirmados,
+comparación de contenedores y límites de carga/disponibilidad. Actualización
+documental, sin nuevas pruebas funcionales ni operación de infraestructura.
+& Sebastián Sánchez (asistencia Codex) \\
 \hline
 \end{longtable}
 \end{center}
@@ -1144,10 +1151,12 @@ empaquetado y no una reescritura del dominio.
 % ==================== Tácticas arquitectónicas ====================
 % Desempeño, disponibilidad y monitoreo medidos sobre ADR-16.
 \input{AtributosVigentes}
+\input{SeguridadVigente}
 
 \section{Tácticas y mediciones históricas por atributo de calidad}
 \textbf{Historia, no evidencia de ADR-16.} Las mediciones actuales de desempeño, disponibilidad
-y monitoreo están en la sección \ref{sec:atributos-vigentes}. Los resultados que siguen pertenecen
+y monitoreo están en la sección \ref{sec:atributos-vigentes}; Seguridad vigente,
+en la sección \ref{sec:seguridad-vigente}. Los resultados que siguen pertenecen
 a versiones anteriores. No se han repetido para certificar rendimiento/disponibilidad de la arquitectura
 actual. Sus guiones pueden alterar datos o pausar contenedores; usar las pruebas aisladas
 y consultar ESTADO-MIGRACION, sin ejecutarlos sobre el entorno habitual.
@@ -1157,8 +1166,11 @@ y consultar ESTADO-MIGRACION, sin ejecutarlos sobre el entorno habitual.
 Las decisiones de la sección \ref{sec:adr} dicen \textit{qué} se eligió; esta sección dice
 \textbf{cómo se realiza} cada atributo priorizado en el código, con el nombre de la táctica, el
 mecanismo concreto que la implementa y la medición que la respalda. Cubre los cinco atributos
-que la entrega exige demostrar en vivo: \textbf{desempeño}, \textbf{disponibilidad},
+priorizados por aquella entrega: \textbf{desempeño}, \textbf{disponibilidad},
 \textbf{seguridad}, \textbf{consistencia} y \textbf{desplegabilidad}.
+No es el temario completo del curso. La rúbrica actual exige todos los atributos
+vistos; su cobertura, responsables confirmados y pendientes se contrastan en
+\href{https://github.com/Emperador24/HEXACORE/blob/feature/sebastian/Documentation/Work/CIERRE-RUBRICA.md}{CIERRE-RUBRICA.md}.
 
 La columna \textbf{Evidencia} no es una promesa de diseño: son cifras obtenidas ejecutando los
 guiones de \texttt{pruebas/} contra el sistema desplegado, a través del API Gateway, que es por
@@ -1303,6 +1315,10 @@ caída de dos de sus tres dependencias y se recupera solo de la muerte del proce
 \end{center}
 
 \subsection{Seguridad}
+\textbf{Registro histórico de ADR-12.} Las 11 rutas, cifras y afirmaciones de esta
+subsección no describen el inventario actual ni aprueban RNF-05/06.
+Para diseño, correcciones, 167/167 operaciones y límites vigentes, véase
+la sección \ref{sec:seguridad-vigente}.
 
 Escenario de referencia: toda petición a un microservicio llega autenticada y autorizada por rol
 desde el API Gateway (RNF-06), y el sistema nunca guarda datos completos de tarjeta (RNF-05).

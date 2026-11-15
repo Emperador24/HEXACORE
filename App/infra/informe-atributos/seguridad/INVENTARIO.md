@@ -1,5 +1,33 @@
 # Inventario RNF-06 — 2026-11-12
 
+## Actualización documental — 15/11/2026
+
+El inventario vigente publicado en [COBERTURA-RECURSOS.md](COBERTURA-RECURSOS.md)
+y [RESULTADO.md](RESULTADO.md) es **186 declaradas / 181 expuestas / 167
+protegidas**; las **167/167** tienen la evidencia y límites allí descritos.
+RNF-05/06 siguen parciales. No se ejecuta nuevamente el inventariador ni una
+matriz por esta actualización documental.
+
+Respecto de la tabla histórica de abajo, CU-028 integrado añadió estas ocho
+operaciones de Núcleo, protegidas y enrutadas por gateway:
+
+| Método | Ruta | Autoridad |
+|---|---|---|
+| GET | `/api/v1/admin/roles` | Administrador vigente |
+| POST | `/api/v1/admin/roles` | Administrador vigente |
+| GET | `/api/v1/admin/roles/:id` | Administrador vigente |
+| PUT | `/api/v1/admin/roles/:id` | Administrador vigente |
+| DELETE | `/api/v1/admin/roles/:id` | Administrador vigente |
+| POST | `/api/v1/admin/roles/:id/usuarios` | Administrador vigente |
+| DELETE | `/api/v1/admin/roles/:id/usuarios/:usuarioId` | Administrador vigente |
+| GET | `/api/v1/cuentas/permisos` | Sesión; identidad propia |
+
+Fuente: `App/backend/modulos/identidad/roles-permisos/roles-permisos.controller.ts`
+y las ocho filas del inventario de cobertura vigente. La actualización no cambia
+las excepciones públicas/técnicas históricas ni convierte sus controles en prueba
+de autorización por recurso.
+
+## Tabla histórica — 12/11 y actualización 13/11
 
 **Actualización 13/11, autorización/DAST:** se conserva esta tabla histórica.
 El denominador continúa en 178 controladores/159 protegidas/173 expuestas.

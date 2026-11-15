@@ -7,20 +7,23 @@
 \section{Atributos de calidad sobre la arquitectura vigente}
 \label{sec:atributos-vigentes}
 
-Esta sección cubre los tres atributos que se demuestran en vivo sobre la arquitectura de ADR-16:
+Esta sección conserva la evidencia del 12/11/2026 de tres atributos sobre ADR-16:
 \textbf{desempeño}, \textbf{disponibilidad} y \textbf{monitoreo y logs}. Para cada uno da el
 escenario de calidad, las tácticas con el mecanismo que las implementa, cómo se prueba y lo que
-se midió. A diferencia de la sección \ref{sec:tacticas}, que conserva las mediciones de versiones
+se midió. Seguridad vigente se documenta en la sección \ref{sec:seguridad-vigente}.
+Estos tres atributos no constituyen el temario completo del curso. A diferencia de la sección \ref{sec:tacticas}, que conserva las mediciones de versiones
 anteriores, estas cifras son de la arquitectura actual: Núcleo, Boletería y Trabajador detrás del
 API Gateway, con un PostgreSQL de un esquema por módulo.
 
 \medskip
 \noindent\textbf{Dónde y cómo se midió.} El 12/11/2026, en un portátil de 11 núcleos con Docker
 Desktop, en el entorno local habitual. El generador de carga, el gateway, los programas y
-PostgreSQL comparten esa CPU, así que las cifras son un \textbf{piso}: en máquinas separadas cada
-componente tendría su propia CPU. Entre corridas seguidas el p95 varía alrededor de $\pm$30\%; por
-eso se comparan tendencias (dónde se satura y qué componente), no milisegundos. Todo se reproduce
-con tres órdenes:
+PostgreSQL comparten esa CPU; no se puede inferir la capacidad de equipos separados
+sin medirlos. Entre corridas seguidas el p95 varía alrededor de $\pm$30\%; por
+eso se comparan tendencias (dónde se satura y qué componente), no milisegundos.
+Las órdenes siguientes son procedimientos históricos, \textbf{no se ejecutan
+en esta revisión documental}. Arrancan servicios, generan carga o provocan caídas;
+requieren un ensayo posterior preparado por su responsable:
 
 \begin{center}
 \begin{tabular}{|>{\raggedright\arraybackslash}p{6.2cm}|>{\raggedright\arraybackslash}p{7.4cm}|}
@@ -59,8 +62,9 @@ Entorno & Operación normal, con 1 réplica y después con 2 réplicas del Núcl
 \hline
 Respuesta & Se atiende cada petición sin errores. Al agregar réplicas, la capacidad crece.\\
 \hline
-Medida & p95 $\leq$ 500 ms y 0 fallos (RNF-07). Al duplicar instancias, rendimiento
-$\geq$ 1,7$\times$ (RNF-10).\\
+Medida & Ensayo local hasta 200 usuarios: p95 $\leq$ 500 ms y 0 fallos.
+RNF-07 exige 2\,000 sobre CU-001; RNF-10 exige $\geq$ 1,7$\times$ en Entradas.
+Son objetivos distintos del ensayo local del Núcleo.\\
 \hline
 \end{tabular}
 \end{center}
@@ -188,10 +192,10 @@ la medición (muestras cada 2 s, dentro del nivel) y la regla de interpretación
 
 \paragraph{Frente a los RNF.}
 \begin{itemize}
-\item \textbf{RNF-07: cumple hasta 200 usuarios, no verificado en 2\,000.} El umbral del RNF está
+\item \textbf{RNF-07: parcial, no verificado en 2\,000 ni en su consulta CU-001.} El umbral del RNF está
 definido para 2\,000 usuarios concurrentes. En un solo portátil, el generador de carga compite por
 la CPU con lo que mide, así que el resultado solo es válido hasta 200.
-\item \textbf{RNF-10: se cumple en CU-025 y no en CU-026.} El RNF pide rendimiento
+\item \textbf{RNF-10: parcial; el factor se alcanza en CU-025 y no en CU-026.} El RNF pide rendimiento
 $\geq$ 1,7$\times$ al duplicar instancias. CU-025 llegó a 1,82$\times$ y CU-026 a 1,57$\times$.
 Las dos réplicas comparten la CPU del portátil con PostgreSQL y el gateway, así que no es una
 duplicación limpia. El RNF habla del servicio de Entradas (Boletería), pero el escalado se midió
@@ -245,25 +249,30 @@ Varias réplicas atienden a la vez, todas con el mismo estado compartido (Postgr
 guarda sesión en memoria. &
 \texttt{docker-compose.\allowbreak escalado.yml}\\
 \hline
-Reintento &
-Si una réplica cae sin responder, nginx reintenta la petición en otra
-(\texttt{proxy\_next\_upstream error timeout}, por omisión, solo para métodos idempotentes). El
-cliente recibe 200. &
+Reintento de lecturas &
+Un error/timeout antes de responder puede llevar la lectura a otra réplica,
+según la política efectiva de Nginx. No garantiza 200 ni justifica reintentar
+escrituras de resultado incierto; no habilitar reenvíos no idempotentes. &
 \texttt{App/gateway/\allowbreak nginx.conf}\\
 \hline
-Detección (\textit{ping/echo}) &
-Sonda de salud en cada contenedor (\texttt{/api/v1/salud} cada 10 s). El gateway espera a que el
-Núcleo y Boletería estén sanos antes de arrancar. &
+Sonda de salud y detección pasiva &
+Sonda Docker (\texttt{/api/v1/salud} cada 10 s) y espera inicial de Compose.
+Durante tráfico, Nginx detecta errores/timeouts; la sonda no constituye una
+comprobación activa de salud de destinos remotos por el gateway. &
 \texttt{docker-compose.yml}\\
 \hline
 Reintroducción automática &
-\texttt{restart: unless-stopped}: Docker relanza el contenedor muerto. El DNS de Docker vuelve a
-publicar la réplica y el gateway la retoma en $\leq$ 5 s. &
+\texttt{restart: unless-stopped}: Docker puede relanzar el proceso muerto;
+una parada manual o un host apagado son escenarios distintos. El DNS vuelve a
+publicar la réplica. Los 5 s de caché DNS no son una cota de recuperación;
+arranque, errores y timeouts también intervienen. &
 \texttt{docker-compose.yml}\\
 \hline
 Concurrencia segura entre réplicas &
-Los trabajos de fondo del Núcleo toman sus filas con \texttt{FOR UPDATE SKIP LOCKED}. Dos réplicas
-no publican dos veces el mismo aviso: bandejas de evacuación, reservas, eventos y vencimientos. &
+Existen bloqueos SQL/Redis, outbox y consumidores con distintas garantías.
+\texttt{SKIP LOCKED} evita procesamiento simultáneo donde se usa; no elimina
+reentrega tras publicar/confirmar. Logística conserva deduplicación en memoria;
+no se certifica ejecución única global ni sondeo de Alimentos replicado. &
 Módulos del Núcleo\\
 \hline
 \end{longtable}
@@ -307,9 +316,9 @@ Vuelve a recibir tráfico & Sí, reparto parejo & Sí, reparto parejo\\
 
 \paragraph{Interpretación.}
 \begin{itemize}
-\item \textbf{Ningún cliente ve la caída.} La petición que la réplica no alcanzó a responder se
-reintenta en otra, y las demás ya van a las réplicas vivas.
-\item \textbf{La recuperación es automática y cabe en RNF-04}: entre 8 y 13 s frente a los 30 s
+\item \textbf{Las lecturas de aquella corrida no registraron errores.} La petición que la réplica
+no alcanzó a responder se reintentó en otra; no se extrapola a escrituras o a todo cliente.
+\item \textbf{La recuperación observada cabe en el umbral de RNF-04}: entre 8 y 13 s frente a los 30 s
 que concede. Casi todo ese tiempo es el arranque del proceso y la primera sonda de salud.
 \item \textbf{El Núcleo también se puede replicar.} Antes de tumbarlo en vivo se comprobó que la
 demostración completa de los casos de uso (8 de 8 con Playwright) pasa contra dos réplicas. Los
@@ -325,6 +334,13 @@ muere no se reintenta, para no duplicar una escritura: el cliente recibe el erro
 sondeo de inventario de Alimentos (CU-011) no se certificó con réplicas. PostgreSQL, Redis y
 RabbitMQ siguen siendo una sola instancia: su caída se trata con degradación elegante
 (sección \ref{sec:tacticas}), no con redundancia.
+
+\paragraph{Ensayo entre computadores pendiente.} El plan
+\href{https://github.com/Emperador24/HEXACORE/blob/feature/sebastian/Documentation/Work/PLAN-DEMO-ZEROTIER.md}{PLAN-DEMO-ZEROTIER}
+propone A y B con aplicaciones y C como cliente. Solo B será apagable; A conserva
+gateway y datos y debe permanecer encendido. No se ejecutó ese ensayo ni se
+instaló VPN. La evidencia local anterior no acredita tolerancia a cualquier caída
+de computador ni disponibilidad mensual.
 
 % ------------------------------------------------------------------
 \subsection{Monitoreo y logs}
@@ -353,7 +369,7 @@ Medida & CPU y memoria por instancia, réplicas vivas y logs filtrables en un so
 \end{tabular}
 \end{center}
 
-\paragraph{Diseño.} \texttt{docker-compose.monitoreo.yml} agrega cuatro piezas al sistema y se
+\paragraph{Diseño.} \texttt{docker-compose.monitoreo.yml} agrega cinco contenedores al sistema y se
 sirve por el gateway que ya existía. No modifica los programas: ninguno tuvo que instrumentarse.
 
 \begin{center}
