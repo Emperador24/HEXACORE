@@ -1,5 +1,16 @@
 # Alternar Redash y HEXACORE en este Mac
 
+**16/11/2026 — preparación ejecutable A/B/C:** solo consultas de estado del motor
+y validación del cliente Compose; no arranque/parada/prueba de caída local, ni
+operación sobre Redash u otros proyectos. El Mac tiene 8GiB físicos y el motor
+2912MiB: no cumple las guardas A≥6144MiB/B≥3072MiB y no se asigna como A.
+En la consulta de cierre el socket Docker está ausente (info sale1); no se intenta
+iniciar/restaurar el motor. Aparece ZeroTier1.16.2 instalado fuera de estos guiones,
+pero listnetworks sale2 sin inventario. No se une/configura una red ni se atribuye
+ese cambio del entorno a esta entrega. Reconsultar capacidad/estado antes de operar.
+Los comandos nuevos usan ámbito propio y no invocan los procedimientos históricos
+de alternancia de esta guía. [Plan y pendientes reales](PLAN-DEMO-ZEROTIER.md).
+
 
 **Última ventana — 15/11 Bogotá, cierre de las 16 operaciones:** registro de
 **105 contenedores originales**, Docker activo, once CU-015 y siete Redash activos;
@@ -25,8 +36,10 @@ limpiezas globales ni intervención de otros proyectos. Se requiere revisión de
 capacidad/concurrencia por el responsable, no cambios globales desde esta entrega.
 [Resultado y límites](../../App/infra/informe-atributos/seguridad/AUTORIZACION-CIERRE.md).
 
-La preparación de [dos servidores y un cliente](PLAN-DEMO-ZEROTIER.md) fue solo
-documental. No se instaló/configuró VPN ni se ejecutaron caídas entre computadores.
+La preparación anterior de [dos servidores y un cliente](PLAN-DEMO-ZEROTIER.md)
+fue documental. La entrega16/11 añade herramientas/configuración ejecutables y
+pruebas locales de herramientas/CI; sigue sin configurar VPN ni acreditar caídas
+entre computadores. Los procedimientos de las ventanas inferiores son históricos.
 
 
 **Ventana anterior — 15/11 Bogotá, Evacuación/Monitoreo:** Docker **activo** al
