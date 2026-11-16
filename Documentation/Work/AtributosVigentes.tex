@@ -7,11 +7,10 @@
 \section{Atributos de calidad sobre la arquitectura vigente}
 \label{sec:atributos-vigentes}
 
-Esta sección conserva la evidencia del 12/11/2026 de tres atributos sobre ADR-16:
+Esta sección cubre tres atributos que se demuestran en vivo sobre la arquitectura de ADR-16:
 \textbf{desempeño}, \textbf{disponibilidad} y \textbf{monitoreo y logs}. Para cada uno da el
 escenario de calidad, las tácticas con el mecanismo que las implementa, cómo se prueba y lo que
-se midió. Seguridad vigente se documenta en la sección \ref{sec:seguridad-vigente}.
-Estos tres atributos no constituyen el temario completo del curso. A diferencia de la sección \ref{sec:tacticas}, que conserva las mediciones de versiones
+se midió. Seguridad se documenta en la sección \ref{sec:seguridad-vigente}. A diferencia de la sección \ref{sec:tacticas}, que conserva las mediciones de versiones
 anteriores, estas cifras son de la arquitectura actual: Núcleo, Boletería y Trabajador detrás del
 API Gateway, con un PostgreSQL de un esquema por módulo.
 
@@ -21,9 +20,8 @@ Desktop, en el entorno local habitual. El generador de carga, el gateway, los pr
 PostgreSQL comparten esa CPU; no se puede inferir la capacidad de equipos separados
 sin medirlos. Entre corridas seguidas el p95 varía alrededor de $\pm$30\%; por
 eso se comparan tendencias (dónde se satura y qué componente), no milisegundos.
-Las órdenes siguientes son procedimientos históricos, \textbf{no se ejecutan
-en esta revisión documental}. Arrancan servicios, generan carga o provocan caídas;
-requieren un ensayo posterior preparado por su responsable:
+Todo se reproduce con tres órdenes. Arrancan servicios, generan carga o provocan
+caídas, así que se corren en un entorno de prueba, nunca sobre datos reales:
 
 \begin{center}
 \begin{tabular}{|>{\raggedright\arraybackslash}p{6.2cm}|>{\raggedright\arraybackslash}p{7.4cm}|}
@@ -251,8 +249,8 @@ guarda sesión en memoria. &
 \hline
 Reintento de lecturas &
 Un error/timeout antes de responder puede llevar la lectura a otra réplica,
-según la política efectiva de Nginx. No garantiza 200 ni justifica reintentar
-escrituras de resultado incierto; no habilitar reenvíos no idempotentes. &
+según la política efectiva de Nginx. No garantiza 200. Las escrituras no se
+reenvían: su resultado en la réplica caída sería incierto. &
 \texttt{App/gateway/\allowbreak nginx.conf}\\
 \hline
 Sonda de salud y detección pasiva &
@@ -335,12 +333,11 @@ sondeo de inventario de Alimentos (CU-011) no se certificó con réplicas. Postg
 RabbitMQ siguen siendo una sola instancia: su caída se trata con degradación elegante
 (sección \ref{sec:tacticas}), no con redundancia.
 
-\paragraph{Ensayo entre computadores pendiente.} El plan
-\href{https://github.com/Emperador24/HEXACORE/blob/feature/sebastian/Documentation/Work/PLAN-DEMO-ZEROTIER.md}{PLAN-DEMO-ZEROTIER}
-propone A y B con aplicaciones y C como cliente. Solo B será apagable; A conserva
-gateway y datos y debe permanecer encendido. No se ejecutó ese ensayo ni se
-instaló VPN. La evidencia local anterior no acredita tolerancia a cualquier caída
-de computador ni disponibilidad mensual.
+\paragraph{Entre computadores.} Estas mediciones son de un solo computador: no
+acreditan tolerancia a que se apague un equipo ni la disponibilidad mensual de
+RNF-03. El montaje con varios computadores unidos por ZeroTier está en
+\href{https://github.com/Emperador24/HEXACORE/blob/develop/Documentation/Work/PLAN-DEMO-ZEROTIER.md}{PLAN-DEMO-ZEROTIER}
+y aún no se ha ensayado.
 
 % ------------------------------------------------------------------
 \subsection{Monitoreo y logs}
