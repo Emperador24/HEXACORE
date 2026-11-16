@@ -99,18 +99,18 @@ Plataforma común para entradas, alimentos, personal y operación de eventos.
 
 \begin{frame}{Responsables de atributos}
 \small
-\begin{tabular}{L{3.0cm}L{6.8cm}L{3.3cm}}
-\toprule Integrante & Confirmado en el repositorio & Por confirmar\\\midrule
-Sebastián Sánchez & Seguridad (RNF-05/06) & Sin ampliación a Safety física\\[0.5em]
-Samuel Emperador & Desempeño, Disponibilidad, Monitoreo y logs & Asignación formal de Escalabilidad\\[0.5em]
-Daniel Cristancho & Consolidación de Usabilidad & Otros atributos y prueba con usuarios\\[0.5em]
-Diego Coronado & Asignación de atributos desconocida & Reparto y evidencia de sus atributos\\
+\begin{tabular}{L{2.8cm}L{7.4cm}L{2.9cm}}
+\toprule Integrante & Bloque de validación acordado & Alcance\\\midrule
+Sebastián Sánchez & Seguridad: RNF-05/06 & Aporta también a Usabilidad\\[0.4em]
+Samuel Emperador & Desempeño: RNF-07/08/10. Disponibilidad: RNF-03/04/09/17. Monitoreo: RNF-19 & Mantiene límites de cada escenario\\[0.4em]
+Daniel Cristancho & Consolidación de Usabilidad: RNF-12/14 & Con aportes de todos\\[0.4em]
+Diego Coronado & Desplegabilidad: RNF-15/18 & Incluye Comprobabilidad\\
 \bottomrule
 \end{tabular}
 \medskip
-\textbf{El equipo debe confirmar los demás atributos y el temario completo.}
-El reparto de CU no demuestra el reparto de atributos.
-\franja{02:00--04:00 · Respaldo: AtributosVigentes, guion de Samuel y PLAN-CIERRE, «Alcance y acuerdos».}
+\textbf{Reparto acordado: guía de validación del 5/11.}
+Es un plan, no evidencia de resultados. Temario y RNF fuera del reparto por contrastar.
+\franja{02:00--04:00 · Monitoreo documentado posteriormente en el repositorio. Se conservan los nombres y umbrales de cada RNF del SAD.}
 \end{frame}
 
 \begin{frame}{Contenedores: antes y ahora}
@@ -215,7 +215,7 @@ Balanceo, procesos concurrentes y pools limitados. Un portátil comparte CPU ent
 \item 151 anteriores conservan sus combinaciones; no son todos los actores/estados/consumidores.
 \end{itemize}
 \textbf{Pendiente:} DAST, CSP y canales/límites de datos. Security no acredita Safety física.
-\franja{24:00--26:00 · Sebastián · 560 observaciones no son 560 CU. Evidencias y fallos previos conservados.}
+\franja{24:00--26:00 · Sebastián · Backend directo se conserva como comprobación adicional al gateway; 560 observaciones no son 560 CU.}
 \end{frame}
 
 \begin{frame}{Consistencia y tiempo real}
@@ -226,7 +226,7 @@ Balanceo, procesos concurrentes y pools limitados. Un portátil comparte CPU ent
 \item Revocación SSE a 2/3 s mide seguridad de sesión, no latencia ingreso--tablero.
 \item QR sin puntoAcceso registra QR/Ventas, pero no se proyecta a Monitoreo: hallazgo funcional pendiente.
 \end{itemize}
-\franja{26:00--28:00 · Responsables de atributos por confirmar · Convergencia eventual no es atomicidad ni tiempo real acreditado.}
+\franja{26:00--28:00 · Samuel: RNF-09. Consistencia: por confirmar. Convergencia eventual no es tiempo real acreditado.}
 \end{frame}
 
 \begin{frame}{Trazabilidad y Safety: garantías distintas}
@@ -239,18 +239,19 @@ Balanceo, procesos concurrentes y pools limitados. Un portátil comparte CPU ent
 \end{itemize}
 \codigo{App/backend/modulos/operacion/evacuacion}{Evacuación} ·
 \codigo{App/backend/modulos/finanzas/pagos}{Pagos}
-\franja{28:00--30:00 · Responsables por confirmar · Auditoría SQL no equivale a no repudio criptográfico.}
+\franja{28:00--30:00 · Samuel: RNF-17. Trazabilidad: por confirmar. Auditoría SQL no equivale a no repudio criptográfico.}
 \end{frame}
 
 \begin{frame}{Usabilidad y portabilidad}
 \begin{itemize}
 \item ASR-08/RNF-12: tarea de compra en $\leq$5 pasos, éxito $\geq$80\% con cinco usuarios nuevos.
-\item Interfaces por rol implementadas; falta evidencia humana consolidada por Daniel.
+\item Daniel consolida RNF-12/14 con aportes de todos; falta evidencia humana.
 \item ASR-10/RNF-14: 100\% de CU Cliente en web y móvil con la misma API.
 \item Angular y Flutter consumen el backend; falta matriz global de equivalencia.
+\item Sebastián aporta pantallas, navegación, rotulado, pasos y capturas de Alimentos y cuentas/roles/recintos; reconoce implementación de Samuel.
 \item Playwright y CI no sustituyen usuarios nuevos ni prueban paridad total de clientes.
 \end{itemize}
-\franja{30:00--32:00 · Daniel: Usabilidad. Portabilidad: responsable por confirmar. Móvil/TLS del ensayo remoto pendientes.}
+\franja{30:00--32:00 · Daniel: RNF-12/14. Móvil/TLS del ensayo remoto pendientes; aportar capturas no acredita resultados con usuarios.}
 \end{frame}
 
 \begin{frame}{Evolución y pruebas: código presente, límites pendientes}
@@ -263,7 +264,7 @@ Integrabilidad / 11 & Interfaz Pagos y adaptadores HTTP/Stripe & RNF-16: falta m
 Comprobabilidad / 14 & Unitarias/dobles, HTTP y contratos separados & RNF-18: 1173 tests no equivalen a cobertura $\geq$70\%\\
 \bottomrule
 \end{tabular}
-\franja{32:00--34:00 · Responsables por confirmar · Sin implementar sustituciones, F12 ni nuevas funciones en esta entrega.}
+\franja{32:00--34:00 · Diego: RNF-15/18. Mantenibilidad e Integrabilidad: por confirmar. Sin nuevas funciones ni sustituciones.}
 \end{frame}
 
 \begin{frame}{Prototipo: guion futuro de diez minutos (1/2)}
@@ -313,7 +314,7 @@ Comprobabilidad & Prueba aislada existente y CI de su revisión & 30\\
 
 \begin{frame}{Pendientes que el equipo debe resolver}
 \begin{itemize}
-\item Temario completo y reparto de atributos faltantes, incluido Diego.
+\item Temario completo y responsables de RNF-01/02/11/13/16 por confirmar.
 \item Ensayo de 54 min y demostraciones vivas pendientes por responsable.
 \item Seguridad RNF-05/06 parcial; Safety, retención, cobertura y otros umbrales sin acreditar.
 \item Prueba A/B/C pendiente; A es punto único de fallo. Faltan equipos, IP asignadas, puertos, HTTPS y móvil.

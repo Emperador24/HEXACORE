@@ -12,6 +12,18 @@ aprobada 8/8, separada del fallo previo conservado. Revisión documental sin
 recorridos, matrices, operación Docker/Redash ni implementación funcional.
 El ensayo [dos servidores y cliente](PLAN-DEMO-ZEROTIER.md) sigue pendiente.
 
+Aclaración del usuario en esta entrega, según guía de validación del **5/11**:
+Samuel, Desempeño RNF-07/08/10 y Disponibilidad RNF-03/04/09/17, más Monitoreo
+posterior RNF-19; Diego, Desplegabilidad RNF-15/18; Sebastián, Seguridad
+RNF-05/06; Daniel consolida Usabilidad RNF-12/14 con aportes de todos. Se actualizan
+tabla/fichas/diapositiva, conservando la clasificación de cada RNF del SAD. La
+guía es un plan, no resultados: no se ejecutan instrucciones antiguas destructivas
+o sobre otros proyectos. Backend directo sigue siendo comprobación de Seguridad
+adicional al gateway. Sebastián aporta pantallas, navegación, rotulado, pasos y
+capturas de Alimentos y cuentas/roles/recintos, reconociendo la implementación
+de Samuel donde corresponda. Temario completo y responsables de RNF-01/02/11/13/16
+siguen por contrastar; ningún resultado se convierte en aprobado por el reparto.
+
 ## Cierre de autorización del inventario — 15/11/2026 Bogotá, corte vigente
 
 **16/16 nuevas; global 167/167, cero operaciones pendientes del inventario.

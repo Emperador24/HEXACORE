@@ -7,8 +7,10 @@ Docker/Redash, no instala ZeroTier, no provoca caídas y no desarrolla F12,
 sustituciones ni casos de otros integrantes.
 
 **Preparación parcial.** Hay SAD y presentación actualizados, trazabilidad de
-Seguridad y guion de 54 minutos. Faltan el temario completo, responsables de varios
-atributos y evidencias/demostraciones que debe confirmar el equipo. No se puede
+Seguridad y guion de 54 minutos. El usuario confirmó el reparto de validación
+del 5/11, incorporado abajo sobre `d819d4d` limpio. Faltan el temario completo,
+la asignación de los RNF fuera de ese reparto y evidencias/demostraciones que debe
+confirmar el equipo. No se puede
 afirmar que se cubrieron todos los atributos vistos solo porque estén los del SAD.
 
 ## Rúbrica y material de entrega
@@ -18,7 +20,7 @@ afirmar que se cubrieron todos los atributos vistos solo porque estén los del S
 | Máximo una hora | Guion **54 min**, con 6 min de preguntas; reserva adicional de 6 min hasta el máximo | Propuesto; falta ensayo cronometrado del equipo |
 | Cambios de arquitectura, 10 min | Presentación, 04:00–14:00: contenedores antiguos ADR-14/15 frente a ADR-16 actual, decisiones y concesiones | Preparado; el diagrama antiguo es una propuesta, no un despliegue demostrado |
 | Prototipo, 10 min | 34:00–44:00; tabla de microdemostraciones inferior | Propuesto; pruebas en vivo pendientes, varias dependen de confirmación |
-| Una diapositiva de atributos por integrante | Diapositiva «Responsables de atributos» con nombres respaldados y pendientes explícitos | Parcial: no se reemplaza el reparto de atributos con el reparto de CU |
+| Una diapositiva de atributos por integrante | Diapositiva «Responsables de atributos» con el reparto de validación confirmado por el usuario | Preparada; el contraste con el temario completo y RNF fuera del reparto sigue pendiente |
 | Diseño e implementación de todos los atributos del curso, diapositivas y demostración | Quince fichas inferiores, correspondientes a RNF-01–19, más grupos de diapositivas y propuestas de demo | **No acreditado globalmente:** falta temario completo y cerrar faltantes de evidencia/autoría |
 | SAD, enlaces a código, diapositivas y anexos en Brightspace | [SAD PDF](../Submission/DescripcionArquitecturaSoftware.pdf), [presentación PDF](../Submission/Presentacion.pdf), fuentes y anexos enlazados abajo | Compilación/revisión local documentada al final; carga a Brightspace pendiente del equipo |
 | SAD 10 %, diseño 30 %, implementación 30 %, conocimiento individual escrito 30 % | Cada ficha conecta escenario → táctica → código → evidencia → límite; preguntas individuales al final | La documentación no acredita la evaluación escrita individual |
@@ -51,12 +53,34 @@ el temario y cotejarlo uno a uno; no inventar atributos ni autores por exclusió
 - **Pendiente:** acción futura, sin resultado medido. Un atributo puede tener código implementado,
   un ensayo comprobado y seguir parcial frente al RNF completo.
 
-| Integrante | Asignación de atributo confirmada | Respaldo | Por confirmar |
+**Fuente del reparto:** confirmación del usuario en esta entrega, basada en la
+guía de validación del **5 de noviembre de 2026**. Se incorpora el reparto
+transcrito; no se atribuye una lectura de una copia íntegra no identificada en el
+repositorio. La guía es un **plan de validación, no evidencia de resultados**.
+El código y los informes actuales determinan los estados de las fichas. No se
+ejecutan sus instrucciones antiguas de borrado, semillas, paradas o intervención
+de otros proyectos.
+
+| Integrante | Asignación de validación confirmada | Respaldo | Validación pendiente |
 |---|---|---|---|
-| Sebastián Sánchez | Seguridad, RNF-05/06 | RESULTADO.md y PLAN-CIERRE-SEBASTIAN.md, «Alcance y acuerdos» | Ninguna ampliación a Safety física o pendientes ajenos |
-| Samuel Emperador | Desempeño, Disponibilidad, Monitoreo y logs | Encabezados de AtributosVigentes.tex y DEMOSTRACION-ATRIBUTOS.md | Dueño formal de Escalabilidad; su ensayo del Núcleo se usa como evidencia relacionada |
-| Daniel Cristancho | Consolidación de Usabilidad | PLAN-CIERRE-SEBASTIAN.md, «Alcance y acuerdos» | Qué otros atributos acordó y evidencia con usuarios |
-| Diego Coronado | **Desconocida: por confirmar** | SRS confirma sus CU, no una asignación de atributos | Atributos, escenarios y demostraciones que presentará |
+| Sebastián Sánchez | **Seguridad, RNF-05/06**; aporte a Usabilidad | Confirmación del usuario; RESULTADO.md y PLAN-CIERRE-SEBASTIAN.md | Preparar microdemo existente y aporte de pantallas, navegación, rotulado, pasos y capturas; RNF-05/06 siguen parciales |
+| Samuel Emperador | **Desempeño, RNF-07/08/10; Disponibilidad, RNF-03/04/09/17; Monitoreo, RNF-19** | Reparto confirmado de la guía 5/11; Monitoreo documentado después en AtributosVigentes.tex y DEMOSTRACION-ATRIBUTOS.md | Contrastar cada umbral con informes actuales; 2000 usuarios, ingreso→tablero y recepción de alertas no se dan por comprobados por el reparto |
+| Daniel Cristancho | **Consolidación de Usabilidad, RNF-12/14**, con aportes de todos | Confirmación del usuario y PLAN-CIERRE-SEBASTIAN.md, «Alcance y acuerdos» | Evidencia humana RNF-12 y matriz web/móvil RNF-14 |
+| Diego Coronado | **Desplegabilidad, RNF-15/18** | Reparto confirmado por el usuario a partir de la guía 5/11 | Evidencia específica de despliegue/reversión y cobertura/aislamiento, sin equiparar configuración o conteo de tests a cumplimiento |
+
+Los **bloques de trabajo de la guía** agrupan RNF de varios atributos del SAD:
+RNF-10 es Escalabilidad; RNF-09, Tiempo real; RNF-17, Safety; RNF-18,
+Comprobabilidad; RNF-14, Portabilidad. Sus nombres, escenarios y umbrales
+permanecen separados en las fichas. Agruparlos para sustentar no los redefine ni
+convierte la guía en medición. RNF-01/02 (Consistencia), RNF-11 (Trazabilidad),
+RNF-13 (Mantenibilidad) y RNF-16 (Integrabilidad) no tienen responsable confirmado
+por este reparto; no se deduce uno.
+
+**Aporte de Sebastián a Usabilidad:** pantallas, navegación, rotulado, flujos
+con pasos y capturas de **Alimentos y cuentas/roles/recintos**, para la
+consolidación de Daniel. Reconocer la implementación de Samuel donde corresponda,
+en particular en Identidad/CU-027/028 y Recintos/CU-029; aportar documentación de
+uso no transfiere su autoría ni acredita el ensayo con usuarios o la paridad global.
 
 Implementar un CU no confirma la propiedad de su atributo. Se conserva el reparto
 formal del SRS y el acuerdo de implementación de Identidad/Recintos por Samuel;
@@ -83,7 +107,7 @@ RNF-19 pero no un ASR numerado en ese árbol; no se crea un ASR ficticio.
 
 | Campo | Revisión |
 |---|---|
-| Responsable confirmado | **Samuel Emperador** |
+| Responsable confirmado | **Samuel Emperador**, bloque Disponibilidad de la guía: RNF-03/04 y RNF-09/17, estos últimos en fichas separadas |
 | Escenario / ASR / RNF | Caída de instancia durante ingreso. ASR-02, RNF-03/04: ≥99,9 % mensual y recuperación ≤30 s |
 | Diseño | Núcleo/Boletería replicables, gateway, sesiones compartidas, detección pasiva y reinicio Docker; dependencias centrales sin redundancia |
 | Implementación | **Implementada:** [Compose de escalado](../../App/infra/docker-compose.escalado.yml), [gateway](../../App/gateway/nginx.conf) y [guion local](../../App/infra/demo-disponibilidad.sh) |
@@ -119,25 +143,25 @@ RNF-19 pero no un ASR numerado en ese árbol; no se crea un ASR ficticio.
 
 | Campo | Revisión |
 |---|---|
-| Responsable confirmado | **Desconocido**, por confirmar |
+| Responsable confirmado | **Samuel Emperador**, RNF-09 dentro del bloque Disponibilidad acordado |
 | Escenario / ASR / RNF | Ingreso/salida o incidente reflejado en tablero ≤2 s. ASR-05, RNF-09 |
 | Diseño | Ingreso por evento AMQP, proyección de Operación y SSE consultando estado |
 | Implementación | **Implementada en parte:** [Monitoreo](../../App/backend/modulos/operacion/monitoreo), [flujos SSE](../../App/backend/modulos/operacion/comun/flujo-operacion.service.ts) y Parqueaderos |
 | Evidencia | Pruebas de panel/consumidor y SSE de Seguridad; el cierre de sesión medido a 2/3 s es una **métrica de revocación**, no latencia ingreso→tablero |
 | Resultado | **Parcial; umbral extremo a extremo desconocido.** Ciclo del panel de 3 s no permite inferir ≤2 s |
-| Pendiente | Medición con instantes correlacionados y responsable; ingreso QR sin puntoAcceso se registra en QR/Ventas pero va a DLQ en Monitoreo, hallazgo funcional ya documentado |
+| Pendiente | Samuel contrasta medición con instantes correlacionados; ingreso QR sin puntoAcceso se registra en QR/Ventas pero va a DLQ en Monitoreo, hallazgo funcional ya documentado, sin implementar su corrección aquí |
 
 ### Escalabilidad
 
 | Campo | Revisión |
 |---|---|
-| Responsable confirmado | **Desconocido**; Samuel aportó medición relacionada, no consta asignación formal separada |
+| Responsable confirmado | **Samuel Emperador**, RNF-10 dentro del bloque Desempeño acordado |
 | Escenario / ASR / RNF | Duplicar Entradas: throughput ≥1,7× sin degradar otros dominios. ASR-06, RNF-10 |
 | Diseño | Réplicas por programa y balanceo; PostgreSQL, Redis y gateway compartidos pueden limitar |
 | Implementación | **Implementada:** escalado de Núcleo/Boletería; los componentes internos de Boletería no escalan de forma independiente |
 | Evidencia | CARGA-nucleo-2-replicas.md: CU-025 **1,82×**, CU-026 **1,57×** frente a una réplica; CPU compartida |
 | Resultado | **Parcial.** El factor de CU-025 está comprobado; no es RNF-10 de Entradas ni aislamiento de latencia de los demás |
-| Pendiente | Confirmar responsable y evidencia de Boletería/efecto en otros dominios; no ampliar infraestructura ahora |
+| Pendiente | Samuel contrasta evidencia de Boletería/efecto en otros dominios; no ampliar infraestructura ahora |
 
 ### Trazabilidad
 
@@ -155,7 +179,7 @@ RNF-19 pero no un ASR numerado en ese árbol; no se crea un ASR ficticio.
 
 | Campo | Revisión |
 |---|---|
-| Responsable confirmado | **Daniel Cristancho consolida**; Sebastián aporta pantallas/navegación de Alimentos |
+| Responsable confirmado | **Daniel Cristancho consolida RNF-12/14**, con aportes de todos; Sebastián aporta pantallas, navegación, rotulado, pasos y capturas de Alimentos y cuentas/roles/recintos, reconociendo la implementación de Samuel donde corresponda |
 | Escenario / ASR / RNF | Usuario nuevo compra en ≤5 pasos; éxito ≥80 % con 5 usuarios. ASR-08, RNF-12 |
 | Diseño | Interfaces por rol, estados y avisos diferenciados; no confundir aviso de reembolso con dinero confirmado |
 | Implementación | **Implementadas interfaces:** [portal cliente](../../App/frontend/portal-web-cliente), [portal admin](../../App/frontend/portal-web-admin), [app](../../App/frontend/app-movil) |
@@ -179,25 +203,25 @@ RNF-19 pero no un ASR numerado en ese árbol; no se crea un ASR ficticio.
 
 | Campo | Revisión |
 |---|---|
-| Responsable confirmado | **Desconocido**, por confirmar |
+| Responsable confirmado | **Daniel Cristancho**, consolidación RNF-14 dentro del bloque Usabilidad acordado, con aportes de todos |
 | Escenario / ASR / RNF | 100 % de CU Cliente en web/móvil, misma API y sin reglas duplicadas. ASR-10, RNF-14 |
 | Diseño | Dos portales Angular y una app Flutter Cliente/Personal sobre gateway; configuración de API por entorno |
 | Implementación | **Implementados clientes y contratos**; no se infiere paridad de todo CU por existir sus pantallas |
 | Evidencia | Plan de cierre registra integración en Alimentos; fuentes de web/app y CI independientes. No consta matriz global 100 % web/móvil |
 | Resultado | **Parcial.** Backend y compilación móvil no acreditan equivalencia completa ni uso de móvil físico por VPN |
-| Pendiente | Responsable y matriz por CU; confirmar dispositivo/emulador, URL HTTPS y confianza de certificados |
+| Pendiente | Daniel consolida matriz por CU con aportes del equipo; confirmar dispositivo/emulador, URL HTTPS y confianza de certificados |
 
 ### Desplegabilidad
 
 | Campo | Revisión |
 |---|---|
-| Responsable confirmado | **Desconocido**, por confirmar |
+| Responsable confirmado | **Diego Coronado**, RNF-15/18 en el bloque Desplegabilidad acordado; RNF-18 se analiza también como Comprobabilidad |
 | Escenario / ASR / RNF | Versión sin errores, despliegue ≤10 min y reversión ≤5 min. ASR-12, RNF-15 |
 | Diseño | Imágenes, preparación SQL única, control de versiones y plan de corte/reversión; una base compartida exige coherencia de escritores |
 | Implementación | **Implementados scripts/configuración:** [infra](../../App/infra), [preparación](../../App/backend/compartido/persistencia/preparar-base.ts), CI/CD |
 | Evidencia | ESTADO-MIGRACION §§23–24: A/B, imágenes y CI; [corte/reversión](CORTE-Y-REVERSION.md) sigue pendiente en el entorno habitual |
 | Resultado | **Parcial.** YAML válido, arranque vacío o CI verde no acreditan despliegue sin interrupción y reversión de datos nuevos |
-| Pendiente | Responsable, ventana controlada y evidencia específica; no ejecutar despliegue, corte ni restauración en esta entrega |
+| Pendiente | Diego contrasta evidencia específica y ventana controlada futura; no ejecutar despliegue, corte ni restauración en esta entrega |
 
 ### Integrabilidad
 
@@ -215,25 +239,25 @@ RNF-19 pero no un ASR numerado en ese árbol; no se crea un ASR ficticio.
 
 | Campo | Revisión |
 |---|---|
-| Responsable confirmado | **Desconocido**, por confirmar; Samuel implementó CU-010, sin que esto asigne todo Safety |
+| Responsable confirmado | **Samuel Emperador**, RNF-17 dentro del bloque Disponibilidad acordado; no implica certificación de Safety física |
 | Escenario / ASR / RNF | Evacuación notificada al ≥99 % de dispositivos en ≤10 s incluso con lentitud/fallo. ASR-13, RNF-17 |
 | Diseño | Estados y activación, avisos prioritarios con reintento, interlocks y reporte; separación entre decisión, aviso y recepción efectiva |
 | Implementación | **Parcial:** [Evacuación](../../App/backend/modulos/operacion/evacuacion), portal/app; sin canales push/SMS reales ni aislamiento de proceso propio |
 | Evidencia | Pruebas funcionales y de autorización/SSE existentes; [Security/Safety](../../App/infra/informe-atributos/seguridad/SECURITY-SAFETY.md) distingue interlocks de negocio de seguridad física |
 | Resultado | **Parcial.** No existe prueba de población de dispositivos/acuse que acredite el porcentaje/tiempo RNF-17 |
-| Pendiente | Responsable, fallos/omisiones/estados inseguros y recepción verificable; no activar evacuación ni enviar avisos en esta revisión |
+| Pendiente | Samuel contrasta fallos/omisiones/estados inseguros y recepción verificable; no activar evacuación ni enviar avisos en esta revisión |
 
 ### Comprobabilidad
 
 | Campo | Revisión |
 |---|---|
-| Responsable confirmado | **Desconocido**, por confirmar |
+| Responsable confirmado | **Diego Coronado**, RNF-18 dentro del bloque Desplegabilidad acordado |
 | Escenario / ASR / RNF | Pruebas aisladas, cobertura de dominio ≥70 % y 100 % de dependencias sustituibles. ASR-14, RNF-18 |
 | Diseño | Dobles de puertos externos, unitarias separadas de HTTP/contratos/imagen; entornos de prueba propios |
 | Implementación | **Implementada:** [Jest](../../App/backend/jest-unitarias.json), [test backend](../../App/backend/test/README.md), [cobertura](../../App/backend/test/cobertura-total.cjs) |
 | Evidencia | CI 9bc1ee5: 1173 unitarias y suites HTTP/imagen/contratos aprobadas. Hay doble/configuración, pero el conteo no es porcentaje de cobertura |
 | Resultado | **Parcial; umbral global desconocido** en esta revisión. CI exitosa no demuestra automáticamente ≥70 % ni 100 % de dependencias |
-| Pendiente | Responsable, informe de cobertura de la revisión y matriz de dependencias; no volver a correr suites por esta edición documental |
+| Pendiente | Diego contrasta informe de cobertura de la revisión y matriz de dependencias; no volver a correr suites por esta edición documental |
 
 ### Observabilidad / Monitoreo y logs
 
@@ -278,7 +302,7 @@ internos sin escalado independiente. No se rediseñan diagramas vigentes.
 | 00:00–02:00 | 2 min | Problema, alcance, rúbrica y lectura de estados | Moderador por confirmar |
 | 02:00–04:00 | 2 min | Diapositiva de atributos por integrante y pendientes de asignación | Equipo |
 | 04:00–14:00 | **10 min** | Antes/ahora de contenedores: 2 min comparación, 3 min propuesta anterior, 3 min arquitectura actual y 2 min concesiones/código | Expositor de arquitectura por confirmar |
-| 14:00–34:00 | 20 min | Diseño e implementación: mapa RNF 2; desempeño/escalado 3; disponibilidad/observabilidad 3; Seguridad 4; consistencia/tiempo real 2; trazabilidad/Safety 2; usabilidad/portabilidad 2; mantenibilidad/despliegue/integrabilidad/comprobabilidad 2 | Samuel/Sebastián/Daniel y responsables pendientes |
+| 14:00–34:00 | 20 min | Diseño e implementación: mapa RNF 2; desempeño/escalado 3; disponibilidad/observabilidad 3; Seguridad 4; consistencia/tiempo real 2; trazabilidad/Safety 2; usabilidad/portabilidad 2; mantenibilidad/despliegue/integrabilidad/comprobabilidad 2 | Samuel, Sebastián, Daniel y Diego según RNF; quedan por asignar Consistencia, Trazabilidad, Mantenibilidad e Integrabilidad |
 | 34:00–44:00 | **10 min** | Prototipo y microdemostraciones inferiores | Cada responsable; orden ensayado |
 | 44:00–48:00 | 4 min | Evidencias, límites, pendientes, enlaces y paquete Brightspace | Equipo |
 | 48:00–54:00 | 6 min | Preguntas y defensa individual | Todos |
@@ -299,15 +323,15 @@ faltante; no se marca la rúbrica completa por mostrar una diapositiva.
 | Disponibilidad | 40 | Leer X-Servidor y señalar el escenario de caída pendiente y evidencia local histórica | **Caída de B pendiente**, sin incluirla como lograda. La prueba multiequipo completa requiere ventana posterior y puede exceder este presupuesto; sustituir/repartir tiempo solo tras ensayo del equipo |
 | Observabilidad | 35 | Abrir tablero preparado y correlacionar una solicitud con upstream, CPU y log | Samuel confirma cobertura/acceso; ningún arranque desde esta revisión |
 | Consistencia | 60 | Responsable selecciona caso existente de competencia/replay sobre recurso exclusivo y señala un único efecto | Prueba exacta/coste pendientes; no relanzar guion histórico que siembra/borra datos. Si no cabe, queda evidencia histórica, sin afirmar demo cumplida |
-| Tiempo real | 40 | Evento/ingreso propio con puntoAcceso y actualización del panel | Responsable y cronómetro extremo a extremo pendientes; ciclo SSE o revocación no son RNF-09 |
+| Tiempo real | 40 | Samuel: evento/ingreso propio con puntoAcceso y actualización del panel | Cronómetro extremo a extremo pendiente; ciclo SSE o revocación no son RNF-09 |
 | Trazabilidad | 30 | Leer historial/libro de una operación propia y correlacionar actor/transacción | No prueba retención anual ni cobertura financiera global |
-| Safety | 35 | Mostrar estado/aviso de un escenario simulado ya preparado y sus interlocks | Responsable confirma ejecución; sin mensajes reales ni afirmar 99 % de dispositivos en 10 s |
+| Safety | 35 | Samuel: mostrar estado/aviso de un escenario simulado ya preparado y sus interlocks | Ejecución por confirmar; sin mensajes reales ni afirmar 99 % de dispositivos en 10 s |
 | Usabilidad | 45 | Daniel muestra una tarea corta y los pasos, con la evidencia humana si existe | Recorrido del expositor no sustituye cinco usuarios nuevos |
-| Portabilidad | 35 | La misma lectura autorizada en web y app ya conectadas | Una lectura no acredita 100 % de CU; móvil/TLS pendientes |
+| Portabilidad | 35 | Daniel consolida con aportes del equipo: la misma lectura autorizada en web y app ya conectadas | Una lectura no acredita 100 % de CU; móvil/TLS pendientes |
 | Mantenibilidad | 30 | Navegar de interfaz de módulo a implementación/contrato para explicar impacto | No modificar código en vivo ni afirmar independencia de despliegue por dominio |
-| Desplegabilidad | 30 | Mostrar versión, imagen y CI; explicar procedimiento de corte/reversión | Sin despliegue/rollback real no se acredita RNF-15 |
+| Desplegabilidad | 30 | Diego: mostrar versión, imagen y CI; explicar procedimiento de corte/reversión | Sin despliegue/rollback real no se acredita RNF-15 |
 | Integrabilidad | 25 | Mostrar interfaz y pruebas existentes del adaptador seleccionado | Código y contratos no equivalen a sustitución completa medida |
-| Comprobabilidad | 30 | Mostrar una prueba aislada existente y su resultado CI; ejecución breve futura solo si responsable confirma | Conteo aprobado no equivale a 70 %; no ejecutar suites ahora |
+| Comprobabilidad | 30 | Diego: mostrar una prueba aislada existente y su resultado CI; ejecución breve futura solo si confirma | Conteo aprobado no equivale a 70 %; no ejecutar suites ahora |
 
 Para Seguridad se reutilizan sesiones/casos de las pruebas existentes: primero
 control positivo y objeto válido, luego rechazo en la misma operación y finalmente
@@ -315,6 +339,12 @@ revocación. Preparar previamente los actores/recursos nuevos del ensayo autoriz
 no usar cuentas ajenas, cadenas de compra/cobro ni reintentos automáticos de
 escrituras. Mostrar solo método/ruta/estado y datos saneados. Conservar los fallos
 y tiempos reales si la demo no sale; evidencia previa no se llama ejecución en vivo.
+
+La comprobación de Seguridad contra **backend directo se conserva como evidencia
+adicional al gateway**, por defensa en profundidad. Se reutilizan sus resultados
+existentes con recursos y actores válidos; no se elimina ese canal de la cobertura
+167/167 ni se expone el backend públicamente por mostrar la demo. No se repite la
+matriz en esta actualización del reparto.
 
 ## Dos servidores y un cliente — pendiente separado
 
@@ -338,13 +368,13 @@ RNF-03 mensual ni demuestra tolerancia al fallo de A.
 
 | Integrante | Tarea de preparación pendiente | Evidencia que debe traer |
 |---|---|---|
-| Sebastián | Sustentar el bloque Seguridad y seleccionar microdemo existente de 90 s; explicar RNF-05/06 parciales | RESULTADO, cobertura 167/167, evidencia saneada, código de correcciones; secretos privados |
-| Samuel | Confirmar guion de desempeño/disponibilidad/monitoreo y cifras por revisión; participar en preparación futura A/B/C | Informes de carga, tablero y fallo local con alcance; faltantes de 2000 usuarios, Boletería y porcentaje mensual |
-| Daniel | Consolidar Usabilidad y confirmar otros atributos asignados; revisar evidencias de sus CU usadas por Consistencia/Portabilidad | Protocolo/resultados humanos o declarar ausencia; casos vigentes de Boletería/QR que seleccione |
-| Diego | **Confirmar primero sus atributos**; asociar escenario, código, evidencia y demo existentes | No se presume Trazabilidad/Safety/Despliegue por su reparto de CU; no se le atribuye trabajo no confirmado |
+| Sebastián | Sustentar Seguridad RNF-05/06 y seleccionar microdemo existente de 90 s; aportar a Daniel pantallas, navegación, rotulado, pasos y capturas de Alimentos y cuentas/roles/recintos | RESULTADO, cobertura 167/167 gateway + backend directo, evidencia saneada y código; reconocer implementación de Samuel donde corresponda, secretos privados |
+| Samuel | Preparar Desempeño RNF-07/08/10, Disponibilidad RNF-03/04/09/17 y Monitoreo RNF-19; contrastar cifras por revisión; participar en preparación futura A/B/C | Informes de carga, tablero/fallo local y pruebas existentes de ingreso→panel/alertas; señalar faltantes de 2000 usuarios, Boletería, porcentaje mensual y recepción de dispositivos |
+| Daniel | Consolidar Usabilidad RNF-12/14 con aportes de todos | Protocolo/resultados humanos o declarar ausencia; matriz de equivalencia web/móvil, flujos/pasos/capturas con autoría reconocida |
+| Diego | Preparar Desplegabilidad RNF-15/18 con escenario, código, evidencia y demo existentes | Plan/resultado real de despliegue/reversión, informe de cobertura y aislamiento; documentar faltantes sin ejecutar instrucciones destructivas antiguas ni desarrollar pendientes en esta entrega |
 | Equipo | Traer temario completo, cerrar reparto, moderador y arquitectura; ensayar 54 min y confirmar carga Brightspace | Matriz curso↔fichas↔diapositivas↔demo; asignación explícita de los atributos desconocidos |
 
-Bloqueos: lista completa del curso y reparto faltantes; pruebas de varios umbrales
+Bloqueos: lista completa del curso y responsables de RNF-01/02/11/13/16 faltantes; pruebas de varios umbrales
 sin acreditar; demo multiequipo pendiente; capacidad del entorno. El último control
 de Redash **15/11 16:48 Bogotá** terminó en timeout HTTP y nuevos OOM; es histórico,
 no diagnóstico actual ni motivo para operar ese proyecto. Consultar la
@@ -396,3 +426,11 @@ credenciales o tokens añadidos. `git diff --check` aprobado. **No se ejecutaron
 matrices, recorridos de negocio, Docker ni pruebas de caída.** La CI funcional
 citada es la existente de `9bc1ee5`, separada de cualquier nueva CI automática de
 publicación documental; no se lanza una repetición manual por cambios de texto.
+
+**Aclaración posterior del reparto:** sobre `d819d4d` limpio se actualizan solo
+esta matriz, la presentación/fuente/PDF y la nota de seguimiento del plan de
+cierre. `latexmk -pdf` aprobado, **26 diapositivas**, sin referencias indefinidas
+ni desbordes; revisión visual de las láminas afectadas. Comparación con `d819d4d`:
+**las quince filas de evidencia y las quince de resultado permanecen idénticas**.
+Se conservan los resultados previos del SAD y las pruebas gateway/backend directo. El reparto confirmado no
+cambia ningún resultado a aprobado, ni completa RNF-05/06 o el temario del curso.
