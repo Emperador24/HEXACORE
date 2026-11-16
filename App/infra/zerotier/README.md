@@ -2,9 +2,18 @@
 
 Herramientas ejecutables sobre la arquitectura existente, **16/11/2026**.
 La implementación y las pruebas locales de herramientas no acreditan una prueba
-entre computadores. Faltan equipos/direcciones/certificados reales. Estos guiones
-no instalan ZeroTier, unen nodos, cambian firewalls o administran Redash.
-La caída de B es **manual**; A debe permanecer encendido.
+entre computadores. **Reparto confirmado:** A, Mac de Samuel; B, VM Javeriana
+Ubuntu22.04.5; C, Mac de Sebastián, solo navegador/registrador. Direcciones y red
+recibidas permanecen en inventario/JSON privados, fuera de Git. Los pings entre
+hosts están informados; capacidad, contenedores, HTTPS y tráfico real siguen
+pendientes. Estos guiones no instalan ZeroTier, unen nodos, cambian firewalls o
+administran Redash. **La etapa actual termina antes de cualquier apagado.**
+
+Empezar por [ETAPAS-REALES.md](ETAPAS-REALES.md): diagnóstico por equipo, Git sin
+perder trabajo y CA/HTTPS con participación de los propietarios. No ejecutar
+construcción/arranque antes de revisar resultados A/B. Para apagar la VM B falta
+confirmar quién puede encenderla desde la plataforma universitaria; ARPUJ se
+conserva para administración, sin cambiar rutas. A debe permanecer encendido.
 
 ## Alcance y requisitos
 
@@ -25,16 +34,21 @@ Las guardas de arranque exigen memoria asignada a Docker de **6144 MiB en A** o
 **3072 MiB en B**, y capacidad restante estimada (presupuesto 4096/1536 MiB menos
 consumo propio, mínimo 512). Son presupuestos preventivos del montaje, no medidas
 de capacidad ni certificación RNF. Considerar además RAM del sistema operativo,
-CPU, disco y otros procesos; A debería disponer de un equipo con más capacidad
-que el Mac local de 8 GiB. No se cambian límites globales ni se detienen proyectos
+CPU, disco y otros procesos. La capacidad de los servidores confirmados sigue
+pendiente; los 8GiB del Mac C no describen el Mac de Samuel ni habilitan servidores
+en C. El disco de la VM Docker requiere comprobación manual: `detectar` informa
+solo el disco del checkout y no impone un umbral de almacenamiento. No se cambian
+límites globales ni se detienen proyectos
 para satisfacer las guardas. Un `detectar` no selecciona rol.
 
 ## 1. Datos que acuerdan los tres participantes
 
-1. Identificador nuevo de demo, responsables y computadores A/B/C dedicados a la
-   ventana; OS/arquitectura/RAM/CPU, Docker/Compose y espacio de disco.
-2. Red **privada** ZeroTier autorizada por su propietario e IP RFC1918 realmente
-   asignada a cada miembro. Cada participante instala/se une personalmente si
+1. Reparto confirmado A/B/C del encabezado; faltan operador/reencendido de B,
+   ventana, OS/arquitectura/RAM/CPU, Docker/Compose y disco reales de A/B.
+   Compartir el mismo identificador nuevo de demo por canal privado.
+2. Red **privada** e IP ZeroTier recibidas; comprobar en cada miembro que son
+   las realmente asignadas y que el alcance corresponde al nuevo reparto.
+   Cada participante instala/se une personalmente si
    hace falta. No usar direcciones de ejemplos como si fueran asignaciones.
 3. Dos nombres DNS para los portales, que C resuelva **solo a A**, y puertos
    disponibles. Certificado con SAN para ambos nombres, cadena y privada en A;
@@ -47,8 +61,9 @@ para satisfacer las guardas. Un `detectar` no selecciona rol.
    La cartelera debe ser no vacía para acreditar datos compartidos en la puerta
    de la demo. No se ejecuta ninguna semilla automáticamente; para obtener las
    primeras cuentas de un ámbito vacío existe la opción explícita de A del paso3.
-6. Confirmar autorización del apagado de **todo B** y ausencia de trabajo ajeno
-   que se pueda perder. Elegir un B dedicado. El guion no apaga computadores.
+6. Apagado de **toda la VM B**, solo en etapa posterior: confirmar autorización,
+   ausencia de trabajo ajeno y responsable capaz de reencender desde la plataforma
+   universitaria. No apagar el hipervisor. El guion no apaga máquinas.
 
 Los ejemplos [equipo.example.json](equipo.example.json) y
 [cliente.example.json](cliente.example.json) contienen **marcadores inválidos**:
@@ -268,6 +283,19 @@ Alternativamente copiar un export reciente de `equipo.py logs` de A e importarlo
 por stdin, si se puede respetar la frescura. Sin logs recientes **no se habilita**
 el apagado. Los guiones no instalan SSH, copian claves ni aceptan hosts desconocidos.
 
+En la etapa actual, mientras el observador y los logs siguen activos, consultar
+el reparto **sin armar** el apagado:
+
+```bash
+python3 App/infra/zerotier/cliente.py reparto --directorio "$ZT_PRIVADO/registro-01" --estado-a "$ZT_PRIVADO/estado-a-antes.json" --estado-b "$ZT_PRIVADO/estado-b-antes.json"
+```
+
+Reutiliza `acreditar` sin peticiones adicionales, marcas o modificaciones del
+registro; devuelve `armado:false`. Si faltan tráfico, logs, datos o frescura,
+falla con las mismas guardas. No habilita el apagado.
+
+**Solo en una etapa posterior**, tras confirmar el reencendido desde la plataforma
+y la ventana de B, se podrán usar los comandos inferiores. No ejecutarlos ahora.
 Mientras las dos terminales anteriores siguen trabajando, en una tercera:
 
 ```bash
@@ -283,10 +311,11 @@ upstream iguales y relojes UTC compatibles (≤2s de diferencia con el log). Cad
 ID corresponde a una solicitud real de C. No basta una sonda saludable. Armado
 vence en5s y la marca vuelve a verificar el tráfico, sin emitir peticiones extra.
 
-**En ese momento el compañero de B apaga manualmente el computador B.** C sigue
+**En esa etapa posterior el responsable apaga manualmente la VM B.** C sigue
 midiendo y conserva su URL/token. No usar `parar` como sustituto del apagado
-acordado ni ejecutar un kill automático. Cuando se constate físicamente el apagado,
-registrarlo desde C (fecha declarada por el operador, no una detección infalible):
+acordado ni ejecutar un kill automático. Cuando se confirme la VM apagada,
+registrarlo desde C (confirmación de VM apagada por el operador/plataforma, no
+una detección infalible del registrador):
 
 ```bash
 python3 App/infra/zerotier/cliente.py marcar --evento b-apagado --directorio "$ZT_PRIVADO/registro-01" --estado-a "$ZT_PRIVADO/estado-a-antes.json" --estado-b "$ZT_PRIVADO/estado-b-antes.json"

@@ -1,5 +1,12 @@
 # Alternar Redash y HEXACORE en este Mac
 
+**Reparto real confirmado — este Mac es C:** solo navegador y registrador. A es
+el Mac de Samuel y B una VM Javeriana. No aplicar aquí los procedimientos de
+arranque/parada/alternancia históricos inferiores para la demo ZeroTier; no
+operar Docker o Redash desde C. Los diagnósticos A/B se ejecutan por sus dueños.
+Conservar ARPUJ para administrar B y confirmar reencendido desde plataforma
+antes de cualquier apagado. [Etapas reales](../../App/infra/zerotier/ETAPAS-REALES.md).
+
 **16/11/2026 — preparación ejecutable A/B/C:** solo consultas de estado del motor
 y validación del cliente Compose; no arranque/parada/prueba de caída local, ni
 operación sobre Redash u otros proyectos. El Mac tiene 8GiB físicos y el motor
