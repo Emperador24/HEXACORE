@@ -1,0 +1,12 @@
+{
+  "demo":"<MISMO_IDENTIFICADOR_A_B>",
+  "fuente":"<SHA_COMUN_40_HEX_A_B>",
+  "red_zerotier":"<ID_RED_PRIVADA_16_HEX>",
+  "ip_a":"<IP_ZT_A_ASIGNADA>",
+  "ip_b":"<IP_ZT_B_ASIGNADA>",
+  "ip_c":"<IP_ZT_C_ASIGNADA>",
+  "url":"https://<NOMBRE_HTTPS_CLIENTE>:443",
+  "ca":"<RUTA_CA_CONFIABLE_EN_C_O_NULL_SI_ES_PUBLICA>",
+  "upstreams_a":{"publica":"<IP_DOCKER_BOLETERIA_A>:3001","autenticada":"<IP_DOCKER_NUCLEO_A>:3002"},
+  "puertos_b":{"publica":3001,"autenticada":3002}
+}
