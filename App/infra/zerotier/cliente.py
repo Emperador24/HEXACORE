@@ -326,9 +326,9 @@ def main():
         if n=='iniciar':
             s.add_argument('--sesion',required=True);s.add_argument('--directorio',required=True)
             s.add_argument('--duracion',type=int,default=180);s.add_argument('--intervalo',type=float,default=0.5)
-    for n in ['importar-logs','armar','marcar','informe']:
+    for n in ['importar-logs','reparto','armar','marcar','informe']:
         s=sub.add_parser(n);s.add_argument('--directorio',required=True)
-        if n in ['armar','marcar']:
+        if n in ['reparto','armar','marcar']:
             s.add_argument('--estado-a',required=True);s.add_argument('--estado-b',required=True)
         if n=='marcar':s.add_argument('--evento',choices=['apagar-b','b-apagado','b-restaurado'],required=True)
     a=p.parse_args()
@@ -341,6 +341,8 @@ def main():
     if a.accion=='importar-logs':importar_logs(d,sys.stdin);return
     if a.accion=='informe':print(json.dumps(informe(d),indent=2));return
     ea,eb=leer_json(a.estado_a),leer_json(a.estado_b)
+    if a.accion=='reparto':
+        print(json.dumps(dict(estado='reparto_acreditado',armado=False,evidencia=acreditar(d,ea,eb)),indent=2));return
     if a.accion=='armar':armar(d,ea,eb)
     else:marcar(d,a.evento,ea,eb)
 

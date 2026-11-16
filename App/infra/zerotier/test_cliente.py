@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import signal
 import ssl
+import sys
 import tempfile
 import threading
 import time
@@ -53,6 +54,25 @@ class PuertaDeDemostracion(unittest.TestCase):
 
     def test_respuestas_reales_de_ambos_correlacionadas(self):
         p=self.acreditar();self.assertEqual(set(p['prueba']),{'A/publica','B/publica','A/autenticada','B/autenticada'})
+
+    def test_reparto_cli_acredita_sin_armar_ni_modificar_registro(self):
+        for rol,estado in zip(['a','b'],self.estados):escribir(self.d/('estado-'+rol+'.json'),json_bytes(estado))
+        previos={p.name:p.read_bytes() for p in self.d.iterdir()}
+        args=['cliente.py','reparto','--directorio',str(self.d),'--estado-a',str(self.d/'estado-a.json'),'--estado-b',str(self.d/'estado-b.json')]
+        salida=io.StringIO()
+        with patch.object(sys,'argv',args),patch.object(sys,'stdout',salida):cliente.main()
+        r=json.loads(salida.getvalue())
+        self.assertEqual(r['estado'],'reparto_acreditado');self.assertFalse(r['armado'])
+        self.assertEqual(set(r['evidencia']['prueba']),{'A/publica','B/publica','A/autenticada','B/autenticada'})
+        self.assertEqual({p.name:p.read_bytes() for p in self.d.iterdir()},previos)
+
+    def test_reparto_cli_rechaza_sin_logs_y_no_arma(self):
+        for rol,estado in zip(['a','b'],self.estados):escribir(self.d/('estado-'+rol+'.json'),json_bytes(estado))
+        (self.d/'gateway.jsonl').unlink()
+        previos={p.name:p.read_bytes() for p in self.d.iterdir()}
+        args=['cliente.py','reparto','--directorio',str(self.d),'--estado-a',str(self.d/'estado-a.json'),'--estado-b',str(self.d/'estado-b.json')]
+        with patch.object(sys,'argv',args),self.assertRaises(ValueError):cliente.main()
+        self.assertEqual({p.name:p.read_bytes() for p in self.d.iterdir()},previos)
 
     def test_config_c_rechaza_http_credenciales_en_url_y_equipos_repetidos(self):
         for url in ['http://demo.test','https://usuario:clave@demo.test','https://demo.test/api/v1','https://demo.test?token=x']:
