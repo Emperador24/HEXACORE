@@ -1,0 +1,19 @@
+# Nombres propuestos: editar solo la copia privada antes de generar en A.
+[req]
+prompt = no
+distinguished_name = dn
+req_extensions = servidor
+
+[dn]
+CN = hexacore.zt.test
+
+[servidor]
+basicConstraints = critical,CA:false
+keyUsage = critical,digitalSignature,keyEncipherment
+extendedKeyUsage = serverAuth
+subjectKeyIdentifier = hash
+subjectAltName = @nombres
+
+[nombres]
+DNS.1 = hexacore.zt.test
+DNS.2 = admin.hexacore.zt.test

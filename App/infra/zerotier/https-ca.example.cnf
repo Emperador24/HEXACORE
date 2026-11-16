@@ -1,0 +1,14 @@
+# Plantilla pública: generar la CA privada exclusivamente en A, directorio nuevo.
+[req]
+prompt = no
+distinguished_name = dn
+x509_extensions = ca
+
+[dn]
+CN = HEXACORE CA de ensayo
+
+[ca]
+basicConstraints = critical,CA:true,pathlen:0
+keyUsage = critical,keyCertSign,cRLSign
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid:always

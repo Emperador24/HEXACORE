@@ -306,6 +306,14 @@ jobs:
       - name: Validar docker-compose
         run: docker compose -f App/infra/docker-compose.yml --profile servicios config -q
 
+      - name: Herramientas A B C, guardas y observador con TLS local
+        run: |
+          python3 -m unittest discover -s App/infra/zerotier -p 'test_*.py' -v
+          node --test App/infra/zerotier/preparacion-demo.test.cjs
+
+      - name: Gateway y HTTPS de la demo contra dobles aislados
+        run: python3 App/infra/zerotier/prueba_gateway_ci.py --imagen hexacore-gateway-ci
+
   datos:
     name: Transferencia histórica y aplicaciones sobre esquemas
     runs-on: ubuntu-latest

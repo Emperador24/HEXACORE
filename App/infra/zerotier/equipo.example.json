@@ -1,0 +1,12 @@
+{
+  "demo": "<identificador-unico>",
+  "rol": "A",
+  "red_zerotier": "<ID_RED_PRIVADA_16_HEX>",
+  "ip_a": "<IP_ZT_A_ASIGNADA>",
+  "ip_b": "<IP_ZT_B_ASIGNADA>",
+  "dominio_cliente": "<NOMBRE_HTTPS_CLIENTE>",
+  "dominio_admin": "<NOMBRE_HTTPS_ADMIN>",
+  "puertos": {"https":443,"nucleo_b":3002,"boleteria_b":3001,"postgres":5432,"redis":6380,"rabbitmq":5672,"correo":3098,"pasarela":3099},
+  "secretos": "<DIRECTORIO_PRIVADO_COMPARTIDO_A_B>",
+  "tls": {"certificado":"<FULLCHAIN_PEM>","privada":"<CLAVE_TLS_PEM>","ca":"<CA_CONFIABLE_PEM>"}
+}
