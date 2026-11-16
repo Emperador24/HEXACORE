@@ -166,31 +166,8 @@ Implementado $\neq$ comprobado. Comprobado en un ensayo $\neq$ RNF completo.
 \franja{14:00--16:00 · Falta temario completo para asegurar cobertura de todo lo visto en clase. Fichas: CIERRE-RUBRICA.md.}
 \end{frame}
 
-\begin{frame}{Desempeño y escalabilidad: objetivo frente a medición}
-\small
-\begin{tabular}{L{3.3cm}L{5.0cm}L{5.0cm}}
-\toprule & Objetivo & Resultado existente, 12/11\\\midrule
-RNF-07/08, ASR-04 & CU-001: p95 $\leq$500 ms con 2000 usuarios; QR $\leq$300 ms & Lecturas CU-006/026/025 con 200 usuarios: p95 150/355/311 ms, cero fallos\\[0.8em]
-RNF-10, ASR-06 & Duplicar Entradas: capacidad $\geq$1,7$\times$, sin degradar otros dominios & Dos Núcleos: CU-025 1,82$\times$; CU-026 1,57$\times$\\
-\bottomrule
-\end{tabular}
-\medskip
-Balanceo, procesos concurrentes y pools limitados. Un portátil comparte CPU entre carga, apps y datos.
-\textbf{200 no acredita 2000; escalar Núcleo no acredita RNF-10 de Entradas.}
-\franja{16:00--19:00 · Samuel · Informes CARGA-1-replica y CARGA-nucleo-2-replicas. No se ejecuta carga en esta entrega.}
-\end{frame}
-
-\begin{frame}{Disponibilidad y observabilidad}
-\begin{itemize}
-\item ASR-02, RNF-03/04: redundancia de apps, detección pasiva y reinicio.
-\item Ensayo local: 484/509 lecturas, cero fallos en 8 s; reinicio 8--13 s.
-\item No acredita 99,9\% mensual ni caída de computador o dependencias.
-\item RNF-19: exportador, Prometheus, Promtail/Loki y Grafana; CPU cada 2 s, refresco 5 s.
-\item Logs por instancia/upstream; retención 2 días, sin alertas automáticas.
-\end{itemize}
-\textbf{A/B/C pendiente:} A mantiene gateway y datos; B será apagable. A es punto único de fallo.
-\franja{19:00--22:00 · Samuel · DNS de 5 s no acota conmutación; no reintentar automáticamente escrituras.}
-\end{frame}
+% Desempeño, disponibilidad y monitoreo (Samuel), 16:00--22:00.
+\input{PresentacionAtributosSamuel}
 
 \begin{frame}{Seguridad: diseño y ubicación de controles}
 \begin{itemize}

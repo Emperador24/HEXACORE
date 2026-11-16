@@ -1,0 +1,291 @@
+% Diapositivas de los atributos de calidad de Samuel Emperador: desempeño,
+% disponibilidad y monitoreo y logs. Las incluye Presentacion.tex con \input.
+% Las cifras son las de App/infra/informe-atributos/ (12/11/2026) y el detalle,
+% en el SAD, sección «Atributos de calidad sobre la arquitectura vigente».
+% Ocupan el tramo 16:00--22:00 del guion; el diagrama de despliegue está en los anexos.
+
+% ---------------------------------------------------------------------------
+\begin{frame}{Tres atributos, una misma evidencia}
+\small
+\begin{tabular}{L{2.4cm}L{5.2cm}L{5.5cm}}
+\toprule
+\textbf{Atributo} & \textbf{Lo que se pide} & \textbf{Cómo se demuestra}\\
+\midrule
+Desempeño & Prueba de carga en el momento, con reporte e interpretación &
+\texttt{prueba-carga.py}: 3 casos de uso, 5 niveles, CPU por contenedor\\[0.3em]
+Disponibilidad & Balanceo entre réplicas; tumbar una y que el sistema siga y se recupere &
+\texttt{demo-disponibilidad.sh}: \texttt{kill -9} con tráfico en curso\\[0.3em]
+Monitoreo y logs & CPU y memoria por instancia y logs desde el mismo punto de entrada &
+Grafana en \texttt{/grafana/}, servido por el API Gateway\\
+\bottomrule
+\end{tabular}
+
+\vspace{0.8em}
+\begin{block}{Una sola orden}
+\texttt{./iniciar.sh -{}-monitoreo} levanta el sistema y el tablero. El monitoreo es la evidencia
+visual de los otros dos: mientras corre la carga se ve subir la CPU, y al tumbar una réplica se ve
+caer y volver.
+\end{block}
+\franja{16:00--16:30 · Samuel · Desempeño RNF-07/08/10, Disponibilidad RNF-03/04/09/17, Monitoreo RNF-19.}
+\end{frame}
+
+% ---------------------------------------------------------------------------
+\begin{frame}{Desempeño · diseño}
+\small
+\begin{columns}[T]
+\begin{column}{0.47\textwidth}
+\textbf{Escenario de calidad}\\[0.3em]
+\begin{tabular}{@{}L{1.7cm}L{4.6cm}@{}}
+Fuente & Clientes y organizadores en la apertura\\
+Estímulo & Hasta 200 usuarios pidiendo sin pausa\\
+Artefacto & Boletería (CU-006) y Núcleo (CU-025, CU-026)\\
+Entorno & 1 réplica y luego 2 del Núcleo\\
+Respuesta & Atender sin errores; crecer al replicar\\
+Medida & \leavevmode\cifra{p95 $\leq$ 500 ms} y 0 fallos hasta 200 usuarios; $\geq$ 1,7$\times$ al duplicar\\
+\end{tabular}
+\end{column}
+\begin{column}{0.5\textwidth}
+\textbf{Tácticas}\\[0.3em]
+\begin{itemize}\setlength\itemsep{0.3em}
+\item \textbf{Introducir concurrencia:} réplicas de Núcleo y Boletería; cada una, un proceso Node
+con su núcleo.
+\item \textbf{Balancear:} nginx reparte por turnos y descubre réplicas en el DNS de Docker cada 5 s.
+\item \textbf{Acotar la demanda:} pool de 10 conexiones y espera máxima de 3 s por programa.
+\item \textbf{Reducir la sobrecarga:} el token se verifica en local; nadie le pregunta a Identidad
+en cada petición.
+\end{itemize}
+\end{column}
+\end{columns}
+\franja{16:30--17:30 · Samuel · Ensayo local; RNF-07 fija 2\,000 usuarios sobre CU-001 y RNF-10 habla de Entradas.}
+\end{frame}
+
+% ---------------------------------------------------------------------------
+\begin{frame}{Desempeño · resultados con una réplica}
+\begin{columns}[T]
+\begin{column}{0.6\textwidth}
+\begin{tikzpicture}
+\begin{axis}[width=\linewidth, height=4.6cm, xlabel={Usuarios simultáneos}, ylabel={p95 (ms)},
+  xmode=log, log basis x=10, xtick={1,10,50,100,200}, xticklabels={1,10,50,100,200},
+  ymin=0, ymax=560, legend style={font=\scriptsize, draw=none, fill=none, at={(0.5,-0.3)}, anchor=north, legend columns=2},
+  tick label style={font=\scriptsize}, label style={font=\small}, grid=major, grid style={gray!20}]
+\addplot[hexaacento, thick, mark=*] coordinates {(1,4.5)(10,13.5)(50,38.4)(100,84.9)(200,150.3)};
+\addplot[hexazul, thick, mark=square*] coordinates {(1,4.9)(10,16.4)(50,84.8)(100,168.0)(200,355.0)};
+\addplot[hexaparcial, thick, mark=triangle*] coordinates {(1,5.3)(10,21.0)(50,93.3)(100,203.7)(200,310.6)};
+\addplot[hexapend, dashed, domain=1:200] {500};
+\legend{CU-006 reventa, CU-026 eventos, CU-025 parqueadero, umbral RNF-07}
+\end{axis}
+\end{tikzpicture}
+\end{column}
+\begin{column}{0.38\textwidth}
+\small
+\begin{tabular}{@{}lrr@{}}
+\toprule
+& \textbf{p95, 200 us.} & \textbf{Máx. pet/s}\\
+\midrule
+CU-006 & 150 ms & 1\,906\\
+CU-026 & 355 ms & 760\\
+CU-025 & 311 ms & 759\\
+\bottomrule
+\end{tabular}
+
+\vspace{0.8em}
+\cifra{0 fallos} en más de 100\,000 peticiones, todas por el gateway.
+
+\vspace{0.5em}
+Los tres quedan en \cifra{p95 $\leq$ 500 ms} en todos los niveles medidos, hasta 200 usuarios.
+\end{column}
+\end{columns}
+\franja{17:30--18:15 · Samuel · Informe: App/infra/informe-atributos/CARGA-1-replica.md.}
+\end{frame}
+
+% ---------------------------------------------------------------------------
+\begin{frame}{Desempeño · interpretación}
+\begin{columns}[T]
+\begin{column}{0.52\textwidth}
+\begin{tikzpicture}
+\begin{axis}[width=\linewidth, height=4.6cm, xlabel={Usuarios simultáneos}, ylabel={Peticiones/s},
+  xmode=log, log basis x=10, xtick={1,10,50,100,200}, xticklabels={1,10,50,100,200},
+  ymin=0, ymax=1500, legend style={font=\scriptsize, draw=none, fill=none, at={(0.5,-0.3)}, anchor=north, legend columns=2},
+  tick label style={font=\scriptsize}, label style={font=\small}, grid=major, grid style={gray!20}]
+\addplot[hexaparcial, thick, mark=triangle*] coordinates {(1,266)(10,746)(50,750)(100,673)(200,759)};
+\addplot[hexaparcial, thick, dashed, mark=triangle] coordinates {(1,193)(10,934)(50,1052)(100,1275)(200,1385)};
+\addplot[hexazul, thick, mark=square*] coordinates {(1,315)(10,760)(50,715)(100,683)(200,675)};
+\addplot[hexazul, thick, dashed, mark=square] coordinates {(1,245)(10,1030)(50,1196)(100,1123)(200,1106)};
+\legend{CU-025 · 1 réplica, CU-025 · 2 réplicas, CU-026 · 1 réplica, CU-026 · 2 réplicas}
+\end{axis}
+\end{tikzpicture}
+\end{column}
+\begin{column}{0.46\textwidth}
+\small
+\begin{itemize}\setlength\itemsep{0.35em}
+\item \textbf{El rendimiento se topa:} desde ahí, más usuarios es solo más espera. Ley de Little:
+usuarios = rendimiento $\times$ tiempo de respuesta.
+\item \textbf{Cuello de botella: el proceso Node}, en \cifra{101--106\,\%} de un núcleo. Ejecuta la
+aplicación en un solo hilo.
+\item \textbf{Por eso replicar funciona:} con 2 réplicas, CU-025 \cifra{+82\,\%} (1,82$\times$) y
+CU-026 \cifra{+57\,\%}.
+\item \textbf{Siguiente límite:} PostgreSQL en 325\,\% con 2 réplicas en CU-025. Todavía reparte el
+trabajo en varios núcleos.
+\end{itemize}
+\end{column}
+\end{columns}
+\franja{18:15--19:00 · Samuel · Se escaló el Núcleo; el escalado de Boletería (Entradas) sigue sin medir.}
+\end{frame}
+
+% ---------------------------------------------------------------------------
+\begin{frame}{Disponibilidad · diseño}
+\footnotesize
+\begin{columns}[T]
+\begin{column}{0.47\textwidth}
+\textbf{Escenario de calidad}\\[0.3em]
+\begin{tabular}{@{}L{1.7cm}L{4.6cm}@{}}
+Fuente & Falla interna: muere un proceso\\
+Estímulo & \texttt{kill -9} a una réplica con tráfico en curso\\
+Artefacto & Réplicas de Boletería y Núcleo, gateway, Docker\\
+Entorno & Operación normal con carga constante\\
+Respuesta & Las demás absorben el tráfico; la caída se recupera sola\\
+Medida & \leavevmode\cifra{0 fallos}; recuperación \cifra{$\leq$ 30 s} sin intervención (RNF-04)\\
+\end{tabular}
+\end{column}
+\begin{column}{0.5\textwidth}
+\textbf{Tácticas}\\[0.3em]
+\begin{itemize}\setlength\itemsep{0.3em}
+\item \textbf{Redundancia activa:} varias réplicas sin estado en memoria; comparten PostgreSQL y Redis.
+\item \textbf{Reintento de lecturas:} si una réplica falla antes de responder, nginx lleva la lectura a
+otra. Las escrituras no se reintentan.
+\item \textbf{Detección:} sonda de salud cada 10 s en Docker; el gateway detecta errores y tiempos
+agotados al enviar tráfico.
+\item \textbf{Reintroducción:} \texttt{restart: unless-stopped}; el DNS de Docker vuelve a publicar
+la réplica.
+\item \textbf{Réplicas seguras:} los trabajos de fondo toman sus filas con \texttt{SKIP LOCKED}; dos
+réplicas no procesan la misma a la vez.
+\end{itemize}
+\end{column}
+\end{columns}
+\franja{19:00--19:45 · Samuel · Escenario: caída de un proceso. No cubre apagar un computador ni la caída de PostgreSQL.}
+\end{frame}
+
+% ---------------------------------------------------------------------------
+\begin{frame}{Disponibilidad · resultados}
+\begin{columns}[T]
+\begin{column}{0.55\textwidth}
+\small
+\begin{tabular}{@{}L{3.6cm}L{1.8cm}L{1.6cm}@{}}
+\toprule
+& \textbf{Boletería ×3} & \textbf{Núcleo ×2}\\
+\midrule
+Reparto de 30 peticiones & 10 / 10 / 10 & 15 / 15\\
+Peticiones en los 8 s tras el \texttt{kill -9} & \leavevmode\cifra{484} & \leavevmode\cifra{509}\\
+Fallidas & \leavevmode\cifra{0} & \leavevmode\cifra{0}\\
+Reintentadas en otra réplica & 1 & 1\\
+Docker la reinicia y está sana & \leavevmode\cifra{8--13 s} & \leavevmode\cifra{8 s}\\
+Vuelve al reparto & Sí & Sí\\
+\bottomrule
+\end{tabular}
+\end{column}
+\begin{column}{0.43\textwidth}
+\small
+\begin{itemize}\setlength\itemsep{0.35em}
+\item \textbf{Ninguna lectura falló:} la que la réplica no alcanzó a responder se reintentó en otra.
+\item \textbf{Dentro de RNF-04:} 8--13 s frente a los 30 s permitidos. No mide el 99,9\,\% mensual.
+\item \textbf{El Núcleo también se replica:} la demo de los 8 casos de uso pasa contra 2 réplicas.
+\item \textbf{Límites:} un \texttt{POST} en curso no se reintenta (no se duplica una escritura);
+PostgreSQL, Redis y RabbitMQ siguen siendo una instancia.
+\end{itemize}
+\end{column}
+\end{columns}
+\franja{19:45--20:30 · Samuel · Informe: App/infra/DEMOSTRACION-ATRIBUTOS.md, sección 3.}
+\end{frame}
+
+% ---------------------------------------------------------------------------
+\begin{frame}{Monitoreo y logs · diseño}
+\begin{columns}[T]
+\begin{column}{0.56\textwidth}
+\centering
+\begin{tikzpicture}[font=\scriptsize, node distance=0.45cm and 0.45cm,
+  caja/.style={draw=hexazul, fill=hexagris, rounded corners=2pt, align=center, minimum width=2.1cm, minimum height=0.7cm},
+  flecha/.style={-{Stealth[length=2mm]}, thick, hexaacento}]
+\node[caja] (docker) {Contenedores\\(API de Docker)};
+\node[caja, right=of docker] (exp) {Exportador\\CPU y memoria};
+\node[caja, below=of exp] (prom) {Prometheus\\muestra cada 2 s};
+\node[caja, below=of docker] (salida) {Salida de los\\contenedores};
+\node[caja, below=of salida] (promtail) {Promtail};
+\node[caja, right=of promtail] (loki) {Loki};
+\node[caja, fill=hexaacento!20, right=0.8cm of prom] (graf) {Grafana\\7 paneles};
+\node[caja, fill=hexazul!15, above=of graf] (gw) {API Gateway\\\texttt{/grafana/}};
+\draw[flecha] (docker) -- (exp);
+\draw[flecha] (exp) -- (prom);
+\draw[flecha] (salida) -- (promtail);
+\draw[flecha] (promtail) -- (loki);
+\draw[flecha] (prom) -- (graf);
+\draw[flecha] (loki) -| (graf);
+\draw[flecha] (gw) -- (graf);
+\end{tikzpicture}
+\end{column}
+\begin{column}{0.42\textwidth}
+\small
+\textbf{Paneles:} instancias vivas · CPU por instancia · memoria por instancia · peticiones por
+réplica · respuestas por código · latencia p95 · logs filtrables por servicio.
+
+\vspace{0.6em}
+\textbf{Sin instrumentar los programas:} las métricas salen de Docker y el tráfico del log del
+gateway (\texttt{upstream=}, \texttt{rt=}).
+
+\vspace{0.6em}
+\textbf{Por qué no cAdvisor:} en Docker Desktop (containerd) las versiones 0.49 y 0.52 no ven los
+contenedores. El exportador publica las mismas métricas: en Linux se vuelve a cAdvisor sin tocar
+el tablero.
+\end{column}
+\end{columns}
+\franja{20:30--21:15 · Samuel · Despliegue con réplicas y monitoreo: anexo «despliegue».}
+\end{frame}
+
+% ---------------------------------------------------------------------------
+\begin{frame}{Demostración en vivo · unos 6,5 minutos}
+\footnotesize
+\begin{tabular}{@{}cL{5.3cm}L{5.0cm}r@{}}
+\toprule
+\# & \textbf{Qué se corre} & \textbf{Qué se señala} & \textbf{Tiempo}\\
+\midrule
+1 & Abrir \texttt{localhost:8080/grafana/} & Instancias vivas, CPU, memoria y logs & 30 s\\
+2 & \texttt{./prueba-carga.py -{}-rapida} & La tabla por nivel y la CPU subiendo en Grafana & 2 min\\
+3 & Leer la interpretación impresa & Dónde se satura cada caso de uso y por qué & 1 min\\
+4 & \texttt{./demo-disponibilidad.sh} & Reparto, réplica caída, 0 fallos, recuperación & 1,5 min\\
+5 & \texttt{SERVICIO=nucleo ./demo-disponibilidad.sh -{}-seguido} & Lo mismo con el Núcleo & 40 s\\
+6 & \texttt{./demo-disponibilidad.sh -{}-restaurar} & Todo vuelve a una réplica & 10 s\\
+\bottomrule
+\end{tabular}
+
+\vspace{0.5em}
+Todo desde \texttt{App/infra}. Guion completo en \texttt{App/infra/DEMOSTRACION-ATRIBUTOS.md}.
+\franja{Se ejecuta en el bloque de demostraciones (34:00--44:00), que hoy le asigna 150 s: tiempo por acordar.}
+\end{frame}
+
+% ---------------------------------------------------------------------------
+\begin{frame}{Límites medidos y siguiente paso}
+\footnotesize
+\begin{columns}[T]
+\begin{column}{0.5\textwidth}
+\textbf{Lo que no se cumple o no se midió}
+\begin{itemize}\setlength\itemsep{0.2em}
+\item \textbf{RNF-07:} medido hasta 200 usuarios y sobre CU-006/025/026; fija 2\,000 sobre CU-001.
+En un solo portátil el generador compite por la CPU con lo que mide.
+\item \textbf{RNF-10:} con 2 Núcleos, CU-025 llega a \cifra{1,82$\times$} y CU-026 a \cifra{1,57$\times$}
+(pide 1,7$\times$ en Entradas, que no se midió).
+\item \textbf{RNF-08, RNF-09 y RNF-17:} asignados, aún sin medición.
+\item \textbf{Monitoreo:} sin alertas automáticas, 2 días de retención y un solo nodo.
+\item Todo compartía 11 núcleos; el p95 varía ±30\,\% entre corridas.
+\end{itemize}
+\end{column}
+\begin{column}{0.48\textwidth}
+\textbf{Qué se haría después}
+\begin{itemize}\setlength\itemsep{0.2em}
+\item Más réplicas de Núcleo y Boletería, hasta que PostgreSQL o el gateway sean el límite.
+\item Guardar unos segundos en Redis el panel de CU-025, la lectura más cara.
+\item Alertas en Grafana sobre instancias caídas y p95.
+\item Repetir la carga con el generador en otra máquina.
+\end{itemize}
+\end{column}
+\end{columns}
+\franja{21:15--22:00 · Samuel · Implementado $\neq$ comprobado; comprobado en un ensayo $\neq$ RNF completo.}
+\end{frame}
