@@ -190,17 +190,25 @@ export class EvacuacionService {
   }
 
   /** Pasos 10-11: el estado de la evacuación y sus alertas, calculadas al leer. */
-  async detalle(id: string) {
-    const evacuacion = await this.buscar(this.datos.manager, id);
+  /** Solo SSE: consultas propias acotadas como en Parqueaderos; HTTP conserva sus límites. */
+  detalleParaFlujo(id: string) {
+    return this.datos.transaction(async m => {
+      await m.query("SET LOCAL statement_timeout = '2000ms'");
+      return this.detalle(id, m);
+    });
+  }
+
+  async detalle(id: string, m: EntityManager = this.datos.manager) {
+    const evacuacion = await this.buscar(m, id);
     const [zonas, salidas, rutas, avisos, bitacora, personal] = await Promise.all([
-      this.zonasDe(this.datos.manager, id),
-      this.salidasDe(this.datos.manager, evacuacion.recintoId),
-      this.rutasDe(this.datos.manager, evacuacion.recintoId),
-      this.datos.query(
+      this.zonasDe(m, id),
+      this.salidasDe(m, evacuacion.recintoId),
+      this.rutasDe(m, evacuacion.recintoId),
+      m.query(
         `SELECT id, canal, zona_id AS "zonaId", mensaje, prioridad, creada_en AS "creadaEn", publicada_en AS "publicadaEn",
                 entregada_en AS "entregadaEn", intentos
            FROM notificaciones_evacuacion WHERE evacuacion_id = $1 ORDER BY creada_en DESC LIMIT 200`, [id]),
-      this.datos.query(`SELECT id, tipo, detalle, realizado_por AS "realizadoPor", fecha FROM bitacora_evacuacion WHERE evacuacion_id = $1 ORDER BY fecha DESC LIMIT 200`, [id]),
+      m.query(`SELECT id, tipo, detalle, realizado_por AS "realizadoPor", fecha FROM bitacora_evacuacion WHERE evacuacion_id = $1 ORDER BY fecha DESC LIMIT 200`, [id]),
       this.cobertura.deEvento(evacuacion.eventoId).catch(() => []),
     ]);
     const abierta = evacuacion.estado === 'PROPUESTA' || evacuacion.estado === 'ACTIVA';

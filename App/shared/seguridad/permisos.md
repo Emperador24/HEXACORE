@@ -43,5 +43,13 @@ roles-usuario:<id de usuario>   JSON  ["Cliente","Supervisor"]     PX = vida del
 
 ## Gateway
 
-Una ruta con `$roles_requeridos` y `$modulo_permiso` deja pasar un token que traiga algún rol
-propio, aunque no tenga los requeridos. Decide el Núcleo, que lee la matriz vigente.
+Una ruta con `$roles_requeridos` y `$modulo_permiso` delega la autorización al
+Núcleo después de validar el JWT, incluso si este solo trae roles del sistema:
+la cuenta puede haber recibido un rol propio después de emitirlo. Decide el
+Núcleo leyendo roles y matriz vigentes; delegar no concede el permiso. Las rutas
+sin módulo dinámico conservan el rechazo de rol en el gateway.
+
+Una clave `roles-usuario` presente con JSON ilegible, vacío o de forma inválida
+produce `503 SESIONES_NO_DISPONIBLES`; no se recuperan roles antiguos del JWT.
+Si la clave no existe, sigue siendo válido el contrato de roles del token y
+ventana de publicación. La matriz ausente no concede permisos.

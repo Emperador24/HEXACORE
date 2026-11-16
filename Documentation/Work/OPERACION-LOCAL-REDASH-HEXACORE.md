@@ -1,6 +1,74 @@
 # Alternar Redash y HEXACORE en este Mac
 
-**Última ventana — 14/11 Bogotá, Eventos/Recintos:** Docker **activo** al
+
+**Última ventana — 15/11 Bogotá, cierre de las 16 operaciones:** registro de
+**105 contenedores originales**, Docker activo, once CU-015 y siete Redash activos;
+preparación-base inactiva. Parada única por etapas, gracia 120 s: scheduler137,
+OOMKilled=false, logs conservados sin certificar cierre ordenado. Otros cuatro
+OOMKilled=true ya estaban en el estado inicial. Seis aplicaciones CU-015 cierran
+0/143, sin OOM. Base, Redis/volumen, vhost, ocho cuentas iniciales y recursos
+posteriores exclusivos; originales intactos y solo proveedores simulados.
+
+Restauración única **21:45:10–21:46:21 UTC**: **105 mismos IDs/imágenes/montajes/
+estados**, once CU-015 y siete Redash activos; preparación-base inactiva. Seis
+nuevos detenidos **0/0/0/143/0/0 sin OOM**; todos los datos retenidos. Docker activo.
+Los metadatos incluyen Núcleo/gateway anteriores conservados y Boletería propia;
+no asumir siempre tres o cuatro contenedores nuevos. Se restauran las imágenes y
+configuraciones originales, sin reconstruir/preparar/sembrar al reanudar.
+
+Auditoría **21:48:03 UTC (16:48 Bogotá)**: /ping y /login timeout15s, curl28/HTTP000.
+PostgreSQL listo y Redis PONG durante la restauración. Cgroups nuevos oom_kill:
+server4, scheduled_worker2, adhoc_worker4, worker2; scheduler/Redis/PG0. Los200
+puntuales del arranque escalonado no acreditan estabilidad sostenida. **Estados
+restaurados; HTTP Redash bloqueado/inestable con OOM**, sin ciclos de recuperación,
+limpiezas globales ni intervención de otros proyectos. Se requiere revisión de
+capacidad/concurrencia por el responsable, no cambios globales desde esta entrega.
+[Resultado y límites](../../App/infra/informe-atributos/seguridad/AUTORIZACION-CIERRE.md).
+
+La preparación de [dos servidores y un cliente](PLAN-DEMO-ZEROTIER.md) fue solo
+documental. No se instaló/configuró VPN ni se ejecutaron caídas entre computadores.
+
+
+**Ventana anterior — 15/11 Bogotá, Evacuación/Monitoreo:** Docker **activo** al
+inicio; registro de **101 originales**,11 CU-015 y 7 Redash activos. Redash se
+detuvo una vez por etapas según la guía, gracia 120 s. Scheduler cerró137 con
+OOMKilled=false, causa interna no aislada; logs/estado conservados, sin repetir
+reinicios o presentarlo como cierre ordenado. Sus proveedores se detuvieron
+después de registrar ese diagnóstico. Seis aplicaciones CU-015 cerraron0/143
+sin OOM; proveedores conservados. Base/Redis/volumen/vhost nuevos y 9 cuentas
+propias, sin semillas ni destinatarios/canales externos.
+
+El gateway original conservaba un render anterior, sin módulos dinámicos del
+develop integrado: lector403 allí/directo200. No se modifica imagen/configuración
+original; un gateway actual exclusivo usa el puerto18100 durante las medidas.
+Debe detenerse junto con Núcleo/Redis de ensayo antes de restaurar el gateway
+original. El restaurador valida el conjunto exacto de ids nuevos del metadato,
+incluido ese gateway, sin asumir siempre tres contenedores.
+
+Restauración única terminada **2026-11-15T19:50:16 UTC**: **101 originales con
+mismos ids/imágenes/montajes/estados**, once CU-015 y siete Redash activos otra
+vez. Preparacion-base inicialmente inactiva sigue inactiva, sin ejecutarla.
+**Cuatro nuevos detenidos, cierres 0/0/0/0 sin OOM**, datos/base/vhost/volúmenes
+retenidos. Gateway original reanudado con su misma configuración; el actual de
+ensayo queda detenido. Docker activo inicial/final; otros proyectos intactos.
+
+Control posterior **15/11 19:53:00 UTC (14:53 Bogotá)**: `/ping` y `/login`
+agotan **15 s**, curl28/HTTP000; PG listo y RedisPONG. Tras el arranque escalonado
+hubo reset56 inicial y luego200, que no acreditan estabilidad sostenida. Nuevos
+cgroups oom_kill: server **3**, scheduled_worker **2**, adhoc_worker **2**,
+worker **2**, scheduler/Redis/PG **0**. Contadores aparte: gateway ajeno ya
+restarting **29→109**, scheduler **2→1**. **Estados restaurados; HTTP Redash
+bloqueado/inestable con OOM**, sin ciclos de recuperación, limpiezas o cambios
+globales. No se intervienen otros proyectos para igualar contadores.
+
+
+Los acuses asíncronos y expiraciones naturales se distinguen de mutaciones en
+rechazos. Instantes completos privados por comparación en gzip; servidor Redis
+leído atómicamente, sin alterar TTL/reloj. Los fallos del arnés y las series
+interrumpidas se conservan. No se cambia capacidad global, limpian volúmenes o
+intervienen otros proyectos. [Resultado](../../App/infra/informe-atributos/seguridad/RESULTADO.md).
+
+**Ventana anterior — 14/11 Bogotá, Eventos/Recintos:** Docker **activo** al
 inicio/final. El registro inicial tenía **CU-015 (11 servicios) y Redash (7)
 activos**; no asumir el estado detenido de ventanas anteriores. Se detuvo Redash
 una vez antes de probar. La guarda bloqueó la primera preparación por Núcleo

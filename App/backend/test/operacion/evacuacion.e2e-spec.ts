@@ -78,6 +78,36 @@ describe('CU-010 · Gestionar evacuación ante emergencias (e2e)', () => {
   const zona = (d: { zonas: { zonaId: string }[] }, id: string) => d.zonas.find((z) => z.zonaId === id) as unknown as Record<string, unknown>;
   const tipos = (d: { bitacora: { tipo: string }[] }) => d.bitacora.map((b) => b.tipo).reverse();
 
+  it('Seguridad SSE: la revocación real cierra el flujo abierto y no entrega más paneles', async () => {
+    const escenarioPropio = await escenario(0); await plan(escenarioPropio.recinto, escenarioPropio.zonas);
+    const e = (await request(nucleo.url).post(`${E}/eventos/${escenarioPropio.evento}/evacuaciones`).set('Authorization', como(supervisor)).send({ tipo: 'PREVENTIVA', ubicacion: 'Recurso propio SSE', nivel: 1, alcance: 'PARCIAL', zonaOrigenId: escenarioPropio.zonas.A }).expect(201)).body.evacuacion.id;
+    const propia = await nucleo.cuenta(['Organizador']);
+    const abortar = new AbortController(), plazo = setTimeout(() => abortar.abort(), 10000);
+    let lector: ReadableStreamDefaultReader<Uint8Array> | undefined;
+    try {
+      const respuesta = await fetch(`${nucleo.url}${E}/evacuaciones/${e}/flujo`, { headers: { Authorization: como(propia) }, signal: abortar.signal });
+      expect(respuesta.status).toBe(200); lector = respuesta.body!.getReader();
+      const decoder = new TextDecoder(); let buffer = '';
+      async function siguiente(): Promise<{ tipo: string; datos: { codigo?: string; evento?: { id: string } } } | null> {
+        for (;;) {
+          const i = buffer.indexOf('\n\n');
+          if (i >= 0) {
+            const frame = buffer.slice(0, i); buffer = buffer.slice(i + 2);
+            const tipo = /^event: (.+)$/m.exec(frame)?.[1], datos = frame.split('\n').filter(l => l.startsWith('data:')).map(l => l.slice(5).trim()).join('\n');
+            if (tipo && datos) return { tipo, datos: JSON.parse(datos) }; continue;
+          }
+          const r = await lector!.read(); if (r.done) return null;
+          buffer += decoder.decode(r.value, { stream: true }).replaceAll('\r\n', '\n');
+        }
+      }
+      expect(await siguiente()).toMatchObject({ tipo: 'evacuacion', datos: { evacuacion: { id: e } } });
+      await request(nucleo.url).delete('/api/v1/sesiones/actual').set('Authorization', como(propia)).expect(200);
+      expect(await siguiente()).toMatchObject({ tipo: 'sesion_finalizada', datos: { codigo: 'SIN_AUTENTICAR' } });
+      expect(await siguiente()).toBeNull();
+      await request(nucleo.url).get(`${E}/evacuaciones/${e}/flujo`).set('Authorization', como(propia)).expect(401);
+    } finally { clearTimeout(plazo); abortar.abort(); await lector?.cancel().catch(() => undefined); lector?.releaseLock(); }
+  });
+
   it('pasos 1-13 con CU-010A, B, C y D: propuesta parcial, activación, ruta bloqueada, escalada, congestión y reporte', async () => {
     const { recinto, evento, zonas } = await escenario(40);
     const p = await plan(recinto, zonas);
@@ -222,7 +252,8 @@ describe('CU-010 · Gestionar evacuación ante emergencias (e2e)', () => {
     expect(previa.final).toBe(false);
     const flujo = await primerMensajeSse(`${nucleo.url}${E}/evacuaciones/${id}/flujo`, supervisor.token);
     expect(flujo).toContain('event: evacuacion');
-    expect(await primerMensajeSse(`${nucleo.url}${E}/evacuaciones/${randomUUID()}/flujo`, supervisor.token)).toContain('event: error');
+    const desconocida = await primerMensajeSse(`${nucleo.url}${E}/evacuaciones/${randomUUID()}/flujo`, supervisor.token);
+    expect(desconocida).toContain('event: sesion_finalizada'); expect(desconocida).toContain('FLUJO_NO_DISPONIBLE');
     await request(nucleo.url).post(`${E}/evacuaciones/${id}/descartar`).set('Authorization', como(supervisor)).expect(201);
   });
 

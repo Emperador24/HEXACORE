@@ -1,7 +1,7 @@
 # Demostraciones CU-011F, CU-012–015, CU-027 y CU-029; CU-028 bloqueado
 
-**14/11/2026 — velocidad visible vigente:** `test:cu015:visible` y los demás
-`:visible` usan demo de **1500 ms por etapa lista, slowMo=0**. Aceptación
+**15/11/2026 — velocidad visible vigente:** `test:cu015:visible` y los demás
+`:visible` usan demo de **500 ms entre acciones y 1500 ms por etapa lista**. Aceptación
 explícita sin pausas: `:visible:normal`. Configuración y comprobación acotada
 [en la sección Demo visible](#demo-visible-15-segundos-por-pantalla); los ritmos
 anteriores inferiores se conservan como historia.
@@ -150,12 +150,15 @@ npm --prefix App/e2e run test:implementados:visible
 npm --prefix App/e2e run test:completo:visible
 ```
 
-`playwright.demo.config.ts` fija **slowMo=0** y **1500 ms por etapa relevante**,
-después de sus esperas de contenido. No espera entre cada clic, escritura o
-aserción. Las variables antiguas CU015_DEMO_MS/CU015_DEMO_PAUSA_MS ya no cambian
-estos valores. `presentar()` enfoca la página y pausa una vez en el punto marcado;
-se elimina la pausa genérica después de login para no sumarla a la siguiente
-etapa. Los contextos explícitos usan el mismo navegador, también sin slowMo.
+`playwright.demo.config.ts` fija **500 ms entre acciones** y **1500 ms de lectura**
+después de las esperas de contenido. `actuar()` trae al actor al frente **antes**
+de sus clics, campos, selecciones o navegación, también en contextos explícitos.
+Cada campo se completa en una acción distinta; el formulario no aparece completo
+de golpe. La espera se cuenta desde el final de la acción anterior: una lectura
+de 1500 ms ya la satisface, sin sumar otros 500 ms. `presentar()` pausa solo en
+los puntos marcados. No hay pausas adicionales de 5 s ni demora por aserción.
+El slowMo nativo queda en 0 para no retrasar además el enfoque/comprobaciones;
+la demora efectiva está en el helper. Sin variables de velocidad en consola.
 
 Sigue cargando `.env.local` privada para las cuentas existentes. No cambia claves
 ni siembra datos. `npm --prefix App/e2e run demo -- cu015` usa la misma presentación.
@@ -176,7 +179,15 @@ esperas del producto. Informes privados `demo-FECHA` y `conjunto-demo-FECHA`,
 separados de aceptación. El observador completo mantiene diagnóstico CU-028,
 `completo:false` y salida **2** aunque Playwright apruebe; la demo no acredita aceptación.
 
-**Comprobación acotada, 14/11 Bogotá:** tipos y descubrimiento aprobados (16 casos,
+**Comprobación acotada, 15/11 Bogotá:** navegador visible con dos actores, dos
+campos, selección y clic por actor, más regreso al primero. Eventos del DOM
+registran foco/visibilidad **antes** de las acciones; separaciones **512–551 ms**,
+lecturas **1503/1503 ms**, regreso después de lectura **57 ms** (sin otra pausa).
+1/1 demo y 1/1 normal sobre páginas sintéticas, sin negocio ni los 16 recorridos.
+El primer arnés contó input y change de un mismo selector; se corrige el contador
+y se conservan su fallo/traza. No se cambian límites o reintentos.
+
+**Comprobación anterior, 14/11 Bogotá:** tipos y descubrimiento aprobados (16 casos,
 dos CU-015). Navegador visible con páginas sintéticas listas, sin API de negocio:
 lectura del helper **1502/1503 ms**, acciones completas **118/64 ms**, contextos
 predeterminado y explícito; modo normal **sin pausas ni adjuntos demo**. No se

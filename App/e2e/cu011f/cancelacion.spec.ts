@@ -1,6 +1,6 @@
 import { expect, test, APIRequestContext } from '../csp.fixture';
 import { createHash, randomUUID } from 'node:crypto';
-import { presentar } from '../presentacion';
+import { actuar, presentar } from '../presentacion';
 import { adminURL, clienteURL, comprobarAislamiento, gateway, loginAPI, loginUI, nucleo, sql } from '../cu015/entorno';
 import { comprar, entornoEntrega, h, listo } from '../cu014/entorno';
 const { nucleo: controlarNucleo } = require('../../backend/test/cu012/entorno.cjs') as { nucleo(a: 'parar' | 'iniciar'): void };
@@ -21,16 +21,16 @@ async function seguimiento(api: APIRequestContext, token: string, pedido: string
 
 test('CU-011F por interfaces: compra, cancelación explícita en local cerrado, respuesta perdida, reembolso y aviso sin QR', async ({ page, browser, request }) => {
   const e = await entornoEntrega(request, 'CU011F');
-  await loginUI(page, clienteURL, 'cliente@hexacore.com'); await page.goto(`${clienteURL}/pedidos?eventoId=${e.evento.id}`);
-  await page.getByRole('link').filter({ hasText: e.nombre }).click();
-  await page.getByRole('button', { name: 'Agregar Receta CU011F', exact: true }).click();
+  await loginUI(page, clienteURL, 'cliente@hexacore.com'); await actuar(page, objetivo => objetivo.goto(`${clienteURL}/pedidos?eventoId=${e.evento.id}`));
+  await actuar(page.getByRole('link').filter({ hasText: e.nombre }), objetivo => objetivo.click());
+  await actuar(page.getByRole('button', { name: 'Agregar Receta CU011F', exact: true }), objetivo => objetivo.click());
   const checkout = page.waitForResponse(r => r.url().endsWith('/pedidos/checkout'));
-  await page.getByRole('button', { name: 'Continuar', exact: true }).click(); const r = await checkout; expect(r.status()).toBe(201); const p = await r.json();
+  await actuar(page.getByRole('button', { name: 'Continuar', exact: true }), objetivo => objetivo.click()); const r = await checkout; expect(r.status()).toBe(201); const p = await r.json();
   const cobro = page.waitForResponse(r => r.url().endsWith(`/pedidos/${p.id}/pagos`));
-  await page.getByRole('button', { name: 'Pagar pedido', exact: true }).click(); const pago = await cobro; expect(pago.status()).toBe(200); const pagado = await pago.json();
+  await actuar(page.getByRole('button', { name: 'Pagar pedido', exact: true }), objetivo => objetivo.click()); const pago = await cobro; expect(pago.status()).toBe(200); const pagado = await pago.json();
   const antes = original(p.id, pagado.transaccionId);
   const comprobante = page;
-  const [seguimientoNuevo] = await Promise.all([page.context().waitForEvent('page'), page.getByRole('link', { name: 'Ver seguimiento y avisos', exact: true }).click({ modifiers: ['ControlOrMeta'] })]);
+  const [seguimientoNuevo] = await Promise.all([page.context().waitForEvent('page'), actuar(page.getByRole('link', { name: 'Ver seguimiento y avisos', exact: true }), objetivo => objetivo.click({ modifiers: ['ControlOrMeta'] }))]);
   page = seguimientoNuevo; await expect(page).toHaveURL(`${clienteURL}/mis-pedidos/${p.id}`);
   await expect(page.getByAltText('Código QR del pedido confirmado')).toBeVisible();
   await presentar(page, 'Cliente: pedido pagado y QR antes de la cancelación');
@@ -38,16 +38,16 @@ test('CU-011F por interfaces: compra, cancelación explícita en local cerrado, 
   const contexto = await browser.newContext(), operador = await contexto.newPage();
   try {
     await loginUI(operador, adminURL, 'restaurante@hexacore.com');
-    await operador.getByRole('navigation').getByRole('link', { name: 'Preparación de pedidos', exact: true }).click();
+    await actuar(operador.getByRole('navigation').getByRole('link', { name: 'Preparación de pedidos', exact: true }), objetivo => objetivo.click());
     await expect(operador).toHaveURL(`${adminURL}/admin/preparacion`);
     await expect(operador.getByRole('heading', { name: /Preparación de pedidos/ })).toBeVisible();
-    await operador.getByLabel('Establecimiento vinculado', { exact: true }).selectOption(e.local.id);
-    await operador.locator(`[data-pedido="${p.id}"]`).getByRole('button', { name: 'Gestionar pedido', exact: true }).click();
+    await actuar(operador.getByLabel('Establecimiento vinculado', { exact: true }), objetivo => objetivo.selectOption(e.local.id));
+    await actuar(operador.locator(`[data-pedido="${p.id}"]`).getByRole('button', { name: 'Gestionar pedido', exact: true }), objetivo => objetivo.click());
     const panel = operador.getByRole('region', { name: 'Cancelación del pedido', exact: true });
-    await panel.getByRole('button', { name: 'Cancelar pedido', exact: true }).click();
+    await actuar(panel.getByRole('button', { name: 'Cancelar pedido', exact: true }), objetivo => objetivo.click());
     await expect(panel.getByRole('button', { name: 'Confirmar cancelación', exact: true })).toBeDisabled();
-    await panel.getByLabel('Motivo de cancelación', { exact: true }).fill('No podemos preparar lo acordado');
-    await panel.getByLabel('Confirmo cancelar este pedido y solicitar su reembolso total', { exact: true }).check();
+    await actuar(panel.getByLabel('Motivo de cancelación', { exact: true }), objetivo => objetivo.fill('No podemos preparar lo acordado'));
+    await actuar(panel.getByLabel('Confirmo cancelar este pedido y solicitar su reembolso total', { exact: true }), objetivo => objetivo.check());
     await presentar(operador, 'Personal: revisar motivo, efecto sobre inventario y confirmación explícita');
     let resolver!: (status: number) => void; const recibida = new Promise<number>(r => resolver = r);
     await operador.route('**/cancelacion', async route => {
@@ -55,16 +55,16 @@ test('CU-011F por interfaces: compra, cancelación explícita en local cerrado, 
       try { const real = await route.fetch({ maxRetries: 0 }); resolver(real.status()); } catch { resolver(0); }
       await route.abort('failed');
     });
-    await panel.getByRole('button', { name: 'Confirmar cancelación', exact: true }).click(); expect(await recibida).toBe(200);
+    await actuar(panel.getByRole('button', { name: 'Confirmar cancelación', exact: true }), objetivo => objetivo.click()); expect(await recibida).toBe(200);
     await expect(panel.getByRole('button', { name: 'Consultar cancelación pendiente', exact: true })).toBeVisible();
     const guardada = await operador.evaluate(actor => localStorage.getItem(`hexacore.cu011f.intencion.${actor}`), e.personal.usuario.id);
     expect(guardada).not.toContain(pagado.codigoQr); expect(guardada).not.toContain(e.personal.token);
     await presentar(operador, 'Personal: respuesta perdida y misma operación conservada');
-    await operador.unroute('**/cancelacion'); await operador.reload();
-    await panel.getByRole('button', { name: 'Consultar cancelación pendiente', exact: true }).click();
+    await operador.unroute('**/cancelacion'); await actuar(operador, objetivo => objetivo.reload());
+    await actuar(panel.getByRole('button', { name: 'Consultar cancelación pendiente', exact: true }), objetivo => objetivo.click());
     await expect(panel.getByRole('status')).toContainText('Pedido cancelado');
     const consulta = operador.waitForResponse(r => r.url().endsWith(`/${p.id}/cancelacion`) && r.request().method() === 'GET');
-    await panel.getByRole('button', { name: 'Consultar cancelación y reembolso', exact: true }).click();
+    await actuar(panel.getByRole('button', { name: 'Consultar cancelación y reembolso', exact: true }), objetivo => objetivo.click());
     const confirmacion = await consulta; expect(confirmacion.status()).toBe(200); const c = await confirmacion.json();
     expect(c.reembolso.estado).toBe('APROBADO'); await expect(panel.locator('[data-reembolso]')).toContainText('aprobado');
     await presentar(operador, 'Personal: cancelación confirmada y aprobación del reembolso acreditada');
@@ -73,11 +73,11 @@ test('CU-011F por interfaces: compra, cancelación explícita en local cerrado, 
     expect(sql(`SELECT count(*) FROM alimentos.historial_preparacion WHERE pedido_id='${p.id}' AND accion='CANCELAR'`)).toBe('1');
     expect(sql(`SELECT count(*) FROM finanzas_pagos.transacciones_pago WHERE clave_idempotencia=(SELECT reembolso_id::text FROM alimentos.cancelaciones_pedido WHERE pedido_id='${p.id}') AND tipo='REEMBOLSO' AND intentos=1`)).toBe('1');
     expect(original(p.id, pagado.transaccionId)).toEqual(antes);
-    await page.reload(); await expect(page.locator('[data-avance]')).toHaveText('Cancelado');
+    await actuar(page, objetivo => objetivo.reload()); await expect(page.locator('[data-avance]')).toHaveText('Cancelado');
     const cliente = page.getByRole('region', { name: 'Cancelación y reembolso', exact: true });
     await expect(cliente).toContainText('No podemos preparar lo acordado'); await expect(cliente.locator('[data-cancelado]')).toBeVisible();
     await expect(cliente.locator('[data-reembolso]')).toContainText('aprobado'); await expect(page.getByAltText('Código QR del pedido confirmado')).toHaveCount(0);
-    await comprobante.getByRole('button', { name: 'Actualizar estado del pedido', exact: true }).click();
+    await actuar(comprobante.getByRole('button', { name: 'Actualizar estado del pedido', exact: true }), objetivo => objetivo.click());
     await expect(comprobante.getByRole('heading', { name: 'Pedido cancelado por el establecimiento', exact: true })).toBeVisible();
     await expect(comprobante.getByAltText('Código QR del pedido confirmado')).toHaveCount(0);
     await expect(page.getByText('El establecimiento canceló tu pedido: No podemos preparar lo acordado. El reembolso se encuentra pendiente de confirmación.', { exact: true })).toBeVisible();

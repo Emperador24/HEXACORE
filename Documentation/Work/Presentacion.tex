@@ -74,46 +74,282 @@
 \newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
 
 \title{Sistema Integral de Gestión de Eventos}
-\subtitle{Arquitectura de Software · SRS, SAD y prototipo funcional}
+\subtitle{Sustentación · arquitectura, atributos y prototipo · preparación parcial}
 \author{Daniel Cristancho \and Samuel Emperador \and Sebastián Sánchez \and Diego Coronado}
 \institute{Pontificia Universidad Javeriana · HEXACORE}
-\date{Noviembre de 2026}
+\date{15 de noviembre de 2026 · corte de código 9bc1ee5}
+
+\newcommand{\codigo}[2]{\href{https://github.com/Emperador24/HEXACORE/blob/9bc1ee5/#1}{#2}}
+\newcommand{\docrepo}[2]{\href{https://github.com/Emperador24/HEXACORE/blob/feature/sebastian/#1}{#2}}
+\newcommand{\franja}[1]{\par\smallskip{\scriptsize\color{hexaacento}#1}}
 
 \input{Diagrams/Vigente/diagramas}
 \begin{document}
-\begin{frame}{HEXACORE: cierre técnico de la migración}
-ADR-16, integrada en develop (PR \#44); corte del entorno habitual pendiente.
-\begin{itemize}\item Migrar funcionalidad existente, sin completar casos de otros integrantes.
-\item Tres programas ejecutables: Núcleo, Boletería y Trabajador.
-\item Operación conserva su frontera objetivo; no está implementada.
-\item Una base con ocho esquemas, libro financiero compartido y webhook único.
-\end{itemize}\end{frame}
-\begin{frame}{Contexto actual}\centering\HexContexto\end{frame}
-\begin{frame}{Programas y dependencias}\centering\HexContenedores\end{frame}
-\begin{frame}{Componentes del Núcleo}\centering\HexComponentesNucleo\end{frame}
-\begin{frame}{Componentes de Boletería}\centering\HexComponentesBoleteria\end{frame}
-\begin{frame}{Compra con turno y sus límites}\centering\HexSecuencia\end{frame}
-\begin{frame}{Despliegue}\centering\HexDespliegue\end{frame}
-\begin{frame}{Datos y ejecución}
-\begin{itemize}\item Copia transferida: reconoce ocho historiales, no reaplica las 18 migraciones.
-\item Instalación vacía: 49 tablas, 18 entradas de historial y cuatro roles iniciales.
-\item Preparación única serializada antes de apps; synchronize/migrationsRun=false.
-\item Compartir base no elimina las proyecciones ni aporta atomicidad nueva.
-\item Respaldos/restauración y corte coherente; volver de imagen no revierte datos.
-\end{itemize}\end{frame}
-\begin{frame}{Responsables y trabajo pendiente}
-\begin{itemize}\item Daniel: CU-001--005 y 021--023.
+\begin{frame}{HEXACORE: propósito y recorrido}
+Plataforma común para entradas, alimentos, personal y operación de eventos.
+\begin{itemize}
+\item Arquitectura: propuesta anterior frente a implementación actual.
+\item Atributos: escenario, táctica, código, evidencia y límites.
+\item Prototipo: diez minutos de demostraciones breves por preparar.
+\item SAD y anexos: material revisable para Brightspace.
+\end{itemize}
+\textbf{54 minutos propuestos}; máximo una hora, incluidas preguntas.
+\franja{00:00--02:00 · SAD 10\%, diseño 30\%, implementación 30\%, conocimiento individual escrito 30\%.}
+\end{frame}
+
+\begin{frame}{Responsables de atributos}
+\small
+\begin{tabular}{L{2.8cm}L{7.4cm}L{2.9cm}}
+\toprule Integrante & Bloque de validación acordado & Alcance\\\midrule
+Sebastián Sánchez & Seguridad: RNF-05/06 & Aporta también a Usabilidad\\[0.4em]
+Samuel Emperador & Desempeño: RNF-07/08/10. Disponibilidad: RNF-03/04/09/17. Monitoreo: RNF-19 & Mantiene límites de cada escenario\\[0.4em]
+Daniel Cristancho & Consolidación de Usabilidad: RNF-12/14 & Con aportes de todos\\[0.4em]
+Diego Coronado & Desplegabilidad: RNF-15/18 & Incluye Comprobabilidad\\
+\bottomrule
+\end{tabular}
+\medskip
+\textbf{Reparto acordado: guía de validación del 5/11.}
+Es un plan, no evidencia de resultados. Temario y RNF fuera del reparto por contrastar.
+\franja{02:00--04:00 · Monitoreo documentado posteriormente en el repositorio. Se conservan los nombres y umbrales de cada RNF del SAD.}
+\end{frame}
+
+\begin{frame}{Contenedores: antes y ahora}
+\begin{columns}[T,onlytextwidth]
+\column{0.49\textwidth}\centering
+\textbf{Antes: propuesta ADR-14/15}
+\includegraphics[width=\linewidth,height=0.56\textheight,keepaspectratio]{Historico/Contenedores-ADR14-15.pdf}
+\column{0.49\textwidth}\centering
+\textbf{Ahora: implementación ADR-16}
+\includegraphics[width=\linewidth,height=0.56\textheight,keepaspectratio]{Diagrams/ArchifyPDF/02-contenedores.pdf}
+\end{columns}
+\small Antes: 14 servicios propuestos. Ahora: Núcleo, Boletería y Trabajador.
+\franja{04:00--06:00 · Las siguientes vistas amplían cada diagrama. Antes recuperado sin cambios de 4b8cdd4.}
+\end{frame}
+
+\begin{frame}{Antes: contenedores propuestos en ADR-14/15}
+\centering
+\docrepo{Documentation/Work/Historico/Contenedores-ADR14-15.pdf}{\includegraphics[width=\textwidth,height=0.72\textheight,keepaspectratio]{Historico/Contenedores-ADR14-15.pdf}}
+\franja{06:00--09:00 · Propuesta histórica, sin despliegue acreditado. Pulsar el diagrama abre el PDF para ampliar.}
+\end{frame}
+
+\begin{frame}{Ahora: programas y dependencias vigentes}
+\centering
+\docrepo{Documentation/Work/Diagrams/ArchifyPDF/02-contenedores.pdf}{\includegraphics[width=\textwidth,height=0.72\textheight,keepaspectratio]{Diagrams/ArchifyPDF/02-contenedores.pdf}}
+\franja{09:00--12:00 · Núcleo incluye Operación CU-010/019, Eventos y Parqueaderos. CU-020 pendiente.}
+\end{frame}
+
+\begin{frame}{Decisiones, datos y concesiones}
+\begin{itemize}
+\item Tres ejecutables; Pagos es un módulo y su webhook está en Núcleo.
+\item Una PostgreSQL, \textbf{11 esquemas de negocio / 36 migraciones}; 18 fuentes originales conservadas.
+\item Preparación serializada antes de apps; sin migraciones automáticas al arrancar réplicas.
+\item Menor coordinación de procesos; coste: fallo SQL y despliegue/versionado compartidos.
+\item Compartir base no hace atómicos todos los módulos ni elimina proyecciones.
+\end{itemize}
+\codigo{App/backend/apps/nucleo/nucleo.module.ts}{NucleoModule} ·
+\codigo{App/backend/compartido/persistencia/historia.ts}{Migraciones vigentes}
+\franja{12:00--14:00 · El corte del entorno habitual sigue pendiente; integrar código no equivale a desplegarlo.}
+\end{frame}
+
+\begin{frame}{Mapa de atributos y lectura de resultados}
+\small
+\begin{tabular}{L{6.7cm}L{6.7cm}}
+\toprule Atributos en RNF-01--19 & Estado que se puede defender\\\midrule
+Consistencia, Disponibilidad, Seguridad, Rendimiento & Código y mediciones con alcance; requisitos completos parciales\\[0.5em]
+Tiempo real, Escalabilidad, Trazabilidad, Usabilidad & Mecanismos presentes; faltan umbrales o evidencias globales\\[0.5em]
+Mantenibilidad, Portabilidad, Desplegabilidad, Integrabilidad & Fronteras implementadas; concesiones y validaciones pendientes\\[0.5em]
+Safety, Comprobabilidad, Observabilidad & No confundir interlocks con Safety, tests con cobertura o tablero con alertas\\
+\bottomrule
+\end{tabular}
+\medskip
+Implementado $\neq$ comprobado. Comprobado en un ensayo $\neq$ RNF completo.
+\franja{14:00--16:00 · Falta temario completo para asegurar cobertura de todo lo visto en clase. Fichas: CIERRE-RUBRICA.md.}
+\end{frame}
+
+\begin{frame}{Desempeño y escalabilidad: objetivo frente a medición}
+\small
+\begin{tabular}{L{3.3cm}L{5.0cm}L{5.0cm}}
+\toprule & Objetivo & Resultado existente, 12/11\\\midrule
+RNF-07/08, ASR-04 & CU-001: p95 $\leq$500 ms con 2000 usuarios; QR $\leq$300 ms & Lecturas CU-006/026/025 con 200 usuarios: p95 150/355/311 ms, cero fallos\\[0.8em]
+RNF-10, ASR-06 & Duplicar Entradas: capacidad $\geq$1,7$\times$, sin degradar otros dominios & Dos Núcleos: CU-025 1,82$\times$; CU-026 1,57$\times$\\
+\bottomrule
+\end{tabular}
+\medskip
+Balanceo, procesos concurrentes y pools limitados. Un portátil comparte CPU entre carga, apps y datos.
+\textbf{200 no acredita 2000; escalar Núcleo no acredita RNF-10 de Entradas.}
+\franja{16:00--19:00 · Samuel · Informes CARGA-1-replica y CARGA-nucleo-2-replicas. No se ejecuta carga en esta entrega.}
+\end{frame}
+
+\begin{frame}{Disponibilidad y observabilidad}
+\begin{itemize}
+\item ASR-02, RNF-03/04: redundancia de apps, detección pasiva y reinicio.
+\item Ensayo local: 484/509 lecturas, cero fallos en 8 s; reinicio 8--13 s.
+\item No acredita 99,9\% mensual ni caída de computador o dependencias.
+\item RNF-19: exportador, Prometheus, Promtail/Loki y Grafana; CPU cada 2 s, refresco 5 s.
+\item Logs por instancia/upstream; retención 2 días, sin alertas automáticas.
+\end{itemize}
+\textbf{A/B/C pendiente:} A mantiene gateway y datos; B será apagable. A es punto único de fallo.
+\franja{19:00--22:00 · Samuel · DNS de 5 s no acota conmutación; no reintentar automáticamente escrituras.}
+\end{frame}
+
+\begin{frame}{Seguridad: diseño y ubicación de controles}
+\begin{itemize}
+\item ASR-03, RNF-05/06. JWT RS256; privada en Identidad/Núcleo, pública en borde/Boletería.
+\item El gateway valida JWT; módulos dinámicos deciden con permisos vigentes en backend.
+\item Servicios aplican rol, propiedad/vínculo, estado y autoridad administrativa vigente.
+\item Redis compartido: revocación y roles; dato ilegible produce 503, sin recuperar privilegios viejos.
+\item SSE revalida y cierra con terminal saneado; detección periódica, no instantánea.
+\end{itemize}
+\codigo{App/gateway/autenticacion.js}{Gateway} ·
+\codigo{App/backend/compartido/seguridad/sesion-valida.guard.ts}{Guarda común} ·
+\codigo{App/shared/seguridad/permisos.md}{Contrato}
+\franja{22:00--24:00 · Sebastián · RNF-05/06 parciales; acceso y conservación no certifican todos los canales de datos de pago.}
+\end{frame}
+
+\begin{frame}{Seguridad: 167/167 y su alcance real}
+\begin{itemize}
+\item Inventario: 186 declaradas, 181 expuestas y \textbf{167 protegidas}.
+\item Últimas 16: cuentas 5, CU-028 integrado 8, QR 3; gateway y servicio directo.
+\item Dos brechas corregidas: rol nuevo ignorado por gateway; roles Redis ilegibles recuperaban privilegio antiguo.
+\item Tres finales 560/560; 346 conservaciones completas de 76 tablas y Redis por final.
+\item 151 anteriores conservan sus combinaciones; no son todos los actores/estados/consumidores.
+\end{itemize}
+\textbf{Pendiente:} DAST, CSP y canales/límites de datos. Security no acredita Safety física.
+\franja{24:00--26:00 · Sebastián · Backend directo se conserva como comprobación adicional al gateway; 560 observaciones no son 560 CU.}
+\end{frame}
+
+\begin{frame}{Consistencia y tiempo real}
+\begin{itemize}
+\item ASR-01, RNF-01/02: bloqueo/reserva, idempotencia, outbox y proyecciones.
+\item Histórico: 50 compradores, un checkout; no demuestra QR viejo invalidado inmediatamente en toda condición actual.
+\item ASR-05, RNF-09: ingreso AMQP $\rightarrow$ proyección $\rightarrow$ panel SSE; objetivo $\leq$2 s.
+\item Revocación SSE a 2/3 s mide seguridad de sesión, no latencia ingreso--tablero.
+\item QR sin puntoAcceso registra QR/Ventas, pero no se proyecta a Monitoreo: hallazgo funcional pendiente.
+\end{itemize}
+\franja{26:00--28:00 · Samuel: RNF-09. Consistencia: por confirmar. Convergencia eventual no es tiempo real acreditado.}
+\end{frame}
+
+\begin{frame}{Trazabilidad y Safety: garantías distintas}
+\begin{itemize}
+\item ASR-07/RNF-11: libro/historial con actor de sesión, tiempo y transacción.
+\item Casos concretos comprobados; falta acreditar 100\% financiero y retención de un año.
+\item ASR-13/RNF-17: evacuación y avisos prioritarios implementados en Núcleo.
+\item Objetivo: 99\% de dispositivos en 10 s; faltan población, acuses y prueba bajo fallo.
+\item Bloqueos/interlocks de negocio no certifican Safety física; no hay push/SMS reales.
+\end{itemize}
+\codigo{App/backend/modulos/operacion/evacuacion}{Evacuación} ·
+\codigo{App/backend/modulos/finanzas/pagos}{Pagos}
+\franja{28:00--30:00 · Samuel: RNF-17. Trazabilidad: por confirmar. Auditoría SQL no equivale a no repudio criptográfico.}
+\end{frame}
+
+\begin{frame}{Usabilidad y portabilidad}
+\begin{itemize}
+\item ASR-08/RNF-12: tarea de compra en $\leq$5 pasos, éxito $\geq$80\% con cinco usuarios nuevos.
+\item Daniel consolida RNF-12/14 con aportes de todos; falta evidencia humana.
+\item ASR-10/RNF-14: 100\% de CU Cliente en web y móvil con la misma API.
+\item Angular y Flutter consumen el backend; falta matriz global de equivalencia.
+\item Sebastián aporta pantallas, navegación, rotulado, pasos y capturas de Alimentos y cuentas/roles/recintos; reconoce implementación de Samuel.
+\item Playwright y CI no sustituyen usuarios nuevos ni prueban paridad total de clientes.
+\end{itemize}
+\franja{30:00--32:00 · Daniel: RNF-12/14. Móvil/TLS del ensayo remoto pendientes; aportar capturas no acredita resultados con usuarios.}
+\end{frame}
+
+\begin{frame}{Evolución y pruebas: código presente, límites pendientes}
+\small
+\begin{tabular}{L{3.2cm}L{5.0cm}L{5.1cm}}
+\toprule Atributo / ASR & Mecanismo & Límite del RNF\\\midrule
+Mantenibilidad / 09 & Módulos, contratos y pools propios & RNF-13: despliegue coordinado aceptado\\[0.5em]
+Desplegabilidad / 12 & Imágenes, preparación y reversión prevista & RNF-15: cero errores/10 min y rollback 5 min no acreditados\\[0.5em]
+Integrabilidad / 11 & Interfaz Pagos y adaptadores HTTP/Stripe & RNF-16: falta medir sustitución e impacto\\[0.5em]
+Comprobabilidad / 14 & Unitarias/dobles, HTTP y contratos separados & RNF-18: 1173 tests no equivalen a cobertura $\geq$70\%\\
+\bottomrule
+\end{tabular}
+\franja{32:00--34:00 · Diego: RNF-15/18. Mantenibilidad e Integrabilidad: por confirmar. Sin nuevas funciones ni sustituciones.}
+\end{frame}
+
+\begin{frame}{Prototipo: guion futuro de diez minutos (1/2)}
+\small
+\begin{tabular}{L{3.2cm}L{8.8cm}r}
+\toprule Atributo & Microdemostración propuesta & s\\\midrule
+Seguridad & Positivo 200, rol ajeno 403, sin token 401 y revocación propia & 90\\
+Desempeño & Lectura y contraste con informe existente & 45\\
+Escalabilidad & Reparto entre instancias ya preparadas & 30\\
+Disponibilidad & X-Servidor y evidencia histórica; caída B pendiente & 40\\
+Observabilidad & Correlación de solicitud, upstream y log en tablero & 35\\
+Consistencia & Caso existente de competencia/replay por seleccionar & 60\\
+Tiempo real & Ingreso propio y panel; medir extremo a extremo & 40\\
+\bottomrule
+\end{tabular}
+\franja{34:00--44:00 compartido con la siguiente lámina · Plan por ensayar, no resultado de esta entrega.}
+\end{frame}
+
+\begin{frame}{Prototipo: guion futuro de diez minutos (2/2)}
+\small
+\begin{tabular}{L{3.2cm}L{8.8cm}r}
+\toprule Atributo & Microdemostración propuesta & s\\\midrule
+Trazabilidad & Registro propio con actor y transacción & 30\\
+Safety & Estado/aviso simulado e interlock ya preparado & 35\\
+Usabilidad & Tarea/pasos y evidencia humana, si existe & 45\\
+Portabilidad & Una lectura autorizada en web y app & 35\\
+Mantenibilidad & Contrato e implementación de un módulo & 30\\
+Desplegabilidad & Versión/CI y procedimiento; sin despliegue nuevo & 30\\
+Integrabilidad & Interfaz y contrato existente del adaptador & 25\\
+Comprobabilidad & Prueba aislada existente y CI de su revisión & 30\\
+\bottomrule
+\end{tabular}
+\franja{600 s totales entre las dos láminas · Código/CI no sustituyen la demo viva exigida: lo faltante sigue pendiente.}
+\end{frame}
+
+\begin{frame}{Evidencia revisable y material para Brightspace}
+\begin{itemize}
+\item \href{DescripcionArquitecturaSoftware.pdf}{SAD PDF}: arquitectura, RNF/ASR, tácticas, Seguridad vigente y límites.
+\item \docrepo{Documentation/Work/CIERRE-RUBRICA.md}{CIERRE-RUBRICA}: fichas, responsables, guion y tareas pendientes.
+\item \codigo{App/infra/informe-atributos/seguridad/RESULTADO.md}{RESULTADO},
+\codigo{App/infra/informe-atributos/seguridad/COBERTURA-RECURSOS.md}{COBERTURA} y evidencia saneada.
+\item \href{https://github.com/Emperador24/HEXACORE/actions/runs/43768177312}{CI 9bc1ee5}: 8/8; 1173 unitarias, Núcleo 141$\times$2, Boletería 29$\times$2.
+\item Informes de carga, diagramas antes/ahora y \docrepo{Documentation/Work/PLAN-DEMO-ZEROTIER.md}{plan A/B/C}.
+\end{itemize}
+\franja{44:00--46:00 · Enlaces al código medido; secretos, QR, capturas SQL/Redis y logs crudos fuera de Git y Brightspace.}
+\end{frame}
+
+\begin{frame}{Pendientes que el equipo debe resolver}
+\begin{itemize}
+\item Temario completo y responsables de RNF-01/02/11/13/16 por confirmar.
+\item Ensayo de 54 min y demostraciones vivas pendientes por responsable.
+\item Seguridad RNF-05/06 parcial; Safety, retención, cobertura y otros umbrales sin acreditar.
+\item Prueba A/B/C pendiente; A es punto único de fallo. Faltan equipos, IP asignadas, puertos, HTTPS y móvil.
+\item Último control histórico Redash: timeout/OOM; capacidad a revisar por su responsable.
+\end{itemize}
+\franja{46:00--48:00 · Esta entrega es documental: no opera Docker/Redash, no instala VPN ni ejecuta caídas. Carga Brightspace pendiente.}
+\end{frame}
+
+\begin{frame}{Defensa y conocimiento individual}
+Cada integrante debe poder explicar:
+\begin{itemize}
+\item Escenario y umbral; diferencia entre requisito y resultado medido.
+\item Táctica elegida, alternativa descartada y concesión aceptada.
+\item Ubicación del código y prueba que respalda la afirmación.
+\item Qué falla, qué se conserva y qué sigue pendiente.
+\end{itemize}
+\textbf{El 30\% escrito individual requiere preparación de cada integrante.}
+\franja{48:00--54:00 · Preguntas · 6 min adicionales de reserva hasta el máximo de una hora.}
+\end{frame}
+
+\appendix
+\begin{frame}{Anexo: contexto actual}\centering\HexContexto\end{frame}
+\begin{frame}{Anexo: componentes del Núcleo}\centering\HexComponentesNucleo\end{frame}
+\begin{frame}{Anexo: componentes de Boletería}\centering\HexComponentesBoleteria\end{frame}
+\begin{frame}{Anexo: compra con turno y límites}\centering\HexSecuencia\end{frame}
+\begin{frame}{Anexo: despliegue}\centering\HexDespliegue\end{frame}
+\begin{frame}{Anexo: reparto formal de casos de uso}
+\begin{itemize}
+\item Daniel: CU-001--005 y 021--023.
 \item Samuel: CU-006--010 y 024--026.
 \item Sebastián: CU-011--015 y 027--029.
 \item Diego: CU-016--020 y 030--032.
 \end{itemize}
-El reparto del SRS sigue vigente. Guía de ubicaciones y pendientes en GUIA-EQUIPO-MIGRACION.
+Se conserva el SRS. Acuerdos de implementación de Identidad/Recintos por Samuel
+no reasignan todo un atributo. Código presente no implica completar todos los CU.
+\docrepo{Documentation/Work/GUIA-EQUIPO-MIGRACION.md}{Guía de ubicaciones y acuerdos}.
 \end{frame}
-\begin{frame}{Verificación y concesiones}
-\begin{itemize}\item Evidencia local A/B en ESTADO-MIGRACION, apartado 23.
-\item CI/CD y digests reales, con enlaces/revisión, en el apartado 24.
-\item Pruebas locales no acreditan CI remoto ni publicación de imágenes.
-\item F12/F13/F14/F15 abiertos; no se certifica rendimiento/disponibilidad.
-\item Despliegue coordinado, base/fallo SQL compartidos; Operación y alertas pendientes.
-\end{itemize}\end{frame}
 \end{document}

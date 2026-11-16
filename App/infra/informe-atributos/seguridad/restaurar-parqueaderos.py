@@ -84,7 +84,14 @@ def main():
     # Los contadores pueden avanzar automáticamente o reiniciarse al arrancar;
     # se conservan como observación, sin intervenir otros proyectos.
     assert all(all(x[k] for k in ['idIgual', 'imagenIgual', 'montajesIguales', 'estadoRestaurado']) for x in comparaciones)
-    assert len(nuevos) == 3 and all(not c['State']['Running'] and not c['State']['OOMKilled'] and c['State']['ExitCode'] in [0, 143] for c in nuevos)
+    meta = json.loads((p / 'entorno-parqueaderos.json').read_text())
+    esperados = {meta['coreId'], meta['redisId']}
+    if meta.get('coreAntes'): esperados.add(meta['coreAntes']['id'])
+    if meta.get('gatewayEnsayo'): esperados.add(meta['gatewayEnsayo']['id'])
+    if meta.get('gatewayAntes'): esperados.add(meta['gatewayAntes']['id'])
+    if meta.get('boleteriaEnsayo'): esperados.add(meta['boleteriaEnsayo']['id'])
+    assert {c['Id'] for c in nuevos} == esperados
+    assert all(not c['State']['Running'] and not c['State']['OOMKilled'] and c['State']['ExitCode'] in [0, 143] for c in nuevos)
     assert all(c['Config']['Labels'].get('com.docker.compose.project') == 'hexacore-seguridad-parqueaderos-sebastian' for c in nuevos)
-    print(f'{len(comparaciones)} contenedores originales conservados/restaurados; tres de ensayo detenidos; Docker activo.', flush=True)
+    print(f'{len(comparaciones)} contenedores originales conservados/restaurados; {len(nuevos)} de ensayo detenidos; Docker activo.', flush=True)
 if __name__ == '__main__': main()

@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Header, MessageEvent, Param, ParseUUIDPipe, Patch, Post, Put, Req, Sse, UseGuards, UsePipes } from '@nestjs/common';
-import { Observable, catchError, exhaustMap, from, interval, map, of, startWith } from 'rxjs';
+import { Observable } from 'rxjs';
+import { FlujoOperacionService } from '../comun/flujo-operacion.service';
 import { validacionAlimentos as validacion } from '../../../compartido/validacion';
 import { AccionPermiso, ModuloPermisos, PeticionConSesion, RolesPermitidos, SesionValida } from '../comun/autenticacion/sesion-valida.guard';
 import {
@@ -32,7 +33,7 @@ const INTERVALO_MS = 2000;
 @RolesPermitidos('Organizador', 'Administrador')
 @ModuloPermisos('emergencias')
 export class EvacuacionController {
-  constructor(private readonly evacuacion: EvacuacionService) {}
+  constructor(private readonly flujos: FlujoOperacionService, private readonly evacuacion: EvacuacionService) {}
 
   @Get('recintos/:recintoId/plan')
   plan(@Param('recintoId', ParseUUIDPipe) recintoId: string) {
@@ -74,16 +75,10 @@ export class EvacuacionController {
   /** Pasos 10-11 en tiempo real, por Server-Sent Events. */
   @Sse('evacuaciones/:id/flujo')
   @Header('X-Accel-Buffering', 'no')
-  flujo(@Param('id', ParseUUIDPipe) id: string): Observable<MessageEvent> {
-    return interval(INTERVALO_MS).pipe(
-      startWith(0),
-      exhaustMap(() =>
-        from(this.evacuacion.detalle(id)).pipe(
-          map((datos): MessageEvent => ({ type: 'evacuacion', data: datos })),
-          catchError((error: Error & { response?: unknown }) => of<MessageEvent>({ type: 'error', data: error.response ?? { mensaje: error.message } })),
-        ),
-      ),
-    );
+  flujo(@Param('id', ParseUUIDPipe) id: string, @Req() peticion: PeticionConSesion): Observable<MessageEvent> {
+    const token = peticion.headers.authorization!.split(' ')[1];
+    return this.flujos.seguir(() => this.evacuacion.detalleParaFlujo(id), token,
+      { roles: ['Organizador', 'Administrador'], modulo: 'emergencias', accion: 'leer' }, INTERVALO_MS, 'evacuacion');
   }
 
   /** Paso 7. */

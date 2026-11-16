@@ -1,4 +1,56 @@
-# Cobertura por recurso — 14/11/2026 Bogotá, Eventos/Recintos
+# Cobertura por recurso — 15/11/2026 Bogotá, cierre del inventario
+
+## Cierre de las 16 pendientes — corte vigente
+
+**167/167 protegidas; cero operaciones pendientes del inventario. RNF-05/06
+siguen parciales.** Nuevas: cuentas5, roles/permisos8 y QR3; cada método/ruta
+por gateway y servicio directo con recursos/estados válidos y positivos.
+Inventario sin cambios **186 declaradas / 181 expuestas / 167 protegidas**.
+Las 151 anteriores conservan su evidencia y combinaciones; no se repiten sus
+matrices ni se acredita toda combinación de permisos, estado o consumidor.
+
+Dos brechas demostradas: asignaciones nuevas bloqueadas en gateway por JWT
+anterior y recuperación del privilegio antiguo ante roles Redis ilegibles.
+Corregidas en **8eae8b9**. Tres finales de cierre **560/560**, **346 conservaciones
+de 76 tablas/planos/secuencias/Redis por final**, 236 rechazos de autorización.
+Datos/DTO/estado/contexto/dependencia/carreras se separan. Las carreras de último
+administrador admiten una mutación válida y rechazan la segunda; no se cuentan
+como igualdad global. Evidencia previa y todos los fallos del arnés conservados.
+
+[Contrato y pendientes](AUTORIZACION-CIERRE.md) · [Evidencia saneada](CIERRE-EVIDENCIA.json) ·
+[Resultado](RESULTADO.md). El plan de dos servidores y un cliente es documental;
+no añade cobertura ni ejecuta VPN/caídas.
+
+## Corte anterior — Evacuación/Monitoreo
+
+**151/167 protegidas; 16 pendientes. RNF-05/06 parciales.** Se agregan las
+**22/22 de Evacuación/Monitoreo** (16/6) por gateway y Núcleo, incluidos dos SSE.
+Inventario actual **186 declaradas / 181 expuestas / 167 protegidas**: develop
+36998aa incorporó ocho protegidas CU-028 (admin/roles y cuentas/permisos), que
+permanecen pendientes. Las ocho antiguas pendientes son Acceso QR3/Admin cuentas5.
+Las 129 anteriores conservan su evidencia y combinaciones probadas; no se atribuye
+esa evidencia a todas las combinaciones de la nueva matriz dinámica.
+
+Tres finales seriales de cierre **510/510** cada una: 470 semánticas, 32 de
+contexto, 4 DTO y 4 estado. **256 comparaciones completas de 76 tablas**, avisos,
+historial, planos, secuencias y Redis; **216 rechazos de autorización**. Positivos
+de las 22 rutas para Organizador y Administrador en cada canal; Personal solo
+las tres operaciones de campo declaradas, sin asignaciones ni propiedad inventadas.
+Lector/creador/actualizador propios prueban los permisos vigentes, sin desarrollar
+CU-028 ni declarar cubiertas sus ocho rutas nuevas.
+
+Ambos SSE revalidan sesión y permiso en sus ciclos 2/3 s y antes de emitir;
+terminal saneado y EOF, sin datos tardíos. Revocación, exp, fallo Redis, permiso
+retirado, consulta pendiente, desconexión y SIGTERM5s; regresión acotada del SSE
+anterior. Ventana periódica, no instantánea; no se certifica RNF-17.
+
+[Contrato y reproducción](AUTORIZACION-OPERACION.md) ·
+[Evidencia](OPERACION-EVIDENCIA.json) · [Resultado e incidencias](RESULTADO.md).
+La serie inicial interrumpida por un acuse asíncrono se conserva y se explica;
+la precondición corregida mantiene límites y compara todos los campos. No repetir
+los 16 recorridos ni 300 controles históricos; sin ampliación DAST.
+
+## Corte anterior — 14/11/2026 Bogotá, Eventos/Recintos
 
 **129/159 operaciones protegidas; 30 pendientes. RNF-05/06 parciales.** Se
 agregan las **16/16 de Eventos/Recintos**, por gateway y Núcleo directo, sin
@@ -62,7 +114,7 @@ Cubrir una operación no agota combinaciones/carreras/estados. Las 46 pendientes
 conservan identidad/roles anteriores; **RNF-05/06 siguen parciales**. No se amplía
 DAST ni se repiten localmente los 16 recorridos completos.
 
-## Inventario vigente por método y ruta — 129/159
+## Inventario vigente por método y ruta — 151/167
 
 | Método | Ruta | Regla efectiva revisada | Prueba por gateway/directo | Ubicación |
 |---|---|---|---|---|
@@ -76,9 +128,9 @@ DAST ni se repiten localmente los 16 recorridos completos.
 |GET|`/api/v1/compras/:id`|SesionValida; Cliente|Sí; Compras/Reventa 3×150; ambas vías, con positivos|`App/backend/modulos/entradas/ventas/venta/compras.controller.ts`|
 |GET|`/api/v1/compras`|SesionValida; Cliente|Sí; Compras/Reventa 3×150; ambas vías, con positivos|`App/backend/modulos/entradas/ventas/venta/compras.controller.ts`|
 |POST|`/api/v1/compras`|SesionValida; Cliente|Sí; Compras/Reventa 3×150; ambas vías, con positivos|`App/backend/modulos/entradas/ventas/venta/compras.controller.ts`|
-|GET|`/api/v1/ingresos/eventos/:eventoId/cache`|SesionValida; Personal, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/entradas/acceso-qr/acceso/ingresos.controller.ts`|
-|POST|`/api/v1/ingresos/sincronizacion`|SesionValida; Personal, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/entradas/acceso-qr/acceso/ingresos.controller.ts`|
-|POST|`/api/v1/ingresos`|SesionValida; Personal, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/entradas/acceso-qr/acceso/ingresos.controller.ts`|
+|GET|`/api/v1/ingresos/eventos/:eventoId/cache`|SesionValida; Personal, Administrador|Sí; Cierre 3×560; gateway/directo, positivos y conservación|`App/backend/modulos/entradas/acceso-qr/acceso/ingresos.controller.ts`|
+|POST|`/api/v1/ingresos/sincronizacion`|SesionValida; Personal, Administrador|Sí; Cierre 3×560; gateway/directo, positivos y conservación|`App/backend/modulos/entradas/acceso-qr/acceso/ingresos.controller.ts`|
+|POST|`/api/v1/ingresos`|SesionValida; Personal, Administrador|Sí; Cierre 3×560; gateway/directo, positivos y conservación|`App/backend/modulos/entradas/acceso-qr/acceso/ingresos.controller.ts`|
 |POST|`/api/v1/reventa/checkout/:id/pagar`|SesionValida; Cliente|Sí; Compras/Reventa 3×150; ambas vías, con positivos|`App/backend/modulos/entradas/postventa/postventa/reventa.controller.ts`|
 |DELETE|`/api/v1/reventa/checkout/:id`|SesionValida; Cliente|Sí; Compras/Reventa 3×150; ambas vías, con positivos|`App/backend/modulos/entradas/postventa/postventa/reventa.controller.ts`|
 |GET|`/api/v1/reventa/checkout/:id`|SesionValida; Cliente|Sí; Compras/Reventa 3×150; ambas vías, con positivos|`App/backend/modulos/entradas/postventa/postventa/reventa.controller.ts`|
@@ -90,38 +142,46 @@ DAST ni se repiten localmente los 16 recorridos completos.
 |PATCH|`/api/v1/reventa/publicaciones/:id`|SesionValida; Cliente|Sí; Compras/Reventa 3×150; ambas vías, con positivos|`App/backend/modulos/entradas/postventa/postventa/reventa.controller.ts`|
 |GET|`/api/v1/reventa/publicaciones`|SesionValida; Cliente|Sí; Compras/Reventa 3×150; ambas vías, con positivos|`App/backend/modulos/entradas/postventa/postventa/reventa.controller.ts`|
 |POST|`/api/v1/reventa/publicaciones`|SesionValida; Cliente|Sí; Compras/Reventa 3×150; ambas vías, con positivos|`App/backend/modulos/entradas/postventa/postventa/reventa.controller.ts`|
-|POST|`/api/v1/admin/cuentas/:id/activar`|SesionRequerida, AdministradorRequerido; Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/identidad/administracion-cuentas/administracion-cuentas.controller.ts`|
-|POST|`/api/v1/admin/cuentas/:id/desactivar`|SesionRequerida, AdministradorRequerido; Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/identidad/administracion-cuentas/administracion-cuentas.controller.ts`|
-|DELETE|`/api/v1/admin/cuentas/:id`|SesionRequerida, AdministradorRequerido; Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/identidad/administracion-cuentas/administracion-cuentas.controller.ts`|
-|GET|`/api/v1/admin/cuentas/:id`|SesionRequerida, AdministradorRequerido; Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/identidad/administracion-cuentas/administracion-cuentas.controller.ts`|
-|GET|`/api/v1/admin/cuentas`|SesionRequerida, AdministradorRequerido; Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/identidad/administracion-cuentas/administracion-cuentas.controller.ts`|
+|POST|`/api/v1/admin/cuentas/:id/activar`|SesionRequerida, AdministradorRequerido; Administrador|Sí; Cierre 3×560; gateway/directo, positivos y conservación|`App/backend/modulos/identidad/administracion-cuentas/administracion-cuentas.controller.ts`|
+|POST|`/api/v1/admin/cuentas/:id/desactivar`|SesionRequerida, AdministradorRequerido; Administrador|Sí; Cierre 3×560; gateway/directo, positivos y conservación|`App/backend/modulos/identidad/administracion-cuentas/administracion-cuentas.controller.ts`|
+|DELETE|`/api/v1/admin/cuentas/:id`|SesionRequerida, AdministradorRequerido; Administrador|Sí; Cierre 3×560; gateway/directo, positivos y conservación|`App/backend/modulos/identidad/administracion-cuentas/administracion-cuentas.controller.ts`|
+|GET|`/api/v1/admin/cuentas/:id`|SesionRequerida, AdministradorRequerido; Administrador|Sí; Cierre 3×560; gateway/directo, positivos y conservación|`App/backend/modulos/identidad/administracion-cuentas/administracion-cuentas.controller.ts`|
+|GET|`/api/v1/admin/cuentas`|SesionRequerida, AdministradorRequerido; Administrador|Sí; Cierre 3×560; gateway/directo, positivos y conservación|`App/backend/modulos/identidad/administracion-cuentas/administracion-cuentas.controller.ts`|
+|DELETE|`/api/v1/admin/roles/:id/usuarios/:usuarioId`|SesionRequerida, AdministradorRequerido; Administrador|Sí; Cierre 3×560; gateway/directo, positivos y conservación|`App/backend/modulos/identidad/roles-permisos/roles-permisos.controller.ts`|
+|POST|`/api/v1/admin/roles/:id/usuarios`|SesionRequerida, AdministradorRequerido; Administrador|Sí; Cierre 3×560; gateway/directo, positivos y conservación|`App/backend/modulos/identidad/roles-permisos/roles-permisos.controller.ts`|
+|DELETE|`/api/v1/admin/roles/:id`|SesionRequerida, AdministradorRequerido; Administrador|Sí; Cierre 3×560; gateway/directo, positivos y conservación|`App/backend/modulos/identidad/roles-permisos/roles-permisos.controller.ts`|
+|GET|`/api/v1/admin/roles/:id`|SesionRequerida, AdministradorRequerido; Administrador|Sí; Cierre 3×560; gateway/directo, positivos y conservación|`App/backend/modulos/identidad/roles-permisos/roles-permisos.controller.ts`|
+|PUT|`/api/v1/admin/roles/:id`|SesionRequerida, AdministradorRequerido; Administrador|Sí; Cierre 3×560; gateway/directo, positivos y conservación|`App/backend/modulos/identidad/roles-permisos/roles-permisos.controller.ts`|
+|GET|`/api/v1/admin/roles`|SesionRequerida, AdministradorRequerido; Administrador|Sí; Cierre 3×560; gateway/directo, positivos y conservación|`App/backend/modulos/identidad/roles-permisos/roles-permisos.controller.ts`|
+|POST|`/api/v1/admin/roles`|SesionRequerida, AdministradorRequerido; Administrador|Sí; Cierre 3×560; gateway/directo, positivos y conservación|`App/backend/modulos/identidad/roles-permisos/roles-permisos.controller.ts`|
 |PUT|`/api/v1/cuentas/perfil/contrasena`|SesionRequerida; identidad/contexto del servicio|Sí; contexto probado, combinaciones limitadas|`App/backend/modulos/identidad/cuentas/perfil.controller.ts`|
 |GET|`/api/v1/cuentas/perfil`|SesionRequerida; identidad/contexto del servicio|Sí; contexto probado, combinaciones limitadas|`App/backend/modulos/identidad/cuentas/perfil.controller.ts`|
 |PATCH|`/api/v1/cuentas/perfil`|SesionRequerida; identidad/contexto del servicio|Sí; contexto probado, combinaciones limitadas|`App/backend/modulos/identidad/cuentas/perfil.controller.ts`|
-|POST|`/api/v1/emergencias/evacuaciones/:id/confirmar`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/operacion/evacuacion/evacuacion.controller.ts`|
-|POST|`/api/v1/emergencias/evacuaciones/:id/descartar`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/operacion/evacuacion/evacuacion.controller.ts`|
-|POST|`/api/v1/emergencias/evacuaciones/:id/finalizar`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/operacion/evacuacion/evacuacion.controller.ts`|
-|GET|`/api/v1/emergencias/evacuaciones/:id/flujo`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/operacion/evacuacion/evacuacion.controller.ts`|
-|POST|`/api/v1/emergencias/evacuaciones/:id/nivel`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/operacion/evacuacion/evacuacion.controller.ts`|
-|GET|`/api/v1/emergencias/evacuaciones/:id/reporte`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/operacion/evacuacion/evacuacion.controller.ts`|
-|POST|`/api/v1/emergencias/evacuaciones/:id/salidas/:salidaId/bloqueo`|SesionValida; Organizador, Administrador, Personal|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/operacion/evacuacion/evacuacion.controller.ts`|
-|POST|`/api/v1/emergencias/evacuaciones/:id/zonas/:zonaId/ruta`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/operacion/evacuacion/evacuacion.controller.ts`|
-|PATCH|`/api/v1/emergencias/evacuaciones/:id/zonas/:zonaId`|SesionValida; Organizador, Administrador, Personal|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/operacion/evacuacion/evacuacion.controller.ts`|
-|GET|`/api/v1/emergencias/evacuaciones/:id`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/operacion/evacuacion/evacuacion.controller.ts`|
-|GET|`/api/v1/emergencias/eventos/:eventoId/activa`|SesionValida; Organizador, Administrador, Personal|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/operacion/evacuacion/evacuacion.controller.ts`|
-|GET|`/api/v1/emergencias/eventos/:eventoId/evacuaciones`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/operacion/evacuacion/evacuacion.controller.ts`|
-|POST|`/api/v1/emergencias/eventos/:eventoId/evacuaciones`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/operacion/evacuacion/evacuacion.controller.ts`|
-|GET|`/api/v1/emergencias/eventos`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/operacion/evacuacion/evacuacion.controller.ts`|
-|GET|`/api/v1/emergencias/recintos/:recintoId/plan`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/operacion/evacuacion/evacuacion.controller.ts`|
-|PUT|`/api/v1/emergencias/recintos/:recintoId/plan`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/operacion/evacuacion/evacuacion.controller.ts`|
-|POST|`/api/v1/eventos/:id/cancelar`|SesionValida; Organizador|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/eventos/eventos.controller.ts`|
-|POST|`/api/v1/eventos/:id/publicar`|SesionValida; Organizador|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/eventos/eventos.controller.ts`|
-|DELETE|`/api/v1/eventos/:id`|SesionValida; Organizador|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/eventos/eventos.controller.ts`|
-|GET|`/api/v1/eventos/:id`|SesionValida; Organizador, Administrador|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/eventos/eventos.controller.ts`|
-|PUT|`/api/v1/eventos/:id`|SesionValida; Organizador|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/eventos/eventos.controller.ts`|
-|GET|`/api/v1/eventos/disponibilidad`|SesionValida; Organizador, Administrador|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/eventos/eventos.controller.ts`|
-|GET|`/api/v1/eventos`|SesionValida; Organizador, Administrador|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/eventos/eventos.controller.ts`|
-|POST|`/api/v1/eventos`|SesionValida; Organizador|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/eventos/eventos.controller.ts`|
+|GET|`/api/v1/cuentas/permisos`|SesionRequerida; identidad/contexto del servicio|Sí; Cierre 3×560; gateway/directo, positivos y conservación|`App/backend/modulos/identidad/roles-permisos/roles-permisos.controller.ts`|
+|POST|`/api/v1/emergencias/evacuaciones/:id/confirmar`|SesionValida; Organizador, Administrador; o permiso emergencias:actualizar|Sí; Operación 3×510 + SSE, ambas vías, positivos Org/Admin|`App/backend/modulos/operacion/evacuacion/evacuacion.controller.ts`|
+|POST|`/api/v1/emergencias/evacuaciones/:id/descartar`|SesionValida; Organizador, Administrador; o permiso emergencias:actualizar|Sí; Operación 3×510 + SSE, ambas vías, positivos Org/Admin|`App/backend/modulos/operacion/evacuacion/evacuacion.controller.ts`|
+|POST|`/api/v1/emergencias/evacuaciones/:id/finalizar`|SesionValida; Organizador, Administrador; o permiso emergencias:actualizar|Sí; Operación 3×510 + SSE, ambas vías, positivos Org/Admin|`App/backend/modulos/operacion/evacuacion/evacuacion.controller.ts`|
+|GET|`/api/v1/emergencias/evacuaciones/:id/flujo`|SesionValida; Organizador, Administrador; o permiso emergencias:leer|Sí; Operación 3×510 + SSE, ambas vías, positivos Org/Admin|`App/backend/modulos/operacion/evacuacion/evacuacion.controller.ts`|
+|POST|`/api/v1/emergencias/evacuaciones/:id/nivel`|SesionValida; Organizador, Administrador; o permiso emergencias:actualizar|Sí; Operación 3×510 + SSE, ambas vías, positivos Org/Admin|`App/backend/modulos/operacion/evacuacion/evacuacion.controller.ts`|
+|GET|`/api/v1/emergencias/evacuaciones/:id/reporte`|SesionValida; Organizador, Administrador; o permiso emergencias:leer|Sí; Operación 3×510 + SSE, ambas vías, positivos Org/Admin|`App/backend/modulos/operacion/evacuacion/evacuacion.controller.ts`|
+|POST|`/api/v1/emergencias/evacuaciones/:id/salidas/:salidaId/bloqueo`|SesionValida; Organizador, Administrador, Personal; o permiso emergencias:actualizar|Sí; Operación 3×510 + SSE, ambas vías, positivos Org/Admin|`App/backend/modulos/operacion/evacuacion/evacuacion.controller.ts`|
+|POST|`/api/v1/emergencias/evacuaciones/:id/zonas/:zonaId/ruta`|SesionValida; Organizador, Administrador; o permiso emergencias:actualizar|Sí; Operación 3×510 + SSE, ambas vías, positivos Org/Admin|`App/backend/modulos/operacion/evacuacion/evacuacion.controller.ts`|
+|PATCH|`/api/v1/emergencias/evacuaciones/:id/zonas/:zonaId`|SesionValida; Organizador, Administrador, Personal; o permiso emergencias:actualizar|Sí; Operación 3×510 + SSE, ambas vías, positivos Org/Admin|`App/backend/modulos/operacion/evacuacion/evacuacion.controller.ts`|
+|GET|`/api/v1/emergencias/evacuaciones/:id`|SesionValida; Organizador, Administrador; o permiso emergencias:leer|Sí; Operación 3×510 + SSE, ambas vías, positivos Org/Admin|`App/backend/modulos/operacion/evacuacion/evacuacion.controller.ts`|
+|GET|`/api/v1/emergencias/eventos/:eventoId/activa`|SesionValida; Organizador, Administrador, Personal; o permiso emergencias:leer|Sí; Operación 3×510 + SSE, ambas vías, positivos Org/Admin|`App/backend/modulos/operacion/evacuacion/evacuacion.controller.ts`|
+|GET|`/api/v1/emergencias/eventos/:eventoId/evacuaciones`|SesionValida; Organizador, Administrador; o permiso emergencias:leer|Sí; Operación 3×510 + SSE, ambas vías, positivos Org/Admin|`App/backend/modulos/operacion/evacuacion/evacuacion.controller.ts`|
+|POST|`/api/v1/emergencias/eventos/:eventoId/evacuaciones`|SesionValida; Organizador, Administrador; o permiso emergencias:crear|Sí; Operación 3×510 + SSE, ambas vías, positivos Org/Admin|`App/backend/modulos/operacion/evacuacion/evacuacion.controller.ts`|
+|GET|`/api/v1/emergencias/eventos`|SesionValida; Organizador, Administrador; o permiso emergencias:leer|Sí; Operación 3×510 + SSE, ambas vías, positivos Org/Admin|`App/backend/modulos/operacion/evacuacion/evacuacion.controller.ts`|
+|GET|`/api/v1/emergencias/recintos/:recintoId/plan`|SesionValida; Organizador, Administrador; o permiso emergencias:leer|Sí; Operación 3×510 + SSE, ambas vías, positivos Org/Admin|`App/backend/modulos/operacion/evacuacion/evacuacion.controller.ts`|
+|PUT|`/api/v1/emergencias/recintos/:recintoId/plan`|SesionValida; Organizador, Administrador; o permiso emergencias:actualizar|Sí; Operación 3×510 + SSE, ambas vías, positivos Org/Admin|`App/backend/modulos/operacion/evacuacion/evacuacion.controller.ts`|
+|POST|`/api/v1/eventos/:id/cancelar`|SesionValida; Organizador; o permiso eventos:actualizar|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/eventos/eventos.controller.ts`|
+|POST|`/api/v1/eventos/:id/publicar`|SesionValida; Organizador; o permiso eventos:actualizar|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/eventos/eventos.controller.ts`|
+|DELETE|`/api/v1/eventos/:id`|SesionValida; Organizador; o permiso eventos:eliminar|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/eventos/eventos.controller.ts`|
+|GET|`/api/v1/eventos/:id`|SesionValida; Organizador, Administrador; o permiso eventos:leer|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/eventos/eventos.controller.ts`|
+|PUT|`/api/v1/eventos/:id`|SesionValida; Organizador; o permiso eventos:actualizar|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/eventos/eventos.controller.ts`|
+|GET|`/api/v1/eventos/disponibilidad`|SesionValida; Organizador, Administrador; o permiso eventos:leer|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/eventos/eventos.controller.ts`|
+|GET|`/api/v1/eventos`|SesionValida; Organizador, Administrador; o permiso eventos:leer|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/eventos/eventos.controller.ts`|
+|POST|`/api/v1/eventos`|SesionValida; Organizador; o permiso eventos:crear|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/eventos/eventos.controller.ts`|
 |GET|`/api/v1/logistica/asignaciones`|SesionValida, ContextoDeLogistica, SoloQuienSupervisa; identidad/contexto del servicio|Sí; contexto probado, combinaciones limitadas|`App/backend/modulos/personal-logistica/turnos-asistencia/gestion-personal.controller.ts`|
 |POST|`/api/v1/logistica/asistencia/entrada`|SesionValida, ContextoDeLogistica; Personal, Organizador, Administrador|Sí; contexto probado, combinaciones limitadas|`App/backend/modulos/personal-logistica/turnos-asistencia/asistencia.controller.ts`|
 |GET|`/api/v1/logistica/asistencia/estado`|SesionValida, ContextoDeLogistica; identidad/contexto del servicio|Sí; contexto probado, combinaciones limitadas|`App/backend/modulos/personal-logistica/turnos-asistencia/asistencia.controller.ts`|
@@ -153,37 +213,37 @@ DAST ni se repiten localmente los 16 recorridos completos.
 |GET|`/api/v1/logistica/zonas/:zonaId/candidatos`|SesionValida, ContextoDeLogistica, SoloQuienSupervisa; identidad/contexto del servicio|Sí; contexto probado, combinaciones limitadas|`App/backend/modulos/personal-logistica/turnos-asistencia/gestion-personal.controller.ts`|
 |GET|`/api/v1/logistica/zonas`|SesionValida, ContextoDeLogistica, SoloQuienSupervisa; identidad/contexto del servicio|Sí; contexto probado, combinaciones limitadas|`App/backend/modulos/personal-logistica/turnos-asistencia/personal-operativo.controller.ts`|
 |POST|`/api/v1/logistica/zonas`|SesionValida, ContextoDeLogistica, SoloQuienSupervisa; identidad/contexto del servicio|Sí; contexto probado, combinaciones limitadas|`App/backend/modulos/personal-logistica/turnos-asistencia/personal-operativo.controller.ts`|
-|GET|`/api/v1/monitoreo/eventos/:id/alertas`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/operacion/monitoreo/monitoreo.controller.ts`|
-|PATCH|`/api/v1/monitoreo/eventos/:id/decisiones/:decisionId`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/operacion/monitoreo/monitoreo.controller.ts`|
-|POST|`/api/v1/monitoreo/eventos/:id/decisiones`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/operacion/monitoreo/monitoreo.controller.ts`|
-|GET|`/api/v1/monitoreo/eventos/:id/flujo`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/operacion/monitoreo/monitoreo.controller.ts`|
-|GET|`/api/v1/monitoreo/eventos/:id/panel`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/operacion/monitoreo/monitoreo.controller.ts`|
-|GET|`/api/v1/monitoreo/eventos`|SesionValida; Organizador, Administrador|Pendiente semántica; conservar identidad/rol previos|`App/backend/modulos/operacion/monitoreo/monitoreo.controller.ts`|
-|GET|`/api/v1/parqueaderos/eventos/:eventoId/asignaciones`|SesionValida; Organizador, Administrador|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
-|GET|`/api/v1/parqueaderos/eventos/:eventoId/cache`|SesionValida; Organizador, Administrador, Personal|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
+|GET|`/api/v1/monitoreo/eventos/:id/alertas`|SesionValida; Organizador, Administrador; o permiso reportes:leer|Sí; Operación 3×510 + SSE, ambas vías, positivos Org/Admin|`App/backend/modulos/operacion/monitoreo/monitoreo.controller.ts`|
+|PATCH|`/api/v1/monitoreo/eventos/:id/decisiones/:decisionId`|SesionValida; Organizador, Administrador; o permiso reportes:actualizar|Sí; Operación 3×510 + SSE, ambas vías, positivos Org/Admin|`App/backend/modulos/operacion/monitoreo/monitoreo.controller.ts`|
+|POST|`/api/v1/monitoreo/eventos/:id/decisiones`|SesionValida; Organizador, Administrador; o permiso reportes:crear|Sí; Operación 3×510 + SSE, ambas vías, positivos Org/Admin|`App/backend/modulos/operacion/monitoreo/monitoreo.controller.ts`|
+|GET|`/api/v1/monitoreo/eventos/:id/flujo`|SesionValida; Organizador, Administrador; o permiso reportes:leer|Sí; Operación 3×510 + SSE, ambas vías, positivos Org/Admin|`App/backend/modulos/operacion/monitoreo/monitoreo.controller.ts`|
+|GET|`/api/v1/monitoreo/eventos/:id/panel`|SesionValida; Organizador, Administrador; o permiso reportes:leer|Sí; Operación 3×510 + SSE, ambas vías, positivos Org/Admin|`App/backend/modulos/operacion/monitoreo/monitoreo.controller.ts`|
+|GET|`/api/v1/monitoreo/eventos`|SesionValida; Organizador, Administrador; o permiso reportes:leer|Sí; Operación 3×510 + SSE, ambas vías, positivos Org/Admin|`App/backend/modulos/operacion/monitoreo/monitoreo.controller.ts`|
+|GET|`/api/v1/parqueaderos/eventos/:eventoId/asignaciones`|SesionValida; Organizador, Administrador; o permiso parqueaderos:leer|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
+|GET|`/api/v1/parqueaderos/eventos/:eventoId/cache`|SesionValida; Organizador, Administrador, Personal; o permiso parqueaderos:leer|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
 |GET|`/api/v1/parqueaderos/eventos/:eventoId/disponibilidad`|SesionValida; Cliente, Organizador, Administrador, Personal|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/reservas/reservas.controller.ts`|
-|PATCH|`/api/v1/parqueaderos/eventos/:eventoId/espacios/:espacioId`|SesionValida; Organizador, Administrador|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
-|GET|`/api/v1/parqueaderos/eventos/:eventoId/espacios`|SesionValida; Organizador, Administrador, Personal|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
-|POST|`/api/v1/parqueaderos/eventos/:eventoId/ingresos`|SesionValida; Organizador, Administrador, Personal|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
-|GET|`/api/v1/parqueaderos/eventos/:eventoId/ocupacion/flujo`|SesionValida; Organizador, Administrador|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
-|GET|`/api/v1/parqueaderos/eventos/:eventoId/ocupacion`|SesionValida; Organizador, Administrador|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
-|GET|`/api/v1/parqueaderos/eventos/:eventoId/recomendacion`|SesionValida; Organizador, Administrador, Personal|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
-|PATCH|`/api/v1/parqueaderos/eventos/:eventoId/redirecciones/:redireccionId`|SesionValida; Organizador, Administrador|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
-|POST|`/api/v1/parqueaderos/eventos/:eventoId/redirecciones`|SesionValida; Organizador, Administrador|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
+|PATCH|`/api/v1/parqueaderos/eventos/:eventoId/espacios/:espacioId`|SesionValida; Organizador, Administrador; o permiso parqueaderos:actualizar|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
+|GET|`/api/v1/parqueaderos/eventos/:eventoId/espacios`|SesionValida; Organizador, Administrador, Personal; o permiso parqueaderos:leer|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
+|POST|`/api/v1/parqueaderos/eventos/:eventoId/ingresos`|SesionValida; Organizador, Administrador, Personal; o permiso parqueaderos:crear|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
+|GET|`/api/v1/parqueaderos/eventos/:eventoId/ocupacion/flujo`|SesionValida; Organizador, Administrador; o permiso parqueaderos:leer|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
+|GET|`/api/v1/parqueaderos/eventos/:eventoId/ocupacion`|SesionValida; Organizador, Administrador; o permiso parqueaderos:leer|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
+|GET|`/api/v1/parqueaderos/eventos/:eventoId/recomendacion`|SesionValida; Organizador, Administrador, Personal; o permiso parqueaderos:leer|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
+|PATCH|`/api/v1/parqueaderos/eventos/:eventoId/redirecciones/:redireccionId`|SesionValida; Organizador, Administrador; o permiso parqueaderos:actualizar|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
+|POST|`/api/v1/parqueaderos/eventos/:eventoId/redirecciones`|SesionValida; Organizador, Administrador; o permiso parqueaderos:crear|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
 |GET|`/api/v1/parqueaderos/eventos/:eventoId/reservas`|SesionValida; Organizador, Administrador|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/reservas/reservas.controller.ts`|
 |POST|`/api/v1/parqueaderos/eventos/:eventoId/reservas`|SesionValida; Cliente|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/reservas/reservas.controller.ts`|
-|POST|`/api/v1/parqueaderos/eventos/:eventoId/salidas`|SesionValida; Organizador, Administrador, Personal|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
-|POST|`/api/v1/parqueaderos/eventos/:eventoId/sincronizacion`|SesionValida; Organizador, Administrador, Personal|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
-|GET|`/api/v1/parqueaderos/eventos/:eventoId/vehiculos`|SesionValida; Organizador, Administrador, Personal|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
-|DELETE|`/api/v1/parqueaderos/eventos/:eventoId/zonas/:zonaId`|SesionValida; Organizador, Administrador|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
-|PATCH|`/api/v1/parqueaderos/eventos/:eventoId/zonas/:zonaId`|SesionValida; Organizador, Administrador|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
-|GET|`/api/v1/parqueaderos/eventos/:eventoId/zonas`|SesionValida; Organizador, Administrador, Personal|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
-|POST|`/api/v1/parqueaderos/eventos/:eventoId/zonas`|SesionValida; Organizador, Administrador|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
+|POST|`/api/v1/parqueaderos/eventos/:eventoId/salidas`|SesionValida; Organizador, Administrador, Personal; o permiso parqueaderos:crear|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
+|POST|`/api/v1/parqueaderos/eventos/:eventoId/sincronizacion`|SesionValida; Organizador, Administrador, Personal; o permiso parqueaderos:crear|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
+|GET|`/api/v1/parqueaderos/eventos/:eventoId/vehiculos`|SesionValida; Organizador, Administrador, Personal; o permiso parqueaderos:leer|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
+|DELETE|`/api/v1/parqueaderos/eventos/:eventoId/zonas/:zonaId`|SesionValida; Organizador, Administrador; o permiso parqueaderos:eliminar|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
+|PATCH|`/api/v1/parqueaderos/eventos/:eventoId/zonas/:zonaId`|SesionValida; Organizador, Administrador; o permiso parqueaderos:actualizar|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
+|GET|`/api/v1/parqueaderos/eventos/:eventoId/zonas`|SesionValida; Organizador, Administrador, Personal; o permiso parqueaderos:leer|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
+|POST|`/api/v1/parqueaderos/eventos/:eventoId/zonas`|SesionValida; Organizador, Administrador; o permiso parqueaderos:crear|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
 |POST|`/api/v1/parqueaderos/reservas/:id/pagar`|SesionValida; Cliente|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/reservas/reservas.controller.ts`|
 |GET|`/api/v1/parqueaderos/reservas/:id`|SesionValida; Cliente|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/reservas/reservas.controller.ts`|
 |GET|`/api/v1/parqueaderos/reservas`|SesionValida; Cliente|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/reservas/reservas.controller.ts`|
-|GET|`/api/v1/parqueaderos/tarifa`|SesionValida; Organizador, Administrador, Personal|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
-|PUT|`/api/v1/parqueaderos/tarifa`|SesionValida; Administrador|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
+|GET|`/api/v1/parqueaderos/tarifa`|SesionValida; Organizador, Administrador, Personal; o permiso parqueaderos:leer|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
+|PUT|`/api/v1/parqueaderos/tarifa`|SesionValida; Administrador; o permiso parqueaderos:actualizar|Sí; Parqueaderos 3×300; ambas vías, con positivos|`App/backend/modulos/parqueaderos/parqueaderos.controller.ts`|
 |POST|`/api/v1/pedidos/:pedidoId/pagos`|SesionValida; Cliente|Sí; Alimentos 3×278, ambas vías; reejecutada|`App/backend/modulos/alimentos/pagos/pagos.controller.ts`|
 |PATCH|`/api/v1/pedidos/admin/establecimientos/:id/estado`|SesionValida; Organizador, Administrador|Sí; Alimentos 3×278, ambas vías; ampliada|`App/backend/modulos/alimentos/establecimientos/establecimientos.controller.ts`|
 |DELETE|`/api/v1/pedidos/admin/establecimientos/:id/personal/:usuarioId`|SesionValida; Organizador, Administrador|Sí; Alimentos 3×278, ambas vías; ampliada|`App/backend/modulos/alimentos/establecimientos/establecimientos.controller.ts`|
@@ -214,14 +274,14 @@ DAST ni se repiten localmente los 16 recorridos completos.
 |GET|`/api/v1/pedidos/mis-establecimientos`|SesionValida; Personal|Sí; Alimentos 3×278, ambas vías; ampliada|`App/backend/modulos/alimentos/establecimientos/establecimientos.controller.ts`|
 |GET|`/api/v1/pedidos/mis-pedidos/:pedidoId`|SesionValida; Cliente|Sí; Alimentos 3×278, ambas vías; reejecutada|`App/backend/modulos/alimentos/recepcion/recepcion.controller.ts`|
 |GET|`/api/v1/pedidos/mis-pedidos`|SesionValida; Cliente|Sí; Alimentos 3×278, ambas vías; ampliada|`App/backend/modulos/alimentos/recepcion/recepcion.controller.ts`|
-|DELETE|`/api/v1/recintos/:id/plano`|SesionValida; Organizador, Administrador|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/recintos/recintos.controller.ts`|
-|GET|`/api/v1/recintos/:id/plano`|SesionValida; Organizador, Administrador|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/recintos/recintos.controller.ts`|
-|PUT|`/api/v1/recintos/:id/plano`|SesionValida; Organizador, Administrador|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/recintos/recintos.controller.ts`|
-|DELETE|`/api/v1/recintos/:id`|SesionValida; Organizador, Administrador|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/recintos/recintos.controller.ts`|
-|GET|`/api/v1/recintos/:id`|SesionValida; Organizador, Administrador|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/recintos/recintos.controller.ts`|
-|PUT|`/api/v1/recintos/:id`|SesionValida; Organizador, Administrador|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/recintos/recintos.controller.ts`|
-|GET|`/api/v1/recintos`|SesionValida; Organizador, Administrador|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/recintos/recintos.controller.ts`|
-|POST|`/api/v1/recintos`|SesionValida; Organizador, Administrador|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/recintos/recintos.controller.ts`|
+|DELETE|`/api/v1/recintos/:id/plano`|SesionValida; Organizador, Administrador; o permiso eventos:eliminar|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/recintos/recintos.controller.ts`|
+|GET|`/api/v1/recintos/:id/plano`|SesionValida; Organizador, Administrador; o permiso eventos:leer|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/recintos/recintos.controller.ts`|
+|PUT|`/api/v1/recintos/:id/plano`|SesionValida; Organizador, Administrador; o permiso eventos:actualizar|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/recintos/recintos.controller.ts`|
+|DELETE|`/api/v1/recintos/:id`|SesionValida; Organizador, Administrador; o permiso eventos:eliminar|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/recintos/recintos.controller.ts`|
+|GET|`/api/v1/recintos/:id`|SesionValida; Organizador, Administrador; o permiso eventos:leer|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/recintos/recintos.controller.ts`|
+|PUT|`/api/v1/recintos/:id`|SesionValida; Organizador, Administrador; o permiso eventos:actualizar|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/recintos/recintos.controller.ts`|
+|GET|`/api/v1/recintos`|SesionValida; Organizador, Administrador; o permiso eventos:leer|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/recintos/recintos.controller.ts`|
+|POST|`/api/v1/recintos`|SesionValida; Organizador, Administrador; o permiso eventos:crear|Sí; Eventos/Recintos 3×218; ambas vías, con positivos|`App/backend/modulos/eventos-recintos/recintos/recintos.controller.ts`|
 |DELETE|`/api/v1/sesiones/actual`|SesionRequerida; identidad/contexto del servicio|Sí; contexto probado, combinaciones limitadas|`App/backend/modulos/identidad/sesiones/sesiones.controller.ts`|
 |GET|`/api/v1/sesiones/actual`|SesionRequerida; identidad/contexto del servicio|Sí; contexto probado, combinaciones limitadas|`App/backend/modulos/identidad/sesiones/sesiones.controller.ts`|
 |GET|`/api/v1/sesiones/verificar`|SesionRequerida; identidad/contexto del servicio|Sí; contexto probado, combinaciones limitadas|`App/backend/modulos/identidad/sesiones/sesiones.controller.ts`|

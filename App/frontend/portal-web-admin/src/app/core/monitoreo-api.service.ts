@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { AuthService } from './auth.service';
 import { DecisionPanel, EventoMonitoreable, PanelMonitoreo, TipoDecision } from './models';
 import { Servidor } from './servidor';
+import { seguirFlujo } from './flujo-sse';
 
 export interface DatosDecision {
   tipo: TipoDecision;
@@ -50,38 +51,7 @@ export class MonitoreoApiService {
    * para cortarlo. Si el flujo se cae o termina, avisa con `alCaer` y quien
    * llama decide reconectar.
    */
-  seguir(eventoId: string, alRecibir: (p: PanelMonitoreo) => void, alCaer: (motivo: string) => void): () => void {
-    const control = new AbortController();
-    void (async () => {
-      try {
-        const token = await this.auth.tokenVigente();
-        const respuesta = await fetch(this.url(`/eventos/${eventoId}/flujo`), {
-          headers: { Authorization: `Bearer ${token}`, Accept: 'text/event-stream' },
-          signal: control.signal
-        });
-        if (!respuesta.ok || !respuesta.body) throw new Error(`El flujo respondió ${respuesta.status}`);
-        const lector = respuesta.body.getReader();
-        const decoder = new TextDecoder();
-        let pendiente = '';
-        for (;;) {
-          const { value, done } = await lector.read();
-          if (done) break;
-          pendiente += decoder.decode(value, { stream: true });
-          // Cada evento termina en una línea vacía.
-          let corte: number;
-          while ((corte = pendiente.indexOf('\n\n')) >= 0) {
-            const bloque = pendiente.slice(0, corte);
-            pendiente = pendiente.slice(corte + 2);
-            const tipo = /^event: (.+)$/m.exec(bloque)?.[1];
-            const datos = bloque.split('\n').filter((l) => l.startsWith('data: ')).map((l) => l.slice(6)).join('\n');
-            if (tipo === 'panel' && datos) alRecibir(JSON.parse(datos) as PanelMonitoreo);
-          }
-        }
-        alCaer('El servidor cerró el flujo.');
-      } catch (e) {
-        if (!control.signal.aborted) alCaer(e instanceof Error ? e.message : 'Sin conexión con el flujo.');
-      }
-    })();
-    return () => control.abort();
+  seguir(eventoId: string, alRecibir: (p: PanelMonitoreo) => void, alCaer: (motivo: string, estado?: number) => void): () => void {
+    return seguirFlujo(this.url(`/eventos/${eventoId}/flujo`), () => this.auth.tokenVigente(), 'panel', alRecibir, alCaer);
   }
 }

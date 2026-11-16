@@ -116,5 +116,8 @@ el diff; fixture, cuentas, sesiones, SQL/Redis crudos, QR y logs quedan fuera de
 La aceptación **16/16 automática y 16/16 visible** anterior se reutiliza con
 fuentes de Alimentos/Finanzas intactas desde `ec07de2`. No se repiten los conjuntos
 completos por cambios del arnés/documentos. SIGTERM/outbox conservan su historia
-y causa pendiente. ZeroTier queda solo como futura prueba compartida con un
-servidor HEXACORE y varios clientes; no se instala ni configura.
+y causa pendiente. La nota de ZeroTier de un servidor con varios clientes
+queda sustituida por el
+[plan de dos servidores y un cliente](../../../../Documentation/Work/PLAN-DEMO-ZEROTIER.md),
+solo documental. No se instala/configura VPN ni se ejecutan caídas en esta preparación;
+no se modifica la evidencia histórica de Alimentos.

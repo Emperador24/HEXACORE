@@ -1,4 +1,4 @@
-import { presentar } from '../presentacion';
+import { actuar, presentar } from '../presentacion';
 import { expect, test } from '../csp.fixture';
 import { randomUUID, createHash } from 'node:crypto';
 import { writeFileSync } from 'node:fs';
@@ -12,43 +12,43 @@ function verificadorOptico(codigo:string){let n=14695981039346656037n;for(const 
 
 test('CU-014 por interfaces: QR real ingresado, revisión, entrega única y aviso/fecha sin QR utilizable',async({page,browser,request},info)=>{
  const e=await entornoEntrega(request);
- await loginUI(page,clienteURL,'cliente@hexacore.com');await page.goto(`${clienteURL}/pedidos?eventoId=${e.evento.id}`);
- await page.getByRole('link').filter({hasText:e.nombre}).click();await page.getByRole('button',{name:'Agregar Receta CU014',exact:true}).click();
- const checkout=page.waitForResponse(r=>r.url().endsWith('/pedidos/checkout'));await page.getByRole('button',{name:'Continuar',exact:true}).click();const r=await checkout;expect(r.status()).toBe(201);const p=await r.json();
- const pago=page.waitForResponse(r=>r.url().endsWith(`/pedidos/${p.id}/pagos`));await page.getByRole('button',{name:'Pagar pedido',exact:true}).click();const cobro=await pago;expect(cobro.status()).toBe(200);const pagado=await cobro.json();expect(pagado.codigoQr).toMatch(/^[a-f0-9]{64}$/);
- await page.getByRole('link',{name:'Ver seguimiento y avisos',exact:true}).click();await expect(page).toHaveURL(`${clienteURL}/mis-pedidos/${p.id}`);await expect(page.getByAltText('Código QR del pedido confirmado')).toBeVisible();
+ await loginUI(page,clienteURL,'cliente@hexacore.com');await actuar(page, objetivo => objetivo.goto(`${clienteURL}/pedidos?eventoId=${e.evento.id}`));
+ await actuar(page.getByRole('link').filter({hasText:e.nombre}), objetivo => objetivo.click());await actuar(page.getByRole('button',{name:'Agregar Receta CU014',exact:true}), objetivo => objetivo.click());
+ const checkout=page.waitForResponse(r=>r.url().endsWith('/pedidos/checkout'));await actuar(page.getByRole('button',{name:'Continuar',exact:true}), objetivo => objetivo.click());const r=await checkout;expect(r.status()).toBe(201);const p=await r.json();
+ const pago=page.waitForResponse(r=>r.url().endsWith(`/pedidos/${p.id}/pagos`));await actuar(page.getByRole('button',{name:'Pagar pedido',exact:true}), objetivo => objetivo.click());const cobro=await pago;expect(cobro.status()).toBe(200);const pagado=await cobro.json();expect(pagado.codigoQr).toMatch(/^[a-f0-9]{64}$/);
+ await actuar(page.getByRole('link',{name:'Ver seguimiento y avisos',exact:true}), objetivo => objetivo.click());await expect(page).toHaveURL(`${clienteURL}/mis-pedidos/${p.id}`);await expect(page.getByAltText('Código QR del pedido confirmado')).toBeVisible();
  const imagen=await page.getByAltText('Código QR del pedido confirmado').getAttribute('src');
  writeFileSync(info.outputPath('qr-real-privado.png'),Buffer.from(imagen!.split(',')[1],'base64'));writeFileSync(info.outputPath('qr-huella.json'),JSON.stringify({sha256:createHash('sha256').update(pagado.codigoQr).digest('hex'),verificadorOptico:verificadorOptico(pagado.codigoQr)}));
  const antes=snapshot(p.id);
  await presentar(page,'Cliente: QR del pedido confirmado');
  const contexto=await browser.newContext(),operador=await contexto.newPage();
  try{
-  await loginUI(operador,adminURL,'restaurante@hexacore.com');await operador.getByRole('navigation').getByRole('link',{name:'Preparación de pedidos',exact:true}).click();await expect(operador).toHaveURL(`${adminURL}/admin/preparacion`);await expect(operador.getByRole('heading',{name:/Preparación de pedidos/})).toBeVisible();
-  await operador.getByLabel('Establecimiento vinculado',{exact:true}).selectOption(e.local.id);await operador.locator(`[data-pedido="${p.id}"]`).getByRole('button',{name:'Gestionar pedido',exact:true}).click();
+  await loginUI(operador,adminURL,'restaurante@hexacore.com');await actuar(operador.getByRole('navigation').getByRole('link',{name:'Preparación de pedidos',exact:true}), objetivo => objetivo.click());await expect(operador).toHaveURL(`${adminURL}/admin/preparacion`);await expect(operador.getByRole('heading',{name:/Preparación de pedidos/})).toBeVisible();
+  await actuar(operador.getByLabel('Establecimiento vinculado',{exact:true}), objetivo => objetivo.selectOption(e.local.id));await actuar(operador.locator(`[data-pedido="${p.id}"]`).getByRole('button',{name:'Gestionar pedido',exact:true}), objetivo => objetivo.click());
   const detalle=operador.getByRole('region',{name:'Detalle de preparación'});
-  await detalle.getByRole('button',{name:'Iniciar preparación',exact:true}).click();await operador.getByLabel('Minutos estimados',{exact:true}).fill('10');
-  let cambio=operador.waitForResponse(r=>r.url().endsWith(`/${p.id}/preparacion`));await operador.getByRole('button',{name:'Guardar avance',exact:true}).click();expect((await cambio).status()).toBe(200);
-  cambio=operador.waitForResponse(r=>r.url().endsWith(`/${p.id}/preparacion`));await detalle.getByRole('button',{name:'Marcar listo',exact:true}).click();expect((await cambio).status()).toBe(200);
+  await actuar(detalle.getByRole('button',{name:'Iniciar preparación',exact:true}), objetivo => objetivo.click());await actuar(operador.getByLabel('Minutos estimados',{exact:true}), objetivo => objetivo.fill('10'));
+  let cambio=operador.waitForResponse(r=>r.url().endsWith(`/${p.id}/preparacion`));await actuar(operador.getByRole('button',{name:'Guardar avance',exact:true}), objetivo => objetivo.click());expect((await cambio).status()).toBe(200);
+  cambio=operador.waitForResponse(r=>r.url().endsWith(`/${p.id}/preparacion`));await actuar(detalle.getByRole('button',{name:'Marcar listo',exact:true}), objetivo => objetivo.click());expect((await cambio).status()).toBe(200);
   expect((await request.patch(`${gateway}/pedidos/admin/establecimientos/${e.local.id}/estado`,{headers:h(e.organizador.token),data:{estado:'CERRADO'}})).status()).toBe(200);
   const entrega=operador.getByRole('region',{name:'Validación y entrega'});
-  await entrega.getByLabel('Código QR completo',{exact:true}).fill(pagado.codigoQr);
-  let consulta=operador.waitForResponse(r=>r.url().endsWith('/entregas/prevalidar'));await entrega.getByRole('button',{name:'Validar código',exact:true}).click();expect((await consulta).status()).toBe(200);
+  await actuar(entrega.getByLabel('Código QR completo',{exact:true}), objetivo => objetivo.fill(pagado.codigoQr));
+  let consulta=operador.waitForResponse(r=>r.url().endsWith('/entregas/prevalidar'));await actuar(entrega.getByRole('button',{name:'Validar código',exact:true}), objetivo => objetivo.click());expect((await consulta).status()).toBe(200);
   await expect(entrega.getByRole('region',{name:'Revisar entrega'})).toContainText(e.local.puntoEntrega);
  await presentar(operador,'Personal: revisar productos y punto antes de entregar');
   expect(sql(`SELECT count(*) FROM alimentos.entregas_pedido WHERE pedido_id='${p.id}'`)).toBe('0');expect(sql(`SELECT version FROM alimentos.preparaciones_pedido WHERE pedido_id='${p.id}'`)).toBe('2');
   // Fallo de transporte después de COMMIT: se llama al backend real y se pierde solo su respuesta.
   let responder!:(estado:number)=>void;const recibidaServidor=new Promise<number>(r=>responder=r);
   await operador.route('**/entregas/confirmar',async ruta=>{try{const real=await ruta.fetch({maxRetries:0});responder(real.status());}catch{responder(0);}await ruta.abort('failed');});
-  await entrega.getByRole('button',{name:'Confirmar entrega',exact:true}).click();expect(await recibidaServidor).toBe(200);await expect(entrega.getByRole('button',{name:'Consultar entrega pendiente',exact:true})).toBeVisible();
+  await actuar(entrega.getByRole('button',{name:'Confirmar entrega',exact:true}), objetivo => objetivo.click());expect(await recibidaServidor).toBe(200);await expect(entrega.getByRole('button',{name:'Consultar entrega pendiente',exact:true})).toBeVisible();
  await presentar(operador,'Personal: resultado incierto conservado para consulta segura');
   const almacenada=await operador.evaluate(id=>localStorage.getItem(`hexacore.cu014.intencion.${id}`),e.personal.usuario.id);expect(almacenada).not.toContain(pagado.codigoQr);
-  await operador.unroute('**/entregas/confirmar');await operador.reload();
-  const confirmar=operador.waitForResponse(r=>r.url().endsWith('/entregas/confirmar'));await entrega.getByRole('button',{name:'Consultar entrega pendiente',exact:true}).click();expect((await confirmar).status()).toBe(200);await expect(entrega.getByRole('status')).toContainText('Pedido entregado');
+  await operador.unroute('**/entregas/confirmar');await actuar(operador, objetivo => objetivo.reload());
+  const confirmar=operador.waitForResponse(r=>r.url().endsWith('/entregas/confirmar'));await actuar(entrega.getByRole('button',{name:'Consultar entrega pendiente',exact:true}), objetivo => objetivo.click());expect((await confirmar).status()).toBe(200);await expect(entrega.getByRole('status')).toContainText('Pedido entregado');
  await presentar(operador,'Personal: entrega única confirmada');
   expect(sql(`SELECT count(*) FROM alimentos.entregas_pedido WHERE pedido_id='${p.id}'`)).toBe('1');expect(sql(`SELECT count(*) FROM alimentos.historial_preparacion WHERE pedido_id='${p.id}' AND accion='ENTREGAR'`)).toBe('1');expect(snapshot(p.id)).toEqual(antes);
-  await page.reload();await expect(page.locator('[data-avance]')).toHaveText('Entregado');await expect(page.locator('[data-entregado]')).toBeVisible();await expect(page.getByAltText('Código QR del pedido confirmado')).toHaveCount(0);await expect(page.getByText(`Tu pedido fue entregado en ${e.local.puntoEntrega}.`,{exact:true})).toBeVisible();
+  await actuar(page, objetivo => objetivo.reload());await expect(page.locator('[data-avance]')).toHaveText('Entregado');await expect(page.locator('[data-entregado]')).toBeVisible();await expect(page.getByAltText('Código QR del pedido confirmado')).toHaveCount(0);await expect(page.getByText(`Tu pedido fue entregado en ${e.local.puntoEntrega}.`,{exact:true})).toBeVisible();
  await presentar(page,'Cliente: entrega y fecha sin QR reutilizable');
-  await entrega.getByLabel('Código QR completo',{exact:true}).fill(pagado.codigoQr);consulta=operador.waitForResponse(r=>r.url().endsWith('/entregas/prevalidar'));await entrega.getByRole('button',{name:'Validar código',exact:true}).click();expect((await consulta).status()).toBe(409);await expect(entrega.getByRole('alert')).toContainText('ya fue entregado');
+  await actuar(entrega.getByLabel('Código QR completo',{exact:true}), objetivo => objetivo.fill(pagado.codigoQr));consulta=operador.waitForResponse(r=>r.url().endsWith('/entregas/prevalidar'));await actuar(entrega.getByRole('button',{name:'Validar código',exact:true}), objetivo => objetivo.click());expect((await consulta).status()).toBe(409);await expect(entrega.getByRole('alert')).toContainText('ya fue entregado');
  await presentar(operador,'Personal: segundo uso del QR rechazado');
   await operador.screenshot({path:info.outputPath('entrega-unica.png'),fullPage:true});await page.screenshot({path:info.outputPath('cliente-entregado.png'),fullPage:true});
  }finally{await contexto.close();}

@@ -1,6 +1,35 @@
 # Referencias del curso aplicadas a HEXACORE
 
-Actualización vigente: [Compras y Reventa](AUTORIZACION-VENTAS.md), **19/19** nuevas
+## Corte vigente — 15/11/2026, cierre del inventario
+
+**167/167 operaciones protegidas**, inventario **186 declaradas / 181 expuestas /
+167 protegidas**. Las últimas 16 (cuentas5, roles8, QR3) se prueban por gateway y
+servicio directo; las 151 anteriores conservan sus combinaciones acreditadas.
+**RNF-05/06 siguen parciales**: no equivale a cobertura exhaustiva de actores,
+estados, métodos, consumidores, pagos o fallos distribuidos.
+
+Correcciones demostradas: el gateway acepta la delegación al módulo dinámico
+para sesiones abiertas después de validar JWT; roles presentes e ilegibles en
+Redis producen 503 en lugar de recuperar privilegios antiguos. SSE revalida
+sesión/permiso con ventana periódica y cierre saneado, no instantáneo.
+Tres finales 560/560, con 346 conservaciones completas cada una, y sus fallos
+previos se conservan en [RESULTADO.md](RESULTADO.md),
+[COBERTURA-RECURSOS.md](COBERTURA-RECURSOS.md) y
+[AUTORIZACION-CIERRE.md](AUTORIZACION-CIERRE.md).
+
+La separación conceptual sigue vigente: autorización y los interlocks de negocio
+no acreditan RNF-17 ni Safety física. Quedan DAST, residuos CSP, canales de datos
+de pago y demás límites publicados. El SAD incorpora el bloque vigente en
+[SeguridadVigente.tex](../../../../Documentation/Work/SeguridadVigente.tex).
+
+## Matriz conceptual y resultados anteriores — referencia histórica
+
+La matriz inferior conserva los denominadores y pendientes de su fecha. CU-028
+ya está integrado y sus ocho operaciones se revisaron; sus menciones como pendiente
+describen aquel corte. No se atribuye a toda operación del inventario actual la
+cobertura semántica o DAST de esta matriz.
+
+Actualización anterior: [Compras y Reventa](AUTORIZACION-VENTAS.md), **19/19** nuevas
 en ambas vías y **88/159 global**. Tres finales 150/150, con propiedad vigente,
 QR filtrado tras transferencia, bloqueos/idempotencia conservados y barrido
 global administrativo solo con todo su ámbito descartable comprobado. RNF-05/06

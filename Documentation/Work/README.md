@@ -17,6 +17,8 @@ especificaciones JSON de Archify, sus HTML interactivos y los PDF que incluye La
 | `DescripcionArquitecturaSoftware.tex` | **SAD** — cómo se construye y por qué. |
 | `ArchitecturalProposal.tex`, `Summary.tex`, `C4Diagrams.tex` | Propuesta, resumen y diagramas. |
 | `BitacoraArquitectonica.md` | Bitácora del equipo, una entrada por semana. |
+| `Presentacion.tex`, `CIERRE-RUBRICA.md` | Preparación de la sustentación: comparación antes/ahora, responsables confirmados, quince fichas de atributos y guion propuesto de 54 min. Falta confirmar temario/reparto y demos. |
+| `SeguridadVigente.tex` | Bloque incluido por el SAD: 167/167 operaciones del inventario, evidencia reutilizada y RNF-05/06 parciales. |
 
 Dos archivos **no se editan a mano**:
 
@@ -30,7 +32,7 @@ Dos archivos **no se editan a mano**:
   Si corriges un caso de uso, corrígelo **en la hoja de cálculo** y vuelve a generar. Editar el
   `.tex` funciona hasta la siguiente corrida, y entonces se pierde.
 
-- **`RequisitosNoFuncionales.tex`** — la tabla de los 18 RNF. La incluyen **los dos** documentos,
+- **`RequisitosNoFuncionales.tex`** — la tabla de los 19 RNF. La incluyen **los dos** documentos,
   el SRS y el SAD, para que no puedan divergir. Editarla actualiza ambos.
 
 ## Cómo compilar y entregar
@@ -61,3 +63,9 @@ latexmk -c NombreDelDocumento.tex           # limpia .aux/.log/.out/.toc/.fls/.f
 Compilar las cinco fuentes actualizadas con salida en un directorio temporal
 (`latexmk -pdf -outdir=/ruta/temporal Documento.tex`), revisar referencias/figuras y
 copiar únicamente los PDF finales a Submission. No dejar productos en Work.
+
+Revisión documental de sustentación del 15/11/2026: compilar SAD,
+`Presentacion.tex` y `ArchitecturalProposal.tex` (también incluye ADR-16), con
+salida temporal. La comparación histórica de contenedores usa la copia exacta de
+`4b8cdd4` conservada en `Historico/`; no sustituir el diagrama vigente. Pruebas
+funcionales/caídas y preparación A/B/C no se ejecutan por esta edición documental.

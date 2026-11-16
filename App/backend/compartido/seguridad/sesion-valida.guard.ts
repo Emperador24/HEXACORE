@@ -178,7 +178,7 @@ export class SesionValida implements CanActivate {
         throw sinAutenticar('Tu sesión se cerró. Inicia sesión de nuevo.');
       }
 
-      const roles = rolesNuevos ? this.leerRoles(rolesNuevos) ?? token.roles : token.roles;
+      const roles = rolesNuevos === null ? token.roles : this.leerRoles(rolesNuevos);
       const propios = roles.filter((rol) => !esRolDelSistema(rol));
       let permisos: string[] = [];
       if (propios.length > 0) {
@@ -200,16 +200,15 @@ export class SesionValida implements CanActivate {
     }
   }
 
-  /** Una clave mal formada no debe dar ni quitar acceso: se ignora y valen los del token. */
-  private leerRoles(valor: string): string[] | null {
+  /** Una clave presente pero ilegible impide comprobar los roles vigentes. */
+  private leerRoles(valor: string): string[] {
     try {
       const roles: unknown = JSON.parse(valor);
       if (Array.isArray(roles) && roles.every((r) => typeof r === 'string')) return roles;
     } catch {
       /* se registra abajo */
     }
-    this.log.warn('Roles vigentes con formato inválido en Redis; se usan los del token');
-    return null;
+    throw new Error('Roles vigentes con formato inválido en Redis');
   }
 
   private async verificar(token: string): Promise<Omit<SesionVerificada, 'permisos'> | null> {

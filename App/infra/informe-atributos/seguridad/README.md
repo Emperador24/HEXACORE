@@ -1,6 +1,25 @@
 # Reproducir Seguridad RNF-05 / RNF-06
 
-**Bloque vigente: Eventos/Recintos 16/16**, global **129/159**, 30 pendientes:
+**Corte vigente: 167/167 protegidas; RNF-05/06 parciales.** Las últimas 16
+(cuentas 5, CU-028 8, QR 3) se acreditan en [AUTORIZACION-CIERRE.md](AUTORIZACION-CIERRE.md)
+y [CIERRE-EVIDENCIA.json](CIERRE-EVIDENCIA.json). Tres finales seriales 560/560,
+346 conservaciones por final y 12 regresiones SSE acotadas. Dos brechas
+corregidas en 8eae8b9; sin repetir matrices históricas, 16 recorridos o DAST.
+Los preparadores requieren ámbito nuevo y cuentas exclusivas; usar la guía
+específica. La preparación ZeroTier sigue documental en
+[PLAN-DEMO-ZEROTIER.md](../../../../Documentation/Work/PLAN-DEMO-ZEROTIER.md).
+
+
+**Bloque anterior: Evacuación/Monitoreo 22/22**, global **151/167**, 16 pendientes:
+[AUTORIZACION-OPERACION.md](AUTORIZACION-OPERACION.md), `finales-operacion.py` y
+[evidencia](OPERACION-EVIDENCIA.json). Sesión y permisos revalidados en ambos SSE,
+ciclos 2/3 s, terminal saneado y EOF; consumidores con renovación acotada. Tres
+finales normalizadas seriales: matriz 510/510 más ambos flujos/canales. Inventario
+ahora 186/181/167 por ocho protegidas nuevas de CU-028 ya integrado; esas ocho
+siguen pendientes. Demo App/e2e: 500 ms entre acciones, primer plano antes de
+actuar y 1500 ms de lectura, sin duplicar esperas. RNF-05/06 parciales.
+
+**Bloque anterior: Eventos/Recintos 16/16**, global **129/159**, 30 pendientes:
 [AUTORIZACION-EVENTOS.md](AUTORIZACION-EVENTOS.md), `finales-eventos.py` y
 [evidencia](EVENTOS-RECINTOS-EVIDENCIA.json). Tres finales normalizadas de 218/218;
 dos reasignaciones de ids al crear corregidas, con regresiones HTTP. Demo de

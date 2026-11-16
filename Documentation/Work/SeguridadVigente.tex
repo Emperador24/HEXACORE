@@ -1,0 +1,156 @@
+% Corte documental 15/11/2026; no ejecuta pruebas ni sustituye sus evidencias.
+\section{Seguridad vigente: diseño, implementación y evidencia}
+\label{sec:seguridad-vigente}
+
+\textbf{Responsable del atributo: Sebastián Sánchez. Estado: parcial frente a
+RNF-05/06.} El cierre de \textbf{167/167 operaciones protegidas del inventario}
+significa que cada método/ruta tiene evidencia de autorización en las
+combinaciones descritas por su informe. No significa 167 casos de uso, cobertura
+exhaustiva de estados/actores ni cumplimiento completo de Seguridad. El corte
+de código revisado es \texttt{9bc1ee5} de \texttt{feature/sebastian}; integrar,
+compilar y desplegar son hechos distintos.
+
+\subsection{Escenario y decisiones de diseño}
+\textbf{ASR-03, RNF-05 y RNF-06.} Un actor intenta consultar o modificar un
+recurso de otro usuario, ejercer una operación administrativa o reutilizar una
+sesión revocada. La respuesta debe usar la identidad y autoridad vigentes,
+rechazar el acceso indebido y conservar los datos que no podía cambiar. Otro
+riesgo es persistir datos completos de tarjeta en canales propios. Los controles
+de acceso contribuyen a RNF-06; no demuestran por sí solos la ausencia de PAN que
+exige RNF-05. Se conservan los requisitos originales y sus excepciones públicas
+documentadas, sin redefinirlos para convertir resultados parciales en aprobación.
+
+\begin{center}
+\begin{longtable}{P{3.0cm}P{6.0cm}P{4.6cm}}
+\toprule
+\textbf{Táctica} & \textbf{Mecanismo vigente} & \textbf{Fuente de código}\\
+\midrule\endhead
+Autenticar y reducir emisores & JWT RS256: Identidad, dentro del Núcleo, firma;
+gateway y Boletería verifican con pública. Se comprueban emisor, firma y
+caducidad. Cabeceras declaradas por el cliente no sustituyen la sesión. &
+\href{https://github.com/Emperador24/HEXACORE/blob/9bc1ee5/App/gateway/autenticacion.js}{Gateway: autenticacion.js};
+\href{https://github.com/Emperador24/HEXACORE/blob/9bc1ee5/App/shared/seguridad/token-sesion.md}{contrato de sesión}.\\
+\midrule
+Autorizar por operación y recurso & Roles fijos para operaciones sensibles;
+matrices por módulo/acción donde CU-028 las admite. El servicio vuelve a validar
+sesión y aplica propiedad, vínculo laboral, contexto y estado según su contrato.
+Un rol global no inventa una organización o asignación a evento. &
+\href{https://github.com/Emperador24/HEXACORE/blob/9bc1ee5/App/backend/compartido/seguridad/sesion-valida.guard.ts}{Guarda común};
+\href{https://github.com/Emperador24/HEXACORE/blob/9bc1ee5/App/shared/seguridad/permisos.md}{contrato de permisos}.\\
+\midrule
+Revocar y fallar de forma restrictiva & PostgreSQL conserva sesiones/cuentas;
+Redis comparte revocaciones y roles vigentes. Dato de roles presente pero
+ilegible o dependencia no comprobable: 503 saneado. Ausencia de clave conserva
+el contrato del token; una lista vacía no recupera el privilegio anterior. &
+\href{https://github.com/Emperador24/HEXACORE/blob/9bc1ee5/App/backend/modulos/identidad/administracion-cuentas/administrador-requerido.guard.ts}{Autoridad administrativa vigente};
+\href{https://github.com/Emperador24/HEXACORE/blob/9bc1ee5/App/backend/compartido/seguridad/sesion-valida.guard.ts}{SesionValida}.\\
+\midrule
+Cerrar flujos persistentes & SSE de Parqueaderos, Evacuación y Monitoreo
+revalidan; al perder acceso emiten un terminal saneado y cierran, descartando
+datos tardíos. La detección es periódica, no instantánea. &
+\href{https://github.com/Emperador24/HEXACORE/blob/9bc1ee5/App/backend/modulos/operacion/comun/flujo-operacion.service.ts}{Flujo de Operación};
+\href{https://github.com/Emperador24/HEXACORE/blob/9bc1ee5/App/infra/informe-atributos/seguridad/AUTORIZACION-SSE.md}{regresión de Parqueaderos}.\\
+\midrule
+Limitar exposición e integridad & Validación DTO y consultas parametrizadas;
+contraseñas derivadas con scrypt; cookie de renovación HttpOnly/SameSite;
+webhook único en Núcleo con HMAC de bytes originales. Cobro por adaptador de
+pasarela y referencias de pago; no se certifican todos los canales de PAN. &
+\href{https://github.com/Emperador24/HEXACORE/blob/9bc1ee5/App/backend/apps/nucleo/pagos/webhook.controller.ts}{Webhook};
+\href{https://github.com/Emperador24/HEXACORE/blob/9bc1ee5/App/infra/informe-atributos/seguridad/RESULTADO.md}{resultado RNF-05/06}.\\
+\bottomrule
+\caption{Defensa en profundidad vigente; una guarda de rol no reemplaza las reglas del recurso.}
+\end{longtable}
+\end{center}
+
+\subsection{Qué acredita el denominador 167/167}
+El inventario distingue \textbf{186 operaciones declaradas, 181 expuestas por el
+gateway y 167 protegidas}. Las diferencias y excepciones están enumeradas en
+\href{https://github.com/Emperador24/HEXACORE/blob/feature/sebastian/App/infra/informe-atributos/seguridad/INVENTARIO.md}{INVENTARIO.md};
+no se usa ``0 rutas abiertas'' como afirmación sobre toda ruta pública o técnica.
+\href{https://github.com/Emperador24/HEXACORE/blob/9bc1ee5/App/infra/informe-atributos/seguridad/COBERTURA-RECURSOS.md}{COBERTURA-RECURSOS.md}
+traza cada operación protegida a su evidencia por gateway y servicio directo,
+con recursos existentes, entradas válidas y controles positivos. Las
+\textbf{151 anteriores} conservan sus combinaciones comprobadas. Las últimas
+\textbf{16} son cinco de administración de cuentas, ocho de roles/permisos
+CU-028 ya integrado y tres de ingreso QR. No se implementó otro CU-028.
+
+En cuentas se comprueban autoridad administrativa vigente en SQL, actor real de
+sesión, revocación al desactivar/eliminar y protección propia/último administrador.
+En roles, versiones, roles del sistema, asignación/retirada/reasignación y permisos
+propios; propagación a una sesión abierta en \textbf{cinco lecturas concretas},
+sin extrapolar a todos los métodos y consumidores. En QR, roles fijos de Personal
+y Administrador, operador de sesión, separación entre eventos, caché de hashes
+y reenvío sin duplicar efectos. El lote offline conserva atomicidad
+\textbf{por entrada}, no por lote completo; no se inventa propiedad de Personal
+sobre eventos.
+
+\subsection{Correcciones comprobadas}
+Dos brechas se reprodujeron antes de \texttt{8eae8b9}: (1) asignar un rol propio
+a una sesión abierta permitía la lectura directa pero el gateway conservaba 403;
+ahora el borde valida JWT y delega los módulos dinámicos al servicio, que decide
+con permisos vigentes; (2) una clave de roles Redis ilegible recuperaba el
+privilegio antiguo del JWT después de retirar el rol; ahora responde 503. Las
+rutas sensibles mantienen sus restricciones fijas. La corrección anterior de
+SSE evita seguir entregando datos tras revocar sesión o retirar permiso; sus
+ciclos son 2 s en Evacuación y 3 s en Monitoreo/Parqueaderos, más comprobación y
+transporte. No es garantía de revocación instantánea ni la métrica RNF-09.
+
+\subsection{Resultados y procedencia}
+\begin{center}
+\begin{longtable}{P{4.1cm}P{9.5cm}}
+\toprule\textbf{Evidencia existente} & \textbf{Resultado y límite}\\\midrule\endhead
+Tres finales del 15/11/2026, 21:41--21:44 UTC (16:41--16:44 Bogotá) &
+560/560 observaciones por final; 58,734 / 60,470 / 64,307 s. Cada una: 236
+rechazos de autorización y 346 comparaciones de conservación. Son 412
+respuestas del wrapper y 148 comprobaciones/observaciones compuestas, no 560
+casos de uso independientes.\\\midrule
+Conservación íntegra & 1.038 pares / 2.076 instantáneas gzip verificadas por
+SHA-256: 76 tablas de once esquemas, historial, avisos, outbox y acuses, planos,
+secuencias y Redis. Expiraciones naturales 0/4/0, distinguidas por reloj y plazo
+absoluto; sin excluir claves o campos. La carrera de último administrador admite
+una sola mutación autorizada y se informa aparte de igualdad global.\\\midrule
+Regresiones dirigidas & 85/85 backend, 8/8 comparador y 12/12 SSE HTTP reales
+en tres flujos y ambos canales. Estados, DTO, contexto y fallos de dependencia
+se distinguen de rechazos de autorización. Fallos previos y series
+interrumpidas preservados.\\\midrule
+CI publicada, SHA 9bc1ee5 &
+\href{https://github.com/Emperador24/HEXACORE/actions/runs/43768177312}{8/8 trabajos};
+1173/1173 unitarias, Núcleo 141/141 y Boletería 29/29 en cada una de dos
+pasadas. El fallo anterior del verificador ante dos ERROR esperados quedó
+diagnosticado; se corrigió solo el arnés, conservando errores inesperados y logs
+originales. CI no sustituye el ensayo local ni certifica el despliegue actual.\\
+\bottomrule\caption{Mediciones reutilizadas; esta actualización documental no vuelve a ejecutarlas.}
+\end{longtable}\end{center}
+
+Fuentes del bloque:
+\href{https://github.com/Emperador24/HEXACORE/blob/9bc1ee5/App/infra/informe-atributos/seguridad/RESULTADO.md}{resultado},
+\href{https://github.com/Emperador24/HEXACORE/blob/9bc1ee5/App/infra/informe-atributos/seguridad/COBERTURA-RECURSOS.md}{cobertura por operación},
+\href{https://github.com/Emperador24/HEXACORE/blob/feature/sebastian/App/infra/informe-atributos/seguridad/SECURITY-SAFETY.md}{relación Security/Safety},
+\href{https://github.com/Emperador24/HEXACORE/blob/9bc1ee5/App/infra/informe-atributos/seguridad/AUTORIZACION-CIERRE.md}{contrato y fallos}
+y \href{https://github.com/Emperador24/HEXACORE/blob/9bc1ee5/App/infra/informe-atributos/seguridad/CIERRE-EVIDENCIA.json}{evidencia saneada}.
+Las capturas SQL/Redis, sesiones, credenciales y QR completos permanecen privados,
+fuera de Git y de los anexos de Brightspace.
+
+\subsection{Límites de Seguridad y separación de Safety}
+\textbf{RNF-05/06 permanecen parciales.} Quedan DAST autenticado y combinaciones
+adicionales de negocio, consumidores y fallos entre SQL/Redis; residuos CSP de
+imágenes externas y Google Fonts/SRI; revalidación de dependencias y de los
+canales y límites de datos de pago. La migración a Angular 22 eliminó los
+hallazgos altos de aquella referencia; no se atribuyen al portal actual los
+hallazgos antiguos de Angular 19 ni se presenta ese análisis como auditoría nueva.
+
+Los interlocks de estados, bloqueos, idempotencia y actor de sesión relacionan
+Security con integridad del negocio; no certifican \textbf{Safety física},
+RNF-17 (99\% de dispositivos alertados en 10 s), autenticidad del reloj offline,
+firma extremo a extremo de AMQP o no repudio criptográfico de la auditoría SQL.
+F12 y recuperación financiera global no se resuelven en esta entrega.
+Hallazgo funcional separado: un ingreso QR sin \texttt{puntoAcceso} registra
+QR/Ventas, pero no se proyecta a Monitoreo; queda pendiente de su responsable.
+
+La preparación de dos servidores y un cliente sigue siendo
+\href{https://github.com/Emperador24/HEXACORE/blob/feature/sebastian/Documentation/Work/PLAN-DEMO-ZEROTIER.md}{un plan pendiente}:
+A conserva gateway y datos; se podrá apagar B. A sigue siendo punto único de
+fallo. No hay ensayo entre computadores, VPN instalada o disponibilidad mensual
+acreditada por este documento. El último control histórico de Redash terminó con
+timeouts HTTP/OOM; restaurar estados de contenedores no acreditó disponibilidad
+del servicio. Esta revisión no opera Docker ni Redash.

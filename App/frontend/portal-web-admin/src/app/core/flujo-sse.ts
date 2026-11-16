@@ -30,17 +30,18 @@ export function seguirFlujo<T>(
       let pendiente = '';
       for (;;) {
         const { value, done } = await lector.read();
-        if (done) break;
+        if (done || control.signal.aborted) break;
         pendiente += decoder.decode(value, { stream: true });
         let corte: number;
         while ((corte = pendiente.indexOf('\n\n')) >= 0) {
+          if (control.signal.aborted) return;
           const bloque = pendiente.slice(0, corte);
           pendiente = pendiente.slice(corte + 2);
           const evento = /^event: (.+)$/m.exec(bloque)?.[1];
           const datos = bloque.split('\n').filter((l) => l.startsWith('data: ')).map((l) => l.slice(6)).join('\n');
           if (evento === 'sesion_finalizada') {
             const codigo = datos ? (JSON.parse(datos) as { codigo?: string }).codigo : undefined;
-            alCaer(codigo === 'SIN_AUTENTICAR' ? 'Tu sesión terminó.' : 'No se puede mantener el flujo en este momento.', codigo === 'SIN_AUTENTICAR' ? 401 : 503);
+            alCaer(codigo === 'SIN_AUTENTICAR' ? 'Tu sesión terminó.' : 'No se puede mantener el flujo en este momento.', codigo === 'SIN_AUTENTICAR' ? 401 : codigo === 'ROL_INSUFICIENTE' ? 403 : 503);
             return;
           }
           if (evento === tipo && datos) alRecibir(JSON.parse(datos) as T);

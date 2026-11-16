@@ -2,7 +2,7 @@ import { APIRequestContext, expect, Page } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { presentar } from '../presentacion';
+import { actuar, presentar } from '../presentacion';
 
 export const adminURL = 'http://cu015.localhost:14221';
 export const clienteURL = 'http://cu015.localhost:14220';
@@ -31,12 +31,12 @@ export async function loginAPI(api: APIRequestContext, email: string): Promise<{
 }
 
 export async function loginUI(page: Page, url: string, email: string): Promise<void> {
-  await page.goto(`${url}/login`);
+  await actuar(page, objetivo => objetivo.goto(`${url}/login`));
   await expect(page.getByLabel('Correo', { exact: true })).toBeVisible();
   await presentar(page, url === adminURL ? 'Acceso al portal administrativo' : 'Acceso al portal cliente');
-  await page.getByLabel('Correo', { exact: true }).fill(email);
-  await page.getByLabel('Contraseña', { exact: true }).fill(clave()!);
-  await page.getByRole('button', { name: 'Ingresar', exact: true }).click();
+  await actuar(page.getByLabel('Correo', { exact: true }), objetivo => objetivo.fill(email));
+  await actuar(page.getByLabel('Contraseña', { exact: true }), objetivo => objetivo.fill(clave()!));
+  await actuar(page.getByRole('button', { name: 'Ingresar', exact: true }), objetivo => objetivo.click());
   await expect(page).not.toHaveURL(/\/login(?:\?|$)/);
   // La siguiente etapa se presenta cuando su contenido específico esté listo;
   // no sumar otra pausa genérica a la del recorrido que llama a este helper.

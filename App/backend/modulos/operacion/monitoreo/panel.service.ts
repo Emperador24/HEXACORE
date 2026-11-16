@@ -85,7 +85,15 @@ export class PanelService {
   }
 
   /** Pasos 2-4: el estado del evento ahora mismo, con sus alertas al día. */
-  async panel(eventoId: string) {
+  /** Mismo presupuesto SSE que Parqueaderos; no modifica consultas HTTP normales. */
+  panelParaFlujo(eventoId: string) {
+    return this.datos.transaction(async m => {
+      await m.query("SET LOCAL statement_timeout = '2000ms'");
+      return this.panel(eventoId, m);
+    });
+  }
+
+  async panel(eventoId: string, m: EntityManager = this.datos.manager) {
     const { evento, recinto } = await this.eventos.detalle(eventoId);
     if (evento.estado !== 'PUBLICADO') {
       throw new ConflictException({ codigo: 'EVENTO_NO_PUBLICADO', mensaje: 'Solo se monitorea un evento publicado.' });
@@ -94,9 +102,9 @@ export class PanelService {
     const enCurso = evento.fechaInicio <= ahora && evento.fechaFin > ahora;
 
     const [puntos, porMinuto, asistentes, zonas, parqueadero] = await Promise.all([
-      this.puntosConFlujo(eventoId),
-      this.ingresosPorMinuto(eventoId),
-      this.datos.query(`SELECT count(*)::int AS n FROM ingresos WHERE evento_id = $1`, [eventoId]).then((r) => r[0].n as number),
+      this.puntosConFlujo(eventoId, m),
+      this.ingresosPorMinuto(eventoId, m),
+      m.query(`SELECT count(*)::int AS n FROM ingresos WHERE evento_id = $1`, [eventoId]).then((r) => r[0].n as number),
       this.cobertura.deEvento(eventoId),
       this.parqueaderos.resumen(eventoId),
     ]);
@@ -111,8 +119,8 @@ export class PanelService {
     };
 
     const calculadas = this.evaluar({ porcentaje, asistentes, aforoMaximo: evento.aforoMaximo, puntos, zonas, enCurso });
-    const alertas = await this.sincronizarAlertas(eventoId, calculadas);
-    const decisiones = await this.datos.getRepository(Decision).find({ where: { eventoId }, order: { fecha: 'DESC' }, take: 50 });
+    const alertas = await this.sincronizarAlertas(eventoId, calculadas, m);
+    const decisiones = await m.getRepository(Decision).find({ where: { eventoId }, order: { fecha: 'DESC' }, take: 50 });
 
     return {
       evento: {
@@ -210,8 +218,8 @@ export class PanelService {
    * aplican. El índice único parcial impide duplicados si dos pantallas
    * calculan a la vez.
    */
-  private async sincronizarAlertas(eventoId: string, calculadas: AlertaCalculada[]): Promise<Alerta[]> {
-    return this.datos.transaction(async (m) => {
+  private async sincronizarAlertas(eventoId: string, calculadas: AlertaCalculada[], contexto: EntityManager = this.datos.manager): Promise<Alerta[]> {
+    return contexto.transaction(async (m) => {
       const activas = await m.find(Alerta, { where: { eventoId, resueltaEn: IsNull() } });
       const claves = new Set(calculadas.map((c) => c.clave));
       for (const vieja of activas.filter((a) => !claves.has(a.clave))) {
@@ -304,8 +312,8 @@ export class PanelService {
 
   // --- Consultas de flujo --------------------------------------------------------
 
-  private async puntosConFlujo(eventoId: string): Promise<PuntoConFlujo[]> {
-    const filas = await this.datos.query(
+  private async puntosConFlujo(eventoId: string, m: EntityManager = this.datos.manager): Promise<PuntoConFlujo[]> {
+    const filas = await m.query(
       `SELECT p.nombre, p.estado, p.alternativa,
               count(i.id)::int AS total,
               count(i.id) FILTER (WHERE i.escaneado_en > now() - interval '5 minutes')::int AS ultimos5,
@@ -323,8 +331,8 @@ export class PanelService {
   }
 
   /** Flujo de ingreso de los últimos 30 minutos, minuto a minuto (para la gráfica). */
-  private async ingresosPorMinuto(eventoId: string): Promise<{ minuto: string; ingresos: number }[]> {
-    return this.datos.query(
+  private async ingresosPorMinuto(eventoId: string, m: EntityManager = this.datos.manager): Promise<{ minuto: string; ingresos: number }[]> {
+    return m.query(
       `SELECT to_char(m.minuto AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:00"Z"') AS minuto, count(i.id)::int AS ingresos
          FROM generate_series(date_trunc('minute', now()) - interval '29 minutes', date_trunc('minute', now()), interval '1 minute') AS m(minuto)
          LEFT JOIN ingresos i ON i.evento_id = $1 AND date_trunc('minute', i.escaneado_en) = m.minuto

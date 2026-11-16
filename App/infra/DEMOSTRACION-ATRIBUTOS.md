@@ -153,6 +153,14 @@ La arquitectura actual no empeoró la ruta caliente de la reventa.
 
 ## 3. Disponibilidad (RNF-03, RNF-04, RNF-10) — `demo-disponibilidad.sh`
 
+**Alcance de esta evidencia: réplicas en un solo Docker y caída de un proceso.**
+La preparación vigente para **dos servidores de aplicación y un cliente** está
+en [PLAN-DEMO-ZEROTIER.md](../../Documentation/Work/PLAN-DEMO-ZEROTIER.md).
+Allí se propone apagar B manteniendo gateway/datos en A: no tolera apagar A.
+El guion inferior no balancea entre computadores ni debe ejecutarse sin adaptar
+su escalado y caída automática a la futura prueba manual. Las cifras siguientes
+son históricas locales; no acreditan disponibilidad entre equipos.
+
 | Paso | Boletería (3 réplicas) | Núcleo (2 réplicas) |
 |---|---|---|
 | Reparto de 30 peticiones (`X-Servidor`) | 10 / 10 / 10 | 15 / 15 |

@@ -1,4 +1,4 @@
-import { presentar } from '../presentacion';
+import { actuar, presentar } from '../presentacion';
 import { APIRequestContext, expect, test } from '../csp.fixture';
 import { randomUUID } from 'node:crypto';
 import { adminURL, clienteURL, comprobarAislamiento, crearEvento, gateway, loginAPI, loginUI, nucleo, sql } from '../cu015/entorno';
@@ -22,38 +22,38 @@ function snapshots(pedido: string) {
 
 test('CU-013 por interfaces: compra, preparación, retraso, incidencia, listo y recuperación de QR y avisos',async({page,browser,request},info)=>{
  const e=await entorno(request,2);
- await loginUI(page,clienteURL,'cliente@hexacore.com');await page.goto(`${clienteURL}/pedidos?eventoId=${e.evento.id}`);
- await page.getByRole('link').filter({hasText:e.nombre}).click();
- for(let i=0;i<2;i++)await page.getByRole('button',{name:'Agregar Receta CU013',exact:true}).click();
- const checkout=page.waitForResponse(r=>r.url().endsWith('/pedidos/checkout'));await page.getByRole('button',{name:'Continuar',exact:true}).click();
+ await loginUI(page,clienteURL,'cliente@hexacore.com');await actuar(page, objetivo => objetivo.goto(`${clienteURL}/pedidos?eventoId=${e.evento.id}`));
+ await actuar(page.getByRole('link').filter({hasText:e.nombre}), objetivo => objetivo.click());
+ for(let i=0;i<2;i++)await actuar(page.getByRole('button',{name:'Agregar Receta CU013',exact:true}), objetivo => objetivo.click());
+ const checkout=page.waitForResponse(r=>r.url().endsWith('/pedidos/checkout'));await actuar(page.getByRole('button',{name:'Continuar',exact:true}), objetivo => objetivo.click());
  const compra=await checkout;expect(compra.status()).toBe(201);const pedido=await compra.json();
- const cobrar=page.waitForResponse(r=>r.url().endsWith(`/pedidos/${pedido.id}/pagos`));await page.getByRole('button',{name:'Pagar pedido',exact:true}).click();
+ const cobrar=page.waitForResponse(r=>r.url().endsWith(`/pedidos/${pedido.id}/pagos`));await actuar(page.getByRole('button',{name:'Pagar pedido',exact:true}), objetivo => objetivo.click());
  const pago=await cobrar;expect(pago.status()).toBe(200);const pagado=await pago.json();expect(pagado.compraConfirmada).toBe(true);
  await expect(page.getByRole('heading',{name:'¡Tu pedido está confirmado!'})).toBeVisible();
  const anterior=snapshots(pedido.id);
  await presentar(page,'Cliente: compra pagada y QR disponible');
- await page.getByRole('link',{name:'Ver seguimiento y avisos',exact:true}).click();
+ await actuar(page.getByRole('link',{name:'Ver seguimiento y avisos',exact:true}), objetivo => objetivo.click());
  await expect(page).toHaveURL(`${clienteURL}/mis-pedidos/${pedido.id}`);
  await expect(page.getByAltText('Código QR del pedido confirmado')).toBeVisible();
  const qrImagen=await page.getByAltText('Código QR del pedido confirmado').getAttribute('src');
- await page.reload();await expect(page.getByAltText('Código QR del pedido confirmado')).toHaveAttribute('src',qrImagen!);
+ await actuar(page, objetivo => objetivo.reload());await expect(page.getByAltText('Código QR del pedido confirmado')).toHaveAttribute('src',qrImagen!);
  const ctx=await browser.newContext(),operador=await ctx.newPage();
  try {
   await loginUI(operador,adminURL,'restaurante@hexacore.com');
-  await operador.getByRole('navigation').getByRole('link',{name:'Preparación de pedidos',exact:true}).click();
+  await actuar(operador.getByRole('navigation').getByRole('link',{name:'Preparación de pedidos',exact:true}), objetivo => objetivo.click());
   await expect(operador).toHaveURL(`${adminURL}/admin/preparacion`);
-  await operador.getByLabel('Establecimiento vinculado',{exact:true}).selectOption(e.local.id);
-  const fila=operador.locator(`[data-pedido="${pedido.id}"]`);await fila.getByRole('button',{name:'Gestionar pedido',exact:true}).click();
+  await actuar(operador.getByLabel('Establecimiento vinculado',{exact:true}), objetivo => objetivo.selectOption(e.local.id));
+  const fila=operador.locator(`[data-pedido="${pedido.id}"]`);await actuar(fila.getByRole('button',{name:'Gestionar pedido',exact:true}), objetivo => objetivo.click());
   const detalle=operador.getByRole('region',{name:'Detalle de preparación'});
   // La bandeja no confunde disponible cero después de vender con un faltante.
   expect(sql(`SELECT cantidad_inventario FROM alimentos.productos WHERE id='${e.producto.id}';`)).toBe('0');
   await expect(operador.locator('app-qr-pedido')).toHaveCount(0);
   expect((await operador.locator('body').innerText())).not.toContain(pagado.codigoQr);
   expect((await request.patch(`${gateway}/pedidos/admin/establecimientos/${e.local.id}/estado`,{headers:h(e.organizador.token),data:{estado:'CERRADO'}})).status()).toBe(200);
-  await operador.getByRole('button',{name:'Actualizar pedidos',exact:true}).click();
+  await actuar(operador.getByRole('button',{name:'Actualizar pedidos',exact:true}), objetivo => objetivo.click());
   await presentar(operador,'Personal: bandeja y detalle del pedido');
-  await detalle.getByRole('button',{name:'Iniciar preparación',exact:true}).click();
-  await operador.getByLabel('Minutos estimados',{exact:true}).fill('10');
+  await actuar(detalle.getByRole('button',{name:'Iniciar preparación',exact:true}), objetivo => objetivo.click());
+  await actuar(operador.getByLabel('Minutos estimados',{exact:true}), objetivo => objetivo.fill('10'));
   await presentar(operador,'Personal: estimación inicial de preparación');
   const avisoAutomatico=page.waitForResponse(async r=>{
    // Si falla el listado previo, la pantalla pausa su sondeo y no habrá detalle.
@@ -62,37 +62,37 @@ test('CU-013 por interfaces: compra, preparación, retraso, incidencia, listo y 
    if(r.status()!==200)return true;
    return (await r.json()).preparacion.estado==='EN_PREPARACION';
   });
-  let cambio=operador.waitForResponse(r=>r.url().endsWith(`/${pedido.id}/preparacion`));await operador.getByRole('button',{name:'Guardar avance',exact:true}).click();
+  let cambio=operador.waitForResponse(r=>r.url().endsWith(`/${pedido.id}/preparacion`));await actuar(operador.getByRole('button',{name:'Guardar avance',exact:true}), objetivo => objetivo.click());
   let respuesta=await cambio;expect(respuesta.status()).toBe(200);const inicio=await respuesta.json();
   expect((await avisoAutomatico).status()).toBe(200);
   await expect(page.getByText('Tu pedido está en preparación.',{exact:false})).toBeVisible();
  await presentar(page,'Cliente: aviso de preparación');
-  await detalle.getByRole('button',{name:'Registrar retraso',exact:true}).click();
-  await operador.getByLabel('Minutos adicionales',{exact:true}).fill('5');await operador.getByLabel('Motivo o resolución',{exact:true}).fill('Demora de cocción CU013');
+  await actuar(detalle.getByRole('button',{name:'Registrar retraso',exact:true}), objetivo => objetivo.click());
+  await actuar(operador.getByLabel('Minutos adicionales',{exact:true}), objetivo => objetivo.fill('5'));await actuar(operador.getByLabel('Motivo o resolución',{exact:true}), objetivo => objetivo.fill('Demora de cocción CU013'));
   await presentar(operador,'Personal: retraso y motivo antes de guardar');
-  cambio=operador.waitForResponse(r=>r.url().endsWith(`/${pedido.id}/preparacion`));await operador.getByRole('button',{name:'Guardar avance',exact:true}).click();
+  cambio=operador.waitForResponse(r=>r.url().endsWith(`/${pedido.id}/preparacion`));await actuar(operador.getByRole('button',{name:'Guardar avance',exact:true}), objetivo => objetivo.click());
   respuesta=await cambio;expect(respuesta.status()).toBe(200);const retraso=await respuesta.json();
   expect(Date.parse(retraso.preparacion.estimadoListoEn)-Date.parse(inicio.preparacion.estimadoListoEn)).toBe(300000);
-  await page.getByRole('button',{name:'Actualizar seguimiento',exact:true}).click();await expect(page.getByText(/La preparación tiene un retraso: Demora de cocción CU013/)).toBeVisible();
+  await actuar(page.getByRole('button',{name:'Actualizar seguimiento',exact:true}), objetivo => objetivo.click());await expect(page.getByText(/La preparación tiene un retraso: Demora de cocción CU013/)).toBeVisible();
  await presentar(page,'Cliente: retraso comunicado');
-  await detalle.getByRole('button',{name:'Reportar incidencia',exact:true}).click();await operador.getByLabel('Motivo o resolución',{exact:true}).fill('Faltante detectado durante preparación');
+  await actuar(detalle.getByRole('button',{name:'Reportar incidencia',exact:true}), objetivo => objetivo.click());await actuar(operador.getByLabel('Motivo o resolución',{exact:true}), objetivo => objetivo.fill('Faltante detectado durante preparación'));
   await presentar(operador,'Personal: registrar una incidencia');
-  cambio=operador.waitForResponse(r=>r.url().endsWith(`/${pedido.id}/preparacion`));await operador.getByRole('button',{name:'Guardar avance',exact:true}).click();expect((await cambio).status()).toBe(200);
+  cambio=operador.waitForResponse(r=>r.url().endsWith(`/${pedido.id}/preparacion`));await actuar(operador.getByRole('button',{name:'Guardar avance',exact:true}), objetivo => objetivo.click());expect((await cambio).status()).toBe(200);
   await expect(detalle.getByRole('button',{name:'Marcar listo',exact:true})).toBeDisabled();
-  await page.getByRole('button',{name:'Actualizar seguimiento',exact:true}).click();await expect(page.getByText(/El establecimiento reportó una incidencia: Faltante/)).toBeVisible();
+  await actuar(page.getByRole('button',{name:'Actualizar seguimiento',exact:true}), objetivo => objetivo.click());await expect(page.getByText(/El establecimiento reportó una incidencia: Faltante/)).toBeVisible();
  await presentar(page,'Cliente: incidencia comunicada');
-  await detalle.getByRole('button',{name:'Resolver incidencia',exact:true}).click();await operador.getByLabel('Motivo o resolución',{exact:true}).fill('Disponibles los productos acordados');
+  await actuar(detalle.getByRole('button',{name:'Resolver incidencia',exact:true}), objetivo => objetivo.click());await actuar(operador.getByLabel('Motivo o resolución',{exact:true}), objetivo => objetivo.fill('Disponibles los productos acordados'));
   await presentar(operador,'Personal: resolución de la incidencia');
-  cambio=operador.waitForResponse(r=>r.url().endsWith(`/${pedido.id}/preparacion`));await operador.getByRole('button',{name:'Guardar avance',exact:true}).click();expect((await cambio).status()).toBe(200);
-  cambio=operador.waitForResponse(r=>r.url().endsWith(`/${pedido.id}/preparacion`));await detalle.getByRole('button',{name:'Marcar listo',exact:true}).click();
+  cambio=operador.waitForResponse(r=>r.url().endsWith(`/${pedido.id}/preparacion`));await actuar(operador.getByRole('button',{name:'Guardar avance',exact:true}), objetivo => objetivo.click());expect((await cambio).status()).toBe(200);
+  cambio=operador.waitForResponse(r=>r.url().endsWith(`/${pedido.id}/preparacion`));await actuar(detalle.getByRole('button',{name:'Marcar listo',exact:true}), objetivo => objetivo.click());
   respuesta=await cambio;expect(respuesta.status()).toBe(200);expect((await respuesta.json()).preparacion.estado).toBe('LISTO_PARA_ENTREGAR');
-  await page.getByRole('button',{name:'Actualizar seguimiento',exact:true}).click();await expect(page.locator('[data-avance]')).toHaveText('Listo para entregar');
+  await actuar(page.getByRole('button',{name:'Actualizar seguimiento',exact:true}), objetivo => objetivo.click());await expect(page.locator('[data-avance]')).toHaveText('Listo para entregar');
  await presentar(page,'Cliente: pedido listo para entregar');
-  await page.reload();await expect(page.locator('[data-avance]')).toHaveText('Listo para entregar');await expect(page.getByAltText('Código QR del pedido confirmado')).toHaveAttribute('src',qrImagen!);
+  await actuar(page, objetivo => objetivo.reload());await expect(page.locator('[data-avance]')).toHaveText('Listo para entregar');await expect(page.getByAltText('Código QR del pedido confirmado')).toHaveAttribute('src',qrImagen!);
   const nuevaSesion=await browser.newContext();
   try {
    const regreso=await nuevaSesion.newPage();await loginUI(regreso,clienteURL,'cliente@hexacore.com');
-   await regreso.goto(`${clienteURL}/mis-pedidos/${pedido.id}`);
+   await actuar(regreso, objetivo => objetivo.goto(`${clienteURL}/mis-pedidos/${pedido.id}`));
    await expect(regreso.locator('[data-avance]')).toHaveText('Listo para entregar');
    await expect(regreso.getByAltText('Código QR del pedido confirmado')).toHaveAttribute('src',qrImagen!);
  await presentar(regreso,'Cliente: estado recuperado en otra sesión');
@@ -103,7 +103,7 @@ test('CU-013 por interfaces: compra, preparación, retraso, incidencia, listo y 
   expect(sql(`SELECT cantidad_inventario FROM alimentos.productos WHERE id='${e.producto.id}';`)).toBe('0');
   await operador.screenshot({path:info.outputPath('preparacion-lista.png'),fullPage:true});await page.screenshot({path:info.outputPath('cliente-avisos.png'),fullPage:true});
   expect((await request.delete(`${gateway}/pedidos/admin/establecimientos/${e.local.id}/personal/${e.personal.usuario.id}`,{headers:h(e.organizador.token)})).status()).toBe(204);
-  await operador.getByRole('button',{name:'Actualizar pedidos',exact:true}).click();await expect(operador.getByRole('alert')).toContainText('vinculada');
+  await actuar(operador.getByRole('button',{name:'Actualizar pedidos',exact:true}), objetivo => objetivo.click());await expect(operador.getByRole('alert')).toContainText('vinculada');
  }finally{await ctx.close();}
 });
 
