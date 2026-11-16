@@ -135,9 +135,9 @@ RNF-19 pero no un ASR numerado en ese árbol; no se crea un ASR ficticio.
 | Escenario / ASR / RNF | Apertura CU-001 y validación QR. ASR-04, RNF-07 p95≤500 ms con **2000** usuarios; RNF-08 QR p95≤300 ms |
 | Diseño | Balanceo, concurrencia por procesos, pools limitados y consultas parametrizadas |
 | Implementación | **Implementada:** [prueba-carga.py](../../App/infra/prueba-carga.py), aplicaciones y configuración de pools |
-| Evidencia | CARGA-1-replica.md: lecturas CU-006/026/025, hasta **200** usuarios; p95 150,3/355,0/310,6 ms, cero fallos; un portátil compartido, 12/11 |
-| Resultado | **Parcial.** Cumple el umbral de latencia solo en esos ensayos; no son la consulta CU-001 con 2000 usuarios ni validaciones QR RNF-08 |
-| Pendiente | Confirmar evidencia específica de CU-001/QR y condiciones del ensayo; sin nuevos ensayos de carga en esta revisión |
+| Evidencia | CARGA-1-replica.md (12/11): lecturas CU-006/026/025 hasta **200** usuarios, p95 150/355/311 ms. CARGA-boleteria-1-replica.md (16/11): **CU-001 p95 197 ms** con 200 usuarios; **QR p95 51 ms** con 10 lectores sin pausa (~500 validaciones/s), 333 ms con 50. Cero fallos; un portátil compartido |
+| Resultado | **RNF-07 cumple en CU-001 hasta 200 usuarios; 2000 no verificado. RNF-08 cumple hasta ~500 validaciones/s**; desde 50 lectores simultáneos lo supera porque todas suman en la misma fila de aforo |
+| Pendiente | 2000 usuarios con el generador en otra máquina; contador de aforo repartido por puerta si se quiere más capacidad de QR |
 
 ### Tiempo real
 
@@ -147,9 +147,9 @@ RNF-19 pero no un ASR numerado en ese árbol; no se crea un ASR ficticio.
 | Escenario / ASR / RNF | Ingreso/salida o incidente reflejado en tablero ≤2 s. ASR-05, RNF-09 |
 | Diseño | Ingreso por evento AMQP, proyección de Operación y SSE consultando estado |
 | Implementación | **Implementada en parte:** [Monitoreo](../../App/backend/modulos/operacion/monitoreo), [flujos SSE](../../App/backend/modulos/operacion/comun/flujo-operacion.service.ts) y Parqueaderos |
-| Evidencia | Pruebas de panel/consumidor y SSE de Seguridad; el cierre de sesión medido a 2/3 s es una **métrica de revocación**, no latencia ingreso→tablero |
-| Resultado | **Parcial; umbral extremo a extremo desconocido.** Ciclo del panel de 3 s no permite inferir ≤2 s |
-| Pendiente | Samuel contrasta medición con instantes correlacionados; ingreso QR sin puntoAcceso se registra en QR/Ventas pero va a DLQ en Monitoreo, hallazgo funcional ya documentado, sin implementar su corrección aquí |
+| Evidencia | TIEMPO-REAL.md (16/11), `tiempo-real.py`: ingreso → panel SSE, 20 muestras por panel en fase al azar. **Parqueadero máx. 1,01 s; Monitoreo (QR → RabbitMQ → Operación) máx. 1,12 s**, 20/20 en ≤ 2 s |
+| Resultado | **Comprobado con carga normal.** Para lograrlo: flujos cada 1 s (antes 3 s); bandeja de salida de Acceso QR de ~50 a ~1700 avisos/s (confirmaciones en lote); ingreso sin puntoAcceso contado en «Acceso general» en vez de DLQ |
+| Pendiente | Un pico de más de ~1700 ingresos/s volvería a atrasar la bandeja |
 
 ### Escalabilidad
 
@@ -159,9 +159,9 @@ RNF-19 pero no un ASR numerado en ese árbol; no se crea un ASR ficticio.
 | Escenario / ASR / RNF | Duplicar Entradas: throughput ≥1,7× sin degradar otros dominios. ASR-06, RNF-10 |
 | Diseño | Réplicas por programa y balanceo; PostgreSQL, Redis y gateway compartidos pueden limitar |
 | Implementación | **Implementada:** escalado de Núcleo/Boletería; los componentes internos de Boletería no escalan de forma independiente |
-| Evidencia | CARGA-nucleo-2-replicas.md: CU-025 **1,82×**, CU-026 **1,57×** frente a una réplica; CPU compartida |
-| Resultado | **Parcial.** El factor de CU-025 está comprobado; no es RNF-10 de Entradas ni aislamiento de latencia de los demás |
-| Pendiente | Samuel contrasta evidencia de Boletería/efecto en otros dominios; no ampliar infraestructura ahora |
+| Evidencia | CARGA-nucleo-2-replicas.md: CU-025 **1,82×**, CU-026 **1,57×**. CARGA-boleteria-2-replicas.md (16/11): Boletería ×2, **CU-001 1,12×, CU-006 1,26×**, QR 1,04×; réplicas al 90–99 % de un núcleo con gateway, PostgreSQL y generador en el mismo portátil |
+| Resultado | **No cumple en Entradas en este entorno.** La duplicación no es limpia: no quedan núcleos libres; en QR el límite es PostgreSQL (fila de aforo compartida) |
+| Pendiente | Repetir con cada réplica en su máquina (red ZeroTier A/B) |
 
 ### Trazabilidad
 
@@ -243,9 +243,9 @@ RNF-19 pero no un ASR numerado en ese árbol; no se crea un ASR ficticio.
 | Escenario / ASR / RNF | Evacuación notificada al ≥99 % de dispositivos en ≤10 s incluso con lentitud/fallo. ASR-13, RNF-17 |
 | Diseño | Estados y activación, avisos prioritarios con reintento, interlocks y reporte; separación entre decisión, aviso y recepción efectiva |
 | Implementación | **Parcial:** [Evacuación](../../App/backend/modulos/operacion/evacuacion), portal/app; sin canales push/SMS reales ni aislamiento de proceso propio |
-| Evidencia | Pruebas funcionales y de autorización/SSE existentes; [Security/Safety](../../App/infra/informe-atributos/seguridad/SECURITY-SAFETY.md) distingue interlocks de negocio de seguridad física |
-| Resultado | **Parcial.** No existe prueba de población de dispositivos/acuse que acredite el porcentaje/tiempo RNF-17 |
-| Pendiente | Samuel contrasta fallos/omisiones/estados inseguros y recepción verificable; no activar evacuación ni enviar avisos en esta revisión |
+| Evidencia | TIEMPO-REAL.md y TIEMPO-REAL-caida.md (16/11): 300 dispositivos simulados con cuentas de Personal, sondeo de 4 s como la app; **300/300 en ≤ 4,0 s** (p95 3,8 s), y 300/300 en ≤ 4,1 s con una réplica del Núcleo muerta en la activación; 0 errores en ~760 consultas. Simulacro en evento propio, finalizado y cancelado al terminar |
+| Resultado | **Comprobado para la app abierta y con señal.** [Security/Safety](../../App/infra/informe-atributos/seguridad/SECURITY-SAFETY.md) sigue distinguiendo interlocks de negocio de seguridad física |
+| Pendiente | Teléfonos sin señal o con la app cerrada: requieren push/SMS reales, que el prototipo no tiene |
 
 ### Comprobabilidad
 
@@ -269,7 +269,7 @@ RNF-19 pero no un ASR numerado en ese árbol; no se crea un ASR ficticio.
 | Implementación | **Implementada:** [Compose monitoreo](../../App/infra/docker-compose.monitoreo.yml), [Prometheus](../../App/infra/monitoreo/prometheus.yml), [tablero](../../App/infra/monitoreo/grafana/tableros/hexacore.json) |
 | Evidencia | Guion/SAD del 12/11; configuración de CPU cada 2 s, global 5 s, refresco tablero 5 s y retención 2 días. No se abre el tablero en esta revisión |
 | Resultado | **Comprobado en aquella demostración; parcial para totalidad actual.** Métricas de infraestructura y tráfico del gateway, sin alertas automáticas ni detalle por CU |
-| Pendiente | Samuel confirma cobertura vigente de instancias y acceso controlado a logs/tablero; cae con el nodo, no sustituye retención de auditoría anual |
+| Pendiente | Acceso controlado: Grafana ya no admite anónimos (usuario y contraseña, `GRAFANA_CONTRASENA`). Siguen sin alertas automáticas; cae con el nodo y no sustituye la retención de auditoría anual |
 
 ## Correcciones de datos obsoletos y comparación arquitectónica
 
