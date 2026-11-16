@@ -1,0 +1,225 @@
+{
+  "fechaBogota": "2026-11-15",
+  "base": "36998aa",
+  "accionesMsConfiguradas": 500,
+  "lecturaMsConfigurada": 1500,
+  "slowMoNativoMs": 0,
+  "motivo": "El helper enfoca antes de cada acción y espera solo el resto de 500 ms; la lectura satisface ese intervalo. Sin demora duplicada al enfocar o comprobar.",
+  "demo": {
+    "demo": true,
+    "bloques": [
+      {
+        "actor": 0,
+        "contexto": "predeterminado",
+        "eventos": [
+          {
+            "tipo": "input",
+            "id": "nombre",
+            "ms": 1794768038246,
+            "visible": "visible",
+            "enFoco": true
+          },
+          {
+            "tipo": "input",
+            "id": "ciudad",
+            "ms": 1794768038766,
+            "visible": "visible",
+            "enFoco": true
+          },
+          {
+            "tipo": "change",
+            "id": "opcion",
+            "ms": 1794768039278,
+            "visible": "visible",
+            "enFoco": true
+          },
+          {
+            "tipo": "click",
+            "id": "guardar",
+            "ms": 1794768039829,
+            "visible": "visible",
+            "enFoco": true
+          }
+        ],
+        "intervalos": [
+          520,
+          512,
+          551
+        ]
+      },
+      {
+        "actor": 1,
+        "contexto": "explicito",
+        "eventos": [
+          {
+            "tipo": "input",
+            "id": "nombre",
+            "ms": 1794768041457,
+            "visible": "visible",
+            "enFoco": true
+          },
+          {
+            "tipo": "input",
+            "id": "ciudad",
+            "ms": 1794768041972,
+            "visible": "visible",
+            "enFoco": true
+          },
+          {
+            "tipo": "change",
+            "id": "opcion",
+            "ms": 1794768042492,
+            "visible": "visible",
+            "enFoco": true
+          },
+          {
+            "tipo": "click",
+            "id": "guardar",
+            "ms": 1794768043015,
+            "visible": "visible",
+            "enFoco": true
+          }
+        ],
+        "intervalos": [
+          515,
+          520,
+          523
+        ]
+      }
+    ],
+    "pausas": [
+      1509.9892089999994,
+      1506.5048330000009
+    ],
+    "regresoMs": 57.1104579999992,
+    "adjuntos": [
+      {
+        "etapa": "Formulario de actor 0 guardado",
+        "navegador": 1,
+        "contexto": 1,
+        "slowMoMs": 0,
+        "pausaMs": 1500,
+        "lecturaRealMs": 1503
+      },
+      {
+        "etapa": "Formulario de actor 1 guardado",
+        "navegador": 1,
+        "contexto": 2,
+        "slowMoMs": 0,
+        "pausaMs": 1500,
+        "lecturaRealMs": 1503
+      }
+    ],
+    "retries": 0,
+    "timeout": 15000
+  },
+  "normal": {
+    "demo": false,
+    "bloques": [
+      {
+        "actor": 0,
+        "contexto": "predeterminado",
+        "eventos": [
+          {
+            "tipo": "input",
+            "id": "nombre",
+            "ms": 1794768075142,
+            "visible": "visible",
+            "enFoco": true
+          },
+          {
+            "tipo": "input",
+            "id": "ciudad",
+            "ms": 1794768075156,
+            "visible": "visible",
+            "enFoco": true
+          },
+          {
+            "tipo": "change",
+            "id": "opcion",
+            "ms": 1794768075161,
+            "visible": "visible",
+            "enFoco": true
+          },
+          {
+            "tipo": "click",
+            "id": "guardar",
+            "ms": 1794768075206,
+            "visible": "visible",
+            "enFoco": true
+          }
+        ],
+        "intervalos": [
+          14,
+          5,
+          45
+        ]
+      },
+      {
+        "actor": 1,
+        "contexto": "explicito",
+        "eventos": [
+          {
+            "tipo": "input",
+            "id": "nombre",
+            "ms": 1794768075246,
+            "visible": "visible",
+            "enFoco": true
+          },
+          {
+            "tipo": "input",
+            "id": "ciudad",
+            "ms": 1794768075251,
+            "visible": "visible",
+            "enFoco": true
+          },
+          {
+            "tipo": "change",
+            "id": "opcion",
+            "ms": 1794768075256,
+            "visible": "visible",
+            "enFoco": true
+          },
+          {
+            "tipo": "click",
+            "id": "guardar",
+            "ms": 1794768075293,
+            "visible": "visible",
+            "enFoco": true
+          }
+        ],
+        "intervalos": [
+          5,
+          5,
+          37
+        ]
+      }
+    ],
+    "pausas": [
+      0.04583300000012969,
+      0.004207999999380263
+    ],
+    "regresoMs": 11.856333000000632,
+    "adjuntos": [],
+    "retries": 0,
+    "timeout": 15000
+  },
+  "casosDescubiertos": 16,
+  "cu015Descubiertos": 2,
+  "observadorSoloListaCodigo": 2,
+  "recorridosCompletosEjecutados": 0,
+  "falloInicialConservado": "El arnés contó input y change de una misma selección; se corrigió solo su contador, sin ampliar 15 s ni reintentos.",
+  "fuentes": {
+    "App/e2e/presentacion.ts": "b48b5ee92195d9091d212ca738c9389b9f8fdfbb11dc738f65cbd30d7debb7c5",
+    "App/e2e/playwright.demo.config.ts": "45ed542f5a3f9081f8a57b0509d3360decd82917d2b9129abbb3c19d0979b1b9",
+    "App/e2e/cu011f/cancelacion.spec.ts": "eea1e09fa0fa09472e1ea87554f38f43504d1e8f9b477dd7df725513109db8b2",
+    "App/e2e/cu012/menu.spec.ts": "b0139e7a4cd96f985af43eec181d50a70eab6b108e85c173a2c758d1d851fa5e",
+    "App/e2e/cu013/preparacion.spec.ts": "f2684342efd3ab70bea1f24eaf6a5a4d07abb3436cde510b149df5944e790a66",
+    "App/e2e/cu014/entorno.ts": "276352c375fb445dc75b4f03ca1577d2cf9abc16385ceed83fe9c2b6005043ca",
+    "App/e2e/cu014/entrega.spec.ts": "0f7d561fcc14e0867d12d907fdccb06ffa72bf67cc7b9100f324aa14a44af896",
+    "App/e2e/cu015/entorno.ts": "46b7151b41bcef151e6cb0bdd414ac89ad80ac134466bf1ede1fee030c2f4f8f",
+    "App/e2e/cu015/establecimientos.spec.ts": "70307c2ae62b7d128028d48efaa7e0b4595ad337c804b4d838138140698248f2",
+    "App/e2e/cu027/cuentas.spec.ts": "44ffbb037d5c98f1d369a37617165f317cc63db55f97f2b1b1072fdd34c11155",
+    "App/e2e/cu029/recintos.spec.ts": "6110b9802f952ac26d8c0f42149911d9f2268a30274138b3f90ab4ac122c5617"
+  }
+}

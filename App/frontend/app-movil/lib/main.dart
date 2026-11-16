@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
@@ -11,7 +12,9 @@ import 'pages/onboarding_page.dart';
 import 'pages/register_page.dart';
 import 'pages/activity_page.dart';
 import 'pages/resale_page.dart';
+import 'pages/parking_page.dart';
 import 'pages/pedidos_page.dart';
+import 'pages/seguimiento_pedidos_page.dart';
 import 'pages/restaurant_orders_page.dart';
 import 'pages/restaurant_menu_page.dart';
 import 'pages/change_password_page.dart';
@@ -24,6 +27,8 @@ import 'pages/verificar_cuenta_page.dart';
 import 'services/api_client.dart';
 import 'services/cuentas_api.dart';
 import 'services/logistica_api_client.dart';
+import 'services/operacion_api.dart';
+import 'services/punto_control_local.dart';
 import 'services/sesion.dart';
 
 void main() {
@@ -528,8 +533,9 @@ class _ClientShellState extends State<ClientShell> {
       const ParkingPage(),
       const PedidosPage(),
       const ResaleMarketplacePage(),
+      const MisPedidosPage(),
     ];
-    final titles = ['Eventos', 'Parqueadero', 'Pedidos', 'Reventa'];
+    final titles = ['Eventos', 'Parqueadero', 'Pedidos', 'Reventa', 'Mis pedidos'];
     final topInset = MediaQuery.of(context).padding.top;
     return GlassScaffold(
       appBar: GlassAppBar(
@@ -568,6 +574,7 @@ class _ClientShellState extends State<ClientShell> {
                 icon: Icon(Icons.sell_outlined),
                 selectedIcon: Icon(Icons.sell),
                 label: 'Reventa'),
+            NavigationDestination(icon: Icon(Icons.receipt_long_outlined), label: 'Mis pedidos'),
           ]),
     );
   }
@@ -1355,231 +1362,6 @@ class _TicketsPageState extends State<TicketsPage> {
   }
 }
 
-class ParkingPage extends StatefulWidget {
-  const ParkingPage({super.key});
-  @override
-  State<ParkingPage> createState() => _ParkingPageState();
-}
-
-const _kParkingZones = {
-  'Zona A': 25000,
-  'Zona B': 18000,
-  'Zona VIP': 40000,
-};
-
-class _ParkingPageState extends State<ParkingPage> {
-  bool _validated = false;
-  bool _directions = false;
-  final _rand = Random();
-
-  // Reserva precargada de demo (evento/zona/espacio/código), igual que las
-  // entradas demo de TicketsPage — así la pantalla no arranca vacía.
-  Event? _event = _events.first;
-  String? _zone = 'Zona B';
-  String? _space = 'B-04';
-  String? _code = 'HXC-PARK-000045';
-
-  String _code6() => (100000 + _rand.nextInt(899999)).toString();
-
-  void _openCheckout() {
-    var method = 'Tarjeta de crédito o débito';
-    final price = _kParkingZones[_zone]!;
-    showModalBottomSheet(
-        context: context,
-        builder: (context) => StatefulBuilder(
-            builder: (context, setSheetState) => Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const Text('Resumen de la reserva',
-                          style: TextStyle(
-                              fontSize: 20, fontWeight: FontWeight.w600)),
-                      const SizedBox(height: 12),
-                      Text('${_event!.name} · $_zone · \$$price'),
-                      const Divider(),
-                      Text('Total: \$$price',
-                          style: const TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold)),
-                      DropdownButtonFormField<String>(
-                          initialValue: method,
-                          decoration: const InputDecoration(
-                              labelText: 'Método de pago'),
-                          items: const [
-                            DropdownMenuItem(
-                                value: 'Tarjeta de crédito o débito',
-                                child: Text('Tarjeta de crédito o débito')),
-                            DropdownMenuItem(value: 'PSE', child: Text('PSE'))
-                          ],
-                          onChanged: (value) =>
-                              setSheetState(() => method = value!)),
-                      const SizedBox(height: 8),
-                      LoadingFilledButton(
-                          label: 'Confirmar pago',
-                          onPressed: () async {
-                            await Future.delayed(
-                                const Duration(milliseconds: 800));
-                            if (!context.mounted) return;
-                            Navigator.pop(context);
-                            _confirmReservation();
-                          })
-                    ]))));
-  }
-
-  void _confirmReservation() {
-    const letters = 'ABCD';
-    final space =
-        '${letters[_rand.nextInt(letters.length)]}-${(1 + _rand.nextInt(20)).toString().padLeft(2, '0')}';
-    final price = _kParkingZones[_zone]!;
-    setState(() {
-      _space = space;
-      _code = 'HXC-PARK-${_code6()}';
-      _validated = false;
-      _directions = false;
-    });
-    activityLog.add(ActivityEntry(
-        type: ActivityType.parking,
-        title: _event!.name,
-        subtitle: '$_zone · Espacio $space',
-        amount: price));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final scheme = Theme.of(context).colorScheme;
-    return ListView(padding: const EdgeInsets.all(16), children: [
-      Text('Tu reserva', style: textTheme.titleLarge),
-      const SizedBox(height: 12),
-      if (_code == null)
-        LiquidGlassCard(
-          borderRadius: BorderRadius.circular(28),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text('Reserva tu parqueadero', style: textTheme.titleMedium),
-              const SizedBox(height: 10),
-              Material(
-                  type: MaterialType.transparency,
-                  child: RadioGroup<Event>(
-                    groupValue: _event,
-                    onChanged: (value) => setState(() => _event = value),
-                    child: Column(children: [
-                      for (final event in _events.where((e) => !e.past))
-                        RadioListTile<Event>(
-                          contentPadding: EdgeInsets.zero,
-                          value: event,
-                          title: Text(event.name),
-                          subtitle: Text(event.place),
-                        ),
-                    ]),
-                  )),
-              const SizedBox(height: 8),
-              Text('Elige zona', style: textTheme.bodyMedium),
-              Material(
-                  type: MaterialType.transparency,
-                  child: RadioGroup<String>(
-                    groupValue: _zone,
-                    onChanged: (value) => setState(() => _zone = value),
-                    child: Column(children: [
-                      for (final zone in _kParkingZones.keys)
-                        RadioListTile<String>(
-                          contentPadding: EdgeInsets.zero,
-                          value: zone,
-                          title: Text(zone),
-                          subtitle: Text('\$${_kParkingZones[zone]}'),
-                        ),
-                    ]),
-                  )),
-              const SizedBox(height: 8),
-              FilledButton.icon(
-                  onPressed:
-                      _event == null || _zone == null ? null : _openCheckout,
-                  icon: const Icon(Icons.local_parking_outlined),
-                  label: const Text('Reservar parqueadero')),
-            ],
-          ),
-        )
-      else
-        LiquidGlassCard(
-          borderRadius: BorderRadius.circular(32),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(children: [
-                const TintedIconBadge(
-                    icon: Icons.local_parking, color: _kIndigo),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(_event!.name, style: textTheme.titleSmall),
-                      Text(_event!.place,
-                          style: textTheme.bodySmall?.copyWith(
-                              color: scheme.onSurface.withValues(alpha: 0.6))),
-                    ],
-                  ),
-                ),
-              ]),
-              const SizedBox(height: 18),
-              const DashedDivider(),
-              const SizedBox(height: 18),
-              Align(
-                  alignment: Alignment.centerLeft,
-                  child: TintedBadge(
-                      color: _kIndigo,
-                      child:
-                          Text('${_zone!.toUpperCase()} · ESPACIO $_space'))),
-              const SizedBox(height: 20),
-              Center(
-                child: Container(
-                  width: 150,
-                  height: 150,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                      color: _kPaper, borderRadius: BorderRadius.circular(20)),
-                  child: const Icon(Icons.qr_code_2, size: 110, color: _kInk),
-                ),
-              ),
-              const SizedBox(height: 10),
-              Center(
-                  child: Text(_code!,
-                      style: const TextStyle(
-                          fontFamily: 'monospace',
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1.2))),
-              const SizedBox(height: 20),
-              OutlinedButton.icon(
-                  onPressed: () => setState(() => _directions = true),
-                  icon: const Icon(Icons.directions),
-                  label: const Text('Cómo llegar')),
-              if (_directions)
-                Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text('Abriendo ruta a ${_event!.place}.',
-                        style: textTheme.bodySmall)),
-              const SizedBox(height: 12),
-              if (!_validated)
-                FilledButton(
-                    onPressed: () => setState(() => _validated = true),
-                    child: const Text('Simular validación de ingreso'))
-              else
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: StatusChip(
-                      label: 'Ingreso validado · 0 h 0 min',
-                      color: _kGreen,
-                      icon: Icons.timer_outlined),
-                ),
-            ],
-          ),
-        ),
-    ]);
-  }
-}
-
 class Order {
   Order(this.store, this.items, this.total, this.status);
   final String store, status;
@@ -1904,13 +1686,15 @@ List<StaffDestination> _staffPages(User user) {
           'Validar personal', Icons.badge_outlined, PersonnelValidationPage()),
       const StaffDestination(
           'Promociones', Icons.local_offer_outlined, PromotionsPage()),
+      const StaffDestination('Menú', Icons.menu_book_outlined, RestaurantMenuPage()),
+      const StaffDestination('Pedidos', Icons.receipt_long_outlined, RestaurantOrdersPage()),
     ];
   }
   final operational = switch (position) {
     'Entrada' => const StaffDestination('Validar entradas',
         Icons.confirmation_number_outlined, EntryValidationPage()),
-    'Parqueadero' => const StaffDestination(
-        'Parqueadero', Icons.local_parking_outlined, ParkingOperationsPage()),
+    'Parqueadero' => StaffDestination('Parqueadero', Icons.local_parking_outlined,
+        ParkingOperationsPage(credencial: user.credencial ?? user.email)),
     _ => const StaffDestination(
         'Pedidos', Icons.restaurant_outlined, RestaurantOrdersPage()),
   };
@@ -1924,12 +1708,13 @@ List<StaffDestination> _staffPages(User user) {
     StaffDestination('Asistencia', Icons.how_to_reg_outlined,
         AttendancePage(credencial: user.credencial ?? user.email)),
     operational,
-    if (position == 'Restaurante')
-      const StaffDestination('Menú', Icons.menu_book_outlined, RestaurantMenuPage()),
+    if (position == 'Entrada' || position == 'Parqueadero')
+      const StaffDestination('Pedidos', Icons.receipt_long_outlined, RestaurantOrdersPage()),
+    const StaffDestination('Menú', Icons.menu_book_outlined, RestaurantMenuPage()),
     const StaffDestination(
         'Incidentes', Icons.report_outlined, IncidentsPage()),
     StaffDestination('Emergencia', Icons.warning_amber_outlined,
-        EmergencyPage(position: position)),
+        EmergencyPage(position: position, credencial: user.credencial ?? user.email)),
   ];
 }
 
@@ -2313,10 +2098,22 @@ class _ShiftsPageState extends State<ShiftsPage> {
     });
     try {
       final turno = await logisticaApiClient.miTurno(widget.credencial);
+      // CU-008: la solicitud abierta sobre este turno, si la hay. Así el
+      // estado y el botón de cancelar sobreviven a cerrar la app.
+      Map<String, dynamic>? solicitud;
+      if (turno != null) {
+        final solicitudes = await logisticaApiClient.misSolicitudes();
+        solicitud = solicitudes.whereType<Map<String, dynamic>>().where((s) =>
+            s['turnoId'] == turno['id'] &&
+            (s['estado'] == 'PENDIENTE' ||
+                s['estado'] == 'SIN_REEMPLAZO' ||
+                (s['estado'] == 'APROBADA' && s['respuestaReemplazo'] == 'PENDIENTE'))).firstOrNull;
+      }
       // La petición puede terminar después de que esta pantalla se cerrara.
       if (!mounted) return;
       setState(() {
         _turno = turno;
+        _solicitud = solicitud;
         _loading = false;
       });
     } catch (e) {
@@ -2379,6 +2176,89 @@ class _ShiftsPageState extends State<ShiftsPage> {
             ));
   }
 
+  /// El turno llegó por un cambio aprobado (CU-008) y no por una asignación:
+  /// la respuesta va a la solicitud, no al turno.
+  bool get _esReemplazo =>
+      _turno?['estado'] == 'CAMBIADO' &&
+      _solicitud?['estado'] == 'APROBADA' &&
+      _solicitud?['empleadoReemplazoId'] == _turno?['empleadoId'];
+
+  // CU-008B: retirar la solicitud antes de que la revisen.
+  Future<void> _cancelarSolicitud() async {
+    final solicitud = _solicitud;
+    if (solicitud == null) return;
+    try {
+      await logisticaApiClient.cancelarSolicitud(solicitud['id'] as String);
+      if (!mounted) return;
+      setState(() => _mensajeSinReemplazo = null);
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Solicitud cancelada. Conservas tu turno.')));
+      await _cargar();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(e is LogisticaApiException
+              ? e.message
+              : 'No se pudo conectar con el backend de logística.')));
+    }
+  }
+
+  // CU-007, paso 13 y CU-007B: responder a una asignación nueva. Si el turno
+  // llegó por un cambio (CU-008, paso 12 y CU-008C), responde a la solicitud.
+  Future<void> _responder(bool aceptar) async {
+    String? motivo;
+    if (!aceptar) {
+      final controlador = TextEditingController();
+      motivo = await showDialog<String>(
+          context: context,
+          builder: (context) => AlertDialog(
+                title: const Text('Rechazar asignación'),
+                content: TextField(
+                    controller: controlador,
+                    maxLines: 2,
+                    autofocus: true,
+                    decoration: const InputDecoration(labelText: 'Motivo')),
+                actions: [
+                  TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Volver')),
+                  FilledButton(
+                      onPressed: () {
+                        final texto = controlador.text.trim();
+                        if (texto.isNotEmpty) Navigator.pop(context, texto);
+                      },
+                      child: const Text('Rechazar')),
+                ],
+              ));
+      if (motivo == null) return;
+    }
+    if (_turno == null) return;
+    final reemplazo = _esReemplazo;
+    try {
+      if (reemplazo) {
+        await logisticaApiClient.responderReemplazo(
+            solicitudId: _solicitud!['id'] as String, aceptar: aceptar, motivo: motivo);
+      } else {
+        await logisticaApiClient.responderAsignacion(
+            turnoId: _turno!['id'] as String, aceptar: aceptar, motivo: motivo);
+      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(aceptar
+              ? (reemplazo ? 'Cubrirás este turno.' : 'Asignación confirmada.')
+              : (reemplazo
+                  ? 'Rechazaste cubrir el turno. Vuelve a quien lo pidió.'
+                  : 'Asignación rechazada. El organizador asignará a otra persona.'))));
+      await _cargar();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(e is LogisticaApiException
+              ? e.message
+              : 'No se pudo conectar con el backend de logística.')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
@@ -2395,6 +2275,7 @@ class _ShiftsPageState extends State<ShiftsPage> {
           child: Text('No tienes un turno asignado todavía.',
               style: textTheme.bodyMedium));
     }
+    final porConfirmar = _turno!['confirmacion'] == 'PENDIENTE';
     final estado = _solicitud?['estado'] as String?;
     return RefreshIndicator(
       onRefresh: _cargar,
@@ -2410,6 +2291,23 @@ class _ShiftsPageState extends State<ShiftsPage> {
               icon: Icons.event_available,
               color: _kPink),
           const SizedBox(height: 6),
+          if (porConfirmar) ...[
+            Text(
+                _esReemplazo
+                    ? 'Te asignaron este turno para cubrir a un compañero. ¿Lo confirmas?'
+                    : 'Te asignaron este turno. ¿Lo confirmas?',
+                style: textTheme.bodyMedium),
+            const SizedBox(height: 8),
+            Row(children: [
+              FilledButton(
+                  onPressed: () => _responder(true),
+                  child: const Text('Confirmar')),
+              const SizedBox(width: 8),
+              OutlinedButton(
+                  onPressed: () => _responder(false),
+                  child: const Text('Rechazar')),
+            ]),
+          ] else
           Align(
             alignment: Alignment.centerLeft,
             child: estado == null
@@ -2431,6 +2329,13 @@ class _ShiftsPageState extends State<ShiftsPage> {
                       _ => _kRed,
                     }),
           ),
+          if (estado == 'PENDIENTE' || estado == 'SIN_REEMPLAZO')
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                  onPressed: _cancelarSolicitud,
+                  child: const Text('Cancelar solicitud')),
+            ),
           if (_mensajeSinReemplazo != null) ...[
             const SizedBox(height: 8),
             Text(_mensajeSinReemplazo!,
@@ -3156,131 +3061,539 @@ class _EntryValidationPageState extends State<EntryValidationPage> {
   }
 }
 
-const _kParkingCapacity = 40;
 
+/// CU-024 y CU-025 desde la app del personal de parqueadero.
+///
+/// El evento es el del turno de quien entró. Muestra la ocupación por zona y
+/// la zona recomendada para quien llega (CU-025, paso 7); registra ingresos
+/// (CU-025A: una zona llena los rechaza) y salidas con el cobro calculado por
+/// el servidor (CU-024): "ya pagado" si la reserva era prepagada.
+/// CU-022 a CU-025 desde la app del personal de parqueadero: el punto de
+/// control. Lee el QR de la reserva o la placa; el servidor asigna el espacio
+/// (CU-023) y decide si viene prepagada. Si se cae la red, valida contra la
+/// caché guardada, deja los registros en cola y los sincroniza al volver
+/// (offline-first de CU-022).
 class ParkingOperationsPage extends StatefulWidget {
-  const ParkingOperationsPage({super.key});
+  const ParkingOperationsPage({super.key, required this.credencial});
+  final String credencial;
   @override
   State<ParkingOperationsPage> createState() => _ParkingOperationsPageState();
 }
 
 class _ParkingOperationsPageState extends State<ParkingOperationsPage> {
-  final _waiting = <_Vehicle>[
-    const _Vehicle('ABC123', 'HXC-PARK-000301', false),
-    const _Vehicle('XYZ987', 'HXC-PARK-000302', true)
-  ];
-  final _inside = <_Vehicle>[
-    const _Vehicle('JKL456', 'HXC-PARK-000150', false, space: 'A-07')
-  ];
-  final _spaces = <String>['A-08', 'A-09', 'B-05'];
-  final _departed = <String>{};
+  String? _eventoId;
+  String? _error;
+  bool _cargando = true;
+  bool _sinRed = false;
+  bool _sincronizando = false;
+  List<Map<String, dynamic>> _zonas = [];
+  List<Map<String, dynamic>> _vehiculos = [];
+  Map<String, dynamic>? _recomendada;
+  PuntoControlLocal? _local;
+  Timer? _sondeo;
+  final _placa = TextEditingController();
+  String _tipo = 'AUTOMOVIL';
+
+  static const _tipos = {'AUTOMOVIL': 'Automóvil', 'MOTO': 'Moto', 'DISCAPACIDAD': 'Movilidad reducida'};
+
+  @override
+  void initState() {
+    super.initState();
+    _iniciar();
+  }
+
+  @override
+  void dispose() {
+    _sondeo?.cancel();
+    _placa.dispose();
+    super.dispose();
+  }
+
+  Future<void> _iniciar() async {
+    try {
+      final turno = await logisticaApiClient.miTurno(widget.credencial);
+      _eventoId = turno?['eventoId'] as String?;
+      if (_eventoId == null) {
+        setState(() {
+          _cargando = false;
+          _error = 'No tienes un turno asignado: no hay parqueadero que operar.';
+        });
+        return;
+      }
+      _local = PuntoControlLocal(_eventoId!);
+      await _local!.cargar();
+      await _actualizar();
+      _sondeo = Timer.periodic(const Duration(seconds: 5), (_) => _actualizar());
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _cargando = false;
+        _error = e.toString();
+      });
+    }
+  }
+
+  /// Sin red: el servidor no respondió (no es un rechazo con su código).
+  bool _esFallaDeRed(Object e) => e is! OperacionApiException || e.codigo == 'SIN_CONEXION' || e.estado == 0 || e.estado >= 502;
+
+  Future<void> _actualizar() async {
+    final id = _eventoId;
+    if (id == null) return;
+    try {
+      // Primero lo pendiente, para que la caché nueva ya lo incluya.
+      if (_local!.pendientes.isNotEmpty) await _sincronizar(silencioso: true);
+      final r = await Future.wait([
+        operacionApi.zonasParqueadero(id),
+        operacionApi.vehiculosEnLote(id),
+        operacionApi.recomendacion(id),
+        operacionApi.cacheParqueadero(id),
+      ]);
+      await _local!.guardarCache(r[3] as Map<String, dynamic>);
+      if (!mounted) return;
+      setState(() {
+        _zonas = (r[0] as List).cast<Map<String, dynamic>>();
+        _vehiculos = (r[1] as List).cast<Map<String, dynamic>>();
+        _recomendada = (r[2] as Map<String, dynamic>)['zona'] as Map<String, dynamic>?;
+        _cargando = false;
+        _sinRed = false;
+        _error = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _cargando = false;
+        _sinRed = _esFallaDeRed(e);
+        _error = e.toString();
+      });
+    }
+  }
+
+  Future<void> _sincronizar({bool silencioso = false}) async {
+    final local = _local;
+    if (local == null || local.pendientes.isEmpty || _sincronizando) return;
+    _sincronizando = true;
+    try {
+      final respuesta = await operacionApi.sincronizarParqueadero(_eventoId!, local.pendientes);
+      final rechazados = await local.confirmarSincronizacion(respuesta);
+      if (mounted) setState(() {});
+      if (rechazados.isNotEmpty) {
+        _avisar('Al sincronizar se rechazaron ${rechazados.length}: ${rechazados.map((r) => r['mensaje']).join(' · ')}');
+      } else if (!silencioso) {
+        _avisar('Sincronizado: ${respuesta['aplicados']} registros.');
+      }
+    } finally {
+      _sincronizando = false;
+    }
+  }
+
+  void _avisar(String texto) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(texto)));
+  }
+
+  Future<void> _escanear() async {
+    final codigo = await showQrScannerSheet(context, title: 'Escanear reserva de parqueadero');
+    if (codigo != null) await _ingreso(codigoQr: codigo);
+  }
+
+  /// Pasos 1-4: por QR o por placa; el servidor asigna el espacio.
+  Future<void> _ingreso({String? codigoQr}) async {
+    final placa = _placa.text.trim();
+    if ((codigoQr == null && placa.isEmpty) || _eventoId == null) return;
+    try {
+      final r = await operacionApi.registrarIngreso(_eventoId!,
+          codigoQr: codigoQr, placa: codigoQr == null ? placa : null, tipoVehiculo: _tipo);
+      final a = r['asignacion'] as Map<String, dynamic>;
+      final estancia = r['estancia'] as Map<String, dynamic>;
+      _placa.clear();
+      if (!mounted) return;
+      await showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+                title: Text('${estancia['placa']} puede entrar'),
+                content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('${a['zona']} · ${a['espacio']}',
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 8),
+                  Text(a['conReserva'] == true ? 'Con reserva pagada: no paga al salir.' : 'Sin reserva: paga al salir.'),
+                  if (a['detalle'] != null && a['reasignado'] == true) Text(a['detalle'] as String),
+                ]),
+                actions: [FilledButton(onPressed: () => Navigator.pop(context), child: const Text('Listo'))],
+              ));
+      await _actualizar();
+    } catch (e) {
+      if (!_esFallaDeRed(e)) {
+        _avisar(e.toString());
+        return;
+      }
+      // Sin red: se decide con la caché y queda en cola.
+      final decision = await _local!.ingreso(placa: codigoQr == null ? placa : null, codigoQr: codigoQr, tipoVehiculo: _tipo);
+      if (decision.aceptado) _placa.clear();
+      setState(() => _sinRed = true);
+      _avisar(decision.mensaje);
+    }
+  }
+
+  /// Pasos 5-9 y CU-024: registra la salida, libera el espacio y muestra el cobro.
+  Future<void> _salida(String placa) async {
+    if (_eventoId == null) return;
+    try {
+      final r = await operacionApi.registrarSalida(_eventoId!, placa: placa);
+      final cobro = r['cobro'] as Map<String, dynamic>;
+      if (!mounted) return;
+      await showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+                title: Text('Salida de $placa'),
+                content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(
+                      cobro['prepagada'] == true
+                          ? 'Pagado'
+                          : cobro['monto'] != null
+                              ? '\$${(cobro['monto'] as num).round()}'
+                              : 'Cobro pendiente',
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 8),
+                  Text(cobro['mensaje'] as String),
+                  if (r['permanenciaMinutos'] != null) Text('Permanencia: ${r['permanenciaMinutos']} min'),
+                ]),
+                actions: [FilledButton(onPressed: () => Navigator.pop(context), child: const Text('Listo'))],
+              ));
+      await _actualizar();
+    } catch (e) {
+      if (!_esFallaDeRed(e)) {
+        _avisar(e.toString());
+        return;
+      }
+      final decision = await _local!.salida(placa);
+      setState(() {
+        _sinRed = true;
+        _vehiculos = _vehiculos.where((v) => v['placa'] != placa).toList();
+      });
+      _avisar(decision.mensaje);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final scheme = Theme.of(context).colorScheme;
-    final occupied = _inside.where((v) => !_departed.contains(v.code)).length;
-    final ratio = occupied / _kParkingCapacity;
-    return ListView(padding: const EdgeInsets.all(16), children: [
-      LiquidGlassCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(children: [
-              Text('Ocupación', style: textTheme.titleSmall),
-              const Spacer(),
-              Text('$occupied/$_kParkingCapacity',
-                  style: textTheme.titleSmall
-                      ?.copyWith(fontWeight: FontWeight.w700)),
-            ]),
-            const SizedBox(height: 10),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(6),
-              child: LinearProgressIndicator(
-                value: ratio.clamp(0, 1),
-                minHeight: 8,
-                backgroundColor: scheme.outlineVariant.withValues(alpha: 0.3),
-                color: ratio > 0.85 ? _kRed : _kIndigo,
-              ),
+    if (_cargando) return const Center(child: CircularProgressIndicator());
+    final pendientes = _local?.pendientes.length ?? 0;
+    if (_error != null && _zonas.isEmpty && !_sinRed) {
+      return ListView(padding: const EdgeInsets.all(16), children: [
+        LiquidGlassCard(child: Text(_error!, style: textTheme.bodyMedium?.copyWith(color: _kRed))),
+      ]);
+    }
+    return RefreshIndicator(
+      onRefresh: _actualizar,
+      child: ListView(padding: const EdgeInsets.all(16), children: [
+        if (_sinRed || pendientes > 0)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: LiquidGlassCard(
+              child: Row(children: [
+                Icon(_sinRed ? Icons.cloud_off : Icons.cloud_upload_outlined, color: _sinRed ? _kAmber : _kIndigo),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                      _sinRed
+                          ? 'Sin conexión: se valida con los datos guardados${_local?.cacheGeneradaEn != null ? ' a las ${TimeOfDay.fromDateTime(_local!.cacheGeneradaEn!.toLocal()).format(context)}' : ''}. $pendientes por sincronizar.'
+                          : '$pendientes registros por sincronizar.',
+                      style: textTheme.bodySmall),
+                ),
+                if (pendientes > 0) TextButton(onPressed: _sincronizar, child: const Text('Sincronizar')),
+              ]),
             ),
-          ],
+          ),
+        LiquidGlassCard(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Zona recomendada', style: textTheme.titleSmall),
+            const SizedBox(height: 4),
+            Text(_recomendada?['nombre'] as String? ?? 'Sin espacio en el parqueadero',
+                style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 12),
+            for (final z in _zonas) ...[
+              Row(children: [
+                Expanded(child: Text(z['nombre'] as String)),
+                Text('${z['ocupados']}/${z['capacidad']}${(z['reservados'] as num? ?? 0) > 0 ? ' · ${z['reservados']} reservados' : ''}',
+                    style: textTheme.bodySmall),
+              ]),
+              const SizedBox(height: 4),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: LinearProgressIndicator(
+                  value: (((z['ocupados'] as num) + (z['reservados'] as num? ?? 0)) / (z['capacidad'] as num)).clamp(0, 1).toDouble(),
+                  minHeight: 8,
+                  backgroundColor: scheme.outlineVariant.withValues(alpha: 0.3),
+                  color: (z['disponibles'] as num) == 0
+                      ? _kRed
+                      : (z['disponibles'] as num) / (z['capacidad'] as num) <= 0.15
+                          ? _kAmber
+                          : _kIndigo,
+                ),
+              ),
+              const SizedBox(height: 10),
+            ],
+          ]),
         ),
-      ),
-      const SizedBox(height: 20),
-      Text('Por ingresar', style: textTheme.titleMedium),
-      const SizedBox(height: 8),
-      ..._waiting.map((v) => Card(
-          child: ListTile(
-              leading: TintedIconBadge(
-                  icon: Icons.directions_car,
-                  color: v.prepaid ? _kGreen : _kAmber,
-                  size: 40),
-              title: Text(v.plate),
-              subtitle: StatusChip(
-                  label:
-                      '${v.code} · ${v.prepaid ? 'Prepago' : 'Pago pendiente'}',
-                  color: v.prepaid ? _kGreen : _kAmber),
-              trailing: LoadingFilledButton(
-                  label: _spaces.isEmpty
-                      ? 'Sin cupos'
-                      : 'Asignar ${_spaces.first}',
-                  onPressed: _spaces.isEmpty
-                      ? null
-                      : () async {
-                          await Future.delayed(
-                              const Duration(milliseconds: 400));
-                          if (_networkGlitch()) {
-                            if (!context.mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text(_kConnectionError)));
-                            return;
-                          }
-                          setState(() {
-                            final space = _spaces.removeAt(0);
-                            _waiting.remove(v);
-                            _inside.add(_Vehicle(v.plate, v.code, v.prepaid,
-                                space: space));
-                          });
-                        })))),
-      const Divider(height: 32),
-      Text('En el lote', style: textTheme.titleMedium),
-      const SizedBox(height: 8),
-      ..._inside.map((v) => Card(
-          child: ListTile(
-              leading: const TintedIconBadge(
-                  icon: Icons.local_parking, color: _kIndigo, size: 40),
-              title: Text('${v.plate} · ${v.space}'),
-              subtitle: StatusChip(
-                  label: _departed.contains(v.code)
-                      ? (v.prepaid
-                          ? 'Salida registrada · Prepago'
-                          : 'Salida registrada · Cobro: \$15.000')
-                      : 'Ingreso registrado',
-                  color: _departed.contains(v.code) ? _kGreen : _kIndigo),
-              trailing: _departed.contains(v.code)
-                  ? null
-                  : LoadingFilledButton(
-                      label: 'Registrar salida',
-                      onPressed: () async {
-                        await Future.delayed(const Duration(milliseconds: 400));
-                        if (_networkGlitch()) {
-                          if (!context.mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text(_kConnectionError)));
-                          return;
-                        }
-                        setState(() => _departed.add(v.code));
-                      })))),
-    ]);
+        const SizedBox(height: 16),
+        Text('Ingreso', style: textTheme.titleMedium),
+        const SizedBox(height: 8),
+        FilledButton.icon(onPressed: _escanear, icon: const Icon(Icons.qr_code_scanner), label: const Text('Escanear QR de la reserva')),
+        const SizedBox(height: 8),
+        Row(children: [
+          Expanded(
+              child: TextField(
+                  controller: _placa,
+                  textCapitalization: TextCapitalization.characters,
+                  decoration: const InputDecoration(labelText: 'Placa (con o sin reserva)'))),
+          const SizedBox(width: 8),
+          FilledButton(onPressed: _ingreso, child: const Text('Registrar')),
+        ]),
+        const SizedBox(height: 8),
+        Wrap(spacing: 8, children: [
+          for (final t in _tipos.entries)
+            ChoiceChip(label: Text(t.value), selected: _tipo == t.key, onSelected: (_) => setState(() => _tipo = t.key)),
+        ]),
+        const Divider(height: 24),
+        Text('En el lote (${_vehiculos.length})', style: textTheme.titleMedium),
+        const SizedBox(height: 8),
+        for (final v in _vehiculos)
+          Card(
+              child: ListTile(
+                  leading: TintedIconBadge(
+                      icon: v['tipoVehiculo'] == 'MOTO' ? Icons.two_wheeler : v['tipoVehiculo'] == 'DISCAPACIDAD' ? Icons.accessible : Icons.directions_car,
+                      color: v['prepagada'] == true ? _kGreen : _kIndigo,
+                      size: 40),
+                  title: Text('${v['placa']}${v['espacio'] != null ? ' · ${v['espacio']}' : ''}'),
+                  subtitle: StatusChip(
+                      label: '${v['zona']} · ${v['prepagada'] == true ? 'Prepago' : 'Pago a la salida'}',
+                      color: v['prepagada'] == true ? _kGreen : _kAmber),
+                  trailing: LoadingFilledButton(label: 'Salida', onPressed: () => _salida(v['placa'] as String)))),
+        if (_vehiculos.isEmpty) Text('No hay vehículos en el lote.', style: textTheme.bodySmall),
+      ]),
+    );
   }
 }
 
-class _Vehicle {
-  const _Vehicle(this.plate, this.code, this.prepaid, {this.space});
-  final String plate, code;
-  final bool prepaid;
-  final String? space;
+/// CU-010 desde la app del personal: lo que hay que hacer durante una
+/// evacuación activa del evento de su turno (zonas, rutas e instrucciones), y
+/// los reportes de campo del paso 10: cuántas personas quedan en una zona, si
+/// ya se evacuó, o que una salida está bloqueada (CU-010A). Se consulta cada
+/// pocos segundos; activar, escalar o finalizar es del supervisor en el
+/// portal web.
+class EmergencyPage extends StatefulWidget {
+  const EmergencyPage({super.key, required this.position, required this.credencial});
+  final String? position;
+  final String credencial;
+  @override
+  State<EmergencyPage> createState() => _EmergencyPageState();
 }
+
+class _EmergencyPageState extends State<EmergencyPage> {
+  String? _eventoId;
+  Map<String, dynamic>? _activa;
+  String? _error;
+  bool _cargando = true;
+  Timer? _sondeo;
+
+  @override
+  void initState() {
+    super.initState();
+    _iniciar();
+  }
+
+  @override
+  void dispose() {
+    _sondeo?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _iniciar() async {
+    try {
+      final turno = await logisticaApiClient.miTurno(widget.credencial);
+      _eventoId = turno?['eventoId'] as String?;
+      await _actualizar();
+      _sondeo = Timer.periodic(const Duration(seconds: 4), (_) => _actualizar());
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _cargando = false;
+        _error = e.toString();
+      });
+    }
+  }
+
+  Future<void> _actualizar() async {
+    final id = _eventoId;
+    if (id == null) {
+      if (mounted) setState(() => _cargando = false);
+      return;
+    }
+    try {
+      final activa = await operacionApi.evacuacionActiva(id);
+      if (!mounted) return;
+      setState(() {
+        _activa = activa;
+        _cargando = false;
+        _error = null;
+      });
+    } catch (e) {
+      // Sin conexión se conserva lo último recibido: es la información local
+      // con la que el personal sigue operando (RNF de tolerancia a fallos).
+      if (!mounted) return;
+      setState(() {
+        _cargando = false;
+        _error = 'Sin conexión: mostrando la última información recibida.';
+      });
+    }
+  }
+
+  Future<String?> _pedirTexto(String titulo, String etiqueta, {bool numero = false}) {
+    final controlador = TextEditingController();
+    return showDialog<String>(
+        context: context,
+        builder: (context) => AlertDialog(
+              title: Text(titulo),
+              content: TextField(
+                  controller: controlador,
+                  autofocus: true,
+                  keyboardType: numero ? TextInputType.number : TextInputType.text,
+                  decoration: InputDecoration(labelText: etiqueta)),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+                FilledButton(onPressed: () => Navigator.pop(context, controlador.text.trim()), child: const Text('Enviar')),
+              ],
+            ));
+  }
+
+  Future<void> _enviar(Future<Map<String, dynamic>> Function() accion, String exito) async {
+    try {
+      final detalle = await accion();
+      if (!mounted) return;
+      setState(() => _activa = detalle);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(exito)));
+    } on OperacionApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+    }
+  }
+
+  Future<void> _reportar(Map<String, dynamic> zona) async {
+    final texto = await _pedirTexto('Personas en ${zona['nombre']}', 'Cuántas quedan', numero: true);
+    final n = int.tryParse(texto ?? '');
+    if (n == null) return;
+    final id = (_activa!['evacuacion'] as Map)['id'] as String;
+    await _enviar(() => operacionApi.reportarZona(id, zona['zonaId'] as String, personasRestantes: n), 'Reporte enviado.');
+  }
+
+  Future<void> _evacuada(Map<String, dynamic> zona) async {
+    final id = (_activa!['evacuacion'] as Map)['id'] as String;
+    await _enviar(() => operacionApi.reportarZona(id, zona['zonaId'] as String, evacuada: true), '${zona['nombre']} evacuada.');
+  }
+
+  Future<void> _bloquear(Map<String, dynamic> salida) async {
+    final motivo = await _pedirTexto('Salida bloqueada: ${salida['nombre']}', 'Qué pasa');
+    if (motivo == null || motivo.isEmpty) return;
+    final id = (_activa!['evacuacion'] as Map)['id'] as String;
+    await _enviar(() => operacionApi.bloquearSalida(id, salida['id'] as String, motivo), 'Aviso enviado: se recalcularon las rutas.');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final scheme = Theme.of(context).colorScheme;
+    if (_cargando) return const Center(child: CircularProgressIndicator());
+    final activa = _activa;
+    if (activa == null) {
+      return ListView(padding: const EdgeInsets.all(16), children: [
+        LiquidGlassCard(
+          borderRadius: BorderRadius.circular(28),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const TintedIconBadge(icon: Icons.verified_user_outlined, color: _kGreen, size: 52),
+            const SizedBox(height: 14),
+            Text('Sin evacuación activa', style: textTheme.titleLarge),
+            const SizedBox(height: 8),
+            Text(
+                _eventoId == null
+                    ? 'No tienes un turno asignado en un evento.'
+                    : 'Si el supervisor activa una evacuación, aquí verás tu zona, la ruta y qué hacer.',
+                style: textTheme.bodyMedium?.copyWith(color: scheme.onSurface.withValues(alpha: 0.75))),
+            if (_error != null) ...[
+              const SizedBox(height: 8),
+              Text(_error!, style: textTheme.bodySmall?.copyWith(color: _kAmber)),
+            ],
+          ]),
+        ),
+      ]);
+    }
+    final ev = activa['evacuacion'] as Map<String, dynamic>;
+    final zonas = (activa['zonas'] as List).cast<Map<String, dynamic>>();
+    final salidas = (activa['salidas'] as List).cast<Map<String, dynamic>>();
+    final alertas = (activa['alertas'] as List).cast<Map<String, dynamic>>();
+    return RefreshIndicator(
+      onRefresh: _actualizar,
+      child: ListView(padding: const EdgeInsets.all(16), children: [
+        LiquidGlassCard(
+          borderRadius: BorderRadius.circular(28),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const TintedIconBadge(icon: Icons.warning_amber_rounded, color: _kRed, size: 52),
+            const SizedBox(height: 14),
+            Text('Evacuación · nivel ${ev['nivel']}', style: textTheme.titleLarge),
+            const SizedBox(height: 6),
+            Text('${(ev['tipo'] as String).replaceAll('_', ' ').toLowerCase()} · ${ev['ubicacion']}', style: textTheme.bodyMedium),
+            if (_error != null) ...[
+              const SizedBox(height: 8),
+              Text(_error!, style: textTheme.bodySmall?.copyWith(color: _kAmber)),
+            ],
+          ]),
+        ),
+        for (final a in alertas)
+          Padding(
+            padding: const EdgeInsets.only(top: 10),
+            child: StatusChip(label: a['mensaje'] as String, color: a['severidad'] == 'critica' ? _kRed : _kAmber),
+          ),
+        const SizedBox(height: 16),
+        Text('Zonas', style: textTheme.titleMedium),
+        for (final z in zonas)
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Row(children: [
+                  Expanded(child: Text(z['nombre'] as String, style: textTheme.titleSmall)),
+                  StatusChip(
+                      label: z['estado'] == 'EVACUADA' ? 'Evacuada' : '${z['personasRestantes']} por evacuar',
+                      color: z['estado'] == 'EVACUADA' ? _kGreen : _kRed),
+                ]),
+                const SizedBox(height: 6),
+                Text(z['instruccion'] as String? ?? '', style: textTheme.bodyMedium),
+                if (z['estado'] != 'EVACUADA')
+                  Row(children: [
+                    TextButton(onPressed: () => _reportar(z), child: const Text('Reportar personas')),
+                    TextButton(onPressed: () => _evacuada(z), child: const Text('Zona evacuada')),
+                  ]),
+              ]),
+            ),
+          ),
+        const SizedBox(height: 12),
+        Text('Salidas', style: textTheme.titleMedium),
+        for (final s in salidas)
+          Card(
+              child: ListTile(
+                  leading: Icon(s['habilitada'] == true ? Icons.exit_to_app : Icons.block,
+                      color: s['habilitada'] == true ? _kGreen : _kRed),
+                  title: Text(s['nombre'] as String),
+                  subtitle: Text(s['habilitada'] == true ? 'Habilitada' : (s['motivoBloqueo'] as String? ?? 'Bloqueada')),
+                  trailing: s['habilitada'] == true
+                      ? TextButton(onPressed: () => _bloquear(s), child: const Text('Está bloqueada'))
+                      : null)),
+      ]),
+    );
+  }
+}
+
 
 class PersonnelValidationPage extends StatefulWidget {
   const PersonnelValidationPage({super.key});
@@ -3443,73 +3756,6 @@ class _IncidentsPageState extends State<IncidentsPage> {
               ],
             ),
           ))),
-    ]);
-  }
-}
-
-class EmergencyPage extends StatefulWidget {
-  const EmergencyPage({super.key, required this.position});
-  final String? position;
-  @override
-  State<EmergencyPage> createState() => _EmergencyPageState();
-}
-
-class _EmergencyPageState extends State<EmergencyPage> {
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final scheme = Theme.of(context).colorScheme;
-    final info = switch (widget.position) {
-      'Parqueadero' => (
-          'Vía de Servicio hacia la calle principal',
-          'Junto a la barrera de salida vehicular',
-          'Abre las barreras y prioriza la salida peatonal.'
-        ),
-      'Restaurante' => (
-          'Salida Este',
-          'Frente al punto de comida',
-          'Apaga los equipos de gas y despeja el área.'
-        ),
-      _ => (
-          'Salida Norte',
-          'Bajo el arco de Puerta Norte',
-          'Detén el ingreso y guía la salida en calma.'
-        )
-    };
-    return ListView(padding: const EdgeInsets.all(16), children: [
-      LiquidGlassCard(
-        borderRadius: BorderRadius.circular(28),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const TintedIconBadge(
-                icon: Icons.warning_amber_rounded, color: _kRed, size: 52),
-            const SizedBox(height: 14),
-            Text('Protocolo de emergencia', style: textTheme.titleLarge),
-            const SizedBox(height: 10),
-            Text('Ruta: ${info.$1}', style: textTheme.bodyMedium),
-            Text('Puesto: ${info.$2}', style: textTheme.bodyMedium),
-            const SizedBox(height: 8),
-            Text(info.$3,
-                style: textTheme.bodyMedium?.copyWith(
-                    color: scheme.onSurface.withValues(alpha: 0.75))),
-          ],
-        ),
-      ),
-      const SizedBox(height: 16),
-      FilledButton(
-          onPressed: () => showDialog(
-              context: context,
-              builder: (_) => AlertDialog(
-                      title: const Text('Emergencia activada'),
-                      content: Text('Ruta: ${info.$1}\n\n${info.$3}'),
-                      actions: [
-                        TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text('Entendido'))
-                      ])),
-          style: FilledButton.styleFrom(backgroundColor: _kRed),
-          child: const Text('Activar protocolo de emergencia'))
     ]);
   }
 }

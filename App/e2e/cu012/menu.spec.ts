@@ -1,0 +1,239 @@
+import { actuar, presentar } from '../presentacion';
+import { APIResponse, expect, Page, test } from '../csp.fixture';
+import { randomUUID } from 'node:crypto';
+import { adminURL, clienteURL, comprobarAislamiento, crearEvento, gateway, loginAPI, loginUI, nucleo, sql } from '../cu015/entorno';
+
+test.beforeAll(comprobarAislamiento);
+const headers = (token: string, clave?: string) => ({ Authorization: `Bearer ${token}`, ...(clave ? { 'Idempotency-Key': clave } : {}) });
+const ficha = (eventoId: string, nombre: string) => ({ eventoId, nombre, contacto:'Contacto CU012', puntoEntrega:'Puerta CU012', horaApertura:'00:00', horaCierre:'00:00', zonaHoraria:'America/Bogota', estado:'DISPONIBLE' });
+const datosProducto = (nombre: string, cantidadInicial = 10) => ({ nombre, descripcion:'Receta original', precio:'1500.25', restriccionesAlimentarias:['contiene leche'], activo:true, cantidadInicial });
+
+async function llenarProducto(page: Page, nombre: string, cantidad = 10) {
+  await actuar(page.getByLabel('Nombre del producto',{exact:true}), objetivo => objetivo.fill(nombre));
+  await actuar(page.getByLabel('Precio COP',{exact:true}), objetivo => objetivo.fill('1500.25'));
+  await actuar(page.getByLabel('Descripción',{exact:true}), objetivo => objetivo.fill('Receta original'));
+  await actuar(page.getByLabel('Restricciones alimentarias',{exact:true}), objetivo => objetivo.fill('contiene leche'));
+  if (await page.getByLabel('Existencias físicas iniciales',{exact:true}).count()) await actuar(page.getByLabel('Existencias físicas iniciales',{exact:true}), objetivo => objetivo.fill(String(cantidad)));
+}
+
+test('CU-012 por interfaces: asignar Personal, crear, reservar, ajustar, pagar y conservar snapshots', async ({page,browser,request}, info) => {
+  const organizador = await loginAPI(request,'organizador@hexacore.com');
+  const personal = await loginAPI(request,'restaurante@hexacore.com');
+  const nombre = `CU012 ${randomUUID().slice(0,8)}`;
+  const evento = await crearEvento(request,organizador.token,`Evento ${nombre}`);
+  const creada = await request.post(`${gateway}/pedidos/admin/establecimientos`,{headers:headers(organizador.token),data:ficha(evento.id,nombre)});
+  expect(creada.status()).toBe(201); const local = await creada.json();
+  await loginUI(page,adminURL,'organizador@hexacore.com');
+  await actuar(page, objetivo => objetivo.goto(`${adminURL}/admin/establecimientos?eventoId=${evento.id}`));
+  const filaLocal = page.getByRole('row').filter({hasText:nombre});
+  await actuar(filaLocal.getByRole('button',{name:'Personal',exact:true}), objetivo => objetivo.click());
+  await actuar(page.getByLabel('Buscar personal por nombre o correo'), objetivo => objetivo.fill('restaurante@hexacore.com'));
+  await actuar(page.getByRole('button',{name:'Buscar personal',exact:true}), objetivo => objetivo.click());
+  await expect(page.getByLabel('Cuenta Personal activa',{exact:true}).locator('option')).toHaveCount(2);
+  await actuar(page.getByLabel('Cuenta Personal activa',{exact:true}), objetivo => objetivo.selectOption(personal.usuario.id));
+  // La UI confirma después del PUT y de volver a leer los vínculos. Comprobar
+  // ambas respuestas antes del mensaje evita consumir su espera en dos viajes.
+  const vinculo = page.waitForResponse(r=>r.url().endsWith(`/establecimientos/${local.id}/personal/${personal.usuario.id}`) && r.request().method()==='PUT');
+  const vinculados = page.waitForResponse(r=>r.url().endsWith(`/establecimientos/${local.id}/personal`) && r.request().method()==='GET');
+  await actuar(page.getByRole('button',{name:'Asignar personal',exact:true}), objetivo => objetivo.click());
+  expect((await vinculo).status()).toBe(200);
+  expect((await vinculados).status()).toBe(200);
+  await expect(page.getByRole('status')).toContainText('Personal asignado');
+ await presentar(page,'Organizador: Personal asignado');
+
+  const ctx = await browser.newContext(), clienteCtx = await browser.newContext();
+  const operador = await ctx.newPage(), comprador = await clienteCtx.newPage();
+  try {
+    await loginUI(operador,adminURL,'restaurante@hexacore.com');
+    await expect(operador).toHaveURL(/\/admin\/menu$/);
+    await expect(operador.getByRole('navigation').getByRole('link',{name:'Cuentas',exact:true})).toHaveCount(0);
+    await expect(operador.getByRole('navigation').getByRole('link',{name:'Roles y permisos',exact:true})).toHaveCount(0);
+    for (const ruta of ['cuentas','roles','establecimientos','eventos','pagos']) {
+      await actuar(operador, objetivo => objetivo.goto(`${adminURL}/admin/${ruta}`)); await expect(operador).toHaveURL(/\/admin\/menu$/);
+    }
+    expect((await request.get(`${gateway}/admin/cuentas`,{headers:headers(personal.token)})).status()).toBe(403);
+    await actuar(operador.getByLabel('Establecimiento vinculado',{exact:true}), objetivo => objetivo.selectOption(local.id));
+    await actuar(operador.getByRole('button',{name:'Nuevo producto',exact:true}), objetivo => objetivo.click());
+    await expect(operador.getByRole('button',{name:'Guardar producto',exact:true})).toBeDisabled();
+    const productoNombre = `${nombre} Hamburguesa`;
+    await llenarProducto(operador,productoNombre);
+    const alta = operador.waitForResponse(r=>r.url().endsWith(`/establecimientos/${local.id}/productos`) && r.request().method()==='POST');
+    await actuar(operador.getByRole('button',{name:'Guardar producto',exact:true}), objetivo => objetivo.click());
+    const respuesta = await alta; expect(respuesta.status()).toBe(201);
+    const registro = await respuesta.json(); expect(registro.operacion.estado).toBe('APLICADA');
+    const producto = registro.producto;
+    const fila = operador.locator(`[data-producto="${producto.id}"]`);
+    await expect(fila.locator('[data-cantidad="fisica"]')).toHaveText('10');
+    await expect(fila.locator('[data-cantidad="disponible"]')).toHaveText('10');
+ await presentar(operador,'Personal: producto e inventario inicial');
+    await actuar(operador.getByRole('button',{name:'Nuevo producto',exact:true}), objetivo => objetivo.click());
+    await llenarProducto(operador,productoNombre);
+    await actuar(operador.getByRole('button',{name:'Guardar producto',exact:true}), objetivo => objetivo.click());
+    await expect(operador.getByRole('alert')).toContainText('ya está registrado');
+    await actuar(operador.getByRole('button',{name:'Cancelar producto',exact:true}), objetivo => objetivo.click());
+
+    await loginUI(comprador,clienteURL,'cliente@hexacore.com');
+    await actuar(comprador, objetivo => objetivo.goto(`${clienteURL}/pedidos?eventoId=${evento.id}`));
+    await actuar(comprador.getByRole('link').filter({hasText:nombre}), objetivo => objetivo.click());
+    await expect(comprador.getByText('contiene leche',{exact:true})).toBeVisible();
+    for (let i=0;i<3;i++) await actuar(comprador.getByRole('button',{name:`Agregar ${productoNombre}`,exact:true}), objetivo => objetivo.click());
+    const checkout = comprador.waitForResponse(r=>r.url().endsWith('/pedidos/checkout'));
+    await actuar(comprador.getByRole('button',{name:'Continuar',exact:true}), objetivo => objetivo.click());
+    const pedidoRespuesta=await checkout; expect(pedidoRespuesta.status()).toBe(201);
+    const pedido=await pedidoRespuesta.json(); expect(pedido.total).toBe('4500.75');
+    await actuar(operador.getByRole('button',{name:'Actualizar menú',exact:true}), objetivo => objetivo.click());
+    await expect(fila.locator('[data-cantidad="reservada"]')).toHaveText('3');
+    await expect(fila.locator('[data-cantidad="disponible"]')).toHaveText('7');
+    await actuar(fila.getByRole('button',{name:'Ajustar existencias',exact:true}), objetivo => objetivo.click());
+    await actuar(operador.getByLabel('Variación de existencias',{exact:true}), objetivo => objetivo.fill('-8'));
+    await actuar(operador.getByLabel('Motivo del ajuste',{exact:true}), objetivo => objetivo.fill('Merma que excede disponibilidad'));
+    await actuar(operador.getByRole('button',{name:'Aplicar ajuste',exact:true}), objetivo => objetivo.click());
+    await expect(operador.getByRole('alert')).toContainText('cantidades comprometidas');
+ await presentar(operador,'Personal: ajuste rechazado por reservas comprometidas');
+    await expect(fila.locator('[data-cantidad="fisica"]')).toHaveText('10');
+    await actuar(fila.getByRole('button',{name:'Ajustar existencias',exact:true}), objetivo => objetivo.click());
+    await actuar(operador.getByLabel('Variación de existencias',{exact:true}), objetivo => objetivo.fill('2'));
+    await actuar(operador.getByLabel('Motivo del ajuste',{exact:true}), objetivo => objetivo.fill('Reposición con reserva activa'));
+    await actuar(operador.getByRole('button',{name:'Aplicar ajuste',exact:true}), objetivo => objetivo.click());
+    await expect(fila.locator('[data-cantidad="fisica"]')).toHaveText('12');
+    await expect(fila.locator('[data-cantidad="disponible"]')).toHaveText('9');
+ await presentar(operador,'Personal: reposición con reserva activa');
+    await actuar(operador.getByRole('button',{name:'Nuevo producto',exact:true}), objetivo => objetivo.click());
+    await llenarProducto(operador,`${nombre} Adicional`,4);
+    const adicional=operador.waitForResponse(r=>r.url().endsWith(`/establecimientos/${local.id}/productos`) && r.request().method()==='POST');
+    await actuar(operador.getByRole('button',{name:'Guardar producto',exact:true}), objetivo => objetivo.click());
+    const respuestaAdicional=await adicional;expect(respuestaAdicional.status()).toBe(201);
+    const altaAdicional=await respuestaAdicional.json();
+    expect(altaAdicional.operacion.estado).toBe('APLICADA');
+    expect(altaAdicional.producto.id).not.toBe(producto.id);
+    await expect(fila.locator('[data-cantidad="disponible"]')).toHaveText('9');
+    await actuar(fila.getByRole('button',{name:'Editar',exact:true}), objetivo => objetivo.click());
+    await llenarProducto(operador,`${nombre} Nueva receta`);
+    await actuar(operador.getByLabel('Precio COP',{exact:true}), objetivo => objetivo.fill('2000.50'));
+    await actuar(operador.getByLabel('Descripción',{exact:true}), objetivo => objetivo.fill('Receta cambiada'));
+    await actuar(operador.getByLabel('Restricciones alimentarias',{exact:true}), objetivo => objetivo.fill('contiene gluten'));
+    await actuar(operador.getByLabel('Activo para nuevos pedidos',{exact:true}), objetivo => objetivo.uncheck());
+    await actuar(operador.getByRole('button',{name:'Guardar producto',exact:true}), objetivo => objetivo.click());
+    await expect(fila).toContainText('Inactivo');
+    await actuar(comprador.getByRole('button',{name:'Pagar pedido',exact:true}), objetivo => objetivo.click());
+    await expect(comprador.getByRole('heading',{name:'¡Tu pedido está confirmado!'})).toBeVisible();
+    await expect(comprador.getByAltText('Código QR del pedido confirmado')).toBeVisible();
+ await presentar(comprador,'Cliente: pago y QR del pedido');
+    await actuar(operador.getByRole('button',{name:'Actualizar menú',exact:true}), objetivo => objetivo.click());
+    await expect(fila.locator('[data-cantidad="fisica"]')).toHaveText('9');
+    await expect(fila.locator('[data-cantidad="reservada"]')).toHaveText('0');
+    await expect(fila.locator('[data-cantidad="disponible"]')).toHaveText('9');
+    expect(sql(`SELECT nombre_producto||'|'||precio_unitario||'|'||descripcion_producto||'|'||restricciones_alimentarias::text FROM alimentos.detalles_pedido WHERE pedido_id='${pedido.id}';`)).toBe(`${productoNombre}|1500.25|Receta original|["contiene leche"]`);
+    await actuar(comprador, objetivo => objetivo.goto(`${clienteURL}/pedidos?eventoId=${evento.id}`));
+    await actuar(comprador.getByRole('link').filter({hasText:nombre}), objetivo => objetivo.click());
+    await expect(comprador.getByRole('heading',{name:`${nombre} Nueva receta`,exact:true})).toHaveCount(0);
+    const activacion=operador.waitForResponse(r=>r.url().endsWith(`/productos/${producto.id}`) && r.request().method()==='PATCH');
+    await actuar(fila.getByRole('button',{name:'Activar',exact:true}), objetivo => objetivo.click());
+    expect((await activacion).status()).toBe(200);
+    await expect(fila).toContainText('Activo');
+    await actuar(comprador, objetivo => objetivo.reload());
+    await expect(comprador.getByRole('heading',{name:`${nombre} Nueva receta`,exact:true})).toBeVisible();
+    await operador.screenshot({path:info.outputPath('menu-cu012.png'),fullPage:true});
+    await info.attach('Menú CU-012', {path:info.outputPath('menu-cu012.png'),contentType:'image/png'});
+
+    await actuar(filaLocal.getByRole('button',{name:'Deshabilitar',exact:true}), objetivo => objetivo.click());
+    await expect(page.getByRole('status')).toContainText('deshabilitado');
+    await actuar(operador, objetivo => objetivo.reload());
+    await actuar(operador.getByLabel('Establecimiento vinculado',{exact:true}), objetivo => objetivo.selectOption(local.id));
+    await expect(fila).toContainText('Nueva receta');
+    await actuar(fila.getByRole('button',{name:'Editar',exact:true}), objetivo => objetivo.click());
+    await actuar(operador.getByLabel('Descripción',{exact:true}), objetivo => objetivo.fill('Gestión permitida durante cierre'));
+    await actuar(operador.getByRole('button',{name:'Guardar producto',exact:true}), objetivo => objetivo.click());
+    await expect(fila).toContainText('Gestión permitida durante cierre');
+    await actuar(page.getByRole('button',{name:'Revocar restaurante@hexacore.com',exact:true}), objetivo => objetivo.click());
+    await expect(page.getByRole('status')).toContainText('revocado');
+    await actuar(operador.getByRole('button',{name:'Actualizar menú',exact:true}), objetivo => objetivo.click());
+    await expect(operador.getByRole('alert')).toContainText('vinculada');
+ await presentar(operador,'Personal: vínculo revocado y acceso rechazado');
+  } finally { await Promise.allSettled([ctx.close(), clienteCtx.close()]); }
+});
+
+test('CU-012 API real: límites, alcance, replay y concurrencia con compra, pago y expiración', async ({request}) => {
+  const organizador=await loginAPI(request,'organizador@hexacore.com'), personal=await loginAPI(request,'restaurante@hexacore.com'), cliente=await loginAPI(request,'cliente@hexacore.com');
+  const evento=await crearEvento(request,organizador.token,`CU012 concurrencia ${randomUUID().slice(0,8)}`);
+  const r=await request.post(`${gateway}/pedidos/admin/establecimientos`,{headers:headers(organizador.token),data:ficha(evento.id,`CU012 API ${randomUUID()}`)});
+  expect(r.status()).toBe(201);const local=await r.json();
+  expect((await request.put(`${gateway}/pedidos/admin/establecimientos/${local.id}/personal/${personal.usuario.id}`,{headers:headers(organizador.token)})).status()).toBe(200);
+  const url=`${gateway}/pedidos/establecimientos/${local.id}/productos`;
+  for(const destino of [gateway,nucleo]) {
+    const ruta=`${destino}/pedidos/establecimientos/${local.id}/productos`;
+    expect((await request.post(ruta,{data:datosProducto('Sin token')})).status()).toBe(401);
+    expect((await request.post(ruta,{headers:headers(cliente.token,randomUUID()),data:datosProducto('Cliente')})).status()).toBe(403);
+    expect((await request.post(ruta,{headers:headers(organizador.token,randomUUID()),data:datosProducto('Organizador')})).status()).toBe(403);
+  }
+  for(const cambio of [{precio:2.1},{precio:'0.00'},{precio:'1.001'},{cantidadInicial:-1},{cantidadInicial:1.5},{cantidadInicial:2147483648},{nombre:' '},{restriccionesAlimentarias:[' ']}]) {
+    expect((await request.post(url,{headers:headers(personal.token,randomUUID()),data:{...datosProducto('Inválido'),...cambio}})).status()).toBe(400);
+  }
+  const altaClave=randomUUID();
+  const alta=await request.post(url,{headers:headers(personal.token,altaClave),data:datosProducto('Producto concurrente',20)});
+  expect(alta.status()).toBe(201);const producto=(await alta.json()).producto;
+  const repetida=await request.post(url,{headers:headers(personal.token,altaClave),data:datosProducto('Producto concurrente',20)});
+  expect(repetida.status()).toBe(201);expect((await repetida.json()).producto.id).toBe(producto.id);
+  const ajusteUrl=`${url}/${producto.id}/ajustes`;
+  const ajustar=(delta:number, clave=randomUUID())=>request.post(ajusteUrl,{headers:headers(personal.token,clave),data:{delta,motivo:'Ajuste de concurrencia CU012'}});
+  async function terminarAjuste(respuesta:APIResponse,delta:number){
+    expect([200,202,409]).toContain(respuesta.status());
+    let op=await respuesta.json();
+    if (respuesta.status()===202) {
+      expect(op.estado).toBe('PENDIENTE');
+      const id=op.id;let fallo: unknown;
+      // Consultar la intención durable, sin reenviar POST ni generar otra clave.
+      // Un error HTTP/transporte termina el sondeo y falla; nunca se oculta un 503.
+      await expect.poll(async()=>{
+        try {
+          const consulta=await request.get(`${gateway}/pedidos/establecimientos/${local.id}/operaciones/${id}`,{headers:headers(personal.token)});
+          if(consulta.status()!==200){fallo=`HTTP ${consulta.status()}`;return 'ERROR';}
+          op=await consulta.json();expect(op.id).toBe(id);return op.estado;
+        } catch(e){fallo=e;return 'ERROR';}
+      }).not.toBe('PENDIENTE');
+      expect(fallo).toBeUndefined();
+    } else expect(op.estado).toBe(respuesta.status()===200?'APLICADA':'RECHAZADA');
+    expect(['APLICADA','RECHAZADA']).toContain(op.estado);
+    expect(op.productoId).toBe(producto.id);expect(op.delta).toBe(delta);return op;
+  }
+  const simultaneos=await Promise.all([ajustar(-15),ajustar(-15)]);
+  const estados: number[]=[];
+  for (const respuesta of simultaneos) {
+    const op=await terminarAjuste(respuesta,-15);
+    estados.push(op.estado==='APLICADA'?200:409);
+  }
+  expect(estados.sort()).toEqual([200,409]);
+  const trasConcurrentes=await request.get(`${gateway}/pedidos/establecimientos/${local.id}/menu`,{headers:headers(personal.token)});
+  expect(trasConcurrentes.status()).toBe(200);
+  expect((await trasConcurrentes.json())[0]).toMatchObject({cantidadFisica:5,cantidadReservada:0,cantidadDisponible:5});
+  const entrada={eventoId:evento.id,establecimientoId:local.id,metodoEntrega:'RECOGER',productos:[{productoId:producto.id,cantidad:2}]};
+  const [compra,aumento]=await Promise.all([request.post(`${gateway}/pedidos/checkout`,{headers:headers(cliente.token),data:entrada}),ajustar(3)]);
+  // Una intención administrativa en curso puede bloquear admisión, sin crear un pedido parcial.
+  expect([201,409]).toContain(compra.status());expect((await terminarAjuste(aumento,3)).estado).toBe('APLICADA');
+  if (compra.status() === 409) {
+    expect((await compra.json()).codigo).toBe('AJUSTE_INVENTARIO_PENDIENTE');
+    expect(sql(`SELECT count(*) FROM alimentos.pedidos WHERE establecimiento_id='${local.id}';`)).toBe('0');
+  }
+  const compraReal=compra.status()===201?compra:await request.post(`${gateway}/pedidos/checkout`,{headers:headers(cliente.token),data:entrada});
+  expect(compraReal.status()).toBe(201);const pedido=await compraReal.json();
+  const [pago,reduccion]=await Promise.all([request.post(`${gateway}/pedidos/${pedido.id}/pagos`,{headers:headers(cliente.token,randomUUID()),data:{tokenPago:'tok_ok_cu012'}}),ajustar(-1)]);
+  expect(pago.status()).toBe(200);expect((await pago.json()).compraConfirmada).toBe(true);expect((await terminarAjuste(reduccion,-1)).estado).toBe('APLICADA');
+  const clave=randomUUID();const primera=await ajustar(2,clave);
+  const resultado=await terminarAjuste(primera,2);expect(resultado.estado).toBe('APLICADA');expect(resultado.id).toBe(clave);
+  const replay=await ajustar(2,clave);expect(replay.status()).toBe(200);expect(await replay.json()).toEqual(resultado);
+  expect((await ajustar(3,clave)).status()).toBe(409);
+  const expiracion=await request.post(`${gateway}/pedidos/checkout`,{headers:headers(cliente.token),data:entrada});expect(expiracion.status()).toBe(201);
+  const expira=await expiracion.json();
+  sql(`UPDATE alimentos.pedidos SET creado_en=now()-interval '20 minutes',expira_en=now()-interval '1 minute' WHERE id='${expira.id}';`);
+  expect((await terminarAjuste(await ajustar(2),2)).estado).toBe('APLICADA');
+  await expect.poll(()=>sql(`SELECT estado FROM alimentos.reservas_inventario WHERE pedido_id='${expira.id}';`)).toBe('LIBERADA');
+  const menu=await request.get(`${gateway}/pedidos/establecimientos/${local.id}/menu`,{headers:headers(personal.token)});expect(menu.status()).toBe(200);
+  expect((await menu.json())[0]).toMatchObject({cantidadFisica:9,cantidadReservada:0,cantidadDisponible:9});
+  const historial=await request.get(`${gateway}/pedidos/establecimientos/${local.id}/ajustes`,{headers:headers(personal.token)});
+  expect((await historial.json()).find((o:{id:string})=>o.id===clave)).toMatchObject({actorId:personal.usuario.id,motivo:'Ajuste de concurrencia CU012',estado:'APLICADA',delta:2});
+  const ajeno=await request.post(`${gateway}/pedidos/admin/establecimientos`,{headers:headers(organizador.token),data:ficha(evento.id,`CU012 ajeno ${randomUUID()}`)});const otro=await ajeno.json();
+  expect((await request.put(`${gateway}/pedidos/establecimientos/${otro.id}/productos/${producto.id}`,{headers:headers(personal.token),data:datosProducto('Intruso')})).status()).toBe(403);
+  expect((await request.put(`${gateway}/pedidos/admin/establecimientos/${otro.id}/personal/${personal.usuario.id}`,{headers:headers(organizador.token)})).status()).toBe(200);
+  const {cantidadInicial:_c,...edicion}=datosProducto('Producto ajeno');
+  expect((await request.put(`${gateway}/pedidos/establecimientos/${otro.id}/productos/${producto.id}`,{headers:headers(personal.token),data:edicion})).status()).toBe(404);
+});

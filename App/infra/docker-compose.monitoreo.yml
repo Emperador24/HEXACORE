@@ -1,0 +1,75 @@
+# Monitoreo de la demostración: CPU y memoria por instancia (API de Docker →
+# Prometheus) y logs de todos los contenedores (Promtail → Loki), en un tablero
+# de Grafana que se abre por el gateway en http://localhost:8080/grafana/.
+#
+#   ./iniciar.sh --monitoreo               junto con el resto del sistema
+#   docker compose -f docker-compose.yml -f docker-compose.monitoreo.yml up -d \
+#     exportador-docker prometheus loki promtail grafana
+#
+# Es para la máquina de desarrollo y la sustentación: no forma parte del
+# despliegue de producción, y Grafana deja ver el tablero sin iniciar sesión.
+services:
+  # CPU y memoria por contenedor desde la API de Docker. Sustituye a cAdvisor,
+  # que con el almacén de imágenes de containerd de Docker Desktop no ve ningún
+  # contenedor (ver monitoreo/exportador-docker.mjs). Mismos nombres de métrica.
+  exportador-docker:
+    image: node:22.22.3-alpine
+    container_name: hexacore-exportador-docker
+    restart: unless-stopped
+    command: ["node", "/app/exportador-docker.mjs"]
+    volumes:
+      - ./monitoreo/exportador-docker.mjs:/app/exportador-docker.mjs:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    container_name: hexacore-prometheus
+    restart: unless-stopped
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.retention.time=2d"]
+    volumes:
+      - ./monitoreo/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-datos:/prometheus
+    depends_on: [exportador-docker]
+
+  loki:
+    image: grafana/loki:3.2.1
+    container_name: hexacore-loki
+    restart: unless-stopped
+    command: ["-config.file=/etc/loki/local-config.yaml"]
+    volumes:
+      - loki-datos:/loki
+
+  promtail:
+    image: grafana/promtail:3.2.1
+    container_name: hexacore-promtail
+    restart: unless-stopped
+    command: ["-config.file=/etc/promtail/promtail.yml"]
+    volumes:
+      - ./monitoreo/promtail.yml:/etc/promtail/promtail.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on: [loki]
+
+  grafana:
+    image: grafana/grafana:11.3.1
+    container_name: hexacore-grafana
+    restart: unless-stopped
+    environment:
+      # Servido bajo /grafana/ detrás del gateway.
+      GF_SERVER_ROOT_URL: "%(protocol)s://%(domain)s:8080/grafana/"
+      GF_SERVER_SERVE_FROM_SUB_PATH: "true"
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_CONTRASENA:-hexacore2026}
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/tableros/hexacore.json
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+    volumes:
+      - ./monitoreo/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoreo/grafana/tableros:/var/lib/grafana/tableros:ro
+      - grafana-datos:/var/lib/grafana
+    depends_on: [prometheus, loki]
+
+volumes:
+  prometheus-datos:
+  loki-datos:
+  grafana-datos:

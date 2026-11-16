@@ -89,15 +89,44 @@ export interface Entrada {
   precioReventa?: number;
 }
 
+export type TipoVehiculo = 'AUTOMOVIL' | 'MOTO' | 'DISCAPACIDAD';
+
+/** Una reserva de parqueadero (CU-021) tal como la devuelve `/parqueaderos/reservas`. */
 export interface ReservaParqueadero {
   id: string;
   eventoId: string;
-  eventoNombre: string;
-  lugarEvento: string;
+  evento: { id: string; nombre: string; fechaInicio: string; fechaFin: string } | null;
+  zonaId: string;
   zona: string;
-  espacioId: string;
-  codigoQr: string;
-  numeroTransaccion: string;
+  espacio: string;
+  placa: string;
+  tipoVehiculo: TipoVehiculo;
+  llegadaEstimada: string;
+  /** PENDIENTE_PAGO → PAGANDO → CONFIRMADA → USADA, o EXPIRADA si no se pagó a tiempo (CU-021C). */
+  estado: 'PENDIENTE_PAGO' | 'PAGANDO' | 'CONFIRMADA' | 'USADA' | 'EXPIRADA';
+  valorHora: number;
+  horas: number;
+  monto: number;
+  expiraEn: string;
+  segundosParaPagar: number | null;
+  motivo: string | null;
+  referenciaPago: string | null;
+  /** Solo cuando está pagada: el código que se presenta en el punto de control (CU-022). */
+  codigoQr: string | null;
+  usadaEn: string | null;
+}
+
+/** Pasos 1-2 del CU-021: zonas, espacios libres por tipo de vehículo y precio. */
+export interface DisponibilidadParqueadero {
+  evento: { id: string; nombre: string; fechaInicio: string; fechaFin: string };
+  llegada: string;
+  tarifa: { valorHora: number } | null;
+  horas: number;
+  precio: number | null;
+  minutosParaPagar: number;
+  reservable: boolean;
+  motivo: string | null;
+  zonas: { id: string; nombre: string; capacidad: number; disponibles: Record<TipoVehiculo, number> }[];
 }
 
 // El pedido nace sin pagar (sin QR); al confirmarse el pago se le asigna el

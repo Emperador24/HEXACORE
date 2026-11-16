@@ -1,11 +1,11 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatIconModule } from '@angular/material/icon';
 import { AuthService, ErrorCuenta } from '../core/auth.service';
 
 /**
@@ -21,13 +21,14 @@ import { AuthService, ErrorCuenta } from '../core/auth.service';
   standalone: true,
   imports: [
     FormsModule,
-    MatCardModule,
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
-    MatProgressBarModule
+    MatProgressBarModule,
+    MatIconModule
   ],
   templateUrl: './login.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './login.component.scss'
 })
 export class LoginComponent {
@@ -36,6 +37,7 @@ export class LoginComponent {
 
   correo = '';
   contrasena = '';
+  verContrasena = false;
   readonly error = signal<string | null>(null);
   readonly entrando = signal(false);
 

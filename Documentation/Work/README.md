@@ -1,7 +1,7 @@
 # Documentation/Work
 
-Fuentes editables de la documentación: los `.tex`, el `.md` de la bitácora y `Diagrams/` (los
-`.drawio`/`.png` de draw.io y los diagramas interactivos de Archify). **Nada más va aquí.**
+Fuentes editables de la documentación: los `.tex`, el `.md` de la bitácora y `Diagrams/` (las
+especificaciones JSON de Archify, sus HTML interactivos y los PDF que incluye LaTeX). **Nada más va aquí.**
 
 - Los **PDF compilados** van solo en `../Submission/` — nunca se dejan en `Work/`.
 - Los subproductos de LaTeX (`.aux .log .out .toc .fls .fdb_latexmk`) son basura de compilación
@@ -17,6 +17,8 @@ Fuentes editables de la documentación: los `.tex`, el `.md` de la bitácora y `
 | `DescripcionArquitecturaSoftware.tex` | **SAD** — cómo se construye y por qué. |
 | `ArchitecturalProposal.tex`, `Summary.tex`, `C4Diagrams.tex` | Propuesta, resumen y diagramas. |
 | `BitacoraArquitectonica.md` | Bitácora del equipo, una entrada por semana. |
+| `Presentacion.tex`, `CIERRE-RUBRICA.md` | Preparación de la sustentación: comparación antes/ahora, responsables confirmados, quince fichas de atributos y guion propuesto de 54 min. Falta confirmar temario/reparto y demos. |
+| `SeguridadVigente.tex` | Bloque incluido por el SAD: 167/167 operaciones del inventario, evidencia reutilizada y RNF-05/06 parciales. |
 
 Dos archivos **no se editan a mano**:
 
@@ -30,7 +32,7 @@ Dos archivos **no se editan a mano**:
   Si corriges un caso de uso, corrígelo **en la hoja de cálculo** y vuelve a generar. Editar el
   `.tex` funciona hasta la siguiente corrida, y entonces se pierde.
 
-- **`RequisitosNoFuncionales.tex`** — la tabla de los 18 RNF. La incluyen **los dos** documentos,
+- **`RequisitosNoFuncionales.tex`** — la tabla de los 19 RNF. La incluyen **los dos** documentos,
   el SRS y el SAD, para que no puedan divergir. Editarla actualiza ambos.
 
 ## Cómo compilar y entregar
@@ -43,3 +45,27 @@ latexmk -c NombreDelDocumento.tex           # limpia .aux/.log/.out/.toc/.fls/.f
 ```
 
 `latexmk -c` no borra el `.pdf`; bórralo a mano de `Work/` después de copiarlo (`rm NombreDelDocumento.pdf`).
+
+## Vigencia de la entrega técnica de migración (ADR-16)
+
+- Arquitectura implementada: `ArquitecturaVigente.tex`, compartida por SAD,
+  propuesta, resumen y C4. Diagramas: siete vistas C4 en `Diagrams/Archify/*.json` (fuente),
+  `Diagrams/Archify/*.html` (interactivos) y `Diagrams/ArchifyPDF/*.pdf`, que las macros de
+  `Diagrams/Vigente/diagramas.tex` incluyen en todos los documentos. Ver `Diagrams/Archify/README.md`.
+- Decisión: `ADR-16-nucleo-modular.tex`. Los ADR anteriores conservan su historia,
+  con indicación de qué decisiones sustituye/revisa ADR-16.
+- Equipo y pendientes: [GUIA-EQUIPO-MIGRACION.md](GUIA-EQUIPO-MIGRACION.md).
+- Corte/reversión **no ejecutados**: [CORTE-Y-REVERSION.md](CORTE-Y-REVERSION.md).
+- Evidencia local/remota y límites: ESTADO-MIGRACION §23–24.
+- `Historico/` guarda las fuentes/vistas anteriores, incluidos los diagramas draw.io de agosto
+  (`Historico/Diagramas-drawio/`); no describen la topología vigente. No borrar esos antecedentes para aparentar coherencia.
+
+Compilar las cinco fuentes actualizadas con salida en un directorio temporal
+(`latexmk -pdf -outdir=/ruta/temporal Documento.tex`), revisar referencias/figuras y
+copiar únicamente los PDF finales a Submission. No dejar productos en Work.
+
+Revisión documental de sustentación del 15/11/2026: compilar SAD,
+`Presentacion.tex` y `ArchitecturalProposal.tex` (también incluye ADR-16), con
+salida temporal. La comparación histórica de contenedores usa la copia exacta de
+`4b8cdd4` conservada en `Historico/`; no sustituir el diagrama vigente. Pruebas
+funcionales/caídas y preparación A/B/C no se ejecutan por esta edición documental.

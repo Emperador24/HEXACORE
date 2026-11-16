@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'seguimiento_pedidos_page.dart';
+import '../widgets/sondeo_pedidos.dart';
+import '../widgets/cancelacion_pedido_panel.dart' show resumenCancelacion;
 import '../services/pedidos_api.dart';
 import '../widgets/liquid_glass.dart';
 
@@ -29,6 +32,12 @@ class _PedidosPageState extends State<PedidosPage> {
         future: catalogo,
         builder: (context, snapshot) =>
             ListView(padding: const EdgeInsets.all(16), children: [
+          TextButton(
+              onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                      builder: (_) =>
+                          MisPedidosPage(api: api, paginaCompleta: true))),
+              child: const Text('Mis pedidos y avisos')),
           Text('¿Qué se te antoja?',
               style: Theme.of(context).textTheme.headlineSmall),
           const Padding(
@@ -91,6 +100,9 @@ class MenuPedidosPage extends StatefulWidget {
 
 class _MenuPedidosPageState extends State<MenuPedidosPage> {
   late final CompraPedido compra;
+  late final SondeoPedidos sondeo;
+  DatosPedido? estadoActual;
+  bool consultandoEstado = false, vigenciaIncierta = false;
   late Future<List<DatosPedido>> productos;
   @override
   void initState() {
@@ -99,6 +111,14 @@ class _MenuPedidosPageState extends State<MenuPedidosPage> {
         widget.api, widget.evento, widget.establecimiento['id'] as String);
     productos = widget.api.productos(compra.establecimiento);
     compra.addListener(_cambio);
+    sondeo = SondeoPedidos(
+        activo: () =>
+            mounted &&
+            compra.confirmado &&
+            (ModalRoute.of(context)?.isCurrent ?? true) &&
+            TickerMode.valuesOf(context).enabled,
+        ocupado: () => consultandoEstado || compra.ocupado,
+        consultar: actualizarEstado);
   }
 
   void _cambio() {
@@ -107,9 +127,38 @@ class _MenuPedidosPageState extends State<MenuPedidosPage> {
 
   @override
   void dispose() {
+    sondeo.dispose();
     compra.removeListener(_cambio);
     compra.dispose();
     super.dispose();
+  }
+
+  Future<void> actualizarEstado() async {
+    final id = compra.pedido?['id'] as String?;
+    if (id == null || consultandoEstado || !mounted) return;
+    setState(() => consultandoEstado = true);
+    try {
+      final actual = await widget.api.seguimiento(id);
+      if (actual['id'] != id || actual['qrUtilizable'] is! bool) {
+        throw PedidosException('Estado sin confirmar', 0);
+      }
+      if (mounted) {
+        setState(() {
+          estadoActual = actual;
+          vigenciaIncierta = false;
+          sondeo.pausado = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          vigenciaIncierta = true;
+          sondeo.pausado = true;
+        });
+      }
+    } finally {
+      if (mounted) setState(() => consultandoEstado = false);
+    }
   }
 
   Widget _panel(List<Widget> hijos) => Padding(
@@ -141,13 +190,22 @@ class _MenuPedidosPageState extends State<MenuPedidosPage> {
               _panel([
                 const Icon(Icons.check_circle,
                     color: Color(0xFF34D399), size: 48),
-                Text('¡Compra confirmada!',
-                    style: titulo, textAlign: TextAlign.center),
+                Text(
+                    estadoActual?['estado'] == 'CANCELADO'
+                        ? 'Pedido cancelado por el establecimiento'
+                        : estadoActual?['estadoOperativo'] == 'ENTREGADO'
+                            ? 'Pedido entregado'
+                            : '¡Compra confirmada!',
+                    style: titulo,
+                    textAlign: TextAlign.center),
                 const Text('Pago aprobado', textAlign: TextAlign.center),
                 const SizedBox(height: 16),
                 Text(importePedido(pago!['monto'], pago['moneda'] as String),
                     style: titulo, textAlign: TextAlign.center),
-                if (pago['codigoQr'] is String)
+                if (pago['codigoQr'] is String &&
+                    pago['qrUtilizable'] != false &&
+                    !vigenciaIncierta &&
+                    estadoActual?['qrUtilizable'] != false)
                   Center(
                       child: Semantics(
                           label: 'QR del pedido confirmado',
@@ -156,8 +214,27 @@ class _MenuPedidosPageState extends State<MenuPedidosPage> {
                               size: 240,
                               padding: const EdgeInsets.all(16),
                               backgroundColor: Colors.white))),
+                if (pago['entrega'] != null)
+                  const Text(
+                      'Este pedido ya fue entregado. El QR no permite otra entrega.'),
+                if (estadoActual?['cancelacion'] case final Map c)
+                  ...resumenCancelacion(c),
+                if (vigenciaIncierta)
+                  const Text(
+                      'No pudimos confirmar la vigencia del QR. Actualiza el estado antes de presentarlo.'),
+                TextButton(
+                    onPressed: consultandoEstado ? null : actualizarEstado,
+                    child: const Text('Actualizar estado del pedido')),
                 const Text(
-                    'Conserva este QR para recoger tu pedido. Guarda una captura antes de salir.'),
+                    'Consulta el estado vigente desde Mis pedidos. Cancelados o entregados no permiten usar el QR.'),
+                TextButton(
+                    onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                            builder: (_) => MisPedidosPage(
+                                api: compra.api,
+                                paginaCompleta: true,
+                                pedidoId: pedido!['id'] as String))),
+                    child: const Text('Ver seguimiento y avisos')),
               ])
             else if (pedido != null)
               _panel([
@@ -212,9 +289,20 @@ class _MenuPedidosPageState extends State<MenuPedidosPage> {
                               if (producto['descripcion'] != null)
                                 Text(producto['descripcion'] as String),
                               Text(importePedido(producto['precio'])),
+                              if ((producto['restriccionesAlimentarias']
+                                          as List? ??
+                                      [])
+                                  .isNotEmpty)
+                                Text((producto['restriccionesAlimentarias']
+                                        as List)
+                                    .join(', ')),
                               if (producto['activo'] != true ||
-                                  producto['cantidadInventario'] == 0)
-                                const Text('Agotado')
+                                  (producto['cantidadDisponible'] as num? ??
+                                          0) ==
+                                      0)
+                                Text(producto['cantidadDisponible'] == null
+                                    ? 'Disponibilidad por confirmar'
+                                    : 'Agotado')
                               else
                                 Row(
                                     mainAxisAlignment: MainAxisAlignment.end,

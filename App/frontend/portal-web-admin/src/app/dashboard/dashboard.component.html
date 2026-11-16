@@ -1,18 +1,74 @@
-<h1>Hola, {{ usuario()?.nombre }}</h1>
-<p>Este es el resumen general del sistema.</p>
+<div class="pagina-encabezado">
+  <div>
+    <h1>Hola, {{ primerNombre() }} 👋</h1>
+    <p class="descripcion">Así va la operación hoy. Las cifras salen de los servicios en este momento.</p>
+  </div>
+</div>
 
-<div class="tarjetas">
-  <mat-card>
-    <mat-card-content>
-      <p class="numero">{{ totalEventos() }}</p>
-      <p class="etiqueta">Eventos registrados</p>
-    </mat-card-content>
-  </mat-card>
-
-  <mat-card>
-    <mat-card-content>
-      <p class="numero">{{ eventosPublicados() }}</p>
+<div class="cifras">
+  <section class="panel cifra csp-hx-primario">
+    <span class="badge-icono"><mat-icon>event_available</mat-icon></span>
+    <div>
       <p class="etiqueta">Eventos publicados</p>
-    </mat-card-content>
-  </mat-card>
+      @if (sinEventos()) { <p class="secundario">Cartelera no disponible</p> }
+      @else { <p class="valor">{{ eventos()?.length ?? '…' }}</p> }
+    </div>
+  </section>
+  <section class="panel cifra csp-hx-verde">
+    <span class="badge-icono"><mat-icon>badge</mat-icon></span>
+    <div>
+      <p class="etiqueta">Personal activo</p>
+      @if (sinPersonal()) { <p class="secundario">No disponible</p> }
+      @else { <p class="valor">{{ empleados() ? activos() : '…' }}</p> }
+    </div>
+  </section>
+  <section class="panel cifra csp-hx-ambar">
+    <span class="badge-icono"><mat-icon>assignment_late</mat-icon></span>
+    <div>
+      <p class="etiqueta">Fichas incompletas</p>
+      @if (sinPersonal()) { <p class="secundario">—</p> }
+      @else { <p class="valor">{{ empleados() ? sinContacto() : '…' }}</p> }
+    </div>
+  </section>
+</div>
+
+<div class="columnas">
+  <section class="panel">
+    <div class="panel-cabecera">
+      <h2>Próximos eventos</h2>
+      <a mat-button routerLink="/admin/personal/asignaciones">Asignar personal</a>
+    </div>
+    <ul class="lista">
+      @for (e of proximos(); track e.id; let i = $index) {
+        <li>
+          <span class="badge-fecha" [style.--tinte]="acento(i)">
+            <span class="dia">{{ e.fechaInicio | date: 'd' }}</span>
+            <span>{{ e.fechaInicio | date: 'MMM' }}</span>
+          </span>
+          <div class="texto">
+            <strong>{{ e.nombre }}</strong>
+            <span class="secundario">{{ e.fechaInicio | date: 'EEEE, HH:mm' }} · {{ e.lugar }}, {{ e.ciudad }}</span>
+          </div>
+          <a mat-icon-button [routerLink]="'/admin/personal/asignaciones'" [queryParams]="{ evento: e.id }" aria-label="Personal del evento">
+            <mat-icon>chevron_right</mat-icon>
+          </a>
+        </li>
+      } @empty {
+        <li class="secundario vacio-lista">{{ sinEventos() ? 'No se pudo consultar la cartelera.' : 'No hay eventos publicados.' }}</li>
+      }
+    </ul>
+  </section>
+
+  <section class="panel">
+    <div class="panel-cabecera"><h2>Accesos rápidos</h2></div>
+    <div class="accesos">
+      @for (a of accesos(); track a.ruta; let i = $index) {
+        <a class="acceso" [routerLink]="'/admin/' + a.ruta" [style.--tinte]="acento(i + 1)">
+          <span class="badge-icono"><mat-icon>{{ a.icono }}</mat-icon></span>
+          <span>{{ a.etiqueta }}</span>
+          <mat-icon class="flecha">arrow_forward</mat-icon>
+        </a>
+      }
+    </div>
+  </section>
 </div>

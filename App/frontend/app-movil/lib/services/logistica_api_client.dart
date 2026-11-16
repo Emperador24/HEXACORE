@@ -156,16 +156,36 @@ class LogisticaApiClient {
   /// Turno vigente/actual del empleado identificado por su credencial
   /// (usamos el email de la cuenta demo como credencial). Devuelve `null`
   /// si no tiene ningún turno asignado todavía.
+  ///
+  /// Los turnos cancelados (también los rechazados, CU-007B) no cuentan, y una
+  /// asignación que espera respuesta va primero: es lo que el empleado tiene
+  /// que atender.
   Future<Map<String, dynamic>?> miTurno(String credencial) async {
     final turnos =
         _decodeList(await _conSesion((c) => _cliente.get(_uri('/turnos'), headers: c).timeout(_espera)));
-    for (final turno in turnos) {
-      final empleado = turno['empleado'];
-      if (empleado is Map && empleado['credencial'] == credencial) {
-        return turno as Map<String, dynamic>;
-      }
-    }
-    return null;
+    final mios = turnos
+        .whereType<Map<String, dynamic>>()
+        .where((t) =>
+            t['estado'] != 'CANCELADO' &&
+            t['empleado'] is Map &&
+            (t['empleado'] as Map)['credencial'] == credencial)
+        .toList();
+    if (mios.isEmpty) return null;
+    return mios.firstWhere((t) => t['confirmacion'] == 'PENDIENTE', orElse: () => mios.first);
+  }
+
+  /// CU-007, paso 13 (confirmar) y CU-007B (rechazar con motivo). Solo puede
+  /// responder el propio empleado: el servidor lo comprueba con la sesión.
+  Future<Map<String, dynamic>> responderAsignacion({
+    required String turnoId,
+    required bool aceptar,
+    String? motivo,
+  }) async {
+    final res = await _conSesion((c) => _cliente.post(_uri('/turnos/$turnoId/respuesta'), headers: c, body: jsonEncode({
+        'aceptar': aceptar,
+        if (motivo != null) 'motivo': motivo,
+      })).timeout(_espera));
+    return _decodeObject(res);
   }
 
   Future<Map<String, dynamic>> solicitarCambioTurno({
@@ -173,6 +193,35 @@ class LogisticaApiClient {
     required String motivo,
   }) async {
     final res = await _conSesion((c) => _cliente.post(_uri('/turnos/$turnoId/solicitudes-cambio'), headers: c, body: jsonEncode({'motivo': motivo})).timeout(_espera));
+    return _decodeObject(res);
+  }
+
+  /// CU-008: las solicitudes que pidió quien tiene la sesión y las aprobadas
+  /// en que lo nombraron reemplazo. El servidor decide cuáles le tocan.
+  Future<List<dynamic>> misSolicitudes() async {
+    final res = await _conSesion((c) => _cliente.get(_uri('/solicitudes-cambio'), headers: c).timeout(_espera));
+    return _decodeList(res);
+  }
+
+  /// CU-008B: retirar una solicitud que todavía no se revisó.
+  Future<Map<String, dynamic>> cancelarSolicitud(String solicitudId, {String? motivo}) async {
+    final res = await _conSesion((c) => _cliente.post(_uri('/solicitudes-cambio/$solicitudId/cancelar'), headers: c, body: jsonEncode({
+        if (motivo != null && motivo.isNotEmpty) 'motivo': motivo,
+      })).timeout(_espera));
+    return _decodeObject(res);
+  }
+
+  /// CU-008, paso 12 y CU-008C: el reemplazo confirma o rechaza (con motivo)
+  /// el turno que recibió por un cambio aprobado.
+  Future<Map<String, dynamic>> responderReemplazo({
+    required String solicitudId,
+    required bool aceptar,
+    String? motivo,
+  }) async {
+    final res = await _conSesion((c) => _cliente.post(_uri('/solicitudes-cambio/$solicitudId/respuesta-reemplazo'), headers: c, body: jsonEncode({
+        'aceptar': aceptar,
+        if (motivo != null) 'motivo': motivo,
+      })).timeout(_espera));
     return _decodeObject(res);
   }
 

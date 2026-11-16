@@ -1,12 +1,15 @@
-import { Component } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { FondoAtmosferaComponent } from './compartido/fondo-atmosfera.component';
+import { TemaService } from './core/tema.service';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
-  templateUrl: './app.component.html',
-  styleUrl: './app.component.scss'
+  imports: [RouterOutlet, FondoAtmosferaComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
+  template: '<app-fondo-atmosfera /><router-outlet />'
 })
 export class AppComponent {
-  title = 'portal-web-admin';
+  // Se inyecta aquí para que el tema guardado se aplique antes de pintar nada.
+  readonly tema = inject(TemaService);
 }

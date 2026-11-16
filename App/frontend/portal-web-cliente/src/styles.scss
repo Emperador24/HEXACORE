@@ -14,7 +14,8 @@
  */
 @use '@angular/material' as mat;
 
-@include mat.core();
+@include mat.elevation-classes();
+@include mat.app-background();
 
 html {
   // `color-scheme` hace que Material elija sus colores claros u oscuros solo.
@@ -302,3 +303,7 @@ p {
   backdrop-filter: blur(var(--hxc-vidrio-blur));
   -webkit-backdrop-filter: blur(var(--hxc-vidrio-blur));
 }
+
+// Sustituye los atributos style estáticos; conserva sus colores con CSP estricta.
+.csp-hxc-ambar { --tinte: var(--hxc-ambar) !important; }
+.csp-hxc-verde { --tinte: var(--hxc-verde) !important; }

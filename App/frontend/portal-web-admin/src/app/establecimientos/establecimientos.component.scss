@@ -1,0 +1,15 @@
+:host { display: block; }
+.selector-evento { display: flex; align-items: center; gap: 16px; padding: 20px; margin-bottom: 20px; flex-wrap: wrap; }
+select { font: inherit; color: inherit; background: var(--hxc-fondo, #151924); border: 1px solid var(--hxc-borde, #636779); border-radius: 8px; padding: 12px; max-width: 100%; }
+.selector-evento select { flex: 1; min-width: 220px; }
+option { color: #111827; background: #fff; }
+.ficha, .listado { padding: 24px; margin-top: 20px; }
+.campos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.estado { display: flex; flex-direction: column; gap: 6px; }
+.ayuda { color: var(--hxc-texto-secundario); line-height: 1.6; }
+.acciones { display: flex; gap: 12px; margin-top: 20px; }
+table { width: 100%; border-collapse: collapse; text-align: left; }
+th, td { padding: 16px 12px; border-bottom: 1px solid var(--hxc-borde, #636779); vertical-align: top; }
+.tabla-contenedor { overflow-x: auto; }
+.abierto { color: var(--hxc-verde, #48d597); }
+@media (max-width: 700px) { .campos { grid-template-columns: 1fr; } .ficha, .listado { padding: 16px; } }

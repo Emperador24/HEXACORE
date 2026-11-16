@@ -1,0 +1,12 @@
+.evidencia-e2e/
+
+# Configuración local exclusiva del Trabajador
+.env.trabajador
+
+# Respaldos y referencias del ensayo: siempre fuera del repositorio.
+test/consolidacion/salida/
+*.dump
+*.rdb
+
+# Solo resúmenes permitidos para CI; los artefactos son generados.
+.informe-ci/

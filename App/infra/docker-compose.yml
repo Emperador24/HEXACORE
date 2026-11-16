@@ -24,7 +24,7 @@ name: hexacore-infra
 
 services:
   # PostgreSQL — motor transaccional de todos los dominios (ADR-06).
-  # Una base de datos por microservicio (ADR-01): las crea initdb/01-bases.sql,
+  # Base única con esquemas: initdb/01-bases.sql crea solo la base vacía,
   # que solo se ejecuta la primera vez que se levanta el volumen.
   postgres:
     image: postgres:16-alpine
@@ -103,6 +103,12 @@ services:
     build: ./pasarela-pagos-simulada
     container_name: hexacore-pasarela
     restart: unless-stopped
+    # Confirma cada operación por webhook a la ruta pública del gateway, como
+    # una pasarela real (ADR-15). Si el gateway no está levantado, reintenta
+    # unas veces y desiste: la pasarela no depende de él para cobrar.
+    environment:
+      WEBHOOK_URL: http://api-gateway:8080/api/v1/pagos/webhook
+      SECRETO_WEBHOOK: secreto-webhook-desarrollo
     ports:
       - "3099:3099"
     healthcheck:
@@ -136,25 +142,29 @@ services:
   # proceso muere, Docker lo levanta de nuevo sin intervención. Lo que Docker
   # Compose NO hace es reiniciar un contenedor que sigue vivo pero `unhealthy`
   # (colgado); eso es trabajo de la sonda de vida de Kubernetes en producción
-  # (SAD §11). Ver services/administracion/DECISIONES.md §18.
+  # (SAD §11). Ver backend/modulos/identidad/DECISIONES.md §18.
   #
   # NODE_ENV=development porque usan las claves JWT de desarrollo, que en
   # producción se rechazan a propósito.
 
   # API Gateway + balanceador (ADR-02): el punto único de entrada al backend.
-  # Autentica cada petición contra el Servicio de Administración antes de
-  # enrutarla, y reparte entre las réplicas de cada servicio.
+  # Valida el JWT con la clave pública sin llamar a Autenticación, autoriza por
+  # rol, exige el turno de la Cola virtual al comprar (ADR-15), y reparte entre
+  # las réplicas de cada servicio.
   api-gateway:
     profiles: ["servicios"]
-    image: nginx:1.27-alpine
+    build: ../gateway
     container_name: hexacore-gateway
     restart: unless-stopped
     depends_on:
-      administracion: { condition: service_healthy }
-      entradas-mercado-secundario: { condition: service_healthy }
-      pedidos: { condition: service_healthy }
+      nucleo: { condition: service_healthy }
+      boleteria: { condition: service_healthy }
     volumes:
+      - ../gateway/nginx-principal.conf:/etc/nginx/nginx.conf:ro
       - ../gateway/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ../gateway/autenticar.conf:/etc/nginx/hexacore/autenticar.conf:ro
+      - ../gateway/autenticacion.js:/etc/nginx/njs/autenticacion.js:ro
+      - ./claves-desarrollo/jwt-publica.pem:/etc/nginx/claves/jwt-publica.pem:ro
     ports:
       - "8080:8080"
     healthcheck:
@@ -163,11 +173,14 @@ services:
       timeout: 3s
       retries: 5
 
-  # Servicio de Administración — CU-027 (cuentas, login, sesiones).
-  administracion:
+  # Núcleo — servicio de dominio que agrupa Administración y Pedidos (ADR-12).
+  # Ahora reúne Identidad, Alimentos y Personal/Logística, cada uno contra
+  # su propio esquema. Sin `container_name`: es lo que permitirá replicarlo
+  # (`--scale nucleo=2`) cuando el temporizador de reservas esté protegido con
+  # un candado en Redis.
+  nucleo:
     profiles: ["servicios"]
-    build: ../services/administracion
-    container_name: hexacore-administracion
+    build: ../backend
     restart: unless-stopped
     # Un init mínimo como PID 1: reenvía las señales a node y recoge procesos
     # huérfanos. Sin él, node es el PID 1 y el kernel le trata las señales de
@@ -177,6 +190,8 @@ services:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }
+      preparacion-base: { condition: service_completed_successfully }
+      pasarela: { condition: service_healthy }
     # Los nombres de la capa de datos son variables para poder repartir el
     # sistema en dos computadores (RNF de desplegabilidad): por defecto son los
     # contenedores locales; `iniciar.sh --datos <IP>` los apunta a otra máquina.
@@ -184,20 +199,45 @@ services:
       NODE_ENV: development
       POSTGRES_HOST: ${HOST_POSTGRES:-postgres}
       POSTGRES_PUERTO: ${PUERTO_POSTGRES:-5432}
+      POSTGRES_BD: ${POSTGRES_BD:-hexacore}
       REDIS_HOST: ${HOST_REDIS:-redis}
       REDIS_PUERTO: ${PUERTO_REDIS:-6379}
       RABBITMQ_URL: amqp://hexacore:hexacore@${HOST_RABBIT:-rabbitmq}:${PUERTO_RABBIT:-5672}
       AUTH_JWT_CLAVE_PUBLICA_ARCHIVO: /claves/jwt-publica.pem
-    # Solo en este servicio se monta también la privada: es el único que firma.
+      # Con qué se identifican los servicios entre sí en las rutas `/interno/`,
+      # donde no hay usuario cuyo token reenviar — el trabajo de expiración de
+      # Postventa (CU-006D). En desarrollo es un valor fijo y conocido; en
+      # producción lo inyecta el orquestador y el servicio no arranca sin él.
+      TOKEN_SERVICIOS: ${TOKEN_SERVICIOS:-hexacore-servicios-dev}
+      # Pasarela real (Stripe en modo de prueba): PAGOS_PROVEEDOR=stripe y las
+      # llaves en App/infra/.env (ver .env.ejemplo). Núcleo y Boletería cobran
+      # con el mismo módulo de Pagos, así que las dos reciben lo mismo.
+      PAGOS_PROVEEDOR: ${PAGOS_PROVEEDOR:-simulada}
+      STRIPE_CLAVE_SECRETA: ${STRIPE_CLAVE_SECRETA:-}
+      STRIPE_CLAVE_PUBLICA: ${STRIPE_CLAVE_PUBLICA:-}
+      STRIPE_SECRETO_WEBHOOK: ${STRIPE_SECRETO_WEBHOOK:-}
+    # Solo aquí se monta también la privada: el módulo de Administración es el
+    # único que firma tokens (ADR-11).
     environment:
       <<: *entorno-comun
       AUTH_JWT_CLAVE_PRIVADA_ARCHIVO: /claves/jwt-privada.pem
+      PUERTO: "3002"
+      PREFIJO_API: api/v1
+      AUTH_JWT_EMISOR: hexacore-administracion
+      POSTGRES_USUARIO: hexacore
+      POSTGRES_CONTRASENA: hexacore
+      # Una base común con un esquema por propietario.
+      POSTGRES_MAX_CONEXIONES: "10"
+      POSTGRES_ESPERA_MAXIMA_MS: "3000"
       CORREO_PROVEEDOR_URL: http://${HOST_CORREO:-correo}:${PUERTO_CORREO:-3098}
+      PAGOS_PROVEEDOR_URL: http://${HOST_PASARELA:-pasarela}:${PUERTO_PASARELA:-3099}
+      PASARELA_TIMEOUT_MS: "10000"
+      PASARELA_SECRETO_WEBHOOK: secreto-webhook-desarrollo
     volumes:
       - ./claves-desarrollo/jwt-privada.pem:/claves/jwt-privada.pem:ro
       - ./claves-desarrollo/jwt-publica.pem:/claves/jwt-publica.pem:ro
     # En una máquina limpia, el primer arranque incluye inicializar PostgreSQL
-    # y correr las migraciones. La sonda que trae la imagen agota sus
+    # tras la preparación SQL separada. La sonda que trae la imagen agota sus
     # reintentos antes de eso y Compose da el sistema por fallido con todo ya
     # en pie; esta le da margen de sobra.
     healthcheck:
@@ -209,108 +249,124 @@ services:
     ports:
       - "3002:3002"
 
-  # Servicio de Entradas y Mercado Secundario — CU-006.
-  entradas-mercado-secundario:
+  # Boletería: cinco componentes existentes en un proceso, cuatro esquemas propios.
+  boleteria:
     profiles: ["servicios"]
-    build: ../services/entradas-mercado-secundario
-    # Sin `container_name`: es el que se replica para demostrar el balanceo
-    # (`--scale entradas-mercado-secundario=2`), y un nombre fijo lo impediría.
+    build:
+      context: ../backend
+      dockerfile: Dockerfile.boleteria
     restart: unless-stopped
-    # Un init mínimo como PID 1: reenvía las señales a node y recoge procesos
-    # huérfanos. Sin él, node es el PID 1 y el kernel le trata las señales de
-    # forma especial.
     init: true
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }
+      preparacion-base: { condition: service_completed_successfully }
       pasarela: { condition: service_healthy }
     environment:
       <<: *entorno-comun
-      PASARELA_URL: http://${HOST_PASARELA:-pasarela}:${PUERTO_PASARELA:-3099}
+      PUERTO: "3001"
+      POSTGRES_USUARIO: hexacore
+      POSTGRES_CONTRASENA: hexacore
+      PAGOS_PROVEEDOR_URL: http://${HOST_PASARELA:-pasarela}:${PUERTO_PASARELA:-3099}
+      PASARELA_TIMEOUT_MS: "10000"
+      COLA_AFORO_CONCURRENTE: "25"
     volumes:
       - ./claves-desarrollo/jwt-publica.pem:/claves/jwt-publica.pem:ro
-    # En una máquina limpia, el primer arranque incluye inicializar PostgreSQL
-    # y correr las migraciones. La sonda que trae la imagen agota sus
-    # reintentos antes de eso y Compose da el sistema por fallido con todo ya
-    # en pie; esta le da margen de sobra.
     healthcheck:
-      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3001/api/v1/salud',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3001/api/v1/salud',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
       interval: 10s
       timeout: 5s
       start_period: 90s
       retries: 10
-    ports:
-      - "3001:3001"
+    ports: ["3001:3001"]
 
-  # Servicio de Pedidos — CU-011.
-  pedidos:
+  # Una ejecución de los ocho historiales antes de habilitar ambos programas.
+  # Usa la imagen Núcleo como herramienta CLI; no abre HTTP ni corre su main.
+  preparacion-base:
     profiles: ["servicios"]
-    container_name: hexacore-pedidos
-    build: ../services/pedidos
-    restart: unless-stopped
-    init: true
+    build: ../backend
+    restart: "no"
+    command: ["node", "dist/compartido/persistencia/preparar-base.js"]
     depends_on:
       postgres: { condition: service_healthy }
-      redis: { condition: service_healthy }
+    environment:
+      NODE_ENV: development
+      POSTGRES_HOST: ${HOST_POSTGRES:-postgres}
+      POSTGRES_PUERTO: ${PUERTO_POSTGRES:-5432}
+      POSTGRES_USUARIO: hexacore
+      POSTGRES_CONTRASENA: hexacore
+      POSTGRES_BD: ${POSTGRES_BD:-hexacore}
+    healthcheck: { disable: true }
+
+  # Trabajador: consumidor de correo existente, sin bases, Redis ni claves JWT.
+  trabajador:
+    profiles: ["servicios"]
+    build:
+      context: ../backend
+      dockerfile: Dockerfile.trabajador
+    # Sin `container_name`: ADR-14 lo escala por longitud de cola.
+    restart: unless-stopped
+    init: true
+    # Sin PostgreSQL: su estado es la cola. Necesita el broker, de donde toma
+    # el trabajo, y el proveedor de correo, que es a quien se lo entrega.
+    depends_on:
       rabbitmq: { condition: service_healthy }
-      pasarela: { condition: service_healthy }
+      correo: { condition: service_healthy }
+    environment:
+      NODE_ENV: development
+      RABBITMQ_URL: amqp://hexacore:hexacore@${HOST_RABBIT:-rabbitmq}:${PUERTO_RABBIT:-5672}
+      PUERTO: "3006"
+      CORREO_PROVEEDOR_URL: http://${HOST_CORREO:-correo}:${PUERTO_CORREO:-3098}
+      # Correo real (Gmail): CORREO_PROVEEDOR=smtp y las credenciales en
+      # App/infra/.env, que Compose lee solo y git ignora (ver .env.ejemplo).
+      CORREO_PROVEEDOR: ${CORREO_PROVEEDOR:-simulado}
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PUERTO: ${SMTP_PUERTO:-465}
+      SMTP_USUARIO: ${SMTP_USUARIO:-}
+      SMTP_CONTRASENA: ${SMTP_CONTRASENA:-}
+      CORREO_REMITENTE: ${CORREO_REMITENTE:-}
+      # El enlace del correo lo abre quien lo recibe, quizá en otro dispositivo:
+      # con correo real conviene poner la IP del computador en vez de localhost.
+      CORREO_URL_BASE_ENLACES: ${CORREO_URL_BASE_ENLACES:-http://localhost:4200/cuenta}
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3006/api/v1/salud',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      start_period: 60s
+      retries: 10
+    ports:
+      - "3006:3006"
+
+  # Datos de demostración (perfil `demo`), sin Node en el computador: corre las
+  # semillas y el inventario de Pedidos desde su propia imagen, una vez que la
+  # base está preparada y el gateway responde. Sobre una base con datos no hace
+  # nada, así que volver a levantar el perfil es seguro.
+  #
+  #   docker compose -f App/infra/docker-compose.yml --profile servicios --profile demo up -d --build
+  datos-demo:
+    profiles: ["demo"]
+    build:
+      context: ../backend
+      dockerfile: Dockerfile.herramientas
+    restart: "no"
+    depends_on:
+      preparacion-base: { condition: service_completed_successfully }
+      api-gateway: { condition: service_healthy }
     environment:
       <<: *entorno-comun
-      PUERTO: "3003"
-      PREFIJO_API: api/v1
+      AUTH_JWT_CLAVE_PRIVADA_ARCHIVO: /claves/jwt-privada.pem
       AUTH_JWT_EMISOR: hexacore-administracion
       POSTGRES_USUARIO: hexacore
       POSTGRES_CONTRASENA: hexacore
-      POSTGRES_BASE: pedidos
-      POSTGRES_MAX_CONEXIONES: "10"
-      POSTGRES_ESPERA_MAXIMA_MS: "3000"
+      CORREO_PROVEEDOR_URL: http://${HOST_CORREO:-correo}:${PUERTO_CORREO:-3098}
       PAGOS_PROVEEDOR_URL: http://${HOST_PASARELA:-pasarela}:${PUERTO_PASARELA:-3099}
-      PASARELA_TIMEOUT_MS: "10000"
+      PASARELA_SECRETO_WEBHOOK: secreto-webhook-desarrollo
+      GATEWAY_URL: http://api-gateway:8080/api/v1
     volumes:
+      - ./claves-desarrollo/jwt-privada.pem:/claves/jwt-privada.pem:ro
       - ./claves-desarrollo/jwt-publica.pem:/claves/jwt-publica.pem:ro
-    healthcheck:
-      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3003/api/v1/salud',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
-      interval: 10s
-      timeout: 5s
-      start_period: 90s
-      retries: 10
-    ports:
-      - "3003:3003"
-
-  # Servicio de Eventos / Emergencias — CU-018 (turnos y asistencia del personal).
-  eventos-emergencias:
-    profiles: ["servicios"]
-    build: ../services/eventos-emergencias
-    container_name: hexacore-logistica
-    restart: unless-stopped
-    init: true
-    depends_on:
-      postgres: { condition: service_healthy }
-      redis: { condition: service_healthy }
-      rabbitmq: { condition: service_healthy }
-    environment:
-      <<: *entorno-comun
-      PUERTO: "3016"
-      DB_HOST: ${HOST_POSTGRES:-postgres}
-      DB_PORT: ${PUERTO_POSTGRES:-5432}
-      DB_USER: hexacore
-      DB_PASSWORD: hexacore
-      DB_NAME: eventos_emergencias
-      DB_SYNCHRONIZE: "true"
-    volumes:
-      - ./claves-desarrollo/jwt-publica.pem:/claves/jwt-publica.pem:ro
-    ports:
-      - "3016:3016"
-    # La imagen no trae sonda propia, así que se declara aquí. `/turnos` exige
-    # sesión y responde 401 sin token: eso ya demuestra que el proceso atiende
-    # y que llegó a la base. Cualquier 5xx sí es un problema.
-    healthcheck:
-      test: ["CMD-SHELL", "wget -qS -O /dev/null http://127.0.0.1:3016/api/v1/turnos 2>&1 | grep -qE 'HTTP/1.1 (2|4)' || exit 1"]
-      interval: 10s
-      timeout: 3s
-      start_period: 25s
-      retries: 5
+    healthcheck: { disable: true }
 
   # Portal Web de Clientes. Se sirve como sitio estático: el navegador de quien
   # lo abre es el que llama al gateway, así que la misma imagen vale en

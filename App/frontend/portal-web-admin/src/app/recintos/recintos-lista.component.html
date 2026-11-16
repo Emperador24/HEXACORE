@@ -1,0 +1,61 @@
+<div class="pagina-encabezado">
+  <div>
+    <h1>Recintos y zonas <span class="referencia-cu">CU-029</span></h1>
+    <p class="descripcion">Los lugares donde se hacen los eventos, con sus zonas y su capacidad. Un recinto activo se puede elegir al crear un evento.</p>
+  </div>
+  <div class="acciones">
+    <button mat-flat-button routerLink="nuevo"><mat-icon>add_business</mat-icon> Nuevo recinto</button>
+  </div>
+</div>
+
+@if (error()) {
+  <div class="mensaje error" role="alert">
+    <mat-icon>error_outline</mat-icon><span>{{ error() }}</span>
+    <button mat-button (click)="cargar()">Reintentar</button>
+  </div>
+}
+
+<section class="panel">
+  <div class="barra-filtros">
+    <mat-form-field>
+      <mat-icon matPrefix>search</mat-icon>
+      <mat-label>Buscar</mat-label>
+      <input matInput [ngModel]="busqueda()" (ngModelChange)="busqueda.set($event)" placeholder="Nombre, ciudad o dirección" />
+    </mat-form-field>
+    <span class="espaciador"></span>
+    <span class="secundario">{{ visibles().length }} recinto(s)</span>
+    <button mat-icon-button (click)="cargar()" matTooltip="Actualizar" aria-label="Actualizar"><mat-icon>refresh</mat-icon></button>
+  </div>
+  @if (cargando()) { <mat-progress-bar mode="indeterminate" /> }
+</section>
+
+<div class="rejilla">
+  @for (r of visibles(); track r.id; let i = $index) {
+    <a class="panel tarjeta" [routerLink]="r.id" [class.inactivo]="!r.activo">
+      <div class="cabeza">
+        <span class="badge-icono" [style.--tinte]="acento(i)"><mat-icon>location_city</mat-icon></span>
+        <div class="titulos">
+          <strong>{{ r.nombre }}</strong>
+          <span class="secundario">{{ r.ciudad }}{{ r.direccion ? ' · ' + r.direccion : '' }}</span>
+        </div>
+        <span class="estado" [class.ok]="r.activo">{{ r.activo ? 'Activo' : 'Inactivo' }}</span>
+      </div>
+      <dl class="datos">
+        <div><dt>Capacidad</dt><dd>{{ r.capacidad | number }}</dd></div>
+        <div><dt>Zonas</dt><dd>{{ r.zonas.length }}</dd></div>
+        <div><dt>Eventos activos</dt><dd>{{ r.eventosActivos }}</dd></div>
+      </dl>
+      <div class="barra" [matTooltip]="'Zonas: ' + ocupacionZonas(r) + ' % de la capacidad'"><span [style.width.%]="ocupacionZonas(r)"></span></div>
+      <div class="pie">
+        @for (z of r.zonas.slice(0, 4); track z.id) { <span class="zona">{{ z.nombre }}</span> }
+        @if (r.zonas.length > 4) { <span class="zona">+{{ r.zonas.length - 4 }}</span> }
+        <span class="espaciador"></span>
+        @if (r.tienePlano) { <mat-icon class="plano" matTooltip="Tiene plano">map</mat-icon> }
+      </div>
+    </a>
+  } @empty {
+    @if (!cargando()) {
+      <section class="panel"><div class="vacio"><mat-icon>location_city</mat-icon><p>No hay recintos que coincidan.</p></div></section>
+    }
+  }
+</div>

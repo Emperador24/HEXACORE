@@ -1,0 +1,374 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "HEXACORE — Componentes del Núcleo (ADR-16)",
+    "output": "03-componentes-nucleo.html",
+    "quality_profile": "standard",
+    "viewBox": [
+      1980,
+      920
+    ]
+  },
+  "components": [
+    {
+      "id": "gateway",
+      "type": "security",
+      "label": "API Gateway",
+      "sublabel": "JWT RS256 público · permisos por ruta",
+      "pos": [
+        159,
+        30
+      ],
+      "size": [
+        1532.0,
+        60
+      ]
+    },
+    {
+      "id": "identidad",
+      "type": "backend",
+      "label": "Identidad",
+      "sublabel": "cuentas · sesiones · roles y permisos",
+      "pos": [
+        60,
+        200
+      ],
+      "size": [
+        230,
+        76
+      ]
+    },
+    {
+      "id": "logistica",
+      "type": "backend",
+      "label": "Personal/Logística",
+      "sublabel": "personal · turnos · asistencia · avisos",
+      "pos": [
+        310,
+        200
+      ],
+      "size": [
+        230,
+        76
+      ]
+    },
+    {
+      "id": "eventos",
+      "type": "backend",
+      "label": "Eventos-Recintos",
+      "sublabel": "eventos · recintos · zonas · outbox",
+      "pos": [
+        560,
+        200
+      ],
+      "size": [
+        230,
+        76
+      ]
+    },
+    {
+      "id": "operacion",
+      "type": "backend",
+      "label": "Operación",
+      "sublabel": "evacuación · panel en vivo (SSE)",
+      "pos": [
+        810,
+        200
+      ],
+      "size": [
+        230,
+        76
+      ]
+    },
+    {
+      "id": "parqueaderos",
+      "type": "backend",
+      "label": "Parqueaderos",
+      "sublabel": "tarifa · cobro · ocupación · reservas",
+      "pos": [
+        1060,
+        200
+      ],
+      "size": [
+        230,
+        76
+      ]
+    },
+    {
+      "id": "alimentos",
+      "type": "backend",
+      "label": "Alimentos",
+      "sublabel": "pedidos · menú · inventario en Redis",
+      "pos": [
+        1310,
+        200
+      ],
+      "size": [
+        230,
+        76
+      ]
+    },
+    {
+      "id": "webhook",
+      "type": "security",
+      "label": "Webhook de pagos",
+      "sublabel": "POST /pagos/webhook · HMAC",
+      "pos": [
+        1560,
+        200
+      ],
+      "size": [
+        230,
+        76
+      ]
+    },
+    {
+      "id": "guarda",
+      "type": "security",
+      "label": "Guarda común",
+      "sublabel": "SesionValida · verifica JWT y permisos",
+      "pos": [
+        60,
+        430
+      ],
+      "size": [
+        230,
+        76
+      ]
+    },
+    {
+      "id": "pagos",
+      "type": "backend",
+      "label": "Módulo Pagos",
+      "sublabel": "idempotencia · adaptador de pasarela",
+      "pos": [
+        1560,
+        430
+      ],
+      "size": [
+        230,
+        76
+      ]
+    },
+    {
+      "id": "redis",
+      "type": "database",
+      "label": "Redis",
+      "sublabel": "revocación · permisos-rol · roles-usuario",
+      "pos": [
+        60,
+        660
+      ],
+      "size": [
+        230,
+        76
+      ]
+    },
+    {
+      "id": "rabbitmq",
+      "type": "messagebus",
+      "label": "RabbitMQ",
+      "sublabel": "eventos.gestion · turnos.cambios · evacuación · ingresos · pedidos · correo",
+      "pos": [
+        325,
+        660
+      ],
+      "size": [
+        700,
+        72
+      ]
+    },
+    {
+      "id": "pasarela",
+      "type": "external",
+      "label": "Pasarela de pagos",
+      "sublabel": "externa",
+      "pos": [
+        1560,
+        660
+      ],
+      "size": [
+        230,
+        76
+      ]
+    },
+    {
+      "id": "postgres",
+      "type": "database",
+      "label": "PostgreSQL · base hexacore",
+      "sublabel": "un esquema por módulo: identidad, personal_logistica, eventos_recintos, operacion, parqueaderos, alimentos, finanzas_pagos",
+      "pos": [
+        60,
+        810
+      ],
+      "size": [
+        1730,
+        64
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Núcleo :3002",
+      "wraps": [
+        "identidad",
+        "logistica",
+        "eventos",
+        "operacion",
+        "parqueaderos",
+        "alimentos",
+        "webhook",
+        "guarda",
+        "pagos"
+      ],
+      "pad": 24
+    }
+  ],
+  "connections": [
+    {
+      "id": "gw-identidad",
+      "from": "gateway",
+      "to": "identidad",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "gw-logistica",
+      "from": "gateway",
+      "to": "logistica",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "gw-eventos",
+      "from": "gateway",
+      "to": "eventos",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "gw-operacion",
+      "from": "gateway",
+      "to": "operacion",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "gw-parqueaderos",
+      "from": "gateway",
+      "to": "parqueaderos",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "gw-alimentos",
+      "from": "gateway",
+      "to": "alimentos",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "gw-webhook",
+      "from": "gateway",
+      "to": "webhook",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "variant": "security"
+    },
+    {
+      "id": "identidad-guarda",
+      "from": "identidad",
+      "to": "guarda",
+      "label": "publica la matriz",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [
+        175,
+        353
+      ]
+    },
+    {
+      "id": "guarda-redis",
+      "from": "guarda",
+      "to": "redis",
+      "label": "lee en cada petición",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "variant": "security",
+      "labelAt": [
+        175,
+        583
+      ]
+    },
+    {
+      "id": "eventos-rabbit",
+      "from": "eventos",
+      "to": "rabbitmq",
+      "label": "eventos.gestion",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "variant": "emphasis",
+      "labelAt": [
+        675,
+        468
+      ]
+    },
+    {
+      "id": "webhook-pagos",
+      "from": "webhook",
+      "to": "pagos",
+      "label": "actualiza el libro",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [
+        1675,
+        353
+      ]
+    },
+    {
+      "id": "pagos-pasarela",
+      "from": "pagos",
+      "to": "pasarela",
+      "label": "HTTP cobros",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "variant": "emphasis",
+      "labelAt": [
+        1675,
+        583
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Un proceso, siete módulos",
+      "items": [
+        "Un solo proceso NestJS por réplica; todas las réplicas son iguales",
+        "Cada módulo tiene su conexión nombrada y su esquema; no comparten repositorios",
+        "Identidad es el único que firma tokens; la guarda común verifica la firma y lee revocación y permisos (CU-028) de Redis en cada petición"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Mensajería",
+      "items": [
+        "Eventos-Recintos publica eventos.gestion por outbox; lo consumen los cuatro módulos de Boletería",
+        "Logística publica turnos.cambios; Parqueaderos, avisos de reservas; Alimentos, pedidos.eventos",
+        "Operación consume los ingresos de Acceso QR y publica los avisos de evacuación con prioridad",
+        "Las bandejas toman filas con SKIP LOCKED: dos réplicas no publican dos veces"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Relaciones no dibujadas",
+      "items": [
+        "Todos los módulos escriben en su esquema de PostgreSQL",
+        "Alimentos cobra por el módulo Pagos y reserva inventario en Redis",
+        "Identidad envía el correo pendiente por RabbitMQ (lo envía el Trabajador)"
+      ]
+    }
+  ]
+}

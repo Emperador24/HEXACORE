@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -30,6 +30,7 @@ import { FuerzaContrasenaComponent } from '../shared/fuerza-contrasena.component
     FuerzaContrasenaComponent
   ],
   templateUrl: './ajustes.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './ajustes.component.scss'
 })
 export class AjustesComponent {

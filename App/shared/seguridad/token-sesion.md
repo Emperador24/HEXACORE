@@ -1,7 +1,7 @@
 # Contrato: token de sesión
 
-Lo emite el **Servicio de Administración** (CU-027, paso 9) y lo exige todo microservicio con
-endpoints de negocio (RNF-06). Este documento es lo que los servicios tienen que acordar; cambiar
+Lo emite el módulo **Identidad** del Núcleo (CU-027, paso 9) y lo exigen el gateway y todo módulo con
+endpoints de negocio, en Núcleo y Boletería (RNF-06). Este documento es lo que esos programas tienen que acordar; cambiar
 cualquiera de estos puntos en un lado sin cambiarlo en el otro rompe la autenticación o, peor, la
 debilita sin que nadie lo note.
 
@@ -36,11 +36,15 @@ nuevo y el mismo `jti`.
 **Clientes web:** con la cabecera `X-Hexacore-Cliente: web`, el token de renovación no va en el
 cuerpo sino en una cookie `hxc_renovacion` (`HttpOnly`, `SameSite=Strict`,
 `Path=/api/v1/sesiones`), y el portal guarda el token de acceso solo en memoria. Ver
-`services/administracion/DECISIONES.md` §22.
+`backend/modulos/identidad/DECISIONES.md` §22.
 
-Consecuencia para los verificadores: un cambio de roles llega como mucho cuando caduca el token de
-acceso vigente (15 minutos). Si una operación no puede esperar tanto, debe consultar los roles a
-Administración, como hace su propia administración de cuentas.
+El JWT conserva los roles de su emisión. Los módulos del Núcleo cubiertos por
+CU-028 consultan roles/matriz vigentes en Redis en cada petición y aplican la
+asignación o retirada sin renovar ese JWT; el gateway delega esas rutas después
+de comprobar su firma. Administración de cuentas/roles exige además autoridad
+administrativa activa en SQL. Esto no concede permisos dinámicos a Ingreso QR
+ni a otros módulos de Boletería: conservan sus roles fijos y revocación. Ver
+[permisos.md](permisos.md) para el alcance y el rechazo de datos ilegibles.
 
 ## Claves
 
@@ -77,15 +81,15 @@ servicio limpia solo sus propias claves (`reventa:*`, por ejemplo).
 ## El API Gateway valida antes, y no sustituye a nadie
 
 Todo el tráfico de los clientes entra por el **API Gateway** (ADR-02, `App/gateway/`). Antes de
-enrutar una ruta protegida, el gateway pregunta a `GET /api/v1/sesiones/verificar` del Servicio de
-Administración, que aplica exactamente estas mismas reglas y responde:
+enrutar una ruta protegida, el gateway **verifica el token él mismo, con la clave pública**
+(`gateway/autenticacion.js`, ADR-15): firma RS256, emisor, caducidad, forma del contenido y el rol que
+pida la ruta. No pregunta a Autenticación en cada petición; hasta ADR-15 lo hacía contra
+`GET /api/v1/sesiones/verificar`, que sigue existiendo pero ya no está en el camino del tráfico.
 
-| Respuesta | Cabeceras | Significa |
-|---|---|---|
-| `204 No Content` | `X-Usuario-Id`, `X-Usuario-Roles` (separados por coma) | Token válido y sesión abierta |
-| `401` | — | Cualquier otro caso |
+Lo que el gateway **no** comprueba es la revocación: no mira Redis. Un token de una sesión cerrada
+pasa el gateway y lo rechaza el servicio de destino con el mismo 401.
 
-El gateway reenvía la petición solo tras un 204, y añade esas dos cabeceras. **Un servicio no debe
+El gateway añade `X-Usuario-Id` y `X-Usuario-Roles` (separados por coma). **Un servicio no debe
 confiar en ellas**: son una comodidad para trazas y logs, no una credencial. Cada servicio sigue
 verificando el `Authorization: Bearer` por su cuenta (RNF-06), porque un atacante dentro de la red
 puede llamar al servicio directamente y poner la cabecera que quiera. Comprobado en
@@ -101,7 +105,39 @@ puede llamar al servicio directamente y poner la cabecera que quiera. Comprobado
 
 ## Implementaciones
 
-- Emisión: `services/administracion/src/sesiones/`
-- Verificación: `services/entradas-mercado-secundario/src/comun/autenticacion/sesion-valida.guard.ts`
-- Prueba entre servicios: `services/entradas-mercado-secundario/pruebas/rnf06-autenticacion.py`
-- Validación en el borde: `gateway/nginx.conf` (`auth_request`) y `gateway/pruebas/gateway.py`
+### Conexión SSE de ocupación de Parqueaderos
+
+Este endpoint revalida con su misma `SesionValida` en el ciclo de 3 s y antes
+de emitir datos. JWT caducado/revocado o Redis no comprobable termina el flujo.
+La detección es periódica: hasta ciclo + comprobación (Redis tiene límite de
+2 s), más planificación/red; no se promete revocación instantánea.
+
+Antes de abrir conserva 401/403/503. Una vez iniciado, HTTP sigue siendo 200:
+emite un único `event: sesion_finalizada` con `codigo` y mensaje fijo y cierra
+con EOF. Códigos: `SIN_AUTENTICAR` para caducidad/revocación,
+`SESIONES_NO_DISPONIBLES` para fallo de comprobación y `FLUJO_NO_DISPONIBLE` para
+fallo/timeout del panel. Sin token, trazas ni respuestas crudas en el evento.
+El consumidor web conserva Bearer, permite una renovación existente ante 401
+hasta recibir datos válidos y se detiene ante otro rechazo/403/503. Desconexión
+y apagado liberan suscripciones; resultados tardíos no se emiten.
+
+Este cambio no acredita ni modifica otros módulos SSE. Evidencia y límites:
+[AUTORIZACION-SSE.md](../../infra/informe-atributos/seguridad/AUTORIZACION-SSE.md).
+
+- Emisión: `backend/modulos/identidad/sesiones/`
+- Verificación: `backend/modulos/entradas/compartido/sesion-valida.guard.ts`
+- Prueba entre servicios: `backend/modulos/entradas/ventas/pruebas/rnf06-autenticacion.py`
+- Validación en el borde: `gateway/autenticacion.js` (njs) y `gateway/pruebas/gateway.py`
+
+## API interna de Ventas (RNF-06, 12/11/2026)
+
+Las cuatro operaciones `/interno/entradas/*` exigen `X-Token-Servicio`, validado
+en tiempo constante contra `TOKEN_SERVICIOS`. Un JWT de usuario, incluso de
+Administrador, no acredita a Postventa: el cuerpo puede declarar un propietario
+distinto del actor. Se elimina esa alternativa. Postventa autoriza al usuario
+en sus rutas públicas y sus adaptadores HTTP/local presentan la credencial del
+servidor. No se envía al navegador ni se registra su valor.
+
+La operación interna de Cola conserva su contrato independiente de sesión y
+propiedad del turno. Ninguna ruta `/interno/` se publica en gateway. En producción
+`TOKEN_SERVICIOS` sigue siendo obligatorio; no habilitar valores de desarrollo.

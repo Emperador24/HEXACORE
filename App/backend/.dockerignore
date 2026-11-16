@@ -1,0 +1,10 @@
+node_modules
+dist
+coverage
+test
+**/*.spec.ts
+**/pruebas
+.env
+**/*.pem
+.env.trabajador
+.evidencia-e2e

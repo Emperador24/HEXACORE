@@ -13,45 +13,128 @@
       <mat-card-content>
         <mat-form-field appearance="outline" class="campo">
           <mat-label>Evento</mat-label>
-          <mat-select [value]="eventoSeleccionado()" (selectionChange)="eventoSeleccionado.set($event.value)">
+          <mat-select [value]="eventoSeleccionado()" (selectionChange)="elegirEvento($event.value)">
             @for (evento of eventosProximos(); track evento.id) {
               <mat-option [value]="evento.id">{{ evento.nombre }} — {{ evento.fecha }}</mat-option>
             }
           </mat-select>
         </mat-form-field>
 
-        <mat-form-field appearance="outline" class="campo">
-          <mat-label>Zona</mat-label>
-          <mat-select [value]="zonaSeleccionada()" (selectionChange)="zonaSeleccionada.set($event.value)">
-            @for (zona of zonas; track zona) {
-              <mat-option [value]="zona">{{ zona }}</mat-option>
+        @if (cargando()) {
+          <p class="nota">Consultando disponibilidad…</p>
+        }
+        @if (disponibilidad(); as d) {
+          @if (!d.reservable) {
+            <p class="nota" role="status">{{ d.motivo ?? 'Este evento ya no tiene espacios libres para reservar.' }}</p>
+          }
+          @if (d.zonas.length) {
+            <mat-form-field appearance="outline" class="campo">
+              <mat-label>Tipo de vehículo</mat-label>
+              <mat-select [value]="tipo()" (selectionChange)="tipo.set($event.value)">
+                @for (t of tipos; track t.valor) {
+                  <mat-option [value]="t.valor">{{ t.etiqueta }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <div class="zonas" role="radiogroup" aria-label="Zona">
+              @for (z of d.zonas; track z.id) {
+                <button
+                  type="button"
+                  class="zona"
+                  role="radio"
+                  [attr.aria-checked]="z.id === zonaSeleccionada()"
+                  [class.elegida]="z.id === zonaSeleccionada()"
+                  [disabled]="z.disponibles[tipo()] === 0"
+                  (click)="elegirZona(z.id)"
+                >
+                  <span class="nombre">{{ z.nombre }}</span>
+                  <span class="libres">{{ z.disponibles[tipo()] === 0 ? 'Sin espacios' : z.disponibles[tipo()] + ' libres' }}</span>
+                </button>
+              }
+            </div>
+
+            <mat-form-field appearance="outline" class="campo">
+              <mat-label>Placa del vehículo</mat-label>
+              <input matInput [value]="placa()" (input)="editarPlaca($event)" maxlength="10" autocomplete="off" placeholder="ABC123" />
+              @if (placa() && !placaValida()) {
+                <mat-error>Entre 4 y 10 letras o números.</mat-error>
+              }
+            </mat-form-field>
+
+            @if (d.tarifa && d.precio !== null) {
+              <p class="total">Total: ${{ d.precio | number: '1.0-0' }}</p>
+              <p class="nota">
+                {{ d.horas }} h hasta el final del evento × ${{ d.tarifa.valorHora | number: '1.0-0' }}/h. El espacio se te guarda
+                {{ d.minutosParaPagar }} minutos mientras pagas.
+              </p>
             }
-          </mat-select>
-        </mat-form-field>
 
-        <p class="total">Total: ${{ tarifa | number: '1.0-0' }}</p>
+            @if (error()) {
+              <p class="error" role="alert">{{ error() }}</p>
+            }
+            @if (alternativas().length) {
+              <p class="nota">Zonas con espacio:</p>
+              <div class="alternativas">
+                @for (a of alternativas(); track a.id) {
+                  <button mat-stroked-button type="button" (click)="elegirZona(a.id)">{{ a.nombre }} · {{ a.disponibles }} libres</button>
+                }
+              </div>
+            }
 
-        <button mat-flat-button color="primary" (click)="reservar()" class="campo">Continuar al pago</button>
+            <button
+              mat-flat-button
+              color="primary"
+              class="campo"
+              (click)="reservar()"
+              [disabled]="!d.reservable || !zona() || libresDelTipo() === 0 || !placaValida() || reservando()"
+            >
+              {{ reservando() ? 'Reservando…' : 'Continuar al pago' }}
+            </button>
+          }
+        } @else if (error() && !cargando()) {
+          <p class="error" role="alert">{{ error() }}</p>
+        }
       </mat-card-content>
     </mat-card>
   }
 } @else {
-  @if (reservas().length === 0) {
+  @if (errorReservas()) {
+    <p class="error" role="alert">{{ errorReservas() }}</p>
+  } @else if (reservas().length === 0) {
     <p class="vacio">Todavía no tienes reservas de parqueadero.</p>
   } @else {
     <div class="grilla">
       @for (reserva of reservas(); track reserva.id) {
         <mat-card class="tarjeta">
           <mat-card-header>
-            <mat-card-title>{{ reserva.eventoNombre }}</mat-card-title>
-            <mat-card-subtitle>{{ reserva.lugarEvento }}</mat-card-subtitle>
+            <mat-card-title>{{ reserva.evento?.nombre }}</mat-card-title>
+            <mat-card-subtitle>{{ estado(reserva) }}</mat-card-subtitle>
           </mat-card-header>
           <mat-card-content>
-            <p>{{ reserva.zona }} · Espacio {{ reserva.espacioId }}</p>
-            <app-qr-placeholder [codigo]="reserva.codigoQr" />
+            <p>{{ reserva.zona }} · Espacio {{ reserva.espacio }}</p>
+            <p>{{ reserva.placa }} · {{ nombreTipo(reserva.tipoVehiculo) }} · ${{ reserva.monto | number: '1.0-0' }}</p>
+            @if (reserva.codigoQr && reserva.estado === 'CONFIRMADA') {
+              <app-qr-pedido [codigo]="reserva.codigoQr" descripcion="Código QR de la reserva de parqueadero" />
+              <p class="codigo">{{ reserva.codigoQr }}</p>
+            }
+            @if (reserva.estado === 'PENDIENTE_PAGO' && !vencida(reserva)) {
+              <p class="aviso">Paga antes de {{ restante(reserva) }} o el espacio se libera.</p>
+              @if (reserva.motivo) {
+                <p class="error">{{ reserva.motivo }}</p>
+              }
+            }
+            @if (reserva.estado === 'USADA') {
+              <p class="nota">Ingresaste el {{ reserva.usadaEn | date: 'short' }}.</p>
+            }
           </mat-card-content>
           <mat-card-actions>
-            <a mat-button [href]="enlaceComoLlegar(reserva.lugarEvento)" target="_blank" rel="noopener">Cómo llegar</a>
+            @if (reserva.estado === 'PENDIENTE_PAGO' && !vencida(reserva)) {
+              <button mat-flat-button color="primary" (click)="irAPagar(reserva)">Pagar</button>
+            }
+            @if (enlaceComoLlegar(reserva); as enlace) {
+              <a mat-button [href]="enlace" target="_blank" rel="noopener">Cómo llegar</a>
+            }
           </mat-card-actions>
         </mat-card>
       }

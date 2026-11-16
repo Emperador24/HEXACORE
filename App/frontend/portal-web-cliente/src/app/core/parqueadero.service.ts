@@ -1,49 +1,56 @@
-import { Injectable, signal } from '@angular/core';
-import { ReservaParqueadero } from './models';
-
-/** Zonas y tarifa quemadas mientras no existe el API Gateway — la tarifa real la fija el Administrador desde el Portal Web Admin. */
-export const ZONAS_PARQUEADERO = ['Zona A', 'Zona B', 'Zona C'];
-export const TARIFA_PARQUEADERO = 15000;
-
-function nuevoEspacio(zona: string): string {
-  const letra = zona.replace('Zona ', '');
-  return `${letra}-${String(Math.floor(1 + Math.random() * 40)).padStart(2, '0')}`;
-}
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { Injectable, inject, signal } from '@angular/core';
+import { AuthService } from './auth.service';
+import { DisponibilidadParqueadero, ReservaParqueadero, TipoVehiculo } from './models';
+import { Servidor } from './servidor';
 
 /**
- * Reservas de parqueadero del cliente (CU-021..CU-025) — a diferencia de
- * app-movil-cliente (que solo muestra reservas ya pagadas y su tiempo en
- * vivo, ver ParqueaderoScreen allá), aquí es donde se genera la reserva
- * nueva, igual que la compra de entradas.
+ * Parqueadero del cliente (CU-021) contra el backend real, por el gateway.
+ *
+ * Igual que la compra de entradas, en dos pasos: **reservar** retiene un
+ * espacio (lo asigna el servidor, CU-023) y devuelve el precio ya calculado;
+ * **pagar** cobra y entrega el QR que se presenta en el punto de control
+ * (CU-022). La app móvil usa estas mismas rutas (RNF-14).
  */
 @Injectable({ providedIn: 'root' })
 export class ParqueaderoService {
-  private readonly _reservas = signal<ReservaParqueadero[]>([
-    {
-      id: 'res-1',
-      eventoId: 'evt-1',
-      eventoNombre: 'HEXACORE Fest 2026',
-      lugarEvento: 'Movistar Arena, Bogotá',
-      zona: 'Zona B',
-      espacioId: 'B-04',
-      codigoQr: 'HXC-PARK-000045',
-      numeroTransaccion: 'TXN-2026-000601'
-    }
-  ]);
+  private readonly http = inject(HttpClient);
+  private readonly auth = inject(AuthService);
 
+  private readonly _reservas = signal<ReservaParqueadero[]>([]);
   readonly reservas = this._reservas.asReadonly();
 
-  reservar(datos: { eventoId: string; eventoNombre: string; lugarEvento: string; zona: string }): void {
-    const nueva: ReservaParqueadero = {
-      id: `res-${Date.now()}`,
-      eventoId: datos.eventoId,
-      eventoNombre: datos.eventoNombre,
-      lugarEvento: datos.lugarEvento,
-      zona: datos.zona,
-      espacioId: nuevoEspacio(datos.zona),
-      codigoQr: `HXC-PARK-${Math.floor(100000 + Math.random() * 900000)}`,
-      numeroTransaccion: `TXN-2026-${Math.floor(100000 + Math.random() * 900000)}`
-    };
-    this._reservas.update((lista) => [nueva, ...lista]);
+  private url(ruta: string): string {
+    return `${Servidor.api}/parqueaderos${ruta}`;
+  }
+
+  /** Pasos 1-2. */
+  disponibilidad(eventoId: string, llegada?: string): Promise<DisponibilidadParqueadero> {
+    const params = llegada ? new HttpParams().set('llegada', llegada) : undefined;
+    return this.auth.conAcceso((cabeceras: HttpHeaders) =>
+      this.http.get<DisponibilidadParqueadero>(this.url(`/eventos/${eventoId}/disponibilidad`), { headers: cabeceras, params })
+    );
+  }
+
+  /** Pasos 3-4. Sin espacio en la zona responde CU-021A con las zonas alternativas. */
+  reservar(eventoId: string, datos: { zonaId: string; placa: string; tipoVehiculo: TipoVehiculo; llegada?: string }): Promise<ReservaParqueadero> {
+    return this.auth.conAcceso((cabeceras: HttpHeaders) =>
+      this.http.post<ReservaParqueadero>(this.url(`/eventos/${eventoId}/reservas`), datos, { headers: cabeceras })
+    );
+  }
+
+  /** Pasos 5-9. Un rechazo (CU-021B) deja la reserva viva para reintentar; reintentar no cobra dos veces. */
+  async pagar(reservaId: string, token: string): Promise<ReservaParqueadero> {
+    const reserva = await this.auth.conAcceso((cabeceras: HttpHeaders) =>
+      this.http.post<ReservaParqueadero>(this.url(`/reservas/${reservaId}/pagar`), { token }, { headers: cabeceras })
+    );
+    await this.cargar();
+    return reserva;
+  }
+
+  async cargar(): Promise<void> {
+    this._reservas.set(
+      await this.auth.conAcceso((cabeceras: HttpHeaders) => this.http.get<ReservaParqueadero[]>(this.url('/reservas'), { headers: cabeceras }))
+    );
   }
 }

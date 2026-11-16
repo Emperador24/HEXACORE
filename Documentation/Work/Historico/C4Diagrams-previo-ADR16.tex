@@ -1,0 +1,521 @@
+% Documento anterior, referencia histórica previa a ADR-16.
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{geometry}
+\usepackage{setspace}
+\usepackage{parskip}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc,matrix,fit,backgrounds}
+\usepackage{graphicx}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+
+\geometry{left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm,headheight=14.5pt}
+\onehalfspacing
+\hypersetup{colorlinks=true,linkcolor=black,urlcolor=blue,pdftitle={Diagramas C4 - Sistema Integral de Gestión de Eventos},pdfauthor={Daniel Cristancho, Samuel Emperador, Sebastián Sánchez, Diego Coronado}}
+
+\definecolor{azul}{RGB}{31,78,121}
+\definecolor{gris}{RGB}{242,242,242}
+\definecolor{grisoscuro}{RGB}{80,80,80}
+\definecolor{verde}{RGB}{39,120,70}
+\definecolor{naranja}{RGB}{230,126,34}
+\definecolor{morado}{RGB}{106,27,154}
+
+% Columna de ancho fijo con alineación a la izquierda (en vez de justificada),
+% para evitar espaciado irregular en las columnas angostas de las tablas de relaciones.
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+\titleformat{\section}{\Large\bfseries\color{azul}}{\thesection.}{0.5em}{}
+\titleformat{\subsection}{\large\bfseries}{\thesubsection.}{0.5em}{}
+% Etiquetas en español (sin babel, que no está disponible en este entorno)
+\renewcommand{\contentsname}{Índice}
+\renewcommand{\figurename}{Figura}
+\renewcommand{\tablename}{Tabla}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{Sistema Integral de Gestión de Eventos}
+\fancyhead[R]{Diagramas C4}
+\fancyfoot[C]{\thepage}
+
+\begin{document}
+
+\begin{titlepage}
+\centering
+\vspace*{2cm}
+{\Huge\bfseries Sistema Integral de Gestión de Eventos\par}
+\vspace{0.7cm}
+{\Large Arquitectura de Software\par}
+\vspace{1.2cm}
+{\Large\bfseries Diagramas de Arquitectura --- Modelo C4\par}
+\vspace{2cm}
+\begin{tikzpicture}
+\node[draw=azul,rounded corners,fill=gris,minimum width=10cm,minimum height=1cm,align=center]
+{Nivel 1 --- Contexto};
+\node[draw=morado,rounded corners,fill=violet!8,minimum width=10cm,minimum height=1cm,below=0.4cm of current bounding box.south,align=center]
+{Nivel 2 --- Contenedores};
+\node[draw=verde,rounded corners,fill=green!8,minimum width=10cm,minimum height=1cm,below=0.4cm of current bounding box.south,align=center]
+{Nivel 3 --- Componentes};
+\node[draw=grisoscuro,rounded corners,fill=gris,minimum width=10cm,minimum height=1cm,below=0.4cm of current bounding box.south,align=center]
+{Auxiliares --- Panorama, Secuencia y Despliegue};
+\end{tikzpicture}
+\vfill
+\begin{tabular}{rl}
+\textbf{Materia:} & Arquitectura de Software\\
+\textbf{Integrantes:} & Daniel Cristancho, Samuel Emperador, Sebastián Sánchez, Diego Coronado\\
+\textbf{Fecha:} & Agosto de 2026\\
+\textbf{Documento base:} & Atributos de Calidad y Propuesta Arquitectónica
+\end{tabular}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+\section{Introducción}
+
+Este documento complementa a \textbf{Atributos de Calidad y Propuesta Arquitectónica} y presenta,
+de forma independiente, los diagramas de arquitectura del \textbf{Sistema Integral de Gestión de
+Eventos} siguiendo el \textbf{modelo C4} (Simon Brown). Incluye los tres diagramas jerárquicos
+principales --- \textbf{Contexto} (Nivel 1), \textbf{Contenedores} (Nivel 2) y \textbf{Componentes}
+(Nivel 3) --- y tres diagramas auxiliares: \textbf{Panorama de Sistemas} (\textit{System
+Landscape}), \textbf{Despliegue} (\textit{Deployment}) y, en vez del \textit{Diagrama Dinámico} que
+propone el modelo C4, un \textbf{Diagrama de Secuencia} UML (ver la nota en la sección
+correspondiente). No se
+incluye el Nivel 4 (Código) porque la guía oficial del modelo solo lo recomienda para componentes
+especialmente críticos, y normalmente se genera de forma automática con herramientas de IDE a
+partir del código fuente ya escrito --- que todavía no existe para este proyecto.
+
+Cada diagrama incluye título, tipo, alcance, leyenda de notación y una tabla de relaciones con la
+tecnología asociada a cada una, en cumplimiento del checklist oficial de
+\href{https://c4model.com/diagrams/checklist}{c4model.com/diagrams/checklist}, verificado al
+final de este documento.
+
+\textbf{Cambios de esta versión.} Los seis diagramas se regeneraron con
+\href{https://github.com/tt-a1i/archify}{Archify}, que los produce a partir de una especificación
+\texttt{JSON} versionada en el repositorio. El cambio responde a dos necesidades: (1) mantener las
+indicaciones del profesor --- cada caja muestra nombre, tipo/tecnología y una breve descripción de
+su responsabilidad, y el antiguo \textbf{Diagrama Dinámico} sigue reemplazado por un
+\textbf{Diagrama de Secuencia} UML con líneas de vida, mensajes numerados y barra de activación
+---; y (2) que el diagrama deje de desactualizarse respecto al código: al vivir en un archivo de
+texto, una decisión como ADR-07 (unificar las dos apps móviles en una sola) se refleja editando la
+especificación y regenerando, en vez de reeditando una imagen a mano.
+
+Las fuentes \texttt{JSON} y la versión interactiva (\texttt{HTML} con pan/zoom y tema
+claro/oscuro) quedan en \texttt{Work/Diagrams/Archify/}; los PDF que se insertan en este documento,
+en \texttt{Work/Diagrams/ArchifyPDF/}. Los archivos \texttt{.drawio} de la versión anterior se
+conservan en \texttt{Work/Diagrams/} como referencia histórica, pero \textbf{ya no son la fuente
+de los diagramas de este documento}.
+
+\section{Nivel 1 — Diagrama de contexto}
+
+\textbf{Tipo:} diagrama de contexto del sistema. \textbf{Alcance:} muestra el Sistema Integral de
+Gestión de Eventos como caja negra, los roles de usuario que interactúan con él y los sistemas
+externos de los que depende. \textbf{Audiencia:} técnica y no técnica.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth,height=0.8\textheight,keepaspectratio]{Diagrams/ArchifyPDF/01-contexto.pdf}
+\caption{Diagrama de contexto (Nivel 1, modelo C4). Generado con Archify a partir de una especificación JSON; la versión interactiva
+(pan/zoom, tema claro/oscuro) está en \texttt{Diagrams/Archify/}.}
+\label{fig:contexto}
+\end{figure}
+
+\textbf{Leyenda:} cada figura incluye su propia leyenda de colores, generada por Archify a partir
+del tipo de cada caja. En este nivel: verde = el sistema en alcance de este documento; gris =
+personas (roles) y sistemas externos, ambos fuera de la frontera del sistema.
+
+\begin{longtable}{L{3cm}L{3cm}L{6.5cm}L{2.3cm}}
+\caption{Relaciones del diagrama de contexto.}\label{tab:rel-contexto}\\
+\toprule
+\textbf{Origen} & \textbf{Destino} & \textbf{Descripción} & \textbf{Tecnología}\\
+\midrule
+\endfirsthead
+\multicolumn{4}{l}{\small\textit{Tabla \thetable{} --- continuación}}\\
+\toprule
+\textbf{Origen} & \textbf{Destino} & \textbf{Descripción} & \textbf{Tecnología}\\
+\midrule
+\endhead
+\midrule
+\multicolumn{4}{r}{\small\textit{Continúa en la página siguiente\ldots}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+Cliente & Sistema & Consulta eventos, compra y revende entradas, reserva parqueadero. & HTTPS\\
+Organizador & Sistema & Crea eventos, asigna personal y coordina la operación. & HTTPS\\
+Empleado & Sistema & Consulta turnos y registra ingreso/salida. & HTTPS\\
+Administrador & Sistema & Administra usuarios, personal y configuración. & HTTPS\\
+Supervisor de emergencia & Sistema & Activa y coordina el protocolo de evacuación. & HTTPS\\
+Sistema & Pasarela de Pagos & Procesa compras, reventas y reembolsos. & HTTPS/REST\\
+Sistema & Proveedor de Notificaciones & Envía notificaciones push, correo y SMS. & HTTPS/REST\\
+\end{longtable}
+
+\section{Nivel 2 — Diagrama de contenedores}
+
+\textbf{Tipo:} diagrama de contenedores. \textbf{Alcance:} zoom dentro del sistema, mostrando las
+cuatro interfaces desplegables, los catorce servicios del backend —siete microservicios y siete
+servicios de dominio (ADR-14)— y la infraestructura que comparten: 27 contenedores en total, con las
+correcciones de ADR-15.
+\textbf{Audiencia:} arquitectos y desarrolladores.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth,height=0.8\textheight,keepaspectratio]{Diagrams/ArchifyPDF/02-contenedores.pdf}
+\caption{Diagrama de contenedores (Nivel 2, modelo C4). Generado con Archify a partir de una especificación JSON; la versión
+interactiva está en \texttt{Diagrams/Archify/}.}
+\label{fig:contenedores}
+\end{figure}
+
+\textbf{Leyenda:} cian = interfaz de usuario; verde = servicio del backend, agrupado en dos regiones
+(microservicios y servicios de dominio); rojo = API Gateway; violeta =
+almacenamiento (Redis y bases de datos); naranja = cola de mensajes; gris = sistema externo. Las
+flechas punteadas indican interacciones asíncronas.
+
+\begin{longtable}{L{3.2cm}L{3.2cm}L{5.7cm}L{2.3cm}}
+\caption{Relaciones del diagrama de contenedores.}\label{tab:rel-contenedores}\\
+\toprule
+\textbf{Origen} & \textbf{Destino} & \textbf{Descripción} & \textbf{Tecnología}\\
+\midrule
+\endfirsthead
+\multicolumn{4}{l}{\small\textit{Tabla \thetable{} --- continuación}}\\
+\toprule
+\textbf{Origen} & \textbf{Destino} & \textbf{Descripción} & \textbf{Tecnología}\\
+\midrule
+\endhead
+\midrule
+\multicolumn{4}{r}{\small\textit{Continúa en la página siguiente\ldots}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+Cliente & App Móvil / Portal Web Cliente & Consulta eventos, compra y revende entradas, reserva parqueadero. & HTTPS\\
+Organizador & Portal Web Admin & Crea eventos, asigna personal y coordina la operación. & HTTPS\\
+Empleado & App Móvil & Consulta turnos y registra ingreso/salida. & HTTPS\\
+Administrador & Portal Web Admin & Administra usuarios, personal y configuración. & HTTPS\\
+Supervisor de emergencia & Portal Web Admin & Activa y coordina el protocolo de evacuación. & HTTPS\\
+Las cuatro interfaces & API Gateway & Envía las solicitudes del usuario al backend. & HTTPS/JSON\\
+API Gateway & Los catorce servicios & Valida el JWT con la clave pública, autoriza por rol, enruta cada solicitud y balancea entre sus réplicas. & HTTPS/JSON\\
+API Gateway & Cola virtual & Pide turno y, en la ruta de compra, gasta el turno del comprador antes de dejar pasar a Ventas (ADR-15). & HTTPS/JSON\\
+API Gateway & Autenticación & Solo \textit{login} y emisión de tokens: el gateway no le consulta cada petición. & HTTPS/JSON\\
+Ventas & Redis & Reserva atómica del inventario con vencimiento y contador de usos de cupones. & Redis\\
+Ventas & Base propia & Persiste órdenes y entradas emitidas. & SQL\\
+Ventas & Pagos & Solicita el cobro con una llave de idempotencia. & HTTPS/REST\\
+Pagos & Pasarela de Pagos & Único punto de contacto: cobros y reembolsos. & HTTPS/REST\\
+Pasarela de Pagos & API Gateway $\rightarrow$ Pagos & \textit{Webhook} de confirmación por la única ruta pública sin JWT, firmado con HMAC. & HTTPS/JSON\\
+Pagos & Broker & Publica \texttt{PagoAprobado} / \texttt{PagoRechazado}, que cierran la Saga de compra en Ventas. & AMQP\\
+Postventa & Ventas & Cambia el dueño de la entrada revendida. & HTTPS/JSON\\
+Postventa & Pagos & Cobro de la reventa. & HTTPS/JSON\\
+Catálogo & Índice de búsqueda & Resuelve búsqueda y filtros por categoría, fecha, ciudad o artista. & HTTP\\
+Eventos y recintos & Broker & Publica \texttt{EventoPublicado} y \texttt{EventoCancelado}, que alimentan a Catálogo, Ventas, Acceso QR y Notificaciones. & AMQP\\
+Ventas & Broker & Publica \texttt{CompraConfirmada} y \texttt{EntradaActualizada} desde su bandeja de salida (Transactional Outbox). & AMQP\\
+Broker & Notificaciones & Dispara el envío del QR al comprador. & AMQP\\
+Broker & Acceso QR & Activa los QR emitidos e invalida el anterior en una reventa; Acceso QR valida contra esa copia y no llama a Ventas (ADR-15). & AMQP\\
+Broker & Finanzas y reportes & Registra el ingreso para la conciliación. & AMQP\\
+Acceso QR & Broker $\rightarrow$ Ventas & Publica \texttt{IngresoRegistrado}; Ventas marca la entrada como usada. & AMQP\\
+Operación del evento & Broker & Publica \texttt{AlertaEvacuación}, que Notificaciones atiende con prioridad alta. & AMQP\\
+Notificaciones & Proveedor de Notificaciones & Dispara correo y push; prioridad alta para evacuación. & HTTPS/REST\\
+Servicios de dominio & Base central & Persisten en su propio esquema dentro de la base compartida. & SQL\\
+Finanzas y reportes & Réplica de lectura & Consulta los reportes sin tocar el primario. & SQL\\
+\end{longtable}
+
+\section{Nivel 3 — Diagrama de componentes}
+
+\textbf{Tipo:} diagrama de componentes. \textbf{Alcance:} zoom dentro del microservicio
+\textit{Ventas}, mostrando sus componentes internos y su relación con los contenedores de los
+niveles anteriores. \textbf{Audiencia:} arquitectos y desarrolladores.
+
+\textbf{Por qué Ventas:} de los catorce contenedores del Nivel 2 es el único que cumple los cuatro
+criterios de extracción de ADR-14 y no solo dos, y es el que orquesta la Saga de CU-001. Hacerle
+zoom a cualquier otro mostraría un controlador, un servicio y un repositorio; aquí se ve el
+mecanismo que la arquitectura introduce.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth,height=0.8\textheight,keepaspectratio]{Diagrams/ArchifyPDF/03-componentes.pdf}
+\caption{Diagrama de componentes — microservicio Ventas (Nivel 3, modelo C4).
+Generado con Archify a partir de una especificación JSON; la versión
+interactiva está en \texttt{Diagrams/Archify/}.}
+\label{fig:componentes}
+\end{figure}
+
+\textbf{Leyenda:} verde = componente interno de Ventas, dentro del recuadro punteado; fuera del
+recuadro, contenedor o almacén de otro nivel, que aquí solo se referencia y no se detalla.
+
+\begin{longtable}{L{3.2cm}L{3.2cm}L{5.7cm}L{2.3cm}}
+\caption{Relaciones del diagrama de componentes.}\label{tab:rel-componentes}\\
+\toprule
+\textbf{Origen} & \textbf{Destino} & \textbf{Descripción} & \textbf{Tecnología}\\
+\midrule
+\endfirsthead
+\multicolumn{4}{l}{\small\textit{Tabla \thetable{} --- continuación}}\\
+\toprule
+\textbf{Origen} & \textbf{Destino} & \textbf{Descripción} & \textbf{Tecnología}\\
+\midrule
+\endhead
+\midrule
+\multicolumn{4}{r}{\small\textit{Continúa en la página siguiente\ldots}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+API Gateway & Controlador de compra & Enruta la solicitud del cliente hacia el servicio. & HTTPS/JSON\\
+Cola virtual & Controlador de compra & Entrega el turno que el controlador debe verificar antes de admitir el checkout. & HTTPS/JSON\\
+Controlador de compra & Orquestador de la Saga & Delega la compra una vez verificado el turno. & Llamada interna\\
+Orquestador de la Saga & Gestor de reserva & Pide apartar las entradas antes de cobrar. & Llamada interna\\
+Gestor de reserva & Caché & Reserva de forma atómica y con vencimiento, para que dos compradores no tomen la misma entrada. & Redis \texttt{SET NX}\\
+Orquestador de la Saga & Compensador & Ordena deshacer los pasos ya ejecutados cuando uno falla. & Llamada interna\\
+Compensador & Caché & Borra la reserva, por orden del orquestador o por vencimiento. & Redis\\
+Orquestador de la Saga & Cliente de Pagos & Solicita el cobro del total. & Llamada interna\\
+Cliente de Pagos & Pagos & Cobra añadiendo la llave de idempotencia, para que un reintento no cobre dos veces. & HTTPS/REST\\
+Orquestador de la Saga & Repositorio de entradas & Confirma la venta y asigna el dueño de cada entrada. & Llamada interna\\
+Repositorio de entradas & Base de Ventas & Consulta y persiste los registros. & SQL\\
+Orquestador de la Saga & Publicador de eventos & Anuncia la compra confirmada. & Llamada interna\\
+Publicador de eventos & Broker & Publica el hecho con confirmación, para no perderlo si el broker rechaza. & Asíncrono\\
+\end{longtable}
+
+\textbf{Estado de implementación:} estos componentes viven hoy dentro de
+\texttt{ventas}, junto a los de Catálogo, Postventa y Acceso QR. El Gestor de
+reserva y la llave de idempotencia ya existen; el Orquestador y el Compensador no.
+
+\section{Diagrama de panorama de sistemas (System Landscape)}
+
+\textbf{Tipo:} diagrama de panorama de sistemas (\textit{System Landscape Diagram}).
+\textbf{Alcance:} zoom hacia afuera respecto al diagrama de contexto: en vez de mostrar solo el
+Sistema Integral de Gestión de Eventos, muestra ese sistema junto a los demás sistemas de software
+que ya opera la organización, y cómo se relacionan entre sí. \textbf{Audiencia:} directivos,
+arquitectos empresariales y equipos de otras áreas (finanzas, marketing).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth,height=0.8\textheight,keepaspectratio]{Diagrams/ArchifyPDF/04-panorama.pdf}
+\caption{Diagrama de panorama de sistemas (\textit{System Landscape}, modelo C4). Generado con Archify; la versión interactiva está en
+\texttt{Diagrams/Archify/}.}
+\label{fig:panorama}
+\end{figure}
+
+\textbf{Leyenda:} verde = el sistema en alcance de este documento; ámbar = otro sistema de la
+organización; gris = sistema externo.
+
+\begin{longtable}{L{3.2cm}L{3.2cm}L{5.7cm}L{2.3cm}}
+\caption{Relaciones del diagrama de panorama de sistemas.}\label{tab:rel-panorama}\\
+\toprule
+\textbf{Origen} & \textbf{Destino} & \textbf{Descripción} & \textbf{Tecnología}\\
+\midrule
+\endfirsthead
+\multicolumn{4}{l}{\small\textit{Tabla \thetable{} --- continuación}}\\
+\toprule
+\textbf{Origen} & \textbf{Destino} & \textbf{Descripción} & \textbf{Tecnología}\\
+\midrule
+\endhead
+\midrule
+\multicolumn{4}{r}{\small\textit{Continúa en la página siguiente\ldots}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+Sistema Integral de Gestión de Eventos & Sistema de Contabilidad y Facturación & Envía las transacciones de venta, reventa, reembolsos y cobros de parqueadero para su registro contable. & HTTPS/REST (por lotes)\\
+Sistema Integral de Gestión de Eventos & CRM y Marketing & Envía datos de clientes y su historial de compras para campañas y segmentación. & HTTPS/REST\\
+Sistema Integral de Gestión de Eventos & Plataforma de Analítica (BI) & Exporta métricas de aforo, ventas y operación de eventos. & ETL / HTTPS\\
+CRM y Marketing & Plataforma de Analítica (BI) & Comparte segmentos y campañas para el análisis conjunto con datos de eventos. & ETL\\
+Sistema Integral de Gestión de Eventos & Pasarela de Pagos & Procesa compras, reventas y reembolsos. & HTTPS/REST\\
+\end{longtable}
+
+\section{Diagrama de secuencia (Sequence Diagram) --- Compra de una entrada}
+
+\textbf{Tipo:} diagrama de secuencia UML. \textbf{Alcance:} muestra, con líneas de vida y barras
+de activación, cómo colaboran los contenedores del Nivel 2 para resolver
+\textbf{CU-001 --- Compra de entradas} mediante una \textbf{Saga orquestada}.
+\textbf{Audiencia:} arquitectos y desarrolladores.
+
+\textbf{Por qué este caso de uso:} la compra atraviesa cuatro despliegues con almacén propio
+---Cola virtual, Ventas, Pagos y el broker---, así que no existe una transacción de base de datos
+que los abarque. Es el proceso donde la separación que decide ADR-14 tiene consecuencias
+visibles, y donde hay que mostrar cómo se deshace lo hecho.
+
+\textbf{Nota sobre este cambio:} el modelo C4 propone para este propósito un \textit{Diagrama
+Dinámico} (variante simplificada, sin líneas de vida ni barras de activación). Siguiendo la
+recomendación del profesor, se reemplazó por un \textbf{diagrama de secuencia UML} completo ---con
+línea de vida punteada por participante y barras de activación que marcan el periodo en que cada
+servicio está trabajando--- porque documenta el mismo flujo con una notación más precisa y
+estándar en la industria.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth,height=0.8\textheight,keepaspectratio]{Diagrams/ArchifyPDF/05-secuencia.pdf}
+\caption{Diagrama de secuencia --- compra de una entrada con Saga orquestada (CU-001). Las bandas
+horizontales agrupan las fases; la última es la compensación, que solo ocurre si el pago falla o
+la reserva vence.}
+\label{fig:secuencia}
+\end{figure}
+
+\begin{longtable}{L{1cm}L{4cm}L{7.4cm}}
+\caption{Secuencia de interacciones del diagrama de secuencia.}\label{tab:rel-secuencia}\\
+\toprule
+\textbf{Paso} & \textbf{Interacción} & \textbf{Descripción}\\
+\midrule
+\endfirsthead
+\multicolumn{3}{l}{\small\textit{Tabla \thetable{} --- continuación}}\\
+\toprule
+\textbf{Paso} & \textbf{Interacción} & \textbf{Descripción}\\
+\midrule
+\endhead
+\midrule
+\multicolumn{3}{r}{\small\textit{Continúa en la página siguiente\ldots}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+1 & Comprador $\rightarrow$ Portal Cliente & El comprador elige entradas para un evento.\\
+2 & Portal $\rightarrow$ API Gateway $\rightarrow$ Cola virtual & Pide turno. Sin turno no se entra al checkout: es lo que impide que el pico de una apertura de venta llegue entero a Ventas.\\
+3 & Cola virtual $\rightarrow$ Portal & Entrega un token de turno con vencimiento corto.\\
+4 & Portal $\rightarrow$ API Gateway $\rightarrow$ Ventas & Reenvía el checkout con el token; Ventas inicia la Saga y a partir de aquí ningún otro servicio decide el orden de los pasos.\\
+5 & Ventas $\rightarrow$ Caché & Reserva las entradas de forma atómica y con vencimiento. El vencimiento es la red de seguridad: si la Saga muere a medias, la entrada se libera sola.\\
+6 & Ventas $\rightarrow$ Pagos & Encarga el cobro con una llave de idempotencia.\\
+7 & Pagos $\rightarrow$ Pasarela & Autoriza el cargo. La llave evita el cobro doble cuando el comprador reintenta o la pasarela reenvía un \textit{webhook}.\\
+8 & Ventas $\rightarrow$ Caché & Convierte la reserva en venta una vez confirmado el pago.\\
+9 & Ventas $\rightarrow$ Broker & Publica \texttt{COMPRA\_CONFIRMADA}.\\
+10 & Ventas $\rightarrow$ Portal & Responde con la entrada y su QR. Notificar queda fuera del camino de respuesta: lo hace Notificaciones al consumir el evento.\\
+11 & Ventas $\rightarrow$ Caché & \textbf{Compensación.} Si el pago falla o la reserva vence, libera lo reservado.\\
+12 & Ventas $\rightarrow$ Portal & \textbf{Compensación.} Responde que la compra no se completó.\\
+\end{longtable}
+
+\textbf{Estado de implementación:} hoy la compra la resuelve un solo servicio y no hay
+orquestación con compensación. La reserva atómica con vencimiento y las llaves de idempotencia ya
+existen; faltan el orquestador, el deshacer explícito y la cola virtual.
+
+\section{Diagrama de despliegue (Deployment Diagram)}
+
+\textbf{Tipo:} diagrama de despliegue (\textit{Deployment Diagram}). \textbf{Alcance:} muestra en
+qué nodos de infraestructura real se despliegan los contenedores del Nivel 2: dispositivos del
+usuario, red de distribución de contenido, el clúster de Kubernetes con los servicios agrupados por
+política de escalado, y los clústeres de datos y mensajería. \textbf{Audiencia:} arquitectos, DevOps e infraestructura.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth,height=0.8\textheight,keepaspectratio]{Diagrams/ArchifyPDF/06-despliegue.pdf}
+\caption{Diagrama de despliegue (\textit{Deployment}, modelo C4). Generado con Archify; la versión interactiva está en
+\texttt{Diagrams/Archify/}.}
+\label{fig:despliegue}
+\end{figure}
+
+\textbf{Leyenda:} ámbar = nodo de infraestructura (CDN/Edge); verde = grupo de servicios desplegados,
+rotulado con su política de escalado; violeta
+= clústeres de datos; naranja = clúster de mensajería; rojo = balanceador + API Gateway; gris =
+dispositivo del usuario y sistemas externos. El recuadro punteado delimita el ambiente de
+clúster de Kubernetes.
+
+\begin{longtable}{L{3.6cm}L{3.6cm}L{5.2cm}L{2cm}}
+\caption{Relaciones del diagrama de despliegue.}\label{tab:rel-despliegue}\\
+\toprule
+\textbf{Nodo origen} & \textbf{Nodo destino} & \textbf{Descripción} & \textbf{Tecnología}\\
+\midrule
+\endfirsthead
+\multicolumn{4}{l}{\small\textit{Tabla \thetable{} --- continuación}}\\
+\toprule
+\textbf{Nodo origen} & \textbf{Nodo destino} & \textbf{Descripción} & \textbf{Tecnología}\\
+\midrule
+\endhead
+\midrule
+\multicolumn{4}{r}{\small\textit{Continúa en la página siguiente\ldots}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+Dispositivo del usuario & CDN / Edge & Descarga los archivos estáticos de la aplicación web. & HTTPS\\
+Dispositivo del usuario & Balanceador + API Gateway & Envía las solicitudes de la API. & HTTPS/JSON\\
+Balanceador + API Gateway & Cola · Catálogo · Ventas & Enruta y balancea entre sus 3+ réplicas; se pre-escalan antes de una apertura anunciada. & HTTPS/JSON\\
+Balanceador + API Gateway & Pagos · Autenticación & Enruta y balancea entre sus 3+ réplicas. & HTTPS/JSON\\
+Balanceador + API Gateway & Acceso QR & Enruta y balancea; escala por validaciones por segundo. & HTTPS/JSON\\
+Balanceador + API Gateway & 7 servicios de dominio & Enruta; corren con 2 réplicas fijas, sin autoescalado. & HTTPS/JSON\\
+Cola · Catálogo · Ventas & Clúster Redis & Inventario con reserva atómica y fila de turnos. & Redis\\
+Cola · Catálogo · Ventas & Índice de búsqueda & Resuelve las consultas del catálogo. & HTTP\\
+Cola · Catálogo · Ventas & Bases por microservicio & Persiste órdenes y entradas en su base propia. & SQL\\
+Cola · Catálogo · Ventas & Clúster del broker & Publica los hechos de la compra. & AMQP/Kafka\\
+Clúster del broker & Notificaciones & Consume para enviar el QR; escala por mensajes pendientes. & AMQP/Kafka\\
+7 servicios de dominio & Base central & Persisten en su propio esquema dentro de la base compartida. & SQL\\
+7 servicios de dominio & Réplica de lectura & Solo la leen los reportes (CU-032). & SQL\\
+Clúster de Mensajería & Proveedor de Notificaciones & Dispara notificaciones push, correo y SMS. & HTTPS/REST\\
+\end{longtable}
+
+\section{Verificación contra el checklist oficial de C4}
+
+Los seis diagramas (Contexto, Contenedores, Componentes, Panorama de Sistemas, Secuencia y
+Despliegue) se validaron contra el \textit{Software architecture diagram review checklist} oficial
+de \href{https://c4model.com/diagrams/checklist}{c4model.com/diagrams/checklist}. La tabla
+reproduce cada criterio del checklist oficial y cómo lo satisface este documento.
+
+\begin{longtable}{L{9.5cm}L{4.5cm}}
+\caption{Verificación contra el checklist de c4model.com.}\label{tab:checklist}\\
+\toprule
+\textbf{Criterio} & \textbf{Cumple}\\
+\midrule
+\endfirsthead
+\multicolumn{2}{l}{\small\textit{Tabla \thetable{} --- continuación}}\\
+\toprule
+\textbf{Criterio} & \textbf{Cumple}\\
+\midrule
+\endhead
+\midrule
+\multicolumn{2}{r}{\small\textit{Continúa en la página siguiente\ldots}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+\textbf{Criterio (General)} & \textbf{Cumple}\\
+\midrule
+¿El diagrama tiene título? & Sí, en el encabezado de cada sección y en cada \textit{caption}.\\
+¿Se entiende el tipo de diagrama? & Sí, indicado explícitamente como \textbf{Tipo:} al inicio de cada sección.\\
+¿Se entiende el alcance del diagrama? & Sí, indicado explícitamente como \textbf{Alcance:} al inicio de cada sección.\\
+¿El diagrama tiene leyenda/clave? & Sí, todos incluyen leyenda de formas y colores.\\
+\midrule
+\textbf{Criterio (Elementos)} & \textbf{Cumple}\\
+\midrule
+¿Cada elemento tiene nombre? & Sí.\\
+¿Se entiende el tipo de cada elemento (persona, sistema, contenedor, componente, nodo)? & Sí (ver leyenda de cada figura).\\
+¿Se entiende qué hace cada elemento? & Sí: siguiendo la retroalimentación del profesor, cada caja
+muestra tres líneas --- nombre, tipo/tecnología entre corchetes y una breve descripción de su
+responsabilidad.\\
+¿Se entienden las tecnologías asociadas a cada elemento? & Sí (línea \textit{[Tipo: Tecnología]} en
+cada caja, además de la tabla de relaciones al pie de cada figura).\\
+¿Se entienden todas las siglas y abreviaturas? & Sí: SPA, API, AMQP, ETL, BI, CRM, CDN, multi-AZ se explicitan la primera vez que aparecen.\\
+¿Se entiende el significado de los colores usados? & Sí (ver leyenda de cada figura): azul oscuro = persona, azul = sistema/contenedor propio, azul claro = componente o instancia de microservicio, gris = sistema externo u otro sistema de la organización, gris punteado = referencia a un elemento de otro nivel o nodo de infraestructura.\\
+¿Se entiende el significado de las formas usadas? & Sí: una sola forma (rectángulo de esquinas redondeadas) en todo el documento; solo cambia el color/borde según el tipo de elemento.\\
+¿Se entiende el significado de los íconos usados? & No aplica: este documento no usa íconos, solo color y texto.\\
+¿Se entiende el significado de los bordes punteados? & Sí: punteado = sistema externo, referencia a un elemento de otro nivel, o nodo de infraestructura física (ver leyenda de cada figura).\\
+¿Se entiende el significado del tamaño de los elementos? & Sí: el tamaño es uniforme dentro de cada tipo de elemento y no codifica información adicional (se aclara para evitar ambigüedad).\\
+\midrule
+\textbf{Criterio (Relaciones)} & \textbf{Cumple}\\
+\midrule
+¿Cada flecha tiene una etiqueta que describe la relación? & Sí.\\
+¿La descripción coincide con la dirección de la flecha? & Sí.\\
+¿Se entienden las tecnologías/protocolos de cada relación? & Sí (ver tablas de relaciones al pie de cada figura).\\
+¿Se entienden todas las siglas y abreviaturas de las relaciones? & Sí (HTTPS, REST, SQL, AMQP, ETL se usan de forma consistente).\\
+¿Se entiende el significado de los colores usados en las relaciones? & Sí: todas las flechas usan el mismo color y estilo; no se codifica información adicional por color.\\
+¿Se entiende el significado de las cabezas de flecha? & Sí: una sola convención (flecha simple) en todo el documento, siempre en el sentido \textit{origen} $\rightarrow$ \textit{destino}.\\
+¿Se entiende el significado del estilo de línea (sólida/punteada)? & Sí: línea sólida en todas las relaciones; no se usa línea punteada para relaciones (solo para bordes de elementos externos/nodos).\\
+\end{longtable}
+
+\section{Conclusión}
+
+Los seis diagramas de este documento cubren el modelo C4 completo, salvo el Nivel 4 (Código), que
+se excluye deliberadamente por las razones explicadas en la introducción. Los tres niveles
+jerárquicos documentan de forma progresiva la arquitectura del Sistema Integral de Gestión de
+Eventos: desde su relación con los usuarios y sistemas externos (Nivel 1: Contexto), pasando por
+sus aplicaciones, microservicios e infraestructura de soporte (Nivel 2: Contenedores), hasta el
+detalle interno del componente más complejo del sistema, el Servicio de Entradas y Mercado
+Secundario (Nivel 3: Componentes, CU-006). Los tres diagramas auxiliares complementan esa vista
+jerárquica: el \textbf{Panorama de Sistemas} ubica al sistema dentro del ecosistema de software de
+la organización (contabilidad, CRM y analítica); el \textbf{Diagrama de Secuencia} muestra, mensaje
+a mensaje, cómo colaboran los contenedores para resolver la reventa de una entrada; y el
+\textbf{Despliegue} aterriza los contenedores en nodos de infraestructura real (CDN, balanceador,
+clúster de aplicación, clústeres de datos y mensajería). Cada uno de los seis diagramas fue
+verificado contra el checklist oficial de c4model.com, garantizando que título, alcance, leyenda,
+tipos de elemento y tecnologías de cada relación queden explícitos. Los seis se elaboraron en
+Archify con nombre, tipo/tecnología y descripción en cada caja, y sus fuentes
+\texttt{JSON} quedan en \texttt{Work/Diagrams/Archify/} para su regeneración futura. Este documento debe
+leerse en conjunto con \textit{Atributos de Calidad y Propuesta Arquitectónica}, que sustenta las
+decisiones que aquí se representan gráficamente.
+
+\end{document}

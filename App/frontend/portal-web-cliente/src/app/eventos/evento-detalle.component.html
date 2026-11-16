@@ -79,7 +79,11 @@
         }
 
         <button mat-flat-button color="primary" (click)="comprar()" [disabled]="reservando()" class="boton-continuar">
-          {{ reservando() ? 'Reservando…' : 'Continuar al pago' }}
+          @if (posicionFila(); as posicion) {
+            En la fila virtual · puesto {{ posicion }}
+          } @else {
+            {{ reservando() ? 'Reservando…' : 'Continuar al pago' }}
+          }
         </button>
       </mat-card-content>
     </mat-card>

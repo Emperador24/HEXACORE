@@ -1,3 +1,4 @@
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -9,10 +10,14 @@ class MenuApi extends PedidosApi {
   Completer<DatosPedido>? pendiente;
   final cambios = <List<Object>>[];
   @override
-  Future<List<DatosPedido>> establecimientos(String evento) async => [
+  Future<List<DatosPedido>> misEstablecimientos() async => [
         {'id': 'uno', 'nombre': 'Restaurante uno'},
         {'id': 'dos', 'nombre': 'Restaurante dos'}
       ];
+  @override
+  Future<List<DatosPedido>> historialInventario(String local) async => [];
+  @override
+  Future<DatosPedido?> pendienteMenu() async => null;
   @override
   Future<List<DatosPedido>> menu(String establecimiento) async {
     if (errorLectura) throw Exception('Error');
@@ -48,6 +53,7 @@ Future<void> abrir(WidgetTester tester, MenuApi api) async {
 }
 
 void main() {
+  setUp(() => SharedPreferences.setMockInitialValues({}));
   testWidgets('lista activos/inactivos y permite seleccionar establecimiento',
       (tester) async {
     await abrir(tester, MenuApi());
@@ -66,6 +72,7 @@ void main() {
       (tester) async {
     final api = MenuApi()..pendiente = Completer<DatosPedido>();
     await abrir(tester, api);
+    await tester.ensureVisible(find.byType(Switch).first);
     await tester.tap(find.byType(Switch).first);
     await tester.pump();
     expect(find.byType(LinearProgressIndicator), findsOneWidget);
@@ -78,6 +85,7 @@ void main() {
     expect(tester.widget<Switch>(find.byType(Switch).first).value, false);
     expect(find.text('Disponibilidad actualizada.'), findsOneWidget);
     api.pendiente = null;
+    await tester.ensureVisible(find.byType(Switch).first);
     await tester.tap(find.byType(Switch).first);
     await tester.pumpAndSettle();
     expect(tester.widget<Switch>(find.byType(Switch).first).value, true);
@@ -85,6 +93,7 @@ void main() {
   testWidgets('fallo al guardar conserva el estado y muestra error',
       (tester) async {
     await abrir(tester, MenuApi()..errorCambio = true);
+    await tester.ensureVisible(find.byType(Switch).first);
     await tester.tap(find.byType(Switch).first);
     await tester.pumpAndSettle();
     expect(tester.widget<Switch>(find.byType(Switch).first).value, true);

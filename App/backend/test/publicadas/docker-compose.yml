@@ -1,0 +1,36 @@
+# Solo proyecto hexacore-publicadas-e2e y base hexacore_publicadas_e2e.
+# Todas las imágenes se reciben por digest tras verificar su revisión OCI.
+services:
+  preparacion-base:
+    build: !reset null
+    image: ${IMAGEN_NUCLEO:?falta manifiesto publicado}
+  nucleo:
+    build: !reset null
+    image: ${IMAGEN_NUCLEO:?falta manifiesto publicado}
+  boleteria:
+    build: !reset null
+    image: ${IMAGEN_BOLETERIA:?falta manifiesto publicado}
+  trabajador:
+    build: !reset null
+    image: ${IMAGEN_TRABAJADOR:?falta manifiesto publicado}
+  gateway:
+    build: !reset null
+    image: ${IMAGEN_GATEWAY:?falta manifiesto publicado}
+  pasarela:
+    image: ${IMAGEN_PASARELA:?falta manifiesto publicado}
+    volumes: !reset []
+    command: !reset null
+  correo:
+    image: ${IMAGEN_CORREO:?falta manifiesto publicado}
+    volumes: !reset []
+    command: !reset null
+  portal-cliente:
+    image: ${IMAGEN_PORTAL_CLIENTE:?falta manifiesto publicado}
+    depends_on:
+      gateway: { condition: service_healthy }
+    ports: ["127.0.0.1:14200:4200"]
+  portal-admin:
+    image: ${IMAGEN_PORTAL_ADMIN:?falta manifiesto publicado}
+    depends_on:
+      gateway: { condition: service_healthy }
+    ports: ["127.0.0.1:14201:4201"]

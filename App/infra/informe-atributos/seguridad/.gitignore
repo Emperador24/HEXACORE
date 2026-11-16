@@ -1,0 +1,6 @@
+.privado/
+.env*
+salidas/
+*.session
+__pycache__/
+*.pyc

@@ -1,0 +1,160 @@
+<div class="pagina-encabezado">
+  <div>
+    <a mat-button routerLink="/admin/recintos" class="volver"><mat-icon>arrow_back</mat-icon> Recintos</a>
+    @if (esAlta()) {
+      <h1>Nuevo recinto</h1>
+      <p class="descripcion">Datos generales, zonas con su capacidad y, si quieres, el plano con las zonas dibujadas.</p>
+    } @else {
+      <h1>{{ nombre || 'Recinto' }} <span class="estado" [class.ok]="activo">{{ activo ? 'Activo' : 'Inactivo' }}</span></h1>
+      <p class="descripcion">{{ ciudad }}{{ direccion ? ' · ' + direccion : '' }}</p>
+    }
+  </div>
+</div>
+
+@if (cargando() || guardando()) { <mat-progress-bar mode="indeterminate" /> }
+@if (error()) {
+  <div class="mensaje error" role="alert">
+    <mat-icon>error_outline</mat-icon><span>{{ error() }}</span>
+    <button class="cerrar" (click)="error.set(null)" aria-label="Cerrar"><mat-icon>close</mat-icon></button>
+  </div>
+}
+@if (aviso()) {
+  <div class="mensaje exito" role="status">
+    <mat-icon>check_circle</mat-icon><span>{{ aviso() }}</span>
+    <button class="cerrar" (click)="aviso.set(null)" aria-label="Cerrar"><mat-icon>close</mat-icon></button>
+  </div>
+}
+@if (eventosActivos().length) {
+  <div class="mensaje info">
+    <mat-icon>event</mat-icon>
+    <span>Tiene {{ eventosActivos().length }} evento(s) publicados. Cambiar capacidades pedirá confirmación, y no se puede bajar de lo ya puesto a la venta.</span>
+  </div>
+}
+
+<div class="columnas">
+  <div class="principal">
+    <section class="panel">
+      <div class="panel-cabecera"><h2>Datos generales</h2></div>
+      <div class="panel-cuerpo rejilla-formulario">
+        <mat-form-field>
+          <mat-label>Nombre</mat-label>
+          <input matInput [(ngModel)]="nombre" (ngModelChange)="marcar()" required maxlength="200" />
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Ciudad</mat-label>
+          <input matInput [(ngModel)]="ciudad" (ngModelChange)="marcar()" required maxlength="120" />
+        </mat-form-field>
+        <mat-form-field class="ancho-completo">
+          <mat-label>Dirección</mat-label>
+          <input matInput [(ngModel)]="direccion" (ngModelChange)="marcar()" maxlength="200" />
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Capacidad total</mat-label>
+          <input matInput type="number" min="1" [ngModel]="capacidad()" (ngModelChange)="capacidad.set($event); marcar()" required />
+          <mat-hint>Personas que caben en el recinto</mat-hint>
+        </mat-form-field>
+        <div class="interruptor">
+          <mat-slide-toggle [(ngModel)]="activo" (ngModelChange)="marcar()">Disponible para nuevos eventos</mat-slide-toggle>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-cabecera">
+        <h2>Zonas</h2>
+        <span class="detalle" [class.peligro]="excede()">{{ sumaZonas() | number }} de {{ capacidad() | number }} personas</span>
+      </div>
+      <div class="barra-capacidad" [class.excede]="excede()"><span [style.width.%]="porcentaje()"></span></div>
+      @if (excede()) {
+        <div class="mensaje error compacto"><mat-icon>warning</mat-icon><span>Las zonas suman {{ sumaZonas() | number }} y el recinto admite {{ capacidad() | number }}. Ajusta alguna capacidad.</span></div>
+      }
+      <ul class="zonas">
+        @for (z of zonas(); track $index; let i = $index) {
+          <li [class.elegida]="i === elegida()" (click)="elegida.set(i)">
+            <input type="color" class="color" [value]="z.color || '#2f6bff'" (input)="editarZona(i, { color: $any($event.target).value })" aria-label="Color de la zona" />
+            <mat-form-field class="nombre">
+              <mat-label>Zona</mat-label>
+              <input matInput [ngModel]="z.nombre" (ngModelChange)="editarZona(i, { nombre: $event })" placeholder="VIP, General, Palco…" />
+            </mat-form-field>
+            <mat-form-field class="numero">
+              <mat-label>Capacidad</mat-label>
+              <input matInput type="number" min="1" [ngModel]="z.capacidad" (ngModelChange)="editarZona(i, { capacidad: $event })" />
+            </mat-form-field>
+            @if (z.x === null || z.x === undefined) {
+              <button mat-button type="button" (click)="colocar(i)" matTooltip="Dibujarla en el plano"><mat-icon>add_location_alt</mat-icon> Ubicar</button>
+            } @else {
+              <button mat-icon-button type="button" (click)="quitarDelPlano(i)" matTooltip="Quitar del plano" aria-label="Quitar del plano"><mat-icon>wrong_location</mat-icon></button>
+            }
+            <button mat-icon-button type="button" (click)="quitarZona(i)" matTooltip="Quitar zona" aria-label="Quitar zona"><mat-icon>delete</mat-icon></button>
+          </li>
+        } @empty {
+          <li class="secundario vacia">Sin zonas: el recinto se vende como un solo espacio.</li>
+        }
+      </ul>
+      <div class="panel-cuerpo pie-zonas">
+        <button mat-button type="button" (click)="agregarZona()"><mat-icon>add</mat-icon> Añadir zona</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-cabecera">
+        <h2>Mapa de distribución</h2>
+        <div class="acciones-plano">
+          <label class="subir mat-mdc-outlined-button mdc-button mdc-button--outlined" tabindex="0">
+            <mat-icon>upload</mat-icon> {{ planoUrl() ? 'Cambiar plano' : 'Subir plano' }}
+            <input type="file" accept="image/png,image/jpeg,image/webp" (change)="elegirPlano($event)" hidden />
+          </label>
+          @if (planoUrl()) { <button mat-button type="button" class="boton-peligro" (click)="quitarPlano()">Quitar</button> }
+        </div>
+      </div>
+      <div class="panel-cuerpo">
+        <app-mapa-zonas
+          [zonas]="zonas()"
+          [plano]="planoUrl()"
+          [elegida]="elegida()"
+          (elegir)="elegida.set($event)"
+          (cambio)="editarZona($event.indice, $event.zona)"
+        />
+        <p class="secundario ayuda">Pulsa «Ubicar» en una zona para dibujarla; arrástrala para moverla y usa la esquina para cambiar su tamaño. PNG, JPG o WebP de hasta 1,5 MB (opcional).</p>
+      </div>
+    </section>
+
+    <div class="pie-formulario barra-guardar">
+      @if (!esAlta()) {
+        <button mat-button type="button" (click)="ngOnInit()" [disabled]="!sucio() || guardando()">Descartar cambios</button>
+      }
+      <button mat-flat-button type="button" (click)="guardar()" [disabled]="guardando() || excede() || !nombre.trim() || !ciudad.trim() || (!esAlta() && !sucio())">
+        {{ esAlta() ? 'Registrar recinto' : 'Guardar cambios' }}
+      </button>
+    </div>
+  </div>
+
+  @if (detalle(); as d) {
+    <aside class="lateral">
+      <section class="panel">
+        <div class="panel-cabecera"><h2>Eventos en este recinto</h2></div>
+        <ul class="lista-eventos">
+          @for (e of d.eventos; track e.id) {
+            <li>
+              <a class="nombre" [routerLink]="['/admin/eventos', e.id]">{{ e.nombre }}</a>
+              <div class="secundario">{{ e.fechaInicio | date: 'd MMM y, HH:mm' }} · aforo {{ e.aforoMaximo | number }}</div>
+              @let est = estadoEvento(e.estado);
+              <span class="estado" [class]="est.tono">{{ est.texto }}</span>
+            </li>
+          } @empty {
+            <li class="secundario">Ningún evento usa este recinto.</li>
+          }
+        </ul>
+      </section>
+      <section class="panel">
+        <div class="panel-cuerpo">
+          @if (d.eventos.length === 0) {
+            <button mat-stroked-button class="boton-peligro ancho" (click)="eliminar()"><mat-icon>delete</mat-icon> Eliminar recinto</button>
+          } @else {
+            <p class="secundario">Tiene eventos asociados: no se elimina. Desactívalo para que no se ofrezca en eventos nuevos.</p>
+          }
+        </div>
+      </section>
+    </aside>
+  }
+</div>

@@ -1,0 +1,30 @@
+# Reutiliza únicamente la definición de recursos de test/docker-compose.e2e.yml.
+x-etiquetas: &etiquetas
+  hexacore.uso: cu015-regresion
+  hexacore.checkout: ${CU015_CHECKOUT:?usar regresion.cjs}
+services:
+  postgres:
+    labels: *etiquetas
+  redis:
+    labels: *etiquetas
+  rabbitmq:
+    hostname: cu015-regresion
+    labels: *etiquetas
+  pasarela:
+    labels: *etiquetas
+  correo:
+    labels: *etiquetas
+  preparacion-base:
+    labels: *etiquetas
+    build: !reset null
+    image: hexacore-cu015-sebastian-nucleo:local
+volumes:
+  postgres:
+    labels: *etiquetas
+  redis:
+    labels: *etiquetas
+  rabbitmq:
+    labels: *etiquetas
+networks:
+  default:
+    labels: *etiquetas

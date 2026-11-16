@@ -1,43 +1,266 @@
-<mat-card class="tarjeta">
-  <mat-card-header>
-    <mat-card-title>{{ esEdicion ? 'Editar evento' : 'Nuevo evento' }}</mat-card-title>
-  </mat-card-header>
+<div class="pagina-encabezado">
+  <div>
+    <a mat-button routerLink="/admin/eventos" class="volver"><mat-icon>arrow_back</mat-icon> Eventos</a>
+    @let d = detalle();
+    @if (esAlta()) {
+      <h1>Nuevo evento</h1>
+      <p class="descripcion">Se guarda como borrador; nadie fuera del equipo lo ve hasta que lo publiques.</p>
+    } @else if (d) {
+      <h1>
+        {{ d.evento.nombre }}
+        @let est = estadoEvento(d.evento.estado);
+        <span class="estado" [class]="est.tono">{{ est.texto }}</span>
+      </h1>
+      <p class="descripcion">{{ d.recinto?.nombre }}, {{ d.recinto?.ciudad }} · {{ d.evento.fechaInicio | date: 'EEEE d MMMM y, HH:mm' }}</p>
+    } @else {
+      <h1>Evento</h1>
+    }
+  </div>
+</div>
 
-  <mat-card-content>
-    <form [formGroup]="formulario" (ngSubmit)="guardar()">
-      <mat-form-field appearance="outline" class="campo">
-        <mat-label>Nombre</mat-label>
-        <input matInput formControlName="nombre" />
-      </mat-form-field>
+@if (cargando() || guardando()) {
+  <mat-progress-bar mode="indeterminate" />
+}
+@if (error()) {
+  <div class="mensaje error" role="alert">
+    <mat-icon>error_outline</mat-icon><span>{{ error() }}</span>
+    @if (versionVieja()) {
+      <button mat-button (click)="recargar()">Recargar</button>
+    }
+    <button class="cerrar" (click)="error.set(null)" aria-label="Cerrar"><mat-icon>close</mat-icon></button>
+  </div>
+}
+@if (aviso()) {
+  <div class="mensaje exito" role="status">
+    <mat-icon>check_circle</mat-icon><span>{{ aviso() }}</span>
+    <button class="cerrar" (click)="aviso.set(null)" aria-label="Cerrar"><mat-icon>close</mat-icon></button>
+  </div>
+}
+@if (!esOrganizador()) {
+  <div class="mensaje info"><mat-icon>visibility</mat-icon><span>Solo lectura: los cambios los hace una cuenta con rol Organizador.</span></div>
+} @else if (estado() === 'CANCELADO') {
+  <div class="mensaje info"><mat-icon>block</mat-icon><span>Evento cancelado: {{ detalle()?.evento?.motivoCancelacion }}. Ya no se puede modificar.</span></div>
+} @else if (publicado()) {
+  <div class="mensaje info"><mat-icon>info</mat-icon><span>Publicado: hay entradas a la venta. Puedes cambiar datos, horario y precios, y ampliar o añadir tipos de entrada; no cambiar el recinto ni reducir cupos.</span></div>
+}
 
-      <mat-form-field appearance="outline" class="campo">
-        <mat-label>Fecha</mat-label>
-        <input matInput type="date" formControlName="fecha" />
-      </mat-form-field>
-
-      <mat-form-field appearance="outline" class="campo">
-        <mat-label>Recinto</mat-label>
-        <input matInput formControlName="recinto" />
-      </mat-form-field>
-
-      <mat-form-field appearance="outline" class="campo">
-        <mat-label>Aforo</mat-label>
-        <input matInput type="number" formControlName="aforo" />
-      </mat-form-field>
-
-      <mat-form-field appearance="outline" class="campo">
-        <mat-label>Estado</mat-label>
-        <mat-select formControlName="estado">
-          @for (estado of estados; track estado) {
-            <mat-option [value]="estado">{{ estado }}</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
-
-      <div class="acciones">
-        <button mat-button type="button" routerLink="/admin/eventos">Cancelar</button>
-        <button mat-flat-button color="primary" type="submit" [disabled]="formulario.invalid">Guardar</button>
+<div class="columnas">
+  <form class="principal" [formGroup]="formulario" (ngSubmit)="guardar()">
+    <section class="panel">
+      <div class="panel-cabecera"><h2>Información general</h2></div>
+      <div class="panel-cuerpo rejilla-formulario">
+        <mat-form-field class="ancho-completo">
+          <mat-label>Nombre del evento</mat-label>
+          <input matInput formControlName="nombre" />
+          <mat-error>Obligatorio.</mat-error>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Categoría</mat-label>
+          <input matInput formControlName="categoria" [matAutocomplete]="cats" />
+          <mat-autocomplete #cats="matAutocomplete">
+            @for (c of categorias; track c) { <mat-option [value]="c">{{ c }}</mat-option> }
+          </mat-autocomplete>
+          <mat-error>Obligatoria.</mat-error>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Artista o cabeza de cartel</mat-label>
+          <input matInput formControlName="artista" />
+          <mat-hint>Opcional</mat-hint>
+        </mat-form-field>
+        <mat-form-field class="ancho-completo">
+          <mat-label>Descripción</mat-label>
+          <textarea matInput formControlName="descripcion" rows="3"></textarea>
+        </mat-form-field>
+        <mat-form-field class="ancho-completo">
+          <mat-label>Imagen (URL)</mat-label>
+          <input matInput formControlName="imagenUrl" placeholder="https://…" />
+          <mat-error>Debe empezar por http:// o https://</mat-error>
+        </mat-form-field>
       </div>
-    </form>
-  </mat-card-content>
-</mat-card>
+    </section>
+
+    <section class="panel">
+      <div class="panel-cabecera">
+        <h2>Fecha y recinto</h2>
+        @if (horario(); as h) {
+          <span class="detalle">{{ h.horaInicio | date: 'EEE d MMM, HH:mm' }} – {{ h.horaFin | date: 'EEE d MMM, HH:mm' }}</span>
+        }
+      </div>
+      <div class="panel-cuerpo rejilla-formulario">
+        <mat-form-field class="ancho-completo">
+          <mat-label>Recinto</mat-label>
+          <mat-select formControlName="recintoId">
+            @for (r of recintos(); track r.id) {
+              <mat-option [value]="r.id">{{ r.nombre }} — {{ r.ciudad }} · capacidad {{ r.capacidad | number }}</mat-option>
+            }
+          </mat-select>
+          @if (recintos().length === 0 && !cargando()) {
+            <mat-hint class="peligro">No hay recintos registrados (CU-029).</mat-hint>
+          }
+          <mat-error>Elige un recinto.</mat-error>
+        </mat-form-field>
+        <mat-form-field><mat-label>Fecha</mat-label><input matInput type="date" formControlName="fecha" /></mat-form-field>
+        <mat-form-field><mat-label>Hora de inicio</mat-label><input matInput type="time" formControlName="inicio" /></mat-form-field>
+        <mat-form-field>
+          <mat-label>Hora de fin</mat-label>
+          <input matInput type="time" formControlName="fin" />
+          <mat-hint>Si es menor que el inicio, termina al día siguiente.</mat-hint>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Aforo máximo</mat-label>
+          <input matInput type="number" min="1" formControlName="aforoMaximo" [placeholder]="(recinto()?.capacidad ?? '') + ''" />
+          <mat-hint>Vacío = capacidad del recinto</mat-hint>
+        </mat-form-field>
+      </div>
+
+      @if (disponibilidad(); as disp) {
+        @if (disp.conflictos.length) {
+          <div class="traslape" role="alert">
+            <div class="titulo"><mat-icon>event_busy</mat-icon> El recinto está ocupado en ese horario</div>
+            @for (c of disp.conflictos; track c.id) {
+              <p>«{{ c.nombre }}», {{ c.fechaInicio | date: 'EEE d MMM, HH:mm' }} – {{ c.fechaFin | date: 'HH:mm' }}</p>
+            }
+            <p class="secundario">Puedes guardarlo como borrador, pero no publicarlo así. Horarios libres con la misma duración:</p>
+            <div class="sugerencias">
+              @for (s of disp.sugerencias; track s.fechaInicio) {
+                <button mat-stroked-button type="button" (click)="usarSugerencia(s)" [disabled]="soloLectura()">
+                  {{ s.fechaInicio | date: 'EEE d MMM, HH:mm' }}
+                </button>
+              } @empty {
+                <span class="secundario">No hay huecos en los próximos 14 días.</span>
+              }
+            </div>
+          </div>
+        } @else if (horario() && recinto()) {
+          <p class="libre"><mat-icon>event_available</mat-icon> Recinto libre en ese horario.</p>
+        }
+      }
+    </section>
+
+    <section class="panel">
+      <div class="panel-cabecera">
+        <h2>Tipos de entrada</h2>
+        <span class="detalle" [class.peligro]="totalCupos() > aforo()">{{ totalCupos() | number }} de {{ aforo() | number }} cupos</span>
+      </div>
+      <div class="panel-cuerpo" formArrayName="localidades">
+        @for (l of localidades.controls; track l; let i = $index) {
+          <div class="fila-localidad" [formGroupName]="i" [class.en-conflicto]="zonaEnConflicto() && l.value.zonaRecintoId === zonaEnConflicto()">
+            <mat-form-field class="nombre-loc">
+              <mat-label>Nombre</mat-label>
+              <input matInput formControlName="nombre" />
+              <mat-error>Obligatorio.</mat-error>
+            </mat-form-field>
+            @if (recinto()?.zonas?.length) {
+              <mat-form-field class="zona-loc">
+                <mat-label>Zona</mat-label>
+                <mat-select formControlName="zonaRecintoId">
+                  <mat-option [value]="null">Sin zona</mat-option>
+                  @for (z of recinto()!.zonas; track z.id) { <mat-option [value]="z.id">{{ z.nombre }} ({{ z.capacidad | number }})</mat-option> }
+                </mat-select>
+              </mat-form-field>
+            }
+            <mat-form-field class="numero-loc">
+              <mat-label>Precio (COP)</mat-label>
+              <input matInput type="number" min="0" step="1000" formControlName="precio" />
+              <mat-error>No negativo.</mat-error>
+            </mat-form-field>
+            <mat-form-field class="numero-loc">
+              <mat-label>Cupos</mat-label>
+              <input matInput type="number" [min]="minimoDe(i) ?? 1" formControlName="cantidad" />
+              @if (minimoDe(i); as m) { <mat-hint>Mínimo {{ m }} (publicado)</mat-hint> }
+              <mat-error>Mínimo {{ minimoDe(i) ?? 1 }}.</mat-error>
+            </mat-form-field>
+            <button mat-icon-button type="button" (click)="quitarLocalidad(i)" [disabled]="!sePuedeQuitar(i)" aria-label="Quitar tipo de entrada"
+                    [matTooltip]="minimoDe(i) ? 'Ya está a la venta: no se quita' : 'Quitar'">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
+        }
+        @if (!soloLectura()) {
+          <button mat-button type="button" (click)="agregarLocalidad()"><mat-icon>add</mat-icon> Añadir tipo de entrada</button>
+        }
+        @for (p of problemasAforo(); track p) {
+          <div class="mensaje error compacto"><mat-icon>warning</mat-icon><span>{{ p }}</span></div>
+        }
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-cuerpo opciones">
+        <mat-checkbox formControlName="permiteReventa">Permitir reventa entre compradores (CU-006)</mat-checkbox>
+      </div>
+    </section>
+
+    @if (!soloLectura()) {
+      <div class="pie-formulario barra-guardar">
+        @if (!esAlta()) {
+          <button mat-button type="button" (click)="descartar()" [disabled]="!formulario.dirty || guardando()">Descartar cambios</button>
+        }
+        <button mat-flat-button type="submit" [disabled]="guardando() || (!esAlta() && !formulario.dirty)">
+          {{ esAlta() ? 'Guardar borrador' : 'Guardar cambios' }}
+        </button>
+      </div>
+    }
+  </form>
+
+  @if (detalle(); as d) {
+    <aside class="lateral">
+      <section class="panel">
+        <div class="panel-cabecera"><h2>Estado</h2><span class="detalle">versión {{ d.evento.version }}</span></div>
+        <div class="panel-cuerpo acciones-estado">
+          @if (d.evento.estado === 'BORRADOR') {
+            <p class="secundario">Visible solo para el equipo. Publicarlo valida aforo y fechas y lo envía a la cartelera.</p>
+            <button mat-flat-button class="ancho" (click)="publicar()" [disabled]="!esOrganizador() || formulario.dirty || guardando()"
+                    [matTooltip]="formulario.dirty ? 'Guarda los cambios antes de publicar' : ''">
+              <mat-icon>publish</mat-icon> Publicar
+            </button>
+          }
+          @if (d.evento.estado === 'PUBLICADO') {
+            <p class="secundario">Publicado el {{ d.evento.publicadoEn | date: 'd MMM y, HH:mm' }}.</p>
+          }
+          @if (d.evento.estado !== 'CANCELADO' && esOrganizador()) {
+            <button mat-stroked-button class="ancho boton-peligro" (click)="cancelar()" [disabled]="guardando()">
+              <mat-icon>event_busy</mat-icon> Cancelar evento
+            </button>
+          }
+          @if (d.evento.estado === 'BORRADOR' && !d.evento.publicadoEn && esOrganizador()) {
+            <button mat-button class="ancho boton-peligro" (click)="eliminar()" [disabled]="guardando()">Eliminar borrador</button>
+          }
+          @if (d.evento.estado === 'CANCELADO') {
+            <p class="secundario">Cancelado el {{ d.evento.canceladoEn | date: 'd MMM y, HH:mm' }}.</p>
+          }
+        </div>
+      </section>
+
+      @if (recinto(); as r) {
+        <section class="panel">
+          <div class="panel-cabecera"><h2>Aforo</h2></div>
+          <dl class="aforo panel-cuerpo">
+            <div><dt>Capacidad del recinto</dt><dd>{{ r.capacidad | number }}</dd></div>
+            <div><dt>Aforo máximo</dt><dd>{{ aforo() | number }}</dd></div>
+            <div><dt>Cupos definidos</dt><dd [class.peligro]="totalCupos() > aforo()">{{ totalCupos() | number }}</dd></div>
+            @for (z of porZona(); track z.id) {
+              <div><dt>Zona {{ z.nombre }}</dt><dd [class.peligro]="z.asignado > z.capacidad">{{ z.asignado | number }} / {{ z.capacidad | number }}</dd></div>
+            }
+          </dl>
+        </section>
+      }
+
+      <section class="panel">
+        <div class="panel-cabecera"><h2>Historial</h2></div>
+        <ol class="historial">
+          @for (h of d.historial; track h.id) {
+            <li>
+              <span class="punto" aria-hidden="true"></span>
+              <div>
+                <strong>v{{ h.version }} · {{ etiquetaHistorial(h.accion) }}</strong>
+                <div class="secundario">{{ h.fecha | date: 'd MMM y, HH:mm' }}</div>
+                @if (resumenCambios(h.cambios); as r) { <div class="resumen">{{ r }}</div> }
+              </div>
+            </li>
+          }
+        </ol>
+      </section>
+    </aside>
+  }
+</div>

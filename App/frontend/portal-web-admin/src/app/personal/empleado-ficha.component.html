@@ -1,0 +1,256 @@
+<div class="pagina-encabezado">
+  <div>
+    <a mat-button routerLink="/admin/personal" class="volver"><mat-icon>arrow_back</mat-icon> Personal</a>
+    @let d = detalle();
+    @if (esAlta()) {
+      <h1>Nuevo empleado</h1>
+      <p class="descripcion">Vincula la ficha a una cuenta existente y completa sus datos. Documento y correo no pueden repetirse.</p>
+    } @else if (d) {
+      <h1>
+        {{ d.empleado.nombre }}
+        <span class="estado" [class.ok]="d.empleado.activo">{{ d.empleado.activo ? 'Activo' : 'Inactivo' }}</span>
+      </h1>
+      <p class="descripcion">{{ d.empleado.rol }} · credencial <span class="mono">{{ d.empleado.credencial }}</span></p>
+    } @else {
+      <h1>Ficha del empleado</h1>
+    }
+  </div>
+</div>
+
+@if (cargando()) {
+  <mat-progress-bar mode="indeterminate" />
+}
+
+@if (error()) {
+  <div class="mensaje error" role="alert">
+    <mat-icon>error_outline</mat-icon><span>{{ error() }}</span>
+    <button class="cerrar" (click)="error.set(null)" aria-label="Cerrar"><mat-icon>close</mat-icon></button>
+  </div>
+}
+@if (aviso()) {
+  <div class="mensaje exito" role="status">
+    <mat-icon>check_circle</mat-icon><span>{{ aviso() }}</span>
+    <button class="cerrar" (click)="aviso.set(null)" aria-label="Cerrar"><mat-icon>close</mat-icon></button>
+  </div>
+}
+
+@if (esAlta() && !puedeDarDeAlta()) {
+  <div class="mensaje info">
+    <mat-icon>info</mat-icon>
+    <span>El alta de empleados la hace un administrador, porque requiere buscar y vincular la cuenta del empleado.</span>
+  </div>
+} @else {
+  <div class="columnas">
+    <div class="principal">
+      @if (esAlta()) {
+        <section class="panel">
+          <div class="panel-cabecera">
+            <h2>1. Cuenta del empleado</h2>
+            <span class="detalle">Cuentas activas de CU-027</span>
+          </div>
+          <div class="panel-cuerpo">
+            @if (cuenta(); as c) {
+              <div class="cuenta-elegida">
+                <mat-icon>account_circle</mat-icon>
+                <div>
+                  <strong>{{ c.nombre }}</strong><br />
+                  <span class="secundario">{{ c.email }} · {{ c.roles.join(', ') }}</span>
+                </div>
+                <button mat-button (click)="cuenta.set(null)">Cambiar</button>
+              </div>
+            } @else {
+              <form class="buscar-cuenta" (ngSubmit)="buscarCuentas()">
+                <mat-form-field>
+                  <mat-icon matPrefix>search</mat-icon>
+                  <mat-label>Nombre o correo de la cuenta</mat-label>
+                  <input matInput [value]="busquedaCuenta()" (input)="busquedaCuenta.set($any($event.target).value)" />
+                </mat-form-field>
+                <button mat-stroked-button type="submit">Buscar</button>
+              </form>
+              @if (buscandoCuentas()) {
+                <mat-progress-bar mode="indeterminate" />
+              }
+              <ul class="lista-cuentas">
+                @for (c of cuentas(); track c.id) {
+                  <li>
+                    <div>
+                      <strong>{{ c.nombre }}</strong><br />
+                      <span class="secundario">{{ c.email }} · {{ c.roles.join(', ') || 'sin roles' }}</span>
+                    </div>
+                    <button mat-button (click)="elegirCuenta(c)">Elegir</button>
+                  </li>
+                } @empty {
+                  @if (!buscandoCuentas()) {
+                    <li class="secundario">Ninguna cuenta activa coincide.</li>
+                  }
+                }
+              </ul>
+            }
+          </div>
+        </section>
+      }
+
+      <section class="panel">
+        <div class="panel-cabecera">
+          <h2>{{ esAlta() ? '2. Datos del empleado' : 'Datos del empleado' }}</h2>
+          @if (!esAlta() && formulario.dirty) {
+            <span class="detalle">Cambios sin guardar</span>
+          }
+        </div>
+        <form class="panel-cuerpo" [formGroup]="formulario" (ngSubmit)="guardar()">
+          <div class="rejilla-formulario">
+            <mat-form-field>
+              <mat-label>Nombre completo</mat-label>
+              <input matInput formControlName="nombre" autocomplete="off" />
+              <mat-error>Obligatorio.</mat-error>
+            </mat-form-field>
+
+            <mat-form-field>
+              <mat-label>Documento</mat-label>
+              <input matInput formControlName="documento" autocomplete="off" />
+              @if (campoDuplicado() === 'documento') {
+                <mat-hint class="duplicado">Ya registrado en otra ficha</mat-hint>
+              }
+              <mat-error>Entre 5 y 20 letras, números o guiones.</mat-error>
+            </mat-form-field>
+
+            <mat-form-field>
+              <mat-label>Correo</mat-label>
+              <input matInput type="email" formControlName="correo" autocomplete="off" />
+              @if (campoDuplicado() === 'correo') {
+                <mat-hint class="duplicado">Ya registrado en otra ficha</mat-hint>
+              }
+              <mat-error>Correo no válido.</mat-error>
+            </mat-form-field>
+
+            <mat-form-field>
+              <mat-label>Teléfono</mat-label>
+              <input matInput type="tel" formControlName="telefono" autocomplete="off" placeholder="+57 300 123 4567" />
+              <mat-error>Solo números, espacios y un + inicial.</mat-error>
+            </mat-form-field>
+
+            <mat-form-field>
+              <mat-label>Rol (área de trabajo)</mat-label>
+              <input matInput formControlName="rol" [matAutocomplete]="roles" />
+              <mat-autocomplete #roles="matAutocomplete">
+                @for (r of rolesSugeridos; track r) {
+                  <mat-option [value]="r">{{ r }}</mat-option>
+                }
+              </mat-autocomplete>
+              <mat-hint>Debe coincidir con el rol que pide cada zona.</mat-hint>
+              <mat-error>Obligatorio.</mat-error>
+            </mat-form-field>
+
+            <mat-form-field>
+              <mat-label>Credencial (carné QR/NFC)</mat-label>
+              <input matInput formControlName="credencial" class="mono" />
+              <button mat-icon-button matSuffix type="button" (click)="regenerarCredencial()" matTooltip="Generar otra" aria-label="Generar otra credencial">
+                <mat-icon>autorenew</mat-icon>
+              </button>
+              @if (campoDuplicado() === 'credencial') {
+                <mat-hint class="duplicado">Ya registrada en otra ficha</mat-hint>
+              }
+              <mat-error>Obligatoria.</mat-error>
+            </mat-form-field>
+          </div>
+
+          <div class="pie-formulario">
+            @if (!esAlta()) {
+              <button mat-button type="button" (click)="descartar()" [disabled]="!formulario.dirty || guardando()">Descartar</button>
+            }
+            <button
+              mat-flat-button
+              type="submit"
+              [disabled]="guardando() || (esAlta() ? !cuenta() : !formulario.dirty)"
+            >
+              {{ guardando() ? 'Guardando…' : esAlta() ? 'Dar de alta' : 'Guardar cambios' }}
+            </button>
+          </div>
+        </form>
+      </section>
+
+      @if (detalle(); as d) {
+        <section class="panel">
+          <div class="panel-cabecera">
+            <h2>Turnos y asignaciones</h2>
+            <span class="detalle">Últimos 50</span>
+          </div>
+          <div class="tabla-contenedor">
+            <table mat-table [dataSource]="d.turnos">
+              <ng-container matColumnDef="evento">
+                <th mat-header-cell *matHeaderCellDef>Evento</th>
+                <td mat-cell *matCellDef="let t">{{ nombreEvento(t.eventoId) }}</td>
+              </ng-container>
+              <ng-container matColumnDef="zona">
+                <th mat-header-cell *matHeaderCellDef>Zona</th>
+                <td mat-cell *matCellDef="let t">{{ t.zona }}</td>
+              </ng-container>
+              <ng-container matColumnDef="horario">
+                <th mat-header-cell *matHeaderCellDef>Horario</th>
+                <td mat-cell *matCellDef="let t">
+                  {{ t.horaInicio | date: 'EEE d MMM, HH:mm' }} – {{ t.horaFin | date: 'HH:mm' }}
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="estado">
+                <th mat-header-cell *matHeaderCellDef>Estado</th>
+                <td mat-cell *matCellDef="let t">
+                  @let est = estadoAsignacion(t);
+                  <span class="estado" [class]="est.tono">{{ est.texto }}</span>
+                  @if (t.motivoRechazo) {
+                    <div class="secundario">“{{ t.motivoRechazo }}”</div>
+                  }
+                </td>
+              </ng-container>
+              <tr mat-header-row *matHeaderRowDef="columnasTurnos"></tr>
+              <tr mat-row *matRowDef="let fila; columns: columnasTurnos"></tr>
+            </table>
+          </div>
+          @if (d.turnos.length === 0) {
+            <div class="vacio"><p>Sin turnos asignados.</p></div>
+          }
+        </section>
+      }
+    </div>
+
+    @if (detalle(); as d) {
+      <aside class="lateral">
+        <section class="panel">
+          <div class="panel-cabecera"><h2>Estado</h2></div>
+          <div class="panel-cuerpo">
+            @if (d.empleado.activo) {
+              <p class="secundario">Activo: aparece como candidato al asignar personal.</p>
+              <button mat-stroked-button class="boton-peligro ancho" (click)="desactivar()">
+                <mat-icon>person_off</mat-icon> Desactivar
+              </button>
+            } @else {
+              <p class="secundario">Inactivo: no recibe asignaciones.</p>
+              <button mat-stroked-button class="ancho" (click)="reactivar()">
+                <mat-icon>person_check</mat-icon> Reactivar
+              </button>
+            }
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-cabecera"><h2>Historial</h2></div>
+          <ol class="historial">
+            @for (a of d.auditoria; track a.id) {
+              <li>
+                <span class="punto" aria-hidden="true"></span>
+                <div>
+                  <strong>{{ etiquetaAccion(a.accion) }}</strong>
+                  <div class="secundario">{{ a.fecha | date: 'd MMM y, HH:mm' }}</div>
+                  @if (resumenAuditoria(a.detalle); as r) {
+                    <div class="resumen">{{ r }}</div>
+                  }
+                </div>
+              </li>
+            } @empty {
+              <li class="secundario">Sin registros. Las fichas anteriores a CU-007 no tienen historial de alta.</li>
+            }
+          </ol>
+        </section>
+      </aside>
+    }
+  </div>
+}

@@ -1,0 +1,14 @@
+% Vistas vigentes (ADR-16), reutilizadas por SAD, C4, resumen, propuesta y presentación.
+% Una sola fuente: las especificaciones de ../Archify/*.json. Cada macro incluye el PDF
+% vectorial que exporta Archify (../ArchifyPDF), el mismo dibujo que el HTML interactivo.
+% Para cambiar una vista: editar su JSON, regenerar HTML y PDF (ver ../Archify/README.md)
+% y recompilar los documentos. Las rutas son relativas a Documentation/Work.
+\providecommand{\HexVista}[1]{%
+  \includegraphics[width=\textwidth,height=0.78\textheight,keepaspectratio]{Diagrams/ArchifyPDF/#1.pdf}}
+\providecommand{\HexContexto}{\HexVista{01-contexto}}
+\providecommand{\HexContenedores}{\HexVista{02-contenedores}}
+\providecommand{\HexComponentesNucleo}{\HexVista{03-componentes-nucleo}}
+\providecommand{\HexComponentesBoleteria}{\HexVista{04-componentes-boleteria}}
+\providecommand{\HexPanorama}{\HexVista{05-panorama}}
+\providecommand{\HexSecuencia}{\HexVista{06-secuencia}}
+\providecommand{\HexDespliegue}{\HexVista{07-despliegue}}

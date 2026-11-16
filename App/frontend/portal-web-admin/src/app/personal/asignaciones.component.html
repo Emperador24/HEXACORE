@@ -1,0 +1,210 @@
+<div class="pagina-encabezado">
+  <div>
+    <h1>Personal <span class="referencia-cu">CU-007</span></h1>
+    <p class="descripcion">
+      Elige un evento y una zona, define el horario y asigna a alguien del rol requerido que esté libre.
+      El empleado recibe el aviso y confirma o rechaza desde la app.
+    </p>
+  </div>
+</div>
+
+<app-pestanas-personal />
+
+@if (error()) {
+  <div class="mensaje error" role="alert">
+    <mat-icon>error_outline</mat-icon><span>{{ error() }}</span>
+    <button class="cerrar" (click)="error.set(null)" aria-label="Cerrar"><mat-icon>close</mat-icon></button>
+  </div>
+}
+@if (aviso()) {
+  <div class="mensaje exito" role="status">
+    <mat-icon>check_circle</mat-icon><span>{{ aviso() }}</span>
+    <button class="cerrar" (click)="aviso.set(null)" aria-label="Cerrar"><mat-icon>close</mat-icon></button>
+  </div>
+}
+
+<section class="panel">
+  <div class="panel-cuerpo selector-evento">
+    <mat-form-field class="evento">
+      <mat-label>Evento</mat-label>
+      <mat-select [value]="eventoId()" (selectionChange)="elegirEvento($event.value)" placeholder="Elige un evento publicado">
+        @for (e of eventos(); track e.id) {
+          <mat-option [value]="e.id">
+            {{ e.nombre }} — {{ e.fechaInicio | date: 'd MMM y, HH:mm' }} · {{ e.lugar }}
+          </mat-option>
+        }
+      </mat-select>
+      <mat-hint>Eventos publicados en la cartelera.</mat-hint>
+    </mat-form-field>
+
+    @if (evento()) {
+      <dl class="cifras">
+        <div><dt>Puestos</dt><dd>{{ resumen().asignados }} / {{ resumen().requeridos }}</dd></div>
+        <div><dt>Esperando respuesta</dt><dd>{{ resumen().pendientes }}</dd></div>
+        <div><dt>Rechazadas</dt><dd>{{ resumen().rechazadas }}</dd></div>
+      </dl>
+    }
+  </div>
+  @if (cargando()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+</section>
+
+@if (!evento()) {
+  <section class="panel">
+    <div class="vacio">
+      <mat-icon>event</mat-icon>
+      <p>{{ eventos().length ? 'Elige un evento para ver sus zonas y su personal.' : 'No hay eventos publicados.' }}</p>
+    </div>
+  </section>
+} @else {
+  <div class="columnas">
+    <section class="panel zonas">
+      <div class="panel-cabecera">
+        <h2>Zonas del evento</h2>
+        <button mat-button (click)="creandoZona.set(!creandoZona())">
+          <mat-icon>{{ creandoZona() ? 'close' : 'add' }}</mat-icon> {{ creandoZona() ? 'Cerrar' : 'Nueva zona' }}
+        </button>
+      </div>
+
+      @if (creandoZona()) {
+        <form class="nueva-zona" (ngSubmit)="crearZona()">
+          <mat-form-field><mat-label>Nombre</mat-label><input matInput name="nombre" [(ngModel)]="nuevaZona.nombre" required placeholder="Puerta Norte" /></mat-form-field>
+          <mat-form-field><mat-label>Rol requerido</mat-label><input matInput name="rol" [(ngModel)]="nuevaZona.rolRequerido" required placeholder="Entrada" /></mat-form-field>
+          <mat-form-field><mat-label>Personas</mat-label><input matInput type="number" min="1" name="cantidad" [(ngModel)]="nuevaZona.personalRequerido" required /></mat-form-field>
+          <button mat-flat-button type="submit">Crear zona</button>
+        </form>
+      }
+
+      <ul class="lista-zonas" role="listbox" aria-label="Zonas">
+        @for (z of zonas(); track z.id) {
+          <li>
+            <button class="zona" [class.elegida]="z.id === zonaId()" (click)="elegirZona(z.id)" role="option" [attr.aria-selected]="z.id === zonaId()">
+              <div class="fila">
+                <strong>{{ z.nombre }}</strong>
+                <span class="estado" [class.ok]="!z.deficit" [class.aviso]="z.deficit">{{ z.deficit ? 'Faltan ' + (z.personalRequerido - z.personalAsignado) : 'Cubierta' }}</span>
+              </div>
+              <div class="secundario">Rol {{ z.rolRequerido }} · {{ z.personalAsignado }} de {{ z.personalRequerido }}</div>
+              <div class="barra" aria-hidden="true"><span [style.width.%]="porcentaje(z)"></span></div>
+            </button>
+          </li>
+        } @empty {
+          <li class="vacio"><p>Este evento todavía no tiene zonas. Crea la primera.</p></li>
+        }
+      </ul>
+    </section>
+
+    <section class="panel">
+      @if (zona(); as z) {
+        <div class="panel-cabecera">
+          <h2>Asignar personal a «{{ z.nombre }}»</h2>
+          <span class="detalle">Rol requerido: {{ z.rolRequerido }}</span>
+        </div>
+        <form class="panel-cuerpo horario" (ngSubmit)="buscarCandidatos()">
+          <mat-form-field><mat-label>Fecha</mat-label><input matInput type="date" name="fecha" [(ngModel)]="fecha" required /></mat-form-field>
+          <mat-form-field><mat-label>Desde</mat-label><input matInput type="time" name="inicio" [(ngModel)]="inicio" required /></mat-form-field>
+          <mat-form-field><mat-label>Hasta</mat-label><input matInput type="time" name="fin" [(ngModel)]="fin" required /></mat-form-field>
+          <button mat-stroked-button type="submit"><mat-icon>person_search</mat-icon> Ver disponibles</button>
+        </form>
+        @if (horario(); as h) {
+          <p class="nota-horario secundario">
+            {{ h.horaInicio | date: 'EEEE d MMM, HH:mm' }} – {{ h.horaFin | date: 'EEEE d MMM, HH:mm' }}
+            ({{ horasEntre(h.horaInicio, h.horaFin).toFixed(1) }} h). Máximo 12 h por turno y 14 h por día.
+          </p>
+        }
+        @if (buscando()) {
+          <mat-progress-bar mode="indeterminate" />
+        }
+
+        @if (candidatos(); as lista) {
+          <ul class="candidatos">
+            @for (c of lista; track c.empleado.id) {
+              <li [class.no-disponible]="!c.disponible">
+                <div>
+                  <a class="nombre" [routerLink]="['/admin/personal', c.empleado.id]">{{ c.empleado.nombre }}</a>
+                  <div class="secundario">
+                    @if (c.disponible) {
+                      Libre · {{ c.horasEseDia.toFixed(1) }} h asignadas ese día
+                    } @else {
+                      {{ c.motivo }}
+                    }
+                  </div>
+                </div>
+                @if (c.disponible) {
+                  <button mat-flat-button (click)="asignar(c)">Asignar</button>
+                } @else {
+                  <span class="estado">No disponible</span>
+                }
+              </li>
+            } @empty {
+              <li class="vacio">
+                <p>No hay personal activo con el rol «{{ z.rolRequerido }}».</p>
+                <a mat-button routerLink="/admin/personal">Ir a empleados</a>
+              </li>
+            }
+          </ul>
+        }
+      } @else {
+        <div class="vacio">
+          <mat-icon>touch_app</mat-icon>
+          <p>Elige una zona para ver quién puede cubrirla.</p>
+        </div>
+      }
+    </section>
+  </div>
+
+  <section class="panel">
+    <div class="panel-cabecera">
+      <h2>Asignaciones del evento</h2>
+      <button mat-icon-button (click)="recargar()" matTooltip="Actualizar respuestas" aria-label="Actualizar"><mat-icon>refresh</mat-icon></button>
+    </div>
+    <div class="tabla-contenedor">
+      <table mat-table [dataSource]="asignaciones()">
+        <ng-container matColumnDef="empleado">
+          <th mat-header-cell *matHeaderCellDef>Empleado</th>
+          <td mat-cell *matCellDef="let t">
+            <a class="nombre" [routerLink]="['/admin/personal', t.empleadoId]">{{ t.empleado.nombre }}</a><br />
+            <span class="secundario">{{ t.empleado.rol }}</span>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="zona">
+          <th mat-header-cell *matHeaderCellDef>Zona</th>
+          <td mat-cell *matCellDef="let t">{{ t.zona }}</td>
+        </ng-container>
+        <ng-container matColumnDef="horario">
+          <th mat-header-cell *matHeaderCellDef>Horario</th>
+          <td mat-cell *matCellDef="let t">
+            {{ t.horaInicio | date: 'EEE d MMM, HH:mm' }} – {{ t.horaFin | date: 'HH:mm' }}
+            <div class="secundario">{{ horasEntre(t.horaInicio, t.horaFin).toFixed(1) }} h</div>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="estado">
+          <th mat-header-cell *matHeaderCellDef>Respuesta</th>
+          <td mat-cell *matCellDef="let t">
+            @let est = estadoAsignacion(t);
+            <span class="estado" [class]="est.tono">{{ est.texto }}</span>
+            @if (t.motivoRechazo) {
+              <div class="secundario">“{{ t.motivoRechazo }}”</div>
+            }
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="acciones">
+          <th mat-header-cell *matHeaderCellDef class="acciones"></th>
+          <td mat-cell *matCellDef="let t" class="acciones">
+            @if (t.zonaEventoId && (asignacionVigente(t) || t.confirmacion === 'RECHAZADA')) {
+              <button mat-button (click)="reasignar(t)">{{ t.confirmacion === 'RECHAZADA' ? 'Asignar a otro' : 'Modificar' }}</button>
+            }
+            @if (asignacionVigente(t)) {
+              <button mat-button class="boton-peligro" (click)="cancelar(t)">Cancelar</button>
+            }
+          </td>
+        </ng-container>
+        <tr mat-header-row *matHeaderRowDef="columnas"></tr>
+        <tr mat-row *matRowDef="let fila; columns: columnas"></tr>
+      </table>
+    </div>
+    @if (asignaciones().length === 0) {
+      <div class="vacio"><p>Todavía no hay personal asignado a este evento.</p></div>
+    }
+  </section>
+}

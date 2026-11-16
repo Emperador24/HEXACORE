@@ -754,7 +754,7 @@ No hay extensiones conocidas
   \item CU-012: Administrar menú e inventario.
   \item CU-013: Gestionar preparación del pedido.
   \item CU-014: Validar y entregar pedido.
-  \item CU-015: Gestionar cancelaciones y reembolsos.
+  \item CU-015: Gestionar establecimientos de alimentos.
 \end{itemize}
 
 \item[Entradas] Evento seleccionado; establecimiento; productos y cantidades; método de entrega; datos de pago.
@@ -817,7 +817,7 @@ No hay extensiones conocidas
 \end{itemize}
 
 \paragraph{Extensiones}
-Se relaciona con CU-013 para la preparación, CU-014 para la entrega y CU-015 si se solicita una cancelación o reembolso.
+Se relaciona con CU-013 para la preparación, CU-014 para la entrega y CU-015 para la disponibilidad operativa del establecimiento. La cancelación por el establecimiento se conserva en CU-011F; sus transiciones y los reembolsos requieren reglas explícitas y no son efecto automático de CU-015.
 
 \paragraph{Atributos de calidad asociados}
 \begin{itemize}[leftmargin=1.4em, topsep=1pt]
@@ -1073,8 +1073,8 @@ Caché en memoria con el estado de los QR válidos/entregados para una validaci�
 
 \item[CU relacionados] \hfill
 \begin{itemize}[leftmargin=1.2em, topsep=1pt]
-  \item CU-001: Gestión integral de pedidos.
-  \item CU-002: Administrar menú e inventario.
+  \item CU-011: Gestión integral de pedidos.
+  \item CU-012: Administrar menú e inventario.
 \end{itemize}
 
 \item[Entradas] Datos del establecimiento; evento asociado; nombre; información de contacto; ubicación o punto de entrega; horario de atención; estado de disponibilidad.
@@ -1124,13 +1124,16 @@ Caché en memoria con el estado de los QR válidos/entregados para una validaci�
 
 \paragraph{Flujos alternativos}
 \begin{itemize}[leftmargin=1.4em, topsep=1pt]
-  \item CU-005A: Si el establecimiento ya se encuentra registrado en el evento, el sistema informa la situación y permite actualizar sus datos en lugar de duplicarlo.
-  \item CU-005B: Si faltan datos obligatorios, el sistema solicita completar la información antes de continuar.
-  \item CU-005C: Si se modifica el horario o el estado de disponibilidad, el sistema actualiza inmediatamente si el establecimiento puede recibir nuevos pedidos.
+  \item CU-015A: Si el establecimiento ya se encuentra registrado en el evento, el sistema informa la situación y permite actualizar sus datos en lugar de duplicarlo.
+  \item CU-015B: Si faltan datos obligatorios, el sistema solicita completar la información antes de continuar.
+  \item CU-015C: Si se modifica el horario o el estado de disponibilidad, el sistema actualiza inmediatamente si el establecimiento puede recibir nuevos pedidos.
 \end{itemize}
 
+\paragraph{Caminos de excepción}
+CU-015D: Si se intenta deshabilitar un establecimiento con pedidos activos, el sistema informa la situación y evita afectar los pedidos ya confirmados; la restricción se aplica únicamente a nuevos pedidos.
+
 \paragraph{Extensiones}
-Los establecimientos habilitados son consultados por CU-001. Una vez registrado y habilitado, el establecimiento puede administrar sus productos mediante CU-002.
+Los establecimientos habilitados son consultados por CU-011. Una vez registrado y habilitado, el establecimiento puede administrar sus productos mediante CU-012.
 
 \subsection{CU-016 --- Planificar logística del evento}
 \label{cu:cu-016}

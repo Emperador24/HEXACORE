@@ -1,61 +1,77 @@
-# Diagramas C4 (Archify)
+# Diagramas C4 interactivos (Archify)
 
-**Esta es la fuente oficial de los diagramas C4 del proyecto.** Los seis diagramas se generan con
+Siete vistas de la arquitectura vigente (**ADR-16**), generadas con
 [Archify](https://github.com/tt-a1i/archify) a partir de las especificaciones `JSON` de esta
-carpeta, y son los que se insertan en `C4Diagrams.tex` y en `DescripcionArquitecturaSoftware.tex`.
+carpeta. Abren en el navegador con zoom, búsqueda, foco y recorridos. Son la única fuente: los
+PDF de `../ArchifyPDF/` se exportan desde estos HTML y las macros de `../Vigente/diagramas.tex`
+los incluyen en el SAD, el documento C4 y los demás `.tex`.
 
-Los `.drawio`/`.png` de la carpeta padre son la versión anterior (hecha a mano en draw.io) y se
-conservan solo como referencia histórica: **ya no se usan en ningún documento**.
+Las vistas anteriores (ADR-14/15) se retiraron el 2/11/2026; están en el historial de git.
+Las vistas 01, 02, 03, 04 y 07 se actualizaron el 14/11/2026.
 
-## Por qué se cambió a Archify
-
-La versión de draw.io se desactualizaba en silencio cada vez que cambiaba una decisión: describía
-una sola "App Móvil" genérica y cuatro microservicios, cuando el repo ya tenía otra estructura.
-Al estar la especificación en un archivo de texto versionado, un cambio como ADR-07 (unificar las
-apps móviles de Cliente y Personal en una sola) se refleja editando el `JSON` y regenerando, y la
-diferencia queda visible en el diff del commit.
-
-## Archivos
-
-| Diagrama | Fuente (editar aquí) | Interactivo | PDF que usa el `.tex` |
+| Vista | Fuente (editar aquí) | Interactivo | PDF |
 |---|---|---|---|
 | Nivel 1 — Contexto | `01-contexto.architecture.json` | `01-contexto.html` | `../ArchifyPDF/01-contexto.pdf` |
 | Nivel 2 — Contenedores | `02-contenedores.architecture.json` | `02-contenedores.html` | `../ArchifyPDF/02-contenedores.pdf` |
-| Nivel 3 — Componentes (Entradas, CU-006) | `03-componentes.architecture.json` | `03-componentes.html` | `../ArchifyPDF/03-componentes.pdf` |
-| Panorama de Sistemas | `04-panorama.architecture.json` | `04-panorama.html` | `../ArchifyPDF/04-panorama.pdf` |
-| Secuencia — Reventa (CU-006) | `05-secuencia.sequence.json` | `05-secuencia.html` | `../ArchifyPDF/05-secuencia.pdf` |
-| Despliegue | `06-despliegue.architecture.json` | `06-despliegue.html` | `../ArchifyPDF/06-despliegue.pdf` |
+| Nivel 3 — Componentes del Núcleo | `03-componentes-nucleo.architecture.json` | `03-componentes-nucleo.html` | `../ArchifyPDF/03-componentes-nucleo.pdf` |
+| Nivel 3 — Componentes de Boletería | `04-componentes-boleteria.architecture.json` | `04-componentes-boleteria.html` | `../ArchifyPDF/04-componentes-boleteria.pdf` |
+| Panorama de sistemas | `05-panorama.architecture.json` | `05-panorama.html` | `../ArchifyPDF/05-panorama.pdf` |
+| Dinámica — Compra con turno (CU-001) | `06-secuencia.sequence.json` | `06-secuencia.html` | `../ArchifyPDF/06-secuencia.pdf` |
+| Despliegue con Docker Compose | `07-despliegue.architecture.json` | `07-despliegue.html` | `../ArchifyPDF/07-despliegue.pdf` |
 
-Los `.html` son autocontenidos: se abren directamente en el navegador, sin servidor.
+## Qué describen
+
+- **Contexto:** cinco personas, todas con backend: el Organizador gestiona eventos, personal y
+  parqueadero; el Supervisor, la evacuación y el panel en vivo. Pasarela y correo son externos,
+  simulados en pruebas.
+- **Contenedores:** gateway, Núcleo y Boletería replicables, Trabajador, la tarea `preparacion-base`
+  (36 migraciones), monitoreo en `/grafana/`, PostgreSQL con once esquemas, Redis y RabbitMQ.
+- **Componentes:** los siete módulos del Núcleo con la guarda común de sesión y permisos (CU-028),
+  y los cinco de Boletería con sus trabajos en segundo plano, el módulo Pagos y `eventos.gestion`.
+- **Secuencia:** turno gastado en el gateway, reserva, PAGANDO, cobro local, confirmación con
+  outbox y proyección del QR. Señala lo que no garantiza (F12, convergencia del QR).
+- **Despliegue:** perfiles `servicios` y `datos` de Compose, réplicas de Núcleo y Boletería, el
+  monitoreo (exportador, Prometheus, Promtail, Loki y Grafana) e imágenes de GHCR.
+
+Cada diagrama dibuja las relaciones principales; las que se omiten para que se lea están
+enumeradas en la tarjeta «Relaciones no dibujadas» o «Relaciones resumidas» del propio HTML.
 
 ## Cómo regenerar después de editar un JSON
 
 ```bash
-SKILL=~/.claude/skills/archify
-cd "$SKILL"
-
-# 1. Regenerar el HTML (valida geometría y solapamientos; debe terminar con errors: 0)
-node bin/archify.mjs deliver architecture <ruta>/02-contenedores.architecture.json \
-     <ruta>/02-contenedores.html --quality standard --json
-# (para 05-secuencia usar el tipo "sequence")
-
-# 2. Exportar el PDF que consume LaTeX: se oculta el cromo del visor y se recorta el sobrante
-python3 -c "
-import pathlib
-h=pathlib.Path('02-contenedores.html').read_text(encoding='utf-8')
-css='<style>@media print{.header,.cards,.diagram-guide{display:none!important}.container{padding:0!important}.diagram-container{margin:0!important;border:0!important;box-shadow:none!important}}</style></body>'
-pathlib.Path('/tmp/print.html').write_text(h.replace('</body>',css,1),encoding='utf-8')"
-"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless --disable-gpu \
-  --no-pdf-header-footer --virtual-time-budget=4000 \
-  --print-to-pdf=../ArchifyPDF/02-contenedores.pdf file:///tmp/print.html
-pdfcrop --margins 6 ../ArchifyPDF/02-contenedores.pdf ../ArchifyPDF/02-contenedores.pdf
+./regenerar.sh                      # todas las vistas publicadas
+./regenerar.sh 02-contenedores      # solo una
 ```
 
-Archify trae su propio bloque `@media print` que fuerza la paleta clara, así que el PDF sale legible
-aunque el `HTML` abra en tema oscuro.
+El guion valida y entrega el HTML, exporta el PDF a `../ArchifyPDF/` (con la página del tamaño
+del `viewBox`, recortado) y al final corre `revisar-flechas.py`. Termina con error si alguna vista
+no pasa la validación o si alguna flecha comparte tramo con otra o llega al mismo punto de una
+caja que otra. `06-secuencia` es de tipo `sequence` y se regenera aparte, con Archify directo.
 
-## Trampa conocida
+**Por qué un guion y no Archify directo.** Cuando varias flechas llegan al mismo lado de una
+caja, Archify las separa como mucho 14 px: las puntas se enciman y los tramos horizontales se
+recorren unos encima de otros. El guion usa una copia temporal de Archify (la instalada no se
+toca) que reparte esas flechas a lo largo de todo el lado. Para que bajen rectas, **el lado de la
+caja mide lo mismo que el tramo entre los centros de las cajas con las que conecta, más 32 px**
+(el margen de 16 px de cada esquina): por eso el gateway del Núcleo abarca los siete módulos y
+HEXACORE, en el contexto, abarca a las cinco personas.
 
-**No usar el campo `tag` de Archify.** En el visor interactivo queda oculto, pero al imprimir se
-dibuja encima del `sublabel` y los textos se solapan. Si hace falta esa información (roles, rangos
-de CU), va dentro del `sublabel` — así está hecho hoy en `02-contenedores`.
+Después de regenerar, mirar el PDF: el revisor mide flechas, no la estética.
+
+## Trampas conocidas
+
+- **El validador no ve rótulos que se tapan entre sí ni flechas que comparten borde** (por eso
+  existe `revisar-flechas.py`). En esta
+  versión pasó dos veces: «webhook HMAC» encima de «cobros y reembolsos» en el contexto, y la
+  entrada y salida del Trabajador sobre el mismo borde, que parecía una flecha bidireccional. La
+  comprobación que vale es renderizar el PDF y mirarlo.
+- **No usar el campo `tag`.** Al imprimir se dibuja encima del `sublabel`.
+- **Rótulo de una flecha recta encima de su caja:** moverlo con `labelDy`, no con `labelAt`.
+  `labelAt` (y `via`) sacan la flecha del reparto y la mandan al centro del lado, encima de las
+  demás.
+- **Aristas paralelas hacia un mismo nodo:** declarar `fromSide`/`toSide`; si no, el validador
+  rechaza la dirección inferida.
+- **`visual-check` del visor:** con el perfil `standard` y lienzos de ~1500 px, contexto y
+  panorama aprueban; contenedores, componentes, secuencia y despliegue piden scroll a 1440×900 y
+  sus subtítulos quedan bajo el mínimo legible al proyectarse. Se leen con zoom en el visor y
+  completos en el PDF.

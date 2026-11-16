@@ -62,7 +62,11 @@ RNF-17 & Al activarse una evacuación, todo el personal en campo recibe su instr
 \textbf{$\leq$ 10 s} desde la activación.\\[0.3em]
 RNF-18 & Cada microservicio puede probarse de forma aislada, sin levantar los demás.
 & Comproba-bilidad & Cobertura de pruebas de la lógica de dominio \textbf{$\geq$ 70\%} y
-\textbf{100\%} de las dependencias externas sustituibles por dobles de prueba.\\
+\textbf{100\%} de las dependencias externas sustituibles por dobles de prueba.\\[0.3em]
+RNF-19 & El equipo de operación ve el consumo y los logs de cada instancia desde el mismo punto de
+entrada que la API. & Observa-bilidad & CPU y memoria por instancia, réplicas vivas y logs de
+\textbf{100\%} de los servicios en un solo tablero tras el gateway, con muestras cada
+\textbf{$\leq$ 5 s}.\\
 \bottomrule
 \caption{Requisitos no funcionales, con métrica y umbral verificable por atributo de calidad.}
 \label{tab:rnf}

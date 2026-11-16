@@ -7,14 +7,14 @@
 
 | Archivo | Quién lo usa | Para qué |
 |---|---|---|
-| `jwt-privada.pem` | **Solo** el Servicio de Administración | Firmar los tokens de sesión (RS256) |
-| `jwt-publica.pem` | Todos los microservicios que exigen sesión | Verificar esos tokens |
+| `jwt-privada.pem` | **Solo** Identidad, en el Núcleo | Firmar los tokens de sesión (RS256) |
+| `jwt-publica.pem` | Gateway, Núcleo y Boletería | Verificar esos tokens |
 
 ## Por qué dos claves y no un secreto compartido
 
 Con un secreto compartido (HS256), cada servicio que verifica tokens **también puede fabricarlos**:
 bastaría con comprometer el servicio de parqueaderos para emitir un token de administrador. Con
-RS256, la clave pública solo sirve para verificar. Ver `services/administracion/DECISIONES.md` §7.
+RS256, la clave pública solo sirve para verificar. Ver `backend/modulos/identidad/DECISIONES.md` §7.
 
 ## En producción
 

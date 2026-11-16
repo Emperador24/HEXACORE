@@ -1,0 +1,40 @@
+import { opcionesEsquema, opcionesSesion, migracionesEnEsquema } from '../../../../compartido/persistencia/esquemas';
+import { CONEXION_PAGOS } from './conexion';
+import { config as cargarEnv } from 'dotenv';
+import { DataSource, DataSourceOptions } from 'typeorm';
+import { ConfiguracionServicio, cargarConfiguracion } from '../config/configuracion';
+import { TransaccionPago } from './entidades/transaccion-pago.entity';
+import { EsquemaPagos1790380800000 } from './migraciones/1790380800000-EsquemaPagos';
+
+export const ENTIDADES = [TransaccionPago];
+export const MIGRACIONES = [EsquemaPagos1790380800000];
+
+export function opcionesDataSource(config: ConfiguracionServicio): DataSourceOptions & { name: string } {
+  return {
+    name: CONEXION_PAGOS,
+    type: 'postgres',
+    ...opcionesEsquema('finanzas-pagos'),
+    host: config.postgres.host,
+    port: config.postgres.puerto,
+    username: config.postgres.usuario,
+    password: config.postgres.contrasena,
+    database: config.postgres.base,
+    entities: ENTIDADES,
+    migrations: migracionesEnEsquema(MIGRACIONES, 'finanzas-pagos'),
+    migrationsTableName: 'migraciones',
+    extra: { ...opcionesSesion('finanzas-pagos'),
+      application_name: `finanzas-pagos:${process.env.PROGRAMA_BACKEND || 'modulo'}`,
+      max: config.postgres.maxConexiones,
+      connectionTimeoutMillis: config.postgres.esperaMaximaMs,
+    },
+
+    // Nunca `synchronize: true`: las restricciones CHECK que impiden un
+    // APROBADO sin referencia no se deducen de la entidad.
+    synchronize: false,
+    migrationsRun: false,
+    logging: config.entorno === 'development' ? ['error', 'warn', 'migration'] : ['error'],
+  };
+}
+
+cargarEnv();
+export default new DataSource(opcionesDataSource(cargarConfiguracion()));

@@ -1,0 +1,104 @@
+<div class="pagina-encabezado">
+  <div>
+    <h1>Cambios de turno <span class="referencia-cu">CU-008</span></h1>
+    <p class="descripcion">
+      Solicitudes de cambio del personal. Elige el reemplazo entre quienes tienen el mismo rol y están libres a esa hora;
+      el reemplazo confirma desde la app y todo queda en el historial.
+    </p>
+  </div>
+  <div class="acciones">
+    <button mat-icon-button (click)="cargar()" matTooltip="Actualizar" aria-label="Actualizar"><mat-icon>refresh</mat-icon></button>
+  </div>
+</div>
+
+<app-pestanas-personal />
+
+@if (error()) {
+  <div class="mensaje error" role="alert">
+    <mat-icon>error_outline</mat-icon><span>{{ error() }}</span>
+    <button class="cerrar" (click)="error.set(null)" aria-label="Cerrar"><mat-icon>close</mat-icon></button>
+  </div>
+}
+@if (aviso()) {
+  <div class="mensaje exito" role="status">
+    <mat-icon>check_circle</mat-icon><span>{{ aviso() }}</span>
+    <button class="cerrar" (click)="aviso.set(null)" aria-label="Cerrar"><mat-icon>close</mat-icon></button>
+  </div>
+}
+
+<div class="chips" role="group" aria-label="Filtrar por estado">
+  @for (e of estados; track e[0]) {
+    <button type="button" class="chip" [class.activo]="estado() === e[0]" (click)="filtrar(e[0])">{{ e[1] }}</button>
+  }
+</div>
+
+<section class="panel">
+  @if (cargando()) { <mat-progress-bar mode="indeterminate" /> }
+  <ul class="solicitudes">
+    @for (s of solicitudes(); track s.id) {
+      <li [class.abierta]="abierta() === s.id">
+        <button type="button" class="fila" (click)="abrir(s)" [attr.aria-expanded]="abierta() === s.id">
+          <span class="estado-sol" [attr.data-estado]="s.estado">{{ etiquetaEstado(s.estado) }}</span>
+          <span class="quien">
+            <strong>{{ solicitante(s) }}</strong>
+            <span class="secundario">{{ s.turno.zona }} · {{ s.turno.horaInicio | date: 'd MMM, HH:mm' }}–{{ s.turno.horaFin | date: 'HH:mm' }}</span>
+          </span>
+          <span class="motivo">«{{ s.motivo }}»</span>
+          <span class="reemplazo secundario">
+            @if (s.empleadoReemplazoId) {
+              <mat-icon>swap_horiz</mat-icon> {{ nombre(s.empleadoReemplazoId) }}
+              @if (s.respuestaReemplazo === 'PENDIENTE') { · esperando su confirmación }
+              @if (s.respuestaReemplazo === 'ACEPTADA') { · confirmó }
+            }
+          </span>
+          <span class="secundario fecha">{{ s.fechaSolicitud | date: 'd MMM, HH:mm' }}</span>
+          <mat-icon class="chevron">{{ abierta() === s.id ? 'expand_less' : 'expand_more' }}</mat-icon>
+        </button>
+
+        @if (abierta() === s.id) {
+          <div class="detalle">
+            @if (s.motivoRechazoOBloqueo) {
+              <p class="nota"><mat-icon>info</mat-icon> {{ s.motivoRechazoOBloqueo }}</p>
+            }
+            @if (s.estado === 'PENDIENTE') {
+              <h3>Posibles reemplazos <span class="secundario">· mismo rol ({{ s.turno.empleado.rol }}), {{ disponibles() }} disponible(s)</span></h3>
+              @if (!reemplazos()) { <mat-progress-bar mode="indeterminate" /> }
+              <mat-radio-group class="candidatos" [ngModel]="elegido()" (ngModelChange)="elegido.set($event)" aria-label="Reemplazo">
+                @for (c of reemplazos()?.candidatos ?? []; track c.empleado.id) {
+                  <mat-radio-button [value]="c.empleado.id" [disabled]="!c.disponible">
+                    <span class="candidato">
+                      <strong>{{ c.empleado.nombre }}</strong>
+                      @if (c.empleado.id === reemplazos()!.propuestoId) { <span class="etiqueta-propuesto">Propuesto</span> }
+                      <span class="secundario">{{ c.disponible ? (c.horasEseDia | number: '1.0-1') + ' h asignadas ese día' : c.motivo }}</span>
+                    </span>
+                  </mat-radio-button>
+                } @empty {
+                  @if (reemplazos()) { <p class="secundario">Nadie con ese rol puede cubrirlo ahora.</p> }
+                }
+              </mat-radio-group>
+              <div class="pie">
+                <button mat-stroked-button class="boton-peligro" (click)="rechazar(s)" [disabled]="trabajando()">Rechazar</button>
+                <button mat-flat-button (click)="aprobar(s)" [disabled]="trabajando() || !elegido()">
+                  <mat-icon>check</mat-icon> Aprobar con {{ nombre(elegido()) }}
+                </button>
+              </div>
+            }
+            <h3>Historial</h3>
+            <ol class="historial">
+              @for (h of historial() ?? []; track h.id) {
+                <li><span class="punto-tl"></span><div><strong>{{ accion(h.accion) }}</strong><span class="secundario"> · {{ h.fecha | date: 'd MMM, HH:mm:ss' }}</span>
+                  @if (h.detalle['motivo']) { <div class="secundario">«{{ h.detalle['motivo'] }}»</div> }</div></li>
+              } @empty {
+                <li class="secundario">Sin movimientos registrados (solicitud anterior al historial).</li>
+              }
+            </ol>
+          </div>
+        }
+      </li>
+    } @empty {
+      @if (!cargando()) {
+        <li class="vacio"><mat-icon>event_available</mat-icon><p>No hay solicitudes {{ estado() ? 'en este estado' : '' }}.</p></li>
+      }
+    }
+  </ul>
+</section>

@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -29,6 +29,7 @@ const FILTROS_FECHA: FiltroFecha[] = ['Todos', 'Este mes', 'Próximos 3 meses'];
   standalone: true,
   imports: [RouterLink, DecimalPipe, FormsModule, MatIconModule, MatButtonModule],
   templateUrl: './eventos-lista.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './eventos-lista.component.scss'
 })
 export class EventosListaComponent {

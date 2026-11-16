@@ -2,394 +2,422 @@
   "schema_version": 1,
   "diagram_type": "architecture",
   "meta": {
-    "title": "HEXACORE — Contenedores",
+    "title": "HEXACORE — Contenedores (ADR-16)",
     "output": "02-contenedores.html",
     "quality_profile": "standard",
+    "viewBox": [
+      1780,
+      900
+    ],
     "views": [
       {
-        "id": "compra-entradas",
+        "id": "compra",
         "label": "Compra de entradas",
         "focus": [
           "portal_cliente",
-          "app_movil",
           "gateway",
-          "svc_entradas",
-          "db",
+          "boleteria",
+          "postgres",
           "redis",
-          "pagos"
+          "rabbitmq",
+          "pasarela"
         ],
-        "note": "El camino que resuelve CU-006, el hilo conductor del sistema."
+        "note": "Turno de la fila, compra, cobro por el módulo Pagos y QR por eventos."
       },
       {
-        "id": "operacion-personal",
-        "label": "Operación y personal",
+        "id": "nucleo",
+        "label": "Núcleo",
         "focus": [
           "portal_admin",
           "app_movil",
           "gateway",
-          "svc_personal",
-          "svc_eventos",
-          "queue"
+          "nucleo",
+          "postgres",
+          "redis",
+          "rabbitmq",
+          "pasarela"
         ],
-        "note": "Cómo se coordinan organizador, empleados y el protocolo de emergencia."
+        "note": "Identidad, roles y permisos, Alimentos, Personal, Eventos, Operación, Parqueaderos y el webhook financiero."
       },
       {
-        "id": "infraestructura-async",
-        "label": "Infraestructura asíncrona",
+        "id": "correo",
+        "label": "Correo",
         "focus": [
-          "svc_entradas",
-          "svc_eventos",
-          "svc_parqueaderos",
-          "redis",
-          "queue",
-          "notif"
+          "nucleo",
+          "rabbitmq",
+          "trabajador",
+          "correo"
         ],
-        "note": "Qué microservicios dependen de Redis y de la cola de mensajes."
+        "note": "Identidad publica el correo pendiente; el Trabajador lo envía."
+      },
+      {
+        "id": "monitoreo",
+        "label": "Monitoreo",
+        "focus": [
+          "gateway",
+          "monitoreo",
+          "nucleo",
+          "boleteria",
+          "trabajador"
+        ],
+        "note": "CPU, memoria y logs de cada instancia, servidos por el mismo gateway en /grafana/."
       }
     ]
   },
   "components": [
     {
-      "id": "app_movil",
-      "type": "frontend",
-      "label": "App Móvil",
-      "sublabel": "Flutter — Cliente + Personal",
-      "pos": [
-        15.6,
-        89.8
-      ],
-      "size": [
-        171.6,
-        49.9
-      ]
-    },
-    {
       "id": "portal_cliente",
       "type": "frontend",
       "label": "Portal Web Cliente",
-      "sublabel": "Angular — rol Cliente",
+      "sublabel": "Angular · Nginx",
       "pos": [
-        15.6,
-        186.5
+        340,
+        20
       ],
       "size": [
-        171.6,
-        49.9
+        230,
+        64
       ]
     },
     {
       "id": "portal_admin",
       "type": "frontend",
       "label": "Portal Web Admin",
-      "sublabel": "Angular — Organizador/Admin/Supervisor",
+      "sublabel": "Angular · Nginx",
       "pos": [
-        15.6,
-        283.2
+        630,
+        20
       ],
       "size": [
-        171.6,
-        49.9
+        230,
+        64
+      ]
+    },
+    {
+      "id": "app_movil",
+      "type": "frontend",
+      "label": "App móvil",
+      "sublabel": "Flutter · Cliente y Personal",
+      "pos": [
+        920,
+        20
+      ],
+      "size": [
+        230,
+        64
+      ]
+    },
+    {
+      "id": "pasarela",
+      "type": "external",
+      "label": "Pasarela de pagos",
+      "sublabel": "externa · simulada en pruebas",
+      "pos": [
+        1480,
+        20
+      ],
+      "size": [
+        260,
+        64
       ]
     },
     {
       "id": "gateway",
       "type": "security",
       "label": "API Gateway",
-      "sublabel": "Balanceador de carga",
+      "sublabel": "Nginx/njs :8080 · JWT RS256 público · gasta el turno",
       "pos": [
-        257.4,
-        184.1
+        439,
+        180
       ],
       "size": [
-        156.0,
-        54.6
+        612,
+        72
       ]
     },
     {
-      "id": "svc_entradas",
+      "id": "nucleo",
       "type": "backend",
-      "label": "Servicio de Entradas",
-      "sublabel": "CU-001..006 · PostgreSQL",
+      "label": "Núcleo × N",
+      "sublabel": "NestJS :3002 · Identidad, Alimentos, Personal, Eventos, Operación, Parqueaderos",
       "pos": [
-        483.6,
-        0.0
+        320,
+        360
       ],
       "size": [
-        187.2,
-        46.8
+        440,
+        90
       ]
     },
     {
-      "id": "svc_personal",
+      "id": "boleteria",
       "type": "backend",
-      "label": "Servicio de Personal",
-      "sublabel": "CU-007..009 · PostgreSQL",
+      "label": "Boletería × N",
+      "sublabel": "NestJS :3001 · Ventas, Catálogo, Fila, Postventa, Acceso QR",
       "pos": [
-        483.6,
-        78.0
+        900,
+        360
       ],
       "size": [
-        187.2,
-        46.8
+        420,
+        90
       ]
     },
     {
-      "id": "svc_eventos",
-      "type": "backend",
-      "label": "Eventos / Emergencias",
-      "sublabel": "CU-010, 016..020, 026 · PostgreSQL",
+      "id": "monitoreo",
+      "type": "cloud",
+      "label": "Monitoreo",
+      "sublabel": "Prometheus · Loki · Grafana",
       "pos": [
-        483.6,
-        156.0
+        20,
+        180
       ],
       "size": [
-        187.2,
-        46.8
+        260,
+        72
       ]
     },
     {
-      "id": "svc_parqueaderos",
+      "id": "preparacion",
       "type": "backend",
-      "label": "Servicio de Parqueaderos",
-      "sublabel": "CU-021..025 · PostgreSQL",
+      "label": "preparacion-base",
+      "sublabel": "tarea única · 36 migraciones",
       "pos": [
-        483.6,
-        234.0
+        320,
+        560
       ],
       "size": [
-        187.2,
-        46.8
+        170,
+        72
       ]
     },
     {
-      "id": "svc_pedidos",
+      "id": "trabajador",
       "type": "backend",
-      "label": "Servicio de Pedidos",
-      "sublabel": "CU-011..015 · PostgreSQL",
+      "label": "Trabajador",
+      "sublabel": "NestJS · solo correo · sin SQL ni Redis",
       "pos": [
-        483.6,
-        312.0
+        1480,
+        560
       ],
       "size": [
-        187.2,
-        46.8
+        260,
+        72
       ]
     },
     {
-      "id": "svc_admin",
-      "type": "backend",
-      "label": "Servicio de Administración",
-      "sublabel": "CU-027..032 · PostgreSQL + MongoDB",
+      "id": "postgres",
+      "type": "database",
+      "label": "PostgreSQL 16",
+      "sublabel": "base hexacore · 11 esquemas · libro único",
       "pos": [
-        483.6,
-        390.0
+        320,
+        760
       ],
       "size": [
-        187.2,
-        46.8
+        420,
+        80
       ]
     },
     {
       "id": "redis",
       "type": "database",
-      "label": "Redis",
-      "sublabel": "bloqueos + datos rápidos",
+      "label": "Redis 7",
+      "sublabel": "reservas, fila, revocación, permisos",
       "pos": [
-        826.8,
-        46.8
+        770,
+        760
       ],
       "size": [
-        163.8,
-        46.8
+        290,
+        72
       ]
     },
     {
-      "id": "queue",
+      "id": "rabbitmq",
       "type": "messagebus",
-      "label": "Cola de Mensajes",
-      "sublabel": "RabbitMQ",
+      "label": "RabbitMQ 3.13",
+      "sublabel": "eventos de dominio y correo",
       "pos": [
-        826.8,
-        210.6
+        1140,
+        760
       ],
       "size": [
-        163.8,
-        46.8
+        270,
+        72
       ]
     },
     {
-      "id": "db",
-      "type": "database",
-      "label": "Bases de Datos",
-      "sublabel": "una por servicio",
-      "pos": [
-        826.8,
-        374.4
-      ],
-      "size": [
-        163.8,
-        46.8
-      ]
-    },
-    {
-      "id": "pagos",
+      "id": "correo",
       "type": "external",
-      "label": "Pasarela de Pagos",
-      "sublabel": "cobros y reembolsos",
+      "label": "Proveedor de correo",
+      "sublabel": "externo · simulado en pruebas",
       "pos": [
-        1146.6,
-        124.8
+        1480,
+        760
       ],
       "size": [
-        163.8,
-        46.8
-      ]
-    },
-    {
-      "id": "notif",
-      "type": "external",
-      "label": "Proveedor de Notificaciones",
-      "sublabel": "push · correo · SMS",
-      "pos": [
-        1126.6,
-        296.4
-      ],
-      "size": [
-        200,
-        46.8
+        260,
+        72
       ]
     }
   ],
   "connections": [
     {
-      "id": "app-movil-gateway",
-      "from": "app_movil",
-      "to": "gateway",
-      "label": "HTTPS/JSON",
-      "variant": "emphasis"
-    },
-    {
-      "id": "portal-cliente-gateway",
+      "id": "cliente-gw",
       "from": "portal_cliente",
       "to": "gateway",
-      "label": "HTTPS/JSON",
-      "variant": "emphasis"
+      "label": "HTTPS /api/v1",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 61
     },
     {
-      "id": "portal-admin-gateway",
+      "id": "admin-gw",
       "from": "portal_admin",
       "to": "gateway",
-      "label": "HTTPS/JSON"
+      "label": "HTTPS",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 61
     },
     {
-      "id": "gateway-entradas",
+      "id": "movil-gw",
+      "from": "app_movil",
+      "to": "gateway",
+      "label": "HTTPS",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 61
+    },
+    {
+      "id": "gw-nucleo",
       "from": "gateway",
-      "to": "svc_entradas",
-      "label": "enruta",
+      "to": "nucleo",
+      "label": "cuentas, eventos, personal, operación, parqueaderos",
+      "fromSide": "bottom",
+      "toSide": "top",
       "variant": "emphasis"
     },
     {
-      "id": "gateway-personal",
+      "id": "gw-boleteria",
       "from": "gateway",
-      "to": "svc_personal"
+      "to": "boleteria",
+      "label": "cartelera, cola, compras, reventa, ingresos",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "variant": "emphasis"
     },
     {
-      "id": "gateway-eventos",
-      "from": "gateway",
-      "to": "svc_eventos"
+      "id": "pasarela-gw",
+      "from": "pasarela",
+      "to": "gateway",
+      "label": "webhook HMAC → Núcleo",
+      "fromSide": "bottom",
+      "toSide": "right",
+      "variant": "security"
     },
     {
-      "id": "gateway-parqueaderos",
-      "from": "gateway",
-      "to": "svc_parqueaderos"
+      "id": "boleteria-pasarela",
+      "from": "boleteria",
+      "to": "pasarela",
+      "label": "cobros (módulo Pagos)",
+      "fromSide": "right",
+      "toSide": "bottom"
     },
     {
-      "id": "gateway-pedidos",
-      "from": "gateway",
-      "to": "svc_pedidos"
+      "id": "nucleo-postgres",
+      "from": "nucleo",
+      "to": "postgres",
+      "label": "7 pools",
+      "fromSide": "bottom",
+      "toSide": "top"
     },
     {
-      "id": "gateway-admin",
-      "from": "gateway",
-      "to": "svc_admin"
+      "id": "prep-postgres",
+      "from": "preparacion",
+      "to": "postgres",
+      "label": "DDL antes de las apps",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "variant": "dashed"
     },
     {
-      "id": "entradas-db",
-      "from": "svc_entradas",
-      "to": "db",
-      "label": "SQL",
-      "variant": "emphasis",
-      "route": "orthogonal-h"
+      "id": "boleteria-postgres",
+      "from": "boleteria",
+      "to": "postgres",
+      "label": "5 pools",
+      "fromSide": "bottom",
+      "toSide": "right"
     },
     {
-      "id": "admin-db",
-      "from": "svc_admin",
-      "to": "db",
-      "label": "SQL + Mongo",
-      "labelAt": [
-        695,
-        386
-      ]
-    },
-    {
-      "id": "entradas-redis",
-      "from": "svc_entradas",
+      "id": "boleteria-redis",
+      "from": "boleteria",
       "to": "redis",
-      "label": "bloqueo checkout",
-      "variant": "emphasis",
-      "labelDy": -10
+      "label": "candados y fila",
+      "fromSide": "bottom",
+      "toSide": "top"
     },
     {
-      "id": "entradas-queue",
-      "from": "svc_entradas",
-      "to": "queue",
-      "label": "publica evento",
-      "variant": "dashed",
-      "route": "orthogonal-h",
-      "labelDy": 10
+      "id": "boleteria-rabbit",
+      "from": "boleteria",
+      "to": "rabbitmq",
+      "label": "outbox y consumidores",
+      "fromSide": "bottom",
+      "toSide": "top"
     },
     {
-      "id": "entradas-pagos",
-      "from": "svc_entradas",
-      "to": "pagos",
-      "label": "cobra compra/reventa",
-      "variant": "emphasis",
-      "labelDy": 12
+      "id": "rabbit-trabajador",
+      "from": "rabbitmq",
+      "to": "trabajador",
+      "label": "cuentas.correos",
+      "fromSide": "right",
+      "toSide": "left"
     },
     {
-      "id": "queue-notif",
-      "from": "queue",
-      "to": "notif",
-      "label": "dispara notificación",
+      "id": "trabajador-correo",
+      "from": "trabajador",
+      "to": "correo",
+      "label": "HTTP",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 77
+    },
+    {
+      "id": "gw-monitoreo",
+      "from": "gateway",
+      "to": "monitoreo",
+      "label": "/grafana/",
+      "fromSide": "left",
+      "toSide": "right",
       "variant": "dashed"
     }
   ],
   "cards": [
     {
       "dot": "cyan",
-      "title": "Quién usa cada interfaz",
+      "title": "Tres programas en marcha",
       "items": [
-        "Cliente → App Móvil y Portal Web Cliente",
-        "Empleado → la misma App Móvil (Flutter); el login detecta el rol y el cargo, y abre su conjunto de pantallas (ADR-07)",
-        "Organizador, Administrador y Supervisor de Emergencia → Portal Web Admin"
-      ]
-    },
-    {
-      "dot": "emerald",
-      "title": "Backend por dominio",
-      "items": [
-        "6 microservicios independientes, uno por dominio de negocio",
-        "Cada uno con su propio esquema (ADR-01, polyglot en Administración)",
-        "El API Gateway es el único punto de entrada — ninguna app llama a un microservicio directamente"
+        "Núcleo y Boletería reciben todo el tráfico por el gateway y escalan por réplicas",
+        "El gateway descubre las réplicas en el DNS de Docker y reintenta en otra si una cae",
+        "Trabajador solo consume la cola de correo"
       ]
     },
     {
       "dot": "amber",
-      "title": "Infraestructura de soporte (patrón representativo)",
+      "title": "Relaciones resumidas",
       "items": [
-        "Para no saturar el diagrama, solo se dibuja el detalle completo de Entradas — los otros 5 servicios siguen el mismo patrón hacia Bases de Datos y, cuando aplica, Redis/Cola/Pasarela (ver Nivel 3 para el detalle interno de Entradas)",
-        "Redis: bloqueo temporal en checkout de reventa y datos de ocupación en tiempo real (también lo usan Eventos/Emergencias y Parqueaderos)",
-        "Cola de mensajes: desacopla QR, notificaciones, auditoría y liquidación; las notificaciones nunca bloquean la respuesta"
+        "El Núcleo también usa Redis (revocación, permisos de CU-028, inventario) y la pasarela (cobros de alimentos)",
+        "El Núcleo publica eventos.gestion por RabbitMQ; lo consumen Catálogo, Ventas, Postventa y Acceso QR",
+        "Monitoreo lee CPU y memoria de Docker y los logs de todos los contenedores"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Datos",
+      "items": [
+        "Una base con un esquema por módulo (11); finanzas_pagos es el libro compartido",
+        "Compartir base no da atomicidad entre módulos"
       ]
     }
   ]

@@ -1,17 +1,13 @@
-# Ajuste para demostrar el balanceo y la tolerancia a fallos (RNF-03, RNF-10).
+# Quita los puertos fijos para que Núcleo y Boletería admitan réplicas detrás
+# del gateway (Docker no deja que dos contenedores publiquen el mismo puerto).
 #
-# En el día a día, el Servicio de Entradas publica el puerto 3001 en la máquina:
-# así las pruebas de integración pueden llamarlo directo y comprobar que también
-# valida el token por su cuenta, sin pasar por el gateway.
-#
-# Ese puerto fijo impide tener varias instancias (dos contenedores no pueden
-# ocupar el mismo puerto). Este archivo lo quita, dejando el acceso únicamente
-# por el API Gateway — que es como se despliega en producción (SAD §11).
-#
-#   docker compose -f docker-compose.yml -f docker-compose.escalado.yml \
-#     --profile servicios up -d --scale entradas-mercado-secundario=2
-#
-# Para volver a lo de siempre, basta con levantar sin este archivo.
+# Boletería se escala desde iniciar.sh --replicas N. El Núcleo se comprobó con
+# 2 réplicas el 12/11/2026: la demostración completa de CU-006 a CU-010,
+# CU-024 a CU-026 y CU-028 pasa contra él, y sus trabajos de fondo toman las
+# filas con SKIP LOCKED (ver App/infra/DEMOSTRACION-ATRIBUTOS.md). El sondeo de
+# inventario de Alimentos no se certificó aquí.
 services:
-  entradas-mercado-secundario:
+  boleteria:
+    ports: !reset []
+  nucleo:
     ports: !reset []

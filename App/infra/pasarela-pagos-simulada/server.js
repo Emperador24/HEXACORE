@@ -44,12 +44,29 @@
  * devuelven **el mismo resultado y la misma referencia**, sin cobrar dos veces.
  * Es lo que hace seguro reintentar cuando no se sabe si el primer intento llegó
  * (CU-006I), y es como funcionan las pasarelas de verdad.
+ *
+ * ## Webhook (ADR-15)
+ *
+ * Después de responder, la pasarela **confirma el resultado por webhook**:
+ * `POST WEBHOOK_URL` con `{ claveIdempotencia, operacion, resultado,
+ * referencia, motivo }`, firmado en `X-Pasarela-Firma` con HMAC-SHA256 del
+ * cuerpo y el secreto compartido. La URL es la ruta pública del API Gateway,
+ * que lo reenvía a Pagos. Mientras no reciba un 2xx, reintenta con espera
+ * creciente: es lo que hace que el aviso llegue aunque Pagos o el broker
+ * estén caídos un rato.
+ *
+ * Solo se confirma lo que la pasarela decidió. Los tokens de timeout y de error
+ * no generan webhook: simulan justamente la operación de la que nadie supo.
  */
 
 const http = require('node:http');
-const { randomUUID } = require('node:crypto');
+const { createHmac, randomUUID } = require('node:crypto');
 
 const PUERTO = Number(process.env.PUERTO || 3099);
+/** Sin URL no hay webhook: así la pasarela sigue sirviendo sola, sin el resto del sistema. */
+const WEBHOOK_URL = process.env.WEBHOOK_URL || '';
+const SECRETO_WEBHOOK = process.env.SECRETO_WEBHOOK || 'secreto-webhook-desarrollo';
+const REINTENTOS_WEBHOOK = [500, 1000, 2000, 4000, 8000, 16000];
 
 /** Cobros ya resueltos, por clave de idempotencia. En memoria: es un simulador. */
 const cobros = new Map();
@@ -83,6 +100,49 @@ function leerCuerpo(req) {
     });
     req.on('error', reject);
   });
+}
+
+/**
+ * Confirma una operación por webhook, reintentando mientras no haya un 2xx.
+ *
+ * Empieza con una espera corta a propósito: quien cobró todavía está anotando
+ * la respuesta síncrona, y un webhook que llega antes que esa anotación
+ * encuentra una operación que aún no existe.
+ */
+function confirmarPorWebhook(notificacion, intento = 0) {
+  if (!WEBHOOK_URL || !notificacion.claveIdempotencia) return;
+  const espera = REINTENTOS_WEBHOOK[intento];
+  if (espera === undefined) {
+    console.log(`[pasarela] webhook abandonado tras ${intento} intentos: ${notificacion.claveIdempotencia}`);
+    return;
+  }
+  setTimeout(() => {
+    const cuerpo = JSON.stringify(notificacion);
+    const firma = createHmac('sha256', SECRETO_WEBHOOK).update(cuerpo).digest('hex');
+    const reintentar = (motivo) => {
+      console.log(`[pasarela] webhook ${notificacion.claveIdempotencia} → ${motivo}; se reintenta`);
+      confirmarPorWebhook(notificacion, intento + 1);
+    };
+    const req = http.request(WEBHOOK_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(cuerpo),
+        'X-Pasarela-Firma': firma,
+      },
+      timeout: 5000,
+    }, (res) => {
+      res.resume();
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        console.log(`[pasarela] webhook ${notificacion.claveIdempotencia} confirmado (${notificacion.resultado})`);
+      } else {
+        reintentar(`HTTP ${res.statusCode}`);
+      }
+    });
+    req.on('timeout', () => req.destroy(new Error('timeout')));
+    req.on('error', (error) => reintentar(error.message));
+    req.end(cuerpo);
+  }, espera).unref();
 }
 
 function decidir(token) {
@@ -155,6 +215,13 @@ async function cobrar(req, res) {
   }
   console.log(`[pasarela] ${resultado.estado} ${resultado.referencia} monto=${monto}`);
   responder(res, 200, resultado);
+  confirmarPorWebhook({
+    claveIdempotencia: clave,
+    operacion: 'COBRO',
+    resultado: resultado.estado,
+    referencia: resultado.referencia,
+    motivo: resultado.motivo,
+  });
 }
 
 async function reembolsar(req, res) {
@@ -202,6 +269,13 @@ async function reembolsar(req, res) {
   if (clave) reembolsos.set(clave, resultado);
   console.log(`[pasarela] reembolso ${resultado.estado} ${referenciaCobro} monto=${monto}`);
   responder(res, 200, resultado);
+  confirmarPorWebhook({
+    claveIdempotencia: clave,
+    operacion: 'REEMBOLSO',
+    resultado: resultado.estado,
+    referencia: resultado.referencia,
+    motivo: resultado.motivo,
+  });
 }
 
 const servidor = http.createServer((req, res) => {

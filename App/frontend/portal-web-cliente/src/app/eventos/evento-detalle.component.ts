@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -34,6 +34,7 @@ const TOKENS_DEMO = [
   standalone: true,
   imports: [RouterLink, DecimalPipe, MatCardModule, MatButtonModule, MatIconModule],
   templateUrl: './evento-detalle.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './evento-detalle.component.scss'
 })
 export class EventoDetalleComponent {
@@ -50,6 +51,8 @@ export class EventoDetalleComponent {
   readonly evento = signal<Evento | undefined>(undefined);
   readonly cargando = signal(true);
   readonly reservando = signal(false);
+  /** Puesto en la fila virtual mientras se espera turno; null si no hay fila. */
+  readonly posicionFila = signal<number | null>(null);
   readonly error = signal<string | null>(null);
 
   readonly zonaSeleccionada = signal('');
@@ -111,12 +114,15 @@ export class EventoDetalleComponent {
     this.error.set(null);
     let compra;
     try {
-      compra = await this.entradasService.reservar(zona.id, this.cantidad());
+      compra = await this.entradasService.reservar(evento.id, zona.id, this.cantidad(), (posicion) =>
+        this.posicionFila.set(posicion)
+      );
     } catch (error) {
       this.error.set(mensajeDeError(error));
       return;
     } finally {
       this.reservando.set(false);
+      this.posicionFila.set(null);
     }
 
     // Paso 2 de 2: pagar en la pasarela. El resumen usa el precio que devolvió
