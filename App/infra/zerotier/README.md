@@ -5,15 +5,20 @@ La implementación y las pruebas locales de herramientas no acreditan una prueba
 entre computadores. **Reparto confirmado:** A, Mac de Samuel; B, VM Javeriana
 Ubuntu22.04.5; C, Mac de Sebastián, solo navegador/registrador. Direcciones y red
 recibidas permanecen en inventario/JSON privados, fuera de Git. Los pings entre
-hosts están informados; capacidad, contenedores, HTTPS y tráfico real siguen
-pendientes. Estos guiones no instalan ZeroTier, unen nodos, cambian firewalls o
+hosts están informados y llegaron diagnósticos iniciales: A supera el mínimo
+de memoria observado pero faltan disco/CPU/puertos; B está bloqueado por permisos
+y plugin Compose. Contenedores, HTTPS y tráfico real siguen pendientes. Estos
+guiones no instalan ZeroTier, unen nodos, cambian firewalls o
 administran Redash. **La etapa actual termina antes de cualquier apagado.**
 
-Empezar por [ETAPAS-REALES.md](ETAPAS-REALES.md): diagnóstico por equipo, Git sin
+Continuar por [SIGUIENTES-PASOS.md](SIGUIENTES-PASOS.md): conserva develop de A
+y main de B con copias exclusivas, puertos alternativos y solución de permisos/
+Compose por sus administradores. El procedimiento general sigue en
+[ETAPAS-REALES.md](ETAPAS-REALES.md): diagnóstico por equipo, Git sin
 perder trabajo y CA/HTTPS con participación de los propietarios. No ejecutar
 construcción/arranque antes de revisar resultados A/B. Para apagar la VM B falta
-confirmar quién puede encenderla desde la plataforma universitaria; ARPUJ se
-conserva para administración, sin cambiar rutas. A debe permanecer encendido.
+confirmar si Samuel u otro responsable puede encenderla desde la plataforma
+universitaria; ARPUJ se conserva para administración, sin cambiar rutas. A debe permanecer encendido.
 
 ## Alcance y requisitos
 
@@ -27,7 +32,11 @@ A/B: Python 3.10+, Docker local/Compose con `config --format json`, OpenSSL,
 repositorio en `feature/sebastian` y **el mismo commit limpio**. Se soporta el
 guion de equipos en macOS/Linux; Windows requiere WSL2 y comprobar sus rutas desde
 Docker. El observador usa la biblioteca estándar de Python. No se usa `sudo`
-automático, Docker remoto o contexto SSH. No hay Swarm/Kubernetes ni un sistema
+automático, Docker remoto o contexto SSH. Para B, tras autorización local, existe
+`--consulta-zerotier-con-sudo`: únicamente `sudo -n zerotier-cli -j listnetworks`,
+sin elevar Docker/Git/Python y sin copiar el token. El propietario autentica sudo
+antes; falta de autorización detiene el preflight, sin reintento o prompt.
+No hay Swarm/Kubernetes ni un sistema
 nuevo de sesiones, pagos o trabajos.
 
 Las guardas de arranque exigen memoria asignada a Docker de **6144 MiB en A** o
@@ -38,12 +47,12 @@ CPU, disco y otros procesos. La capacidad de los servidores confirmados sigue
 pendiente; los 8GiB del Mac C no describen el Mac de Samuel ni habilitan servidores
 en C. El disco de la VM Docker requiere comprobación manual: `detectar` informa
 solo el disco del checkout y no impone un umbral de almacenamiento. No se cambian
-límites globales ni se detienen proyectos
-para satisfacer las guardas. Un `detectar` no selecciona rol.
+límites globales ni se detienen proyectos para satisfacer las guardas. Un `detectar` no selecciona rol.
 
 ## 1. Datos que acuerdan los tres participantes
 
-1. Reparto confirmado A/B/C del encabezado; faltan operador/reencendido de B,
+1. Reparto confirmado A/B/C; Samuel administra B desde A. Falta confirmar
+   reencendido desde plataforma y completar capacidad/acceso/puertos,
    ventana, OS/arquitectura/RAM/CPU, Docker/Compose y disco reales de A/B.
    Compartir el mismo identificador nuevo de demo por canal privado.
 2. Red **privada** e IP ZeroTier recibidas; comprobar en cada miembro que son
@@ -83,6 +92,12 @@ no sustituir la IP por `0.0.0.0` ni desactivar verificaciones.
 
 ## 2. Configurar y construir sin afectar instalaciones anteriores
 
+Los puertos por defecto de datos están ocupados en A. Usar el mapa alternativo
+**privado y común A/B/C** solo después de sondearlo en cada anfitrión con
+`equipo.py puertos --ip … --puertos …`. La reserva temporal no escucha ni acredita
+rutas/firewall; las guardas previas del montaje vuelven a comprobar todo. No
+editar montajes sellados o reutilizar los recursos activos para esta demo.
+
 Todos los comandos se ejecutan desde la raíz de HEXACORE. Los nombres de rutas
 entre `<…>` son datos por completar; usar un directorio privado nuevo por rol.
 
@@ -113,14 +128,17 @@ La pública JWT y el SQL inicial sin credenciales usan644 para njs/UID postgres,
 dentro de un directorio host700; las privadas siguen600. Cada Núcleo usa el UID/GID local para leer su
 montaje de la privada, cuya lectura comprueba la sonda antes del arranque.
 
-**B**, con esos mismos secretos y SHA:
+**B**, con esos mismos secretos y SHA, una vez resueltos Docker normal y Compose.
+Si necesita consulta ZeroTier privilegiada, el propietario autentica `sudo -v`
+antes de construir/iniciar/comprobar; no ejecutar equipo.py completo como root.
+Si su CLI funciona sin sudo, omitir la opción explícita de esos comandos:
 
 ```bash
 cp -n App/infra/zerotier/equipo.example.json "$ZT_PRIVADO/b.json"
 # Editar: rol B, mismos valores compartidos, su ruta de secretos y tls: null.
 python3 App/infra/zerotier/equipo.py configurar --config "$ZT_PRIVADO/b.json" --directorio "$ZT_PRIVADO/montaje-b"
 python3 App/infra/zerotier/equipo.py validar --directorio "$ZT_PRIVADO/montaje-b"
-python3 App/infra/zerotier/equipo.py construir --directorio "$ZT_PRIVADO/montaje-b"
+python3 App/infra/zerotier/equipo.py construir --directorio "$ZT_PRIVADO/montaje-b" --consulta-zerotier-con-sudo
 ```
 
 `configurar` reutiliza el resultado de `docker compose … config --format json`
@@ -184,8 +202,8 @@ servicio y su comando `preparar` se rechaza antes de operar Docker.
 **B**, después de A preparado:
 
 ```bash
-python3 App/infra/zerotier/equipo.py iniciar --directorio "$ZT_PRIVADO/montaje-b"
-python3 App/infra/zerotier/equipo.py comprobar --directorio "$ZT_PRIVADO/montaje-b"
+python3 App/infra/zerotier/equipo.py iniciar --directorio "$ZT_PRIVADO/montaje-b" --consulta-zerotier-con-sudo
+python3 App/infra/zerotier/equipo.py comprobar --directorio "$ZT_PRIVADO/montaje-b" --consulta-zerotier-con-sudo
 python3 App/infra/zerotier/equipo.py estado --directorio "$ZT_PRIVADO/montaje-b" --salida "$ZT_PRIVADO/estado-b-antes.json"
 ```
 
