@@ -2,7 +2,7 @@ import type { ConsumeMessage } from 'amqplib';
 import { randomUUID } from 'node:crypto';
 import { DataSource } from 'typeorm';
 import { ConexionRabbitMq } from '../../../compartido/rabbitmq/conexion-rabbitmq.service';
-import { ConsumidorIngresosMonitoreo } from './consumidor-ingresos.service';
+import { ConsumidorIngresosMonitoreo, PUNTO_SIN_NOMBRE } from './consumidor-ingresos.service';
 
 /** CU-019, paso 2: las ramas del consumidor que la e2e no alcanza sin romper la base a mitad. */
 describe('ConsumidorIngresosMonitoreo (CU-019)', () => {
@@ -38,8 +38,17 @@ describe('ConsumidorIngresosMonitoreo (CU-019)', () => {
   it('un mensaje ilegible o con campos inválidos va directo a la DLQ', async () => {
     await procesar(mensaje('{roto'));
     await procesar(mensaje({ ...ingreso(), escaneadoEn: 'ayer' }));
-    await procesar(mensaje({ ...ingreso(), puntoAcceso: '' }));
+    await procesar(mensaje({ ...ingreso(), puntoAcceso: 42 }));
     expect(canal.nack.mock.calls.map((c) => c[2])).toEqual([false, false, false]);
+  });
+
+  it.each([null, undefined, '  '])('un ingreso sin puerta (%p) se cuenta en «Acceso general», no va a la DLQ', async (puntoAcceso) => {
+    const query = jest.fn();
+    datos.transaction.mockImplementationOnce(async (f: (m: { query: jest.Mock }) => Promise<void>) => f({ query }));
+    await procesar(mensaje({ ...ingreso(), puntoAcceso }));
+    expect(canal.ack).toHaveBeenCalledTimes(1);
+    expect(canal.nack).not.toHaveBeenCalled();
+    expect(query.mock.calls.map((c) => c[1][c[0].includes('puntos_acceso') ? 1 : 2])).toEqual([PUNTO_SIN_NOMBRE, PUNTO_SIN_NOMBRE]);
   });
 
   it('con la base caída reencola hasta el máximo de intentos y entonces lo suelta', async () => {

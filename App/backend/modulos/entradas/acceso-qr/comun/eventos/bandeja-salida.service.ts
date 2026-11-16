@@ -7,7 +7,14 @@ import { ConexionRabbitMq } from '../rabbitmq/conexion-rabbitmq.service';
 
 /** Cada cuánto se mira la bandeja. Es la latencia máxima entre el commit y el broker. */
 const INTERVALO_MS = 300;
-const LOTE = 100;
+/**
+ * Hasta cuántos avisos salen por vuelta. Con las confirmaciones en paralelo una
+ * vuelta tarda lo que una ida y vuelta al broker, así que el techo es de unos
+ * LOTE / INTERVALO_MS avisos por segundo (≈ 1 600). Esperando cada confirmación
+ * por separado se quedaba en unos 50/s, y en un pico de ingresos el panel de
+ * Monitoreo (RNF-09, ≤ 2 s) se atrasaba minutos.
+ */
+const LOTE = 500;
 
 /**
  * Bandeja de salida: Transactional Outbox (ADR-15). Copia de la de Ventas.
@@ -79,10 +86,11 @@ export class BandejaSalida implements OnApplicationBootstrap, OnModuleDestroy {
           await canal.assertExchange(exchange, 'topic', { durable: true });
         }
 
-        const publicados: string[] = [];
-        for (const pendiente of pendientes) {
+        // Todo el lote sale en orden por el mismo canal y después se esperan las
+        // confirmaciones juntas, no una por una.
+        const confirmaciones = pendientes.map((pendiente) => {
           const cuerpo: Record<string, unknown> = { ...pendiente.cuerpo, secuencia: Number(pendiente.secuencia) };
-          const confirmado = await new Promise<boolean>((resolve) => {
+          return new Promise<boolean>((resolve) => {
             canal.publish(
               pendiente.exchange,
               pendiente.clave,
@@ -96,11 +104,13 @@ export class BandejaSalida implements OnApplicationBootstrap, OnModuleDestroy {
               (error) => resolve(!error),
             );
           });
-          // Se para en el primero que falle: publicar los siguientes rompería
-          // el orden que la secuencia promete.
-          if (!confirmado) break;
-          publicados.push(pendiente.secuencia);
-        }
+        });
+        const confirmados = await Promise.all(confirmaciones);
+        // Solo se marcan los anteriores al primero que falle: ese y los que le
+        // siguen vuelven a salir en la próxima vuelta, en orden. Los que ya
+        // llegaron llegarán dos veces, y quien consume los descarta por `id`.
+        const primerFallo = confirmados.indexOf(false);
+        const publicados = pendientes.slice(0, primerFallo === -1 ? pendientes.length : primerFallo).map((p) => p.secuencia);
 
         if (publicados.length > 0) {
           await tx.update(EventoSaliente, { secuencia: In(publicados) }, { publicadoEn: new Date() });

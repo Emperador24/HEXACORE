@@ -6,8 +6,8 @@ import { ModuloPermisos, PeticionConSesion, RolesPermitidos, SesionValida } from
 import { RegistrarDecisionDto, ResultadoDecisionDto } from './dto/decision.dto';
 import { PanelService } from './panel.service';
 
-/** Cada cuánto se recalcula el panel que se empuja por el flujo (RNF de rendimiento: "casi en tiempo real"). */
-const INTERVALO_MS = 3000;
+/** Cada cuánto se recalcula el panel que se empuja por el flujo. RNF-09 pide ver un ingreso en ≤ 2 s. */
+const INTERVALO_MS = 1000;
 
 /**
  * CU-019: Monitorear el evento. El actor es el supervisor; como el sistema no

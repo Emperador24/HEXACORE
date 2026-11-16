@@ -57,8 +57,15 @@ services:
       # Servido bajo /grafana/ detrás del gateway.
       GF_SERVER_ROOT_URL: "%(protocol)s://%(domain)s:8080/grafana/"
       GF_SERVER_SERVE_FROM_SUB_PATH: "true"
-      GF_AUTH_ANONYMOUS_ENABLED: "true"
-      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      # Sin acceso anónimo: los logs llevan rutas, upstreams y errores, y el
+      # gateway publica /grafana/ a quien llegue al :8080. Se entra con usuario
+      # y contraseña; en una máquina compartida, GRAFANA_CONTRASENA en el .env.
+      # (Solo se aplica al crear el volumen grafana-datos; después se cambia
+      # desde Grafana o con `grafana cli admin reset-admin-password`.)
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_AUTH_DISABLE_SIGNOUT_MENU: "false"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USUARIO:-admin}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_CONTRASENA:-hexacore2026}
       GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/tableros/hexacore.json
       GF_ANALYTICS_REPORTING_ENABLED: "false"

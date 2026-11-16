@@ -1,5 +1,5 @@
 import { ForbiddenException, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
-import { FlujoOcupacionService } from './flujo-ocupacion.service';
+import { FlujoOcupacionService, INTERVALO_OCUPACION_MS as CICLO } from './flujo-ocupacion.service';
 import { SesionValida } from '../comun/autenticacion/sesion-valida.guard';
 import { OcupacionService } from './ocupacion.service';
 
@@ -18,29 +18,29 @@ describe('SSE Parqueaderos: revalidación y ciclo de vida (dobles, tiempo virtua
     return { datos, completo, sub };
   }
   it('continúa con sesión válida y comprueba también después del panel', async () => {
-    const f = abrir(); await jest.advanceTimersByTimeAsync(3000);
+    const f = abrir(); await jest.advanceTimersByTimeAsync(CICLO);
     expect(f.datos).toEqual([{ type: 'ocupacion', data: { total: 1 } }, { type: 'ocupacion', data: { total: 1 } }]);
     expect(validar).toHaveBeenCalledTimes(4); expect(panel).toHaveBeenCalledTimes(2); f.sub.unsubscribe();
   });
   it.each([new UnauthorizedException('dato secreto'), new ServiceUnavailableException('detalle interno')])('cierra y sanea ante invalidación: %s', async error => {
     const f = abrir(); await jest.advanceTimersByTimeAsync(0); validar.mockRejectedValue(error);
-    await jest.advanceTimersByTimeAsync(3000);
+    await jest.advanceTimersByTimeAsync(CICLO);
     expect(f.completo).toHaveBeenCalledTimes(1); expect(f.datos).toHaveLength(2);
     expect(JSON.stringify(f.datos)).not.toMatch(/dato secreto|detalle interno|token-en-cabecera/);
-    await jest.advanceTimersByTimeAsync(9000); expect(panel).toHaveBeenCalledTimes(1);
+    await jest.advanceTimersByTimeAsync(CICLO * 3); expect(panel).toHaveBeenCalledTimes(1);
   });
   it('pasa el acceso exigido y cierra si se pierde el permiso (CU-028B)', async () => {
     const acceso = { roles: ['Organizador'], modulo: 'parqueaderos' as const, accion: 'leer' as const };
     const datos: unknown[] = []; const completo = jest.fn();
     servicio.seguir('evento-propio', 'token-en-cabecera', acceso).subscribe({ next: v => datos.push(v), complete: completo });
     await jest.advanceTimersByTimeAsync(0); expect(validar).toHaveBeenCalledWith('token-en-cabecera', acceso);
-    validar.mockRejectedValue(new ForbiddenException()); await jest.advanceTimersByTimeAsync(3000);
+    validar.mockRejectedValue(new ForbiddenException()); await jest.advanceTimersByTimeAsync(CICLO);
     expect(datos.at(-1)).toMatchObject({ type: 'sesion_finalizada', data: { codigo: 'ROL_INSUFICIENTE' } });
     expect(completo).toHaveBeenCalledTimes(1);
   });
   it('descarta el panel pendiente cuando una comprobación periódica detecta revocación', async () => {
     const consulta = diferida(); panel.mockReturnValue(consulta.promesa); const f = abrir(); await jest.advanceTimersByTimeAsync(0);
-    validar.mockRejectedValue(new UnauthorizedException()); await jest.advanceTimersByTimeAsync(3000);
+    validar.mockRejectedValue(new UnauthorizedException()); await jest.advanceTimersByTimeAsync(CICLO);
     consulta.resolver({ datoTardio: true }); await jest.advanceTimersByTimeAsync(0);
     expect(f.datos).toHaveLength(1); expect(f.datos[0]).toMatchObject({ type: 'sesion_finalizada', data: { codigo: 'SIN_AUTENTICAR' } });
     expect(f.completo).toHaveBeenCalledTimes(1);
@@ -48,7 +48,7 @@ describe('SSE Parqueaderos: revalidación y ciclo de vida (dobles, tiempo virtua
   it('no solapa la validación periódica con la previa a emitir', async () => {
     const consulta = diferida(), comprobacion = diferida(); panel.mockReturnValue(consulta.promesa);
     const f = abrir(); await jest.advanceTimersByTimeAsync(0); validar.mockReturnValue(comprobacion.promesa);
-    await jest.advanceTimersByTimeAsync(3000); consulta.resolver({ dato: true }); await jest.advanceTimersByTimeAsync(0);
+    await jest.advanceTimersByTimeAsync(CICLO); consulta.resolver({ dato: true }); await jest.advanceTimersByTimeAsync(0);
     expect(validar).toHaveBeenCalledTimes(2); comprobacion.rechazar(new UnauthorizedException()); await jest.advanceTimersByTimeAsync(0);
     expect(f.datos).toHaveLength(1); expect(f.completo).toHaveBeenCalledTimes(1);
   });

@@ -2,7 +2,7 @@ import { ForbiddenException, ServiceUnavailableException, UnauthorizedException 
 import { FlujoOperacionService } from './flujo-operacion.service';
 import { SesionValida } from '../../../compartido/seguridad/sesion-valida.guard';
 
-describe.each([{ intervalo: 2000, tipo: 'evacuacion' as const }, { intervalo: 3000, tipo: 'panel' as const }])('SSE Operación $tipo: revalidación y ciclo de vida (dobles, tiempo virtual)', ({ intervalo, tipo }) => {
+describe.each([{ intervalo: 2000, tipo: 'evacuacion' as const }, { intervalo: 1000, tipo: 'panel' as const }])('SSE Operación $tipo: revalidación y ciclo de vida (dobles, tiempo virtual)', ({ intervalo, tipo }) => {
   let validar: jest.Mock, panel: jest.Mock, servicio: FlujoOperacionService;
   const diferida = () => { let resolver!: (v?: unknown) => void, rechazar!: (e: unknown) => void;
     const promesa = new Promise((res, rej) => { resolver = res; rechazar = rej; }); return { promesa, resolver, rechazar }; };

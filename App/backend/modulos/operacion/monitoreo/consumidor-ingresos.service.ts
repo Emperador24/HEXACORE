@@ -7,12 +7,14 @@ import { CONEXION_OPERACION } from '../persistencia/conexion';
 import { COLA_INGRESOS, MAXIMO_INTENTOS, declararTopologiaMonitoreo } from './topologia';
 
 const ES_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** Donde se cuenta un ingreso cuyo escaneo no dijo la puerta: el punto de acceso es opcional en CU-002. */
+export const PUNTO_SIN_NOMBRE = 'Acceso general';
 
 interface IngresoRegistrado {
   id: string;
   tipo: 'INGRESO_REGISTRADO';
   eventoId: string;
-  puntoAcceso: string;
+  puntoAcceso?: string | null;
   escaneadoEn: string;
 }
 
@@ -46,11 +48,16 @@ export class ConsumidorIngresosMonitoreo implements OnModuleInit {
     const canal = this.conexion.obtenerCanal();
     if (!mensaje || !canal) return;
     let ingreso: IngresoRegistrado;
+    let punto: string;
     try {
       ingreso = JSON.parse(mensaje.content.toString()) as IngresoRegistrado;
-      if (!ES_UUID.test(ingreso.id) || !ES_UUID.test(ingreso.eventoId) || !ingreso.puntoAcceso || Number.isNaN(Date.parse(ingreso.escaneadoEn))) {
+      const nombrado = ingreso.puntoAcceso === undefined || ingreso.puntoAcceso === null || typeof ingreso.puntoAcceso === 'string';
+      if (!ES_UUID.test(ingreso.id) || !ES_UUID.test(ingreso.eventoId) || !nombrado || Number.isNaN(Date.parse(ingreso.escaneadoEn))) {
         throw new Error('campos inválidos');
       }
+      // Acceso QR publica `puntoAcceso: null` cuando el personal no eligió puerta.
+      // Ese ingreso existe y suma al aforo: descartarlo dejaba el panel por debajo de la realidad.
+      punto = (ingreso.puntoAcceso?.trim() || PUNTO_SIN_NOMBRE).slice(0, 120);
     } catch (error) {
       this.log.warn(`Ingreso descartado a la DLQ: ${(error as Error).message}`);
       canal.nack(mensaje, false, false);
@@ -60,10 +67,10 @@ export class ConsumidorIngresosMonitoreo implements OnModuleInit {
       await this.datos.transaction(async (m) => {
         await m.query(
           `INSERT INTO ingresos (id, evento_id, punto_acceso, escaneado_en) VALUES ($1, $2, $3, $4) ON CONFLICT (id) DO NOTHING`,
-          [ingreso.id, ingreso.eventoId, ingreso.puntoAcceso.slice(0, 120), ingreso.escaneadoEn],
+          [ingreso.id, ingreso.eventoId, punto, ingreso.escaneadoEn],
         );
         // El primer ingreso por una entrada la da de alta como punto de acceso.
-        await m.query(`INSERT INTO puntos_acceso (evento_id, nombre) VALUES ($1, $2) ON CONFLICT DO NOTHING`, [ingreso.eventoId, ingreso.puntoAcceso.slice(0, 120)]);
+        await m.query(`INSERT INTO puntos_acceso (evento_id, nombre) VALUES ($1, $2) ON CONFLICT DO NOTHING`, [ingreso.eventoId, punto]);
       });
       this.intentos.delete(ingreso.id);
       canal.ack(mensaje);
