@@ -78,5 +78,13 @@ class GuardasRecursos(unittest.TestCase):
         with patch.object(montaje,'limpio',side_effect=ValueError('trabajo local')),self.assertRaises(ValueError):self.m.previo()
         self.m.compose.assert_not_called()
 
+    def test_previo_propaga_solo_opcion_de_consulta_sudo(self):
+        self.m.consulta_zerotier_con_sudo=True
+        self.m.recursos=Mock(return_value=[]);self.m.puertos=Mock();self.m.capacidad=Mock(return_value={})
+        with patch.object(montaje,'limpio'),patch.object(montaje,'red_local') as red:
+            self.m.previo()
+        red.assert_called_once_with(self.m.c,con_sudo=True)
+        self.m.compose.assert_not_called()
+
 
 if __name__=='__main__':unittest.main()
