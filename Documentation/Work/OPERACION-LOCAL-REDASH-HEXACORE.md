@@ -4,10 +4,11 @@
 y validación del cliente Compose; no arranque/parada/prueba de caída local, ni
 operación sobre Redash u otros proyectos. El Mac tiene 8GiB físicos y el motor
 2912MiB: no cumple las guardas A≥6144MiB/B≥3072MiB y no se asigna como A.
-En la consulta de cierre el socket Docker está ausente (info sale1); no se intenta
+En la consulta posterior el socket Docker está ausente (info sale1); no se intenta
 iniciar/restaurar el motor. Aparece ZeroTier1.16.2 instalado fuera de estos guiones,
-pero listnetworks sale2 sin inventario. No se une/configura una red ni se atribuye
-ese cambio del entorno a esta entrega. Reconsultar capacidad/estado antes de operar.
+primero listnetworks sale2 y a las 18:26 UTC responde con una red PRIVATE/OK y una
+IP. Inventario real conservado privado, sin asignar rol. No se une/configura una
+red ni se atribuye ese cambio del entorno a esta entrega. Reconsultar capacidad/estado antes de operar.
 Los comandos nuevos usan ámbito propio y no invocan los procedimientos históricos
 de alternancia de esta guía. [Plan y pendientes reales](PLAN-DEMO-ZEROTIER.md).
 

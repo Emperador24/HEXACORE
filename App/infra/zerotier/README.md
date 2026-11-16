@@ -141,7 +141,10 @@ en un PostgreSQL/volumen exclusivo. No se transfieren bases habituales.
 La opción **explícita** `--cuentas-demo` reutiliza solo el CLI de Identidad existente
 para las primeras cuentas, después de comprobar que todas las tablas de negocio
 están vacías (salvo roles e historiales de migración). Ese CLI contiene TRUNCATE:
-por eso se rechaza si hay cualquier dato y nunca se monta en B. Solo el hijo de
+por eso se rechaza si hay cualquier dato. El guion de preparación solo se monta
+en A; B no tiene una acción que lo invoque. Las imágenes comunes conservan los
+CLI existentes, lo que no equivale a impedir acciones manuales de un administrador
+con acceso a Docker. Solo el hijo de
 fixtures usa `NODE_ENV=development`, requerido por su guarda; las apps conservan
 `production`, cookies Secure y HTTPS. Las contraseñas de fixtures son conocidas:
 usar exclusivamente este ámbito aislado y conservar su salida solo en el log
@@ -211,7 +214,9 @@ certificado. No se usa `-k`, `CERT_NONE` ni `check_hostname=False`.
 Núcleos comparten privada JWT/emisor/base, gateway y Boleterías la pública.
 `NODE_ENV=production` conserva cookie de renovación Secure/HttpOnly/SameSiteStrict.
 No hay afinidad de sesión. La guarda sigue comprobando Redis/permisos vigentes;
-auth_request, njs, rutas sensibles y parámetros SSE no se reescriben.
+auth_request, njs, rutas sensibles y parámetros SSE no se reescriben. Se conserva
+el aforo de Cola25 del Compose base (el default del código es100); solo Núcleo
+recibe el secreto del webhook, como en el contrato de configuración vigente.
 
 El gateway mezcla destinos locales Docker y B explícito. Mantiene X-Servidor y
 añade X-Demo-Solicitud; logs JSON con ese ID, ruta sin query, estado, upstream y

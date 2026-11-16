@@ -173,10 +173,15 @@ def derivar(base, c, d, propietario, sha):
                 TOKEN_SERVICIOS=k['servicios'], REDIS_HOST='redis' if c['rol'] == 'A' else host,
                 REDIS_PUERTO=str(6379 if c['rol'] == 'A' else p['redis']), PAGOS_PROVEEDOR='simulada',
                 PAGOS_PROVEEDOR_URL='http://' + ('pasarela:3099' if c['rol'] == 'A' else f'{host}:{p["pasarela"]}'),
-                PASARELA_TIMEOUT_MS='10000', PASARELA_SECRETO_WEBHOOK=k['webhook'])
+                PASARELA_TIMEOUT_MS='10000')
             s['volumes'] = [bind(d / 'jwt-publica.pem', '/claves/jwt-publica.pem')]
+        if nombre == 'boleteria':
+            # Conservar el aforo explícito del montaje actual (25), no caer al
+            # default del código (100) al reconstruir el entorno sin secretos.
+            s['environment']['COLA_AFORO_CONCURRENTE'] = base['services'][nombre]['environment']['COLA_AFORO_CONCURRENTE']
         if nombre == 'nucleo':
             s['environment']['AUTH_JWT_CLAVE_PRIVADA_ARCHIVO'] = '/claves/jwt-privada.pem'
+            s['environment']['PASARELA_SECRETO_WEBHOOK'] = k['webhook']
             s['volumes'] += [bind(d / 'jwt-privada.pem', '/claves/jwt-privada.pem'),
                             bind(CARPETA / 'sonda.cjs', '/demo/sonda.cjs'), bind(d / 'historial.json', '/demo/historial.json')]
             if c['rol']=='A':s['volumes'].append(bind(CARPETA/'preparacion-demo.cjs','/demo/preparacion-demo.cjs'))

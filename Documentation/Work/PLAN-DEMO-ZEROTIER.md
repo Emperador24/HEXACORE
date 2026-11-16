@@ -120,7 +120,9 @@ correlacionan ID/ruta/HTTP/upstream/tiempo sin tokens, cookies o query. La polí
 propia fija **`proxy_next_upstream off`, un intento**, `max_fails=1` y
 `fail_timeout=10s`; conserva conexión5s/HTTP35s/SSE1h sin buffering. No agrega
 `non_idempotent` ni reintentos de escrituras financieras. Detección pasiva y
-DNS5s no garantizan una cota de recuperación. La llamada njs de Cola sigue usando
+DNS5s no garantizan una cota de recuperación. Se conserva Cola25 del Compose,
+frente al default100 del código; el secreto de webhook solo se entrega a Núcleo.
+La llamada njs de Cola sigue usando
 Boletería **local de A**: compras fuera de la carga de caída.
 
 A prepara SQL con el CLI vigente/advisory lock, **11 esquemas de negocio y 36
@@ -175,12 +177,12 @@ registrador acredita su propia sesión, no una validación visual inexistente.
 | Comprobación de esta entrega | Resultado / alcance |
 |---|---|
 | Referencias Git y PR53 | Merge verificado; rama actualizada normalmente desde develop |
-| Equipo local, lectura sin asignar rol | macOS27 arm64/Mac14,2, 8GiB físicos/8CPU; Docker29.7.2, Compose5.3.1, motor2912MiB en consulta inicial; al cierre aparece CLI ZeroTier1.16.2, consulta de redes sale2 sin datos |
-| Guarda de memoria | Último valor comprobado no cumple A≥6144MiB ni B≥3072MiB. Al cierre Docker info sale1/socket ausente; no se inicia/restaura el motor ni se operan proyectos. Reconsultar capacidad antes de elegir rol |
+| Equipo local, lectura sin asignar rol | macOS27 arm64/Mac14,2, 8GiB físicos/8CPU; Docker29.7.2, Compose5.3.1, motor2912MiB en consulta inicial. Después CLI ZeroTier1.16.2: primero consulta2 y a las 18:26 UTC una red PRIVATE/OK con una IP; valores reales privados, sin rol asignado |
+| Guarda de memoria | Último valor comprobado no cumple A≥6144MiB ni B≥3072MiB. En la consulta posterior Docker info sale1/socket ausente; no se inicia/restaura el motor ni se operan proyectos. Reconsultar capacidad antes de elegir rol |
 | Python, Compose cliente y HTTPS loopback | 51/51 locales, incluidos errores de entradas, memoria, preparación con apps activas y TLS. Compose renderiza sin crear recursos; sin SQL/semillas/caídas reales |
 | Preparación con dobles SQL/proceso | 7/7; valida B prohibido, datos presentes, repetición y fallo parcial. No ejecuta semillas o SQL reales |
 | Incidencias locales conservadas | Primer intento45: command:null de Compose5; se eliminan nulos y rechazan comandos administrativos. Segundo48: variable del bucle ocultaba secretos; corregida. Logs privados, sin ocultar fallos |
-| Gateway/njs/Caddy reales | Prueba propia añadida a CI con dos dobles Node aislados: auth401/403, reparto, correlación, POST interrumpido sin reenvío, TLS, SSE y caída de un doble. Resultado publicado en el PR/CI; **no prueba hosts/VPN** |
+| Gateway/njs/Caddy reales | Prueba propia añadida a CI con dos dobles Node aislados: auth401/403, reparto, correlación, POST interrumpido sin reenvío, TLS, SSE y caída de un doble. [CI92](https://github.com/Emperador24/HEXACORE/actions/runs/43927587452), dabd181: **8/8 trabajos aprobados**, proxy con503 visible y atención posterior por A. Última referencia/CI en [PR54](https://github.com/Emperador24/HEXACORE/pull/54); **no prueba hosts/VPN** |
 | Evidencia anterior reutilizada | Seguridad167/167 operaciones protegidas, regresiones y SSE con límites de RESULTADO/SECURITY-SAFETY; no se repiten matrices ni se declaran RNF05/06 completos |
 | Prueba A/B/C real | **PENDIENTE: no iniciada**. Sin equipos/red/IP/certificados confirmados, sin apagado de un computador |
 

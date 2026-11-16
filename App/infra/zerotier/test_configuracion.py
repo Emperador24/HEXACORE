@@ -98,12 +98,15 @@ class ComposeReal(unittest.TestCase):
             for p in s.get('ports',[]):self.assertEqual(p['host_ip'],c['ip_a'])
         self.assertFalse(cfg['services']['nucleo'].get('ports'))
         self.assertFalse(cfg['services']['api-gateway'].get('ports'))
+        self.assertEqual(cfg['services']['boleteria']['environment']['COLA_AFORO_CONCURRENTE'],'25')
         for v in cfg['volumes'].values():self.assertTrue(v['name'].startswith('hxc-zt-prueba-local-a-'))
 
     def test_b_exactamente_dos_apps_sin_preparacion(self):
         c,cfg,_=self.render('B')
         self.assertEqual(set(cfg['services']),{'nucleo','boleteria'})
         self.assertEqual(cfg['volumes'],{})
+        self.assertEqual(cfg['services']['boleteria']['environment']['COLA_AFORO_CONCURRENTE'],'25')
+        self.assertNotIn('PASARELA_SECRETO_WEBHOOK',cfg['services']['boleteria']['environment'])
         for s in cfg['services'].values():
             self.assertNotIn('command',s);self.assertNotIn('depends_on',s)
             self.assertEqual(s['environment']['POSTGRES_HOST'],c['ip_a'])
