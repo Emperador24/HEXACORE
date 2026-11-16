@@ -9,6 +9,9 @@ cd App/infra && ./iniciar.sh --datos-demo --monitoreo
 
 Esa orden levanta el sistema completo y además el tablero de monitoreo, en
 <http://localhost:8080/grafana/>. El tablero entra por el mismo punto que la API: el gateway.
+Pide usuario y contraseña (por omisión `admin` / `hexacore2026`; en una máquina compartida,
+`GRAFANA_CONTRASENA` en `App/infra/.env`): los logs muestran rutas, réplicas y errores, y el
+`:8080` lo alcanza cualquiera en la red.
 
 ## Orden sugerido en vivo (≈ 6,5 min)
 
@@ -23,16 +26,29 @@ Esa orden levanta el sistema completo y además el tablero de monitoreo, en
 
 ---
 
+### Mediciones que no se corren en vivo
+
+Tardan más de lo que hay en la sustentación; se muestran con su informe ya escrito.
+
+| Orden | Qué mide | Informe |
+|---|---|---|
+| `./prueba-carga.py --escenario cu006 --escenario cu001 --escenario qr --salida CARGA-boleteria-1-replica` | RNF-07 sobre CU-001 y RNF-08 (validar el QR) | `informe-atributos/CARGA-boleteria-1-replica.md` |
+| Lo mismo con Boletería ×2 y `--salida CARGA-boleteria-2-replicas` | RNF-10 sobre Entradas | `informe-atributos/CARGA-boleteria-2-replicas.md` |
+| `./tiempo-real.py` | RNF-09 (del ingreso al tablero) y RNF-17 (aviso de evacuación) | `informe-atributos/TIEMPO-REAL.md` |
+| `./tiempo-real.py evacuacion --caida`, con Núcleo ×2 | RNF-17 con una réplica muerta en la activación | `informe-atributos/TIEMPO-REAL-caida.md` |
+
+---
+
 ## 1. Monitoreo y logs
 
-`docker-compose.monitoreo.yml` levanta cuatro piezas:
+`docker-compose.monitoreo.yml` levanta cinco piezas:
 
 | Pieza | Qué hace |
 |---|---|
 | **exportador-docker** | Lee CPU y memoria de cada contenedor de la API de Docker. |
-| **Prometheus** | Las guarda, una muestra cada 5 s. |
+| **Prometheus** | Las guarda, una muestra cada 2 s, durante 2 días. |
 | **Promtail → Loki** | Recogen los logs de todos los contenedores. |
-| **Grafana** | Muestra el tablero «HEXACORE · Instancias y logs». |
+| **Grafana** | Muestra el tablero «HEXACORE · Instancias y logs». Sin visitantes anónimos: pide sesión. |
 
 El tablero tiene estos paneles:
 
