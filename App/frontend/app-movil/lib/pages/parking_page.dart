@@ -99,17 +99,61 @@ class _ParkingPageState extends State<ParkingPage> {
     } catch (_) {}
   }
 
-  bool get _placaValida => RegExp(r'^[A-Za-z0-9-]{4,10}$').hasMatch(_placa.text.trim());
+  /// Como la guarda el servidor: mayúsculas, sin guiones ni espacios.
+  String get _placaNormalizada => _placa.text.replaceAll(RegExp(r'[-\s]'), '').toUpperCase();
+
+  /// El formato que publica el servidor para este tipo (carro ABC123, moto ABC12D).
+  /// La regla es suya; aquí solo se usa para avisar antes de enviar (RNF-14).
+  Map<String, dynamic>? get _formato => (_disponibilidad?['formatosPlaca'] as Map?)?[_tipo] as Map<String, dynamic>?;
+
+  bool get _placaValida {
+    final formato = _formato;
+    return formato == null ? _placaNormalizada.length >= 4 : RegExp(formato['patron'] as String).hasMatch(_placaNormalizada);
+  }
+
+  /// Al cambiar el tipo, si la zona elegida no tiene espacios de ese tipo, se pasa a una que sí.
+  void _elegirTipo(String tipo) {
+    final zonas = ((_disponibilidad?['zonas'] as List?) ?? []).cast<Map<String, dynamic>>();
+    num libres(String? id) => (zonas.where((z) => z['id'] == id).firstOrNull?['disponibles'][tipo] as num?) ?? 0;
+    setState(() {
+      _tipo = tipo;
+      _error = null;
+      if (libres(_zonaId) == 0) _zonaId = zonas.where((z) => (z['disponibles'][tipo] as num) > 0).firstOrNull?['id'] as String? ?? _zonaId;
+    });
+  }
+
+  /// Antes de apartar el espacio: que la placa y el vehículo sean los correctos.
+  Future<bool> _confirmarDatos(String zona) async =>
+      await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Revisa los datos'),
+          content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(_placaNormalizada,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontFamily: 'monospace', letterSpacing: 2)),
+            Text('${_tipos[_tipo]} · $zona'),
+            if (_disponibilidad?['precio'] != null) Text('Total: \$${(_disponibilidad!['precio'] as num).round()}'),
+          ]),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Corregir')),
+            FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Sí, la placa es correcta')),
+          ],
+        ),
+      ) ??
+      false;
 
   Future<void> _reservar() async {
     final eventoId = _eventoId, zonaId = _zonaId;
     if (eventoId == null || zonaId == null || !_placaValida) return;
+    final zonas = ((_disponibilidad?['zonas'] as List?) ?? []).cast<Map<String, dynamic>>();
+    final nombreZona = zonas.where((z) => z['id'] == zonaId).firstOrNull?['nombre'] as String? ?? '';
+    if (!await _confirmarDatos(nombreZona) || !mounted) return;
     setState(() {
       _error = null;
       _alternativas = [];
     });
     try {
-      final reserva = await _api.reservar(eventoId, zonaId: zonaId, placa: _placa.text.trim(), tipoVehiculo: _tipo);
+      final reserva = await _api.reservar(eventoId, zonaId: zonaId, placa: _placaNormalizada, tipoVehiculo: _tipo);
       _placa.clear();
       await _recargarReservas();
       if (mounted) await _pagar(reserva);
@@ -185,6 +229,9 @@ class _ParkingPageState extends State<ParkingPage> {
     final d = _disponibilidad;
     final zonas = d == null ? <Map<String, dynamic>>[] : (d['zonas'] as List).cast<Map<String, dynamic>>();
     final libres = zonas.where((z) => z['id'] == _zonaId).map((z) => (z['disponibles'][_tipo] as num).toInt()).firstOrNull ?? 0;
+    final libresTotales = zonas.fold<int>(0, (n, z) => n + (z['disponibles'][_tipo] as num).toInt());
+    final formato = _formato;
+    final esMoto = _tipo == 'MOTO';
     return RefreshIndicator(
       onRefresh: () async {
         await _recargarReservas();
@@ -215,7 +262,7 @@ class _ParkingPageState extends State<ParkingPage> {
                 initialValue: _tipo,
                 decoration: const InputDecoration(labelText: 'Tipo de vehículo'),
                 items: [for (final t in _tipos.entries) DropdownMenuItem(value: t.key, child: Text(t.value))],
-                onChanged: (v) => setState(() => _tipo = v!),
+                onChanged: (v) => _elegirTipo(v!),
               ),
               const SizedBox(height: 12),
               if (d == null && _error == null)
@@ -223,6 +270,12 @@ class _ParkingPageState extends State<ParkingPage> {
               else if (d != null) ...[
                 if (d['reservable'] != true)
                   Text(d['motivo'] as String? ?? 'No quedan espacios para reservar en este evento.', style: textTheme.bodySmall),
+                Text(
+                  libresTotales == 0
+                      ? 'No hay espacios para ${_tipos[_tipo]!.toLowerCase()} en este evento.'
+                      : '$libresTotales espacios libres para ${_tipos[_tipo]!.toLowerCase()} en total.',
+                  style: textTheme.bodySmall,
+                ),
                 Material(
                   type: MaterialType.transparency,
                   child: RadioGroup<String>(
@@ -247,7 +300,15 @@ class _ParkingPageState extends State<ParkingPage> {
                   controller: _placa,
                   textCapitalization: TextCapitalization.characters,
                   maxLength: 10,
-                  decoration: const InputDecoration(labelText: 'Placa del vehículo', counterText: ''),
+                  decoration: InputDecoration(
+                    labelText: 'Placa del vehículo',
+                    counterText: '',
+                    hintText: formato?['ejemplo'] as String? ?? 'ABC123',
+                    helperText: formato == null ? null : 'Placa de ${esMoto ? 'moto' : 'carro'}: ${formato['descripcion']}',
+                    errorText: _placa.text.isNotEmpty && !_placaValida
+                        ? 'No es una placa de ${esMoto ? 'moto' : 'carro'} válida${formato == null ? '' : ': ${formato['descripcion']}'}'
+                        : null,
+                  ),
                   onChanged: (_) => setState(() {}),
                 ),
                 if (d['precio'] != null) ...[

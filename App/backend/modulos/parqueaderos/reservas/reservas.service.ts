@@ -11,7 +11,7 @@ import { EventosService } from '../../eventos-recintos/eventos/eventos.service';
 import { CobrarDto, PagosService, ResultadoCobro, validarSolicitudPagos } from '../../finanzas/pagos';
 import { AsignacionService } from '../asignacion/asignacion.service';
 import { CobroService, horasEntre } from '../cobro/cobro.service';
-import { TIPOS_VEHICULO, TipoVehiculo, nombreTipo, normalizarPlaca } from '../comun/vehiculos';
+import { FORMATO_PLACA, TIPOS_VEHICULO, TipoVehiculo, errorPlaca, nombreTipo, normalizarPlaca } from '../comun/vehiculos';
 import { ReservarDto } from '../dto/parqueaderos.dto';
 import { CONEXION_PARQUEADEROS } from '../persistencia/conexion';
 import { NotificadorReservas } from './notificador-reservas.service';
@@ -113,6 +113,10 @@ export class ReservasService implements OnModuleInit, OnModuleDestroy {
       reservable: !!tarifa && lista.some((z) => Object.values(z.disponibles).some((n) => n > 0)),
       motivo: !tarifa ? 'Todavía no hay tarifa de parqueadero: no se puede reservar.' : null,
       zonas: lista,
+      // Para que el portal y la app avisen antes de enviar, sin copiar la regla (RNF-14).
+      formatosPlaca: Object.fromEntries(TIPOS_VEHICULO.map((t) => [t, {
+        patron: FORMATO_PLACA[t].patron.source, ejemplo: FORMATO_PLACA[t].ejemplo, descripcion: FORMATO_PLACA[t].descripcion,
+      }])) as Record<TipoVehiculo, { patron: string; ejemplo: string; descripcion: string }>,
     };
   }
 
@@ -124,6 +128,8 @@ export class ReservasService implements OnModuleInit, OnModuleDestroy {
     const llegada = this.llegada(evento, dto.llegada);
     const placa = normalizarPlaca(dto.placa);
     const tipo = dto.tipoVehiculo ?? 'AUTOMOVIL';
+    const problemaPlaca = errorPlaca(placa, tipo);
+    if (problemaPlaca) throw new BadRequestException({ codigo: 'PLACA_INVALIDA', mensaje: problemaPlaca });
 
     const id = await this.datos.transaction(async (m) => {
       const tarifa = await this.cobro.tarifaVigente(m);

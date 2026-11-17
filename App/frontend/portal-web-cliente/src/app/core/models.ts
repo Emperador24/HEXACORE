@@ -127,6 +127,8 @@ export interface DisponibilidadParqueadero {
   reservable: boolean;
   motivo: string | null;
   zonas: { id: string; nombre: string; capacidad: number; disponibles: Record<TipoVehiculo, number> }[];
+  /** Formato de placa por tipo de vehículo; la regla es del servidor y aquí solo se usa para avisar antes de enviar. */
+  formatosPlaca?: Record<TipoVehiculo, { patron: string; ejemplo: string; descripcion: string }>;
 }
 
 // El pedido nace sin pagar (sin QR); al confirmarse el pago se le asigna el

@@ -13,8 +13,22 @@ import { abrir, narrar, paso } from '../apoyo/portal';
  */
 const EVENTO = 'Noche de Rock Nacional';
 
+type Compra = { id: string; numeroCompra: string; eventoId: string; estado: string };
+
 test.describe.serial('Boletería · casos de uso de Daniel', () => {
-  let compra: { id: string; numeroCompra: string; eventoId: string };
+  let compra: Compra | undefined;
+
+  /**
+   * La compra de CU-001 en esta misma corrida; si el caso se corre suelto
+   * (`--grep "CU-002"`), la compra pagada más reciente de la cuenta.
+   */
+  const compraPagada = async (): Promise<Compra> => {
+    if (compra) return compra;
+    const token = await sesion(CUENTAS_DANIEL.cliente);
+    const pagada = (await llamar<Compra[]>(token, 'GET', '/compras')).find((c) => c.estado === 'PAGADA');
+    if (!pagada) throw new Error(`${CUENTAS_DANIEL.cliente} no tiene compras pagadas: corre antes CU-001.`);
+    return (compra = pagada);
+  };
 
   test('CU-005 · Consultar la cartelera de eventos', async ({ page }) => {
     const tarjeta = (nombre: string) => page.getByRole('heading', { name: nombre, exact: true }).first();
@@ -108,16 +122,18 @@ test.describe.serial('Boletería · casos de uso de Daniel', () => {
     });
 
     const token = await sesion(CUENTAS_DANIEL.cliente);
-    compra = (await llamar<{ id: string; numeroCompra: string; eventoId: string }[]>(token, 'GET', '/compras'))[0];
-    await paso(page, 'Resultado', `Compra ${compra.numeroCompra} pagada, con el descuento de ROCK20.`, async () => {
-      await expect(page.locator(`[data-prueba="compra-${compra.numeroCompra}"]`)).toContainText('Pagada');
+    const hecha = (await llamar<Compra[]>(token, 'GET', '/compras'))[0];
+    compra = hecha;
+    await paso(page, 'Resultado', `Compra ${hecha.numeroCompra} pagada, con el descuento de ROCK20.`, async () => {
+      await expect(page.locator(`[data-prueba="compra-${hecha.numeroCompra}"]`)).toContainText('Pagada');
     });
   });
 
   test('CU-002 · Entradas con QR y validación en la puerta', async ({ page }) => {
-    const tarjeta = page.locator(`[data-prueba="compra-${compra.numeroCompra}"]`);
+    const c = await compraPagada();
+    const tarjeta = page.locator(`[data-prueba="compra-${c.numeroCompra}"]`);
 
-    await paso(page, 'CU-002 · Mis entradas', `La compra ${compra.numeroCompra} tiene un QR por entrada.`, async () => {
+    await paso(page, 'CU-002 · Mis entradas', `La compra ${c.numeroCompra} tiene un QR por entrada.`, async () => {
       await entrarCliente(page, CUENTAS_DANIEL.cliente);
       await abrir(page, `${ENTORNO.portalCliente}/entradas`);
       await tarjeta.locator('[data-prueba="compra-ver"]').click();
@@ -125,18 +141,18 @@ test.describe.serial('Boletería · casos de uso de Daniel', () => {
     });
 
     const cliente = await sesion(CUENTAS_DANIEL.cliente);
-    const detalle = await llamar<{ entradas: { codigoQr: string; numeroTicket: string }[] }>(cliente, 'GET', `/compras/${compra.id}`);
+    const detalle = await llamar<{ entradas: { codigoQr: string; numeroTicket: string }[] }>(cliente, 'GET', `/compras/${c.id}`);
     const entrada = detalle.entradas[0];
     const personal = await sesion(CUENTAS_DANIEL.personal);
 
     await paso(page, 'Pasos 2-10 · En la puerta', `La app del personal escanea ${entrada.numeroTicket}: el servidor valida y registra el ingreso.`, async () => {
-      const r = await intentar(personal, 'POST', '/ingresos', { eventoId: compra.eventoId, codigoQr: entrada.codigoQr });
+      const r = await intentar(personal, 'POST', '/ingresos', { eventoId: c.eventoId, codigoQr: entrada.codigoQr });
       expect(r.estado).toBe(200);
       await narrar(page, 'Ingreso autorizado', `${r.cuerpo.localidadNombre} · Ticket ${r.cuerpo.numeroTicket} · aforo ${r.cuerpo.asistentes}/${r.cuerpo.aforoMaximo}`);
     });
 
     await paso(page, 'CU-002D · QR ya usado', 'Si alguien intenta entrar otra vez con el mismo QR, se rechaza y se dice cuándo entró.', async () => {
-      const r = await intentar(personal, 'POST', '/ingresos', { eventoId: compra.eventoId, codigoQr: entrada.codigoQr });
+      const r = await intentar(personal, 'POST', '/ingresos', { eventoId: c.eventoId, codigoQr: entrada.codigoQr });
       expect(r.cuerpo.codigo).toBe('CU-002D');
       await narrar(page, 'NO puede ingresar · CU-002D', r.cuerpo.mensaje);
     });
@@ -149,18 +165,18 @@ test.describe.serial('Boletería · casos de uso de Daniel', () => {
   });
 
   test('CU-003 · Cancelar la compra con reembolso', async ({ page }) => {
-    const tarjeta = page.locator(`[data-prueba="compra-${compra.numeroCompra}"]`);
+    const c = await compraPagada();
+    const tarjeta = page.locator(`[data-prueba="compra-${c.numeroCompra}"]`);
 
-    await paso(page, 'CU-003 · Cancelar', `La persona quiere cancelar la compra ${compra.numeroCompra}.`, async () => {
+    await paso(page, 'CU-003 · Cancelar', `La persona quiere cancelar la compra ${c.numeroCompra}.`, async () => {
       await entrarCliente(page, CUENTAS_DANIEL.cliente);
       await abrir(page, `${ENTORNO.portalCliente}/entradas`);
       await expect(tarjeta).toBeVisible();
     });
 
-    await paso(page, 'Pasos 2-4 · Cotización', 'El servidor dice cuánto devuelve según la política; la entrada usada no se reembolsa (CU-003D).', async () => {
+    await paso(page, 'Pasos 2-4 · Cotización', 'El servidor dice cuánto devuelve según la política; una entrada ya usada no se reembolsa (CU-003D).', async () => {
       await tarjeta.locator('[data-prueba="compra-cancelar"]').click();
       await expect(page.getByText(/Reembolso:/)).toBeVisible();
-      await expect(page.locator('.rechazada').first()).toBeVisible();
     });
 
     await paso(page, 'Pasos 5-9 · Confirmar', 'Con el motivo, se reembolsa por la pasarela y se anula la entrada.', async () => {
@@ -169,8 +185,8 @@ test.describe.serial('Boletería · casos de uso de Daniel', () => {
       await expect(page.getByRole('status')).toBeVisible({ timeout: 30_000 });
     });
 
-    await paso(page, 'Resultado', 'La compra queda cancelada en parte: la entrada usada se conserva y la otra queda anulada.', async () => {
-      await expect(tarjeta).toContainText('Cancelada en parte');
+    await paso(page, 'Resultado', 'La compra queda cancelada: las entradas reembolsadas se anulan; la usada se conserva.', async () => {
+      await expect(tarjeta).toContainText(/Cancelada/);
     });
   });
 });

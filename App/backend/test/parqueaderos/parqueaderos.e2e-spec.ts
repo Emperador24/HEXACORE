@@ -25,7 +25,12 @@ describe('CU-021 a CU-025 · Parqueaderos (e2e)', () => {
   let redis: Redis;
   const como = (c: { token: string }) => `Bearer ${c.token}`;
   const P = '/api/v1/parqueaderos';
-  const placa = () => `T${randomUUID().replace(/-/g, '').slice(0, 5).toUpperCase()}`;
+  // Placa de carro colombiana (AAA111): CU-021 rechaza las que no tienen el formato del vehículo.
+  const placa = () => {
+    const h = randomUUID().replace(/-/g, '');
+    const letras = [...h.slice(0, 3)].map((c) => String.fromCharCode(65 + (parseInt(c, 16) % 26))).join('');
+    return letras + String(parseInt(h.slice(3, 9), 16) % 1000).padStart(3, '0');
+  };
 
   beforeAll(async () => {
     nucleo = new NucleoPrueba('parqueaderos');
@@ -303,12 +308,19 @@ describe('CU-021 a CU-025 · Parqueaderos (e2e)', () => {
     const disponibilidad = (await request(nucleo.url).get(`${P}/eventos/${evento}/disponibilidad`).set('Authorization', como(cliente)).expect(200)).body;
     expect(disponibilidad).toMatchObject({ reservable: true, tarifa: { valorHora: 5000 }, horas: 3, precio: 15000, minutosParaPagar: 10 });
     expect(disponibilidad.zonas).toEqual([
-      expect.objectContaining({ id: vip.id, disponibles: { AUTOMOVIL: 2, MOTO: 2, DISCAPACIDAD: 2 } }),
-      expect.objectContaining({ id: general.id, disponibles: { AUTOMOVIL: 10, MOTO: 10, DISCAPACIDAD: 10 } }),
+      // Cada tipo cuenta solo sus espacios: las zonas nuevas solo tienen de automóvil.
+      expect.objectContaining({ id: vip.id, disponibles: { AUTOMOVIL: 2, MOTO: 0, DISCAPACIDAD: 0 } }),
+      expect.objectContaining({ id: general.id, disponibles: { AUTOMOVIL: 10, MOTO: 0, DISCAPACIDAD: 0 } }),
     ]);
     // El cliente no administra el parqueadero, y el personal no reserva.
     await request(nucleo.url).get(`${P}/eventos/${evento}/ocupacion`).set('Authorization', como(cliente)).expect(403);
     await reservar(evento, { zonaId: vip.id, placa: placa() }, personal as typeof cliente, 403);
+    // La placa debe tener el formato del vehículo: carro AAA111, moto AAA11A.
+    expect(disponibilidad.formatosPlaca).toMatchObject({ AUTOMOVIL: { ejemplo: 'ABC123' }, MOTO: { ejemplo: 'ABC12D' }, DISCAPACIDAD: { ejemplo: 'ABC123' } });
+    expect(await reservar(evento, { zonaId: vip.id, placa: 'ABC12D' }, cliente, 400)).toMatchObject({ codigo: 'PLACA_INVALIDA' });
+    expect(await reservar(evento, { zonaId: vip.id, placa: 'ABC123', tipoVehiculo: 'MOTO' }, cliente, 400)).toMatchObject({ codigo: 'PLACA_INVALIDA' });
+    // Una moto no toma un espacio de automóvil: sin espacios de moto no hay cupo (CU-021A).
+    await reservar(evento, { zonaId: vip.id, placa: 'ABC12D', tipoVehiculo: 'MOTO' }, cliente, 409);
     await reservar(evento, { zonaId: vip.id, placa: placa(), llegada: new Date(Date.now() + 5 * 3_600_000).toISOString() }, cliente, 400);
 
     // Pasos 3-4: el espacio queda retenido mientras se paga, en la base y en Redis.
