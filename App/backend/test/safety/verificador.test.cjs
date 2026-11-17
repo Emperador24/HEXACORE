@@ -24,6 +24,10 @@ test('ausencia y auditoría incompleta no pasan por éxito', () => {
   assert.equal(evaluar({}).codigo,1);
   const d=fixture(); delete d.operacion.actor; assert.ok(evaluar(d).errores.includes('AUDITORIA_INCOMPLETA'));
 });
+test('checkout cancelado sin cobro no se presenta como aprobado', () => {
+  const d=fixture('CANCELADA');delete d.libro;
+  const r=evaluar(d);assert.equal(r.estado,'cancelado');assert.equal(r.codigo,0);
+});
 test('entrada inválida revierte la transacción de solo lectura; nunca escribe ni llama proveedores', async () => {
   const sql=[]; const db={query:async q => {sql.push(q);return {rows:[]};}};
   await assert.rejects(verificar(db,'desconocido','no-uuid'), /TIPO_O_ID_INVALIDO/);

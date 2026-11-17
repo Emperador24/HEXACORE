@@ -10,7 +10,8 @@ function centavos(n) {
   return BigInt(e) * 100n + BigInt(d.padEnd(2, '0'));
 }
 function estado(e) {
-  if (['APROBADA', 'APROBADO', 'PAGADA', 'CANCELADA', 'PARCIALMENTE_CANCELADA'].includes(e)) return 'aprobado';
+  if (['APROBADA', 'APROBADO', 'PAGADA'].includes(e)) return 'aprobado';
+  if (e === 'CANCELADA') return 'cancelado';
   if (['RECHAZADA', 'RECHAZADO'].includes(e)) return 'rechazado';
   if (['FALLIDA', 'INCIERTO', 'INDETERMINADO'].includes(e)) return 'incierto';
   return 'pendiente';
@@ -26,7 +27,8 @@ function evaluar(d) {
   const o = d.operacion, l = d.libro, s = estado(o.estado);
   comprobar(Boolean(o.actor && o.fecha && Number.isFinite(new Date(o.fecha).getTime())), 'AUDITORIA_INCOMPLETA');
   if (!l) {
-    if (s === 'pendiente') pendientes.push('SIN_RESULTADO_FINANCIERO');
+    if (s === 'cancelado') { /* Checkout abandonado, sin movimiento financiero. */ }
+    else if (s === 'pendiente') pendientes.push('SIN_RESULTADO_FINANCIERO');
     else errores.push('FALTA_LIBRO');
   } else {
     comprobar(l.clave_idempotencia === o.clave, 'CLAVE_INCOMPATIBLE');
@@ -79,7 +81,7 @@ async function cargar(db, tipo, id) {
       // Se verifica el último intento conocido; los rechazados previos se conservan.
       const libros = await todas('SELECT * FROM finanzas_pagos.transacciones_pago WHERE clave_idempotencia LIKE $1', [id + ':%']);
       const l = libros.find(x => x.resultado === 'APROBADO') || libros.find(x => x.clave_idempotencia === `${id}:${r.intentos_rechazados}`) || libros.at(-1);
-      const estadoCompra = l?.resultado === 'RECHAZADO' && r.estado === 'PENDIENTE' ? 'RECHAZADA' : l?.resultado === 'INDETERMINADO' && r.estado === 'PAGANDO' ? 'INCIERTO' : r.estado;
+      const estadoCompra = ['CANCELADA','PARCIALMENTE_CANCELADA'].includes(r.estado) ? 'PAGADA' : l?.resultado === 'RECHAZADO' && r.estado === 'PENDIENTE' ? 'RECHAZADA' : l?.resultado === 'INDETERMINADO' && r.estado === 'PAGANDO' ? 'INCIERTO' : r.estado;
       d.operacion = op(r, {clave: l?.clave_idempotencia || `${id}:${r.intentos_rechazados}`, monto: r.total, moneda: 'COP', estado: estadoCompra, referencia: r.referencia_pasarela, actor: r.comprador_id, solicitante: 'entradas'});
       check(libros.filter(x => x.resultado === 'APROBADO').length <= 1, 'MULTIPLES_COBROS_APROBADOS');
       if (estado(d.operacion.estado) === 'aprobado') {
@@ -94,6 +96,8 @@ async function cargar(db, tipo, id) {
     if (r) {
       d.operacion = op(r, {clave: r.id, monto: r.precio, moneda: 'COP', estado: r.estado, referencia: r.referencia_pasarela, actor: r.comprador_id, solicitante: 'entradas'});
       check(centavos(r.precio) === centavos(r.comision) + centavos(r.neto_vendedor), 'LIQUIDACION_INCOMPATIBLE');
+      const aprobadas = await una("SELECT count(*)::int AS n FROM entradas_postventa.transacciones_reventa WHERE publicacion_id=$1 AND estado='APROBADA'", [r.publicacion_id]);
+      check(aprobadas.n <= 1, 'MULTIPLES_VENTAS_APROBADAS');
       if (r.estado === 'APROBADA') {
         const h = await todas('SELECT * FROM entradas_ventas.historial_propietarios WHERE transaccion_id=$1');
         check(h.length === 1 && h[0].entrada_id === r.entrada_id && h[0].propietario_anterior_id === r.vendedor_id && h[0].propietario_nuevo_id === r.comprador_id && h[0].motivo === 'REVENTA' && Boolean(h[0].registrado_en), 'HISTORIAL_TRANSFERENCIA_INCOMPATIBLE');
@@ -113,6 +117,8 @@ async function cargar(db, tipo, id) {
       d.operacion = op(r, {clave: r.id, monto: r.monto_reembolso, moneda: 'COP', estado: r.estado, referencia: r.referencia_pasarela, actor: r.solicitante_id, solicitante: 'entradas'});
       const compra = await una('SELECT * FROM entradas_ventas.compras WHERE id=$1', [r.compra_id]);
       check(Boolean(compra?.referencia_pasarela) && centavos(r.monto_reembolso) <= centavos(compra.total), 'COBRO_ORIGINAL_INCOMPATIBLE');
+      const originales = await todas("SELECT * FROM finanzas_pagos.transacciones_pago WHERE clave_idempotencia LIKE $1 AND resultado='APROBADO'", [r.compra_id + ':%']);
+      check(originales.length === 1 && originales[0].referencia === compra?.referencia_pasarela && originales[0].tipo === 'COBRO' && originales[0].solicitante === 'entradas' && originales[0].moneda === 'COP' && centavos(originales[0].monto) === centavos(compra.total), 'LIBRO_COBRO_ORIGINAL_INCOMPATIBLE');
       const entradas = await todas('SELECT * FROM entradas_ventas.entradas WHERE id=ANY($1::uuid[])', [r.entradas_ids]);
       check(r.entradas_ids.length > 0 && entradas.length === r.entradas_ids.length && entradas.every(e => e.compra_id === r.compra_id), 'ENTRADAS_REEMBOLSO_INCOMPATIBLES');
       if (r.estado === 'APROBADA') check(entradas.every(e => e.estado === 'ANULADA'), 'ENTRADAS_NO_ANULADAS');
@@ -124,7 +130,7 @@ async function cargar(db, tipo, id) {
       d.operacion = op(r, {clave: r.reembolso_id, monto: r.monto, moneda: r.moneda, estado: r.estado_reembolso, referencia: r.referencia_reembolso, actor: r.actor_id, solicitante: 'alimentos'});
       const cobro = await una('SELECT * FROM alimentos.transacciones_pedido WHERE id=$1', [r.cobro_id]);
       const original = await una('SELECT * FROM finanzas_pagos.transacciones_pago WHERE clave_idempotencia=$1', [r.cobro_id]);
-      check(Boolean(cobro && original) && cobro.pedido_id === r.pedido_id && cobro.estado === 'APROBADA' && original.resultado === 'APROBADO' && cobro.referencia_pasarela === r.referencia_cobro && original.referencia === r.referencia_cobro && centavos(cobro.monto) === centavos(r.monto) && centavos(original.monto) === centavos(r.monto) && original.moneda === r.moneda, 'COBRO_ORIGINAL_INCOMPATIBLE');
+      check(Boolean(cobro && original) && cobro.pedido_id === r.pedido_id && cobro.estado === 'APROBADA' && original.resultado === 'APROBADO' && original.tipo === 'COBRO' && original.solicitante === 'alimentos' && cobro.referencia_pasarela === r.referencia_cobro && original.referencia === r.referencia_cobro && centavos(cobro.monto) === centavos(r.monto) && centavos(original.monto) === centavos(r.monto) && original.moneda === r.moneda && cobro.moneda === r.moneda, 'COBRO_ORIGINAL_INCOMPATIBLE');
       const pedido = await una('SELECT * FROM alimentos.pedidos WHERE id=$1', [r.pedido_id]);
       check(pedido?.estado === 'CANCELADO' && Boolean(pedido.cancelado_en) && /^[a-f0-9]{64}$/.test(r.huella), 'CANCELACION_SNAPSHOT_INCOMPLETO');
       d.pendientes.push('LIBRO_NO_PERSISTE_REFERENCIA_COBRO_ORIGINAL');

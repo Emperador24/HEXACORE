@@ -5,8 +5,10 @@ const assert = require('node:assert/strict');
 const { randomUUID, createHmac } = require('node:crypto');
 const { execFileSync } = require('node:child_process');
 const { resolve } = require('node:path');
+const {mkdirSync,writeFileSync} = require('node:fs');
 const { Client } = require('pg');
 const { verificar, cargar, evaluar } = require('../../herramientas/verificar-transaccion.cjs');
+const {esperarGateway}=require('../base-unica/esperar-gateway.cjs');
 const { cifrarContrasena } = require('../../dist/modulos/identidad/comun/contrasenas');
 const {proyecto} = require('../base-unica/conexiones.cjs');
 // También conserva el override por digest al detener/reiniciar imágenes publicadas.
@@ -113,6 +115,9 @@ test('login real, alimentos y entradas escriben sus claves y referencias en ese 
     assert.equal(e.intentos, 1);
     assert.equal((await db.ventas.query('SELECT referencia_pasarela FROM compras WHERE id=$1', [compra.id])).rows[0].referencia_pasarela, referenciaEntrada);
     assert.equal((await db.libro.query('SELECT count(*)::int AS n FROM transacciones_pago WHERE clave_idempotencia=ANY($1)', [[claveComida, entradaClave]])).rows[0].n, 2);
+    const privada = resolve(__dirname, '../../.evidencia-e2e');
+    mkdirSync(privada,{recursive:true,mode:0o700});
+    writeFileSync(resolve(privada,'safety-config.json'), JSON.stringify({ambito:'ensayo-simulado',postgres:opcionesPg('pagos'),operaciones:[{tipo:'pedido',id:claveComida},{tipo:'compra',id:compra.id}]}),{mode:0o600});
     for (const [tipo, identificador] of [['pedido', claveComida], ['compra', compra.id]]) {
         const resultado = await verificar(db.libro, tipo, identificador);
         assert.equal(resultado.codigo, 0, JSON.stringify(resultado));
@@ -136,6 +141,10 @@ test('reinicio de ambos programas conserva resultados, referencias y efectos ún
     }
     execFileSync('docker', [...compose, 'up', '-d', '--no-deps', '--no-build', '--wait', 'nucleo', 'boleteria'], { encoding: 'utf8' });
     assert.equal(inspeccionar('preparacion-base').State.FinishedAt, fin);
+    // Sondas directas de Docker no prueban el upstream que mantiene Nginx tras
+    // un NXDOMAIN durante el reinicio. Se conserva cada fallo GET de la espera;
+    // las operaciones de pago/cancelación siguientes se envían exactamente una vez.
+    console.log('Precondición gateway después del reinicio:',JSON.stringify(await esperarGateway(gateway)));
     const replay = await pedir(gateway, `/pedidos/${pedido.id}/pagos`, 'POST', { tokenPago: 'tok_ok_convivencia' }, { 'Idempotency-Key': claveComida });
     assert.equal(replay.status, 200);
     assert.equal(replay.body.referenciaPasarela, comida.body.referenciaPasarela);

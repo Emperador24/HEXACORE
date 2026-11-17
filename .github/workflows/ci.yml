@@ -203,6 +203,10 @@ jobs:
       - name: Libro común, convivencia y reinicio
         id: convivencia
         run: npm run test:pagos:convivencia
+      - name: Demostración posterior y doble inconsistente sin modificar registros
+        env:
+          SAFETY_CONFIG: .evidencia-e2e/safety-config.json
+        run: node test/safety/demostrar.cjs
       - name: Logs si falla
         if: failure()
         run: |
