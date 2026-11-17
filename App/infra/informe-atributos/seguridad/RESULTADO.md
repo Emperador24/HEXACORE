@@ -2,6 +2,24 @@
 
 ## Corte 16/11 — automatización y alcance actual
 
+**Aclaración de entorno — confirmación de Samuel, 16/11:** el servidor de
+presentación nunca se creó. El dominio de los ejemplos históricos pertenece a
+un tercero y queda excluido, con todos sus subdominios; se sustituyó por
+marcadores `.invalid` en la guía y ayuda. No se contacta ni se repite el escaneo.
+
+La evidencia vigente conservada es [CI111, 9/9 sobre d32f582](https://github.com/Emperador24/HEXACORE/actions/runs/44000569216)
+y [sus seis HTML/JSON saneados](https://github.com/Emperador24/HEXACORE/actions/runs/44000569216/artifacts/14291638302).
+ZAP 2.17.0 en `ci-efimero`: 0 High, 0 Low, 10 Medium y 4 Informational, todas
+las 14 instancias retenidas; 20 GET / 1 autenticado HTTP200, pendientes 0.
+Revisión servida antes/después `dc6d373ed0f3362b3e7d916ba181263db8e155b2`,
+merge de prueba del código anterior a esta corrección documental. No acredita
+escaneo de una URL de presentación. La conexión de Diego se conserva como
+pendiente separado; RNF-05/06 siguen parciales. [Pasos para mostrar y abrir
+informes en Actions](../../../../Documentation/Work/PLAN-CIERRE-SEBASTIAN.md#mostrar-el-escaneo-aprobado-en-actions).
+La documentación se publica con `[skip ci]`; no se atribuye una CI nueva al
+commit documental ni se ejecutan escaneos por este cambio.
+
+
 **Ejecución comprobada CI109 (head 05af28b):** [14 alertas completas saneadas y
 configuración con las mismas imágenes](https://github.com/Emperador24/HEXACORE/actions/runs/43995508643/artifacts/14290455753). ZAP 2.17.0 AMD64, 20 GET,
 uno autenticado HTTP200, 62 reglas, pendientes 0. **High 0 / Low 0 / Medium 10 /

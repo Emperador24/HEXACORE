@@ -150,9 +150,11 @@ auditar en Actions sobre el commit que efectivamente se prueba.
 escanearlo. \path{owasp-desplegado.yml} es reutilizable tras el despliegue de
 presentación: CD lo conecta después de verificar las ocho aplicaciones activas
 por revisión OCI. Gateway/Caddy sirven \texttt{/version}; la revisión debe
-coincidir antes y después del escaneo. \textbf{El despliegue externo de Diego no
-existe aún según confirmación del usuario}: faltan destino HTTPS, acceso de
-Actions y cuenta exclusiva. El workflow obtiene una sesión nueva por HTTPS
+coincidir antes y después del escaneo. \textbf{Samuel confirma que el servidor de
+presentación nunca se creó}. El dominio utilizado en los ejemplos históricos
+pertenece a un tercero, incluidos sus subdominios; se retiró de las plantillas y
+queda excluido de pruebas. Faltan destino y nombres controlados por el equipo,
+HTTPS, acceso de Actions y cuenta exclusiva para conectar el despliegue de Diego. El workflow obtiene una sesión nueva por HTTPS
 después de verificar la revisión, con un login sin redirecciones ni reintentos;
 no amplía su TTL ni guarda un JWT que caduque durante CD. Las credenciales
 son secretos de Actions y no llegan al contenedor ZAP. El runner no acredita
@@ -164,6 +166,17 @@ conservadas. Revisión gateway igual antes/después (\texttt{486808e}, merge de
 prueba de head \texttt{05af28b}). Los fallos previos se conservan: arranque del
 portal, conexión del upstream tras reinicio y digest ZAP ARM64 en runner AMD64;
 se corrigieron orden/DNS, precondición GET y pin a índice oficial nativo.
+
+Se conserva \href{https://github.com/Emperador24/HEXACORE/actions/runs/44000569216}{CI111 aprobada, 9/9},
+código \texttt{d32f582}: \textbf{despliegue temporal del runner}, ZAP 2.17.0,
+0 High, 10 Medium y 4 Informational, las 14 instancias conservadas. La revisión
+servida es igual antes y después (\texttt{dc6d373}, merge de prueba).
+\href{https://github.com/Emperador24/HEXACORE/actions/runs/44000569216/artifacts/14291638302}{Descargar informes HTML/JSON}.
+Para mostrarlo en clase: abrir el trabajo OWASP, sus pasos de despliegue y escaneo,
+volver a Summary y descargar \texttt{atributos-sebastian}; abrir \path{owasp.html}
+y \path{owasp.json} localmente. Es una ejecución completada, no una prueba nueva
+ni evidencia del servidor externo. Esta corrección es documental y no repite el
+escaneo; se conservan los límites de RNF-05/06 y los demás RNF descritos abajo.
 
 \subsection{Safety monetario: comprobación posterior identificada}
 Sebastián asume RNF-01/02/11 en el reparto actual. Bloqueos, reservas, unicidad e

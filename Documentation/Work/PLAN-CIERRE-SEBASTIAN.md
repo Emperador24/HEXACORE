@@ -14,6 +14,21 @@ sesión, permisos, cierre SSE y Playwright visible de 500 ms/1500 ms; normal/CI 
 aceptación de un trabajador/cero reintentos sin cambios. No se repiten 167 matrices
 ni las aceptaciones 16/16 automática y visible. [PR #64](https://github.com/Emperador24/HEXACORE/pull/64).
 
+### Alcance confirmado del despliegue — aclaración documental 16/11
+
+Samuel confirma que el servidor de presentación **nunca se creó**. El dominio
+que figuraba en los ejemplos pertenece a un tercero, incluidos sus subdominios;
+queda excluido de pruebas y configuración. [Guía corregida y marcadores](../../App/infra/DESPLIEGUE.md).
+No se contacta ese dominio ni se crea infraestructura cloud.
+
+Se conserva **CI111**, ejecución `44000569216`, **9/9** sobre código
+`d32f582a3323904bd0a8ed001d16feaee7d7d22f`. ZAP escaneó el **despliegue temporal
+del runner**, revisión servida `dc6d373ed0f3362b3e7d916ba181263db8e155b2`
+(merge de prueba), igual antes y después. No acredita servidor, DNS, HTTPS ni
+escaneo de presentación de Diego. La corrección documental usa `[skip ci]`;
+no se repiten escaneos ni recorridos. Los resultados inferiores conservan sus
+versiones y fechas; RNF-05/06 y los límites de Safety/RNF-13 siguen parciales.
+
 ### Qué se implementa y qué se demuestra
 
 | Bloque | Implementación y evidencia nueva | Límite |
@@ -81,9 +96,48 @@ versión del código tenía 14 unitarias Safety; el cierre añade tres dobles de
 reembolso de pedido (**17/17 locales**) sin atribuirles una nueva prueba SQL/HTTP.
 [CI completa](https://github.com/Emperador24/HEXACORE/actions/runs/43995508643).
 
+### Mostrar el escaneo aprobado en Actions
+
+Guion de **dos minutos** para Seguridad, dentro de los ocho del bloque. Se navega
+en vivo por una ejecución ya completada: no se presenta como escaneo nuevo en ese
+instante ni como despliegue del servidor pendiente.
+
+1. Con la sesión de GitHub abierta, entrar a [CI111 aprobada](https://github.com/Emperador24/HEXACORE/actions/runs/44000569216).
+   Mostrar la revisión de código `d32f582` y los nueve trabajos aprobados.
+2. Abrir **«atributos_sebastian / OWASP y tres parámetros, mismo artefacto»**.
+   Desplegar **«Desplegar imágenes propias en proyecto nuevo (solo runner)»** y
+   **«ZAP posterior al despliegue y cambios sin reconstruir imágenes»**:
+   el despliegue temporal ocurre antes del escaneo. Mostrar el registro conservado;
+   no pulsar **Re-run jobs** para esta corrección.
+3. Volver a **Summary**: mostrar el resumen de OWASP y dependencias.
+   ZAP: **0 High / 0 Low / 10 Medium / 4 Informational**, 14 instancias conservadas,
+   20 GET y un perfil Cliente autenticado HTTP200, cero pendientes, versión 2.17.0.
+   `Critical` no es una categoría de ZAP. npm informa producción/Critical cero y
+   20 moderadas de desarrollo del backend.
+4. En **Artifacts**, descargar **`atributos-sebastian`**
+   ([enlace directo](https://github.com/Emperador24/HEXACORE/actions/runs/44000569216/artifacts/14291638302)).
+   Descomprimir el ZIP en C y abrir **`owasp.html`** en el navegador y
+   **`owasp.json`** en VSCode. Son archivos locales saneados; abrirlos no levanta
+   servidores ni envía solicitudes a los destinos analizados.
+5. Señalar `tipoDespliegue: ci-efimero`, `revisionGatewayAntes` y
+   `revisionGatewayDespues` iguales, autenticación, las 14 alertas y limitaciones.
+   Abrir **`dependencias.html/json`** si se pide distinguir producción/desarrollo;
+   **`modificabilidad.html/json`** contiene el otro atributo, no un escaneo externo.
+6. Cerrar con el alcance: pasivo HTTP de HTML/assets iniciales y perfil autenticado;
+   no ejecuta JavaScript ni sustituye 167/167, PAN o RNF completos. El destino y
+   prueba de presentación de Diego siguen pendientes separados.
+
+El artifact se conserva 30 días según el workflow; descargarlo antes de la clase.
+[Descarga oficial de artifacts](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/download-workflow-artifacts?tool=webui).
+La CI actual se dispara por PR/push a main, sin `workflow_dispatch`: no tiene
+botón **Run workflow**. Si se requiere observar un análisis nuevo ejecutándose
+durante la clase, esa ejecución se debe programar aparte en el runner, conservando
+antes esta evidencia. No se ha disparado aquí y nunca se dirigirá al dominio de
+terceros ni a un servidor de presentación inexistente.
+
 ### Guion ejecutable de ocho minutos (dentro del bloque de atributos)
 
-1. **Seguridad, 2 min:** abrir [CI de PR #64](https://github.com/Emperador24/HEXACORE/pull/64/checks),
+1. **Seguridad, 2 min:** seguir [el recorrido de CI111](#mostrar-el-escaneo-aprobado-en-actions),
    trabajo «OWASP y tres parámetros, mismo artefacto» y artifact `atributos-sebastian`.
    Abrir `owasp.html/json` y `dependencias.html/json`: revisión antes/después,
    autenticación, reglas, alertas completas y severidades. Identificar explícitamente
@@ -158,7 +212,8 @@ cero High, falla con reporte incompleto; no se desactiva TLS ni se concede una
 exclusión para aprobar.
 
 Consulta actual: variables/secretos de repositorio vacíos; entorno `produccion`
-no acreditado, último trabajo «Desplegar en producción» omitido. El usuario confirma que ese destino todavía no existe. Diego debe
+no acreditado, último trabajo «Desplegar en producción» omitido. Samuel confirma que el servidor de presentación nunca se creó; falta también
+confirmar nombres controlados por el equipo. Diego debe
 confirmar destino y acceso desde Actions, `PRODUCCION_DOMINIO` y opcional
 `PRODUCCION_DOMINIO_ADMIN`, los cuatro `PRODUCCION_SSH_*`, confianza HTTPS,
 credenciales de esa cuenta y ejecución efectiva sobre SHA exacto. La ruta automática

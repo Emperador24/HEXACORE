@@ -7,6 +7,14 @@ límites](PLAN-CIERRE-SEBASTIAN.md#entrega-vigente--seguridad-safety-monetario-y
 Se integra PR #60 y #62, sin operar ZeroTier. El temario completo sigue por
 contrastar. [PR #64](https://github.com/Emperador24/HEXACORE/pull/64).
 
+**Aclaración del entorno (Samuel, 16/11):** el servidor de presentación nunca
+se creó; los nombres de terceros de la antigua guía no son destinos del equipo.
+Se conserva [CI111 temporal, 9/9](https://github.com/Emperador24/HEXACORE/actions/runs/44000569216)
+sobre `d32f582`, sin repetir escaneos por esta corrección documental.
+[Guion de navegación y descarga de informes](PLAN-CIERRE-SEBASTIAN.md#mostrar-el-escaneo-aprobado-en-actions).
+La conexión/validación externa de Diego sigue pendiente separada. Se mantienen
+los límites RNF de las fichas y la falta de temario completo contrastado.
+
 | Atributo | Diseño/implementación nueva | Comprobado | Resultado/pendiente |
 |---|---|---|---|
 | Seguridad | ZAP reutilizado tras despliegue temporal y workflow posterior al despliegue real; versiones/HTML/JSON saneados, cero High; npm producción/desarrollo | 167/167 y PAN históricos reutilizados; 4/4 pruebas de saneamiento; cinco paquetes sin Critical ni producción vulnerable, 20 moderadas de desarrollo backend | **Comprobado en CI109:** ZAP 2.17.0 AMD64, 0 High, 10 Medium/4 Informational conservadas; producción/Critical npm 0. RNF-05/06 **parciales**, conexión externa de Diego pendiente; fallos anteriores conservados |

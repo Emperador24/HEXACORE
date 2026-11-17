@@ -266,11 +266,11 @@ Usabilidad (arq. de información) & Daniel; todos aportan & RNF-12, 14 & Patrón
 \begin{itemize}\setlength\itemsep{0.25em}
 \item \cifra{167/167} protegidas de 186 declaradas/181 expuestas: evidencia histórica por gateway y backend directo; combinaciones publicadas, no cobertura universal.
 \item ZAP reutilizado \textbf{después de desplegar}: dos portales y GET públicos/perfil Cliente autenticado. HTML/JSON saneados con todas las alertas.
-\item CI109: ZAP 2.17.0, \cifra{0 High}, 10 Medium y 4 Informational conservadas; sin categoría Critical. npm: producción/Critical cero, 20 moderadas de desarrollo backend.
-\item \textbf{Dos destinos separados:} runner temporal de CI y workflow listo para el despliegue de Diego, todavía inexistente. Revisión gateway antes/después; CD exige ocho imágenes OCI antes del escaneo externo.
+\item CI111: ZAP 2.17.0, \cifra{0 High}, 10 Medium y 4 Informational conservadas; sin categoría Critical. npm: producción/Critical cero, 20 moderadas de desarrollo backend.
+\item \textbf{Alcance:} runner temporal aprobado. Samuel confirma que el servidor de presentación nunca se creó; faltan nombres controlados por el equipo y conexión de Diego.
 \item RNF-05/06 parciales: ZAP pasivo no ejecuta JS ni sustituye pruebas de autorización/PAN.
 \end{itemize}
-\nota{Sebastián · PR 64, artifacts HTML/JSON de Actions y RESULTADO.md. CI109: 20 GET, 1 autenticado; fallos previos conservados y conexión de Diego pendiente.}
+\nota{Demo: \href{https://github.com/Emperador24/HEXACORE/actions/runs/44000569216}{Actions CI111} $\rightarrow$ trabajo OWASP $\rightarrow$ Summary/Artifacts $\rightarrow$ \texttt{atributos-sebastian} $\rightarrow$ \path{owasp.html} / \path{owasp.json}. Ejecución completada: 20 GET, 1 autenticado. No se repite por este cambio documental.}
 \end{frame}
 
 \begin{frame}{Safety · transacciones con dinero}
@@ -378,7 +378,7 @@ siguen sin prueba con usuarios. Cada integrante confirma el patrón de sus panta
 \item \textbf{RNF-07} se midió hasta 200 usuarios, no 2\,000; \textbf{RNF-10} con Boletería llega a 1,12--1,26$\times$ en un portátil.
 \item \textbf{RNF-03} (99,9\,\% mensual) no se mide en una demo: se muestra su mecanismo.
 \item \textbf{Seguridad:} escaneo integrado; falta conectar y ejecutar el despliegue de presentación de Diego.
-\item \textbf{Desplegabilidad:} falta el servidor de producción para que el CD despliegue solo.
+\item \textbf{Desplegabilidad:} servidor de presentación nunca creado; conexión de Diego pendiente, sin dominio del equipo confirmado.
 \item \textbf{Comprobabilidad:} falta publicar la cobertura de todos los servicios en Actions.
 \item \textbf{Usabilidad:} falta la prueba con cinco usuarios nuevos.
 \end{itemize}
