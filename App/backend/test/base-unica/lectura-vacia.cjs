@@ -21,13 +21,13 @@ const {GRUPOS_MIGRACIONES,PROCEDENCIA_ORIGINAL}=require('../../dist/compartido/p
       const esperadas=t.tablename===grupo.historial?grupo.migraciones.length:t.schemaname==='identidad'&&t.tablename==='roles'?4:0;
       assert.equal(n,esperadas,t.schemaname+'.'+t.tablename);filas+=n;
     }
-    assert.equal(filas,40);assert.equal((await c.query("SELECT count(*)::int n FROM pg_tables WHERE schemaname='public'")).rows[0].n,0);
+    assert.equal(filas,41);assert.equal((await c.query("SELECT count(*)::int n FROM pg_tables WHERE schemaname='public'")).rows[0].n,0);
     const originales=(await c.query('SELECT * FROM migracion_control.procedencia')).rows;
     assert.equal(originales.length,18);
     const esperadas=PROCEDENCIA_ORIGINAL.map(h=>{const g=GRUPOS_MIGRACIONES.find(g=>g.conexion===h.conexion);
       return {...h,origen:'instalacion-vacia',esquema:g.esquema,historial:g.historial};});
     const porOrigen=rows=>Object.fromEntries(rows.map(h=>[h.conexion+':'+h.nombre,h]));
     assert.deepEqual(porOrigen(originales),porOrigen(esperadas),'18 procedencias completas, con dueño, fuente y SHA intactos');
-    console.log('Instalación vacía: 87 tablas (incluida alimentos.cancelaciones_pedido), 36 historiales por nombre/dueño + cuatro roles, cero negocio/public y 18 procedencias intactas; sin semillas.');
+    console.log('Instalación vacía: 87 tablas (incluida alimentos.cancelaciones_pedido), 37 historiales por nombre/dueño + cuatro roles, cero negocio/public y 18 procedencias intactas; sin semillas.');
   }finally{await c.end();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
