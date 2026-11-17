@@ -155,8 +155,15 @@ presentación nunca se creó}. El dominio utilizado en los ejemplos históricos
 pertenece a un tercero, incluidos sus subdominios; se retiró de las plantillas y
 queda excluido de pruebas. Desde el 16/11 el equipo tiene su propio servidor de
 presentación (Google Cloud, \texttt{hexacore-javeriana.duckdns.org} y \texttt{admin.}\ldots, HTTPS de
-Let's Encrypt) y Actions ya despliega en él; falta la cuenta exclusiva de ensayo
-(\texttt{OWASP\_CLIENTE\_*}) y ejecutar allí el ZAP. El workflow obtiene una sesión nueva por HTTPS
+Let's Encrypt) y Actions ya despliega en él. El 17/11 se creó la cuenta exclusiva de ensayo
+(\texttt{OWASP\_CLIENTE\_*}) y el ZAP corrió contra ese servidor:
+\href{https://github.com/Emperador24/HEXACORE/actions/runs/44044715233}{CD de \texttt{main} aprobado},
+\href{https://github.com/Emperador24/HEXACORE/actions/runs/44044715233/artifacts/14311052588}{HTML/JSON saneados}. ZAP 2.17.0, revisión del gateway
+\texttt{86d8902} igual antes y después; \textbf{0 High, 10 Medium, 19 Low y 12
+Informational}. Las Medium son la CSP que admite estilos en línea (10055) y las fuentes
+externas sin SRI (90003); las Low, la cabecera HSTS (10035). Un primer reintento falló porque
+\texttt{main} había avanzado y la revisión servida no coincidía con la esperada: el control
+funcionó como debía. El workflow obtiene una sesión nueva por HTTPS
 después de verificar la revisión, con un login sin redirecciones ni reintentos;
 no amplía su TTL ni guarda un JWT que caduque durante CD. Las credenciales
 son secretos de Actions y no llegan al contenedor ZAP. El runner no acredita

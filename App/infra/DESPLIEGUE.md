@@ -157,13 +157,16 @@ ocho aplicaciones activas por SHA OCI (`verificar-version.py`). Gateway/Caddy ex
 `/version`, revisado antes y después del ZAP pasivo. No basta con `.version-desplegada` ni con
 la etiqueta solicitada.
 
-Para el perfil autenticado faltan los secretos `OWASP_CLIENTE_EMAIL` /
-`OWASP_CLIENTE_CONTRASENA` de una cuenta exclusiva de ensayo (y, opcional,
-`PRODUCCION_DOMINIO_ADMIN`). Tras verificar la revisión se hace un único login HTTPS, sin
+El perfil autenticado usa los secretos `OWASP_CLIENTE_EMAIL` / `OWASP_CLIENTE_CONTRASENA`
+de una cuenta exclusiva de ensayo, creada el 17/11 (opcional: `PRODUCCION_DOMINIO_ADMIN`). Tras verificar la revisión se hace un único login HTTPS, sin
 seguir redirecciones, para obtener JWT nuevo al terminar el CD; no se amplía su TTL. El
 certificado de Let's Encrypt es confiable para el runner, sin excepciones TLS.
 
-La evidencia aprobada hasta ahora es el **despliegue temporal de CI111**, dentro de un runner
+**Resultado contra el servidor (17/11):** [CD de `main`](https://github.com/Emperador24/HEXACORE/actions/runs/44044715233), revisión `86d8902` igual antes y
+después; ZAP 2.17.0 con **0 High**, 10 Medium (CSP con estilos en línea, fuentes sin SRI),
+19 Low (HSTS) y 12 Informational. [HTML/JSON saneados](https://github.com/Emperador24/HEXACORE/actions/runs/44044715233/artifacts/14311052588).
+
+La evidencia anterior es el **despliegue temporal de CI111**, dentro de un runner
 de Actions: [ejecución](https://github.com/Emperador24/HEXACORE/actions/runs/44000569216)
 y [HTML/JSON saneados](https://github.com/Emperador24/HEXACORE/actions/runs/44000569216/artifacts/14291638302).
 Reportes `owasp-presentacion`: todas las instancias saneadas en HTML/JSON, criterio cero High;
