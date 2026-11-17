@@ -1,5 +1,15 @@
 # Alternar Redash y HEXACORE en este Mac
 
+**17/11 — ventana CU-015 autorizada:** se inspeccionó trabajo activo y se
+detuvieron ordenadamente 18 aplicaciones, manteniendo los proveedores. La línea
+estable pasó y el único recorrido visible solicitado completó **1/1, salida0,
+119,13s**, con1000/2500ms y cero reintentos. Después se restauraron los mismos
+18 y se conservaron los111 IDs/imágenes/configuraciones/montajes/estados.
+Redash tuvo sondas iniciales agotadas y finalmente `/ping`/`/login`200; el gateway
+base antiguo conserva su `unhealthy` previo. No se promete convivencia estable.
+Esta autorización fue para la demo local exclusiva; el rol C de ZeroTier y A/B
+no se operaron. [Guion reproducible y evidencia](DEMO-CU015-SUSTENTACION.md).
+
 **16/11 — Seguridad/Safety monetario/Modificabilidad:** Docker activo, motor
 2912 MiB y 41 contenedores activos al consultar; inventario privado conservado. Se ejecutan
 pruebas de herramientas/tipos/audit sin crear o detener recursos ni abrir/cerrar
