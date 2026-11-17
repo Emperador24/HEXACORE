@@ -1,4 +1,4 @@
-import { TOKEN_PAGO } from '../../../../../compartido/token-pago';
+import { TOKEN_PAGO } from '../../../../finanzas/pagos';
 import { Matches as CoincideToken } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsIn, IsString, Length } from 'class-validator';
