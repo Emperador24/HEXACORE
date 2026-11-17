@@ -36,7 +36,8 @@ const ESTADOS: Record<ReservaParqueadero['estado'], string> = {
   PAGANDO: 'Pago en proceso',
   CONFIRMADA: 'Confirmada',
   USADA: 'Usada',
-  EXPIRADA: 'Vencida'
+  EXPIRADA: 'Vencida',
+  CANCELADA: 'Cancelada'
 };
 
 /**
@@ -93,6 +94,10 @@ export class ParqueaderoComponent {
   });
   /** Antes de apartar el espacio, la persona confirma placa, tipo y zona. */
   readonly confirmando = signal(false);
+  /** La reserva cuya cancelación se está confirmando, y el resultado de la última. */
+  readonly porCancelar = signal<string | null>(null);
+  readonly cancelando = signal(false);
+  readonly avisoReservas = signal<string | null>(null);
 
   constructor() {
     effect(() => {
@@ -172,6 +177,24 @@ export class ParqueaderoComponent {
       void this.elegirEvento(evento);
     } finally {
       this.reservando.set(false);
+    }
+  }
+
+  /** Cancelar desde "Mis reservas"; el servidor decide si se puede y si hay devolución. */
+  async cancelar(reserva: ReservaParqueadero): Promise<void> {
+    if (this.cancelando()) return;
+    this.cancelando.set(true);
+    this.errorReservas.set(null);
+    try {
+      const r = await this.parqueaderoService.cancelar(reserva.id);
+      this.avisoReservas.set(r.mensaje);
+      this.porCancelar.set(null);
+      const evento = this.eventoSeleccionado();
+      if (evento) void this.elegirEvento(evento);
+    } catch (error) {
+      this.errorReservas.set(mensajeDeError(error));
+    } finally {
+      this.cancelando.set(false);
     }
   }
 

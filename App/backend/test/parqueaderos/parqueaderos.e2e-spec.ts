@@ -370,6 +370,46 @@ describe('CU-021 a CU-025 · Parqueaderos (e2e)', () => {
       .toMatchObject({ id: reserva.id, estado: 'CONFIRMADA' });
   });
 
+  it('CU-021, cancelar: sin pagar libera; pagada se devuelve si el evento no es hoy; el mismo día no', async () => {
+    await fijarTarifa(5000);
+    const cancelar = (reservaId: string, esperado = 201) =>
+      request(nucleo.url).post(`${P}/reservas/${reservaId}/cancelacion`).set('Authorization', como(cliente)).send({}).expect(esperado).then((r) => r.body);
+
+    // Evento de hoy: quien reserva queda avisado de que no hay devolución.
+    const hoy = await eventoEnCurso();
+    const zonaHoy = await zona(hoy, 'Zona Hoy', 3, 1);
+    const disponibilidad = (await request(nucleo.url).get(`${P}/eventos/${hoy}/disponibilidad`).set('Authorization', como(cliente)).expect(200)).body;
+    expect(disponibilidad.cancelacion).toMatchObject({ conDevolucion: false });
+
+    // Sin pagar se cancela siempre: solo libera el espacio.
+    const pendiente = await reservar(hoy, { zonaId: zonaHoy.id, placa: placa() });
+    expect(pendiente.cancelacion).toMatchObject({ permitida: true, conDevolucion: false });
+    expect(await cancelar(pendiente.id)).toMatchObject({ estado: 'CANCELADA', referenciaReembolso: null });
+    expect((await espacios(hoy, zonaHoy.id)).filter((e) => e.estado === 'LIBRE')).toHaveLength(3);
+
+    // Pagada para hoy: no se cancela.
+    const deHoy = await reservar(hoy, { zonaId: zonaHoy.id, placa: placa() });
+    expect((await pagar(deHoy.id, 'tok_ok_e2e')).cancelacion).toMatchObject({ permitida: false, conDevolucion: false });
+    expect(await cancelar(deHoy.id, 409)).toMatchObject({ codigo: 'CANCELACION_FUERA_DE_PLAZO' });
+
+    // Pagada para otro día: se cancela con devolución completa y no se cancela dos veces.
+    const otroDia = randomUUID(), recinto = randomUUID();
+    await eventos.query('INSERT INTO recintos (id,nombre,ciudad,capacidad) VALUES ($1,$2,$3,$4)', [recinto, `R ${recinto.slice(0, 8)}`, 'Bogotá', 5000]);
+    await eventos.query(
+      `INSERT INTO eventos (id,nombre,categoria,recinto_id,fecha_inicio,fecha_fin,aforo_maximo,estado,creado_por,publicado_en)
+       VALUES ($1,$2,'Conciertos',$3, now() + interval '2 days', now() + interval '2 days 4 hours', 5000, 'PUBLICADO', $4, now())`,
+      [otroDia, `Parqueo ${otroDia.slice(0, 8)}`, recinto, organizador.id]);
+    const zonaOtroDia = await zona(otroDia, 'Zona Otro Día', 2, 1);
+    const reserva = await reservar(otroDia, { zonaId: zonaOtroDia.id, placa: placa() });
+    const pagada = await pagar(reserva.id, 'tok_ok_e2e');
+    expect(pagada.cancelacion).toMatchObject({ permitida: true, conDevolucion: true });
+    const cancelada = await cancelar(reserva.id);
+    expect(cancelada).toMatchObject({ estado: 'CANCELADA', codigoQr: null });
+    expect(cancelada.referenciaReembolso).toEqual(expect.stringMatching(/^ree_/));
+    expect(await cancelar(reserva.id, 409)).toMatchObject({ codigo: 'RESERVA_NO_CANCELABLE' });
+    expect((await espacios(otroDia, zonaOtroDia.id)).every((e) => e.estado === 'LIBRE')).toBe(true);
+  });
+
   it('CU-021A y C: sin disponibilidad sugiere otras zonas; la reserva vencida libera el espacio; sin doble reserva concurrente', async () => {
     await fijarTarifa(5000);
     const evento = await eventoEnCurso();

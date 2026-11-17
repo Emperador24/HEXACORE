@@ -40,6 +40,15 @@ export class ParqueaderoService {
   }
 
   /** Pasos 5-9. Un rechazo (CU-021B) deja la reserva viva para reintentar; reintentar no cobra dos veces. */
+  /** Cancela la reserva: sin pagar libera el espacio; pagada y si el evento no es hoy, con devolución completa. */
+  async cancelar(reservaId: string): Promise<ReservaParqueadero & { mensaje: string }> {
+    const reserva = await this.auth.conAcceso((cabeceras: HttpHeaders) =>
+      this.http.post<ReservaParqueadero & { mensaje: string }>(this.url(`/reservas/${reservaId}/cancelacion`), {}, { headers: cabeceras })
+    );
+    await this.cargar();
+    return reserva;
+  }
+
   async pagar(reservaId: string, token: string): Promise<ReservaParqueadero> {
     const reserva = await this.auth.conAcceso((cabeceras: HttpHeaders) =>
       this.http.post<ReservaParqueadero>(this.url(`/reservas/${reservaId}/pagar`), { token }, { headers: cabeceras })

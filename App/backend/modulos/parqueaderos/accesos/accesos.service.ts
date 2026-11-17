@@ -97,7 +97,7 @@ export class AccesosService {
       }
       if (reserva.estado === 'USADA') throw new ConflictException({ codigo: 'RESERVA_YA_USADA', mensaje: `La reserva de ${reserva.placa} ya se usó para entrar.` });
       if (reserva.estado !== 'CONFIRMADA') {
-        throw new UnprocessableEntityException({ codigo: 'QR_INVALIDO', mensaje: 'La reserva no está pagada o ya venció: ingreso negado.' });
+        throw new UnprocessableEntityException({ codigo: 'QR_INVALIDO', mensaje: 'La reserva no está pagada, venció o fue cancelada: ingreso negado.' });
       }
       if (d.placa && normalizarPlaca(d.placa) !== reserva.placa) {
         throw new ConflictException({ codigo: 'PLACA_NO_COINCIDE', mensaje: `El QR es de la placa ${reserva.placa}, no de ${normalizarPlaca(d.placa)}.` });

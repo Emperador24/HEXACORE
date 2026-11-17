@@ -113,3 +113,13 @@
   .placa-grande { font-size: 1.2em; letter-spacing: 0.08em; font-family: monospace; }
   .acciones-confirmacion { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
 }
+
+/* Reserva el mismo día del evento: sin cancelación ni devolución. */
+.aviso-devolucion {
+  margin: 8px 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(255, 152, 0, 0.12);
+  color: #8a4b00;
+  font-weight: 500;
+}

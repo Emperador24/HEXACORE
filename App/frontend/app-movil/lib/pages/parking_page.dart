@@ -13,6 +13,7 @@ const _estados = {
   'CONFIRMADA': 'Confirmada',
   'USADA': 'Usada',
   'EXPIRADA': 'Vencida',
+  'CANCELADA': 'Cancelada',
 };
 
 /// Los caminos de la pasarela simulada, para poder demostrar cada uno.
@@ -133,6 +134,11 @@ class _ParkingPageState extends State<ParkingPage> {
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontFamily: 'monospace', letterSpacing: 2)),
             Text('${_tipos[_tipo]} · $zona'),
             if (_disponibilidad?['precio'] != null) Text('Total: \$${(_disponibilidad!['precio'] as num).round()}'),
+            if ((_disponibilidad?['cancelacion'] as Map?)?['conDevolucion'] == false) ...[
+              const SizedBox(height: 8),
+              Text('Compras el mismo día del evento: no podrás cancelar esta reserva ni recibir devolución.',
+                  style: TextStyle(color: Colors.orange.shade800, fontWeight: FontWeight.w600)),
+            ],
           ]),
           actions: [
             TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Corregir')),
@@ -216,6 +222,35 @@ class _ParkingPageState extends State<ParkingPage> {
     await _recargarReservas();
   }
 
+  /// El servidor decide si se puede cancelar y si hay devolución (no el mismo día del evento).
+  Future<void> _cancelar(Map<String, dynamic> r) async {
+    final pagada = r['estado'] == 'CONFIRMADA';
+    final si = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('¿Cancelar esta reserva?'),
+            content: Text(pagada
+                ? 'Se te devuelven \$${(r['monto'] as num).round()} y el QR deja de servir.'
+                : 'El espacio queda libre para otra persona.'),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('No')),
+              FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Sí, cancelar')),
+            ],
+          ),
+        ) ??
+        false;
+    if (!si || !mounted) return;
+    final mensajero = ScaffoldMessenger.maybeOf(context);
+    try {
+      final respuesta = await _api.cancelar(r['id'] as String);
+      mensajero?.showSnackBar(SnackBar(content: Text(respuesta['mensaje'] as String? ?? 'Reserva cancelada.')));
+    } on ParqueaderoApiException catch (e) {
+      mensajero?.showSnackBar(SnackBar(content: Text(e.mensaje)));
+    }
+    await _recargarReservas();
+    if (_eventoId != null) await _elegirEvento(_eventoId!);
+  }
+
   String _restante(Map<String, dynamic> r) {
     final s = DateTime.parse(r['expiraEn'] as String).difference(DateTime.now()).inSeconds.clamp(0, 1 << 30);
     return '${s ~/ 60}:${(s % 60).toString().padLeft(2, '0')}';
@@ -239,7 +274,7 @@ class _ParkingPageState extends State<ParkingPage> {
       },
       child: ListView(padding: const EdgeInsets.all(16), children: [
         for (final r in _reservas.where((r) => r['estado'] != 'EXPIRADA')) ...[
-          _TarjetaReserva(reserva: r, restante: _restante(r), onPagar: () => _pagar(r)),
+          _TarjetaReserva(reserva: r, restante: _restante(r), onPagar: () => _pagar(r), onCancelar: () => _cancelar(r)),
           const SizedBox(height: 12),
         ],
         Text('Reservar parqueadero', style: textTheme.titleLarge),
@@ -317,6 +352,12 @@ class _ParkingPageState extends State<ParkingPage> {
                   Text('${d['horas']} h hasta el final del evento. El espacio se te guarda ${d['minutosParaPagar']} min mientras pagas.',
                       style: textTheme.bodySmall),
                 ],
+                // El mismo día del evento: quien reserva queda avisado de que no hay devolución.
+                if ((d['cancelacion'] as Map?)?['conDevolucion'] == false) ...[
+                  const SizedBox(height: 8),
+                  Text(d['cancelacion']['mensaje'] as String,
+                      style: textTheme.bodyMedium?.copyWith(color: Colors.orange.shade800, fontWeight: FontWeight.w600)),
+                ],
               ],
               if (_error != null) ...[
                 const SizedBox(height: 8),
@@ -347,10 +388,11 @@ class _ParkingPageState extends State<ParkingPage> {
 }
 
 class _TarjetaReserva extends StatelessWidget {
-  const _TarjetaReserva({required this.reserva, required this.restante, required this.onPagar});
+  const _TarjetaReserva({required this.reserva, required this.restante, required this.onPagar, required this.onCancelar});
   final Map<String, dynamic> reserva;
   final String restante;
   final VoidCallback onPagar;
+  final VoidCallback onCancelar;
 
   @override
   Widget build(BuildContext context) {
@@ -397,6 +439,15 @@ class _TarjetaReserva extends StatelessWidget {
           const SizedBox(height: 8),
           FilledButton(onPressed: restante == '0:00' ? null : onPagar, child: Text('Pagar \$${(reserva['monto'] as num).round()}')),
         ],
+        if (estado == 'CONFIRMADA' && (reserva['cancelacion'] as Map?)?['mensaje'] != null) ...[
+          const SizedBox(height: 8),
+          Text(reserva['cancelacion']['mensaje'] as String, style: textTheme.bodySmall),
+        ],
+        if ((reserva['cancelacion'] as Map?)?['permitida'] == true)
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(onPressed: onCancelar, child: Text('Cancelar reserva', style: TextStyle(color: scheme.error))),
+          ),
       ]),
     );
   }

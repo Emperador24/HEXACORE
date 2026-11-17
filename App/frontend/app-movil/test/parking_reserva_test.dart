@@ -5,7 +5,11 @@ import 'package:hexacore_app/services/parqueadero_api.dart';
 
 /// Lo que respondería el servidor: una zona solo de automóviles y otra con motos.
 class _ApiFalsa extends ParqueaderoApi {
+  _ApiFalsa({this.eventoHoy = false, List<Map<String, dynamic>>? mias}) : mias = mias ?? [];
+  final bool eventoHoy;
+  final List<Map<String, dynamic>> mias;
   final reservas = <Map<String, Object>>[];
+  final canceladas = <String>[];
 
   @override
   Future<List<EventoCartelera>> eventosProximos() async => [
@@ -13,10 +17,19 @@ class _ApiFalsa extends ParqueaderoApi {
       ];
 
   @override
-  Future<List<Map<String, dynamic>>> misReservas() async => [];
+  Future<List<Map<String, dynamic>>> misReservas() async => mias;
+
+  @override
+  Future<Map<String, dynamic>> cancelar(String reservaId) async {
+    canceladas.add(reservaId);
+    return {'mensaje': 'Reserva cancelada. Se devolvieron 25000 COP a tu medio de pago.'};
+  }
 
   @override
   Future<Map<String, dynamic>> disponibilidad(String eventoId) async => {
+        'cancelacion': eventoHoy
+            ? {'conDevolucion': false, 'mensaje': 'El evento es hoy: esta reserva no se puede cancelar ni tiene devolución.'}
+            : {'conDevolucion': true, 'mensaje': 'Puedes cancelarla con devolución completa hasta el día anterior al evento.'},
         'reservable': true,
         'precio': 25000,
         'horas': 5,
@@ -94,5 +107,54 @@ void main() {
     await tester.tap(find.text('Sí, la placa es correcta'));
     await avanzar(tester);
     expect(api.reservas.single, {'zonaId': 'z2', 'placa': 'ABC12D', 'tipoVehiculo': 'MOTO'});
+  });
+
+  testWidgets('el mismo día del evento se avisa antes de pagar que no hay devolución', (tester) async {
+    tester.view.physicalSize = const Size(1080, 3200);
+    tester.view.devicePixelRatio = 2;
+    addTearDown(tester.view.reset);
+    final api = _ApiFalsa(eventoHoy: true);
+    await tester.pumpWidget(MaterialApp(home: Scaffold(body: ParkingPage(api: api))));
+    await avanzar(tester);
+    expect(find.text('El evento es hoy: esta reserva no se puede cancelar ni tiene devolución.'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField), 'ABC123');
+    await avanzar(tester);
+    await tester.tap(find.widgetWithText(FilledButton, 'Reservar y pagar'));
+    await avanzar(tester);
+    expect(
+        find.descendant(of: find.byType(AlertDialog), matching: find.textContaining('no podrás cancelar esta reserva ni recibir devolución')),
+        findsOneWidget);
+  });
+
+  testWidgets('una reserva pagada se cancela tras confirmar; el botón solo sale si el servidor lo permite', (tester) async {
+    tester.view.physicalSize = const Size(1080, 3200);
+    tester.view.devicePixelRatio = 2;
+    addTearDown(tester.view.reset);
+    Map<String, dynamic> reserva(String id, bool permitida) => {
+          'id': id, 'estado': 'CONFIRMADA', 'placa': 'ABC123', 'tipoVehiculo': 'AUTOMOVIL', 'zona': 'Cubierta', 'espacio': 'C-01',
+          'monto': 25000, 'codigoQr': 'HXP-$id', 'expiraEn': '2027-01-01T00:00:00Z', 'evento': {'nombre': 'Noche de Rock Nacional'},
+          'cancelacion': {'permitida': permitida, 'conDevolucion': permitida, 'mensaje': permitida ? 'Puedes cancelarla.' : 'El evento es hoy.'},
+        };
+    final api = _ApiFalsa(mias: [reserva('r1', true), reserva('r2', false)]);
+    await tester.pumpWidget(MaterialApp(home: Scaffold(body: ParkingPage(api: api))));
+    await avanzar(tester);
+
+    // Solo la que el servidor permite cancelar tiene botón.
+    expect(find.text('Cancelar reserva'), findsOneWidget);
+    await tester.tap(find.text('Cancelar reserva'));
+    await avanzar(tester);
+    expect(find.text('Se te devuelven \$25000 y el QR deja de servir.'), findsOneWidget);
+
+    await tester.tap(find.text('No'));
+    await avanzar(tester);
+    expect(api.canceladas, isEmpty);
+
+    await tester.tap(find.text('Cancelar reserva'));
+    await avanzar(tester);
+    await tester.tap(find.text('Sí, cancelar'));
+    await avanzar(tester);
+    expect(api.canceladas, ['r1']);
+    expect(find.text('Reserva cancelada. Se devolvieron 25000 COP a tu medio de pago.'), findsOneWidget);
   });
 }
