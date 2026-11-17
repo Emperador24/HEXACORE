@@ -7,6 +7,7 @@ import Redis from 'ioredis';
 import { GRUPOS_MIGRACIONES } from '../../compartido/persistencia/historia';
 const procesos = require('./procesos.cjs');
 const { Client } = require('pg');
+const { verificar } = require('../../herramientas/verificar-transaccion.cjs');
 const dias = (n: number) => new Date(Date.now() + n * 86400000);
 
 // Se conserva el mismo contrato antes y después del traslado. Los JWT son fixtures;
@@ -168,6 +169,9 @@ describe('Referencia real de Boletería: CU-001–006', () => {
     await procesos.esperar(async()=> (await sql('acceso-qr','SELECT hash_qr FROM qr_entradas WHERE entrada_id=$1',[transferencia.entradaId]))[0]?.hash_qr===hash(transferencia.codigoQr));
     console.log('Convergencia QR observada (ms):',Date.now()-inicio);
     expect((await pedir('acceso-qr','POST','/ingresos',portero,{eventoId:evento,codigoQr:nuevaCompra.entradas[0].codigoQr})).status).toBe(404);
+    const posterior = await verificar(db.pagos, 'reventa', checkout.id);
+    expect(posterior.codigo).toBe(0);
+    console.log('Safety posterior reventa, después de converger QR:', JSON.stringify(posterior));
     const rs=await Promise.all(Array.from({length:2},()=>pedir('acceso-qr','POST','/ingresos',portero,{eventoId:evento,codigoQr:transferencia.codigoQr})));
     expect(rs.map(r=>r.status).sort()).toEqual([200,409]);
     expect((await sql('acceso-qr','SELECT count(*)::int n FROM ingresos WHERE entrada_id=$1',[transferencia.entradaId]))[0].n).toBe(1);
