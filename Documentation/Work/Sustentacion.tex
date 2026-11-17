@@ -267,7 +267,7 @@ Usabilidad (arq. de información) & Daniel; todos aportan & RNF-12, 14 & Patrón
 \item \cifra{167/167} protegidas de 186 declaradas/181 expuestas: evidencia histórica por gateway y backend directo; combinaciones publicadas, no cobertura universal.
 \item ZAP reutilizado \textbf{después de desplegar}: dos portales y GET públicos/perfil Cliente autenticado. HTML/JSON saneados con todas las alertas.
 \item CI111: ZAP 2.17.0, \cifra{0 High}, 10 Medium y 4 Informational conservadas; sin categoría Critical. npm: producción/Critical cero, 20 moderadas de desarrollo backend.
-\item \textbf{Alcance:} runner temporal aprobado. Samuel confirma que el servidor de presentación nunca se creó; faltan nombres controlados por el equipo y conexión de Diego.
+\item \textbf{Alcance:} runner temporal aprobado. servidor propio en Google Cloud desde el 16/11 (\texttt{hexacore-javeriana.duckdns.org}) con CD configurado; falta correr allí el ZAP.
 \item RNF-05/06 parciales: ZAP pasivo no ejecuta JS ni sustituye pruebas de autorización/PAN.
 \end{itemize}
 \nota{Demo: \href{https://github.com/Emperador24/HEXACORE/actions/runs/44000569216}{Actions CI111} $\rightarrow$ trabajo OWASP $\rightarrow$ Summary/Artifacts $\rightarrow$ \texttt{atributos-sebastian} $\rightarrow$ \path{owasp.html} / \path{owasp.json}. Ejecución completada: 20 GET, 1 autenticado. No se repite por este cambio documental.}
@@ -310,8 +310,9 @@ Image IDs SHA-256 iguales antes/después; \texttt{--no-build}. Sin recarga en ca
 \item «Desplegar en producción» entra por SSH al servidor y corre \texttt{desplegar.sh sha-<commit>}.
 \item Si la versión nueva no queda sana, vuelve sola a la anterior (RNF-15: reversión).
 \end{enumerate}
-\textbf{Para la demo:} el paso de despliegue solo corre cuando existe el servidor
-(\texttt{PRODUCCION\_DOMINIO}); hoy sale omitido. Falta crear la máquina y sus secretos.
+\textbf{Servidor real:} Google Cloud (\texttt{e2-standard-2}, Ubuntu 24.04) con HTTPS de Let's Encrypt en
+\href{https://hexacore-javeriana.duckdns.org}{\texttt{hexacore-javeriana.duckdns.org}} y
+\texttt{admin.}\ldots; secretos del CD configurados, así que cada merge a \texttt{main} se despliega solo.
 \nota{Diego · \codigo{.github/workflows/cd.yml}{cd.yml} · \codigo{App/infra/desplegar.sh}{desplegar.sh}}
 \end{frame}
 
@@ -377,8 +378,7 @@ siguen sin prueba con usuarios. Cada integrante confirma el patrón de sus panta
 \begin{itemize}\setlength\itemsep{0.3em}
 \item \textbf{RNF-07} se midió hasta 200 usuarios, no 2\,000; \textbf{RNF-10} con Boletería llega a 1,12--1,26$\times$ en un portátil.
 \item \textbf{RNF-03} (99,9\,\% mensual) no se mide en una demo: se muestra su mecanismo.
-\item \textbf{Seguridad:} escaneo integrado; falta conectar y ejecutar el despliegue de presentación de Diego.
-\item \textbf{Desplegabilidad:} servidor de presentación nunca creado; conexión de Diego pendiente, sin dominio del equipo confirmado.
+\item \textbf{Seguridad:} escaneo integrado; falta ejecutarlo contra el servidor de presentación (cuenta de ensayo \texttt{OWASP\_CLIENTE\_*}).
 \item \textbf{Comprobabilidad:} falta publicar la cobertura de todos los servicios en Actions.
 \item \textbf{Usabilidad:} falta la prueba con cinco usuarios nuevos.
 \end{itemize}

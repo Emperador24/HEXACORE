@@ -248,9 +248,10 @@ PostgreSQL, Redis y RabbitMQ siguen siendo una instancia.
 \begin{itemize}\setlength\itemsep{0.3em}
 \item \textbf{A}, Mac de Samuel: datos, gateway, HTTPS y una réplica de cada programa.
 \item \textbf{B}, VM Javeriana: otra réplica de Núcleo y Boletería.
-\item \textbf{C}, Mac de Sebastián: cliente que mide.
-\item \textbf{En vivo:} se apaga B y C sigue atendido por A; al volver, el gateway la retoma.
-\item \textbf{Límites:} A es punto único de falla; B llega por relevo (\cifra{$\sim$124 ms}).
+\item \textbf{C}: cliente que mide, 2 lecturas cada 0,5\,s sin reintentos.
+\item \textbf{Medido 17/11, 671 peticiones:} cae el Núcleo de A $\to$ \cifra{1 falla}, vuelve en \cifra{12 s}; B detenida $\to$ A atiende el \cifra{95\,\%}.
+\item \textbf{16 fallas con B caída:} el gateway del montaje no reintenta, a propósito; el normal sí (0 fallas).
+\item \textbf{Límites:} se detuvieron los contenedores de B, no la VM; A es punto único de falla.
 \end{itemize}
 \end{column}
 \end{columns}

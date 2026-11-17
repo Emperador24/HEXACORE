@@ -181,6 +181,12 @@ export interface LineaResumenPago {
   precioUnitario: number;
 }
 
+/** Lo que devuelve el servidor al aplicar o quitar un código promocional (CU-004). */
+export interface ResultadoCupon {
+  descuento: number;
+  codigoPromocional: string | null;
+}
+
 /**
  * Descriptor de un pago pendiente: cualquier flujo de compra (entradas,
  * parqueadero, pedido) lo registra en [PagoService] antes de navegar a
@@ -199,6 +205,18 @@ export interface PagoPendiente {
   onConfirmar: (metodo: MetodoPago, token?: string) => void | Promise<void>;
   /** Medios que admite esta compra. Si falta, se ofrecen todos. */
   metodos?: MetodoPago[];
+  /** Descuento ya calculado por el servidor (CU-004); se resta del total de las líneas. */
+  descuento?: number;
+  /** Código promocional aplicado, si lo hay. */
+  codigoPromocional?: string | null;
+  /**
+   * CU-004: si la compra admite código promocional. La pasarela no conoce la
+   * regla del descuento: pide al servidor que lo aplique y muestra lo que devuelve.
+   */
+  cupon?: {
+    aplicar: (codigo: string) => Promise<ResultadoCupon>;
+    quitar: () => Promise<ResultadoCupon>;
+  };
   /**
    * Tokens de la pasarela simulada para demostrar cada camino (aprobado,
    * rechazado…), como en la reventa. Si falta, no se muestra el selector.

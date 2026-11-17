@@ -5,7 +5,16 @@ import { PagosService } from './pagos.service';
 import { CONFIGURACION, ConfiguracionServicio } from './config/configuracion';
 import { PasarelaHttp } from './pasarela-http.service';
 import { PasarelaStripe } from './pasarela-stripe.service';
-import { PROCESADOR_PAGOS } from './procesador-pagos';
+import { PROCESADOR_PAGOS, ProcesadorPagos } from './procesador-pagos';
+
+/**
+ * RNF-16: el único punto que sabe qué pasarela hay detrás. Se elige por
+ * configuración (`PAGOS_PROVEEDOR`); un proveedor nuevo es un adaptador más
+ * aquí y nada fuera de Pagos cambia.
+ */
+export function crearProcesadorPagos(config: ConfiguracionServicio): ProcesadorPagos {
+  return config.pasarelaPagos.proveedor === 'stripe' ? new PasarelaStripe(config) : new PasarelaHttp(config);
+}
 
 /** Libro y operaciones reutilizables. Importarlo no registra controladores ni clientes de sesión/mensajería. */
 @Module({
@@ -17,8 +26,7 @@ import { PROCESADOR_PAGOS } from './procesador-pagos';
       // nada más cambia. Lo comparten Núcleo y Boletería.
       provide: PROCESADOR_PAGOS,
       inject: [CONFIGURACION],
-      useFactory: (config: ConfiguracionServicio) =>
-        config.pasarelaPagos.proveedor === 'stripe' ? new PasarelaStripe(config) : new PasarelaHttp(config),
+      useFactory: crearProcesadorPagos,
     },
   ],
   exports: [PagosService, ConfigPagosModule],

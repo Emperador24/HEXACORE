@@ -98,7 +98,7 @@ El bloque de atributos ocupa el resto de la hora, después de los 10 minutos de 
 - **RNF-09 · El tablero refleja un ingreso en ≤ 2 s (CU-019, CU-025).** Se cronometra desde que se registra el ingreso hasta que el panel en vivo lo muestra. **Medido:** máximo 1,01 s en el panel del parqueadero y 1,12 s en el de monitoreo (QR → RabbitMQ → Operación), 20 de 20 ingresos en cada uno. Para lograrlo, los paneles pasaron de actualizarse cada 3 s a cada 1 s, y la bandeja de salida de Acceso QR pasó de publicar unos 50 avisos/s a unos 1 700/s: con la versión anterior, en un pico de ingresos el panel se atrasaba minutos.
 - **RNF-17 · La evacuación llega al personal (CU-010).** Umbral: ≥ 99 % de los dispositivos en ≤ 10 s. **Medido:** 300 teléfonos simulados, consultando cada 4 s como la app móvil: 300 de 300 la vieron en ≤ 4 s (p95 3,8 s). Con una réplica del Núcleo muerta en el instante de la activación, también 300 de 300. No cubre teléfonos sin señal ni con la app cerrada: eso requiere notificaciones push o SMS reales.
 
-**Entre computadores (ZeroTier).** La demostración en vivo usa tres equipos en una red ZeroTier privada (`192.168.193.0/24`): A, el Mac de Samuel, con datos, gateway y una réplica de Núcleo y Boletería; B, la VM de la Javeriana, con otra réplica de cada uno; C, el Mac de Sebastián, como cliente que mide. Se apaga B y C sigue atendido por A. A es el punto único de falla: no se apaga. La VM llega a A por un relevo de ZeroTier (unos 124 ms por ida y vuelta), así que sus réplicas responden más lento que las de A.
+**Entre computadores (ZeroTier).** La demostración en vivo usa tres equipos en una red ZeroTier privada (`192.168.193.0/24`): A, el Mac de Samuel, con datos, gateway y una réplica de Núcleo y Boletería; B, la VM de la Javeriana, con otra réplica de cada uno; C, un cliente que mide. Se cae B y C sigue atendido por A. **Medido el 17/11** ([informe](../../App/infra/informe-atributos/DISPONIBILIDAD-ZEROTIER.md)): 671 peticiones; al matar el Núcleo de A falló 1 y volvió en ~12 s; con los contenedores de B detenidos, A atendió el 95 % (las 16 fallas son pruebas del gateway a B, que en el montaje no reintenta a propósito). A es el punto único de falla: no se apaga. La VM llega a A por un relevo de ZeroTier (unos 124 ms por ida y vuelta), así que sus réplicas responden más lento que las de A.
 
 **Cómo debería verse la demostración.**
 
@@ -162,7 +162,7 @@ La cobertura de cada módulo depende de las pruebas que escriba su dueño; Diego
 
 **Entrega ejecutable 16/11 (PR #64):** los tres bloques de Sebastián se implementan
 sin nuevos CU. [Plan y comandos](PLAN-CIERRE-SEBASTIAN.md) separa prueba de herramientas,
-runner temporal y despliegue externo pendiente. ZAP exige cero **High** (no tiene
+runner temporal y el servidor propio de presentación (16/11), donde falta correr el ZAP. ZAP exige cero **High** (no tiene
 Critical); Safety usa verificador posterior de solo lectura; Modificabilidad mide
 tres parámetros con el mismo artefacto. RNF-05/06/02/11/13 permanecen limitados.
 

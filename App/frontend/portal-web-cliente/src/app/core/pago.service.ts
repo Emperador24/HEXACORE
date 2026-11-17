@@ -14,12 +14,22 @@ import { MetodoPago, PagoPendiente } from './models';
 export class PagoService {
   private readonly _pendiente = signal<PagoPendiente | null>(null);
   readonly pendiente = this._pendiente.asReadonly();
-  readonly total = computed(
+  readonly subtotal = computed(
     () => this._pendiente()?.lineas.reduce((acc, l) => acc + l.precioUnitario * l.cantidad, 0) ?? 0
   );
+  /** El descuento lo calcula el servidor (CU-004); aquí solo se resta para mostrarlo. */
+  readonly total = computed(() => Math.max(0, this.subtotal() - (this._pendiente()?.descuento ?? 0)));
 
   registrar(pago: PagoPendiente): void {
     this._pendiente.set(pago);
+  }
+
+  /** CU-004: aplica o quita el código en el servidor y guarda el resultado que devolvió. */
+  async cupon(accion: 'aplicar' | 'quitar', codigo = ''): Promise<void> {
+    const pago = this._pendiente();
+    if (!pago?.cupon) return;
+    const resultado = accion === 'aplicar' ? await pago.cupon.aplicar(codigo) : await pago.cupon.quitar();
+    this._pendiente.set({ ...pago, descuento: resultado.descuento, codigoPromocional: resultado.codigoPromocional });
   }
 
   /**

@@ -190,7 +190,7 @@ Implementado $\neq$ comprobado. Comprobado en un ensayo $\neq$ RNF completo.
 \item Tres finales 560/560; 346 conservaciones completas de 76 tablas y Redis por final.
 \item 151 anteriores conservan sus combinaciones; no son todos los actores/estados/consumidores.
 \end{itemize}
-\textbf{OWASP:} CI111 sobre despliegue temporal, HTML/JSON saneados y cero High. ZAP no tiene Critical. Samuel confirma que el servidor de presentación nunca se creó; conexión de Diego pendiente.
+\textbf{OWASP:} CI111 sobre despliegue temporal, HTML/JSON saneados y cero High. ZAP no tiene Critical. Servidor propio en Google Cloud desde el 16/11 (\texttt{hexacore-javeriana.duckdns.org}); falta correr allí el ZAP.
 \franja{24:00--26:00 · Sebastián · Backend directo se conserva como comprobación adicional al gateway; 560 observaciones no son 560 CU.}
 \end{frame}
 
@@ -262,7 +262,7 @@ Comprobabilidad / 14 & Unitarias/dobles, HTTP y contratos separados & RNF-18: 11
 Seguridad & Positivo 200, rol ajeno 403, sin token 401 y revocación propia & 90\\
 Desempeño & Lectura y contraste con informe existente & 45\\
 Escalabilidad & Reparto entre instancias ya preparadas & 30\\
-Disponibilidad & X-Servidor y evidencia histórica; caída B pendiente & 40\\
+Disponibilidad & X-Servidor; caída del Núcleo de A y de B medida por ZeroTier & 40\\
 Observabilidad & Correlación de solicitud, upstream y log en tablero & 35\\
 Consistencia & Caso existente de competencia/replay por seleccionar & 60\\
 Tiempo real & Ingreso propio y panel; medir extremo a extremo & 40\\
@@ -280,7 +280,7 @@ Safety & Estado/aviso simulado e interlock ya preparado & 35\\
 Usabilidad & Tarea/pasos y evidencia humana, si existe & 45\\
 Portabilidad & Una lectura autorizada en web y app & 35\\
 Mantenibilidad & Contrato e implementación de un módulo & 30\\
-Desplegabilidad & Versión/CI y procedimiento; sin despliegue nuevo & 30\\
+Desplegabilidad & Versión/CI y despliegue del CD en el servidor real & 30\\
 Integrabilidad & Interfaz y contrato existente del adaptador & 25\\
 Comprobabilidad & Prueba aislada existente y CI de su revisión & 30\\
 \bottomrule

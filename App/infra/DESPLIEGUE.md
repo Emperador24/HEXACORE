@@ -1,20 +1,18 @@
-# Despliegue futuro en producción — pendiente
+# Despliegue en producción
 
-**Estado confirmado por Samuel — 16/11/2026:** el servidor de presentación
-**nunca se creó**. El dominio antes usado como ejemplo (`hexacore.duckdns.org`)
-pertenece a un tercero; él y todos sus subdominios quedan excluidos de pruebas,
-SSH, HTTPS y configuración del equipo. No se contactaron para esta revisión.
+**Servidor de presentación en marcha desde el 16/11/2026** (Samuel):
 
-La evidencia aprobada es el **despliegue temporal de CI111**, dentro de un runner
-de Actions: [ejecución](https://github.com/Emperador24/HEXACORE/actions/runs/44000569216)
-y [HTML/JSON saneados](https://github.com/Emperador24/HEXACORE/actions/runs/44000569216/artifacts/14291638302).
-No acredita un servidor externo, un dominio del equipo ni una instalación cloud.
-[Guion para mostrarla en Actions](../../Documentation/Work/PLAN-CIERRE-SEBASTIAN.md#mostrar-el-escaneo-aprobado-en-actions).
+| | |
+|---|---|
+| Portal de clientes y API | https://hexacore-javeriana.duckdns.org (`/api/v1`) |
+| Portal administrativo | https://admin.hexacore-javeriana.duckdns.org |
+| Máquina | Google Cloud Compute Engine, `e2-standard-2` (2 vCPU, 8 GB), Ubuntu 24.04, `us-central1`, IP estática `35.255.61.156` |
+| Certificados | Let's Encrypt, los pide y renueva Caddy |
+| Despliegue continuo | Configurado: cada merge a `main` se despliega solo (sección 5) |
 
-La guía inferior es una **opción histórica no ejecutada**, para que Diego conecte
-un destino futuro. Esta entrega no crea cloud, DNS, redes, certificados ni reglas
-de firewall. `dominio-controlado.example.invalid` y sus subdominios son marcadores
-no resolubles: no son nuestros dominios y no sirven como destinos operativos.
+El nombre `hexacore.duckdns.org` que usaba antes esta guía **pertenece a un tercero**: él y
+sus subdominios quedan excluidos de pruebas, SSH, HTTPS y escaneos. El del equipo es
+`hexacore-javeriana.duckdns.org`.
 
 ```text
 merge a main ──► CI ──► CD: compila y publica las imágenes en ghcr.io
@@ -27,78 +25,102 @@ merge a main ──► CI ──► CD: compila y publica las imágenes en ghcr.
                               https://admin.<dominio>  portal administrativo + /api
 ```
 
-En el servidor solo Caddy publica puertos (80 y 443). Caddy pide y renueva solo los
-certificados de Let's Encrypt. PostgreSQL, Redis, RabbitMQ y los servicios quedan dentro de la red
-de Docker. Cada portal sirve también `/api` en su propio dominio, así no hace falta CORS y la
-cookie de sesión funciona igual que en local. Detalle en
+En el servidor solo Caddy publica puertos (80 y 443). PostgreSQL, Redis, RabbitMQ y los
+servicios quedan dentro de la red de Docker. Cada portal sirve también `/api` en su propio
+dominio, así no hace falta CORS y la cookie de sesión funciona igual que en local. Detalle en
 [docker-compose.produccion.yml](docker-compose.produccion.yml) y [produccion/Caddyfile](produccion/Caddyfile).
 
-> **Estado revisado 16/11:** Actions sí ejecuta CI/CD; la nota anterior de bloqueo
-> de facturación quedó obsoleta. Publicar imágenes no acredita despliegue externo:
-> el último trabajo de producción figura omitido. El usuario confirma que aún no
-> existe el destino de presentación de Diego; no se ejecuta aquí ese despliegue.
+Los pasos siguientes son los que se siguieron. Sirven igual para montar otro servidor: basta
+una máquina Ubuntu con 4 GB de RAM o más, en cualquier proveedor.
 
-## 1. Opción histórica de máquina virtual — no ejecutada
+## 1. Máquina virtual (Google Cloud)
 
-1. Crear la cuenta en https://www.oracle.com/cloud/free. Pide una tarjeta débito o crédito
-   solo para verificar (retiene cerca de US$1 y lo devuelve); en la capa *Always Free* no cobra.
-   - La **región de inicio** que elijas no se puede cambiar después, y las máquinas ARM
-     gratis solo se crean ahí: elige la más cercana (por ejemplo, *Brazil East (São Paulo)*).
-2. *Compute → Instances → Create instance*:
-   - **Image:** *Canonical Ubuntu 24.04* (la variante *aarch64*).
-   - **Shape:** *Ampere → VM.Standard.A1.Flex* con **4 OCPU y 24 GB** (todo lo gratis; con
-     2 OCPU y 12 GB también alcanza). Debe decir *Always Free-eligible*.
-   - **Networking:** crear una VCN nueva con subred **pública** y *Assign a public IPv4 address*.
-   - **SSH keys:** subir tu llave pública (o descargar la que genera Oracle y guardarla bien).
-   - Si sale **"Out of capacity"**, prueba otro *Availability domain* en la misma pantalla, una
-     forma más chica (2 OCPU / 12 GB) o vuelve a intentar en unas horas: es lo normal en la
-     capa gratis y no es un error tuyo.
-3. Abrir HTTP y HTTPS en la red de Oracle: en la instancia, *Primary VNIC → Subnet → Security
-   Lists → Default Security List → Add Ingress Rules*, con *Source CIDR* `0.0.0.0/0`:
-   - TCP, puerto de destino `80`
-   - TCP, puerto de destino `443`
-   - UDP, puerto de destino `443` (HTTP/3; opcional)
+Con la prueba gratuita de Google Cloud (US$300 por 90 días; pide tarjeta pero no cobra sin
+pasar la cuenta a pago). *Compute Engine → Instancias de VM → Crear instancia*:
 
-   El SSH (22) ya viene abierto. Los puertos también hay que abrirlos dentro del Ubuntu, por las
-   reglas de `iptables` que traen las imágenes de Oracle; de eso se encarga
-   `preparar-servidor.sh`.
-4. Para que la IP no cambie al reiniciar la máquina, se puede reservar: *Networking → IP
-   Management → Reserved public IPs* (una reservada también es gratis).
+- **Región:** `us-central1`. **Tipo:** E2 → `e2-standard-2` (2 vCPU, 8 GB). Con `e2-medium`
+  (4 GB) también arranca, pero justo. Aprovisionamiento **Estándar**, no Spot.
+- **SO y almacenamiento:** Ubuntu 24.04 LTS **x86/64**, disco persistente balanceado de **50 GB**
+  (los 10 GB por defecto no alcanzan para las imágenes).
+- **Herramientas de redes:** marcar *Permitir tráfico HTTP* y *Permitir tráfico HTTPS*. En
+  *nic0 → Dirección IPv4 externa*, **Reservar dirección IP externa estática**, para que no
+  cambie al reiniciar.
+- **Seguridad → Administrar acceso → Agregar elemento:** la llave pública seguida del usuario,
+  `ssh-ed25519 AAAA… ubuntu`. Sin el usuario al final, Google la rechaza.
 
-El usuario de SSH de las imágenes de Ubuntu de Oracle es **`ubuntu`**. El CD ya publica las
-imágenes también para ARM (`arm64`), así que la máquina no tiene que compilar nada.
+Antes de conectarse la primera vez, comparar la huella SSH con la de *Registros → Puerto
+serie 1* de la instancia (`ED25519`), en vez de aceptar la que diga el servidor.
 
-## 2. Dos nombres controlados por el equipo — pendientes
+Se intentó primero Oracle Cloud *Always Free* (Bogotá): no había capacidad para máquinas ARM
+y la consola bloqueó más intentos. Azure for Students no estaba activado en la cuenta.
 
-Todavía no hay nombres de presentación confirmados. Diego debe aportar y comprobar
-el control de los nombres de cliente y administración antes de configurar DNS,
-TLS o destinos del escaneo. Los marcadores de esta guía son
-`dominio-controlado.example.invalid` y `admin.dominio-controlado.example.invalid`;
-no se presupone que exista ningún registro ni que apunten a un servidor.
+## 2. Dominio (DuckDNS)
 
-Con un dominio propio basta con dos registros A (`@` y `admin`) hacia la IP; si el administrativo
-va en otro nombre, se pone en `DOMINIO_ADMIN` en el `.env`.
+En https://www.duckdns.org, con la cuenta de GitHub: crear el subdominio y **escribir a mano**
+la IP de la máquina (DuckDNS propone la del computador desde el que se entra). DuckDNS
+resuelve también los subdominios del tuyo, así que `admin.<sub>.duckdns.org` funciona sin
+hacer nada. Con un dominio propio basta con dos registros A (`@` y `admin`) hacia la IP; si el
+administrativo va en otro nombre, se pone en `DOMINIO_ADMIN` en el `.env`.
 
-## 3. Plantilla de preparación del servidor futuro
+## 3. Preparar el servidor (una vez)
 
-Plantilla informativa; sustituir los marcadores únicamente cuando exista el
-servidor controlado por el equipo. No ejecutar este procedimiento en C ni para
-mostrar el escaneo ya aprobado.
-
-```text
-ssh <USUARIO_SSH>@<HOST_SSH_CONTROLADO>
-# En la terminal del servidor verificado y con el checkout disponible:
-cd ~/HEXACORE
-./App/infra/preparar-servidor.sh <DOMINIO_CONTROLADO>
+```bash
+ssh ubuntu@hexacore-javeriana.duckdns.org
+curl -fsSL https://raw.githubusercontent.com/Emperador24/HEXACORE/main/App/infra/preparar-servidor.sh \
+  | bash -s -- hexacore-javeriana.duckdns.org
+exit   # y volver a entrar, para usar docker sin sudo
 ```
 
 [preparar-servidor.sh](preparar-servidor.sh) instala Docker, crea memoria swap, deja abiertos
-solo los puertos 22, 80 y 443 (en Oracle, con sus reglas de `iptables`) y clona el repositorio en `~/HEXACORE`. También **genera claves JWT
-propias** en `App/infra/claves-produccion/` y escribe `App/infra/.env` con el dominio. Las claves
-de `claves-desarrollo/` están en git: con ellas cualquiera podría firmarse una sesión de
+solo los puertos 22, 80 y 443 (con `ufw`; en Oracle, con sus reglas de `iptables`) y clona el
+repositorio en `~/HEXACORE`. También **genera claves JWT propias** en
+`App/infra/claves-produccion/` y escribe `App/infra/.env` con el dominio. Las claves de
+`claves-desarrollo/` están en git: con ellas cualquiera podría firmarse una sesión de
 administrador, y en producción el gateway las rechaza.
 
-## 4. Correo y pagos reales (opcional)
+## 4. Primer despliegue
+
+```bash
+cd ~/HEXACORE/App/infra
+./desplegar.sh main --datos-demo          # imágenes que publicó el CD
+# o ./desplegar.sh --compilar --datos-demo si el CD aún no las publicó
+```
+
+`--datos-demo` carga las cuentas de ejemplo (contraseña `hexacore2026`), solo si la base está
+vacía. El primer acceso a `https://hexacore-javeriana.duckdns.org` puede tardar unos segundos
+mientras Caddy obtiene el certificado.
+
+Las imágenes `hexacore-*` de ghcr.io son públicas, así que el servidor las baja sin token. Si
+alguna vez quedan privadas, agregar en el `.env` del servidor `GHCR_USUARIO` y `GHCR_TOKEN`
+(token clásico con `read:packages`).
+
+## 5. Despliegue automático en cada cambio a `main`
+
+1. Una llave **solo para el CD**, autorizada en el servidor, y la huella del servidor ya
+   verificada (la del paso 1), escrita con el nombre que usará Actions:
+   ```bash
+   ssh-keygen -t ed25519 -f hexacore-cd -N "" -C "hexacore-cd"
+   ssh-copy-id -i hexacore-cd.pub ubuntu@hexacore-javeriana.duckdns.org
+   # known_hosts: "hexacore-javeriana.duckdns.org ssh-ed25519 AAAA…" con la huella comprobada
+   ```
+2. En GitHub → Settings → Secrets and variables → Actions (o con `gh secret set`, que lee la
+   llave del archivo sin mostrarla):
+
+   | Tipo | Nombre | Valor |
+   |---|---|---|
+   | Secret | `PRODUCCION_SSH_CLAVE` | contenido de `hexacore-cd` (la privada) |
+   | Secret | `PRODUCCION_SSH_HOST` | `hexacore-javeriana.duckdns.org` |
+   | Secret | `PRODUCCION_SSH_USUARIO` | `ubuntu` |
+   | Secret | `PRODUCCION_SSH_KNOWN_HOSTS` | la línea de `known_hosts` del paso anterior |
+   | Variable | `PRODUCCION_DOMINIO` | `hexacore-javeriana.duckdns.org` |
+
+   Los cinco quedaron configurados el 16/11. Sin `PRODUCCION_DOMINIO`, el trabajo de
+   despliegue no corre (no falla).
+3. Desde ahí, cada merge a `main` pasa por el CD. El trabajo **Desplegar en producción** entra
+   por SSH, pone el repositorio en ese commit, despliega `sha-<commit>` y comprueba que
+   `https://<dominio>/api/v1/salud` responda.
+
+## 6. Correo y pagos reales (opcional)
 
 Editar `~/HEXACORE/App/infra/.env` en el servidor y descomentar el bloque de Gmail y el de Stripe
 ([.env.ejemplo](.env.ejemplo) explica cada variable). Los enlaces de los correos ya apuntan a
@@ -108,47 +130,6 @@ Para Stripe, el webhook va directo al servidor, sin la Stripe CLI. En el panel d
 Developers → Webhooks se agrega el endpoint `https://<dominio>/api/v1/pagos/webhook/stripe` con
 los eventos `payment_intent.succeeded`, `payment_intent.payment_failed` y `refund.updated`. El
 `whsec_…` que muestra Stripe se copia en `STRIPE_SECRETO_WEBHOOK`.
-
-## 5. Plantilla de primer despliegue — pendiente
-
-```bash
-cd ~/HEXACORE/App/infra
-./desplegar.sh --compilar --datos-demo   # compila en el servidor: no depende del CD
-# o, cuando el CD ya haya publicado imágenes de main:
-./desplegar.sh main --datos-demo
-```
-
-`--datos-demo` carga las cuentas de ejemplo (contraseña `hexacore2026`), solo si la base está
-vacía. Abrir `https://dominio-controlado.example.invalid`; el primer acceso puede tardar unos segundos
-mientras Caddy obtiene el certificado.
-
-## 6. Conexión futura del CD de Diego — pendiente
-
-1. En tu computador, una llave solo para el CD:
-   ```bash
-   ssh-keygen -t ed25519 -f hexacore-cd -N "" -C "hexacore-cd"
-   ssh-copy-id -i hexacore-cd.pub ubuntu@dominio-controlado.example.invalid
-   ssh-keyscan dominio-controlado.example.invalid > hexacore-cd.known_hosts
-   ```
-2. En GitHub → el repositorio → Settings → Secrets and variables → Actions:
-
-   | Tipo | Nombre | Valor |
-   |---|---|---|
-   | Secret | `PRODUCCION_SSH_CLAVE` | contenido de `hexacore-cd` (la privada) |
-   | Secret | `PRODUCCION_SSH_HOST` | `dominio-controlado.example.invalid` |
-   | Secret | `PRODUCCION_SSH_USUARIO` | `ubuntu` |
-   | Secret | `PRODUCCION_SSH_KNOWN_HOSTS` | contenido de `hexacore-cd.known_hosts` |
-   | Variable | `PRODUCCION_DOMINIO` | `dominio-controlado.example.invalid` |
-
-   Sin `PRODUCCION_DOMINIO`, el trabajo de despliegue no corre (no falla).
-3. Las imágenes que publica el CD en ghcr.io pueden quedar privadas. Hay dos opciones:
-   - Hacerlas públicas: en github.com/Emperador24?tab=packages, cada paquete `hexacore-*` →
-     Package settings → Change visibility → Public.
-   - O dejarlas privadas y agregar en el `.env` del servidor `GHCR_USUARIO` y `GHCR_TOKEN`
-     (un token clásico con el permiso `read:packages`).
-4. Desde ahí, cada merge a `main` pasa por el CD. El trabajo **Desplegar en producción** entra
-   por SSH, pone el repositorio en ese commit, despliega `sha-<commit>` y comprueba que
-   `https://<dominio>/api/v1/salud` responda.
 
 ## Operación
 
@@ -166,22 +147,25 @@ delante (ver [CORTE-Y-REVERSION](../../Documentation/Work/CORTE-Y-REVERSION.md))
 despliegue no llega a estar sano, `desplegar.sh` vuelve solo a la versión que estaba y el
 trabajo del CD falla en rojo.
 
-## Escaneo del destino futuro — pendiente separado de CI111
+La máquina gasta unos US$54 al mes del crédito de prueba: al terminar la entrega, detenerla o
+borrarla en la consola de Google Cloud.
 
-El workflow está preparado; todavía no se ha ejecutado contra un servidor de
-presentación. CD conecta `owasp-desplegado.yml` después de `despliegue`, incluida verificación
-de las ocho aplicaciones activas por SHA OCI (`verificar-version.py`).
-Gateway/Caddy exponen `/version`, revisado antes y después del ZAP pasivo.
-No basta con `.version-desplegada` ni con la etiqueta solicitada.
+## Escaneo OWASP del servidor
 
-Configurar `PRODUCCION_DOMINIO`, opcional `PRODUCCION_DOMINIO_ADMIN`, secretos
-SSH ya descritos y `OWASP_CLIENTE_EMAIL` / `OWASP_CLIENTE_CONTRASENA` de una cuenta exclusiva de
-ensayo. Tras verificar la revisión se hace un único login HTTPS, sin seguir
-redirecciones, para obtener JWT nuevo al terminar el CD; no se amplía su TTL. HTTPS debe ser confiable para el runner, sin excepciones TLS. La ruta CD
-automática usa main; otro despliegue docente debe llamar al workflow reutilizable
-con revisión/URL de API y ambos portales después de acreditar sus contenedores.
-No se configura ni opera ese destino desde esta entrega.
+El CD conecta `owasp-desplegado.yml` después de `despliegue`, incluida la verificación de las
+ocho aplicaciones activas por SHA OCI (`verificar-version.py`). Gateway/Caddy exponen
+`/version`, revisado antes y después del ZAP pasivo. No basta con `.version-desplegada` ni con
+la etiqueta solicitada.
 
-Reportes `owasp-presentacion`: todas las instancias saneadas en HTML/JSON, criterio
-cero High; ZAP no tiene Critical. El reporte `atributos-sebastian` de CI identifica
-`ci-efimero` y corresponde a otro entorno. [Guion y límites](../../Documentation/Work/PLAN-CIERRE-SEBASTIAN.md).
+Para el perfil autenticado faltan los secretos `OWASP_CLIENTE_EMAIL` /
+`OWASP_CLIENTE_CONTRASENA` de una cuenta exclusiva de ensayo (y, opcional,
+`PRODUCCION_DOMINIO_ADMIN`). Tras verificar la revisión se hace un único login HTTPS, sin
+seguir redirecciones, para obtener JWT nuevo al terminar el CD; no se amplía su TTL. El
+certificado de Let's Encrypt es confiable para el runner, sin excepciones TLS.
+
+La evidencia aprobada hasta ahora es el **despliegue temporal de CI111**, dentro de un runner
+de Actions: [ejecución](https://github.com/Emperador24/HEXACORE/actions/runs/44000569216)
+y [HTML/JSON saneados](https://github.com/Emperador24/HEXACORE/actions/runs/44000569216/artifacts/14291638302).
+Reportes `owasp-presentacion`: todas las instancias saneadas en HTML/JSON, criterio cero High;
+ZAP no tiene Critical. El reporte `atributos-sebastian` de CI identifica `ci-efimero` y
+corresponde a otro entorno. [Guion y límites](../../Documentation/Work/PLAN-CIERRE-SEBASTIAN.md).

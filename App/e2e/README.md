@@ -226,6 +226,9 @@ Los once CU-015 siguieron saludables. Los resultados y la condición de capacida
 pendiente se añaden al [diagnóstico](../../Documentation/Work/DIAGNOSTICO-DEMO-CU015-2026-11-16.md).
 No se cambiaron producto, recursos Docker, credenciales o el ritmo 1000/2500 ms.
 
+Hasta el 15/11 el ritmo era 500 ms entre acciones y 1500 ms de lectura; las dos
+comprobaciones siguientes se hicieron con esos valores.
+
 **Comprobación acotada, 15/11 Bogotá:** navegador visible con dos actores, dos
 campos, selección y clic por actor, más regreso al primero. Eventos del DOM
 registran foco/visibilidad **antes** de las acciones; separaciones **512–551 ms**,
