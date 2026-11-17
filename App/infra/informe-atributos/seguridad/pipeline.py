@@ -19,7 +19,9 @@ import urllib.parse
 import urllib.request
 
 ROOT = pathlib.Path(__file__).resolve().parents[4]
-IMAGEN = 'ghcr.io/zaproxy/zaproxy@sha256:0b8847b2c722b16f0964431aabcbb499560a1f17e8698d52326d82db29efac1d'
+# Índice oficial 2.17.0: incluye el manifest ARM64 de la evidencia histórica y
+# su pareja AMD64. Fijar solo el manifest ARM en un runner AMD no es portable.
+IMAGEN = 'ghcr.io/zaproxy/zaproxy@sha256:9624669db72f54d86c4b46a7064518bd9bf79d8c61a4c31befa9923489f328af'
 RIESGOS = ['Informational', 'Low', 'Medium', 'High']
 
 def ejecutar(args, **kw):
@@ -29,8 +31,14 @@ def guardar(salida, nombre, d):
     salida.mkdir(parents=True, exist_ok=True)
     (salida / (nombre + '.json')).write_text(json.dumps(d, ensure_ascii=False, indent=2))
     # No se renderiza HTML procedente de respuestas ni de plugins.
+    tabla = ''
+    if nombre == 'owasp':
+        tabla = '<table><tr><th>Regla</th><th>Severidad</th><th>Origen</th></tr>' + ''.join(
+            '<tr><td><a href="' + html.escape(a['regla'], quote=True) + '">' + html.escape(a['referencia']) + '</a> '
+            + html.escape(a['nombreRegla']) + '</td><td>' + html.escape(a['riesgo']) + '</td><td>' + html.escape(a['origen']) + '</td></tr>'
+            for a in d['alertas']) + '</table>'
     (salida / (nombre + '.html')).write_text('<!doctype html><html lang="es"><meta charset="utf-8">'
-        '<title>HEXACORE ' + nombre + '</title><h1>HEXACORE ' + nombre + '</h1><pre>'
+        '<title>HEXACORE ' + nombre + '</title><h1>HEXACORE ' + nombre + '</h1>' + tabla + '<pre>'
         + html.escape(json.dumps(d, ensure_ascii=False, indent=2)) + '</pre></html>')
     resumen = os.environ.get('GITHUB_STEP_SUMMARY')
     if resumen:
@@ -52,9 +60,10 @@ def guardar(salida, nombre, d):
         lineas += ['', 'HTML/JSON completos y saneados: artifact de esta ejecución. Las evidencias HTTP privadas no se publican.', '']
         with open(resumen,'a') as f: f.write('\n'.join(lineas))
 
-def sanear_alertas(alertas, destinos):
+def sanear_alertas(alertas, destinos, reglas=()):
     origenes = {urllib.parse.urlsplit(v).netloc: k for k, v in destinos.items()}
     resultado = []
+    nombres = {str(x['id']): x['name'] for x in reglas}
     for a in alertas:
         url = urllib.parse.urlsplit(a.get('url', ''))
         # Conserva cada instancia, tipo y severidad. No publica paths dinámicos,
@@ -62,10 +71,13 @@ def sanear_alertas(alertas, destinos):
         plugin = str(a.get('pluginId', ''))
         if not re.fullmatch(r'\d+', plugin) or a.get('risk') not in RIESGOS:
             raise ValueError('ALERTA_SIN_CLASIFICAR')
+        referencia = str(a.get('alertRef', plugin))
+        if not re.fullmatch(r'\d+(?:-\d+)?', referencia): referencia = plugin
         resultado.append({'pluginId': plugin, 'riesgo': a['risk'],
+            'referencia':referencia, 'nombreRegla':nombres.get(plugin, 'Regla ' + plugin),
             'confianza': a.get('confidence'), 'origen': origenes.get(url.netloc, 'fuera-de-alcance'),
             'metodo': a.get('method') if a.get('method') in ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'OPTIONS'] else 'otro',
-            'regla': 'https://www.zaproxy.org/docs/alerts/' + plugin + '/'})
+            'regla': 'https://www.zaproxy.org/docs/alerts/' + referencia + '/'})
     return resultado
 
 def revision(cfg):
@@ -100,6 +112,11 @@ def escanear(cfg, salida, privada, red=None):
         if not cfg.get('tokens', {}).get('cliente'):
             raise ValueError('FALTA_SESION_DE_ENSAYO')
         informe['revisionGatewayAntes'] = revision(cfg)
+        ejecutar(['docker','pull',IMAGEN])
+        meta=json.loads(ejecutar(['docker','image','inspect',IMAGEN]).stdout)[0]
+        arquitectura=ejecutar(['docker','version','--format','{{.Server.Arch}}']).stdout.strip()
+        if meta['Architecture'] != arquitectura: raise ValueError('ARQUITECTURA_ZAP_NO_NATIVA')
+        informe.update({'imagenZAP':IMAGEN,'arquitecturaZAP':arquitectura,'imageIDZAP':meta['Id']})
         clave = secrets.token_hex(32)
         ejecutar(['docker', 'run', '-d', '--name', nombre, '--memory', '640m', '--cpus', '1',
             '--network', red or 'bridge', '-e', 'JAVA_OPTS=-Xmx384m -XX:ActiveProcessorCount=2',
@@ -126,7 +143,7 @@ def escanear(cfg, salida, privada, red=None):
         informe.update({'imagenZAP': IMAGEN, 'versionZAP': d['version'], 'pendientes': d['pendientes'],
             'solicitudes': len(d['solicitudes']), 'autenticadas200': sum(s['autenticada'] and s['estado'] == 200 for s in d['solicitudes']),
             'reglas': [{'id': x['id'], 'habilitada': x['enabled']} for x in d['reglas']],
-            'alertas': sanear_alertas(d['alertas'], cfg['destinos'])})
+            'alertas': sanear_alertas(d['alertas'], cfg['destinos'], d['reglas'])})
         informe['revisionGatewayDespues'] = revision(cfg)
         informe['conteo'] = dict(collections.Counter(a['riesgo'] for a in informe['alertas']))
         if d['pendientes'] != 0: raise ValueError('ESCANEO_PENDIENTE')
@@ -136,8 +153,13 @@ def escanear(cfg, salida, privada, red=None):
     except Exception as e:
         # Nunca registrar la excepción HTTP/comando: puede contener un token o cuerpo.
         permitidos = ['REVISION_INVALIDA', 'TIPO_DESPLIEGUE_INVALIDO', 'DESTINO_INVALIDO', 'HTTPS_REQUERIDO',
-            'FALTA_SESION_DE_ENSAYO', 'VERSION_DESPLEGADA_NO_COINCIDE', 'ZAP_NO_INICIA', 'ESCANEO_PENDIENTE', 'ALERTAS_HIGH', 'ALERTA_SIN_CLASIFICAR']
+            'FALTA_SESION_DE_ENSAYO', 'VERSION_DESPLEGADA_NO_COINCIDE', 'ARQUITECTURA_ZAP_NO_NATIVA', 'ZAP_NO_INICIA', 'ESCANEO_PENDIENTE', 'ALERTAS_HIGH', 'ALERTA_SIN_CLASIFICAR']
         informe['error'] = str(e) if str(e) in permitidos else 'FALLO_DE_HERRAMIENTA_O_CONECTIVIDAD'
+        if propio:
+            try:
+                c=json.loads(ejecutar(['docker','inspect',nombre]).stdout)[0]['State']
+                informe['estadoContenedorZAP']={k:c[k] for k in ['Status','ExitCode','OOMKilled']}
+            except Exception: informe['estadoContenedorZAP']={'Status':'no acreditado'}
         return 1
     finally:
         guardar(salida, 'owasp', informe)
