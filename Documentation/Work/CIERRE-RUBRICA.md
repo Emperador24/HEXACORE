@@ -132,9 +132,9 @@ RNF-19 pero no un ASR numerado en ese árbol; no se crea un ASR ficticio.
 | Escenario / ASR / RNF | Caída de instancia durante ingreso. ASR-02, RNF-03/04: ≥99,9 % mensual y recuperación ≤30 s |
 | Diseño | Núcleo/Boletería replicables, gateway, sesiones compartidas, detección pasiva y reinicio Docker; dependencias centrales sin redundancia |
 | Implementación | **Implementada:** [Compose de escalado](../../App/infra/docker-compose.escalado.yml), [gateway](../../App/gateway/nginx.conf) y [guion local](../../App/infra/demo-disponibilidad.sh) |
-| Evidencia | AtributosVigentes.tex/guion de Samuel: 484 lecturas Boletería y 509 Núcleo en 8 s, cero fallos; reinicio 8–13 s en un computador, fecha 12/11 |
-| Resultado | **Comprobado para ese proceso y tráfico; parcial frente a RNF-03/04 completos.** No acredita caída de host, todo método ni porcentaje mensual |
-| Pendiente | [Dos servidores y cliente](PLAN-DEMO-ZEROTIER.md), equipos/TLS/destinos y medición futura; A debe permanecer encendido. No ejecutar caídas en esta entrega |
+| Evidencia | AtributosVigentes.tex/guion de Samuel: 484 lecturas Boletería y 509 Núcleo en 8 s, cero fallos; reinicio 8–13 s en un computador, fecha 12/11. **Entre computadores, 17/11** ([informe](../../App/infra/informe-atributos/DISPONIBILIDAD-ZEROTIER.md)): 671 peticiones desde C; cae el Núcleo de A → 1 falla y vuelve en ~12 s; B detenida → A atiende el 95 %, 16 fallas por las pruebas del gateway a B (sin reintento a propósito) |
+| Resultado | **RNF-04 comprobado** (12 s entre equipos, 8–13 s en uno). **RNF-03: mecanismo demostrado** con B caída; no mide el porcentaje mensual. B se cayó deteniendo sus contenedores, no apagando la VM |
+| Pendiente | Apagado físico de la VM (falta confirmar su reencendido desde la plataforma); caída de A y escrituras sin probar |
 
 ### Seguridad
 
@@ -341,7 +341,7 @@ faltante; no se marca la rúbrica completa por mostrar una diapositiva.
 | Seguridad | 90 | En recursos propios preparados, consulta válida 200; misma operación/recurso con actor sin autoridad 403 y sin token 401; cierre de sesión propia y lectura posterior 401. Mostrar fila de cobertura y fuente de guarda | Casos de RESULTADO/AUTORIZACION-CIERRE, sin regenerar matriz ni inyectar Redis. Identidades/IDs válidos y tokens fuera de pantalla/Git; no usar un 400/404 como prueba de autorización |
 | Desempeño | 45 | Mostrar medición breve de lectura y compararla con carga existente y p95 | Unas lecturas no acreditan p95 con 2000; Samuel selecciona una prueba existente que quepa, sin carga nueva aquí |
 | Escalabilidad | 30 | Mostrar reparto/instancias ya preparadas y relación con informe 1 vs 2 réplicas | Reparto no mide 1,7×; no escalar ahora |
-| Disponibilidad | 40 | Leer X-Servidor y señalar el escenario de caída pendiente y evidencia local histórica | **Caída de B pendiente**, sin incluirla como lograda. La prueba multiequipo completa requiere ventana posterior y puede exceder este presupuesto; sustituir/repartir tiempo solo tras ensayo del equipo |
+| Disponibilidad | 40 | Leer X-Servidor y las cifras de ZeroTier: 1 falla al caer el Núcleo de A, 95 % con B caída | **Medido el 17/11 con B detenida (contenedores, no la VM).** La corrida completa dura ~4 min y no cabe en 40 s: en vivo, mostrar las cifras y, si el equipo lo ensaya, solo la caída del Núcleo de A |
 | Observabilidad | 35 | Abrir tablero preparado y correlacionar una solicitud con upstream, CPU y log | Samuel confirma cobertura/acceso; ningún arranque desde esta revisión |
 | Consistencia | 60 | Responsable selecciona caso existente de competencia/replay sobre recurso exclusivo y señala un único efecto | Prueba exacta/coste pendientes; no relanzar guion histórico que siembra/borra datos. Si no cabe, queda evidencia histórica, sin afirmar demo cumplida |
 | Tiempo real | 40 | Samuel: evento/ingreso propio con puntoAcceso y actualización del panel | Cronómetro extremo a extremo pendiente; ciclo SSE o revocación no son RNF-09 |
