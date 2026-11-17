@@ -1,4 +1,4 @@
-import { TOKEN_PAGO } from '../../../../compartido/token-pago';
+import { TOKEN_PAGO } from '../token-pago';
 import { Matches as CoincideToken } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsIn, IsNumber, IsPositive, IsString, Length, Matches, MaxLength } from 'class-validator';
@@ -52,7 +52,12 @@ export class ReembolsarDto {
 
   @ApiProperty({ description: 'La referencia que devolvió la pasarela al aprobar el cobro.' })
   @IsString()
-  @Matches(/^pas_[0-9a-f-]{36}$/i, { message: 'referenciaCobro no tiene la forma de una referencia de la pasarela' })
+  // Las dos pasarelas: `pas_<uuid>` de la simulada y `pi_…`/`ch_…` de Stripe
+  // (RNF-16). Antes solo aceptaba la simulada y todo reembolso con Stripe
+  // quedaba INDETERMINADO sin llegar a enviarse.
+  @Matches(/^(?:pas_[0-9a-f-]{36}|(?:pi|ch)_[A-Za-z0-9]{1,100})$/i, {
+    message: 'referenciaCobro no tiene la forma de una referencia de la pasarela',
+  })
   referenciaCobro: string;
 
   @ApiProperty()

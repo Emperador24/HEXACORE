@@ -6,6 +6,13 @@ explícita sin pausas: `:visible:normal`. Configuración y comprobación acotada
 [en la sección Demo visible](#demo-visible-25-segundos-por-pantalla); los ritmos
 anteriores inferiores se conservan como historia.
 
+**17/11/2026 — CU-015 visible completo:** **1/1 aprobado**, salida 0, 119,13 s
+totales, un intento/cero reintentos, después de una pausa ordenada de 18
+aplicaciones y una ventana de estabilidad aprobada. Se restauraron los mismos
+18 IDs; 111 contenedores conservaron imágenes/configuración/montajes/estados.
+[Procedimiento breve para clase, resultado y límites](../../Documentation/Work/DEMO-CU015-SUSTENTACION.md).
+No se cambió producto ni se repitieron aceptaciones completas.
+
 ## Entrega y aceptación CU-011F — 11/11 de 2026 (12/11 UTC)
 
 **16/16 automático normal y 16/16 visible normal**, por separado, con Redash
@@ -178,6 +185,46 @@ separado de presentación (15 min por caso; acción/navegación 120 s), sin ampl
 esperas del producto. Informes privados `demo-FECHA` y `conjunto-demo-FECHA`,
 separados de aceptación. El observador completo mantiene diagnóstico CU-028,
 `completo:false` y salida **2** aunque Playwright apruebe; la demo no acredita aceptación.
+
+**Recorrido dirigido, 16/11 Bogotá:** se ejecutó únicamente
+`npm --prefix App/e2e run test:cu015:visible -- --grep "CU-015 por portales"`,
+una vez y sin reintentos. La traza registra **54 operaciones**, separación mínima
+**1004 ms**, y **ocho lecturas de 2500–2505 ms** entre contexto predeterminado y
+explícito. Después de la primera lectura la siguiente operación empieza en
+**7 ms**, sin sumar otra demora de 1000 ms; slowMo permanece en cero.
+
+El caso **falló** después del pago confirmado/QR: al volver al menú, el GET de
+productos se abortó tras **15.032 ms**, gateway registró **499** y el botón
+«Agregar Producto CU015» agotó sus **120 s**. Hubo timeouts DNS de Núcleo/Boletería
+y un statement timeout en Núcleo durante el ensayo; no se aisló una causa única.
+La VM tenía **242 MiB disponibles**, unos **139 MiB** durante la ejecución y
+swap prácticamente lleno. No se cambiaron límites ni se repitió el negocio.
+
+Los once servicios CU-015 estaban saludables y siguieron así; no hubo arranques,
+semillas o reconstrucciones. Se conservaron **111 IDs/imágenes/configuraciones/
+montajes/estados activo o detenido**, y `.env.local` intacta. Se observaron aumentos
+autónomos del contador de reinicios en gateway de `hexacore-infra` (**+9**) y
+scheduler de Redash (**+10**), sin intervenir esos proyectos ni atribuirles una
+causa demostrada. ZeroTier/A/B no se operaron. Informe y traza privados en
+`.evidencia/demo-2026-11-17T04-43-07-791Z/`; no se publican sus contenidos.
+
+**Diagnóstico posterior, 17/11:** el cierre corresponde al lado cliente;
+`AuthService` aplica el plazo RxJS de 15s y Fetch aborta la petición pendiente.
+El 499 no fue una respuesta de negocio ni el timeout de 120s de Playwright.
+La IP de upstream ya estaba seleccionada; no se probó DNS como causa de la
+demora de ese GET. Se separan infraestructura, precondición y regresión, con
+cronología y condición de capacidad/lecturas antes de repetir, en
+[el diagnóstico dirigido](../../Documentation/Work/DIAGNOSTICO-DEMO-CU015-2026-11-16.md).
+No se repitió el recorrido ni se cambiaron límites o negocio.
+
+**Línea base, 17/11 00:34–00:35 Bogotá:** tres GET independientes del mismo
+catálogo, cada 30s nominales, devolvieron 200 con los datos esperados en
+**218 ms / 10,51 s / 496 ms**, todos dentro de 15s y sin reintentos. No se ejecutó
+otra demo: la ventana registró **dos OOM globales nuevos**, reinicios autónomos
+de otros servicios y timeouts DNS/SQL propios, con swap de VM casi agotado.
+Los once CU-015 siguieron saludables. Los resultados y la condición de capacidad
+pendiente se añaden al [diagnóstico](../../Documentation/Work/DIAGNOSTICO-DEMO-CU015-2026-11-16.md).
+No se cambiaron producto, recursos Docker, credenciales o el ritmo 1000/2500 ms.
 
 Hasta el 15/11 el ritmo era 500 ms entre acciones y 1500 ms de lectura; las dos
 comprobaciones siguientes se hicieron con esos valores.
