@@ -108,6 +108,8 @@ async function cargar(db, tipo, id) {
           // La proyección de acceso es asíncrona. Se informa sin prometer un corte instantáneo.
           const anteriorAcceso = await una('SELECT count(*)::int AS n FROM entradas_acceso_qr.qr_entradas WHERE hash_qr=$1', [createHash('sha256').update(h[0].codigo_qr_anterior).digest('hex')]);
           if (anteriorAcceso.n) d.pendientes.push('QR_ANTERIOR_EN_PROYECCION_ACCESO');
+          const proyeccion = await una('SELECT entrada_id FROM entradas_acceso_qr.qr_entradas WHERE entrada_id=$1', [r.entrada_id]);
+          if (!proyeccion) d.pendientes.push('QR_PROYECCION_NO_DISPONIBLE');
         }
       }
     }
@@ -154,7 +156,7 @@ async function main() {
   if (process.argv.length !== 4 || !TIPOS.includes(tipo) || !UUID.test(id || '')) throw new Error('USO: verificar-transaccion.cjs tipo UUID; SAFETY_CONFIG apunta al JSON privado');
   const cfg = JSON.parse(require('node:fs').readFileSync(process.env.SAFETY_CONFIG, 'utf8'));
   if (cfg.ambito !== 'ensayo-simulado' || !cfg.operaciones?.some(o => o.tipo === tipo && o.id === id) || !/^hexacore_(?:\w+_)?e2e$/.test(cfg.postgres?.database || '')) throw new Error('AMBITO_NO_AUTORIZADO');
-  const db = new (require('pg').Client)({...cfg.postgres, application_name: 'safety-solo-lectura', connectionTimeoutMillis: 5000});
+  const db = new (require('pg').Client)({...cfg.postgres, application_name: 'safety-solo-lectura', connectionTimeoutMillis: 5000, query_timeout: 5000});
   try { await db.connect(); const r = await verificar(db, tipo, id); console.log(JSON.stringify(r)); process.exitCode = r.codigo; }
   finally { await db.end(); }
 }

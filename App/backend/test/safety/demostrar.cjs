@@ -9,7 +9,7 @@ const {verificar,cargar,evaluar,centavos}=require('../../herramientas/verificar-
   assert.equal(cfg.ambito,'ensayo-simulado');
   assert.match(cfg.postgres.database,/^hexacore_(?:\w+_)?e2e$/);
   const op=cfg.operaciones.find(o=>o.tipo==='pedido');assert.ok(op);
-  const db=new Client({...cfg.postgres,application_name:'safety-demostracion',connectionTimeoutMillis:5000});
+  const db=new Client({...cfg.postgres,application_name:'safety-demostracion',connectionTimeoutMillis:5000,query_timeout:5000});
   try{
     await db.connect();
     const antes=await verificar(db,op.tipo,op.id);assert.equal(antes.codigo,0,JSON.stringify(antes));
