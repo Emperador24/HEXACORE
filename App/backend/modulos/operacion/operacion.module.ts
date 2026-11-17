@@ -50,5 +50,7 @@ import { PersistenciaOperacionModule } from './persistencia/persistencia.module'
     IncidentesService,
     NotificadorIncidentes,
   ],
+  // Lectura de incidentes para Informes (CU-032), por interfaz local.
+  exports: [IncidentesService],
 })
 export class OperacionModule {}

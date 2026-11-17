@@ -128,6 +128,30 @@ export class IncidentesService {
     return { disponible: true, abiertos, sinResponsable, porPrioridad };
   }
 
+  /**
+   * CU-032: informe de incidentes de un evento en un rango de fechas, para el
+   * dashboard de reportes. A diferencia de `resumenPorEvento` (solo lo
+   * abierto, para el panel en vivo de CU-019), aquí cuentan también los ya
+   * cerrados: lo que importa para analítica posterior al evento.
+   */
+  async informe(eventoId: string, desde: Date, hasta: Date) {
+    const filas: { prioridad: PrioridadIncidente; estado: EstadoIncidente; n: number }[] = await this.datos.query(
+      `SELECT prioridad, estado, count(*)::int AS n FROM incidentes
+        WHERE evento_id = $1 AND creado_en >= $2 AND creado_en <= $3
+        GROUP BY prioridad, estado`,
+      [eventoId, desde, hasta],
+    );
+    const porPrioridad: Record<PrioridadIncidente, number> = { BAJA: 0, MEDIA: 0, ALTA: 0, CRITICA: 0 };
+    const porEstado: Record<EstadoIncidente, number> = { ABIERTO: 0, EN_ATENCION: 0, RESUELTO: 0, CERRADO: 0 };
+    let total = 0;
+    for (const f of filas) {
+      porPrioridad[f.prioridad] += f.n;
+      porEstado[f.estado] += f.n;
+      total += f.n;
+    }
+    return { total, cerrados: porEstado.CERRADO, abiertos: total - porEstado.CERRADO, porPrioridad, porEstado };
+  }
+
   // --- Paso 4 / CU-020A: reclasificar prioridad ------------------------------------
 
   async reclasificar(id: string, dto: ReclasificarPrioridadDto, supervisor: string): Promise<FilaIncidente> {

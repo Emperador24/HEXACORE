@@ -54,7 +54,8 @@ import { TurnosService } from './turnos.service';
     EventosPublicadorService,
     EventosConsumidorService,
   ],
-  // Lectura de cobertura para el monitoreo (CU-019); el resto queda interno.
-  exports: [CoberturaPersonalService],
+  // Lectura de cobertura para el monitoreo (CU-019) y del reporte de
+  // asistencia para Informes (CU-032); el resto queda interno.
+  exports: [CoberturaPersonalService, AsistenciaService],
 })
 export class TurnosAsistenciaModule {}
