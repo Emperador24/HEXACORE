@@ -13,6 +13,7 @@ import { EsquemaInicialCu0181789718400000 } from '../../modulos/personal-logisti
 import { Cu017PersonalOperativo1789750000000 } from '../../modulos/personal-logistica/persistencia/migraciones/1789750000000-Cu017PersonalOperativo';
 import { Cu007GestionPersonal1793664000000 } from '../../modulos/personal-logistica/persistencia/migraciones/1793664000000-Cu007GestionPersonal';
 import { Cu008Cu009CambiosAsistencia1794000000000 } from '../../modulos/personal-logistica/persistencia/migraciones/1794000000000-Cu008Cu009CambiosAsistencia';
+import { Cu016Cu030Planificacion1794950000000 } from '../../modulos/personal-logistica/persistencia/migraciones/1794950000000-Cu016Cu030Planificacion';
 import { EsquemaInicialCu0061789257600000 } from '../../modulos/entradas/ventas/persistencia/migraciones/1789257600000-EsquemaInicialCu006';
 import { SecuenciaNumeroTransaccion1789344000000 } from '../../modulos/entradas/ventas/persistencia/migraciones/1789344000000-SecuenciaNumeroTransaccion';
 import { CarteleraCu0051789776000000 } from '../../modulos/entradas/ventas/persistencia/migraciones/1789776000000-CarteleraCu005';
@@ -39,7 +40,7 @@ import { EsquemaPagos1790380800000 } from '../../modulos/finanzas/pagos/persiste
 export const GRUPOS_MIGRACIONES = [
   { conexion: 'identidad' as const, esquema: 'identidad', historial: 'migraciones', migraciones: [EsquemaInicialCu0271789430400000, AdministracionCuentasCu027b1789516800000, RenovacionSesiones1789603200000, RolesPermisosCu0281794800000000] },
   { conexion: 'alimentos' as const, esquema: 'alimentos', historial: 'migraciones', migraciones: [EsquemaInicialCu0111789902006180, ReservasInventarioCu0111790000000000, GestionEstablecimientosCu0151794300000000, MenuInventarioCu0121794400000000, PreparacionCu0131794500000000, EntregaCu0141794600000000, CancelacionCu011F1794700000000] },
-  { conexion: 'personal-logistica' as const, esquema: 'personal_logistica', historial: 'migraciones', migraciones: [EsquemaInicialCu0181789718400000, Cu017PersonalOperativo1789750000000, Cu007GestionPersonal1793664000000, Cu008Cu009CambiosAsistencia1794000000000] },
+  { conexion: 'personal-logistica' as const, esquema: 'personal_logistica', historial: 'migraciones', migraciones: [EsquemaInicialCu0181789718400000, Cu017PersonalOperativo1789750000000, Cu007GestionPersonal1793664000000, Cu008Cu009CambiosAsistencia1794000000000, Cu016Cu030Planificacion1794950000000] },
   { conexion: 'entradas-ventas' as const, esquema: 'entradas_ventas', historial: 'migraciones', migraciones: [EsquemaInicialCu0061789257600000, SecuenciaNumeroTransaccion1789344000000, CarteleraCu0051789776000000, VentaPrimariaCu001a0041789862400000, BandejaSalida1790553600000, VersionEvento1794400000000] },
   { conexion: 'entradas-catalogo' as const, esquema: 'entradas_catalogo', historial: 'migraciones', migraciones: [EsquemaCatalogo1790208000000, VersionEvento1794400000001] },
   { conexion: 'entradas-postventa' as const, esquema: 'entradas_postventa', historial: 'migrations', migraciones: [EsquemaPostventa1790035200000, VersionEvento1794400000002] },

@@ -1,8 +1,9 @@
 # Personal/Logística dentro de Núcleo
 
 Implementación única trasladada de `App/services/eventos-emergencias`.
-Se conserva lo existente; no implementa monitoreo, incidentes, evacuaciones,
-planificación logística completa ni proveedores.
+Se conserva lo existente; no implementa monitoreo, incidentes ni evacuaciones
+(viven en `operacion/`). CU-016 (planificación logística) y CU-030
+(proveedores) sí están aquí, en `planificacion/` y `proveedores/`.
 
 | Código y rutas /api/v1/logistica | Alcance conservado |
 |---|---|
@@ -128,3 +129,63 @@ La deduplicación y los
 reintentos del consumidor siguen en memoria; no se presentan como outbox o
 procesamiento exactamente una vez. Se conserva cola/DLQ/prefijo, con una conexión
 compartida; el cierre cancela al consumidor y espera su trabajo antes de cerrar.
+
+## CU-030 · Gestión de Proveedores
+
+Actor «Coordinador Logístico»: el sistema no tiene ese rol de cuenta (CU-027), así
+que lo ejercen Organizador y Administrador, igual que el supervisor de CU-019/CU-010.
+
+| Ruta `/api/v1/proveedores` | Qué |
+|---|---|
+| GET / · GET `:id` | Listado (`?todos=true` incluye inactivos, `?tipoServicio=`) y detalle con documentos e historial de servicios |
+| POST | Paso 1-8: registra con estado ACTIVO |
+| PATCH `:id` | **CU-030A**: editar; si tiene asignaciones en eventos futuros, exige `confirmarImpacto` |
+| POST `:id/baja` | **CU-030B**: dar de baja; si tiene asignaciones activas, exige `confirmar` |
+| POST `:id/reactivar` | Vuelve a ACTIVO |
+| POST / GET / DELETE `:id/documentos(/:documentoId)` | Certificaciones: PDF/PNG/JPG hasta 5 MB, con firma de bytes verificada |
+
+«Asignaciones activas» es su presencia en `plan_proveedores` de un plan cuyo evento
+no ha terminado — eso es lo que de verdad importaría cambiar. Los documentos se
+guardan en la base (`bytea`), mismo patrón que `planos_recinto` de CU-029: no hay
+un servicio de objetos aparte en esta instalación.
+
+## CU-016 · Planificar logística del evento
+
+Un plan por evento (`planes_logisticos`, único por `evento_id`), que reúne un
+catálogo propio de recursos materiales, los proveedores de CU-030 y personal
+(`empleados`, ya existente). Mismo actor que CU-030.
+
+| Ruta `/api/v1/planificacion` | Qué |
+|---|---|
+| POST / GET `recursos` | Catálogo de recursos (precondición 2) |
+| POST `eventos/:eventoId/plan` | Paso 1: inicia o retoma el plan del evento (precondición 1) |
+| GET `planes/:id` | Pasos 2-7: recursos/proveedores/personal asignados, costo estimado, conflictos, cronograma, bitácora |
+| POST / DELETE `planes/:id/recursos(/:recursoId)` | Paso 3: asignar/retirar un recurso |
+| POST / DELETE `planes/:id/proveedores(/:proveedorId)` | Paso 3; **CU-016B** si el proveedor no está activo, propone alternativas del mismo tipo de servicio |
+| POST / DELETE `planes/:id/personal(/:empleadoId)` | Paso 3 |
+| POST `planes/:id/personal-adicional` | **CU-016A** |
+| POST `planes/:id/aprobar` | Pasos 8-10: exige cero conflictos pendientes y, si el costo supera el presupuesto (**CU-016E**), `confirmarSobrePresupuesto` |
+
+- **Conflictos (pasos 4-6):** se calculan en cada lectura, cruzando este plan con
+  los demás que comparten el mismo recurso o proveedor y cuyo evento se **cruza en
+  fecha** con el de este plan (misma regla de solapamiento que CU-026C).
+  `RECURSO_INSUFICIENTE` es la alerta de CU-016C; `PROVEEDOR_OCUPADO` trae sus
+  alternativas, igual que CU-016B. Aprobar exige que no quede ninguno.
+- **Cronograma (post-condición 1, CU-016D):** montaje (3 h antes), evento y
+  desmontaje (2 h después), derivado de las fechas **vigentes** del evento en cada
+  lectura — si el evento cambia de fecha, se regenera solo, sin depender de un
+  consumidor de eventos.
+- **Costo estimado (paso 7):** suma de `cantidad × costoUnitario` de los recursos
+  más el `costo` de cada proveedor; se recalcula en cada lectura.
+- **Auditoría (trazabilidad):** `bitacora_planificacion` guarda cada asignación,
+  retiro, solicitud, aprobación y regeneración de cronograma. Al aprobar, cada
+  proveedor y empleado asignado queda notificado ahí mismo (paso 10): no hay una
+  cola de notificaciones nueva porque el propio CU-016 no la pide (a diferencia de
+  CU-020, que sí).
+- **Límite conocido:** «personal disponible» (paso 2/4) se reduce a que el
+  empleado esté activo; la disponibilidad fina por horario/turno la resuelve
+  CU-017/018, no se duplica aquí.
+
+`test/logistica/proveedores.e2e-spec.ts` (6 escenarios) y
+`test/logistica/planificacion.e2e-spec.ts` (12 escenarios, incluida la
+integración cruzada con CU-030).

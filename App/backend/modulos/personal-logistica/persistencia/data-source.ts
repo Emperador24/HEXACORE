@@ -14,6 +14,7 @@ import { EsquemaInicialCu0181789718400000 } from './migraciones/1789718400000-Es
 import { Cu017PersonalOperativo1789750000000 } from './migraciones/1789750000000-Cu017PersonalOperativo';
 import { Cu007GestionPersonal1793664000000 } from './migraciones/1793664000000-Cu007GestionPersonal';
 import { Cu008Cu009CambiosAsistencia1794000000000 } from './migraciones/1794000000000-Cu008Cu009CambiosAsistencia';
+import { Cu016Cu030Planificacion1794950000000 } from './migraciones/1794950000000-Cu016Cu030Planificacion';
 
 cargarEnv();
 
@@ -32,6 +33,7 @@ export const MIGRACIONES = [
   Cu017PersonalOperativo1789750000000,
   Cu007GestionPersonal1793664000000,
   Cu008Cu009CambiosAsistencia1794000000000,
+  Cu016Cu030Planificacion1794950000000,
 ];
 
 export function opcionesDataSource(config: ConfiguracionLogistica = cargarConfiguracion()): DataSourceOptions & { name: string } {

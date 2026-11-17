@@ -32,7 +32,10 @@ export class NucleoPrueba {
   private readonly erroresEsperados: ErrorEsperado[] = [];
   private readonly previos = new Map<string, Set<string>>();
   private readonly cuentas: string[] = [];
-  private readonly tablas = ['auditoria_personal', 'notificaciones', 'registros_asistencia', 'solicitudes_cambio_turno', 'turnos', 'zonas_evento', 'empleados'];
+  // planes_logisticos antes de proveedores/recursos_logisticos/empleados: sus
+  // filas hijas (plan_recursos, plan_proveedores, plan_personal...) tienen
+  // FK sin CASCADE hacia esas tres, y solo CASCADE hacia planes_logisticos.
+  private readonly tablas = ['auditoria_personal', 'notificaciones', 'registros_asistencia', 'solicitudes_cambio_turno', 'turnos', 'zonas_evento', 'planes_logisticos', 'proveedores', 'recursos_logisticos', 'empleados'];
   private readonly redis = new Redis({ host: '127.0.0.1', port: 16384, lazyConnect: true, retryStrategy: () => null });
 
   constructor(private readonly nombre: string) {
