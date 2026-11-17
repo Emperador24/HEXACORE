@@ -42,6 +42,11 @@ export class PasarelaPagoComponent {
   readonly pendiente = this.pagoService.pendiente;
   readonly total = this.pagoService.total;
 
+  /** CU-004: el código que escribe la persona y el error que devuelva el servidor. */
+  readonly codigo = signal('');
+  readonly aplicandoCupon = signal(false);
+  readonly errorCupon = signal<string | null>(null);
+
   /** Los medios que admite esta compra; si no dice, todos menos PSE (que solo acepta entradas). */
   readonly metodos = computed(
     () => this.pendiente()?.metodos ?? [MetodoPago.TARJETA, MetodoPago.EFECTIVO]
@@ -84,6 +89,20 @@ export class PasarelaPagoComponent {
       this.error.set(mensajeDeError(error));
     } finally {
       this.procesando.set(false);
+    }
+  }
+
+  async cupon(accion: 'aplicar' | 'quitar'): Promise<void> {
+    if (this.aplicandoCupon() || (accion === 'aplicar' && this.codigo().trim().length < 3)) return;
+    this.aplicandoCupon.set(true);
+    this.errorCupon.set(null);
+    try {
+      await this.pagoService.cupon(accion, this.codigo());
+      if (accion === 'quitar') this.codigo.set('');
+    } catch (error) {
+      this.errorCupon.set(mensajeDeError(error));
+    } finally {
+      this.aplicandoCupon.set(false);
     }
   }
 

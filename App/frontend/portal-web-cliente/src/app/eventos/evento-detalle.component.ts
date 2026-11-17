@@ -133,6 +133,19 @@ export class EventoDetalleComponent {
       rutaDestino: '/entradas',
       metodos: [MetodoPago.TARJETA, MetodoPago.PSE],
       tokensDemo: TOKENS_DEMO,
+      descuento: compra.descuento,
+      codigoPromocional: compra.codigoPromocional,
+      // CU-004: el código se valida y se descuenta en el servidor.
+      cupon: {
+        aplicar: async (codigo) => {
+          const c = await this.entradasService.aplicarCupon(compra.id, codigo);
+          return { descuento: c.descuento, codigoPromocional: c.codigoPromocional };
+        },
+        quitar: async () => {
+          const c = await this.entradasService.quitarCupon(compra.id);
+          return { descuento: c.descuento, codigoPromocional: c.codigoPromocional };
+        }
+      },
       onConfirmar: async (metodo, token) => {
         await this.entradasService.pagar(compra.id, metodo, token ?? TOKENS_DEMO[0].valor);
       }

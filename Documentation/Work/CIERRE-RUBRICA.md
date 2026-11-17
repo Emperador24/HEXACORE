@@ -1,5 +1,27 @@
 # Preparación de la sustentación y cierre frente a la rúbrica
 
+**Corte vigente 16/11 — tres atributos de Sebastián:** Seguridad RNF-05/06;
+Safety monetario RNF-01/02/11; Modificabilidad RNF-13, conforme a
+[DISTRIBUCION-ATRIBUTOS](DISTRIBUCION-ATRIBUTOS.md). [Guion ejecutable de 8 min y
+límites](PLAN-CIERRE-SEBASTIAN.md#entrega-vigente--seguridad-safety-monetario-y-modificabilidad-16112026).
+Se integra PR #60 y #62, sin operar ZeroTier. El temario completo sigue por
+contrastar. [PR #64](https://github.com/Emperador24/HEXACORE/pull/64).
+
+**Aclaración del entorno (Samuel, 16/11):** el servidor de presentación nunca
+se creó; los nombres de terceros de la antigua guía no son destinos del equipo.
+Se conserva [CI111 temporal, 9/9](https://github.com/Emperador24/HEXACORE/actions/runs/44000569216)
+sobre `d32f582`, sin repetir escaneos por esta corrección documental.
+[Guion de navegación y descarga de informes](PLAN-CIERRE-SEBASTIAN.md#mostrar-el-escaneo-aprobado-en-actions).
+La conexión/validación externa de Diego sigue pendiente separada. Se mantienen
+los límites RNF de las fichas y la falta de temario completo contrastado.
+
+| Atributo | Diseño/implementación nueva | Comprobado | Resultado/pendiente |
+|---|---|---|---|
+| Seguridad | ZAP reutilizado tras despliegue temporal y workflow posterior al despliegue real; versiones/HTML/JSON saneados, cero High; npm producción/desarrollo | 167/167 y PAN históricos reutilizados; 4/4 pruebas de saneamiento; cinco paquetes sin Critical ni producción vulnerable, 20 moderadas de desarrollo backend | **Comprobado en CI109:** ZAP 2.17.0 AMD64, 0 High, 10 Medium/4 Informational conservadas; producción/Critical npm 0. RNF-05/06 **parciales**; servidor propio en `hexacore-javeriana.duckdns.org` desde 16/11, ZAP contra él pendiente; fallos anteriores conservados |
+| Safety monetario | Verificador identificado de solo lectura, dinero exacto, relaciones libro/negocio/historial; negativo con doble | 17/17 unitarias; integración añadida a las pruebas financieras/QR existentes, sin nuevos CU | **Comprobado:** convivencia 5/5 y CLI 0/1 en CI109; reventa después de converger. RNF **parciales**: F12 sin resolver, referencia original de reembolso ausente en libro, QR asíncrono y retención anual sin acreditar |
+| Modificabilidad | Tres parámetros existentes con efecto HTTP/navegador/SQL y Image IDs iguales; rango y URL inválidos rechazados | 24/24 guardas de API de ambos portales, 6/6 guardas de recursos y 3/3 procedencia desplegada con dobles, tipos; ensayo de servicios aprobado en CI109 | **Comprobado en CI108/109:** HTTP/navegador/SQL efectivos; 3004/1003 ms, inválidos rechazados y seis imágenes iguales. RNF-13 **parcial** por concesión de despliegues ADR-16 |
+
+
 Corte documental: **15/11/2026, America/Bogota**. Rama exclusiva
 `feature/sebastian`; revisión inicial limpia en `9bc1ee5`. Código y evidencias
 anteriores se inspeccionan, **no se vuelven a ejecutar**. Esta entrega no opera
@@ -63,18 +85,17 @@ de otros proyectos.
 
 | Integrante | Asignación de validación confirmada | Respaldo | Validación pendiente |
 |---|---|---|---|
-| Sebastián Sánchez | **Seguridad, RNF-05/06**; aporte a Usabilidad | Confirmación del usuario; RESULTADO.md y PLAN-CIERRE-SEBASTIAN.md | Preparar microdemo existente y aporte de pantallas, navegación, rotulado, pasos y capturas; RNF-05/06 siguen parciales |
+| Sebastián Sánchez | **Seguridad RNF-05/06; Safety monetario RNF-01/02/11; Modificabilidad RNF-13**; aporte a Usabilidad | Confirmación del usuario; RESULTADO.md y PLAN-CIERRE-SEBASTIAN.md | Preparar microdemo existente y aporte de pantallas, navegación, rotulado, pasos y capturas; RNF-05/06 siguen parciales |
 | Samuel Emperador | **Desempeño, RNF-07/08/10; Disponibilidad, RNF-03/04/09/17; Monitoreo, RNF-19** | Reparto confirmado de la guía 5/11; Monitoreo documentado después en AtributosVigentes.tex y DEMOSTRACION-ATRIBUTOS.md | Contrastar cada umbral con informes actuales; 2000 usuarios, ingreso→tablero y recepción de alertas no se dan por comprobados por el reparto |
-| Daniel Cristancho | **Consolidación de Usabilidad, RNF-12/14**, con aportes de todos | Confirmación del usuario y PLAN-CIERRE-SEBASTIAN.md, «Alcance y acuerdos» | Evidencia humana RNF-12 y matriz web/móvil RNF-14 |
+| Daniel Cristancho | **Integrabilidad RNF-16 y consolidación de Usabilidad RNF-12/14**, con aportes de todos | Confirmación del usuario y PLAN-CIERRE-SEBASTIAN.md, «Alcance y acuerdos» | Evidencia humana RNF-12 y matriz web/móvil RNF-14 |
 | Diego Coronado | **Desplegabilidad, RNF-15/18** | Reparto confirmado por el usuario a partir de la guía 5/11 | Evidencia específica de despliegue/reversión y cobertura/aislamiento, sin equiparar configuración o conteo de tests a cumplimiento |
 
 Los **bloques de trabajo de la guía** agrupan RNF de varios atributos del SAD:
 RNF-10 es Escalabilidad; RNF-09, Tiempo real; RNF-17, Safety; RNF-18,
 Comprobabilidad; RNF-14, Portabilidad. Sus nombres, escenarios y umbrales
 permanecen separados en las fichas. Agruparlos para sustentar no los redefine ni
-convierte la guía en medición. RNF-01/02 (Consistencia), RNF-11 (Trazabilidad),
-RNF-13 (Mantenibilidad) y RNF-16 (Integrabilidad) no tienen responsable confirmado
-por este reparto; no se deduce uno.
+convierte la guía en medición. El reparto posterior de DISTRIBUCION-ATRIBUTOS confirma RNF-01/02/11/13
+para Sebastián y RNF-16 para Daniel; conserva la clasificación individual del SAD.
 
 **Aporte de Sebastián a Usabilidad:** pantallas, navegación, rotulado, flujos
 con pasos y capturas de **Alimentos y cuentas/roles/recintos**, para la
@@ -95,13 +116,13 @@ RNF-19 pero no un ASR numerado en ese árbol; no se crea un ASR ficticio.
 
 | Campo | Revisión |
 |---|---|
-| Responsable confirmado | **Desconocido**, por confirmar; CU-006 pertenece a Samuel, lo cual no asigna todo el atributo |
+| Responsable confirmado | **Sebastián Sánchez**, Safety monetario RNF-01/02; reconocer implementación CU-006 de Samuel |
 | Escenario / ASR / RNF | Dos compradores sobre la misma publicación, sin doble venta; invalidación del QR anterior. ASR-01, RNF-01/02 |
 | Diseño | Reserva/bloqueos, estado transaccional, idempotencia, outbox y proyecciones; convergencia no equivale a invalidación inmediata |
 | Implementación | **Implementada en parte:** [Ventas/Postventa](../../App/backend/modulos/entradas/postventa/postventa), [Acceso QR](../../App/backend/modulos/entradas/acceso-qr); mismo SQL no hace atómicas operaciones separadas |
 | Evidencia | INFORME.md registra 50 compradores: 1 checkout/49 rechazados en su corrida histórica; pruebas de [Boletería](../../App/backend/test/boleteria) y [autorización de Ventas](../../App/infra/informe-atributos/seguridad/AUTORIZACION-VENTAS.md) con alcances distintos |
 | Resultado | **Parcial.** La carrera histórica está comprobada en su revisión; no prueba RNF-02 inmediato bajo todos los canales/caídas actuales |
-| Pendiente | Responsable y evidencia vigente específica RNF-01/02; no presentar la espera de convergencia como rechazo inmediato del QR viejo |
+| Pendiente | Evidencia vigente específica RNF-01/02; no presentar la espera de convergencia como rechazo inmediato del QR viejo |
 
 ### Disponibilidad
 
@@ -111,9 +132,9 @@ RNF-19 pero no un ASR numerado en ese árbol; no se crea un ASR ficticio.
 | Escenario / ASR / RNF | Caída de instancia durante ingreso. ASR-02, RNF-03/04: ≥99,9 % mensual y recuperación ≤30 s |
 | Diseño | Núcleo/Boletería replicables, gateway, sesiones compartidas, detección pasiva y reinicio Docker; dependencias centrales sin redundancia |
 | Implementación | **Implementada:** [Compose de escalado](../../App/infra/docker-compose.escalado.yml), [gateway](../../App/gateway/nginx.conf) y [guion local](../../App/infra/demo-disponibilidad.sh) |
-| Evidencia | AtributosVigentes.tex/guion de Samuel: 484 lecturas Boletería y 509 Núcleo en 8 s, cero fallos; reinicio 8–13 s en un computador, fecha 12/11 |
-| Resultado | **Comprobado para ese proceso y tráfico; parcial frente a RNF-03/04 completos.** No acredita caída de host, todo método ni porcentaje mensual |
-| Pendiente | [Dos servidores y cliente](PLAN-DEMO-ZEROTIER.md), equipos/TLS/destinos y medición futura; A debe permanecer encendido. No ejecutar caídas en esta entrega |
+| Evidencia | AtributosVigentes.tex/guion de Samuel: 484 lecturas Boletería y 509 Núcleo en 8 s, cero fallos; reinicio 8–13 s en un computador, fecha 12/11. **Entre computadores, 17/11** ([informe](../../App/infra/informe-atributos/DISPONIBILIDAD-ZEROTIER.md)): 671 peticiones desde C; cae el Núcleo de A → 1 falla y vuelve en ~12 s; B detenida → A atiende el 95 %, 16 fallas por las pruebas del gateway a B (sin reintento a propósito) |
+| Resultado | **RNF-04 comprobado** (12 s entre equipos, 8–13 s en uno). **RNF-03: mecanismo demostrado** con B caída; no mide el porcentaje mensual. B se cayó deteniendo sus contenedores, no apagando la VM |
+| Pendiente | Apagado físico de la VM (falta confirmar su reencendido desde la plataforma); caída de A y escrituras sin probar |
 
 ### Seguridad
 
@@ -167,13 +188,13 @@ RNF-19 pero no un ASR numerado en ese árbol; no se crea un ASR ficticio.
 
 | Campo | Revisión |
 |---|---|
-| Responsable confirmado | **Desconocido**, por confirmar |
+| Responsable confirmado | **Sebastián Sánchez**, Safety monetario RNF-11 |
 | Escenario / ASR / RNF | Operaciones financieras con actor, tiempo, transacción y resultado; 100 %, retención ≥1 año. ASR-07, RNF-11 |
 | Diseño | Libro financiero común, historiales y auditoría cuyo actor deriva de sesión |
 | Implementación | **Implementada en parte:** [Finanzas/Pagos](../../App/backend/modulos/finanzas/pagos), auditoría de Identidad y Alimentos |
 | Evidencia | [Contratos de pagos](../../App/backend/test/pagos/README.md), conservación de historiales/outbox en Seguridad y auditoría de cuentas/roles |
 | Resultado | **Parcial.** Se comprueban registros en casos concretos; no hay evidencia suficiente de 100 % global y retención efectiva anual |
-| Pendiente | Responsable, catálogo de operaciones auditables y política/prueba de retención; SQL auditable no es no repudio criptográfico |
+| Pendiente | Catálogo de operaciones auditables y política/prueba de retención; SQL auditable no es no repudio criptográfico |
 
 ### Usabilidad
 
@@ -183,21 +204,21 @@ RNF-19 pero no un ASR numerado en ese árbol; no se crea un ASR ficticio.
 | Escenario / ASR / RNF | Usuario nuevo compra en ≤5 pasos; éxito ≥80 % con 5 usuarios. ASR-08, RNF-12 |
 | Diseño | Interfaces por rol, estados y avisos diferenciados; no confundir aviso de reembolso con dinero confirmado |
 | Implementación | **Implementadas interfaces:** [portal cliente](../../App/frontend/portal-web-cliente), [portal admin](../../App/frontend/portal-web-admin), [app](../../App/frontend/app-movil) |
-| Evidencia | Recorridos automáticos/visibles en [e2e](../../App/e2e/README.md) y plan de cierre; no se halló protocolo/resultados de cinco usuarios nuevos |
-| Resultado | **Parcial; éxito humano desconocido.** Playwright 16/16 no equivale al ensayo RNF-12 |
-| Pendiente | Daniel confirma protocolo, participantes anonimizados, pasos, tiempos/errores y resultados; no se realiza estudio ni recorrido nuevo ahora |
+| Evidencia | Recorridos automáticos/visibles en [e2e](../../App/e2e/README.md) y plan de cierre. [USABILIDAD-PORTABILIDAD.md](USABILIDAD-PORTABILIDAD.md): compra en ≤5 pasos por diseño (app 4, web 4–5) y protocolo de cinco usuarios con plantilla; sin resultados humanos |
+| Resultado | **Parcial; éxito humano desconocido.** Playwright 16/16 y el conteo de pasos no equivalen al ensayo RNF-12 |
+| Pendiente | Ejecutar el protocolo (P1–P5 anonimizados, tiempos, errores, ayudas) o declarar en la sustentación que no se hizo |
 
 ### Mantenibilidad
 
 | Campo | Revisión |
 |---|---|
-| Responsable confirmado | **Desconocido**, por confirmar |
+| Responsable confirmado | **Sebastián Sánchez**, Modificabilidad RNF-13 |
 | Escenario / ASR / RNF | Cambio típico en un dominio sin modificar/redesplegar otros. ASR-09, RNF-13 |
 | Diseño | Módulos y conexiones nombradas, API pública local de Pagos, contratos compartidos; ADR-16 acepta despliegue/versionado coordinados |
 | Implementación | **Implementada:** [workspace backend](../../App/backend/nest-cli.json), módulos, esquemas y preparación coordinada |
 | Evidencia | [ESTADO-MIGRACION](ESTADO-MIGRACION.md) prueba preservación y separación en el hito; no mide todo cambio típico posterior |
 | Resultado | **Parcial.** Separación lógica comprobable por inspección; independencia de despliegue por dominio tiene una concesión explícita |
-| Pendiente | Responsable y ejemplo medido de cambio/impacto; conservar el RNF como objetivo y explicar la concesión, sin rediseñar |
+| Pendiente | Ensayo de tres parámetros y ejemplo revisable Monitoreo sin puntoAcceso (PR #60); medición de cambio/impacto; conservar el RNF como objetivo y explicar la concesión, sin rediseñar |
 
 ### Portabilidad
 
@@ -207,9 +228,9 @@ RNF-19 pero no un ASR numerado en ese árbol; no se crea un ASR ficticio.
 | Escenario / ASR / RNF | 100 % de CU Cliente en web/móvil, misma API y sin reglas duplicadas. ASR-10, RNF-14 |
 | Diseño | Dos portales Angular y una app Flutter Cliente/Personal sobre gateway; configuración de API por entorno |
 | Implementación | **Implementados clientes y contratos**; no se infiere paridad de todo CU por existir sus pantallas |
-| Evidencia | Plan de cierre registra integración en Alimentos; fuentes de web/app y CI independientes. No consta matriz global 100 % web/móvil |
-| Resultado | **Parcial.** Backend y compilación móvil no acreditan equivalencia completa ni uso de móvil físico por VPN |
-| Pendiente | Daniel consolida matriz por CU con aportes del equipo; confirmar dispositivo/emulador, URL HTTPS y confianza de certificados |
+| Evidencia | [Matriz por CU](USABILIDAD-PORTABILIDAD.md#rnf-14--portabilidad): 11/11 CU con parte interactiva del Cliente en web y app sobre el mismo contrato, 0 reglas duplicadas. Antes 6/11: la app simulaba CU-001 a 005 y calculaba el descuento en el teléfono; conectada en esta entrega. Pruebas `boleteria_test.dart` 4/4 y `validar_entradas_test.dart` 8/8 (app 90/90) y `entradas.service.spec.ts` 5/5 (web 35/35) |
+| Resultado | **Cumple por inspección y pruebas automáticas**; sin prueba en teléfono físico ni por HTTPS de la demo |
+| Pendiente | Probar la app en un teléfono contra la URL HTTPS de la demo y confiar en su certificado |
 
 ### Desplegabilidad
 
@@ -227,13 +248,13 @@ RNF-19 pero no un ASR numerado en ese árbol; no se crea un ASR ficticio.
 
 | Campo | Revisión |
 |---|---|
-| Responsable confirmado | **Desconocido**, por confirmar |
+| Responsable confirmado | **Daniel Cristancho**, RNF-16 |
 | Escenario / ASR / RNF | Sustituir pasarela modificando solo un adaptador, cero cambios en Entradas. ASR-11, RNF-16 |
-| Diseño | Módulo Pagos reutilizable, adaptadores y webhook único con autenticación del proveedor |
-| Implementación | **Implementada frontera:** [HTTP](../../App/backend/modulos/finanzas/pagos/pasarela-http.service.ts), [Stripe](../../App/backend/modulos/finanzas/pagos/pasarela-stripe.service.ts), API pública de Pagos |
-| Evidencia | Pruebas de adaptadores/contratos previas, sin cobros reales; existencia de dos adaptadores no mide el coste de sustituir uno |
-| Resultado | **Parcial.** La separación existe; falta evidencia completa del cambio con el criterio exacto RNF-16 |
-| Pendiente | Responsable y prueba/registro del impacto de sustitución por su dueño; no implementar sustituciones ni F12 aquí |
+| Diseño | Módulo Pagos reutilizable, adaptadores y webhook único con autenticación del proveedor; la elección vive solo en `crearProcesadorPagos` |
+| Implementación | **Implementada frontera:** [HTTP](../../App/backend/modulos/finanzas/pagos/pasarela-http.service.ts), [Stripe](../../App/backend/modulos/finanzas/pagos/pasarela-stripe.service.ts), API pública de Pagos. El formato de tokens (`token-pago.ts`) pasó de `compartido/` a Pagos: era lo único fuera del adaptador que conocía a los proveedores |
+| Evidencia | [INTEGRABILIDAD-RNF16.md](INTEGRABILIDAD-RNF16.md): `rnf16-cambio-pasarela.spec.ts` (21 pruebas: elección por configuración, el negocio no nombra proveedores ni importa internos de Pagos, mismo contrato en los dos adaptadores). En vivo (16/11): simulada ↔ Stripe en **8 s** sin recompilar, **0 archivos** de código. Sandbox de Stripe del equipo: cobro aprobado (`pi_…`), rechazado (CU-001C) y reembolso CU-003 (`re_…`) de punta a punta. Corregido: los reembolsos con Stripe fallaban por validar solo referencias de la simulada |
+| Resultado | **Cumplido en backend** entre simulada y Stripe. El portal tokeniza con Stripe Elements (RNF-05), así que un proveedor nuevo también pide su formulario en el cliente |
+| Pendiente | Ensayar el pago desde el portal con Stripe Elements; webhook con `stripe listen` opcional |
 
 ### Seguridad física / Safety
 
@@ -320,7 +341,7 @@ faltante; no se marca la rúbrica completa por mostrar una diapositiva.
 | Seguridad | 90 | En recursos propios preparados, consulta válida 200; misma operación/recurso con actor sin autoridad 403 y sin token 401; cierre de sesión propia y lectura posterior 401. Mostrar fila de cobertura y fuente de guarda | Casos de RESULTADO/AUTORIZACION-CIERRE, sin regenerar matriz ni inyectar Redis. Identidades/IDs válidos y tokens fuera de pantalla/Git; no usar un 400/404 como prueba de autorización |
 | Desempeño | 45 | Mostrar medición breve de lectura y compararla con carga existente y p95 | Unas lecturas no acreditan p95 con 2000; Samuel selecciona una prueba existente que quepa, sin carga nueva aquí |
 | Escalabilidad | 30 | Mostrar reparto/instancias ya preparadas y relación con informe 1 vs 2 réplicas | Reparto no mide 1,7×; no escalar ahora |
-| Disponibilidad | 40 | Leer X-Servidor y señalar el escenario de caída pendiente y evidencia local histórica | **Caída de B pendiente**, sin incluirla como lograda. La prueba multiequipo completa requiere ventana posterior y puede exceder este presupuesto; sustituir/repartir tiempo solo tras ensayo del equipo |
+| Disponibilidad | 40 | Leer X-Servidor y las cifras de ZeroTier: 1 falla al caer el Núcleo de A, 95 % con B caída | **Medido el 17/11 con B detenida (contenedores, no la VM).** La corrida completa dura ~4 min y no cabe en 40 s: en vivo, mostrar las cifras y, si el equipo lo ensaya, solo la caída del Núcleo de A |
 | Observabilidad | 35 | Abrir tablero preparado y correlacionar una solicitud con upstream, CPU y log | Samuel confirma cobertura/acceso; ningún arranque desde esta revisión |
 | Consistencia | 60 | Responsable selecciona caso existente de competencia/replay sobre recurso exclusivo y señala un único efecto | Prueba exacta/coste pendientes; no relanzar guion histórico que siembra/borra datos. Si no cabe, queda evidencia histórica, sin afirmar demo cumplida |
 | Tiempo real | 40 | Samuel: evento/ingreso propio con puntoAcceso y actualización del panel | Cronómetro extremo a extremo pendiente; ciclo SSE o revocación no son RNF-09 |
@@ -329,7 +350,7 @@ faltante; no se marca la rúbrica completa por mostrar una diapositiva.
 | Usabilidad | 45 | Daniel muestra una tarea corta y los pasos, con la evidencia humana si existe | Recorrido del expositor no sustituye cinco usuarios nuevos |
 | Portabilidad | 35 | Daniel consolida con aportes del equipo: la misma lectura autorizada en web y app ya conectadas | Una lectura no acredita 100 % de CU; móvil/TLS pendientes |
 | Mantenibilidad | 30 | Navegar de interfaz de módulo a implementación/contrato para explicar impacto | No modificar código en vivo ni afirmar independencia de despliegue por dominio |
-| Desplegabilidad | 30 | Diego: mostrar versión, imagen y CI; explicar procedimiento de corte/reversión | Sin despliegue/rollback real no se acredita RNF-15 |
+| Desplegabilidad | 30 | Diego: mostrar versión, imagen y CI; el trabajo «Desplegar en producción» entra al servidor real; explicar corte/reversión | Servidor real en Google Cloud con CD configurado (16/11); la reversión automática de RNF-15 aún no se ha provocado en vivo |
 | Integrabilidad | 25 | Mostrar interfaz y pruebas existentes del adaptador seleccionado | Código y contratos no equivalen a sustitución completa medida |
 | Comprobabilidad | 30 | Diego: mostrar una prueba aislada existente y su resultado CI; ejecución breve futura solo si confirma | Conteo aprobado no equivale a 70 %; no ejecutar suites ahora |
 
@@ -368,18 +389,18 @@ RNF-03 mensual ni demuestra tolerancia al fallo de A.
 
 | Integrante | Tarea de preparación pendiente | Evidencia que debe traer |
 |---|---|---|
-| Sebastián | Sustentar Seguridad RNF-05/06 y seleccionar microdemo existente de 90 s; aportar a Daniel pantallas, navegación, rotulado, pasos y capturas de Alimentos y cuentas/roles/recintos | RESULTADO, cobertura 167/167 gateway + backend directo, evidencia saneada y código; reconocer implementación de Samuel donde corresponda, secretos privados |
-| Samuel | Preparar Desempeño RNF-07/08/10, Disponibilidad RNF-03/04/09/17 y Monitoreo RNF-19; contrastar cifras por revisión; participar en preparación futura A/B/C | Informes de carga, tablero/fallo local y pruebas existentes de ingreso→panel/alertas; señalar faltantes de 2000 usuarios, Boletería, porcentaje mensual y recepción de dispositivos |
-| Daniel | Consolidar Usabilidad RNF-12/14 con aportes de todos | Protocolo/resultados humanos o declarar ausencia; matriz de equivalencia web/móvil, flujos/pasos/capturas con autoría reconocida |
-| Diego | Preparar Desplegabilidad RNF-15/18 con escenario, código, evidencia y demo existentes | Plan/resultado real de despliegue/reversión, informe de cobertura y aislamiento; documentar faltantes sin ejecutar instrucciones destructivas antiguas ni desarrollar pendientes en esta entrega |
+| Sebastián | Sustentar Seguridad RNF-05/06, Safety monetario RNF-01/02/11 y Modificabilidad RNF-13: guion ejecutable de ocho minutos; aportar a Daniel pantallas, navegación, rotulado, pasos y capturas de Alimentos y cuentas/roles/recintos | RESULTADO, cobertura 167/167 gateway + backend directo, evidencia saneada y código; reconocer implementación de Samuel donde corresponda, secretos privados |
+| Samuel | Preparar Desempeño RNF-07/08/10, Disponibilidad RNF-03/04/09/17 y Monitoreo RNF-19; contrastar cifras por revisión; continuar el montaje A/B/C a su cargo | Informes de carga, tablero/fallo local y pruebas existentes de ingreso→panel/alertas; señalar faltantes de 2000 usuarios, Boletería, porcentaje mensual y recepción de dispositivos |
+| Daniel | Integrabilidad RNF-16 y consolidar Usabilidad RNF-12/14 con aportes de todos | Protocolo/resultados humanos o declarar ausencia; matriz de equivalencia web/móvil, flujos/pasos/capturas con autoría reconocida |
+| Diego | Preparar Desplegabilidad RNF-15/18 con escenario, código, evidencia y demo existentes | Destino HTTPS de presentación y conexión al workflow OWASP; plan/resultado real de despliegue/reversión, informe de cobertura y aislamiento; documentar faltantes sin ejecutar instrucciones destructivas antiguas ni desarrollar pendientes en esta entrega |
 | Equipo | Traer temario completo, cerrar reparto, moderador y arquitectura; ensayar 54 min y confirmar carga Brightspace | Matriz curso↔fichas↔diapositivas↔demo; asignación explícita de los atributos desconocidos |
 
-Bloqueos: lista completa del curso y responsables de RNF-01/02/11/13/16 faltantes; pruebas de varios umbrales
+Bloqueos: temario completo pendiente de contrastar; reparto de los 19 RNF confirmado en DISTRIBUCION-ATRIBUTOS. Pruebas de varios umbrales
 sin acreditar; demo multiequipo pendiente; capacidad del entorno. El último control
 de Redash **15/11 16:48 Bogotá** terminó en timeout HTTP y nuevos OOM; es histórico,
 no diagnóstico actual ni motivo para operar ese proyecto. Consultar la
 [guía operativa](OPERACION-LOCAL-REDASH-HEXACORE.md); su responsable debe resolver
-capacidad por separado. Ningún contenedor se consulta o modifica en esta entrega.
+capacidad por separado. En C solo se consulta inventario/capacidad, sin modificar contenedores; servicios nuevos únicamente en Actions.
 
 Cada integrante debe poder explicar por escrito escenario/umbral, táctica,
 alternativa descartada, ruta del código, resultado y límite; distinguir

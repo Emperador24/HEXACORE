@@ -1,4 +1,4 @@
-% Corte documental 15/11/2026; no ejecuta pruebas ni sustituye sus evidencias.
+% Corte 16/11/2026: evidencia histórica separada de herramientas y nuevo ensayo CI.
 \section{Seguridad vigente: diseño, implementación y evidencia}
 \label{sec:seguridad-vigente}
 
@@ -6,9 +6,9 @@
 RNF-05/06.} El cierre de \textbf{167/167 operaciones protegidas del inventario}
 significa que cada método/ruta tiene evidencia de autorización en las
 combinaciones descritas por su informe. No significa 167 casos de uso, cobertura
-exhaustiva de estados/actores ni cumplimiento completo de Seguridad. El corte
-de código revisado es \texttt{9bc1ee5} de \texttt{feature/sebastian}; integrar,
-compilar y desplegar son hechos distintos.
+exhaustiva de estados/actores ni cumplimiento completo de Seguridad. La evidencia histórica de autorización corresponde a \texttt{9bc1ee5}; la revisión
+actual integra \texttt{develop} hasta \texttt{b9f93e6} (PR 60 y 62). Integrar,
+compilar, probar herramientas y desplegar son hechos distintos.
 
 \subsection{Escenario y decisiones de diseño}
 \textbf{ASR-03, RNF-05 y RNF-06.} Un actor intenta consultar o modificar un
@@ -131,10 +131,114 @@ y \href{https://github.com/Emperador24/HEXACORE/blob/9bc1ee5/App/infra/informe-a
 Las capturas SQL/Redis, sesiones, credenciales y QR completos permanecen privados,
 fuera de Git y de los anexos de Brightspace.
 
+\subsection{Escaneo automático posterior al despliegue}
+\texttt{pipeline.py} reutiliza el recorrido pasivo de \texttt{zap.py}: HTML y
+JS/CSS iniciales de ambos portales, GET públicos y perfil de un Cliente de ensayo
+autenticado. No ejecuta JavaScript, araña ni ataques activos; reutiliza el DAST
+activo histórico con su alcance. Se publica cada instancia de alerta en HTML/JSON
+saneados, con identificador de regla, severidad, confianza y origen; no cuerpos,
+parámetros, URL dinámica, tokens ni evidencia HTTP privada.
+
+ZAP clasifica \textbf{Informational, Low, Medium y High}, sin Critical. Su criterio
+es \textbf{cero High}. La auditoría npm sí conserva Critical y distingue producción
+de desarrollo. Revisión local de cinco paquetes: cero producción, High y Critical;
+el backend completo tiene 20 moderadas de desarrollo, los demás cero. No se
+aplicó \texttt{audit fix} ni se filtraron alertas. Las dependencias se vuelven a
+auditar en Actions sobre el commit que efectivamente se prueba.
+
+\path{atributos-sebastian.yml} despliega un proyecto temporal de CI antes de
+escanearlo. \path{owasp-desplegado.yml} es reutilizable tras el despliegue de
+presentación: CD lo conecta después de verificar las ocho aplicaciones activas
+por revisión OCI. Gateway/Caddy sirven \texttt{/version}; la revisión debe
+coincidir antes y después del escaneo. \textbf{Samuel confirma que el servidor de
+presentación nunca se creó}. El dominio utilizado en los ejemplos históricos
+pertenece a un tercero, incluidos sus subdominios; se retiró de las plantillas y
+queda excluido de pruebas. Desde el 16/11 el equipo tiene su propio servidor de
+presentación (Google Cloud, \texttt{hexacore-javeriana.duckdns.org} y \texttt{admin.}\ldots, HTTPS de
+Let's Encrypt) y Actions ya despliega en él; falta la cuenta exclusiva de ensayo
+(\texttt{OWASP\_CLIENTE\_*}) y ejecutar allí el ZAP. El workflow obtiene una sesión nueva por HTTPS
+después de verificar la revisión, con un login sin redirecciones ni reintentos;
+no amplía su TTL ni guarda un JWT que caduque durante CD. Las credenciales
+son secretos de Actions y no llegan al contenedor ZAP. El runner no acredita
+el despliegue externo.
+\href{https://github.com/Emperador24/HEXACORE/actions/runs/43995508643/artifacts/14290455753}{CI109 comprobada}:
+ZAP 2.17.0 AMD64, 62 reglas, 20 GET y un perfil autenticado HTTP200; pendientes
+cero. \textbf{0 High, 0 Low, 10 Medium y 4 Informational}, las 14 instancias
+conservadas. Revisión gateway igual antes/después (\texttt{486808e}, merge de
+prueba de head \texttt{05af28b}). Los fallos previos se conservan: arranque del
+portal, conexión del upstream tras reinicio y digest ZAP ARM64 en runner AMD64;
+se corrigieron orden/DNS, precondición GET y pin a índice oficial nativo.
+
+Se conserva \href{https://github.com/Emperador24/HEXACORE/actions/runs/44000569216}{CI111 aprobada, 9/9},
+código \texttt{d32f582}: \textbf{despliegue temporal del runner}, ZAP 2.17.0,
+0 High, 10 Medium y 4 Informational, las 14 instancias conservadas. La revisión
+servida es igual antes y después (\texttt{dc6d373}, merge de prueba).
+\href{https://github.com/Emperador24/HEXACORE/actions/runs/44000569216/artifacts/14291638302}{Descargar informes HTML/JSON}.
+Para mostrarlo en clase: abrir el trabajo OWASP, sus pasos de despliegue y escaneo,
+volver a Summary y descargar \texttt{atributos-sebastian}; abrir \path{owasp.html}
+y \path{owasp.json} localmente. Es una ejecución completada, no una prueba nueva
+ni evidencia del servidor externo. Esta corrección es documental y no repite el
+escaneo; se conservan los límites de RNF-05/06 y los demás RNF descritos abajo.
+
+\subsection{Safety monetario: comprobación posterior identificada}
+Sebastián asume RNF-01/02/11 en el reparto actual. Bloqueos, reservas, unicidad e
+idempotencia son protecciones durante la operación. El nuevo
+\path{herramientas/verificar-transaccion.cjs} consulta después una operación
+identificada en un snapshot \texttt{REPEATABLE READ READ ONLY}. Contrasta libro y
+negocio, importe en centavos exactos, moneda, referencia, clave idempotente,
+resultado, actor/tiempo del negocio e historial pertinente. El solicitante del
+libro es el dominio; el actor humano procede de la operación enlazada.
+
+Admite pedido, compra, reventa y reembolsos. No llama proveedores, escribe,
+repara ni vuelve a cobrar. Código 0: consistente en el alcance; 1: inconsistente;
+2: pendiente, incierto o parcial; 3: configuración/consulta inválida.
+Diecisiete unitarias locales comprueban además negativos. La integración reutiliza
+las pruebas financieras y QR existentes; reembolso de pedido se prueba con dobles,
+sin atribuirle una nueva cancelación HTTP/SQL; un doble en memoria altera un centavo,
+produce código 1 y conserva original válido. F12 se detecta como divergencia,
+sin implementar conciliación. El libro de reembolsos no persiste la referencia
+del cobro original: aun enlazando sus registros, se informa verificación parcial.
+
+\textbf{RNF-01/02/11 conservan límites.} La carrera histórica de 50 compradores
+no se reemplaza por la prueba actual de ocho checkouts concurrentes. Ventas rota
+el QR atómicamente, pero Acceso QR se actualiza por eventos: esperar convergencia
+antes de rechazar el QR anterior no demuestra invalidación inmediata. El
+verificador informa la proyección anterior pendiente. La política de retención
+es al menos un año; no existe evidencia de un año transcurrido. SQL append-only
+no equivale a no repudio criptográfico ni auditoría financiera global completa.
+
+\subsection{Modificabilidad: efecto observable con el mismo artefacto}
+Sebastián asume RNF-13. El ensayo automatizado usa tres parámetros existentes:
+\texttt{PUERTO} 3002 a 3003 (HTTP directo, gateway y sonda coordinados), API externa
+de \texttt{configuracion.js} (petición efectiva de Chromium) y
+\texttt{POSTGRES\_ESPERA\_MAXIMA\_MS} 3000 a 1000 (consulta de 4 s cancelada por
+el DataSource compilado de Identidad). Rechaza puerto 0, API inválida y espera
+499. CI109 comprueba estos cambios, esperas medidas de 3004/1003 ms e inválidos
+rechazados. Compara seis Image IDs SHA-256 antes/después; después de preparar las imágenes
+solo usa \texttt{--no-build}. Reinicio/recreación no implica recarga en caliente.
+
+\textbf{Tácticas concretas:} Monitoreo concentra interpretación/proyección de
+ingresos; contratos públicos de Pagos y eventos actúan como intermediarios, con
+comprobación de dependencias; cargadores y configuración externa postergan el
+enlace al arranque. Carpeta o inyección no prueban cohesión por sí mismas:
+Núcleo reúne varios dominios y SQL/procesos/contratos todavía los acoplan.
+
+\textbf{Impacto revisable RNF-13:} PR 60 cambia consumidor de Monitoreo y sus
+pruebas para interpretar ingreso sin \texttt{puntoAcceso} como «Acceso general».
+El contrato/evento público no se amplía; no modifica productor, Boletería ni
+portal. Cambia un módulo lógico del Núcleo. ADR-16 mantiene versionado y
+\textbf{despliegue coordinados}: no se declara independencia de despliegue por
+dominio ni cumplimiento global de RNF-13 por ese ejemplo.
+
+Fuentes ejecutables y guion de ocho minutos:
+\href{https://github.com/Emperador24/HEXACORE/pull/64}{PR 64},
+\href{https://github.com/Emperador24/HEXACORE/blob/feature/sebastian/Documentation/Work/PLAN-CIERRE-SEBASTIAN.md}{plan de cierre vigente} y
+\href{https://github.com/Emperador24/HEXACORE/blob/feature/sebastian/App/infra/informe-atributos/seguridad/SECURITY-SAFETY.md}{Security/Safety}.
+
 \subsection{Límites de Seguridad y separación de Safety}
 \textbf{RNF-05/06 permanecen parciales.} Quedan DAST autenticado y combinaciones
 adicionales de negocio, consumidores y fallos entre SQL/Redis; residuos CSP de
-imágenes externas y Google Fonts/SRI; revalidación de dependencias y de los
+imágenes externas y Google Fonts/SRI; auditoría continua de dependencias y revisión de los
 canales y límites de datos de pago. La migración a Angular 22 eliminó los
 hallazgos altos de aquella referencia; no se atribuyen al portal actual los
 hallazgos antiguos de Angular 19 ni se presenta ese análisis como auditoría nueva.
@@ -144,13 +248,13 @@ Security con integridad del negocio; no certifican \textbf{Safety física},
 RNF-17 (99\% de dispositivos alertados en 10 s), autenticidad del reloj offline,
 firma extremo a extremo de AMQP o no repudio criptográfico de la auditoría SQL.
 F12 y recuperación financiera global no se resuelven en esta entrega.
-Hallazgo funcional separado: un ingreso QR sin \texttt{puntoAcceso} registra
-QR/Ventas, pero no se proyecta a Monitoreo; queda pendiente de su responsable.
+Hallazgo funcional histórico corregido en PR 60: ingreso sin \texttt{puntoAcceso}
+se proyecta como «Acceso general», con sus pruebas de deduplicación/reintento.
 
 La preparación de dos servidores y un cliente sigue siendo
 \href{https://github.com/Emperador24/HEXACORE/blob/feature/sebastian/Documentation/Work/PLAN-DEMO-ZEROTIER.md}{un plan pendiente}:
 A conserva gateway y datos; se podrá apagar B. A sigue siendo punto único de
-fallo. No hay ensayo entre computadores, VPN instalada o disponibilidad mensual
-acreditada por este documento. El último control histórico de Redash terminó con
+fallo. Este bloque no opera ni acredita la prueba distribuida de Samuel ni disponibilidad
+mensual; consultar el plan vigente para su estado real. El último control histórico de Redash terminó con
 timeouts HTTP/OOM; restaurar estados de contenedores no acreditó disponibilidad
 del servicio. Esta revisión no opera Docker ni Redash.

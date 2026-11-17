@@ -93,6 +93,7 @@ jobs:
           context: ${{ matrix.componente.contexto }}
           file: ${{ matrix.componente.dockerfile || format('{0}/Dockerfile', matrix.componente.contexto) }}
           push: true
+          build-args: REVISION=${{ github.sha }}
           platforms: linux/${{ matrix.arquitectura }}
           # Etiqueta interna única por corrida; no modifica etiquetas de otras ramas.
           tags: ${{ steps.imagen.outputs.ruta }}:construccion-${{ github.sha }}-${{ github.run_id }}-${{ matrix.arquitectura }}
@@ -213,6 +214,13 @@ jobs:
         run: |
           ssh -i ~/.ssh/produccion -o BatchMode=yes "$USUARIO@$HOST" \
             "cd ~/HEXACORE && git fetch --quiet origin main && git checkout --quiet --detach '${{ github.sha }}' && App/infra/desplegar.sh 'sha-${{ github.sha }}'"
+      - name: Comprobar revisión de las ocho aplicaciones activas
+        env:
+          HOST: ${{ secrets.PRODUCCION_SSH_HOST }}
+          USUARIO: ${{ secrets.PRODUCCION_SSH_USUARIO }}
+        run: |
+          ssh -i ~/.ssh/produccion -o BatchMode=yes "$USUARIO@$HOST" \
+            "cd ~/HEXACORE && python3 App/infra/verificar-version.py '${{ github.sha }}'"
       - name: La página responde
         run: |
           for _ in $(seq 1 12); do
@@ -221,3 +229,18 @@ jobs:
           done
           echo "::error::https://${{ vars.PRODUCCION_DOMINIO }}/api/v1/salud no respondió"
           exit 1
+
+  owasp:
+    name: OWASP después del despliegue de producción
+    needs: despliegue
+    uses: ./.github/workflows/owasp-desplegado.yml
+    permissions:
+      contents: read
+    with:
+      revision: ${{ github.sha }}
+      url_api: https://${{ vars.PRODUCCION_DOMINIO }}
+      url_cliente: https://${{ vars.PRODUCCION_DOMINIO }}
+      url_admin: https://${{ vars.PRODUCCION_DOMINIO_ADMIN || format('admin.{0}', vars.PRODUCCION_DOMINIO) }}
+    secrets:
+      OWASP_CLIENTE_EMAIL: ${{ secrets.OWASP_CLIENTE_EMAIL }}
+      OWASP_CLIENTE_CONTRASENA: ${{ secrets.OWASP_CLIENTE_CONTRASENA }}

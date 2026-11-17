@@ -63,8 +63,8 @@
 {\LARGE \textbf{Descripción de la Arquitectura del Software (SAD)}}\\[0.4cm]
 {\Large Sistema Integral de Gestión de Eventos}\\[1.5cm]
 {\Large Equipo Hexacore}\\[2cm]
-{\large Versión: 2.1 -- ADR-16 y Seguridad vigente}\\[0.5cm]
-{\large Revisión documental: 15/11/2026}\\[2cm]
+{\large Versión: 2.2 -- Seguridad, Safety monetario y Modificabilidad}\\[0.5cm]
+{\large Revisión documental: 16/11/2026}\\[2cm]
 {\large Autores:}\\
 {\large Daniel Cristancho}\\
 {\large Samuel Emperador}\\
@@ -163,6 +163,17 @@ parciales. Preparación de sustentación: rúbrica, responsables confirmados,
 comparación de contenedores y límites de carga/disponibilidad. Actualización
 documental, sin nuevas pruebas funcionales ni operación de infraestructura.
 & Sebastián Sánchez (asistencia Codex) \\
+\hline
+16/11/2026 & Versión 2.2: integración de PR 60/62; automatización OWASP posterior
+al despliegue y separación CI/presentación; verificador monetario de solo lectura;
+tres parámetros con el mismo artefacto. Reparto RNF-01/02/05/06/11/13 de Sebastián,
+con resultados y límites en los informes enlazados. Sin operar ZeroTier ni ejecutar
+el despliegue externo pendiente de Diego. & Sebastián Sánchez (asistencia Codex) \\
+\hline
+16/11/2026 & Versión 2.3: servidor de presentación propio en Google Cloud
+(\texttt{hexacore-javeriana.duckdns.org}, HTTPS de Let's Encrypt) y secretos del CD
+configurados: cada merge a \texttt{main} se despliega solo. Se cierra la brecha «sin
+servidor de producción»; el ZAP contra ese servidor sigue pendiente. & Samuel Emperador \\
 \hline
 \end{longtable}
 \end{center}

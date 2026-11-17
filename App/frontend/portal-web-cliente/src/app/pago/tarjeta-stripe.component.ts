@@ -14,7 +14,6 @@ import { StripeService, TarjetaMontada } from '../core/stripe.service';
     <div class="campo" #campo data-prueba="tarjeta-stripe"></div>
     @if (cargando()) { <p class="ayuda">Cargando el formulario seguro de Stripe…</p> }
     @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
-    <p class="ayuda">Modo de prueba: 4242 4242 4242 4242, cualquier fecha futura y CVC.</p>
   `,
   changeDetection: ChangeDetectionStrategy.Eager,
   styles: `

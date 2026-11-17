@@ -101,15 +101,14 @@ Plataforma común para entradas, alimentos, personal y operación de eventos.
 \small
 \begin{tabular}{L{2.8cm}L{7.4cm}L{2.9cm}}
 \toprule Integrante & Bloque de validación acordado & Alcance\\\midrule
-Sebastián Sánchez & Seguridad: RNF-05/06 & Aporta también a Usabilidad\\[0.4em]
+Sebastián Sánchez & Seguridad RNF-05/06; Safety monetario RNF-01/02/11; Modificabilidad RNF-13 & Aporte a Usabilidad\\[0.4em]
 Samuel Emperador & Desempeño: RNF-07/08/10. Disponibilidad: RNF-03/04/09/17. Monitoreo: RNF-19 & Mantiene límites de cada escenario\\[0.4em]
-Daniel Cristancho & Consolidación de Usabilidad: RNF-12/14 & Con aportes de todos\\[0.4em]
+Daniel Cristancho & Integrabilidad RNF-16; Usabilidad RNF-12/14 & Con aportes de todos\\[0.4em]
 Diego Coronado & Desplegabilidad: RNF-15/18 & Incluye Comprobabilidad\\
 \bottomrule
 \end{tabular}
 \medskip
-\textbf{Reparto acordado: guía de validación del 5/11.}
-Es un plan, no evidencia de resultados. Temario y RNF fuera del reparto por contrastar.
+\par\smallskip{\footnotesize Reparto vigente: DISTRIBUCION-ATRIBUTOS; no acredita resultados. Temario completo por contrastar.}
 \franja{02:00--04:00 · Monitoreo documentado posteriormente en el repositorio. Se conservan los nombres y umbrales de cada RNF del SAD.}
 \end{frame}
 
@@ -191,7 +190,7 @@ Implementado $\neq$ comprobado. Comprobado en un ensayo $\neq$ RNF completo.
 \item Tres finales 560/560; 346 conservaciones completas de 76 tablas y Redis por final.
 \item 151 anteriores conservan sus combinaciones; no son todos los actores/estados/consumidores.
 \end{itemize}
-\textbf{Pendiente:} DAST, CSP y canales/límites de datos. Security no acredita Safety física.
+\textbf{OWASP:} CI111 sobre despliegue temporal, HTML/JSON saneados y cero High. ZAP no tiene Critical. Servidor propio en Google Cloud desde el 16/11 (\texttt{hexacore-javeriana.duckdns.org}); falta correr allí el ZAP.
 \franja{24:00--26:00 · Sebastián · Backend directo se conserva como comprobación adicional al gateway; 560 observaciones no son 560 CU.}
 \end{frame}
 
@@ -204,7 +203,7 @@ Implementado $\neq$ comprobado. Comprobado en un ensayo $\neq$ RNF completo.
 \item Para lograrlo: paneles cada 1 s (antes 3 s) y bandeja de salida de QR de $\sim$50 a $\sim$1\,700 avisos/s.
 \item QR sin puntoAcceso: ahora se cuenta en «Acceso general» en vez de ir a la DLQ.
 \end{itemize}
-\franja{26:00--28:00 · Samuel: RNF-09, informe TIEMPO-REAL.md. Consistencia: por confirmar.}
+\franja{26:00--28:00 · Samuel: RNF-09, informe TIEMPO-REAL.md. Safety monetario: Sebastián.}
 \end{frame}
 
 \begin{frame}{Trazabilidad y Safety: garantías distintas}
@@ -217,7 +216,18 @@ Implementado $\neq$ comprobado. Comprobado en un ensayo $\neq$ RNF completo.
 \end{itemize}
 \codigo{App/backend/modulos/operacion/evacuacion}{Evacuación} ·
 \codigo{App/backend/modulos/finanzas/pagos}{Pagos}
-\franja{28:00--30:00 · Samuel: RNF-17. Trazabilidad: por confirmar. Auditoría SQL no equivale a no repudio criptográfico.}
+\franja{28:00--30:00 · Samuel: RNF-17. Trazabilidad: Sebastián. Auditoría SQL no equivale a no repudio criptográfico.}
+\end{frame}
+
+\begin{frame}{Safety monetario y Modificabilidad: demostración de Sebastián}
+\small
+\begin{itemize}
+\item Verificador posterior de solo lectura: negocio/libro, dinero exacto, referencias, idempotencia e historial; original 0, doble inconsistente 1, original 0.
+\item Estados pendientes/inciertos y referencias incompletas: código 2. F12 se detecta, sin reparación ni nuevo cobro. QR asíncrono y retención anual siguen parciales.
+\item Tres parámetros: puerto 3002 a 3003, API externa del portal y espera PostgreSQL 3000 a 1000 ms; comportamiento efectivo e inválidos rechazados.
+\item Mismas imágenes SHA-256, sin recompilar; reinicio/recreación permitidos. RNF-13: cambio Monitoreo sin puerta localizado, ADR-16 mantiene despliegue coordinado.
+\end{itemize}
+\franja{Sebastián · Guion ejecutable de ocho minutos en PLAN-CIERRE-SEBASTIAN; CI temporal separado de presentación.}
 \end{frame}
 
 \begin{frame}{Usabilidad y portabilidad}
@@ -252,7 +262,7 @@ Comprobabilidad / 14 & Unitarias/dobles, HTTP y contratos separados & RNF-18: 11
 Seguridad & Positivo 200, rol ajeno 403, sin token 401 y revocación propia & 90\\
 Desempeño & Lectura y contraste con informe existente & 45\\
 Escalabilidad & Reparto entre instancias ya preparadas & 30\\
-Disponibilidad & X-Servidor y evidencia histórica; caída B pendiente & 40\\
+Disponibilidad & X-Servidor; caída del Núcleo de A y de B medida por ZeroTier & 40\\
 Observabilidad & Correlación de solicitud, upstream y log en tablero & 35\\
 Consistencia & Caso existente de competencia/replay por seleccionar & 60\\
 Tiempo real & Ingreso propio y panel; medir extremo a extremo & 40\\
@@ -270,7 +280,7 @@ Safety & Estado/aviso simulado e interlock ya preparado & 35\\
 Usabilidad & Tarea/pasos y evidencia humana, si existe & 45\\
 Portabilidad & Una lectura autorizada en web y app & 35\\
 Mantenibilidad & Contrato e implementación de un módulo & 30\\
-Desplegabilidad & Versión/CI y procedimiento; sin despliegue nuevo & 30\\
+Desplegabilidad & Versión/CI y despliegue del CD en el servidor real & 30\\
 Integrabilidad & Interfaz y contrato existente del adaptador & 25\\
 Comprobabilidad & Prueba aislada existente y CI de su revisión & 30\\
 \bottomrule

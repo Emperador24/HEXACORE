@@ -3,9 +3,12 @@ const { prepararEvento } = require('../base-unica/preparar-evento.cjs');
 const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const { randomUUID, createHmac } = require('node:crypto');
-const { execFileSync } = require('node:child_process');
+const { execFileSync, spawnSync } = require('node:child_process');
 const { resolve } = require('node:path');
+const {mkdirSync,writeFileSync,readFileSync} = require('node:fs');
 const { Client } = require('pg');
+const { verificar, cargar, evaluar } = require('../../herramientas/verificar-transaccion.cjs');
+const {esperarGateway}=require('../base-unica/esperar-gateway.cjs');
 const { cifrarContrasena } = require('../../dist/modulos/identidad/comun/contrasenas');
 const {proyecto} = require('../base-unica/conexiones.cjs');
 // También conserva el override por digest al detener/reiniciar imágenes publicadas.
@@ -112,6 +115,23 @@ test('login real, alimentos y entradas escriben sus claves y referencias en ese 
     assert.equal(e.intentos, 1);
     assert.equal((await db.ventas.query('SELECT referencia_pasarela FROM compras WHERE id=$1', [compra.id])).rows[0].referencia_pasarela, referenciaEntrada);
     assert.equal((await db.libro.query('SELECT count(*)::int AS n FROM transacciones_pago WHERE clave_idempotencia=ANY($1)', [[claveComida, entradaClave]])).rows[0].n, 2);
+    const privada = resolve(__dirname, '../../.evidencia-e2e');
+    mkdirSync(privada,{recursive:true,mode:0o700});
+    writeFileSync(resolve(privada,'safety-config.json'), JSON.stringify({ambito:'ensayo-simulado',postgres:opcionesPg('pagos'),operaciones:[{tipo:'pedido',id:claveComida},{tipo:'compra',id:compra.id}]}),{mode:0o600});
+    const cli = spawnSync(process.execPath,[resolve(__dirname,'../../herramientas/verificar-transaccion.cjs'),'pedido',claveComida],{encoding:'utf8',env:{...process.env,SAFETY_CONFIG:resolve(privada,'safety-config.json')}});
+    assert.equal(cli.status,0,cli.stderr);assert.equal(JSON.parse(cli.stdout).codigo,0);
+    for (const [tipo, identificador] of [['pedido', claveComida], ['compra', compra.id]]) {
+        const resultado = await verificar(db.libro, tipo, identificador);
+        assert.equal(resultado.codigo, 0, JSON.stringify(resultado));
+        console.log('Safety posterior:', JSON.stringify(resultado));
+    }
+    // Doble en memoria: no se altera la transacción original ni su libro.
+    const original = await cargar(db.libro, 'pedido', claveComida), doble = structuredClone(original);
+    doble.libro.monto = '1150.26';
+    assert.ok(evaluar(doble).errores.includes('IMPORTE_INCOMPATIBLE'));
+    assert.equal(evaluar(doble).codigo, 1);
+    assert.equal((await verificar(db.libro, 'pedido', claveComida)).codigo, 0);
+    console.log('Safety negativo controlado: importe incompatible detectado, código 1; original conserva código 0.');
 });
 test('reinicio de ambos programas conserva resultados, referencias y efectos únicos', async () => {
     const fin = inspeccionar('preparacion-base').State.FinishedAt;
@@ -123,6 +143,10 @@ test('reinicio de ambos programas conserva resultados, referencias y efectos ún
     }
     execFileSync('docker', [...compose, 'up', '-d', '--no-deps', '--no-build', '--wait', 'nucleo', 'boleteria'], { encoding: 'utf8' });
     assert.equal(inspeccionar('preparacion-base').State.FinishedAt, fin);
+    // Sondas directas de Docker no prueban el upstream que mantiene Nginx tras
+    // un NXDOMAIN durante el reinicio. Se conserva cada fallo GET de la espera;
+    // las operaciones de pago/cancelación siguientes se envían exactamente una vez.
+    console.log('Precondición gateway después del reinicio:',JSON.stringify(await esperarGateway(gateway)));
     const replay = await pedir(gateway, `/pedidos/${pedido.id}/pagos`, 'POST', { tokenPago: 'tok_ok_convivencia' }, { 'Idempotency-Key': claveComida });
     assert.equal(replay.status, 200);
     assert.equal(replay.body.referenciaPasarela, comida.body.referenciaPasarela);
@@ -160,6 +184,10 @@ test('cancelación y reembolso locales mantienen el contrato existente sin otro 
     assert.equal(repetida.referencia, r.body.referenciaReembolso);
     assert.equal(repetida.intentos, 1);
     assert.equal((await db.ventas.query('SELECT count(*)::int AS n FROM cancelaciones WHERE compra_id=$1', [compra.id])).rows[0].n, 1);
+    const posterior = await verificar(db.libro, 'reembolso-entrada', r.body.cancelacionId);
+    assert.equal(posterior.errores.length, 0, JSON.stringify(posterior));
+    assert.equal(posterior.codigo, 2); // El libro no persiste la referencia del cobro original.
+    console.log('Safety reembolso, verificación parcial:', JSON.stringify(posterior));
 });
 test('callback financiero auténtico/duplicado no finaliza el pedido incierto: F12 permanece; logout revoca en ambos', async () => {
     const incierto = await checkout(), clave = randomUUID();
@@ -167,6 +195,7 @@ test('callback financiero auténtico/duplicado no finaliza el pedido incierto: F
     assert.equal(pago.status, 502, JSON.stringify(pago.body));
     assert.equal(pago.body.estadoPago, 'FALLIDA');
     assert.equal((await movimiento(clave)).resultado, 'INDETERMINADO');
+    assert.equal((await verificar(db.libro, 'pedido', clave)).codigo, 2);
     const raw = JSON.stringify({ claveIdempotencia: clave, operacion: 'COBRO', resultado: 'APROBADO', referencia: 'pas_' + randomUUID(), motivo: null }, null, 2) + '\n';
     const enviar = firma => fetch(gateway + '/pagos/webhook', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Pasarela-Firma': firma }, body: raw });
     assert.equal((await enviar('0'.repeat(64))).status, 401);
@@ -177,6 +206,16 @@ test('callback financiero auténtico/duplicado no finaliza el pedido incierto: F
     assert.equal((await movimiento(clave)).resultado, 'APROBADO');
     assert.equal((await db.alimentos.query('SELECT estado FROM transacciones_pedido WHERE id=$1', [clave])).rows[0].estado, 'FALLIDA');
     assert.equal((await db.alimentos.query('SELECT estado FROM pedidos WHERE id=$1', [incierto.id])).rows[0].estado, 'PENDIENTE_PAGO');
+    const divergente = await verificar(db.libro, 'pedido', clave);
+    assert.equal(divergente.codigo, 1);
+    assert.ok(divergente.errores.includes('RESULTADO_DIVERGENTE'));
+    console.log('Safety detecta F12, sin reparar:', JSON.stringify(divergente));
+    const manifiesto=resolve(__dirname,'../../.evidencia-e2e/safety-config.json');
+    const cfg=JSON.parse(readFileSync(manifiesto,'utf8'));cfg.operaciones.push({tipo:'pedido',id:clave});
+    writeFileSync(manifiesto,JSON.stringify(cfg),{mode:0o600});
+    const cli=spawnSync(process.execPath,[resolve(__dirname,'../../herramientas/verificar-transaccion.cjs'),'pedido',clave],{encoding:'utf8',env:{...process.env,SAFETY_CONFIG:manifiesto}});
+    assert.equal(cli.status,1,cli.stderr);assert.ok(JSON.parse(cli.stdout).errores.includes('RESULTADO_DIVERGENTE'));
+    console.log('Safety CLI real: divergencia detectada con código de proceso 1; sin reparación.');
     const replay = await pedir(gateway, `/pedidos/${incierto.id}/pagos`, 'POST', { tokenPago: 'tok_ok_no_debe_cobrar' }, { 'Idempotency-Key': clave });
     assert.equal(replay.status, 502);
     assert.equal(replay.body.estadoPago, 'FALLIDA');

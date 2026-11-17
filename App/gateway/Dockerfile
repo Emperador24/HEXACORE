@@ -15,6 +15,11 @@
 
 FROM nginx:1.27-alpine
 
+# Procedencia del gateway servido; no depende de una variable al arrancar.
+ARG REVISION=desarrollo
+RUN test "$REVISION" = desarrollo || (test "${#REVISION}" = 40 && ! echo "$REVISION" | grep -q '[^0-9a-f]')
+RUN mkdir -p /etc/nginx/hexacore && printf '{"revision":"%s"}\n' "$REVISION" > /etc/nginx/hexacore/version.json
+
 COPY nginx-principal.conf /etc/nginx/nginx.conf
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY autenticar.conf /etc/nginx/hexacore/autenticar.conf

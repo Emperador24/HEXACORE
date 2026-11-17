@@ -383,17 +383,45 @@ sondeo de inventario de Alimentos (CU-011) no se certificó con réplicas. Postg
 RabbitMQ siguen siendo una sola instancia: su caída se trata con degradación elegante
 (sección \ref{sec:tacticas}), no con redundancia.
 
-\paragraph{Entre computadores.} Estas mediciones son de un solo computador: no
-acreditan tolerancia a que se apague un equipo ni la disponibilidad mensual de
-RNF-03. Para eso, la demostración en vivo reparte el sistema en tres computadores
+\paragraph{Entre computadores.} Las mediciones anteriores son de un solo computador.
+Para acreditar la caída de un equipo, el sistema se repartió en tres computadores
 unidos por una red ZeroTier privada (figura \ref{fig:despliegue-zerotier}): A conserva
 datos, gateway, entrada HTTPS y una réplica de cada programa; B tiene otra réplica de
-Núcleo y Boletería y es la que se apaga; C es el cliente que mide. A es el punto único
+Núcleo y Boletería y es la que se cae; C es el cliente que mide. A es el punto único
 de falla. La red se usa con el rango \texttt{192.168.193.0/24}, porque un rango
 \texttt{10.x} choca con la VPN de la universidad, y la VM llega a A por un relevo de
 ZeroTier (unos 124 ms por ida y vuelta). El procedimiento está en
 \href{https://github.com/Emperador24/HEXACORE/blob/develop/Documentation/Work/PLAN-DEMO-ZEROTIER.md}{PLAN-DEMO-ZEROTIER}
 y \texttt{App/infra/zerotier/}.
+
+El 17/11 se midió con C haciendo dos lecturas cada 0,5\,s, sin reintentos: la cartelera
+(Boletería) y la sesión actual (Núcleo). Primero se mató el proceso del Núcleo de A
+(\texttt{kill -9}) y luego se detuvieron los contenedores de B; la VM no se apagó porque
+no hay forma confirmada de volver a encenderla
+(\href{https://github.com/Emperador24/HEXACORE/blob/develop/App/infra/informe-atributos/DISPONIBILIDAD-ZEROTIER.md}{informe}).
+
+\begin{center}
+\small
+\begin{longtable}{|p{0.30\textwidth}|p{0.11\textwidth}|p{0.10\textwidth}|p{0.37\textwidth}|}
+\hline
+\textbf{Tramo} & \textbf{Peticiones} & \textbf{Fallidas} & \textbf{Lo observado}\\
+\hline
+A y B arriba & 219 & 0 & Reparto parejo entre A y B.\\
+\hline
+Cae el Núcleo de A & --- & 1 & B absorbe las sesiones; Docker relanza el Núcleo de A y responde de nuevo a los \textbf{12\,s} (RNF-04: $\le$ 30\,s).\\
+\hline
+B detenida & 338 & 16 & A atiende solo el \textbf{95\,\%}; ningún usuario pasa más de 1,7\,s sin respuesta.\\
+\hline
+\textbf{Total} & \textbf{671} & \textbf{17} & Latencia desde C: mediana 63--78\,ms, p95 656\,ms (relevo de ZeroTier).\\
+\hline
+\end{longtable}
+\end{center}
+
+Las 16 fallas con B detenida son las pruebas que el gateway le hace a B cada 10\,s: el
+gateway del montaje no reintenta en otra réplica (\texttt{proxy\_next\_upstream off}), a
+propósito, para que el observador vea todos los errores. El gateway normal sí reintenta
+las lecturas, y con él la caída de una réplica dio 0 fallas (tabla anterior). Son 3
+minutos: muestran el mecanismo de RNF-03, no el 99,9\,\% mensual.
 
 \begin{figure}[htbp]
 \centering
