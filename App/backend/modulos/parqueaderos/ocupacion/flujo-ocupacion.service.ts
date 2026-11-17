@@ -3,7 +3,8 @@ import { Observable, Subject, catchError, concatMap, defer, exhaustMap, map, of,
 import { AccesoRequerido, SesionValida } from '../comun/autenticacion/sesion-valida.guard';
 import { OcupacionService } from './ocupacion.service';
 
-export const INTERVALO_OCUPACION_MS = 3000;
+/** RNF-09: un ingreso o una salida se ve en el panel en ≤ 2 s; con 1 s, la espera más larga es 1 s más la consulta. */
+export const INTERVALO_OCUPACION_MS = 1000;
 /** Acota la espera completa del panel; sus consultas de parqueaderos tienen además límite SQL de 2 s. */
 export const ESPERA_PANEL_MS = 5000;
 

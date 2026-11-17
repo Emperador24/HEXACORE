@@ -30,7 +30,7 @@ const ETIQUETAS_DECISION: Record<string, string> = {
 /**
  * CU-019: panel de monitoreo del evento.
  *
- * Se alimenta del flujo en vivo del servidor (Server-Sent Events, cada 3 s).
+ * Se alimenta del flujo en vivo del servidor (Server-Sent Events, cada segundo).
  * Si el flujo cae, reintenta con espera creciente y mientras tanto consulta
  * el panel cada 10 s: el supervisor nunca se queda con datos congelados sin
  * saberlo, porque la cabecera dice si está en vivo y cuándo se actualizó.

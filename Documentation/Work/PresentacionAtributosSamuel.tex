@@ -38,10 +38,10 @@ caer y volver.
 \begin{tabular}{@{}L{1.7cm}L{4.6cm}@{}}
 Fuente & Clientes y organizadores en la apertura\\
 Estímulo & Hasta 200 usuarios pidiendo sin pausa\\
-Artefacto & Boletería (CU-006) y Núcleo (CU-025, CU-026)\\
-Entorno & 1 réplica y luego 2 del Núcleo\\
+Artefacto & Boletería (CU-001, QR, CU-006) y Núcleo (CU-025, CU-026)\\
+Entorno & 1 réplica y luego 2, de cada programa\\
 Respuesta & Atender sin errores; crecer al replicar\\
-Medida & \leavevmode\cifra{p95 $\leq$ 500 ms} y 0 fallos hasta 200 usuarios; $\geq$ 1,7$\times$ al duplicar\\
+Medida & \leavevmode\cifra{p95 $\leq$ 500 ms} lecturas, \cifra{$\leq$ 300 ms} QR; $\geq$ 1,7$\times$ al duplicar\\
 \end{tabular}
 \end{column}
 \begin{column}{0.5\textwidth}
@@ -56,7 +56,7 @@ en cada petición.
 \end{itemize}
 \end{column}
 \end{columns}
-\franja{16:30--17:30 · Samuel · Ensayo local; RNF-07 fija 2\,000 usuarios sobre CU-001 y RNF-10 habla de Entradas.}
+\franja{16:30--17:15 · Samuel · Ensayo local hasta 200 usuarios; RNF-07 fija 2\,000 sobre CU-001.}
 \end{frame}
 
 % ---------------------------------------------------------------------------
@@ -95,7 +95,7 @@ CU-025 & 311 ms & 759\\
 Los tres quedan en \cifra{p95 $\leq$ 500 ms} en todos los niveles medidos, hasta 200 usuarios.
 \end{column}
 \end{columns}
-\franja{17:30--18:15 · Samuel · Informe: App/infra/informe-atributos/CARGA-1-replica.md.}
+\franja{17:15--17:45 · Samuel · Núcleo, 12/11. Informe: App/infra/informe-atributos/CARGA-1-replica.md.}
 \end{frame}
 
 % ---------------------------------------------------------------------------
@@ -129,7 +129,43 @@ trabajo en varios núcleos.
 \end{itemize}
 \end{column}
 \end{columns}
-\franja{18:15--19:00 · Samuel · Se escaló el Núcleo; el escalado de Boletería (Entradas) sigue sin medir.}
+\franja{17:45--18:15 · Samuel · Escalado del Núcleo; Boletería en la lámina siguiente.}
+\end{frame}
+
+% ---------------------------------------------------------------------------
+\begin{frame}{Desempeño · Boletería, CU-001 y QR}
+\begin{columns}[T]
+\begin{column}{0.55\textwidth}
+\footnotesize
+\begin{tabular}{@{}L{2.2cm}rrr@{}}
+\toprule
+& \textbf{1 rép.} & \textbf{2 rép.} & \textbf{Factor}\\
+\midrule
+\multicolumn{4}{@{}l}{\textit{p95 con 200 usuarios · máx. pet/s}}\\
+CU-001 disponib. & 197 ms · 1\,645 & 230 ms · 1\,840 & 1,12$\times$\\
+CU-006 reventa & 240 ms · 1\,482 & 363 ms · 1\,872 & 1,26$\times$\\[0.3em]
+\multicolumn{4}{@{}l}{\textit{Validar QR, p95}}\\
+10 lectores & \leavevmode\cifra{51 ms} & 46 ms & ---\\
+50 lectores & 333 ms & 352 ms & ---\\
+\bottomrule
+\end{tabular}
+
+\vspace{0.5em}
+0 fallos en todas las corridas.
+\end{column}
+\begin{column}{0.43\textwidth}
+\small
+\begin{itemize}\setlength\itemsep{0.35em}
+\item \textbf{RNF-07 en CU-001:} \cifra{197 ms} con 200 usuarios.
+\item \textbf{RNF-08:} cumple hasta unos \cifra{500 escaneos/s}; una entrada real hace unos 13/s.
+\item \textbf{El QR no escala con réplicas:} todas las validaciones suman en la misma fila de aforo y
+PostgreSQL llega al 100\,\%.
+\item \textbf{RNF-10 no llega a 1,7$\times$:} las dos réplicas están al 90--99\,\%, pero comparten el
+portátil con gateway, base y generador.
+\end{itemize}
+\end{column}
+\end{columns}
+\franja{18:15--18:45 · Samuel · Medido el 16/11. Informes CARGA-boleteria-*.md.}
 \end{frame}
 
 % ---------------------------------------------------------------------------
@@ -162,7 +198,7 @@ réplicas no procesan la misma a la vez.
 \end{itemize}
 \end{column}
 \end{columns}
-\franja{19:00--19:45 · Samuel · Escenario: caída de un proceso. No cubre apagar un computador ni la caída de PostgreSQL.}
+\franja{18:45--19:30 · Samuel · Caída de un proceso; apagar un computador se muestra con ZeroTier (A/B/C).}
 \end{frame}
 
 % ---------------------------------------------------------------------------
@@ -194,7 +230,7 @@ PostgreSQL, Redis y RabbitMQ siguen siendo una instancia.
 \end{itemize}
 \end{column}
 \end{columns}
-\franja{19:45--20:30 · Samuel · Informe: App/infra/DEMOSTRACION-ATRIBUTOS.md, sección 3.}
+\franja{19:30--20:15 · Samuel · Informe: App/infra/DEMOSTRACION-ATRIBUTOS.md, sección 3. RNF-09/17 en 26:00--30:00.}
 \end{frame}
 
 % ---------------------------------------------------------------------------
@@ -223,7 +259,10 @@ PostgreSQL, Redis y RabbitMQ siguen siendo una instancia.
 \end{tikzpicture}
 \end{column}
 \begin{column}{0.42\textwidth}
-\small
+\footnotesize
+\textbf{Entrada:} \texttt{/grafana/} del gateway, con usuario y contraseña (los logs muestran rutas y errores).
+
+\vspace{0.4em}
 \textbf{Paneles:} instancias vivas · CPU por instancia · memoria por instancia · peticiones por
 réplica · respuestas por código · latencia p95 · logs filtrables por servicio.
 
@@ -237,7 +276,7 @@ contenedores. El exportador publica las mismas métricas: en Linux se vuelve a c
 el tablero.
 \end{column}
 \end{columns}
-\franja{20:30--21:15 · Samuel · Despliegue con réplicas y monitoreo: anexo «despliegue».}
+\franja{20:15--21:15 · Samuel · RNF-19. Despliegue con réplicas y monitoreo: anexo «despliegue».}
 \end{frame}
 
 % ---------------------------------------------------------------------------
@@ -268,11 +307,11 @@ Todo desde \texttt{App/infra}. Guion completo en \texttt{App/infra/DEMOSTRACION-
 \begin{column}{0.5\textwidth}
 \textbf{Lo que no se cumple o no se midió}
 \begin{itemize}\setlength\itemsep{0.2em}
-\item \textbf{RNF-07:} medido hasta 200 usuarios y sobre CU-006/025/026; fija 2\,000 sobre CU-001.
-En un solo portátil el generador compite por la CPU con lo que mide.
-\item \textbf{RNF-10:} con 2 Núcleos, CU-025 llega a \cifra{1,82$\times$} y CU-026 a \cifra{1,57$\times$}
-(pide 1,7$\times$ en Entradas, que no se midió).
-\item \textbf{RNF-08, RNF-09 y RNF-17:} asignados, aún sin medición.
+\item \textbf{RNF-07:} CU-001 medido hasta 200 usuarios, no 2\,000. En un solo portátil el generador
+compite por la CPU con lo que mide.
+\item \textbf{RNF-10:} Núcleo \cifra{1,82$\times$} (CU-025) y 1,57$\times$ (CU-026); Boletería, que es lo que
+pide, solo 1,12--1,26$\times$.
+\item \textbf{RNF-08:} desde 50 lectores simultáneos pasa de 300 ms.
 \item \textbf{Monitoreo:} sin alertas automáticas, 2 días de retención y un solo nodo.
 \item Todo compartía 11 núcleos; el p95 varía ±30\,\% entre corridas.
 \end{itemize}
@@ -280,7 +319,8 @@ En un solo portátil el generador compite por la CPU con lo que mide.
 \begin{column}{0.48\textwidth}
 \textbf{Qué se haría después}
 \begin{itemize}\setlength\itemsep{0.2em}
-\item Más réplicas de Núcleo y Boletería, hasta que PostgreSQL o el gateway sean el límite.
+\item Repetir RNF-10 con cada réplica en su máquina (la red ZeroTier ya existe).
+\item Repartir el contador de aforo por puerta para que el QR escale.
 \item Guardar unos segundos en Redis el panel de CU-025, la lectura más cara.
 \item Alertas en Grafana sobre instancias caídas y p95.
 \item Repetir la carga con el generador en otra máquina.
