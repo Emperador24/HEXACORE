@@ -126,6 +126,8 @@ test.describe.serial('Parqueadero · casos de uso de Daniel', () => {
 
     await paso(page, 'Cambiar el tipo de un espacio', `${codigo} pasa a ser para motos.`, async () => {
       await libre.click();
+      // El tooltip del espacio se queda abierto con el mouse encima y tapa el selector.
+      await page.mouse.move(0, 0);
       await elegir(page, 'Tipo', 'Moto');
       await expect(page.locator('button.espacio').filter({ hasText: codigo })).toContainText('two_wheeler');
     });
