@@ -18,6 +18,7 @@ Las vistas 01, 02, 03, 04 y 07 se actualizaron el 14/11/2026.
 | Panorama de sistemas | `05-panorama.architecture.json` | `05-panorama.html` | `../ArchifyPDF/05-panorama.pdf` |
 | Dinámica — Compra con turno (CU-001) | `06-secuencia.sequence.json` | `06-secuencia.html` | `../ArchifyPDF/06-secuencia.pdf` |
 | Despliegue con Docker Compose | `07-despliegue.architecture.json` | `07-despliegue.html` | `../ArchifyPDF/07-despliegue.pdf` |
+| Demostración en tres computadores (ZeroTier A/B/C) | `09-despliegue-zerotier.architecture.json` | `09-despliegue-zerotier.html` | `../ArchifyPDF/09-despliegue-zerotier.pdf` |
 
 ## Qué describen
 
