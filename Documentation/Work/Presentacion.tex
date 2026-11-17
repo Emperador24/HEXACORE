@@ -200,10 +200,11 @@ Implementado $\neq$ comprobado. Comprobado en un ensayo $\neq$ RNF completo.
 \item ASR-01, RNF-01/02: bloqueo/reserva, idempotencia, outbox y proyecciones.
 \item Histórico: 50 compradores, un checkout; no demuestra QR viejo invalidado inmediatamente en toda condición actual.
 \item ASR-05, RNF-09: ingreso AMQP $\rightarrow$ proyección $\rightarrow$ panel SSE; objetivo $\leq$2 s.
-\item Revocación SSE a 2/3 s mide seguridad de sesión, no latencia ingreso--tablero.
-\item QR sin puntoAcceso registra QR/Ventas, pero no se proyecta a Monitoreo: hallazgo funcional pendiente.
+\item Medido de punta a punta (\texttt{tiempo-real.py}): máx. \cifra{1,01 s} en parqueadero y \cifra{1,12 s} en monitoreo, 20/20.
+\item Para lograrlo: paneles cada 1 s (antes 3 s) y bandeja de salida de QR de $\sim$50 a $\sim$1\,700 avisos/s.
+\item QR sin puntoAcceso: ahora se cuenta en «Acceso general» en vez de ir a la DLQ.
 \end{itemize}
-\franja{26:00--28:00 · Samuel: RNF-09. Consistencia: por confirmar. Convergencia eventual no es tiempo real acreditado.}
+\franja{26:00--28:00 · Samuel: RNF-09, informe TIEMPO-REAL.md. Consistencia: por confirmar.}
 \end{frame}
 
 \begin{frame}{Trazabilidad y Safety: garantías distintas}
@@ -211,7 +212,7 @@ Implementado $\neq$ comprobado. Comprobado en un ensayo $\neq$ RNF completo.
 \item ASR-07/RNF-11: libro/historial con actor de sesión, tiempo y transacción.
 \item Casos concretos comprobados; falta acreditar 100\% financiero y retención de un año.
 \item ASR-13/RNF-17: evacuación y avisos prioritarios implementados en Núcleo.
-\item Objetivo: 99\% de dispositivos en 10 s; faltan población, acuses y prueba bajo fallo.
+\item 300 dispositivos simulados (sondeo de 4 s, como la app): \cifra{100\,\%} en $\leq$ 4,1 s, también con una réplica del Núcleo muerta.
 \item Bloqueos/interlocks de negocio no certifican Safety física; no hay push/SMS reales.
 \end{itemize}
 \codigo{App/backend/modulos/operacion/evacuacion}{Evacuación} ·

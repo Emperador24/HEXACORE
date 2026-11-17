@@ -5,7 +5,7 @@
   </div>
   @if (panel()) {
     <div class="acciones">
-      <span class="vivo" [class.activo]="enVivo()" [matTooltip]="enVivo() ? 'Recibiendo cada 3 s' : error() ? 'Conexión detenida. Revisa el aviso.' : 'Sin flujo en vivo: consultando cada 10 s'">
+      <span class="vivo" [class.activo]="enVivo()" [matTooltip]="enVivo() ? 'Recibiendo cada segundo' : error() ? 'Conexión detenida. Revisa el aviso.' : 'Sin flujo en vivo: consultando cada 10 s'">
         <span class="punto"></span>{{ enVivo() ? 'En vivo' : error() ? 'Desconectado' : 'Reconectando' }} · {{ panel()!.actualizadoEn | date: 'HH:mm:ss' }}
       </span>
       <button mat-flat-button (click)="decidir()"><mat-icon>gavel</mat-icon> Registrar decisión</button>

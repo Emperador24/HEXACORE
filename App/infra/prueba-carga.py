@@ -6,6 +6,14 @@ con su reporte e interpretación. Se corre en vivo, con el sistema arriba:
     cd App/infra
     ./prueba-carga.py              # 3 escenarios × 5 niveles × 12 s (≈ 4,5 min)
     ./prueba-carga.py --rapida     # 3 niveles × 8 s (≈ 2 min), para la sustentación
+    ./prueba-carga.py --escenario cu001 --escenario qr --salida CARGA-rnf07-rnf08
+                                   # la consulta de CU-001 (RNF-07) y la validación de QR (RNF-08)
+
+El escenario `qr` escribe: valida en la puerta QR que no se han usado nunca. Para
+eso crea por la API un evento propio («Prueba de carga RNF-08 …») y le carga en la
+base un lote de QR de prueba (no hay otra forma de tener decenas de miles sin
+comprarlos); al terminar cancela ese evento. Usa `docker exec` sobre el
+contenedor de PostgreSQL (`CARGA_POSTGRES`, por omisión `hexacore-postgres`).
 
 Todo entra por el API Gateway (:8080), como el tráfico real. Mientras dura cada
 nivel lee en Prometheus (monitoreo, `iniciar.sh --monitoreo`) cuánta CPU gastó
@@ -17,9 +25,12 @@ y `informe-atributos/carga.json` con los datos crudos.
 """
 
 import argparse
+import base64
 import datetime
+import itertools
 import json
 import os
+import subprocess
 import pathlib
 import statistics
 import threading
@@ -31,19 +42,26 @@ import urllib.request
 API = os.environ.get('CARGA_API', 'http://localhost:8080/api/v1')
 PROMETHEUS = os.environ.get('CARGA_PROMETHEUS', 'http://localhost:8080/grafana/api/datasources/proxy/uid/prometheus/api/v1')
 CONTRASENA = os.environ.get('CARGA_CONTRASENA', 'hexacore2026')
+# Grafana ya no admite visitantes anónimos: Prometheus se lee con la cuenta del tablero.
+GRAFANA = base64.b64encode(f"{os.environ.get('GRAFANA_USUARIO', 'admin')}:{os.environ.get('GRAFANA_CONTRASENA', 'hexacore2026')}".encode()).decode()
 ORGANIZADOR = 'organizador@hexacore.com'
 CLIENTE = 'cliente@hexacore.com'
+PERSONAL = 'personal@hexacore.com'
+POSTGRES = os.environ.get('CARGA_POSTGRES', 'hexacore-postgres')
 UMBRAL_P95_MS = 500
+UMBRAL_QR_MS = 300
+# Más QR que validaciones caben en la prueba completa: si se acabaran, las peticiones fallarían por falta de datos.
+LOTE_QR = 200_000
 SALIDA = pathlib.Path(__file__).resolve().parent / 'informe-atributos'
 NEGRITA, VERDE, ROJO, GRIS, FIN = '\033[1m', '\033[32m', '\033[31m', '\033[90m', '\033[0m'
 
 
-def pedir(ruta, cuerpo=None, token=None, espera=30):
+def pedir(ruta, cuerpo=None, token=None, espera=30, metodo=None):
     cabeceras = {'Content-Type': 'application/json'}
     if token:
         cabeceras['Authorization'] = f'Bearer {token}'
     datos = json.dumps(cuerpo).encode() if cuerpo is not None else None
-    peticion = urllib.request.Request(f'{API}/{ruta}', data=datos, headers=cabeceras, method='POST' if datos else 'GET')
+    peticion = urllib.request.Request(f'{API}/{ruta}', data=datos, headers=cabeceras, method=metodo or ('POST' if datos else 'GET'))
     try:
         with urllib.request.urlopen(peticion, timeout=espera) as r:
             return r.status, r.read()
@@ -58,15 +76,83 @@ def sesion(correo):
     return json.loads(cuerpo)['token']
 
 
-def escenarios():
-    """Los tres, con su caso de uso, el programa que los atiende y la ruta."""
+def sql(consulta):
+    """Una consulta en el PostgreSQL del sistema, por `docker exec` (solo para preparar el lote de QR)."""
+    salida = subprocess.run(['docker', 'exec', '-i', POSTGRES, 'psql', '-U', 'hexacore', '-d', 'hexacore', '-Atqc', consulta],
+                            capture_output=True, text=True)
+    if salida.returncode != 0:
+        raise SystemExit(f'PostgreSQL ({POSTGRES}) no aceptó la preparación: {salida.stderr.strip()}')
+    return salida.stdout.strip()
+
+
+def evento_de_prueba(organizador):
+    """
+    Un evento propio con aforo de sobra, publicado por la API como cualquier otro.
+    Lo que interesa es que llegue por el broker a la referencia de Acceso QR, igual
+    que un evento real.
+    """
+    sufijo = format(int(time.time()), 'x')[-5:].upper()
+    estado, cuerpo = pedir('recintos', {
+        'nombre': f'Estadio Carga {sufijo}', 'ciudad': 'Bogotá', 'direccion': 'Calle de la prueba 1', 'capacidad': LOTE_QR,
+        'zonas': [{'nombre': 'General', 'capacidad': LOTE_QR, 'x': 10, 'y': 10, 'ancho': 80, 'alto': 80}]}, token=organizador)
+    if estado not in (200, 201):
+        raise SystemExit(f'No se pudo crear el recinto de prueba: HTTP {estado} {cuerpo[:200]!r}')
+    recinto = json.loads(cuerpo)['recinto']
+    inicio = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=1)
+    estado, cuerpo = pedir('eventos', {
+        'nombre': f'Prueba de carga RNF-08 {sufijo}', 'categoria': 'Conciertos', 'artista': 'Prueba de carga',
+        'recintoId': recinto['id'], 'fechaInicio': inicio.isoformat(), 'fechaFin': (inicio + datetime.timedelta(hours=4)).isoformat(),
+        'localidades': [{'nombre': 'General', 'precio': 1000, 'cantidad': LOTE_QR}]}, token=organizador)
+    if estado not in (200, 201):
+        raise SystemExit(f'No se pudo crear el evento de prueba: HTTP {estado} {cuerpo[:200]!r}')
+    evento = json.loads(cuerpo)
+    evento = evento.get('evento', evento)
+    estado, cuerpo = pedir(f'eventos/{evento["id"]}/publicar', {'version': evento['version']}, token=organizador)
+    if estado not in (200, 201):
+        raise SystemExit(f'No se pudo publicar el evento de prueba: HTTP {estado} {cuerpo[:200]!r}')
+    return {'id': evento['id'], 'nombre': evento['nombre'], 'sufijo': sufijo}
+
+
+def lote_qr(organizador):
+    """Prepara el escenario de RNF-08: un evento con LOTE_QR entradas válidas y sin usar."""
+    evento = evento_de_prueba(organizador)
+    for _ in range(60):
+        if sql(f"SELECT count(*) FROM entradas_acceso_qr.eventos_referencia WHERE evento_id = '{evento['id']}'") == '1':
+            break
+        time.sleep(0.5)
+    else:
+        raise SystemExit('El evento de prueba no llegó a Acceso QR en 30 s: ¿está RabbitMQ arriba?')
+    prefijo = f'CARGA-{evento["sufijo"]}-'
+    sql(f"""INSERT INTO entradas_acceso_qr.qr_entradas (entrada_id, evento_id, hash_qr, numero_ticket, localidad_nombre, estado, secuencia)
+            SELECT gen_random_uuid(), '{evento['id']}', encode(sha256(convert_to('{prefijo}' || lpad(i::text, 6, '0'), 'UTF8')), 'hex'),
+                   'TCK-C{evento['sufijo']}-' || lpad(i::text, 6, '0'), 'General', 'VALIDA', 1
+              FROM generate_series(1, {LOTE_QR}) AS i""")
+    contador, candado = itertools.count(1), threading.Lock()
+
+    def siguiente():
+        with candado:
+            n = next(contador)
+        return {'eventoId': evento['id'], 'codigoQr': f'{prefijo}{n:06d}', 'puntoAcceso': 'Puerta de carga'}
+    return evento, siguiente
+
+
+def cancelar(organizador, evento_id):
+    estado, cuerpo = pedir(f'eventos/{evento_id}', token=organizador)
+    if estado == 200:
+        datos = json.loads(cuerpo)
+        version = datos.get('evento', datos).get('version')
+        pedir(f'eventos/{evento_id}/cancelar', {'version': version, 'motivo': 'Evento de la prueba de carga RNF-08'}, token=organizador)
+
+
+def escenarios(elegidos):
+    """Los escenarios pedidos, con su caso de uso, el programa que los atiende, la ruta y su umbral."""
     organizador, cliente = sesion(ORGANIZADOR), sesion(CLIENTE)
     estado, cuerpo = pedir('eventos?estado=PUBLICADO', token=organizador)
     publicados = json.loads(cuerpo) if estado == 200 else []
     if not publicados:
         raise SystemExit('No hay eventos publicados: el panel de ocupación no tiene qué mostrar.')
     evento = publicados[0]['id']
-    return [
+    lista = [
         {'id': 'cu006', 'nombre': 'CU-006 · Catálogo de reventa', 'programa': 'Boletería', 'servicio': 'boleteria',
          'ruta': 'reventa/publicaciones', 'token': cliente},
         {'id': 'cu026', 'nombre': 'CU-026 · Eventos del organizador', 'programa': 'Núcleo', 'servicio': 'nucleo',
@@ -74,6 +160,25 @@ def escenarios():
         {'id': 'cu025', 'nombre': 'CU-025 · Panel de ocupación del parqueadero', 'programa': 'Núcleo', 'servicio': 'nucleo',
          'ruta': f'parqueaderos/eventos/{evento}/ocupacion', 'token': organizador},
     ]
+    for e in lista:
+        e.update(umbral=UMBRAL_P95_MS, rnf='el umbral de RNF-07')
+    if 'cu001' in elegidos:
+        _, cuerpo = pedir('cartelera')
+        # Un evento de verdad de la cartelera: no los que crean y cancelan las mediciones,
+        # y que su detalle responda (la copia de la cartelera puede ir unos segundos atrás).
+        proximos = [e for e in json.loads(cuerpo)['eventos'] if not e.get('pasado')
+                    and not e['nombre'].startswith(('Medición', 'Prueba de carga')) and pedir(f'cartelera/{e["id"]}')[0] == 200]
+        if not proximos:
+            raise SystemExit('La cartelera no tiene eventos próximos: CU-001 no tiene qué consultar.')
+        lista.append({'id': 'cu001', 'nombre': 'CU-001 · Disponibilidad de un evento en apertura de venta', 'programa': 'Boletería',
+                      'servicio': 'boleteria', 'ruta': f'cartelera/{proximos[0]["id"]}', 'token': None,
+                      'umbral': UMBRAL_P95_MS, 'rnf': 'RNF-07'})
+    if 'qr' in elegidos:
+        prueba, siguiente = lote_qr(organizador)
+        lista.append({'id': 'qr', 'nombre': 'CU-002 · Validación del QR en la puerta', 'programa': 'Boletería',
+                      'servicio': 'boleteria', 'ruta': 'ingresos', 'token': sesion(PERSONAL), 'cuerpo': siguiente,
+                      'umbral': UMBRAL_QR_MS, 'rnf': 'RNF-08', 'evento_prueba': prueba, 'organizador': organizador})
+    return [e for e in lista if e['id'] in elegidos]
 
 
 def nivel(escenario, concurrencia, segundos):
@@ -84,8 +189,9 @@ def nivel(escenario, concurrencia, segundos):
     def usuario():
         while time.monotonic() < fin:
             inicio = time.perf_counter()
+            cuerpo = escenario['cuerpo']() if 'cuerpo' in escenario else None
             try:
-                estado, _ = pedir(escenario['ruta'], token=escenario['token'], espera=10)
+                estado, _ = pedir(escenario['ruta'], cuerpo, token=escenario['token'], espera=10)
             except Exception:
                 estado = 0
             ms = (time.perf_counter() - inicio) * 1000
@@ -116,7 +222,7 @@ def nivel(escenario, concurrencia, segundos):
 def prometheus(consulta, momento):
     url = f'{PROMETHEUS}/query?' + urllib.parse.urlencode({'query': consulta, 'time': f'{momento:.3f}'})
     try:
-        with urllib.request.urlopen(url, timeout=5) as r:
+        with urllib.request.urlopen(urllib.request.Request(url, headers={'Authorization': f'Basic {GRAFANA}'}), timeout=5) as r:
             return json.loads(r.read())['data']['result']
     except Exception:
         return None
@@ -154,10 +260,10 @@ def interpretar(esc, niveles):
     ultimo = niveles[-1]
     mejor = max(niveles, key=lambda n: n['por_segundo'])
     frases = []
-    cumple = all(n['p95'] <= UMBRAL_P95_MS for n in niveles) and all(n['fallos'] == 0 for n in niveles)
+    cumple = all(n['p95'] <= esc['umbral'] for n in niveles) and all(n['fallos'] == 0 for n in niveles)
     frases.append(
-        f"**{'Cumple' if cumple else 'No cumple'} RNF-07**: p95 de {ultimo['p95']:.0f} ms con {ultimo['concurrencia']} "
-        f"usuarios a la vez (umbral {UMBRAL_P95_MS} ms) y {sum(n['fallos'] for n in niveles)} peticiones fallidas.")
+        f"**{'Cumple' if cumple else 'No cumple'} {esc['rnf']}**: p95 de {ultimo['p95']:.0f} ms con {ultimo['concurrencia']} "
+        f"usuarios a la vez (umbral {esc['umbral']} ms) y {sum(n['fallos'] for n in niveles)} peticiones fallidas.")
 
     # La rodilla: el primer nivel en que el rendimiento casi no sube y la latencia sí.
     rodilla = next((b for a, b in zip(niveles, niveles[1:])
@@ -206,11 +312,13 @@ def barra(valor, maximo, ancho=30):
 def main():
     argumentos = argparse.ArgumentParser(description=__doc__.split('\n\n')[0])
     argumentos.add_argument('--rapida', action='store_true', help='3 niveles × 8 s, para la demostración en vivo')
-    argumentos.add_argument('--escenario', choices=['cu006', 'cu026', 'cu025'], action='append', help='solo estos escenarios')
+    argumentos.add_argument('--escenario', choices=['cu006', 'cu026', 'cu025', 'cu001', 'qr'], action='append',
+                            help='solo estos escenarios (por omisión cu006, cu026 y cu025)')
+    argumentos.add_argument('--salida', default='CARGA', help='nombre del informe en informe-atributos/ (sin extensión)')
     opciones = argumentos.parse_args()
     concurrencias, segundos = ((10, 100, 200), 8) if opciones.rapida else ((1, 10, 50, 100, 200), 12)
 
-    lista = [e for e in escenarios() if not opciones.escenario or e['id'] in opciones.escenario]
+    lista = escenarios(opciones.escenario or ['cu006', 'cu026', 'cu025'])
     print(f'{NEGRITA}Prueba de carga por el gateway{FIN} {GRIS}({API}; {len(concurrencias)} niveles × {segundos} s){FIN}')
     if not prometheus('up', time.time()):
         print(f'{GRIS}  Sin Prometheus: no habrá CPU por contenedor. Arranca con ./iniciar.sh --monitoreo.{FIN}')
@@ -218,38 +326,43 @@ def main():
     resultados = []
     for esc in lista:
         esc['replicas'] = replicas(esc['servicio'])
-        print(f'\n{NEGRITA}{esc["nombre"]}{FIN} {GRIS}→ {esc["programa"]}, {esc["replicas"] or "?"} réplica(s), GET /{esc["ruta"]}{FIN}')
+        print(f'\n{NEGRITA}{esc["nombre"]}{FIN} {GRIS}→ {esc["programa"]}, {esc["replicas"] or "?"} réplica(s), {"POST" if "cuerpo" in esc else "GET"} /{esc["ruta"]}{FIN}')
         print(f'  {"usuarios":>8} {"p50 ms":>8} {"p95 ms":>8} {"p99 ms":>8} {"pet/s":>8} {"fallos":>7}')
         niveles = []
         for c in concurrencias:
             n = nivel(esc, c, segundos)
             niveles.append(n)
-            color = VERDE if n['p95'] <= UMBRAL_P95_MS and n['fallos'] == 0 else ROJO
+            color = VERDE if n['p95'] <= esc['umbral'] and n['fallos'] == 0 else ROJO
             print(f'  {c:>8} {n["p50"]:>8.1f} {color}{n["p95"]:>8.1f}{FIN} {n["p99"]:>8.1f} {n["por_segundo"]:>8.1f} {n["fallos"]:>7}')
         frases = interpretar(esc, niveles)
         for f in frases:
             print('  ' + f.replace('**', ''))
-        resultados.append({**{k: v for k, v in esc.items() if k != 'token'}, 'niveles': niveles, 'interpretacion': frases})
+        if 'evento_prueba' in esc:
+            cancelar(esc['organizador'], esc['evento_prueba']['id'])
+        privados = ('token', 'cuerpo', 'organizador')
+        resultados.append({**{k: v for k, v in esc.items() if k not in privados}, 'niveles': niveles, 'interpretacion': frases})
 
-    escribir(resultados, segundos)
-    print(f'\n{GRIS}Informe: {SALIDA / "CARGA.md"}{FIN}')
-    return 0 if all(n['p95'] <= UMBRAL_P95_MS and n['fallos'] == 0 for r in resultados for n in r['niveles']) else 1
+    escribir(resultados, segundos, opciones.salida)
+    print(f'\n{GRIS}Informe: {SALIDA / (opciones.salida + ".md")}{FIN}')
+    return 0 if all(n['p95'] <= r['umbral'] and n['fallos'] == 0 for r in resultados for n in r['niveles']) else 1
 
 
-def escribir(resultados, segundos):
+def escribir(resultados, segundos, nombre):
     SALIDA.mkdir(exist_ok=True)
-    (SALIDA / 'carga.json').write_text(json.dumps(resultados, ensure_ascii=False, indent=2))
+    (SALIDA / f'{nombre.lower()}.json').write_text(json.dumps(resultados, ensure_ascii=False, indent=2))
     ahora = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
     lineas = [
         '# Prueba de carga — casos de uso de Samuel', '',
         f'Medida el {ahora} por el API Gateway con `App/infra/prueba-carga.py`: cada nivel son N usuarios '
-        f'pidiendo sin pausa durante {segundos} s. Umbral RNF-07: p95 ≤ {UMBRAL_P95_MS} ms sin fallos. '
+        f'pidiendo sin pausa durante {segundos} s. Umbrales: p95 ≤ {UMBRAL_P95_MS} ms (RNF-07) y ≤ {UMBRAL_QR_MS} ms '
+        'en la validación del QR (RNF-08), sin fallos. '
         'La CPU por contenedor sale de Prometheus (tablero de Grafana en `/grafana/`).', '',
     ]
     for r in resultados:
         maximo = max(n['por_segundo'] for n in r['niveles'])
         lineas += [f'## {r["nombre"]}', '',
-                   f'{r["programa"]}, {r["replicas"] or "?"} réplica(s) · `GET /api/v1/{r["ruta"].split("/eventos/")[0]}…`', '',
+                   f'{r["programa"]}, {r["replicas"] or "?"} réplica(s) · `{"POST" if r["id"] == "qr" else "GET"} '
+                   f'/api/v1/{r["ruta"].split("/eventos/")[0]}…` · umbral p95 {r["umbral"]} ms ({r["rnf"]})', '',
                    '| Usuarios | p50 (ms) | p95 (ms) | p99 (ms) | Peticiones/s | Fallos | Más CPU (% de un núcleo) |',
                    '|---:|---:|---:|---:|---:|---:|---|']
         for n in r['niveles']:
@@ -265,11 +378,12 @@ def escribir(resultados, segundos):
         'compiten por la misma CPU. Las cifras son un piso, no la capacidad de un despliegue con máquinas separadas.',
         '- Entre corridas seguidas el p95 varía en torno a ±30 %: se comparan tendencias (dónde se satura y quién), '
         'no décimas de milisegundo.',
-        '- Son lecturas: miden la ruta caliente de cada caso de uso (lo que miles consultan a la vez). '
-        'Las escrituras con bloqueo se miden en las pruebas de concurrencia.', '',
+        '- CU-006, CU-025, CU-026 y CU-001 son lecturas: la ruta caliente de cada caso de uso. La validación del QR '
+        'escribe: cada petición usa un QR distinto, bloquea su fila, suma al aforo y deja el ingreso y su aviso en la '
+        'bandeja de salida, en una transacción.', '',
         '## Cómo se reproduce', '', '```bash', 'cd App/infra && ./iniciar.sh --datos-demo --monitoreo',
         './prueba-carga.py            # o --rapida en vivo', '```', '']
-    (SALIDA / 'CARGA.md').write_text('\n'.join(lineas))
+    (SALIDA / f'{nombre}.md').write_text('\n'.join(lineas))
 
 
 if __name__ == '__main__':

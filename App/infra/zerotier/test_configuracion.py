@@ -41,7 +41,11 @@ class Entradas(unittest.TestCase):
         c['tls']=None;self.assertEqual(comun.validar_config(c)['rol'],'B')
 
     def test_fuera_rama_sin_escritura(self):
-        with patch.object(comun,'git',return_value='develop'),self.assertRaises(ValueError):comun.rama()
+        for otra in ('develop','feature/sebastian'):
+            with patch.object(comun,'git',return_value=otra),self.assertRaises(ValueError):comun.rama()
+
+    def test_main_es_la_rama_de_la_demo(self):
+        with patch.object(comun,'git',return_value='main'):comun.rama()
 
     def test_no_secretos_ni_compose_heredados(self):
         with patch.dict('os.environ',{'HOST_POSTGRES':'ajeno','STRIPE_CLAVE_SECRETA':'no-usar','COMPOSE_PROJECT_NAME':'redash'},clear=False):
@@ -57,6 +61,22 @@ class Entradas(unittest.TestCase):
             with patch.object(comun,'ejecutar',return_value=json.dumps(respuesta)) as ejecutar,self.assertRaises(ValueError):
                 comun.red_local(self.c)
             self.assertEqual(ejecutar.call_args.args[0],['zerotier-cli','-j','listnetworks'])
+
+    def test_consulta_sudo_explicita_solo_listnetworks_y_sin_prompt(self):
+        red=[{'nwid':self.c['red_zerotier'],'status':'OK','type':'PRIVATE','assignedAddresses':[self.c['ip_a']+'/24']}]
+        with patch.object(comun,'ejecutar',return_value=json.dumps(red)) as ejecutar:
+            self.assertEqual(comun.red_local(self.c,con_sudo=True),self.c['ip_a'])
+        ejecutar.assert_called_once_with(['sudo','-n','zerotier-cli','-j','listnetworks'])
+
+    def test_sudo_fallido_no_reintenta_y_no_elude_guarda(self):
+        with patch.object(comun,'ejecutar',side_effect=comun.FalloHerramienta(['sudo'],1,'','sin autorización')) as ejecutar:
+            with self.assertRaises(comun.FalloHerramienta):comun.red_local(self.c,con_sudo=True)
+        self.assertEqual(ejecutar.call_count,1)
+
+    def test_sudo_no_acepta_comando_o_opciones_arbitrarias(self):
+        with patch.object(comun,'ejecutar') as ejecutar,self.assertRaises(ValueError):
+            comun.red_local(self.c,con_sudo='sudo bash')
+        ejecutar.assert_not_called()
 
     def test_no_escrituras_sobre_archivo_previo(self):
         with tempfile.TemporaryDirectory() as tmp:

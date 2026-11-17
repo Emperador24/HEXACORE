@@ -133,8 +133,12 @@ def git(*args):
     return ejecutar(['git', *args]).strip()
 
 
+# A y B montan la misma versión publicada: la de main, que es lo que se entrega.
+RAMA_DEMO = 'main'
+
+
 def rama():
-    exigir(git('branch', '--show-current') == 'feature/sebastian', 'Solo feature/sebastian')
+    exigir(git('branch', '--show-current') == RAMA_DEMO, f'Solo {RAMA_DEMO}')
 
 
 def limpio(sha):
@@ -150,9 +154,11 @@ def docker_local():
     return nombre
 
 
-def red_local(c):
-    """Solo consulta. Nunca instala, join, leave, set ni sudo automático."""
-    redes = json.loads(ejecutar(['zerotier-cli', '-j', 'listnetworks']))
+def red_local(c, *, con_sudo=False):
+    """Solo consulta; sudo -n únicamente por opción explícita, nunca instalación/join/set."""
+    exigir(type(con_sudo) is bool,'La opción de consulta ZeroTier debe ser booleana')
+    args = (['sudo','-n'] if con_sudo else []) + ['zerotier-cli','-j','listnetworks']
+    redes = json.loads(ejecutar(args))
     red = next((r for r in redes if r.get('nwid', r.get('id')) == c['red_zerotier']), None)
     exigir(red and red.get('status') == 'OK' and red.get('type') == 'PRIVATE', 'La red privada ZeroTier debe estar autorizada y OK')
     propia = c['ip_a' if c['rol'] == 'A' else 'ip_b']

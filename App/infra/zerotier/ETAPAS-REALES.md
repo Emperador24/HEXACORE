@@ -1,6 +1,7 @@
 # Preparación real por etapas: A, B y C
 
-Estado 16/11/2026: **esperando diagnósticos de A/B; no iniciar servicios todavía**.
+Estado 16/11/2026: **diagnóstico inicial recibido; faltan verificaciones y acceso B**.
+Continuar por [SIGUIENTES-PASOS.md](SIGUIENTES-PASOS.md). No iniciar servicios todavía.
 Este documento usa marcadores. El inventario con direcciones/red reales, los JSON,
 certificados y credenciales permanecen **fuera de Git**. Las instrucciones se
 ejecutan por los propietarios en sus equipos; no hay acceso SSH supuesto.
@@ -8,7 +9,7 @@ ejecutan por los propietarios en sus equipos; no hay acceso SSH supuesto.
 | Rol confirmado | Equipo | Trabajo permitido en esta etapa |
 |---|---|---|
 | A | Mac de Samuel | Diagnóstico y planificación de capacidad/HTTPS. Después alojará la mayor carga: proveedores, gateway/HTTPS/portales, un Trabajador y Núcleo/Boletería |
-| B | VM Javeriana, Ubuntu 22.04.5 | Diagnóstico; después solo Núcleo/Boletería contra A. Operador y responsable de reencendido desde plataforma pendientes |
+| B | VM Javeriana, Ubuntu 22.04.5 | Diagnóstico; después solo Núcleo/Boletería contra A. Samuel administra desde A; capacidad de reencendido desde plataforma no confirmada |
 | C | Mac de Sebastián, este checkout | Navegador y registrador. No construir/arrancar aplicaciones, proveedores o bases locales |
 
 Se recibieron tres IP y una red privada. Los pings C→A y C→B aprobaron **5/5
@@ -17,7 +18,11 @@ Son evidencias entre anfitriones, no desde contenedores. El rango anterior
 colisionaba con ARPUJ; se usa el nuevo reparto privado y **se conserva ARPUJ**
 para administrar B. No cambiar rutas globales, firewalls o membresías para probar.
 
-## 1. Diagnóstico de solo lectura por cada responsable
+## 1. Diagnóstico inicial de solo lectura, ya recibido
+
+Las salidas de esta sección ya se recibieron. No repetirlas por rutina: completar
+solo CPU/disco/puertos de A y daemon/permisos/Compose de B según SIGUIENTES-PASOS.
+Los bloques inferiores se conservan como referencia de la etapa anterior.
 
 Desde la raíz de su checkout; si no existe, informar ruta/ausencia antes de clonar.
 Si falta herramienta o permiso, conservar el error. No instalar, arrancar Docker,
@@ -72,7 +77,8 @@ Si `detectar` no existe en el SHA anterior, omitirlo y enviar el resto, sin
 actualizar todavía. No publicar `docker inspect`, `compose config` completo,
 `.env`, tokens ZeroTier o secretos; los estados/redes completos se comparten
 solo en el canal privado del equipo. La CLI ZeroTier puede requerir permisos
-adicionales: informar ese bloqueo; estas herramientas no usan sudo automáticamente.
+adicionales: B reportó ese bloqueo. Existe una opción explícita de lectura con
+sudo -n descrita en SIGUIENTES-PASOS; no se eleva todo el montaje automáticamente.
 
 **Interpretación pendiente:** Docker A≥6144 MiB, B≥3072 MiB. Además la guarda
 existente exige capacidad restante estimada: presupuesto4096/1536 MiB menos uso
@@ -95,14 +101,14 @@ ejecutará antes de construir/arrancar; si falla, conservar y diagnosticar.
 ## 2. Acordar el mismo commit limpio sin perder trabajo
 
 **Después de revisar los diagnósticos**, fijar el SHA completo de
-`origin/feature/sebastian` publicado por el coordinador. No usar etiquetas móviles
+`origin/main` publicado por el coordinador. No usar etiquetas móviles
 como evidencia de igualdad; comunicar `git rev-parse HEAD` de ambos equipos.
 
-Si ya están en `feature/sebastian`, limpios y sin divergencia, sus propietarios:
+Si ya están en `main`, limpios y sin divergencia, sus propietarios:
 
 ```bash
-git fetch origin feature/sebastian
-git merge --ff-only origin/feature/sebastian
+git fetch origin main
+git merge --ff-only origin/main
 git status --short --branch
 git rev-parse HEAD
 ```
@@ -111,12 +117,12 @@ Si hay cambios, otra rama o divergencia, **conservar ese checkout**. Usar una
 copia nueva exclusiva, sin cambiar su rama ni stash/reset/clean/force:
 
 ```bash
-git clone --single-branch --branch feature/sebastian https://github.com/Emperador24/HEXACORE.git "$HOME/HEXACORE-demo-zt"
+git clone --single-branch --branch main https://github.com/Emperador24/HEXACORE.git "$HOME/HEXACORE-demo-zt"
 ```
 
 El destino debe ser inexistente. Si ya existe, inspeccionarlo y acordar otro;
 no borrarlo. No ejecutar estos comandos de servidores en C. Ambos deben reportar
-mismo SHA, rama `feature/sebastian` y árbol limpio antes de configurar/construir.
+mismo SHA, rama `main` y árbol limpio antes de configurar/construir.
 
 ## 3. Nombres internos y CA privada de ensayo, exclusivamente A
 
@@ -221,7 +227,8 @@ con sus propietarios antes de otra demo, sin ignorar errores de vigencia.
 
 1. **Revisar diagnósticos** y completar discos/puertos, rol, SHA limpio común y
    permisos CLI. Si no hay capacidad, no construir ni bajar guardas.
-2. **A:** directorio/secretos nuevos, CA/TLS con Samuel, JSON final local;
+2. **A:** puertos alternativos comprobados y mapa privado común actualizado;
+   directorio/secretos nuevos, CA/TLS con Samuel, JSON final local con HTTPS alternativo también en URL de C/enlaces;
    `configurar`, `validar`, `construir`. Preparación única `preparar --cuentas-demo`
    solo sobre ámbito vacío y luego `iniciar`; todos con su `--directorio` A.
    Si falla/queda EN_CURSO, conservar y revisar antes de volver a ejecutar.

@@ -363,7 +363,7 @@
       "dot": "amber",
       "title": "Consistencia por eventos",
       "items": [
-        "Dos outbox (Ventas y Acceso QR) publican después de confirmar la transacción",
+        "Dos outbox (Ventas y Acceso QR) publican después de confirmar la transacción; la de Acceso QR, en lotes de 500",
         "Acceso QR consume compra.confirmada y entrada.actualizada; Ventas consume ingreso.registrado",
         "Catálogo, Ventas, Postventa y Acceso QR consumen eventos.gestion del Núcleo: un evento publicado, editado o cancelado llega a su copia local",
         "Compartir proceso no vuelve atómicas esas operaciones"

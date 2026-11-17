@@ -1,13 +1,15 @@
 # Demostración ZeroTier: dos servidores A/B y un cliente C
 
-Estado **16/11/2026: reparto real confirmado; esperando diagnósticos A/B**.
+Estado **16/11/2026: diagnósticos A/B recibidos; faltan disco/puertos A y acceso/Compose B**.
 Este checkout es **C: Mac de Sebastián, solo navegador y registrador**. Aquí no
 se construyen/arrancan servidores o bases ni se presupone SSH a los demás equipos.
 Trabajo únicamente en `feature/sebastian`. La referencia anterior `35127bf`
 quedó integrada por PR #53 en `develop`, merge `c4c5793`; la rama se actualizó
 mediante `fetch` y `merge --ff-only`, conservando el trabajo local, sin reset ni
-force-push. PR #54 sigue abierto hacia `develop`, base revisada `ed4e9c7` al
-inicio de esta etapa, sin merge o auto-merge; conserva su evidencia CI anterior.
+force-push. PR54 ya se integró en5586b2a; PR55 dejó `develop` enc9b3b26.
+En esta etapa se verificaron y se incorporó c9b3b26 con `merge --ff-only` en
+feature/sebastian, sin modificar ramas ajenas ni los cambios de documentación
+de Samuel. Los cambios nuevos irán en otro PR hacia develop, sin merge/auto-merge.
 
 El requisito sustituye «un servidor con varios clientes»: **dos computadores de
 aplicación y un cliente**. El caso futuro apaga manualmente **toda la VM B mientras
@@ -51,7 +53,13 @@ flowchart LR
 
 ## Herramientas y comandos reproducibles
 
-**Primero [ETAPAS-REALES.md](../../App/infra/zerotier/ETAPAS-REALES.md)**: comandos
+**Ahora [SIGUIENTES-PASOS.md](../../App/infra/zerotier/SIGUIENTES-PASOS.md)**:
+interpreta las salidas reales y contiene la copia exclusiva que conserva develop
+en A/main en B, puertos alternativos por comprobar y diagnóstico/solución
+condicional de acceso y Compose con el administrador. No iniciar servicios.
+
+El procedimiento general sigue en
+[ETAPAS-REALES.md](../../App/infra/zerotier/ETAPAS-REALES.md): comandos
 cortos de diagnóstico A/B, preservación de sus ramas/cambios y procedimiento de
 CA de ensayo en A/confianza en C. No avanzar al arranque antes de los resultados.
 Direcciones/ID de red reales y borradores están fuera de Git; este plan conserva
@@ -67,7 +75,8 @@ Python usa biblioteca estándar. No se añade una plataforma.
 1. A/B ejecutan los diagnósticos de solo lectura del documento por etapas.
    Revisar capacidad/puertos y coordinar el mismo SHA limpio. C no necesita Docker.
    Si un checkout tiene cambios/otra rama, preservarlo y usar una copia nueva de
-   `feature/sebastian`; no stash/reset/clean/switch forzados.
+   `main` (desde el 16/11 las herramientas exigen `main`, la versión que se entrega);
+   no stash/reset/clean/switch forzados.
 2. A genera secretos en un directorio privado **nuevo** con `crear-secretos`;
    A/B acuerdan su transferencia segura. Solo A conserva la privada TLS.
 3. A/B completan sus JSON con `<IP_ZT_A>`, `<IP_ZT_B>`, `<ID_RED_PRIVADA>`,
@@ -194,11 +203,13 @@ registrador acredita su propia sesión, no una validación visual inexistente.
 
 | Comprobación de esta entrega | Resultado / alcance |
 |---|---|
-| Referencias Git/PR | `ed4e9c7` y PR54 abierto verificados al inicio; feature/sebastian limpia, origin/develop en c4c5793. Actualización normal, sin reset/force |
+| Referencias Git/PR | PR54 integrado5586b2a y PR55/c9b3b26 verificados; feature/sebastian actualizada por fast-forward. Checkouts originales A/develop y B/main se conservan; usar copias exclusivas |
 | Reparto y red informados | A Mac Samuel, B VM Javeriana Ubuntu22.04.5, C Mac Sebastián. Red/tres IP recibidas y borradores privados. Pings C→A/B5/5 cada uno informados por usuario; Samuel informa comunicación A/B. No prueban contenedores |
 | Lecturas de C en esta etapa | CLI: red correspondiente PRIVATE/OK e IP de C coincidente; rutas a A/B por interfaz ZeroTier. No se repiten pings ni opera Docker. Sin acceso/diagnóstico remoto supuesto |
 | Medición histórica del Mac, hoy C | macOS27 arm64/Mac14,2, 8GiB físicos/8CPU; Docker29.7.2, Compose5.3.1, motor2912MiB en consulta inicial. Después CLI ZeroTier1.16.2: primero consulta2 y a las 18:26 UTC una red PRIVATE/OK con una IP; valores reales privados; asignación posterior confirmada C, no describe capacidad de A/B |
-| Guarda de memoria | Último valor comprobado no cumple A≥6144MiB ni B≥3072MiB. En la consulta posterior Docker info sale1/socket ausente; no se inicia/restaura el motor ni se operan proyectos. A/B deben entregar su propia capacidad; no trasladar a Samuel la memoria de C |
+| Diagnóstico A recibido | Docker7.654GiB, 22 contenedores≈1044MiB, resto≈6794MiB por stats: supera mínimos de memoria observados. Disco host35GiB disponibles/92% ocupado; libre motor/CPU/RAM física pendientes. Puertos predeterminados ocupados, originales se conservan |
+| Diagnóstico B recibido | main limpio, falta SHA completo; clienteDocker29.1.3/amd64, servidor desconocido por permisos; Compose ausente en CLI y ZeroTier requiere acceso. VM disponible5854MiB/raíz44GiB; faltan daemon/stats/CPU/DockerRootDir y política de acceso, sin declarar servicios apagados |
+| Puertos alternativos | Propuesta privada común A/B/C preparada, sin declarar libre. Sondeo sin escucha y comprobación posterior del montaje; ninguna prueba de puertos en A/B ejecutada por C |
 | Evidencia anterior Python/Compose/HTTPS, reutilizada | 51/51 locales, incluidos errores de entradas, memoria, preparación con apps activas y TLS. Compose renderiza sin crear recursos; sin SQL/semillas/caídas reales |
 | Evidencia anterior de preparación, reutilizada | 7/7; valida B prohibido, datos presentes, repetición y fallo parcial. No ejecuta semillas o SQL reales |
 | Incidencias locales conservadas | Primer intento45: command:null de Compose5; se eliminan nulos y rechazan comandos administrativos. Segundo48: variable del bucle ocultaba secretos; corregida. Logs privados, sin ocultar fallos |
@@ -206,7 +217,8 @@ registrador acredita su propia sesión, no una validación visual inexistente.
 | Evidencia anterior reutilizada | Seguridad167/167 operaciones protegidas, regresiones y SSE con límites de RESULTADO/SECURITY-SAFETY; no se repiten matrices ni se declaran RNF05/06 completos |
 | Consulta reparto sin armar | Dos pruebas nuevas de CLI y una de la guarda de armado: 3/3 locales, sin Docker/SQL/certificados nuevos; comprueba éxito/rechazo y registro inmutable |
 | CA/TLS de ensayo | Plantillas y procedimiento de generación en A/confianza en C preparados y sintaxis revisada; **CA no generada, confianza no instalada, HTTPS real pendiente** |
-| Sistema A/B/C funcionando | **PENDIENTE**. Equipos/red/IP recibidos; faltan diagnósticos, SHA común limpio, disco, puertos, CA/TLS, datos y sondas desde contenedores |
+| Verificación nueva de herramientas | 27/27 dirigidas, sin Docker/sudo/sockets reales en C: reservas con dobles, rechazo/liberación, lectura privilegiada explícita sin reintento y guardas previas. AST/enlaces/Bash revisados; no acredita puertos A/B |
+| Sistema A/B/C funcionando | **PENDIENTE**. Diagnóstico inicial recibido; faltan lecturas complementarias, acceso/plugin B, SHA común limpio, disco/puertos, CA/TLS, datos y sondas desde contenedores |
 | Prueba real de caída | **PENDIENTE, no ejecutada**. Primero acreditar B con tráfico de C. Requiere responsable/permiso de reencendido en plataforma; ARPUJ por sí sola no acredita esa capacidad |
 
 Comandos locales de herramientas (sin arrancar Docker):
@@ -226,8 +238,10 @@ migraciones, pruebas de200 usuarios o caída breve no acreditan 11/36 actuales,
 
 ## Datos exactos pendientes y trabajo por participante
 
-- **En conjunto:** reparto A/B/C confirmado; faltan operador y reencendido B,
-  OS/arquitectura/CPU/RAM disponible de los servidores,
+- **En conjunto:** reparto A/B/C confirmado y Samuel administra B desde A;
+  sigue sin confirmarse reencendido desde plataforma. Faltan
+  CPU/RAM física A, CPU/daemon/uso/disco B y accesos; las versiones ya
+  informadas se conservan. Faltan
   almacenamiento libre **del motor Docker/VM** además del checkout, versiones y
   ventana autorizada. A requiere capacidad para los proveedores y toda la carga;
   B debe poder apagarse sin afectar proyectos ajenos.
@@ -237,14 +251,17 @@ migraciones, pruebas de200 usuarios o caída breve no acreditan 11/36 actuales,
 - **A:** dos nombres DNS hacia A, puertos sin colisión, certificado/clave/cadena
   SAN y CA legítima para C, directorio nuevo, SHA limpio y secretos propios;
   ejecutar preparación única, aplicaciones/datos de ensayo y export de estado/logs.
-- **B:** mismo SHA/secretos, puertos de sus dos apps, rutas verificadas a los cinco
+- **B:** resolver acceso normal a Docker/Compose y consulta ZeroTier autorizada;
+  confirmar daemon/CPU/uso/disco, después mismo SHA/secretos, puertos de sus dos apps, rutas verificadas a los cinco
   proveedores, estado exportado; responsable presente para apagado/restauración manual.
 - **C:** IP propia, resolución de los dos nombres, confianza TLS del navegador y
   Python, estado A/B/mapa real de upstreams, cuenta propia/fixture exclusiva y
   evento publicado; canal autorizado para logs, medición/confirmación en plataforma y
   revisión de sesión. Confirmar si se añade móvil; no es precondición web.
 
-Con esos datos quedan disponibles configuración, construcción, preparación única,
+Se añadieron consulta ZeroTier con sudo -n explícita y sondeo sin escucha para
+resolver los bloqueos observados; no se rebajan guardas ni eleva todo el guion.
+Con las lecturas complementarias quedarán disponibles configuración, construcción, preparación única,
 sondas desde contenedores, HTTPS, registro/gate e informe reproducibles. Faltan la
 ejecución en A/B reales desde C y su evidencia; no se sustituyen por CI o salud.
 
