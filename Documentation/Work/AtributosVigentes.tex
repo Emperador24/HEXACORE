@@ -385,9 +385,22 @@ RabbitMQ siguen siendo una sola instancia: su caída se trata con degradación e
 
 \paragraph{Entre computadores.} Estas mediciones son de un solo computador: no
 acreditan tolerancia a que se apague un equipo ni la disponibilidad mensual de
-RNF-03. El montaje con varios computadores unidos por ZeroTier está en
+RNF-03. Para eso, la demostración en vivo reparte el sistema en tres computadores
+unidos por una red ZeroTier privada (figura \ref{fig:despliegue-zerotier}): A conserva
+datos, gateway, entrada HTTPS y una réplica de cada programa; B tiene otra réplica de
+Núcleo y Boletería y es la que se apaga; C es el cliente que mide. A es el punto único
+de falla. La red se usa con el rango \texttt{192.168.193.0/24}, porque un rango
+\texttt{10.x} choca con la VPN de la universidad, y la VM llega a A por un relevo de
+ZeroTier (unos 124 ms por ida y vuelta). El procedimiento está en
 \href{https://github.com/Emperador24/HEXACORE/blob/develop/Documentation/Work/PLAN-DEMO-ZEROTIER.md}{PLAN-DEMO-ZEROTIER}
-y aún no se ha ensayado.
+y \texttt{App/infra/zerotier/}.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{Diagrams/ArchifyPDF/09-despliegue-zerotier.pdf}
+\caption{Despliegue de la demostración de disponibilidad en tres computadores.}
+\label{fig:despliegue-zerotier}
+\end{figure}
 
 % ------------------------------------------------------------------
 \subsection{Tiempo real y aviso de evacuación}
