@@ -18,9 +18,24 @@ const host = typeof window === 'undefined' ? 'localhost' : window.location.hostn
 const configuracion = typeof window === 'undefined' ? undefined :
   (window as Window & { HEXACORE_CONFIGURACION?: { api?: string; buzonDesarrollo?: string } }).HEXACORE_CONFIGURACION;
 
+// Rechazo al arrancar: una configuración externa errónea no se oculta con el valor por defecto.
+function direccionApi(valor: unknown): string {
+  if (valor === undefined) return `http://${host}:8080/api/v1`;
+  if (typeof valor !== 'string' || !valor.trim() || valor !== valor.trim() ||
+      valor.startsWith('//') || /[\\\r\n]/.test(valor)) {
+    throw new Error('HEXACORE_CONFIGURACION.api inválida: use una URL HTTP(S) o una ruta absoluta');
+  }
+  const url = new URL(valor, typeof window === 'undefined' ? 'http://localhost' : window.location.origin);
+  if ((!valor.startsWith('/') && !/^https?:\/\//.test(valor)) ||
+      !['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.search || url.hash) {
+    throw new Error('HEXACORE_CONFIGURACION.api inválida: sin credenciales, consulta ni fragmento');
+  }
+  return valor.replace(/\/$/, '');
+}
+
 export const Servidor = {
   /** API Gateway: el único punto de entrada al backend. */
-  api: configuracion?.api ?? `http://${host}:8080/api/v1`,
+  api: direccionApi(configuracion?.api),
 
   /**
    * Buzón del correo simulado. **Solo desarrollo**, y no pasa por el gateway:
