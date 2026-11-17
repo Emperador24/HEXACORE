@@ -11,8 +11,8 @@ const entornoLocal = resolve(__dirname, '.env.local');
 if (existsSync(entornoLocal)) loadEnvFile(entornoLocal);
 
 // Velocidad definida aquí, también si .env.local conserva variables antiguas.
-const demora = 500;
-const pausa = 1500;
+const demora = 1000;
+const pausa = 2500;
 // Cada worker vuelve a leer esta configuración: conservar una carpeta por ejecución.
 const sello = process.env.CU015_DEMO_SESION ?? new Date().toISOString().replace(/[:.]/g, '-');
 if (!/^[\dTZ-]+$/.test(sello)) throw new Error('Identificador de sesión demo inválido.');

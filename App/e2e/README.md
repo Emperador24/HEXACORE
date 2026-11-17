@@ -1,9 +1,9 @@
 # Demostraciones CU-011F, CU-012–015, CU-027 y CU-029; CU-028 bloqueado
 
-**15/11/2026 — velocidad visible vigente:** `test:cu015:visible` y los demás
-`:visible` usan demo de **500 ms entre acciones y 1500 ms por etapa lista**. Aceptación
+**16/11/2026 — velocidad visible vigente:** `test:cu015:visible` y los demás
+`:visible` usan demo de **1000 ms entre acciones y 2500 ms por etapa lista**. Aceptación
 explícita sin pausas: `:visible:normal`. Configuración y comprobación acotada
-[en la sección Demo visible](#demo-visible-15-segundos-por-pantalla); los ritmos
+[en la sección Demo visible](#demo-visible-25-segundos-por-pantalla); los ritmos
 anteriores inferiores se conservan como historia.
 
 ## Entrega y aceptación CU-011F — 11/11 de 2026 (12/11 UTC)
@@ -139,7 +139,7 @@ Condiciones, tabla completa de casos y evidencias privadas separadas:
 [PLAN-CIERRE-SEBASTIAN.md](../../Documentation/Work/PLAN-CIERRE-SEBASTIAN.md).
 Los resultados del 8 de noviembre se conservan debajo como referencia histórica.
 
-## Demo visible: 1,5 segundos por pantalla
+## Demo visible: 2,5 segundos por pantalla
 
 Los comandos habituales `:visible` abren la demo directamente, sin parámetros
 ni variables de velocidad:
@@ -150,12 +150,12 @@ npm --prefix App/e2e run test:implementados:visible
 npm --prefix App/e2e run test:completo:visible
 ```
 
-`playwright.demo.config.ts` fija **500 ms entre acciones** y **1500 ms de lectura**
+`playwright.demo.config.ts` fija **1000 ms entre acciones** y **2500 ms de lectura**
 después de las esperas de contenido. `actuar()` trae al actor al frente **antes**
 de sus clics, campos, selecciones o navegación, también en contextos explícitos.
 Cada campo se completa en una acción distinta; el formulario no aparece completo
 de golpe. La espera se cuenta desde el final de la acción anterior: una lectura
-de 1500 ms ya la satisface, sin sumar otros 500 ms. `presentar()` pausa solo en
+de 2500 ms ya la satisface, sin sumar otros 1000 ms. `presentar()` pausa solo en
 los puntos marcados. No hay pausas adicionales de 5 s ni demora por aserción.
 El slowMo nativo queda en 0 para no retrasar además el enfoque/comprobaciones;
 la demora efectiva está en el helper. Sin variables de velocidad en consola.
@@ -178,6 +178,9 @@ separado de presentación (15 min por caso; acción/navegación 120 s), sin ampl
 esperas del producto. Informes privados `demo-FECHA` y `conjunto-demo-FECHA`,
 separados de aceptación. El observador completo mantiene diagnóstico CU-028,
 `completo:false` y salida **2** aunque Playwright apruebe; la demo no acredita aceptación.
+
+Hasta el 15/11 el ritmo era 500 ms entre acciones y 1500 ms de lectura; las dos
+comprobaciones siguientes se hicieron con esos valores.
 
 **Comprobación acotada, 15/11 Bogotá:** navegador visible con dos actores, dos
 campos, selección y clic por actor, más regreso al primero. Eventos del DOM
