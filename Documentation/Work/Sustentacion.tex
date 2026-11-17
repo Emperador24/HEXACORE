@@ -71,7 +71,10 @@
 \input{Diagrams/Vigente/diagramas}
 \begin{document}
 
-\begin{frame}
+\begin{frame}[plain,shrink=5]
+\setbeamerfont{title}{size=\Large}
+\setbeamerfont{subtitle}{size=\normalsize}
+\setbeamerfont{author}{size=\footnotesize}
 \titlepage
 \end{frame}
 
@@ -225,7 +228,7 @@ Desempeño (carga) & Samuel & RNF-07, 08, 10 & Prueba de carga y su reporte inte
 Disponibilidad (resiliencia) & Samuel & RNF-03, 04, 09, 17 & Réplicas, caída y recuperación; tres computadores\\
 Monitoreo y logs & Samuel & RNF-19 & Tablero de CPU, memoria y logs por el gateway\\
 \midrule
-Seguridad (OWASP) & Sebastián & RNF-05, 06 & Escaneo en GitHub Actions, sin críticas\\
+Seguridad (OWASP) & Sebastián & RNF-05, 06 & ZAP en Actions: cero High\\
 Safety (transacciones) & Sebastián & RNF-01, 02, 11 & Código que verifica las transacciones con dinero\\
 Modificabilidad & Sebastián & RNF-13 & Parámetros sin recompilar\\
 \midrule
@@ -259,50 +262,43 @@ Usabilidad (arq. de información) & Daniel; todos aportan & RNF-12, 14 & Patrón
 \end{frame}
 
 \begin{frame}{Seguridad · evidencia y escaneo OWASP}
-\begin{itemize}\setlength\itemsep{0.3em}
-\item Inventario: 186 operaciones declaradas, 181 expuestas y \cifra{167/167 protegidas}, comprobadas por el gateway y directo al servicio.
-\item Dos brechas encontradas y corregidas: el gateway ignoraba roles nuevos, y roles ilegibles en Redis devolvían privilegios antiguos.
-\item \textbf{Escaneo OWASP en GitHub Actions:} es lo que pide el profesor. Hoy el pipeline (\texttt{ci.yml}, \texttt{cd.yml}) no tiene ese paso: hay que agregarlo y mostrar su reporte sin vulnerabilidades críticas.
+\small
+\begin{itemize}\setlength\itemsep{0.25em}
+\item \cifra{167/167} protegidas de 186 declaradas/181 expuestas: evidencia histórica por gateway y backend directo; combinaciones publicadas, no cobertura universal.
+\item ZAP reutilizado \textbf{después de desplegar}: dos portales y GET públicos/perfil Cliente autenticado. HTML/JSON saneados con todas las alertas.
+\item CI109: ZAP 2.17.0, \cifra{0 High}, 10 Medium y 4 Informational conservadas; sin categoría Critical. npm: producción/Critical cero, 20 moderadas de desarrollo backend.
+\item \textbf{Dos destinos separados:} runner temporal de CI y workflow listo para el despliegue de Diego, todavía inexistente. Revisión gateway antes/después; CD exige ocho imágenes OCI antes del escaneo externo.
+\item RNF-05/06 parciales: ZAP pasivo no ejecuta JS ni sustituye pruebas de autorización/PAN.
 \end{itemize}
-\nota{Sebastián · App/infra/informe-atributos/seguridad/RESULTADO.md y COBERTURA-RECURSOS.md.}
+\nota{Sebastián · PR 64, artifacts HTML/JSON de Actions y RESULTADO.md. CI109: 20 GET, 1 autenticado; fallos previos conservados y conexión de Diego pendiente.}
 \end{frame}
 
 \begin{frame}{Safety · transacciones con dinero}
 \small
-\begin{tabular}{@{}L{2.2cm}L{5.2cm}L{5.6cm}@{}}
-\toprule
-\textbf{RNF} & \textbf{Qué asegura} & \textbf{Cómo lo hace el sistema}\\
-\midrule
-RNF-01 & Una reventa no se vende dos veces & Reserva con bloqueo e idempotencia: con 50 compradores a la vez, 1 compra y 49 rechazos\\[0.3em]
-RNF-02 & El QR viejo deja de valer al transferir & Ventas publica el QR nuevo y Acceso QR invalida el anterior\\[0.3em]
-RNF-11 & Toda operación financiera queda auditada & Libro financiero común en Pagos: actor de la sesión, hora y transacción\\
-\bottomrule
-\end{tabular}
-
-\vspace{0.6em}
-\textbf{Verificación posterior:} cuando la puerta registra un ingreso, Ventas marca la entrada como
-usada. Si estaba publicada en reventa, deja una alerta y la transferencia de Postventa falla y se
-compensa sola.
-\nota{Sebastián · \codigo{App/backend/modulos/entradas/ventas/venta/consumidor-ingresos.service.ts}{Consumidor de ingresos} · \codigo{App/backend/modulos/finanzas/pagos}{Pagos}}
+\begin{itemize}\setlength\itemsep{0.3em}
+\item \textbf{Durante:} bloqueos, reservas, unicidad, idempotencia y estados. Después: nuevo verificador identificado \texttt{REPEATABLE READ READ ONLY}.
+\item Cruza negocio/libro: importe exacto, moneda, referencia, clave, resultado, actor/tiempo e historial. No llama proveedores ni escribe/compensa.
+\item \textbf{Demo:} original consistente (0), doble con un centavo distinto (1), original conservado (0). Pendiente/incierto/parcial (2); configuración inválida (3).
+\item RNF-01: histórico 50 compradores reutilizado; ocho checkouts actuales no sustituyen ese umbral. RNF-02: proyección QR asíncrona, prueba espera convergencia.
+\item RNF-11 parcial: política de un año sin antigüedad acreditada; actor del negocio enlazado al dominio solicitante del libro. SQL no es no repudio criptográfico.
+\item F12 detectado, sin resolver. Libro de reembolso sin referencia original persistida: se informa parcial.
+\end{itemize}
+\nota{Sebastián · herramientas/verificar-transaccion.cjs y test/safety/demostrar.cjs; solo fixtures con proveedores simulados.}
 \end{frame}
 
 \begin{frame}{Modificabilidad · configuración sin recompilar}
 \small
-\begin{tabular}{@{}L{4.6cm}L{8.4cm}@{}}
-\toprule
-\textbf{Parámetro} & \textbf{Qué cambia}\\
-\midrule
-\texttt{PUERTO}, \texttt{PREFIJO\_API} & Puerto y prefijo de cada programa\\
-\texttt{POSTGRES\_HOST}, \texttt{REDIS\_HOST}, \texttt{RABBITMQ\_URL} & A qué base, Redis y broker se conecta\\
-\texttt{POSTGRES\_MAX\_CONEXIONES}, \texttt{POSTGRES\_ESPERA\_MAXIMA\_MS} & Tamaño del pool y espera máxima\\
-\texttt{PAGOS\_PROVEEDOR}, \texttt{CORREO\_PROVEEDOR} & Pasarela simulada o Stripe; correo simulado o SMTP\\
-\texttt{./iniciar.sh -{}-replicas N -{}-datos <IP>} & Réplicas y capa de datos en otro computador\\
+\begin{tabular}{@{}L{3.7cm}L{5.4cm}L{3.4cm}@{}}
+\toprule Parámetro & Efecto que se comprueba & Rechazo\\\midrule
+\texttt{PUERTO} & 3002 a 3003: HTTP, gateway y sonda; recrear solo aplicaciones necesarias & Puerto 0\\[0.4em]
+\texttt{configuracion.js}: API & Petición real de Chromium: API por defecto a \texttt{/ensayo-api/v1} & URL inválida\\[0.4em]
+Espera máxima PostgreSQL & 3000 a 1000 ms: consulta de 4 s cancelada por DataSource compilado & 499 ms\\
 \bottomrule
 \end{tabular}
-
-\vspace{0.5em}
-\textbf{RNF-13:} un cambio de reglas de un dominio toca un solo módulo, con su esquema y su contrato.
-\nota{Sebastián · App/infra/docker-compose.yml y App/infra/.env.ejemplo.}
+\par\medskip
+Image IDs SHA-256 iguales antes/después; \texttt{--no-build}. Sin recarga en caliente.
+\textbf{Tácticas:} cohesión de responsabilidades, contratos/intermediarios y restricción de dependencias; enlace al arranque.
+\nota{RNF-13 parcial: PR 60, regla «Acceso general», solo Monitoreo y pruebas; contrato sin ampliar. ADR-16 conserva despliegues coordinados.}
 \end{frame}
 
 % --- Diego: desplegabilidad y comprobabilidad --------------------------------
@@ -381,7 +377,7 @@ siguen sin prueba con usuarios. Cada integrante confirma el patrón de sus panta
 \begin{itemize}\setlength\itemsep{0.3em}
 \item \textbf{RNF-07} se midió hasta 200 usuarios, no 2\,000; \textbf{RNF-10} con Boletería llega a 1,12--1,26$\times$ en un portátil.
 \item \textbf{RNF-03} (99,9\,\% mensual) no se mide en una demo: se muestra su mecanismo.
-\item \textbf{Seguridad:} falta el paso de escaneo OWASP en el pipeline.
+\item \textbf{Seguridad:} escaneo integrado; falta conectar y ejecutar el despliegue de presentación de Diego.
 \item \textbf{Desplegabilidad:} falta el servidor de producción para que el CD despliegue solo.
 \item \textbf{Comprobabilidad:} falta publicar la cobertura de todos los servicios en Actions.
 \item \textbf{Usabilidad:} falta la prueba con cinco usuarios nuevos.

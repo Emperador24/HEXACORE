@@ -1,5 +1,78 @@
 # Seguridad de Sebastián — RNF-05 y RNF-06
 
+## Corte 16/11 — automatización y alcance actual
+
+**Ejecución comprobada CI109 (head 05af28b):** [14 alertas completas saneadas y
+configuración con las mismas imágenes](https://github.com/Emperador24/HEXACORE/actions/runs/43995508643/artifacts/14290455753). ZAP 2.17.0 AMD64, 20 GET,
+uno autenticado HTTP200, 62 reglas, pendientes 0. **High 0 / Low 0 / Medium 10 /
+Informational 4**; ZAP no tiene Critical. CSP 10055-4:2, SRI 90003:8 y 10109:4,
+sin exclusiones para aprobar. Revisión gateway antes/después
+`486808e39e2ef736aa7e7204b71e750723fd6a37` (merge de prueba; distinguir head).
+Auditoría npm: producción/Critical/High 0 en cinco paquetes, backend con desarrollo
+20 moderadas; hashes de locks en el artifact. Modificabilidad: tres parámetros
+aprobados, seis imágenes iguales, esperas SQL **3004/1003 ms**, HTTP real e inválidos
+rechazados. Este runner es `ci-efimero`; el usuario confirma que aún no existe
+el despliegue de presentación de Diego. Las ejecuciones fallidas inferiores se
+conservan; no equivalen a escaneo de cero alertas.
+
+
+**CI109 completa: 9/9 trabajos aprobados.** Backend: **1180/1180** unitarias,
+Núcleo **141/141 ×2**, Boletería **29/29 ×2**, contratos financieros **13/13 ×2**
+y convivencia **5/5**. El verificador comprueba pedido/compra y reventa después
+de converger QR; devolución de entrada queda parcial (código 2). CLI real:
+consistente sale 0, divergencia F12 sale 1; doble con un centavo detectado y
+original conservado. El demostrador posterior no invoca proveedores. Esta
+versión del código tenía 14 unitarias Safety; el cierre añade tres dobles de
+reembolso de pedido (**17/17 locales**) sin atribuirles una nueva prueba SQL/HTTP.
+[CI completa](https://github.com/Emperador24/HEXACORE/actions/runs/43995508643).
+
+Se integra develop hasta `b9f93e6` (PR #60 y #62). Autorización 167/167 y PAN
+reutilizan las fuentes/combinaciones anteriores; no se repiten matrices masivas
+ni 16 recorridos. Los cambios posteriores de Samuel conservan controles de sesión/
+SSE; ingreso sin puntoAcceso ya se proyecta como «Acceso general». Los tiempos de
+corte SSE inferiores son históricos: Monitoreo/Parqueaderos ahora son de 1 s.
+
+Nuevos `pipeline.py`/workflows reutilizan `zap.py` tras el despliegue explícito;
+reportes HTML/JSON saneados conservan todas las instancias. Criterio ZAP: **cero High**,
+categorías reales Informational/Low/Medium/High; **no existe Critical en ZAP**.
+Auditoría npm: producción y completo de cinco paquetes, 0 Critical/High; producción
+0, backend con desarrollo 20 moderadas y demás 0; hashes de lock conservados.
+No se aplicó audit fix ni se ocultaron alertas. Autenticación cubre GET del perfil
+Cliente adicional a rutas públicas; análisis pasivo no ejecuta JS ni sustituye DAST
+activo histórico ni evidencia de autorización. RNF-05/06 permanecen parciales.
+
+[PR #64](https://github.com/Emperador24/HEXACORE/pull/64),
+[primera CI conservada](https://github.com/Emperador24/HEXACORE/actions/runs/43988904312):
+33/33 Node y 10/10 Python de herramientas en esa revisión; fallo de arranque temporal.
+Segunda ejecución 43991106532 aísla portal Cliente con salida 1; su proxy resolvía
+Gateway antes de estar disponible. Se añaden dependencia de salud y DNS dinámico,
+necesario también al recrear el gateway. El fallo financiero 503 tras reiniciar
+Boletería queda separado: precondición GET acotada, sin reenviar escrituras.
+**CI 108, 16/11 a las 20:15 Bogotá:** el montaje temporal ya se prepara y
+Modificabilidad aprueba los tres parámetros y sus negativos con las mismas seis
+imágenes; cancelaciones PostgreSQL de 3008/1005 ms y ambos destinos de API
+con HTTP 200 en Chromium. La auditoría conserva 0 hallazgos de producción,
+20 moderadas de desarrollo del backend y 0 High/Critical en cinco paquetes.
+**El trabajo de atributos sigue fallido:** `owasp.json` está incompleto por
+`ZAP_NO_INICIA`, sin versión/alertas ni revisión posterior; no acredita cero High.
+[Artefacto saneado de CI 108](https://github.com/Emperador24/HEXACORE/actions/runs/43993317805/artifacts/14288508379),
+merge de prueba `4fdc2c9ddfe5c5d6f87ccdd134bf74a557381386`, head de PR
+`8fe6743b19dccd9bba258ea5fc04f175cd6672b4`. No se atribuye a producción ni se
+convierte el fallo de ZAP en una aprobación de Seguridad.
+La producción real de CD figura omitida; variables/secretos de repositorio vacíos.
+El workflow `owasp-desplegado.yml` requiere URL HTTPS, revisión y sesión de ensayo,
+y CD verifica las ocho aplicaciones activas antes del escaneo. No se confunde el
+runner de CI con el despliegue de sustentación. [Comandos, pendientes y guion](../../../../Documentation/Work/PLAN-CIERRE-SEBASTIAN.md).
+
+Regresión local seleccionada **63/63** (cinco suites, incluidos SSE Operación,
+Monitoreo y adaptadores), tipos backend y ambos portales. Contraste PAN de cinco
+DTO del compilado actual aprobado (referencia aceptaba el PAN de prueba; actual
+lo rechaza); sin atribuirlo a todas las vías de persistencia. C conserva motor activo,
+2912 MiB/41 contenedores activos: sin arranques, paradas ni cambios de recursos. Información
+SQL/Redis/sesiones y artefactos crudos privados; solo informes de campos permitidos
+en Actions. Las secciones inferiores conservan sus resultados históricos.
+
+
 ## Cierre de las 16 pendientes — 15/11/2026 Bogotá, corte vigente
 
 **16/16 nuevas; global 167/167 protegidas, cero operaciones pendientes del

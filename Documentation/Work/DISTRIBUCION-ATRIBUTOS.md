@@ -160,6 +160,12 @@ La cobertura de cada módulo depende de las pruebas que escriba su dueño; Diego
 
 ## Sebastián
 
+**Entrega ejecutable 16/11 (PR #64):** los tres bloques de Sebastián se implementan
+sin nuevos CU. [Plan y comandos](PLAN-CIERRE-SEBASTIAN.md) separa prueba de herramientas,
+runner temporal y despliegue externo pendiente. ZAP exige cero **High** (no tiene
+Critical); Safety usa verificador posterior de solo lectura; Modificabilidad mide
+tres parámetros con el mismo artefacto. RNF-05/06/02/11/13 permanecen limitados.
+
 ### Seguridad (escaneo OWASP)
 
 **Lo que pidió el profesor.** Que, como parte del pipeline de GitHub Actions, se ejecute la herramienta de OWASP para escanear vulnerabilidades, y que el reporte aparezca en esa misma ejecución, después del despliegue. No quiere ver ninguna vulnerabilidad crítica: todas las críticas deben estar resueltas. Las demás son opcionales.

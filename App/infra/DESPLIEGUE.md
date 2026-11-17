@@ -21,10 +21,10 @@ de Docker. Cada portal sirve también `/api` en su propio dominio, así no hace 
 cookie de sesión funciona igual que en local. Detalle en
 [docker-compose.produccion.yml](docker-compose.produccion.yml) y [produccion/Caddyfile](produccion/Caddyfile).
 
-> **Requisito para el despliegue automático:** que GitHub Actions corra. Hoy la cuenta del
-> repositorio está bloqueada por un problema de facturación y ningún job arranca; se resuelve en
-> https://github.com/settings/billing. Mientras tanto se puede desplegar a mano con
-> `./desplegar.sh --compilar` (paso 5).
+> **Estado revisado 16/11:** Actions sí ejecuta CI/CD; la nota anterior de bloqueo
+> de facturación quedó obsoleta. Publicar imágenes no acredita despliegue externo:
+> el último trabajo de producción figura omitido. El usuario confirma que aún no
+> existe el destino de presentación de Diego; no se ejecuta aquí ese despliegue.
 
 ## 1. Máquina virtual (Oracle Cloud, capa *Always Free*)
 
@@ -148,3 +148,21 @@ Volver a una versión anterior cambia las imágenes, no los datos: las migracion
 delante (ver [CORTE-Y-REVERSION](../../Documentation/Work/CORTE-Y-REVERSION.md)). Si un
 despliegue no llega a estar sano, `desplegar.sh` vuelve solo a la versión que estaba y el
 trabajo del CD falla en rojo.
+
+## Escaneo posterior al despliegue (Seguridad)
+
+CD conecta `owasp-desplegado.yml` después de `despliegue`, incluida verificación
+de las ocho aplicaciones activas por SHA OCI (`verificar-version.py`).
+Gateway/Caddy exponen `/version`, revisado antes y después del ZAP pasivo.
+No basta con `.version-desplegada` ni con la etiqueta solicitada.
+
+Configurar `PRODUCCION_DOMINIO`, opcional `PRODUCCION_DOMINIO_ADMIN`, secretos
+SSH ya descritos y `OWASP_TOKEN_CLIENTE` de una sesión vigente de una cuenta de
+ensayo. HTTPS debe ser confiable para el runner, sin excepciones TLS. La ruta CD
+automática usa main; otro despliegue docente debe llamar al workflow reutilizable
+con revisión/URL de API y ambos portales después de acreditar sus contenedores.
+No se configura ni opera ese destino desde esta entrega.
+
+Reportes `owasp-presentacion`: todas las instancias saneadas en HTML/JSON, criterio
+cero High; ZAP no tiene Critical. El reporte `atributos-sebastian` de CI identifica
+`ci-efimero` y corresponde a otro entorno. [Guion y límites](../../Documentation/Work/PLAN-CIERRE-SEBASTIAN.md).

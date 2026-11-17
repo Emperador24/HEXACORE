@@ -1,5 +1,43 @@
 # Referencias del curso aplicadas a HEXACORE
 
+## Verificación monetaria posterior — corte 16/11
+
+La asignación actual de Sebastián incluye Safety **monetario** RNF-01/02/11;
+Safety físico RNF-17 sigue con Samuel. Bloqueos, PK/índices únicos, idempotencia,
+transacciones y compensaciones actúan **durante** la operación; las aserciones
+financieras anteriores eran pruebas, no un verificador operativo posterior.
+
+`App/backend/herramientas/verificar-transaccion.cjs` añade ese proceso mínimo:
+operación identificada, snapshot `REPEATABLE READ READ ONLY`, consultas fijas con
+parámetros, importes exactos, moneda, tipo/dominio del libro, clave/referencia,
+actor y tiempos del negocio enlazado e historial pertinente. Admite pedido,
+compra, reventa y reembolsos de entradas/pedidos. La CLI restringe el manifiesto
+privado a UUID propios y base de ensayo. No llama pasarela/SMTP, no escribe,
+reintenta cobros, cambia saldos ni reconstruye datos. El solicitante del libro
+es el dominio; el actor humano se contrasta en operación/historial.
+
+Código **0**: consistente en alcance; **1**: inconsistente/no encontrada;
+**2**: pendiente/incierta o alcance parcial; **3**: configuración/consulta inválida.
+La suite financiera existente comprueba compra/pedido y devolución, estado incierto,
+F12 divergente y doble en memoria con un centavo cambiado; el original conserva
+su importe. `test/safety/demostrar.cjs` permite repetir solo lecturas sobre esa
+fixture, cuyo manifiesto privado no se publica. **17/17 unitarias locales**;
+SQL/HTTP de compra, pedido, reventa y devolución se integran en las suites
+existentes de CI; reembolso de pedido tiene tres pruebas con dobles, sin una
+nueva cancelación HTTP/SQL atribuida a esta entrega. El proceso CLI se prueba
+con salida 0 y salida 1 en la fixture F12; sin reenvío ni reparación.
+
+Brechas que se exponen, sin desarrollo funcional adicional: el libro de reembolsos
+no persiste la referencia del cobro original (código 2, aun contrastando negocio y
+cobro); F12 conserva aprobación financiera con negocio no finalizado (código 1,
+sin reparación); Acceso QR es una proyección asíncrona (código 2 si conserva el
+hash anterior). La prueba espera convergencia; no acredita RNF-02 inmediato.
+RNF-01 reutiliza la corrida histórica de 50; el test actual de ocho competidores
+por checkout no redefine ese umbral. RNF-11 exige ≥1 año: política sin antigüedad
+anual acreditada y sin no repudio criptográfico por tener SQL append-only.
+[Comandos y límites](../../../../Documentation/Work/PLAN-CIERRE-SEBASTIAN.md).
+
+
 ## Corte vigente — 15/11/2026, cierre del inventario
 
 **167/167 operaciones protegidas**, inventario **186 declaradas / 181 expuestas /
