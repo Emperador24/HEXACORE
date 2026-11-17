@@ -227,13 +227,13 @@ RNF-19 pero no un ASR numerado en ese árbol; no se crea un ASR ficticio.
 
 | Campo | Revisión |
 |---|---|
-| Responsable confirmado | **Desconocido**, por confirmar |
+| Responsable confirmado | **Daniel Cristancho**, RNF-16 |
 | Escenario / ASR / RNF | Sustituir pasarela modificando solo un adaptador, cero cambios en Entradas. ASR-11, RNF-16 |
-| Diseño | Módulo Pagos reutilizable, adaptadores y webhook único con autenticación del proveedor |
-| Implementación | **Implementada frontera:** [HTTP](../../App/backend/modulos/finanzas/pagos/pasarela-http.service.ts), [Stripe](../../App/backend/modulos/finanzas/pagos/pasarela-stripe.service.ts), API pública de Pagos |
-| Evidencia | Pruebas de adaptadores/contratos previas, sin cobros reales; existencia de dos adaptadores no mide el coste de sustituir uno |
-| Resultado | **Parcial.** La separación existe; falta evidencia completa del cambio con el criterio exacto RNF-16 |
-| Pendiente | Responsable y prueba/registro del impacto de sustitución por su dueño; no implementar sustituciones ni F12 aquí |
+| Diseño | Módulo Pagos reutilizable, adaptadores y webhook único con autenticación del proveedor; la elección vive solo en `crearProcesadorPagos` |
+| Implementación | **Implementada frontera:** [HTTP](../../App/backend/modulos/finanzas/pagos/pasarela-http.service.ts), [Stripe](../../App/backend/modulos/finanzas/pagos/pasarela-stripe.service.ts), API pública de Pagos. El formato de tokens (`token-pago.ts`) pasó de `compartido/` a Pagos: era lo único fuera del adaptador que conocía a los proveedores |
+| Evidencia | [INTEGRABILIDAD-RNF16.md](INTEGRABILIDAD-RNF16.md): `rnf16-cambio-pasarela.spec.ts` (15 pruebas: elección por configuración, el negocio no nombra proveedores ni importa internos de Pagos, mismo contrato en los dos adaptadores). En vivo (16/11): simulada ↔ Stripe en **8 s** sin recompilar, **0 archivos** de código; con llave inventada la petición llegó a Stripe y fue rechazada |
+| Resultado | **Cumplido en backend** entre simulada y Stripe. El portal tokeniza con Stripe Elements (RNF-05), así que un proveedor nuevo también pide su formulario en el cliente |
+| Pendiente | Pago real en el sandbox de Stripe con llaves `sk_test_`/`pk_test_` de una cuenta del equipo |
 
 ### Seguridad física / Safety
 

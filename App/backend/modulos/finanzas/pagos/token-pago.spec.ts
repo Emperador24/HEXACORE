@@ -1,9 +1,9 @@
 import { ValidationPipe } from '@nestjs/common';
-import { CobrarDto } from '../modulos/finanzas/pagos/dto/pagos.dto';
-import { CrearPagoDto } from '../modulos/alimentos/pagos/dto/crear-pago.dto';
-import { PagarDto as Venta } from '../modulos/entradas/ventas/venta/dto/pagar.dto';
-import { PagarDto as Reventa } from '../modulos/entradas/postventa/postventa/dto/pagar.dto';
-import { PagarReservaDto } from '../modulos/parqueaderos/dto/parqueaderos.dto';
+import { CobrarDto } from './dto/pagos.dto';
+import { CrearPagoDto } from '../../alimentos/pagos/dto/crear-pago.dto';
+import { PagarDto as Venta } from '../../entradas/ventas/venta/dto/pagar.dto';
+import { PagarDto as Reventa } from '../../entradas/postventa/postventa/dto/pagar.dto';
+import { PagarReservaDto } from '../../parqueaderos/dto/parqueaderos.dto';
 describe('RNF-05 DTO de cobro', () => {
   const pipe = new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true });
   const casos = [
