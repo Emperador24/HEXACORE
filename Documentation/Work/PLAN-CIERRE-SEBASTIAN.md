@@ -22,7 +22,7 @@ ni las aceptaciones 16/16 automática y visible. [PR #64](https://github.com/Emp
 | Modificabilidad | `ensayo.py`: PUERTO 3002→3003, API predeterminada→`/ensayo-api/v1` en navegador real y espera PostgreSQL 3000→1000 ms con consulta de 4 s cancelada. Rechaza puerto 0, URL inválida y espera 499. Compara Image IDs SHA-256 de todas las aplicaciones antes/después | Se reconstruye **solo durante preparación**. Cambios posteriores usan `--no-build`; no recarga en caliente. La espera se mide con el DataSource compilado de Identidad, sin modificar reglas financieras/autenticación |
 | Safety monetario | `herramientas/verificar-transaccion.cjs`: snapshot REPEATABLE READ READ ONLY, SELECT parametrizados, importes exactos en centavos, operación/libro/referencias/idempotencia/actor-tiempo/historial. Compra, pedido, reventa y reembolsos identificados. Doble en memoria altera un centavo y produce código 1; original sigue intacto | No invoca proveedores ni repara. El libro de reembolsos no persiste referencia del cobro original: chequeo parcial, código 2. F12 se detecta como divergencia, código 1; no se implementa su resolución |
 
-**Pruebas locales de herramientas:** 43/43 Node, 13/13 Python; 63/63 regresiones
+**Pruebas locales de herramientas:** 43/43 Node, 16/16 Python; 63/63 regresiones
 backend dirigidas (SSE Operación, outbox, ingreso sin puerta y adaptadores de pagos),
 tipos backend y ambos portales; sintaxis de workflows/actionlint. PAN: cinco DTO
 del compilado actual rechazan el número de prueba frente a la referencia que
@@ -150,8 +150,10 @@ CD conserva `compilacion → imagenes → comprobacion → despliegue → owasp`
 `verificar-version.py` exige las ocho aplicaciones activas con label OCI del mismo
 SHA; `/version` en gateway/Caddy acredita la revisión servida antes y después de
 ZAP. `owasp-desplegado.yml` reutilizable exige revisión y URL HTTPS de API/cliente/admin,
-además del secreto `OWASP_TOKEN_CLIENTE` de una cuenta **exclusiva de ensayo** con
-sesión vigente. Sin sesión, certificado confiable, conectividad, revisión igual o
+además de `OWASP_CLIENTE_EMAIL` y `OWASP_CLIENTE_CONTRASENA`, secretos de una
+cuenta **exclusiva de ensayo**. Tras verificar la revisión obtiene una sesión
+nueva con un solo POST HTTPS de login, sin redirecciones ni reintentos; no
+guarda un JWT que pueda caducar durante CD ni amplía su TTL. Sin sesión, certificado confiable, conectividad, revisión igual o
 cero High, falla con reporte incompleto; no se desactiva TLS ni se concede una
 exclusión para aprobar.
 
@@ -159,7 +161,7 @@ Consulta actual: variables/secretos de repositorio vacíos; entorno `produccion`
 no acreditado, último trabajo «Desplegar en producción» omitido. El usuario confirma que ese destino todavía no existe. Diego debe
 confirmar destino y acceso desde Actions, `PRODUCCION_DOMINIO` y opcional
 `PRODUCCION_DOMINIO_ADMIN`, los cuatro `PRODUCCION_SSH_*`, confianza HTTPS,
-cuenta/token de ensayo y ejecución efectiva sobre SHA exacto. La ruta automática
+credenciales de esa cuenta y ejecución efectiva sobre SHA exacto. La ruta automática
 actual despliega **main**; si el destino docente usa otro flujo, debe llamar al
 workflow reutilizable **después de su despliegue verificado**, sin identificar el
 runner temporal con ese servidor. No se despliega ni cambia main desde esta entrega.

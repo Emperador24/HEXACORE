@@ -152,7 +152,11 @@ presentación: CD lo conecta después de verificar las ocho aplicaciones activas
 por revisión OCI. Gateway/Caddy sirven \texttt{/version}; la revisión debe
 coincidir antes y después del escaneo. \textbf{El despliegue externo de Diego no
 existe aún según confirmación del usuario}: faltan destino HTTPS, acceso de
-Actions y sesión exclusiva. El runner no acredita ese despliegue.
+Actions y cuenta exclusiva. El workflow obtiene una sesión nueva por HTTPS
+después de verificar la revisión, con un login sin redirecciones ni reintentos;
+no amplía su TTL ni guarda un JWT que caduque durante CD. Las credenciales
+son secretos de Actions y no llegan al contenedor ZAP. El runner no acredita
+el despliegue externo.
 \href{https://github.com/Emperador24/HEXACORE/actions/runs/43995508643/artifacts/14290455753}{CI109 comprobada}:
 ZAP 2.17.0 AMD64, 62 reglas, 20 GET y un perfil autenticado HTTP200; pendientes
 cero. \textbf{0 High, 0 Low, 10 Medium y 4 Informational}, las 14 instancias

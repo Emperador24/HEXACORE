@@ -157,8 +157,9 @@ Gateway/Caddy exponen `/version`, revisado antes y después del ZAP pasivo.
 No basta con `.version-desplegada` ni con la etiqueta solicitada.
 
 Configurar `PRODUCCION_DOMINIO`, opcional `PRODUCCION_DOMINIO_ADMIN`, secretos
-SSH ya descritos y `OWASP_TOKEN_CLIENTE` de una sesión vigente de una cuenta de
-ensayo. HTTPS debe ser confiable para el runner, sin excepciones TLS. La ruta CD
+SSH ya descritos y `OWASP_CLIENTE_EMAIL` / `OWASP_CLIENTE_CONTRASENA` de una cuenta exclusiva de
+ensayo. Tras verificar la revisión se hace un único login HTTPS, sin seguir
+redirecciones, para obtener JWT nuevo al terminar el CD; no se amplía su TTL. HTTPS debe ser confiable para el runner, sin excepciones TLS. La ruta CD
 automática usa main; otro despliegue docente debe llamar al workflow reutilizable
 con revisión/URL de API y ambos portales después de acreditar sus contenedores.
 No se configura ni opera ese destino desde esta entrega.

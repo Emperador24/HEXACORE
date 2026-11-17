@@ -26,6 +26,12 @@ versión del código tenía 14 unitarias Safety; el cierre añade tres dobles de
 reembolso de pedido (**17/17 locales**) sin atribuirles una nueva prueba SQL/HTTP.
 [CI completa](https://github.com/Emperador24/HEXACORE/actions/runs/43995508643).
 
+El workflow externo requiere los secretos `OWASP_CLIENTE_EMAIL` y
+`OWASP_CLIENTE_CONTRASENA`, obtiene JWT nuevo después de verificar la versión y
+hace un solo login HTTPS sin redirecciones. Tres pruebas con dobles verifican
+obtención privada, rechazo de HTTP y error sin exponer secretos; no se presenta
+como autenticación ejecutada contra el despliegue externo aún inexistente.
+
 Se integra develop hasta `b9f93e6` (PR #60 y #62). Autorización 167/167 y PAN
 reutilizan las fuentes/combinaciones anteriores; no se repiten matrices masivas
 ni 16 recorridos. Los cambios posteriores de Samuel conservan controles de sesión/
