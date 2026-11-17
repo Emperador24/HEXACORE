@@ -207,7 +207,7 @@ RNF-19 pero no un ASR numerado en ese árbol; no se crea un ASR ficticio.
 | Escenario / ASR / RNF | 100 % de CU Cliente en web/móvil, misma API y sin reglas duplicadas. ASR-10, RNF-14 |
 | Diseño | Dos portales Angular y una app Flutter Cliente/Personal sobre gateway; configuración de API por entorno |
 | Implementación | **Implementados clientes y contratos**; no se infiere paridad de todo CU por existir sus pantallas |
-| Evidencia | [Matriz por CU](USABILIDAD-PORTABILIDAD.md#rnf-14--portabilidad): 11/11 CU con parte interactiva del Cliente en web y app sobre el mismo contrato, 0 reglas duplicadas. Antes 6/11: la app simulaba CU-001 a 005 y calculaba el descuento en el teléfono; conectada en esta entrega. Pruebas `boleteria_test.dart` 4/4 (app 82/82) y `entradas.service.spec.ts` 5/5 (web 35/35) |
+| Evidencia | [Matriz por CU](USABILIDAD-PORTABILIDAD.md#rnf-14--portabilidad): 11/11 CU con parte interactiva del Cliente en web y app sobre el mismo contrato, 0 reglas duplicadas. Antes 6/11: la app simulaba CU-001 a 005 y calculaba el descuento en el teléfono; conectada en esta entrega. Pruebas `boleteria_test.dart` 4/4 y `validar_entradas_test.dart` 8/8 (app 90/90) y `entradas.service.spec.ts` 5/5 (web 35/35) |
 | Resultado | **Cumple por inspección y pruebas automáticas**; sin prueba en teléfono físico ni por HTTPS de la demo |
 | Pendiente | Probar la app en un teléfono contra la URL HTTPS de la demo y confiar en su certificado |
 
