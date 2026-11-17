@@ -222,12 +222,13 @@ Implementado $\neq$ comprobado. Comprobado en un ensayo $\neq$ RNF completo.
 \begin{frame}{Usabilidad y portabilidad}
 \begin{itemize}
 \item ASR-08/RNF-12: tarea de compra en $\leq$5 pasos, éxito $\geq$80\% con cinco usuarios nuevos.
-\item Daniel consolida RNF-12/14 con aportes de todos; falta evidencia humana.
+\item Compra en 4 pasos en la app y 4--5 en la web, por diseño; protocolo listo, prueba con usuarios pendiente.
 \item ASR-10/RNF-14: 100\% de CU Cliente en web y móvil con la misma API.
-\item Angular y Flutter consumen el backend; falta matriz global de equivalencia.
+\item Matriz: 11/11 CU Cliente en ambos clientes sobre el mismo contrato y 0 reglas duplicadas (antes 6/11: la app simulaba CU-001--005).
 \item Sebastián aporta pantallas, navegación, rotulado, pasos y capturas de Alimentos y cuentas/roles/recintos; reconoce implementación de Samuel.
 \item Playwright y CI no sustituyen usuarios nuevos ni prueban paridad total de clientes.
 \end{itemize}
+\codigo{Documentation/Work/USABILIDAD-PORTABILIDAD.md}{Matriz y protocolo}
 \franja{30:00--32:00 · Daniel: RNF-12/14. Móvil/TLS del ensayo remoto pendientes; aportar capturas no acredita resultados con usuarios.}
 \end{frame}
 
