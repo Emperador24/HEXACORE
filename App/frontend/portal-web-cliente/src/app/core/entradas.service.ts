@@ -36,6 +36,26 @@ export interface Compra {
   entradas: EntradaEmitida[];
 }
 
+/** Pasos 2-4 del CU-003: qué se puede cancelar y cuánto se devolvería. Lo decide el servidor. */
+export interface CotizacionCancelacion {
+  entradasCancelables: string[];
+  /** CU-003D: las que no se pueden cancelar y por qué. */
+  entradasRechazadas: { entradaId: string; motivo: string }[];
+  montoPagado: number;
+  /** 100 = total; menos = parcial (CU-003A). */
+  porcentajeReembolso: number;
+  montoReembolso: number;
+  parcial: boolean;
+  tramo: 'TOTAL' | 'PARCIAL' | 'EVENTO_CANCELADO';
+  mensaje: string;
+}
+
+export interface Cancelacion extends CotizacionCancelacion {
+  cancelacionId: string;
+  estado: string;
+  referenciaReembolso: string | null;
+}
+
 /** Respuesta de la Cola virtual al pedir turno. */
 interface Turno {
   estado: 'ADMITIDO' | 'EN_ESPERA';
@@ -125,6 +145,42 @@ export class EntradasService {
   detalle(compraId: string): Promise<Compra> {
     return this.auth.conAcceso((cabeceras: HttpHeaders) =>
       this.http.get<Compra>(this.url(`/${compraId}`), { headers: cabeceras })
+    );
+  }
+
+  /** CU-004: el servidor valida el código, reserva un uso y recalcula el total. */
+  aplicarCupon(compraId: string, codigo: string): Promise<Compra> {
+    return this.auth.conAcceso((cabeceras: HttpHeaders) =>
+      this.http.put<Compra>(this.url(`/${compraId}/cupon`), { codigo: codigo.trim() }, { headers: cabeceras })
+    );
+  }
+
+  /** CU-004B: quita el código y recalcula sin descuento. */
+  quitarCupon(compraId: string): Promise<Compra> {
+    return this.auth.conAcceso((cabeceras: HttpHeaders) =>
+      this.http.delete<Compra>(this.url(`/${compraId}/cupon`), { headers: cabeceras })
+    );
+  }
+
+  /** CU-003, pasos 2-4: cotiza sin cambiar nada. Sin `entradaIds`, todas las de la compra. */
+  cotizarCancelacion(compraId: string, entradaIds?: string[]): Promise<CotizacionCancelacion> {
+    return this.auth.conAcceso((cabeceras: HttpHeaders) =>
+      this.http.post<CotizacionCancelacion>(
+        this.url(`/${compraId}/cancelacion/cotizacion`),
+        entradaIds ? { entradaIds } : {},
+        { headers: cabeceras }
+      )
+    );
+  }
+
+  /** CU-003, pasos 5-9: con el monto que la persona aceptó, reembolsa y anula. */
+  cancelar(compraId: string, motivo: string, montoAceptado: number, entradaIds?: string[]): Promise<Cancelacion> {
+    return this.auth.conAcceso((cabeceras: HttpHeaders) =>
+      this.http.post<Cancelacion>(
+        this.url(`/${compraId}/cancelaciones`),
+        { motivo: motivo.trim(), montoAceptado, ...(entradaIds ? { entradaIds } : {}) },
+        { headers: cabeceras }
+      )
     );
   }
 }

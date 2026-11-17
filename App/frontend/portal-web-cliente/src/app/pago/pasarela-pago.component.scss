@@ -8,6 +8,36 @@
   padding: 4px 0;
 }
 
+// CU-004: el código va junto al resumen, antes del total que cambia.
+.cupon {
+  align-items: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.campo-cupon {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+
+  input {
+    padding: 8px 10px;
+    border: 1px solid rgb(var(--hxc-texto-rgb) / 0.24);
+    border-radius: 8px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-transform: uppercase;
+  }
+}
+
+.cupon-aplicado {
+  align-items: center;
+  color: var(--hxc-verde, inherit);
+}
+
 .total {
   font-weight: 700;
   border-top: 1px solid rgb(var(--hxc-texto-rgb) / 0.12);

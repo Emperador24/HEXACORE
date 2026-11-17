@@ -10,6 +10,38 @@
           <span>${{ linea.precioUnitario * linea.cantidad | number: '1.0-0' }}</span>
         </div>
       }
+      @if (pago.cupon) {
+        @if (pago.codigoPromocional) {
+          <div class="fila cupon-aplicado">
+            <span>Código {{ pago.codigoPromocional }}</span>
+            <span>
+              −${{ pago.descuento ?? 0 | number: '1.0-0' }}
+              <button mat-button type="button" (click)="cupon('quitar')" [disabled]="aplicandoCupon()">Quitar</button>
+            </span>
+          </div>
+        } @else {
+          <div class="fila cupon">
+            <label class="campo-cupon">
+              <span>Código promocional (opcional)</span>
+              <input
+                type="text"
+                maxlength="40"
+                autocomplete="off"
+                data-prueba="cupon-codigo"
+                [value]="codigo()"
+                (input)="codigo.set($any($event.target).value)"
+                (keydown.enter)="cupon('aplicar')"
+              />
+            </label>
+            <button mat-stroked-button type="button" data-prueba="cupon-aplicar" (click)="cupon('aplicar')" [disabled]="aplicandoCupon() || codigo().trim().length < 3">
+              Aplicar
+            </button>
+          </div>
+        }
+        @if (errorCupon()) {
+          <p class="error" role="alert">{{ errorCupon() }}</p>
+        }
+      }
       <div class="fila total">
         <span>Total</span>
         <span>${{ total() | number: '1.0-0' }}</span>

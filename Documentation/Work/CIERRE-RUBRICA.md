@@ -204,9 +204,9 @@ RNF-19 pero no un ASR numerado en ese árbol; no se crea un ASR ficticio.
 | Escenario / ASR / RNF | Usuario nuevo compra en ≤5 pasos; éxito ≥80 % con 5 usuarios. ASR-08, RNF-12 |
 | Diseño | Interfaces por rol, estados y avisos diferenciados; no confundir aviso de reembolso con dinero confirmado |
 | Implementación | **Implementadas interfaces:** [portal cliente](../../App/frontend/portal-web-cliente), [portal admin](../../App/frontend/portal-web-admin), [app](../../App/frontend/app-movil) |
-| Evidencia | Recorridos automáticos/visibles en [e2e](../../App/e2e/README.md) y plan de cierre; no se halló protocolo/resultados de cinco usuarios nuevos |
-| Resultado | **Parcial; éxito humano desconocido.** Playwright 16/16 no equivale al ensayo RNF-12 |
-| Pendiente | Daniel confirma protocolo, participantes anonimizados, pasos, tiempos/errores y resultados; no se realiza estudio ni recorrido nuevo ahora |
+| Evidencia | Recorridos automáticos/visibles en [e2e](../../App/e2e/README.md) y plan de cierre. [USABILIDAD-PORTABILIDAD.md](USABILIDAD-PORTABILIDAD.md): compra en ≤5 pasos por diseño (app 4, web 4–5) y protocolo de cinco usuarios con plantilla; sin resultados humanos |
+| Resultado | **Parcial; éxito humano desconocido.** Playwright 16/16 y el conteo de pasos no equivalen al ensayo RNF-12 |
+| Pendiente | Ejecutar el protocolo (P1–P5 anonimizados, tiempos, errores, ayudas) o declarar en la sustentación que no se hizo |
 
 ### Mantenibilidad
 
@@ -228,9 +228,9 @@ RNF-19 pero no un ASR numerado en ese árbol; no se crea un ASR ficticio.
 | Escenario / ASR / RNF | 100 % de CU Cliente en web/móvil, misma API y sin reglas duplicadas. ASR-10, RNF-14 |
 | Diseño | Dos portales Angular y una app Flutter Cliente/Personal sobre gateway; configuración de API por entorno |
 | Implementación | **Implementados clientes y contratos**; no se infiere paridad de todo CU por existir sus pantallas |
-| Evidencia | Plan de cierre registra integración en Alimentos; fuentes de web/app y CI independientes. No consta matriz global 100 % web/móvil |
-| Resultado | **Parcial.** Backend y compilación móvil no acreditan equivalencia completa ni uso de móvil físico por VPN |
-| Pendiente | Daniel consolida matriz por CU con aportes del equipo; confirmar dispositivo/emulador, URL HTTPS y confianza de certificados |
+| Evidencia | [Matriz por CU](USABILIDAD-PORTABILIDAD.md#rnf-14--portabilidad): 11/11 CU con parte interactiva del Cliente en web y app sobre el mismo contrato, 0 reglas duplicadas. Antes 6/11: la app simulaba CU-001 a 005 y calculaba el descuento en el teléfono; conectada en esta entrega. Pruebas `boleteria_test.dart` 4/4 y `validar_entradas_test.dart` 8/8 (app 90/90) y `entradas.service.spec.ts` 5/5 (web 35/35) |
+| Resultado | **Cumple por inspección y pruebas automáticas**; sin prueba en teléfono físico ni por HTTPS de la demo |
+| Pendiente | Probar la app en un teléfono contra la URL HTTPS de la demo y confiar en su certificado |
 
 ### Desplegabilidad
 
