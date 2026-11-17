@@ -1,5 +1,16 @@
 # Cobertura por recurso — 15/11/2026 Bogotá, cierre del inventario
 
+**Revisión 16/11, PR #64:** inventario de negocio sin ampliación: 186/181/167.
+Se reutiliza 167/167 por gateway y backend directo; no se vuelve a ejecutar la
+matriz por herramientas/documentación. `/version` es un metadato público del
+artefacto gateway, sin acceso a negocio ni cambio de autorización del backend.
+PR #60 corrige ingreso sin puerta y cambia intervalos SSE/outbox; 63 regresiones
+backend dirigidas locales aprobadas, con alcance separado de las combinaciones
+históricas. El nuevo ZAP pasivo usa dos portales, GET públicos y perfil Cliente
+propio autenticado; no agota las 167 operaciones ni sus estados/actores.
+[Resultado vigente](RESULTADO.md) · [Guion](../../../../Documentation/Work/PLAN-CIERRE-SEBASTIAN.md).
+
+
 ## Cierre de las 16 pendientes — corte vigente
 
 **167/167 protegidas; cero operaciones pendientes del inventario. RNF-05/06

@@ -45,6 +45,9 @@ Documentation/Work/*.out
 Documentation/Work/*.toc
 Documentation/Work/*.fls
 Documentation/Work/*.fdb_latexmk
+Documentation/Work/*.nav
+Documentation/Work/*.snm
+Documentation/Work/*.vrb
 
 # Archivos temporales de Excel/Word (aparecen mientras el archivo está abierto)
 ~$*
