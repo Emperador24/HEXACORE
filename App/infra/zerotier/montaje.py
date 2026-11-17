@@ -351,7 +351,7 @@ class Montaje:
     def previo(self):
         limpio(self.m['fuente'])
         cs = self.recursos()
-        red_local(self.c)
+        red_local(self.c, con_sudo=getattr(self,'consulta_zerotier_con_sudo',False))
         self.puertos(cs)
         return self.capacidad()
 
