@@ -267,10 +267,10 @@ Usabilidad (arq. de información) & Daniel; todos aportan & RNF-12, 14 & Patrón
 \item \cifra{167/167} protegidas de 186 declaradas/181 expuestas: evidencia histórica por gateway y backend directo; combinaciones publicadas, no cobertura universal.
 \item ZAP reutilizado \textbf{después de desplegar}: dos portales y GET públicos/perfil Cliente autenticado. HTML/JSON saneados con todas las alertas.
 \item CI111: ZAP 2.17.0, \cifra{0 High}, 10 Medium y 4 Informational conservadas; sin categoría Critical. npm: producción/Critical cero, 20 moderadas de desarrollo backend.
-\item \textbf{Alcance:} runner temporal aprobado. servidor propio en Google Cloud desde el 16/11 (\texttt{hexacore-javeriana.duckdns.org}) con CD configurado; falta correr allí el ZAP.
+\item \textbf{Servidor real} (17/11, tras el CD de \texttt{main}): ZAP 2.17.0, \cifra{0 High}, 10 Medium, 19 Low y 12 Informational.
 \item RNF-05/06 parciales: ZAP pasivo no ejecuta JS ni sustituye pruebas de autorización/PAN.
 \end{itemize}
-\nota{Demo: \href{https://github.com/Emperador24/HEXACORE/actions/runs/44000569216}{Actions CI111} $\rightarrow$ trabajo OWASP $\rightarrow$ Summary/Artifacts $\rightarrow$ \texttt{atributos-sebastian} $\rightarrow$ \path{owasp.html} / \path{owasp.json}. Ejecución completada: 20 GET, 1 autenticado. No se repite por este cambio documental.}
+\nota{Servidor: \href{https://github.com/Emperador24/HEXACORE/actions/runs/44044715233}{CD de main} $\rightarrow$ \texttt{owasp-presentacion}. Demo: \href{https://github.com/Emperador24/HEXACORE/actions/runs/44000569216}{Actions CI111} $\rightarrow$ trabajo OWASP $\rightarrow$ Summary/Artifacts $\rightarrow$ \texttt{atributos-sebastian} $\rightarrow$ \path{owasp.html} / \path{owasp.json}. Ejecución completada: 20 GET, 1 autenticado. No se repite por este cambio documental.}
 \end{frame}
 
 \begin{frame}{Safety · transacciones con dinero}
@@ -378,7 +378,7 @@ toma 4--5 pasos ($\leq$ 5); falta la prueba con 5 usuarios nuevos ($\geq$ 80\,\%
 \begin{itemize}\setlength\itemsep{0.3em}
 \item \textbf{RNF-07} se midió hasta 200 usuarios, no 2\,000; \textbf{RNF-10} con Boletería llega a 1,12--1,26$\times$ en un portátil.
 \item \textbf{RNF-03} (99,9\,\% mensual) no se mide en una demo: se muestra su mecanismo.
-\item \textbf{Seguridad:} escaneo integrado; falta ejecutarlo contra el servidor de presentación (cuenta de ensayo \texttt{OWASP\_CLIENTE\_*}).
+\item \textbf{Seguridad:} el ZAP es pasivo; las 10 Medium (CSP con estilos en línea, fuentes sin SRI) siguen abiertas.
 \item \textbf{Comprobabilidad:} 68,7\,\% solo con unitarias; falta publicar la cobertura total en Actions.
 \item \textbf{Desplegabilidad:} la reversión automática no se ha provocado en vivo.
 \item \textbf{Usabilidad:} falta la prueba con cinco usuarios nuevos.
