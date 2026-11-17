@@ -88,6 +88,33 @@ def revision(cfg):
         raise ValueError('VERSION_DESPLEGADA_NO_COINCIDE')
     return dato['revision']
 
+class SinRedireccion(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+def sesion_cliente(api, cuenta):
+    """Un login de la cuenta exclusiva, con TLS normal y sin seguir redirecciones.
+    No amplía TTL ni reintenta; nunca imprime credenciales, cookie o respuesta.
+    """
+    u=urllib.parse.urlsplit(api)
+    if u.scheme != 'https' or not u.netloc or u.username or u.password or u.path not in ['', '/'] or u.query or u.fragment:
+        raise ValueError('DESTINO_INVALIDO')
+    if not cuenta.get('email') or not cuenta.get('contrasena'):
+        raise ValueError('FALTA_CUENTA_DE_ENSAYO')
+    try:
+        req=urllib.request.Request(api.rstrip('/')+'/api/v1/sesiones',
+            data=json.dumps({'email':cuenta['email'],'contrasena':cuenta['contrasena']}).encode(),
+            headers={'Content-Type':'application/json'},method='POST')
+        # build_opener conserva HTTPSHandler y la confianza TLS del sistema.
+        with urllib.request.build_opener(SinRedireccion()).open(req,timeout=15) as r:
+            if r.status != 200: raise ValueError('login no aprobado')
+            token=json.load(r).get('token')
+        if not isinstance(token,str) or not re.fullmatch(r'[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+',token):
+            raise ValueError('token no obtenido')
+        return token
+    except Exception:
+        raise ValueError('SESION_DE_ENSAYO_NO_OBTENIDA') from None
+
 def escanear(cfg, salida, privada, red=None):
     informe = {'fechaUTC': datetime.datetime.now(datetime.timezone.utc).isoformat(),
         'estado': 'incompleto', 'tipoDespliegue': cfg.get('tipoDespliegue'), 'alertas': [],
@@ -109,6 +136,10 @@ def escanear(cfg, salida, privada, red=None):
                 if p.scheme != 'https': raise ValueError('HTTPS_REQUERIDO')
                 # Certificados con confianza del sistema; sin verify=False ni -k.
                 with urllib.request.urlopen(u + '/', timeout=15) as r: r.read(1)
+        if cfg.get('cuentaCliente') is not None:
+            # Antes de enviar credenciales, acreditar la revisión del destino.
+            informe['revisionGatewayAntes'] = revision(cfg)
+            cfg={**cfg,'tokens':{'cliente':sesion_cliente(cfg['destinos']['api'],cfg['cuentaCliente'])}}
         if not cfg.get('tokens', {}).get('cliente'):
             raise ValueError('FALTA_SESION_DE_ENSAYO')
         informe['revisionGatewayAntes'] = revision(cfg)
@@ -133,7 +164,8 @@ def escanear(cfg, salida, privada, red=None):
             time.sleep(1)
         if not listo: raise ValueError('ZAP_NO_INICIA')
         ejecutar(['docker', 'cp', str(pathlib.Path(__file__).with_name('zap.py')), nombre + ':/tmp/zap-hexacore.py'])
-        peticion = {**cfg, 'clave': clave}
+        # La contraseña de la cuenta no se envía al contenedor del escáner.
+        peticion = {**{k:v for k,v in cfg.items() if k!='cuentaCliente'}, 'clave': clave}
         peticion['esperadosPublicos'] = {'/salud':200, '/cartelera':200, '/pagos/configuracion':200, '/cuentas/perfil':401}
         r = ejecutar(['docker', 'exec', '-i', nombre, 'python3', '/tmp/zap-hexacore.py', '--interno'], input=json.dumps(peticion))
         privada.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -153,7 +185,7 @@ def escanear(cfg, salida, privada, red=None):
     except Exception as e:
         # Nunca registrar la excepción HTTP/comando: puede contener un token o cuerpo.
         permitidos = ['REVISION_INVALIDA', 'TIPO_DESPLIEGUE_INVALIDO', 'DESTINO_INVALIDO', 'HTTPS_REQUERIDO',
-            'FALTA_SESION_DE_ENSAYO', 'VERSION_DESPLEGADA_NO_COINCIDE', 'ARQUITECTURA_ZAP_NO_NATIVA', 'ZAP_NO_INICIA', 'ESCANEO_PENDIENTE', 'ALERTAS_HIGH', 'ALERTA_SIN_CLASIFICAR']
+            'FALTA_SESION_DE_ENSAYO', 'FALTA_CUENTA_DE_ENSAYO', 'SESION_DE_ENSAYO_NO_OBTENIDA', 'VERSION_DESPLEGADA_NO_COINCIDE', 'ARQUITECTURA_ZAP_NO_NATIVA', 'ZAP_NO_INICIA', 'ESCANEO_PENDIENTE', 'ALERTAS_HIGH', 'ALERTA_SIN_CLASIFICAR']
         informe['error'] = str(e) if str(e) in permitidos else 'FALLO_DE_HERRAMIENTA_O_CONECTIVIDAD'
         if propio:
             try:

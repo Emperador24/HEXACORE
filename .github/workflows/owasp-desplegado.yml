@@ -15,7 +15,9 @@ on:
         required: true
         type: string
     secrets:
-      OWASP_TOKEN_CLIENTE:
+      OWASP_CLIENTE_EMAIL:
+        required: true
+      OWASP_CLIENTE_CONTRASENA:
         required: true
 jobs:
   zap:
@@ -26,20 +28,21 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
-      - name: Configuración privada del destino y sesión exclusiva
+      - name: Configuración privada del destino y cuenta exclusiva
         env:
           REVISION: ${{ inputs.revision }}
           API: ${{ inputs.url_api }}
           CLIENTE: ${{ inputs.url_cliente }}
           ADMIN: ${{ inputs.url_admin }}
-          TOKEN: ${{ secrets.OWASP_TOKEN_CLIENTE }}
+          EMAIL: ${{ secrets.OWASP_CLIENTE_EMAIL }}
+          CONTRASENA: ${{ secrets.OWASP_CLIENTE_CONTRASENA }}
         run: |
           python3 - <<'PY'
           import json,os,pathlib
           p=pathlib.Path(os.environ['RUNNER_TEMP'])/'owasp-config.json'
           p.write_text(json.dumps({'revision':os.environ['REVISION'],'tipoDespliegue':'presentacion',
             'destinos':{'api':os.environ['API'],'cliente':os.environ['CLIENTE'],'admin':os.environ['ADMIN']},
-            'tokens':{'cliente':os.environ['TOKEN']},'publicas':['/salud','/cartelera','/pagos/configuracion','/cuentas/perfil'],
+            'cuentaCliente':{'email':os.environ['EMAIL'],'contrasena':os.environ['CONTRASENA']},'publicas':['/salud','/cartelera','/pagos/configuracion','/cuentas/perfil'],
             'autenticadas':[['/cuentas/perfil','cliente']]}))
           p.chmod(0o600)
           PY

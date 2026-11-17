@@ -242,4 +242,5 @@ jobs:
       url_cliente: https://${{ vars.PRODUCCION_DOMINIO }}
       url_admin: https://${{ vars.PRODUCCION_DOMINIO_ADMIN || format('admin.{0}', vars.PRODUCCION_DOMINIO) }}
     secrets:
-      OWASP_TOKEN_CLIENTE: ${{ secrets.OWASP_TOKEN_CLIENTE }}
+      OWASP_CLIENTE_EMAIL: ${{ secrets.OWASP_CLIENTE_EMAIL }}
+      OWASP_CLIENTE_CONTRASENA: ${{ secrets.OWASP_CLIENTE_CONTRASENA }}

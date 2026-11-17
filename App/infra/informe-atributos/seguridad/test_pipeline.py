@@ -63,4 +63,30 @@ class VersionDesplegada(unittest.TestCase):
     def test_aplicacion_ausente_no_acredita_despliegue(self):
         with self.assertRaises(ValueError):self.probar(falta=True)
 
+class SesionEnsayo(unittest.TestCase):
+    def test_https_login_nuevo_sin_publicar_secretos(self):
+        respuesta=unittest.mock.MagicMock();respuesta.status=200
+        respuesta.read.return_value=b'{"token":"cabecera.payload.firma"}'
+        opener=unittest.mock.MagicMock();opener.open.return_value.__enter__.return_value=respuesta
+        with patch.object(p.urllib.request,'build_opener',return_value=opener),contextlib.redirect_stdout(io.StringIO()) as salida:
+            self.assertEqual(p.sesion_cliente('https://api.example.test',{'email':'ensayo@example.test','contrasena':'SECRETO'}),'cabecera.payload.firma')
+            self.assertEqual(salida.getvalue(),'')
+        req=opener.open.call_args.args[0]
+        self.assertEqual(req.method,'POST');self.assertEqual(req.full_url,'https://api.example.test/api/v1/sesiones')
+        self.assertEqual(json.loads(req.data)['email'],'ensayo@example.test')
+
+    def test_http_se_rechaza_antes_de_enviar_credenciales(self):
+        with patch.object(p.urllib.request,'build_opener') as abrir:
+            with self.assertRaisesRegex(ValueError,'DESTINO_INVALIDO'):
+                p.sesion_cliente('http://api.example.test',{'email':'ensayo@example.test','contrasena':'SECRETO'})
+            abrir.assert_not_called()
+
+    def test_error_no_expone_cuerpo_y_no_sigue_redireccion(self):
+        opener=unittest.mock.MagicMock();opener.open.side_effect=OSError('SECRETO')
+        with patch.object(p.urllib.request,'build_opener',return_value=opener):
+            with self.assertRaisesRegex(ValueError,'^SESION_DE_ENSAYO_NO_OBTENIDA$'):
+                p.sesion_cliente('https://api.example.test',{'email':'ensayo@example.test','contrasena':'SECRETO'})
+            self.assertEqual(opener.open.call_count,1)
+        self.assertIsNone(p.SinRedireccion().redirect_request(None,None,302,'',{},'https://otro.example.test'))
+
 if __name__=='__main__': unittest.main()
