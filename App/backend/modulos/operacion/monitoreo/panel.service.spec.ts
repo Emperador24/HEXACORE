@@ -4,10 +4,10 @@ import { PanelService, PuntoConFlujo } from './panel.service';
 
 /** Paso 4 de CU-019: las alertas que la e2e no arma porque necesitan personal y accesos a la vez. */
 describe('PanelService · alertas', () => {
-  const panel = new PanelService({} as DataSource, {} as never, {} as never, {} as never);
+  const panel = new PanelService({} as DataSource, {} as never, {} as never, {} as never, {} as never);
   const evaluar = (e: Record<string, unknown>) =>
-    (panel as unknown as { evaluar(e: unknown): { tipo: string; sugerencia?: { texto?: string } }[] }).evaluar({
-      porcentaje: 0.2, asistentes: 20, aforoMaximo: 100, puntos: [], zonas: [], enCurso: true, ...e,
+    (panel as unknown as { evaluar(e: unknown): { tipo: string; mensaje: string; sugerencia?: { texto?: string } }[] }).evaluar({
+      porcentaje: 0.2, asistentes: 20, aforoMaximo: 100, puntos: [], zonas: [], enCurso: true, incidentesCriticos: 0, ...e,
     });
   const punto = (nombre: string, ultimos5: number, ultimos10 = ultimos5): PuntoConFlujo => ({
     nombre, estado: EstadoPuntoAcceso.HABILITADO, alternativa: null, total: ultimos10, ultimos5, ultimos10, ultimaHora: ultimos10, ultimoIngreso: null,
@@ -26,5 +26,12 @@ describe('PanelService · alertas', () => {
     ];
     expect(evaluar({ zonas }).filter((a) => a.tipo === 'PERSONAL_INSUFICIENTE')).toHaveLength(1);
     expect(evaluar({ zonas, enCurso: false }).filter((a) => a.tipo === 'PERSONAL_INSUFICIENTE')).toHaveLength(0);
+  });
+
+  it('CU-020: un incidente crítico abierto se avisa como el resto de alertas del panel', () => {
+    expect(evaluar({ incidentesCriticos: 0 }).some((a) => a.tipo === 'INCIDENTES_CRITICOS')).toBe(false);
+    const alertas = evaluar({ incidentesCriticos: 2 });
+    const incidentes = alertas.find((a) => a.tipo === 'INCIDENTES_CRITICOS')!;
+    expect(incidentes.mensaje).toContain('2 incidentes críticos');
   });
 });

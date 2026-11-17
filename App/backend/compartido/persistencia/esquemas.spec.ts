@@ -19,7 +19,8 @@ describe('Propiedad de esquemas e historia conservada',()=>{
       'EsquemaInicialCu0111789902006180','ReservasInventarioCu0111790000000000',
       'GestionEstablecimientosCu0151794300000000','MenuInventarioCu0121794400000000',
       'PreparacionCu0131794500000000','EntregaCu0141794600000000','CancelacionCu011F1794700000000']);
-    expect(GRUPOS_MIGRACIONES.reduce((n,g)=>n+g.migraciones.length,0)).toBe(36);
+    // +1: CU-020 (Gestionar incidentes), esquema operacion.
+    expect(GRUPOS_MIGRACIONES.reduce((n,g)=>n+g.migraciones.length,0)).toBe(37);
   });
   it('adapta la cualificación histórica sin cambiar nombres ni parámetros/filas',async()=>{
     class Original { name='Ejemplo1700000000000';async up(q:QueryRunner){await q.query('CREATE TYPE "public"."estado" AS ENUM (\'A\')');await q.query('SELECT $1',[ '"public"."dato"' ]);}async down(q:QueryRunner){await q.query('DROP TYPE "public"."estado"');} }

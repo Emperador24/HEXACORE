@@ -2,7 +2,8 @@
 
 Módulo del futuro programa **Operación** (ADR-16: CU-010/019/020). Mientras ese proceso no
 existe, se registra dentro del Núcleo. Esquema propio `operacion`; migraciones
-`1793900000000-EsquemaOperacionMonitoreo` y `1794100000000-Cu010Evacuacion`.
+`1793900000000-EsquemaOperacionMonitoreo`, `1794100000000-Cu010Evacuacion` y
+`1794900000000-Cu020Incidentes`.
 
 ## CU-019 · Monitorear el evento
 
@@ -36,7 +37,9 @@ ejercen Organizador y Administrador.
 - **Personal:** `CoberturaPersonalService` de Personal/Logística: requeridos, asignados,
   confirmados y presentes (entrada sin salida, CU-018) por zona.
 - **Parqueaderos:** resumen de ocupación de CU-025 (`OcupacionService`), si el evento tiene zonas.
-- **Incidencias (CU-020):** no existen; el panel lo dice.
+- **Incidencias:** resumen en vivo de CU-020 (`IncidentesService.resumenPorEvento`): abiertos,
+  sin responsable y por prioridad. Un incidente CRÍTICO abierto dispara la alerta
+  `INCIDENTES_CRITICOS` igual que las demás del paso 4.
 
 ### Alertas (paso 4)
 
@@ -97,3 +100,31 @@ formato de Acceso QR y lee el flujo SSE real.
 personal. Los avisos no salen a push/SMS/altavoces reales: la cola es el punto de integración.
 
 `test/operacion/evacuacion.e2e-spec.ts`: 3 escenarios con cola real.
+
+## CU-020 · Gestionar incidentes
+
+| Ruta `/api/v1/incidentes` | Roles | Qué |
+|---|---|---|
+| POST `eventos/:eventoId/incidentes` | Personal, Org, Admin | Paso 1-3: registra tipo/ubicación/descripción; el sistema asigna prioridad inicial y avisa al supervisor |
+| GET `eventos/:eventoId/incidentes` | Personal, Org, Admin | Listado ordenado por atención: prioridad, luego antigüedad (CU-020A) |
+| GET `incidentes/:id` | Personal, Org, Admin | Detalle con su bitácora completa (paso 9) |
+| PATCH `incidentes/:id/prioridad` | Org, Admin | **CU-020A**: reclasificar la prioridad |
+| POST `incidentes/:id/responsable` | Org, Admin | Paso 5-6: asigna responsable (pasa a EN_ATENCION) y lo notifica |
+| PATCH `incidentes/:id/avance` | Personal, Org, Admin | Pasos 7-8: EN_ATENCION o RESUELTO |
+| POST `incidentes/:id/cerrar` | Personal, Org, Admin | **CU-020B**: cierra directo, con nota de resolución, sin escalar |
+
+- **Prioridad inicial (paso 2):** `clasificarPrioridadInicial` revisa palabras clave del tipo
+  reportado (incendio, médica, estructural → CRÍTICA; robo, violencia → ALTA; objeto perdido,
+  leve → BAJA; el resto, MEDIA). El supervisor la puede corregir después (CU-020A).
+- **Notificaciones (pasos 3 y 6):** mismo patrón que CU-010 — bandeja `notificaciones_incidentes`
+  escrita en la misma transacción y publicada por `NotificadorIncidentes` en la cola de
+  prioridad `operacion.incidentes` (un CRÍTICO se entrega antes que uno de prioridad BAJA).
+- **Ciclo:** ABIERTO → (asignar responsable) → EN_ATENCION → RESUELTO → CERRADO. CU-020B permite
+  saltar directo a CERRADO desde cualquier estado abierto, sin pasar por los intermedios.
+- **Auditoría (paso 9):** `bitacora_incidentes` guarda cada paso (creación, reclasificación,
+  asignación, avance, cierre) con quién y cuándo.
+- **Integración con CU-019:** `PanelService.panel` consulta `resumenPorEvento` y agrega la
+  alerta `INCIDENTES_CRITICOS` cuando hay al menos uno abierto.
+
+`test/operacion/incidentes.e2e-spec.ts`: 8 escenarios con cola real (incluida la entrega de los
+avisos al supervisor y al responsable).

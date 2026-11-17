@@ -102,7 +102,8 @@ describe('CU-019 · Monitorear el evento (e2e)', () => {
     expect(p.accesos.porMinuto).toHaveLength(30);
     expect(p.accesos.ultimos5min).toBe(7);
     expect(p.parqueaderos.disponible).toBe(false);
-    expect(p.incidencias.disponible).toBe(false);
+    // CU-020 ya existe: sin incidentes registrados para este evento, el resumen está en ceros.
+    expect(p.incidencias).toMatchObject({ disponible: true, abiertos: 0, porPrioridad: { BAJA: 0, MEDIA: 0, ALTA: 0, CRITICA: 0 } });
     const lista = await request(nucleo.url).get(`${M}/eventos`).set('Authorization', como(organizador)).expect(200);
     expect(lista.body.find((e: { id: string }) => e.id === id)).toMatchObject({ enCurso: true });
   });

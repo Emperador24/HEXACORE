@@ -9,11 +9,12 @@ import { IngresoMonitoreado } from './entidades/ingreso.entity';
 import { PuntoAcceso } from './entidades/punto-acceso.entity';
 import { EsquemaOperacionMonitoreo1793900000000 } from './migraciones/1793900000000-EsquemaOperacionMonitoreo';
 import { Cu010Evacuacion1794100000000 } from './migraciones/1794100000000-Cu010Evacuacion';
+import { Cu020Incidentes1794900000000 } from './migraciones/1794900000000-Cu020Incidentes';
 
 cargarEnv();
 
 export const ENTIDADES = [IngresoMonitoreado, PuntoAcceso, Alerta, Decision];
-export const MIGRACIONES = [EsquemaOperacionMonitoreo1793900000000, Cu010Evacuacion1794100000000];
+export const MIGRACIONES = [EsquemaOperacionMonitoreo1793900000000, Cu010Evacuacion1794100000000, Cu020Incidentes1794900000000];
 
 export function opcionesDataSource(config: ConfiguracionOperacion = cargarConfiguracion()): DataSourceOptions & { name: string } {
   return {

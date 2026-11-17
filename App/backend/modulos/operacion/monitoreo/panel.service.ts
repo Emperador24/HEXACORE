@@ -4,6 +4,7 @@ import { DataSource, EntityManager, IsNull } from 'typeorm';
 import { EventosService } from '../../eventos-recintos/eventos/eventos.service';
 import { OcupacionService } from '../../parqueaderos/ocupacion/ocupacion.service';
 import { CoberturaPersonalService, CoberturaZona } from '../../personal-logistica/turnos-asistencia/cobertura-personal.service';
+import { IncidentesService } from '../incidentes/incidentes.service';
 import { CONEXION_OPERACION } from '../persistencia/conexion';
 import { Alerta, Severidad } from '../persistencia/entidades/alerta.entity';
 import { Decision, TipoDecision } from '../persistencia/entidades/decision.entity';
@@ -53,8 +54,7 @@ export interface PuntoConFlujo {
  * - Aforo actual y accesos: la copia de ingresos de Acceso QR (`ingresos`).
  * - Personal: cobertura por zona de Personal/Logística (CU-017/018).
  * - Parqueaderos: ocupación por zona de CU-025, por interfaz local.
- * - Incidencias (CU-020): todavía no existen; el panel lo dice en vez de
- *   mostrar ceros.
+ * - Incidencias: resumen de CU-020, por interfaz local.
  */
 @Injectable()
 export class PanelService {
@@ -63,6 +63,7 @@ export class PanelService {
     private readonly eventos: EventosService,
     private readonly cobertura: CoberturaPersonalService,
     private readonly parqueaderos: OcupacionService,
+    private readonly incidentes: IncidentesService,
   ) {}
 
   /** Eventos que se pueden monitorear: los publicados, primero los que están en curso. */
@@ -101,12 +102,13 @@ export class PanelService {
     const ahora = new Date();
     const enCurso = evento.fechaInicio <= ahora && evento.fechaFin > ahora;
 
-    const [puntos, porMinuto, asistentes, zonas, parqueadero] = await Promise.all([
+    const [puntos, porMinuto, asistentes, zonas, parqueadero, incidencias] = await Promise.all([
       this.puntosConFlujo(eventoId, m),
       this.ingresosPorMinuto(eventoId, m),
       m.query(`SELECT count(*)::int AS n FROM ingresos WHERE evento_id = $1`, [eventoId]).then((r) => r[0].n as number),
       this.cobertura.deEvento(eventoId),
       this.parqueaderos.resumen(eventoId),
+      this.incidentes.resumenPorEvento(eventoId),
     ]);
 
     const porcentaje = evento.aforoMaximo ? asistentes / evento.aforoMaximo : 0;
@@ -118,7 +120,7 @@ export class PanelService {
       presentes: zonas.reduce((n, z) => n + z.presentes, 0),
     };
 
-    const calculadas = this.evaluar({ porcentaje, asistentes, aforoMaximo: evento.aforoMaximo, puntos, zonas, enCurso });
+    const calculadas = this.evaluar({ porcentaje, asistentes, aforoMaximo: evento.aforoMaximo, puntos, zonas, enCurso, incidentesCriticos: incidencias.porPrioridad.CRITICA });
     const alertas = await this.sincronizarAlertas(eventoId, calculadas, m);
     const decisiones = await m.getRepository(Decision).find({ where: { eventoId }, order: { fecha: 'DESC' }, take: 50 });
 
@@ -133,7 +135,7 @@ export class PanelService {
       parqueaderos: parqueadero.zonas.length
         ? { disponible: true, ...parqueadero }
         : { disponible: false, motivo: 'El evento no tiene zonas de parqueadero configuradas (CU-025).' },
-      incidencias: { disponible: false, motivo: 'La gestión de incidentes (CU-020) todavía no existe.' },
+      incidencias,
       alertas,
       decisiones,
       umbrales: UMBRALES,
@@ -144,9 +146,16 @@ export class PanelService {
   // --- Paso 4: alertas --------------------------------------------------------
 
   private evaluar(e: {
-    porcentaje: number; asistentes: number; aforoMaximo: number; puntos: PuntoConFlujo[]; zonas: CoberturaZona[]; enCurso: boolean;
+    porcentaje: number; asistentes: number; aforoMaximo: number; puntos: PuntoConFlujo[]; zonas: CoberturaZona[]; enCurso: boolean; incidentesCriticos: number;
   }): AlertaCalculada[] {
     const alertas: AlertaCalculada[] = [];
+    // CU-020: un incidente crítico abierto es tan urgente para el supervisor como el aforo o la congestión.
+    if (e.incidentesCriticos > 0) {
+      alertas.push({
+        tipo: 'INCIDENTES_CRITICOS', clave: 'INCIDENTES_CRITICOS', severidad: 'critica',
+        mensaje: `${e.incidentesCriticos} incidente${e.incidentesCriticos > 1 ? 's' : ''} crítico${e.incidentesCriticos > 1 ? 's' : ''} sin cerrar.`,
+      });
+    }
     if (e.porcentaje >= 1) {
       // CU-019A: el bloqueo lo hace Acceso QR al validar (CU-002B); aquí se avisa.
       alertas.push({

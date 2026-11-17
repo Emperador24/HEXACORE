@@ -27,7 +27,8 @@ async function iniciar({ rabbitmqUrl, gestionUrl = 'http://127.0.0.1:16779' } = 
                 r = await fetch('http://127.0.0.1:13087/api/v1/salud', { signal: AbortSignal.timeout(1000) });
             }
             catch { }
-            if (r?.ok && p.salida.includes('7 topologías declaradas'))
+            // +1: CU-020 (Gestionar incidentes) declara su propia cola de prioridad.
+            if (r?.ok && p.salida.includes('8 topologías declaradas'))
                 break;
             if (Date.now() > limite)
                 throw Error('Núcleo auxiliar no disponible: ' + p.salida);

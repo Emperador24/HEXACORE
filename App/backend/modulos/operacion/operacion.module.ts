@@ -9,6 +9,9 @@ import { CONFIGURACION_OPERACION, ConfiguracionOperacion } from './comun/config/
 import { EvacuacionController } from './evacuacion/evacuacion.controller';
 import { EvacuacionService } from './evacuacion/evacuacion.service';
 import { NotificadorEvacuacion } from './evacuacion/notificador-evacuacion.service';
+import { IncidentesController } from './incidentes/incidentes.controller';
+import { IncidentesService } from './incidentes/incidentes.service';
+import { NotificadorIncidentes } from './incidentes/notificador-incidentes.service';
 import { ConsumidorIngresosMonitoreo } from './monitoreo/consumidor-ingresos.service';
 import { MonitoreoController } from './monitoreo/monitoreo.controller';
 import { PanelService } from './monitoreo/panel.service';
@@ -36,7 +39,16 @@ import { PersistenciaOperacionModule } from './persistencia/persistencia.module'
       }),
     }),
   ],
-  controllers: [MonitoreoController, EvacuacionController],
-  providers: [SesionValida, FlujoOperacionService, PanelService, ConsumidorIngresosMonitoreo, EvacuacionService, NotificadorEvacuacion],
+  controllers: [MonitoreoController, EvacuacionController, IncidentesController],
+  providers: [
+    SesionValida,
+    FlujoOperacionService,
+    PanelService,
+    ConsumidorIngresosMonitoreo,
+    EvacuacionService,
+    NotificadorEvacuacion,
+    IncidentesService,
+    NotificadorIncidentes,
+  ],
 })
 export class OperacionModule {}
