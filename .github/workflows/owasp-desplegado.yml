@@ -1,0 +1,61 @@
+name: OWASP del despliegue de presentación
+on:
+  workflow_call:
+    inputs:
+      revision:
+        required: true
+        type: string
+      url_api:
+        required: true
+        type: string
+      url_cliente:
+        required: true
+        type: string
+      url_admin:
+        required: true
+        type: string
+    secrets:
+      OWASP_CLIENTE_EMAIL:
+        required: true
+      OWASP_CLIENTE_CONTRASENA:
+        required: true
+jobs:
+  zap:
+    name: ZAP después del despliegue verificado
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configuración privada del destino y cuenta exclusiva
+        env:
+          REVISION: ${{ inputs.revision }}
+          API: ${{ inputs.url_api }}
+          CLIENTE: ${{ inputs.url_cliente }}
+          ADMIN: ${{ inputs.url_admin }}
+          EMAIL: ${{ secrets.OWASP_CLIENTE_EMAIL }}
+          CONTRASENA: ${{ secrets.OWASP_CLIENTE_CONTRASENA }}
+        run: |
+          python3 - <<'PY'
+          import json,os,pathlib
+          p=pathlib.Path(os.environ['RUNNER_TEMP'])/'owasp-config.json'
+          p.write_text(json.dumps({'revision':os.environ['REVISION'],'tipoDespliegue':'presentacion',
+            'destinos':{'api':os.environ['API'],'cliente':os.environ['CLIENTE'],'admin':os.environ['ADMIN']},
+            'cuentaCliente':{'email':os.environ['EMAIL'],'contrasena':os.environ['CONTRASENA']},'publicas':['/salud','/cartelera','/pagos/configuracion','/cuentas/perfil'],
+            'autenticadas':[['/cuentas/perfil','cliente']]}))
+          p.chmod(0o600)
+          PY
+      - name: Revisar versión antes/después y exigir cero High
+        run: >-
+          python3 App/infra/informe-atributos/seguridad/pipeline.py zap
+          --config "$RUNNER_TEMP/owasp-config.json"
+          --privada "$RUNNER_TEMP/owasp-privado"
+          --salida "$RUNNER_TEMP/owasp-publico"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: owasp-presentacion
+          path: ${{ runner.temp }}/owasp-publico/*
+          if-no-files-found: error
+          retention-days: 30

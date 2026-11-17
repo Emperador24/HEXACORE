@@ -1,0 +1,237 @@
+#!/usr/bin/env python3
+"""ZAP posterior al despliegue y auditoría npm. Solo publica campos permitidos.
+Los mensajes HTTP, evidencias de ZAP y credenciales permanecen privados.
+"""
+import argparse
+import collections
+import datetime
+import hashlib
+import html
+import importlib.util
+import json
+import os
+import pathlib
+import re
+import secrets
+import subprocess
+import time
+import urllib.parse
+import urllib.request
+
+ROOT = pathlib.Path(__file__).resolve().parents[4]
+# Índice oficial 2.17.0: incluye el manifest ARM64 de la evidencia histórica y
+# su pareja AMD64. Fijar solo el manifest ARM en un runner AMD no es portable.
+IMAGEN = 'ghcr.io/zaproxy/zaproxy@sha256:9624669db72f54d86c4b46a7064518bd9bf79d8c61a4c31befa9923489f328af'
+RIESGOS = ['Informational', 'Low', 'Medium', 'High']
+
+def ejecutar(args, **kw):
+    return subprocess.run(args, check=True, capture_output=True, text=True, timeout=300, **kw)
+
+def guardar(salida, nombre, d):
+    salida.mkdir(parents=True, exist_ok=True)
+    (salida / (nombre + '.json')).write_text(json.dumps(d, ensure_ascii=False, indent=2))
+    # No se renderiza HTML procedente de respuestas ni de plugins.
+    tabla = ''
+    if nombre == 'owasp':
+        tabla = '<table><tr><th>Regla</th><th>Severidad</th><th>Origen</th></tr>' + ''.join(
+            '<tr><td><a href="' + html.escape(a['regla'], quote=True) + '">' + html.escape(a['referencia']) + '</a> '
+            + html.escape(a['nombreRegla']) + '</td><td>' + html.escape(a['riesgo']) + '</td><td>' + html.escape(a['origen']) + '</td></tr>'
+            for a in d['alertas']) + '</table>'
+    (salida / (nombre + '.html')).write_text('<!doctype html><html lang="es"><meta charset="utf-8">'
+        '<title>HEXACORE ' + nombre + '</title><h1>HEXACORE ' + nombre + '</h1>' + tabla + '<pre>'
+        + html.escape(json.dumps(d, ensure_ascii=False, indent=2)) + '</pre></html>')
+    resumen = os.environ.get('GITHUB_STEP_SUMMARY')
+    if resumen:
+        lineas = ['### HEXACORE: ' + nombre, '']
+        if nombre == 'owasp':
+            lineas += ['Estado: **' + d['estado'] + '**. Despliegue: **' + str(d.get('tipoDespliegue')) + '**.',
+                'ZAP no tiene Critical. Criterio: cero High.',
+                'High: **' + str(d.get('conteo', {}).get('High', 0) if d.get('versionZAP') else 'no medido') + '**.',
+                'Revisión: `' + d.get('revisionGatewayAntes', 'no acreditada') + '`.',
+                'Cobertura autenticada HTTP 200: ' + str(d.get('autenticadas200', 'no acreditada')) + '.',
+                'Error: ' + d.get('error', 'ninguno') + '.']
+        elif nombre == 'dependencias':
+            lineas += ['| Paquete | Alcance | Critical | High | Moderate | Low |', '|---|---|---:|---:|---:|---:|']
+            for x in d['resultados']:
+                v=x.get('vulnerabilidades') or {}
+                lineas.append('| ' + ' | '.join([x['paquete'],x['alcance'],*[str(v.get(k,'no medido')) for k in ['critical','high','moderate','low']]]) + ' |')
+        else:
+            lineas += ['Estado: **' + d.get('estado','incompleto') + '**. Mismas imágenes: ' + str(d.get('mismasImagenes','no acreditado')) + '.']
+        lineas += ['', 'HTML/JSON completos y saneados: artifact de esta ejecución. Las evidencias HTTP privadas no se publican.', '']
+        with open(resumen,'a') as f: f.write('\n'.join(lineas))
+
+def sanear_alertas(alertas, destinos, reglas=()):
+    origenes = {urllib.parse.urlsplit(v).netloc: k for k, v in destinos.items()}
+    resultado = []
+    nombres = {str(x['id']): x['name'] for x in reglas}
+    for a in alertas:
+        url = urllib.parse.urlsplit(a.get('url', ''))
+        # Conserva cada instancia, tipo y severidad. No publica paths dinámicos,
+        # parámetros, query, cookies, cuerpos, evidencia, nombres ni referencias.
+        plugin = str(a.get('pluginId', ''))
+        if not re.fullmatch(r'\d+', plugin) or a.get('risk') not in RIESGOS:
+            raise ValueError('ALERTA_SIN_CLASIFICAR')
+        referencia = str(a.get('alertRef', plugin))
+        if not re.fullmatch(r'\d+(?:-\d+)?', referencia): referencia = plugin
+        resultado.append({'pluginId': plugin, 'riesgo': a['risk'],
+            'referencia':referencia, 'nombreRegla':nombres.get(plugin, 'Regla ' + plugin),
+            'confianza': a.get('confidence'), 'origen': origenes.get(url.netloc, 'fuera-de-alcance'),
+            'metodo': a.get('method') if a.get('method') in ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'OPTIONS'] else 'otro',
+            'regla': 'https://www.zaproxy.org/docs/alerts/' + referencia + '/'})
+    return resultado
+
+def revision(cfg):
+    url = cfg.get('versionUrl', cfg['destinos']['api'] + '/version')
+    with urllib.request.urlopen(url, timeout=15) as r:
+        dato = json.load(r)
+    if dato.get('revision') != cfg['revision']:
+        raise ValueError('VERSION_DESPLEGADA_NO_COINCIDE')
+    return dato['revision']
+
+class SinRedireccion(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+def sesion_cliente(api, cuenta):
+    """Un login de la cuenta exclusiva, con TLS normal y sin seguir redirecciones.
+    No amplía TTL ni reintenta; nunca imprime credenciales, cookie o respuesta.
+    """
+    u=urllib.parse.urlsplit(api)
+    if u.scheme != 'https' or not u.netloc or u.username or u.password or u.path not in ['', '/'] or u.query or u.fragment:
+        raise ValueError('DESTINO_INVALIDO')
+    if not cuenta.get('email') or not cuenta.get('contrasena'):
+        raise ValueError('FALTA_CUENTA_DE_ENSAYO')
+    try:
+        req=urllib.request.Request(api.rstrip('/')+'/api/v1/sesiones',
+            data=json.dumps({'email':cuenta['email'],'contrasena':cuenta['contrasena']}).encode(),
+            headers={'Content-Type':'application/json'},method='POST')
+        # build_opener conserva HTTPSHandler y la confianza TLS del sistema.
+        with urllib.request.build_opener(SinRedireccion()).open(req,timeout=15) as r:
+            if r.status != 200: raise ValueError('login no aprobado')
+            token=json.load(r).get('token')
+        if not isinstance(token,str) or not re.fullmatch(r'[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+',token):
+            raise ValueError('token no obtenido')
+        return token
+    except Exception:
+        raise ValueError('SESION_DE_ENSAYO_NO_OBTENIDA') from None
+
+def escanear(cfg, salida, privada, red=None):
+    informe = {'fechaUTC': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        'estado': 'incompleto', 'tipoDespliegue': cfg.get('tipoDespliegue'), 'alertas': [],
+        'categoriasZAP': RIESGOS, 'criterio': 'cero High; ZAP no tiene Critical',
+        'limitaciones': 'Pasivo HTTP, dos SPA y GET de API. Sin ejecución JavaScript, araña ni ataque activo. No sustituye RNF-05/06 ni escaneo de toda la navegación.',
+        'saneamiento': 'Todas las instancias; sin URL dinámica, parámetros, evidencia HTTP ni credenciales. Enlace a cada regla.'}
+    nombre = 'hexacore-zap-' + secrets.token_hex(5)
+    propio = False
+    try:
+        if not re.fullmatch(r'[a-f0-9]{40}', cfg.get('revision', '')):
+            raise ValueError('REVISION_INVALIDA')
+        if cfg.get('tipoDespliegue') not in ['ci-efimero', 'presentacion']:
+            raise ValueError('TIPO_DESPLIEGUE_INVALIDO')
+        for u in cfg['destinos'].values():
+            p = urllib.parse.urlsplit(u)
+            if p.scheme not in ['http', 'https'] or p.username or p.password or p.query or p.fragment or p.path not in ['', '/']:
+                raise ValueError('DESTINO_INVALIDO')
+            if cfg['tipoDespliegue'] == 'presentacion':
+                if p.scheme != 'https': raise ValueError('HTTPS_REQUERIDO')
+                # Certificados con confianza del sistema; sin verify=False ni -k.
+                with urllib.request.urlopen(u + '/', timeout=15) as r: r.read(1)
+        if cfg.get('cuentaCliente') is not None:
+            # Antes de enviar credenciales, acreditar la revisión del destino.
+            informe['revisionGatewayAntes'] = revision(cfg)
+            cfg={**cfg,'tokens':{'cliente':sesion_cliente(cfg['destinos']['api'],cfg['cuentaCliente'])}}
+        if not cfg.get('tokens', {}).get('cliente'):
+            raise ValueError('FALTA_SESION_DE_ENSAYO')
+        informe['revisionGatewayAntes'] = revision(cfg)
+        ejecutar(['docker','pull',IMAGEN])
+        meta=json.loads(ejecutar(['docker','image','inspect',IMAGEN]).stdout)[0]
+        arquitectura=ejecutar(['docker','version','--format','{{.Server.Arch}}']).stdout.strip()
+        if meta['Architecture'] != arquitectura: raise ValueError('ARQUITECTURA_ZAP_NO_NATIVA')
+        informe.update({'imagenZAP':IMAGEN,'arquitecturaZAP':arquitectura,'imageIDZAP':meta['Id']})
+        clave = secrets.token_hex(32)
+        ejecutar(['docker', 'run', '-d', '--name', nombre, '--memory', '640m', '--cpus', '1',
+            '--network', red or 'bridge', '-e', 'JAVA_OPTS=-Xmx384m -XX:ActiveProcessorCount=2',
+            IMAGEN, 'zap.sh', '-daemon', '-silent', '-host', '0.0.0.0', '-port', '8080',
+            '-config', 'api.key=' + clave, '-config', 'api.addrs.addr.name=.*',
+            '-config', 'api.addrs.addr.regex=true', '-config', 'connection.timeoutInSecs=15'])
+        propio = True
+        listo = False
+        for _ in range(90):
+            r = subprocess.run(['docker', 'exec', '-i', nombre, 'python3', '-c',
+                "import json,sys,urllib.request,urllib.parse;c=json.load(sys.stdin);urllib.request.urlopen('http://127.0.0.1:8080/JSON/core/view/version/?'+urllib.parse.urlencode(c),timeout=2)"],
+                input=json.dumps({'apikey':clave}), text=True, capture_output=True)
+            if r.returncode == 0: listo = True; break
+            time.sleep(1)
+        if not listo: raise ValueError('ZAP_NO_INICIA')
+        ejecutar(['docker', 'cp', str(pathlib.Path(__file__).with_name('zap.py')), nombre + ':/tmp/zap-hexacore.py'])
+        # La contraseña de la cuenta no se envía al contenedor del escáner.
+        peticion = {**{k:v for k,v in cfg.items() if k!='cuentaCliente'}, 'clave': clave}
+        peticion['esperadosPublicos'] = {'/salud':200, '/cartelera':200, '/pagos/configuracion':200, '/cuentas/perfil':401}
+        r = ejecutar(['docker', 'exec', '-i', nombre, 'python3', '/tmp/zap-hexacore.py', '--interno'], input=json.dumps(peticion))
+        privada.mkdir(parents=True, exist_ok=True, mode=0o700)
+        crudo = privada / 'zap-privado.json'
+        crudo.write_text(r.stdout); crudo.chmod(0o600)
+        d = json.loads(r.stdout)
+        informe.update({'imagenZAP': IMAGEN, 'versionZAP': d['version'], 'pendientes': d['pendientes'],
+            'solicitudes': len(d['solicitudes']), 'autenticadas200': sum(s['autenticada'] and s['estado'] == 200 for s in d['solicitudes']),
+            'reglas': [{'id': x['id'], 'habilitada': x['enabled']} for x in d['reglas']],
+            'alertas': sanear_alertas(d['alertas'], cfg['destinos'], d['reglas'])})
+        informe['revisionGatewayDespues'] = revision(cfg)
+        informe['conteo'] = dict(collections.Counter(a['riesgo'] for a in informe['alertas']))
+        if d['pendientes'] != 0: raise ValueError('ESCANEO_PENDIENTE')
+        if any(a['riesgo'] == 'High' for a in informe['alertas']): raise ValueError('ALERTAS_HIGH')
+        informe['estado'] = 'aprobado'
+        return 0
+    except Exception as e:
+        # Nunca registrar la excepción HTTP/comando: puede contener un token o cuerpo.
+        permitidos = ['REVISION_INVALIDA', 'TIPO_DESPLIEGUE_INVALIDO', 'DESTINO_INVALIDO', 'HTTPS_REQUERIDO',
+            'FALTA_SESION_DE_ENSAYO', 'FALTA_CUENTA_DE_ENSAYO', 'SESION_DE_ENSAYO_NO_OBTENIDA', 'VERSION_DESPLEGADA_NO_COINCIDE', 'ARQUITECTURA_ZAP_NO_NATIVA', 'ZAP_NO_INICIA', 'ESCANEO_PENDIENTE', 'ALERTAS_HIGH', 'ALERTA_SIN_CLASIFICAR']
+        informe['error'] = str(e) if str(e) in permitidos else 'FALLO_DE_HERRAMIENTA_O_CONECTIVIDAD'
+        if propio:
+            try:
+                c=json.loads(ejecutar(['docker','inspect',nombre]).stdout)[0]['State']
+                informe['estadoContenedorZAP']={k:c[k] for k in ['Status','ExitCode','OOMKilled']}
+            except Exception: informe['estadoContenedorZAP']={'Status':'no acreditado'}
+        return 1
+    finally:
+        guardar(salida, 'owasp', informe)
+        if propio: ejecutar(['docker', 'stop', '--time', '30', nombre])
+
+def auditar(salida):
+    spec = importlib.util.spec_from_file_location('audit_existente', pathlib.Path(__file__).with_name('audit.py'))
+    modulo = importlib.util.module_from_spec(spec); spec.loader.exec_module(modulo)
+    informe = {'fechaUTC': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        'revision': ejecutar(['git', 'rev-parse', 'HEAD'], cwd=ROOT).stdout.strip(),
+        'criterio': 'cero Critical; otras severidades conservadas', 'resultados': []}
+    codigo = 0
+    for nombre, carpeta in modulo.PACKAGES.items():
+        for tipo, args in [('produccion', ['--omit=dev']), ('incluye-desarrollo', ['--include=dev'])]:
+            r = subprocess.run(['npm', 'audit', '--json', *args], cwd=ROOT / carpeta, text=True, capture_output=True, timeout=180)
+            d = json.loads(r.stdout)
+            item = {'paquete': nombre, 'alcance': tipo, 'codigoNpm': r.returncode,
+                'lockSHA256': hashlib.sha256((ROOT / carpeta / 'package-lock.json').read_bytes()).hexdigest(),
+                'vulnerabilidades': d.get('metadata', {}).get('vulnerabilities'), 'hallazgos': []}
+            for n, v in d.get('vulnerabilities', {}).items():
+                item['hallazgos'].append({'paquete': n, 'severidad': v['severity'], 'directa': v['isDirect'],
+                    'rango': v['range'], 'correccionDisponible': bool(v.get('fixAvailable')),
+                    'avisos': [x if isinstance(x, str) else {'id': x.get('source'), 'severidad': x.get('severity'), 'rango': x.get('range')} for x in v['via']]})
+            if not item['vulnerabilidades'] or d.get('error') or r.returncode not in [0, 1]:
+                item['error'] = 'AUDITORIA_INCOMPLETA'; codigo = 1
+            elif item['vulnerabilidades']['critical'] > 0: codigo = 1
+            informe['resultados'].append(item)
+    guardar(salida, 'dependencias', informe)
+    return codigo
+
+def main():
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument('accion', choices=['audit', 'zap'])
+    p.add_argument('--salida', type=pathlib.Path, required=True)
+    p.add_argument('--config', type=pathlib.Path)
+    p.add_argument('--privada', type=pathlib.Path)
+    p.add_argument('--red')
+    args = p.parse_args()
+    if args.accion == 'audit': return auditar(args.salida)
+    if not args.config or not args.privada: p.error('zap requiere --config privado y --privada')
+    return escanear(json.loads(args.config.read_text()), args.salida, args.privada, args.red)
+
+if __name__ == '__main__': raise SystemExit(main())

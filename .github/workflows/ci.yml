@@ -35,6 +35,10 @@ env:
   FLUTTER_VERSION: '3.47.4'
 
 jobs:
+  atributos_sebastian:
+    uses: ./.github/workflows/atributos-sebastian.yml
+    permissions:
+      contents: read
   # --------------------------------------------------------------------------
   # Nada de compilación entra al repositorio. Es rápido y va primero porque es
   # el error más fácil de cometer y el más molesto de deshacer después.
@@ -154,6 +158,8 @@ jobs:
           npm test -- --runInBand --json --outputFile=.evidencia-e2e/unitarias.json
       - name: Seguridad de resúmenes y manifiestos publicados
         run: node --test test/publicadas/seguridad-ci.test.cjs
+      - name: Safety posterior de solo lectura y negativos controlados
+        run: node --test test/safety/verificador.test.cjs
       - name: Infraestructura de correo exclusiva
         run: npm run test:trabajador:infra
       - name: Contratos del correo y límites previos (RabbitMQ real)
@@ -197,6 +203,10 @@ jobs:
       - name: Libro común, convivencia y reinicio
         id: convivencia
         run: npm run test:pagos:convivencia
+      - name: Demostración posterior y doble inconsistente sin modificar registros
+        env:
+          SAFETY_CONFIG: .evidencia-e2e/safety-config.json
+        run: node test/safety/demostrar.cjs
       - name: Logs si falla
         if: failure()
         run: |
@@ -299,6 +309,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Validar entrada HTTPS y ruta de procedencia de producción
+        run: >-
+          docker run --rm -e DOMINIO=portal.example.test -e DOMINIO_ADMIN=admin.example.test
+          -v "$PWD/App/infra/produccion/Caddyfile:/etc/caddy/Caddyfile:ro"
+          caddy:2.8.4-alpine caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
 
       - name: Validar nginx.conf y autenticacion.js
         run: docker build -t hexacore-gateway-ci App/gateway

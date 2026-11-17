@@ -1,5 +1,14 @@
 # Alternar Redash y HEXACORE en este Mac
 
+**16/11 — Seguridad/Safety monetario/Modificabilidad:** Docker activo, motor
+2912 MiB y 41 contenedores activos al consultar; inventario privado conservado. Se ejecutan
+pruebas de herramientas/tipos/audit sin crear o detener recursos ni abrir/cerrar
+Docker Desktop. No se detiene Redash ni se intenta liberar capacidad. El ensayo
+nuevo corre en Actions con proyecto exclusivo y guardas de memoria/disco/puertos.
+No se opera ZeroTier/A/B. Las alternancias históricas inferiores no autorizan
+paradas para esta entrega. [Guion y resultados](PLAN-CIERRE-SEBASTIAN.md).
+
+
 **Reparto real confirmado — este Mac es C:** solo navegador y registrador. A es
 el Mac de Samuel y B una VM Javeriana. No aplicar aquí los procedimientos de
 arranque/parada/alternancia históricos inferiores para la demo ZeroTier; no

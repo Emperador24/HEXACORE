@@ -1,5 +1,262 @@
 # Cierre de Alimentos — Sebastián
 
+## Entrega vigente — Seguridad, Safety monetario y Modificabilidad (16/11/2026)
+
+El reparto de [DISTRIBUCION-ATRIBUTOS.md](DISTRIBUCION-ATRIBUTOS.md) es el vigente:
+Sebastián responde por RNF-05/06, RNF-01/02/11 y RNF-13. Daniel consolida
+Integrabilidad/Usabilidad; Diego, Desplegabilidad/Comprobabilidad. Samuel mantiene
+Disponibilidad/Desempeño/Monitoreo y continúa ZeroTier. Las secciones inferiores
+conservan el historial y sus asignaciones/mediciones a esa fecha.
+
+**Integración:** PR #59 ya integrado; PR #60 revisado (outbox, puntoAcceso opcional,
+SSE de 1 s) y PR #62 incorporado hasta `b9f93e6`, mediante Git normal. Se preservan
+sesión, permisos, cierre SSE y Playwright visible de 500 ms/1500 ms; normal/CI y
+aceptación de un trabajador/cero reintentos sin cambios. No se repiten 167 matrices
+ni las aceptaciones 16/16 automática y visible. [PR #64](https://github.com/Emperador24/HEXACORE/pull/64).
+
+### Alcance confirmado del despliegue — aclaración documental 16/11
+
+Samuel confirma que el servidor de presentación **nunca se creó**. El dominio
+que figuraba en los ejemplos pertenece a un tercero, incluidos sus subdominios;
+queda excluido de pruebas y configuración. [Guía corregida y marcadores](../../App/infra/DESPLIEGUE.md).
+No se contacta ese dominio ni se crea infraestructura cloud.
+
+Se conserva **CI111**, ejecución `44000569216`, **9/9** sobre código
+`d32f582a3323904bd0a8ed001d16feaee7d7d22f`. ZAP escaneó el **despliegue temporal
+del runner**, revisión servida `dc6d373ed0f3362b3e7d916ba181263db8e155b2`
+(merge de prueba), igual antes y después. No acredita servidor, DNS, HTTPS ni
+escaneo de presentación de Diego. La corrección documental usa `[skip ci]`;
+no se repiten escaneos ni recorridos. Los resultados inferiores conservan sus
+versiones y fechas; RNF-05/06 y los límites de Safety/RNF-13 siguen parciales.
+
+### Qué se implementa y qué se demuestra
+
+| Bloque | Implementación y evidencia nueva | Límite |
+|---|---|---|
+| Seguridad | `pipeline.py` reutiliza `zap.py`, imagen ZAP fijada, GET públicos y perfil Cliente autenticado; HTML/JSON de **todas** las instancias saneadas en Actions, cero High. `audit.py` aporta el inventario de cinco paquetes, producción y desarrollo separados | ZAP: Informational/Low/Medium/High, sin Critical. Revisión pasiva sin ejecutar JS ni recorrer toda la SPA; no sustituye 167/167 ni PAN. RNF-05/06 parciales |
+| Modificabilidad | `ensayo.py`: PUERTO 3002→3003, API predeterminada→`/ensayo-api/v1` en navegador real y espera PostgreSQL 3000→1000 ms con consulta de 4 s cancelada. Rechaza puerto 0, URL inválida y espera 499. Compara Image IDs SHA-256 de todas las aplicaciones antes/después | Se reconstruye **solo durante preparación**. Cambios posteriores usan `--no-build`; no recarga en caliente. La espera se mide con el DataSource compilado de Identidad, sin modificar reglas financieras/autenticación |
+| Safety monetario | `herramientas/verificar-transaccion.cjs`: snapshot REPEATABLE READ READ ONLY, SELECT parametrizados, importes exactos en centavos, operación/libro/referencias/idempotencia/actor-tiempo/historial. Compra, pedido, reventa y reembolsos identificados. Doble en memoria altera un centavo y produce código 1; original sigue intacto | No invoca proveedores ni repara. El libro de reembolsos no persiste referencia del cobro original: chequeo parcial, código 2. F12 se detecta como divergencia, código 1; no se implementa su resolución |
+
+**Pruebas locales de herramientas:** 43/43 Node, 16/16 Python; 63/63 regresiones
+backend dirigidas (SSE Operación, outbox, ingreso sin puerta y adaptadores de pagos),
+tipos backend y ambos portales; sintaxis de workflows/actionlint. PAN: cinco DTO
+del compilado actual rechazan el número de prueba frente a la referencia que
+lo aceptaba; no es una búsqueda global de datos persistidos. Auditoría a
+`4a2b851`: 0 hallazgos de producción en cinco paquetes; backend completo 20
+moderadas, resto 0; todos 0 High/Critical. Los lockfiles siguen idénticos; no se
+aplicó audit fix ni se excluyeron alertas. Actions vuelve a auditar el commit final.
+**Ejecuciones conservadas:** CI106 falla en arranque del portal temporal y en
+finanzas tras reiniciar Boletería (upstream rechazó conexión, 503 en vez de 409/200).
+CI107 aísla el portal Cliente con salida 1: proxy con resolución anticipada de
+Gateway; se corrige orden/DNS dinámico. Se añade una precondición GET acotada
+que registra fallos antes de cualquier escritura, sin reintentar pagos/cancelaciones.
+**Corte de Actions, CI 108 (16/11, 20:15 Bogotá):** la preparación del montaje
+temporal aprobó. [El artefacto de esta ejecución](https://github.com/Emperador24/HEXACORE/actions/runs/43993317805/artifacts/14288508379)
+registra Modificabilidad **aprobada**, con las seis Image IDs conservadas:
+puerto 3002→3003 y gateway HTTP 200; espera PostgreSQL 3000→1000 ms con
+cancelaciones medidas de **3008/1005 ms**; API predeterminada y externa en
+Chromium con HTTP 200. Los tres valores inválidos se rechazaron. Esto acredita
+esos parámetros, sin ampliar el alcance de RNF-13 a cambios de reglas por dominio.
+La auditoría de cinco paquetes mantiene 0 hallazgos de producción y 20 moderadas
+de desarrollo del backend, sin High/Critical. **ZAP quedó incompleto con
+`ZAP_NO_INICIA`**: no hay versión, alertas ni revisión posterior acreditadas;
+no equivale a cero High. El trabajo de atributos falla por ese resultado.
+Fuente: merge de prueba `4fdc2c9ddfe5c5d6f87ccdd134bf74a557381386`, con head
+de PR `8fe6743b19dccd9bba258ea5fc04f175cd6672b4`. Safety SQL/HTTP y el resto de
+CI se informan por separado al concluir. No se inició otra ejecución ni se
+operaron servicios de C, A o B para obtener estos datos.
+
+**Diagnóstico posterior al corte CI108:** se comprueba en el registro oficial que
+el digest histórico de ZAP `0b8847b…` es ARM64. El índice ZAP **2.17.0** fijado
+`9624669d…` incluye ese manifest y AMD64 `c2d63bbb…`; la herramienta exige
+arquitectura nativa. [CI109 del código 05af28b](https://github.com/Emperador24/HEXACORE/actions/runs/43995508643)
+valida esa corrección; su resultado y alertas se consultan en el artifact.
+Las menciones a «no se inició otra ejecución» del corte anterior se refieren a
+ese instante; las nuevas ejecuciones se realizan tras diagnosticar cada fallo.
+
+**Resultado comprobado CI109 — 16/11, 20:30 Bogotá:** [HTML/JSON saneados](https://github.com/Emperador24/HEXACORE/actions/runs/43995508643/artifacts/14290455753).
+ZAP **2.17.0 AMD64**, 62 reglas registradas, **20 GET / 1 autenticado HTTP200**,
+0 pendientes; **0 High, 0 Low, 10 Medium y 4 Informational**, conservando las 14
+instancias. Referencias: CSP `10055-4` (2), SRI `90003` (8), aplicación moderna
+`10109` (4). No se corrigen ni excluyen esas alertas aceptadas. Revisión gateway
+antes/después **486808e39e2ef736aa7e7204b71e750723fd6a37**, merge de prueba de head
+`05af28b`; no es el despliegue externo de Diego. Modificabilidad vuelve a aprobar
+con seis imágenes iguales y cancelaciones SQL de **3004/1003 ms**. Las diez
+auditorías npm mantienen producción 0, Critical/High 0 y backend completo 20
+moderadas. Fuente de los resultados definitivos: artifact por versión, no una
+inferencia a partir del color global de CI.
+
+**CI109 completa: 9/9 trabajos aprobados.** Backend: **1180/1180** unitarias,
+Núcleo **141/141 ×2**, Boletería **29/29 ×2**, contratos financieros **13/13 ×2**
+y convivencia **5/5**. El verificador comprueba pedido/compra y reventa después
+de converger QR; devolución de entrada queda parcial (código 2). CLI real:
+consistente sale 0, divergencia F12 sale 1; doble con un centavo detectado y
+original conservado. El demostrador posterior no invoca proveedores. Esta
+versión del código tenía 14 unitarias Safety; el cierre añade tres dobles de
+reembolso de pedido (**17/17 locales**) sin atribuirles una nueva prueba SQL/HTTP.
+[CI completa](https://github.com/Emperador24/HEXACORE/actions/runs/43995508643).
+
+### Mostrar el escaneo aprobado en Actions
+
+Guion de **dos minutos** para Seguridad, dentro de los ocho del bloque. Se navega
+en vivo por una ejecución ya completada: no se presenta como escaneo nuevo en ese
+instante ni como despliegue del servidor pendiente.
+
+1. Con la sesión de GitHub abierta, entrar a [CI111 aprobada](https://github.com/Emperador24/HEXACORE/actions/runs/44000569216).
+   Mostrar la revisión de código `d32f582` y los nueve trabajos aprobados.
+2. Abrir **«atributos_sebastian / OWASP y tres parámetros, mismo artefacto»**.
+   Desplegar **«Desplegar imágenes propias en proyecto nuevo (solo runner)»** y
+   **«ZAP posterior al despliegue y cambios sin reconstruir imágenes»**:
+   el despliegue temporal ocurre antes del escaneo. Mostrar el registro conservado;
+   no pulsar **Re-run jobs** para esta corrección.
+3. Volver a **Summary**: mostrar el resumen de OWASP y dependencias.
+   ZAP: **0 High / 0 Low / 10 Medium / 4 Informational**, 14 instancias conservadas,
+   20 GET y un perfil Cliente autenticado HTTP200, cero pendientes, versión 2.17.0.
+   `Critical` no es una categoría de ZAP. npm informa producción/Critical cero y
+   20 moderadas de desarrollo del backend.
+4. En **Artifacts**, descargar **`atributos-sebastian`**
+   ([enlace directo](https://github.com/Emperador24/HEXACORE/actions/runs/44000569216/artifacts/14291638302)).
+   Descomprimir el ZIP en C y abrir **`owasp.html`** en el navegador y
+   **`owasp.json`** en VSCode. Son archivos locales saneados; abrirlos no levanta
+   servidores ni envía solicitudes a los destinos analizados.
+5. Señalar `tipoDespliegue: ci-efimero`, `revisionGatewayAntes` y
+   `revisionGatewayDespues` iguales, autenticación, las 14 alertas y limitaciones.
+   Abrir **`dependencias.html/json`** si se pide distinguir producción/desarrollo;
+   **`modificabilidad.html/json`** contiene el otro atributo, no un escaneo externo.
+6. Cerrar con el alcance: pasivo HTTP de HTML/assets iniciales y perfil autenticado;
+   no ejecuta JavaScript ni sustituye 167/167, PAN o RNF completos. El destino y
+   prueba de presentación de Diego siguen pendientes separados.
+
+El artifact se conserva 30 días según el workflow; descargarlo antes de la clase.
+[Descarga oficial de artifacts](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/download-workflow-artifacts?tool=webui).
+La CI actual se dispara por PR/push a main, sin `workflow_dispatch`: no tiene
+botón **Run workflow**. Si se requiere observar un análisis nuevo ejecutándose
+durante la clase, esa ejecución se debe programar aparte en el runner, conservando
+antes esta evidencia. No se ha disparado aquí y nunca se dirigirá al dominio de
+terceros ni a un servidor de presentación inexistente.
+
+### Guion ejecutable de ocho minutos (dentro del bloque de atributos)
+
+1. **Seguridad, 2 min:** seguir [el recorrido de CI111](#mostrar-el-escaneo-aprobado-en-actions),
+   trabajo «OWASP y tres parámetros, mismo artefacto» y artifact `atributos-sebastian`.
+   Abrir `owasp.html/json` y `dependencias.html/json`: revisión antes/después,
+   autenticación, reglas, alertas completas y severidades. Identificar explícitamente
+   `tipoDespliegue=ci-efimero`; esto **no acredita** la URL de sustentación.
+2. **Modificabilidad, 3 min:** abrir `modificabilidad.html/json`, comparar Image IDs,
+   HTTP por gateway/puerto nuevo, tráfico real de Chromium al API y tiempos de
+   cancelación SQL. Para repetir en un runner Linux vacío con ≥6144 MiB de motor,
+   ≥12 GiB libres tanto del checkout como del motor y todos los puertos del guion
+   disponibles, usar los comandos inferiores. No ejecutarlos en C ni detener otros
+   proyectos para satisfacer las guardas.
+3. **Safety, 3 min:** abrir los SELECT y `BEGIN ... READ ONLY` del verificador;
+   ejecutar el demostrador con el manifiesto privado de la suite financiera ya
+   existente. Ver original válido, doble inconsistente código 1 y original válido
+   otra vez. Mostrar estados inciertos y F12 detectado; sin cobros nuevos.
+
+```sh
+# Desde la raíz, únicamente en el host exclusivo autorizado para el ensayo.
+# Node 22.22.3; preparar herramientas una sola vez en ese host exclusivo.
+npm --prefix App/backend ci
+npm --prefix App/backend run build
+npm --prefix App/e2e ci
+(cd App/e2e && npx --no-install playwright install --with-deps chromium)
+export DEMO_PRIVADA="$PWD/App/backend/.evidencia-e2e/atributos-demostracion"
+export DEMO_PUBLICA="$PWD/App/backend/.evidencia-e2e/atributos-publico"
+python3 App/infra/informe-atributos/seguridad/ensayo.py preparar --privada "$DEMO_PRIVADA"
+python3 App/infra/informe-atributos/seguridad/ensayo.py comprobar --privada "$DEMO_PRIVADA" --salida "$DEMO_PUBLICA"
+# Incluso tras fallo; detiene solo IDs propios, conserva datos/volúmenes/imágenes.
+python3 App/infra/informe-atributos/seguridad/ensayo.py detener --privada "$DEMO_PRIVADA"
+```
+
+La segunda ejecución necesita un directorio privado nuevo. Nunca borrar recursos
+previos para repetir. El guion rehúsa el montaje local Desktop: su disco de motor
+requiere acreditación separada; usar el runner Linux validado. Cada etapa informa
+su propio resultado; fallos no se transforman en éxito ni se reintentan solicitudes
+para esconderlos. La preparación exclusiva conserva simuladores y un Trabajador.
+
+```sh
+# Desde App/backend, con la infraestructura exclusiva de pruebas financieras ya
+# validada. npm run test:pagos:convivencia genera .evidencia-e2e/safety-config.json
+# con solo los UUID propios del ensayo. No volver a ejecutar aceptaciones completas.
+export SAFETY_CONFIG="$PWD/.evidencia-e2e/safety-config.json"
+node test/safety/demostrar.cjs
+# Diagnóstico de una operación registrada en ese manifiesto:
+node herramientas/verificar-transaccion.cjs pedido "UUID_DE_TRANSACCION_PROPIA"
+```
+
+Los identificadores son: `pedido` → `transacciones_pedido.id` (clave idempotente),
+`compra` → `compras.id`, `reventa` → `transacciones_reventa.id`,
+`reembolso-entrada` → `cancelaciones.id`, `reembolso-pedido` → `operacion_id` de
+la cancelación. Compra/pedido/reventa/reembolso de entradas reutilizan SQL/HTTP
+real de las suites existentes; reembolso de pedido añade tres pruebas con dobles
+de registros y reutiliza snapshots CU-011F anteriores, sin atribuirle una nueva
+cancelación HTTP/SQL ejecutada en esta entrega.
+
+El JSON privado contiene `ambito: "ensayo-simulado"`, opciones PostgreSQL de la
+base exclusiva `hexacore_e2e` y lista `operaciones: [{tipo,id}]`; nunca versionarlo.
+Salidas: **0** relación comprobada en este alcance, **1** inconsistencia/no encontrada,
+**2** pendiente/incierta o verificación parcial, **3** configuración/consulta inválida.
+Un código 0 no prueba todo RNF-11 ni retención durante un año.
+
+### Conexión exacta pendiente del despliegue de Diego
+
+CD conserva `compilacion → imagenes → comprobacion → despliegue → owasp`.
+`verificar-version.py` exige las ocho aplicaciones activas con label OCI del mismo
+SHA; `/version` en gateway/Caddy acredita la revisión servida antes y después de
+ZAP. `owasp-desplegado.yml` reutilizable exige revisión y URL HTTPS de API/cliente/admin,
+además de `OWASP_CLIENTE_EMAIL` y `OWASP_CLIENTE_CONTRASENA`, secretos de una
+cuenta **exclusiva de ensayo**. Tras verificar la revisión obtiene una sesión
+nueva con un solo POST HTTPS de login, sin redirecciones ni reintentos; no
+guarda un JWT que pueda caducar durante CD ni amplía su TTL. Sin sesión, certificado confiable, conectividad, revisión igual o
+cero High, falla con reporte incompleto; no se desactiva TLS ni se concede una
+exclusión para aprobar.
+
+Consulta actual: variables/secretos de repositorio vacíos; entorno `produccion`
+no acreditado, último trabajo «Desplegar en producción» omitido. Samuel confirma que el servidor de presentación nunca se creó; falta también
+confirmar nombres controlados por el equipo. Diego debe
+confirmar destino y acceso desde Actions, `PRODUCCION_DOMINIO` y opcional
+`PRODUCCION_DOMINIO_ADMIN`, los cuatro `PRODUCCION_SSH_*`, confianza HTTPS,
+credenciales de esa cuenta y ejecución efectiva sobre SHA exacto. La ruta automática
+actual despliega **main**; si el destino docente usa otro flujo, debe llamar al
+workflow reutilizable **después de su despliegue verificado**, sin identificar el
+runner temporal con ese servidor. No se despliega ni cambia main desde esta entrega.
+
+Fuentes oficiales: [API/categorías ZAP](https://www.zaproxy.org/docs/api/),
+[npm audit](https://docs.npmjs.com/cli/audit/) y
+[workflows reutilizables](https://docs.github.com/en/actions/reference/workflows-and-actions/reusing-workflow-configurations).
+
+### Tácticas, RNF-13 y límites de Safety
+
+- **Cohesión:** Monitoreo concentra interpretación de ingresos y su proyección;
+  Identidad, Alimentos y Pagos tienen responsabilidades/esquemas definidos.
+  No basta con contar carpetas: Núcleo todavía reúne varios dominios.
+- **Acoplamiento:** interfaces de Pagos y adaptadores, eventos AMQP y comprobador
+  de fronteras. Base/proceso compartidos y contratos de eventos siguen acoplando.
+- **Enlace tardío:** cargadores de configuración y `configuracion.js` externos;
+  reinicio/recreación cuando cambia un proceso, sin compilación posterior.
+- **Cambio típico revisable RNF-13:** PR #60, `git diff ccc9d8e..4a2b851 -- App/backend/modulos/operacion/monitoreo`: ingreso sin `puntoAcceso` se interpreta como «Acceso general». Solo
+  consumidor Monitoreo y sus pruebas del Núcleo; evento/API pública sin ampliación.
+  No se cambia productor, Boletería ni portal. ADR-16 mantiene despliegues
+  coordinados: no se declara independencia de despliegue por dominio ni RNF-13 global.
+- **RNF-01:** bloqueos/PK/reservas/idempotencia son protección durante la operación;
+  verificador y pruebas son comprobaciones posteriores. Reutilizar histórico de
+  50 compradores con fuente/fecha; prueba actual de Boletería tiene 8 competidores
+  por checkout, no se cambia el umbral a 8.
+- **RNF-02:** Ventas rota QR atómicamente; Acceso recibe una proyección asíncrona.
+  La prueba actual espera convergencia antes de rechazar QR viejo. El verificador
+  informa código 2 si todavía encuentra su hash anterior; no acredita invalidación
+  inmediata global ni corrige retroactivamente el historial.
+- **RNF-11:** actor en operación/historial enlazado al libro (el solicitante del
+  libro es un dominio, no el actor humano); política ≥1 año sin evidencia de un
+  año transcurrido. Auditoría SQL no es no repudio criptográfico. Reembolsos tienen
+  límite explícito de referencia original y no hay conciliación global.
+
+**Entorno C:** motor activo 2912 MiB, 111 contenedores totales y 41 activos al revisar; inventario privado
+conservado, sin crear/detener/reconfigurar recursos ni abrir Docker Desktop. No se
+opera VPN/A/B/ZeroTier ni se realizan caídas. Estado de servicios y mediciones
+reales se documentarán con Actions, sin atribuir al equipo C un montaje nuevo.
+
+
 ## Preparación documental para sustentación — 15/11/2026
 
 [CIERRE-RUBRICA.md](CIERRE-RUBRICA.md) contrasta SAD, requisitos, código y
@@ -1788,7 +2045,7 @@ de 18. Las 13 pruebas de esquemas comprueban ese registro y las huellas conserva
 | Verificación local de esta entrega | Resultado |
 |---|---|
 | Tipos y build del backend integrado, Node 22.22.3 | Aprobados |
-| Guardas de revisión y salud | **14/14** |
+| Guardas de revisión y salud | **17/17** |
 | Procedencias contra el Git fijado y controles negativos | **3/3** |
 | Esquemas y 18 fuentes conservadas | **13/13** |
 | Archivo histórico, sin Docker | Tres archivos idénticos a be579614; aprobado |
@@ -2077,7 +2334,7 @@ contiene `min:1`. Trabajador y portales conservan sus imágenes previas; la sond
 del primero cambia por montaje propio. La configuración efectiva del gateway
 coincide con la generada CU-015. No se supone que todas las imágenes lleven HEAD.
 
-La VM dispone de **2,84 GiB / ocho vCPU para 41 contenedores**. Durante el último
+La VM dispone de **2,84 GiB / ocho vCPU para 41 contenedores activos**. Durante el último
 automático se observaron **135–175 MiB disponibles y unos 0,2 MiB libres de 1 GiB
 de swap**. La presión de memoria `full avg10` de la VM osciló **9,94–66,35 %** en
 automático y **3,74–40,79 %** en visible. Los contadores del cgroup propio muestran

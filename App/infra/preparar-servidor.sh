@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
 #
+# Plantillas históricas: el servidor de presentación nunca se creó.
+# dominio-controlado.example.invalid es un marcador no resoluble, no un destino.
+# No ejecutar este script para mostrar el escaneo temporal aprobado en Actions.
+#
 # Prepara un servidor Ubuntu nuevo para HEXACORE. Se ejecuta UNA vez, en el
 # servidor, con un usuario que tenga sudo:
 #
 #   curl -fsSL https://raw.githubusercontent.com/Emperador24/HEXACORE/main/App/infra/preparar-servidor.sh \
-#     | bash -s -- hexacore.duckdns.org
+#     | bash -s -- dominio-controlado.example.invalid
 #
-# o, con el repositorio ya clonado:  ./App/infra/preparar-servidor.sh hexacore.duckdns.org
+# o, con el repositorio ya clonado:  ./App/infra/preparar-servidor.sh dominio-controlado.example.invalid
 #
 # Hace: instala Docker, clona el repositorio en ~/HEXACORE, crea memoria swap
 # (una VM de 4 GB lo agradece), abre solo los puertos 22, 80 y 443, genera
@@ -18,7 +22,7 @@
 set -euo pipefail
 
 DOMINIO="${1:-}"
-[[ -n "$DOMINIO" ]] || { echo "Uso: preparar-servidor.sh <dominio>   (p. ej. hexacore.duckdns.org)"; exit 1; }
+[[ -n "$DOMINIO" ]] || { echo "Uso: preparar-servidor.sh <dominio>   (marcador de la guía: dominio-controlado.example.invalid; debe sustituirse)"; exit 1; }
 REPOSITORIO="${HEXACORE_REPOSITORIO:-https://github.com/Emperador24/HEXACORE.git}"
 DESTINO="${HEXACORE_DESTINO:-$HOME/HEXACORE}"
 

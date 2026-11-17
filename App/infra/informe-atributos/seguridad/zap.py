@@ -14,34 +14,50 @@ def interno():
         return d
     api('core','action','newSession',name='',overwrite='true')
     version=api('core','view','version')['version'];solicitudes=[]
+    destinos=cfg.get('destinos',{'cliente':'http://cliente:4200','admin':'http://admin:4201','api':'http://objetivo:8080'})
+    permitidos={(urllib.parse.urlsplit(x).scheme,urllib.parse.urlsplit(x).netloc) for x in destinos.values()}
     def enviar(url,token=None):
         u=urllib.parse.urlsplit(url)
-        assert u.scheme=='http' and u.netloc in ['cliente:4200','admin:4201','objetivo:8080']
-        request=f'GET {u.path or "/"}{"?"+u.query if u.query else ""} HTTP/1.1\r\nHost: {u.netloc}\r\n'
+        assert (u.scheme,u.netloc) in permitidos and u.scheme in ['http','https']
+        assert not u.username and not u.password and not u.fragment
+        # La URI absoluta conserva HTTPS en sendRequest de ZAP.
+        request=f'GET {url} HTTP/1.1\r\nHost: {u.netloc}\r\n'
         if token: request+='Authorization: Bearer '+token+'\r\n'
         d=api('core','action','sendRequest',request=request+'\r\n',followRedirects='false')
         msgs=d.get('sendRequest',[]);assert msgs,'ZAP no devolvió mensaje'
         m=msgs[0];estado=int(m['responseHeader'].split(' ')[1]);solicitudes.append({'url':url,'autenticada':bool(token),'estado':estado})
         return m.get('responseBody',''),estado
     omitidos=set()
-    for host in ['cliente:4200','admin:4201']:
-        html,status=enviar('http://'+host+'/');assert status==200
-        enviar('http://'+host+'/login')
+    for origen in [destinos['cliente'],destinos['admin']]:
+        host=urllib.parse.urlsplit(origen).netloc
+        html,status=enviar(origen+'/');assert status==200
+        enviar(origen+'/login')
         assets=re.findall(r'(?:src|href)=["\']([^"\']+)["\']',html)
         for asset in sorted(set(assets)):
-            url=urllib.parse.urljoin('http://'+host+'/',asset);u=urllib.parse.urlsplit(url)
+            url=urllib.parse.urljoin(origen+'/',asset);u=urllib.parse.urlsplit(url)
             if u.netloc!=host: omitidos.add(u.netloc);continue
             if re.search(r'\.(js|css)(?:\?|$)',url): enviar(url)
-    f=cfg['fixture'];auth=cfg['tokens']
-    for ruta in ['/salud','/cartelera','/pagos/configuracion','/cuentas/perfil',f'/pedidos/mis-pedidos/{f["pedido"]}']:
-        enviar('http://objetivo:8080/api/v1'+ruta)
-    for ruta,actor in [('/cuentas/perfil','cliente'),(f'/pedidos/mis-pedidos/{f["pedido"]}','cliente'),(f'/pedidos/establecimientos/{f["local"]}/menu','personal')]:
-        _,estado=enviar('http://objetivo:8080/api/v1'+ruta,auth[actor]);assert estado==200,'No hubo cobertura autenticada fuera de login'
+    f=cfg.get('fixture',{});auth=cfg['tokens']
+    publicas=cfg.get('publicas',['/salud','/cartelera','/pagos/configuracion','/cuentas/perfil',f'/pedidos/mis-pedidos/{f.get("pedido", "")}'])
+    autenticadas=cfg.get('autenticadas',[['/cuentas/perfil','cliente'],[f'/pedidos/mis-pedidos/{f.get("pedido", "")}','cliente'],[f'/pedidos/establecimientos/{f.get("local", "")}/menu','personal']])
+    assert autenticadas, 'Falta cobertura autenticada'
+    for ruta in publicas:
+        assert ruta.startswith('/') and '?' not in ruta and '#' not in ruta
+        _,estado=enviar(destinos['api']+'/api/v1'+ruta)
+        esperado=cfg.get('esperadosPublicos',{}).get(ruta)
+        if esperado is not None: assert estado==esperado,'Respuesta pública distinta del contrato del escaneo'
+    for ruta,actor in autenticadas:
+        assert ruta.startswith('/') and '?' not in ruta and '#' not in ruta
+        _,estado=enviar(destinos['api']+'/api/v1'+ruta,auth[actor]);assert estado==200,'No hubo cobertura autenticada fuera de login'
     plazo=time.monotonic()+120
     pendientes=int(api('pscan','view','recordsToScan')['recordsToScan'])
     while pendientes and time.monotonic()<plazo:
         time.sleep(1);pendientes=int(api('pscan','view','recordsToScan')['recordsToScan'])
-    alertas=api('core','view','alerts',start=0,count=10000)['alerts']
+    alertas=[]
+    while True:
+        pagina=api('core','view','alerts',start=len(alertas),count=500)['alerts']
+        alertas.extend(pagina)
+        if len(pagina)<500: break
     reglas=api('pscan','view','scanners')['scanners']
     return {'version':version,'solicitudes':solicitudes,'alertas':alertas,'reglas':reglas,'pendientes':pendientes,'hostsExcluidos':sorted(omitidos),'activoZAP':False,'cobertura':'Pasivo HTTP de HTML/assets iniciales de dos SPA y API; no ejecuta JavaScript ni representa toda la navegación Angular'}
 
