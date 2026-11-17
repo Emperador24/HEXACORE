@@ -82,6 +82,9 @@ export class ParqueaderosComponent implements OnInit, OnDestroy {
   readonly ultimaSalida = signal<SalidaVehiculo | null>(null);
   readonly ingreso = signal<{ texto: string; zonaId: string; tipo: TipoVehiculo }>({ texto: '', zonaId: '', tipo: 'AUTOMOVIL' });
   readonly ultimoIngreso = signal<IngresoVehiculo | null>(null);
+  /** El motivo del último ingreso o salida negados, junto a su panel: el aviso general queda arriba, fuera de la vista. */
+  readonly errorIngreso = signal<string | null>(null);
+  readonly errorSalida = signal<string | null>(null);
   readonly tipos = TIPOS_VEHICULO;
 
   // CU-021 y CU-023.
@@ -178,8 +181,15 @@ export class ParqueaderosComponent implements OnInit, OnDestroy {
   async registrarSalida(): Promise<void> {
     const texto = this.placaSalida().trim();
     if (!texto) return;
+    this.errorSalida.set(null);
     await this.ejecutar(async () => {
-      this.ultimaSalida.set(await this.api.registrarSalida(this.eventoId(), ES_QR.test(texto) ? { codigoQr: texto } : { placa: texto }));
+      try {
+        this.ultimaSalida.set(await this.api.registrarSalida(this.eventoId(), ES_QR.test(texto) ? { codigoQr: texto } : { placa: texto }));
+      } catch (e) {
+        this.ultimaSalida.set(null);
+        this.errorSalida.set(this.mensaje(e, 'No se pudo registrar la salida.'));
+        return;
+      }
       this.placaSalida.set('');
       await this.consultar();
     }, 'No se pudo registrar la salida.');
@@ -190,10 +200,19 @@ export class ParqueaderosComponent implements OnInit, OnDestroy {
     const i = this.ingreso();
     const texto = i.texto.trim();
     if (!texto) return;
+    this.errorIngreso.set(null);
     await this.ejecutar(async () => {
-      const r = await this.api.registrarIngreso(this.eventoId(), {
-        ...(ES_QR.test(texto) ? { codigoQr: texto } : { placa: texto }), tipoVehiculo: i.tipo, ...(i.zonaId ? { zonaId: i.zonaId } : {})
-      });
+      let r: IngresoVehiculo;
+      try {
+        r = await this.api.registrarIngreso(this.eventoId(), {
+          ...(ES_QR.test(texto) ? { codigoQr: texto } : { placa: texto }), tipoVehiculo: i.tipo, ...(i.zonaId ? { zonaId: i.zonaId } : {})
+        });
+      } catch (e) {
+        // CU-022B/C, placa inválida o vehículo ya adentro: el motivo, junto al formulario.
+        this.ultimoIngreso.set(null);
+        this.errorIngreso.set(this.mensaje(e, 'No se pudo registrar el ingreso.'));
+        return;
+      }
       this.ultimoIngreso.set(r);
       this.ingreso.set({ texto: '', zonaId: '', tipo: 'AUTOMOVIL' });
       await this.consultar();

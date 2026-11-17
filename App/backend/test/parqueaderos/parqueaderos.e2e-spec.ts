@@ -252,7 +252,10 @@ describe('CU-021 a CU-025 · Parqueaderos (e2e)', () => {
 
     // Pasos 2-4: cada vehículo al primer espacio de su tipo, el más cercano a la entrada.
     expect((await entrar(evento, { placa: placa(), zonaId: norte.id })).asignacion).toMatchObject({ espacio: 'N-03', zona: 'Zona Norte', reasignado: false, conReserva: false });
-    expect((await entrar(evento, { placa: placa(), zonaId: norte.id, tipoVehiculo: 'MOTO' })).estancia).toMatchObject({ espacio: 'N-02', tipoVehiculo: 'MOTO' });
+    // Sin reserva, la placa debe ser del tipo de vehículo: una moto no entra como automóvil.
+    const moto = `${placa().slice(0, 5)}M`;
+    expect(await entrar(evento, { placa: moto, zonaId: norte.id }, 400)).toMatchObject({ codigo: 'PLACA_INVALIDA' });
+    expect((await entrar(evento, { placa: moto, zonaId: norte.id, tipoVehiculo: 'MOTO' })).estancia).toMatchObject({ espacio: 'N-02', tipoVehiculo: 'MOTO' });
     expect((await entrar(evento, { placa: placa(), zonaId: norte.id, tipoVehiculo: 'DISCAPACIDAD' })).estancia.espacio).toBe('N-01');
     expect((await entrar(evento, { placa: placa(), zonaId: norte.id })).estancia.espacio).toBe('N-04');
     // Un espacio con vehículo no cambia de tipo.

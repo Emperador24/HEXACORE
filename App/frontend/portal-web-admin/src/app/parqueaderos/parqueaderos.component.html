@@ -168,6 +168,12 @@
               <span class="secundario">{{ s.estancia.zona }}{{ s.estancia.espacio ? ' · ' + s.estancia.espacio + ' liberado' : '' }} · {{ s.estancia.ingresoEn | date: 'HH:mm' }} – {{ s.estancia.salidaEn | date: 'HH:mm' }}{{ s.permanenciaMinutos !== null ? ' (' + s.permanenciaMinutos + ' min)' : '' }}{{ s.repetida ? ' · salida ya registrada' : '' }}</span>
             </div>
           }
+          @if (errorSalida(); as motivo) {
+            <div class="rechazo" role="alert" data-prueba="salida-negada">
+              <mat-icon>block</mat-icon>
+              <div><strong>Salida no registrada</strong><span>{{ motivo }}</span></div>
+            </div>
+          }
         </div>
       </section>
 
@@ -195,6 +201,12 @@
               <span class="monto">{{ i.asignacion.espacio }}</span>
               <span>{{ i.asignacion.zona }} · {{ i.asignacion.conReserva ? 'Con reserva pagada' : 'Paga al salir' }}</span>
               @if (i.asignacion.reasignado) { <span class="secundario">{{ i.asignacion.detalle }}</span> }
+            </div>
+          }
+          @if (errorIngreso(); as motivo) {
+            <div class="rechazo" role="alert" data-prueba="ingreso-negado">
+              <mat-icon>block</mat-icon>
+              <div><strong>Ingreso negado</strong><span>{{ motivo }}</span></div>
             </div>
           }
         </div>

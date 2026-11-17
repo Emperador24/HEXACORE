@@ -5,7 +5,7 @@ import { DataSource, EntityManager, QueryFailedError } from 'typeorm';
 import { EventosService } from '../../eventos-recintos/eventos/eventos.service';
 import { Asignacion, AsignacionService } from '../asignacion/asignacion.service';
 import { COLUMNAS_ESTANCIA, CobroService, Estancia, cobroDe } from '../cobro/cobro.service';
-import { TipoVehiculo, normalizarPlaca } from '../comun/vehiculos';
+import { TipoVehiculo, errorPlaca, normalizarPlaca } from '../comun/vehiculos';
 import { RegistroLocalDto } from '../dto/parqueaderos.dto';
 import { OcupacionService } from '../ocupacion/ocupacion.service';
 import { CONEXION_PARQUEADEROS } from '../persistencia/conexion';
@@ -108,6 +108,13 @@ export class AccesosService {
     }
     const placa = reserva?.placa ?? normalizarPlaca(d.placa!);
     const tipo = reserva?.tipoVehiculo ?? d.tipoVehiculo ?? 'AUTOMOVIL';
+    // Sin reserva, la placa debe ser del vehículo que dice el operador: una moto
+    // no entra como automóvil a ocupar un espacio de carro (las reservadas ya se
+    // validaron al reservar).
+    if (!reserva) {
+      const problema = errorPlaca(placa, tipo);
+      if (problema) throw new BadRequestException({ codigo: 'PLACA_INVALIDA', mensaje: `${problema} Ingreso negado.` });
+    }
 
     // Paso 4 / CU-023: con reserva, su espacio; sin ella (CU-022A), el que asigne el sistema si hay cupo (CU-022C si no).
     let asignacion: Asignacion;
