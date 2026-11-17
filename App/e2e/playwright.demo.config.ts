@@ -19,7 +19,7 @@ if (!/^[\dTZ-]+$/.test(sello)) throw new Error('Identificador de sesión demo in
 process.env.CU015_DEMO_SESION = sello;
 const salida = resolve(__dirname, '.evidencia', `demo-${sello}`);
 if (process.env.TEST_WORKER_INDEX === undefined) {
-  console.log(`DEMO VISUAL — acciones ${demora} ms; etapas ${pausa} ms. No sustituye la aceptación automática. Informe privado: ${salida}`);
+  console.log(`DEMO VISUAL — ${demora} ms entre operaciones de interfaz; ${pausa} ms de lectura por pantalla/etapa lista. No sustituye la aceptación automática. Informe privado: ${salida}`);
 }
 
 export default defineConfig({

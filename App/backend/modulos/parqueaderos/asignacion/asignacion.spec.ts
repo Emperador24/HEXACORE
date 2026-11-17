@@ -1,4 +1,4 @@
-import { ESPACIOS_ADMITIDOS } from '../comun/vehiculos';
+import { ESPACIOS_ADMITIDOS, errorPlaca, normalizarPlaca } from '../comun/vehiculos';
 import { codigoEspacio, prefijoDe } from './asignacion.service';
 
 describe('CU-023 · códigos y reglas de espacios', () => {
@@ -13,9 +13,20 @@ describe('CU-023 · códigos y reglas de espacios', () => {
     expect([1, 9, 10, 150].map((n) => codigoEspacio('A', n))).toEqual(['A-01', 'A-09', 'A-10', 'A-150']);
   });
 
-  it('un automóvil nunca ocupa espacios de moto ni de movilidad reducida', () => {
-    expect(ESPACIOS_ADMITIDOS.AUTOMOVIL).toEqual(['AUTOMOVIL']);
-    expect(ESPACIOS_ADMITIDOS.MOTO[0]).toBe('MOTO');
-    expect(ESPACIOS_ADMITIDOS.DISCAPACIDAD[0]).toBe('DISCAPACIDAD');
+  it('cada vehículo ocupa solo espacios de su tipo', () => {
+    expect(ESPACIOS_ADMITIDOS).toEqual({ AUTOMOVIL: ['AUTOMOVIL'], MOTO: ['MOTO'], DISCAPACIDAD: ['DISCAPACIDAD'] });
+  });
+
+  it.each([
+    ['ABC123', 'AUTOMOVIL', true], ['ABC123', 'DISCAPACIDAD', true], ['ABC12D', 'MOTO', true],
+    ['ABC12D', 'AUTOMOVIL', false], ['ABC123', 'MOTO', false], ['AB1234', 'AUTOMOVIL', false],
+    ['ABCD12', 'MOTO', false], ['ABC1234', 'AUTOMOVIL', false],
+  ] as const)('placa %s para %s: %s', (placa, tipo, valida) => {
+    expect(errorPlaca(placa, tipo) === null).toBe(valida);
+  });
+
+  it('normaliza guiones, espacios y minúsculas antes de validar', () => {
+    expect(normalizarPlaca(' abc-12d ')).toBe('ABC12D');
+    expect(errorPlaca(normalizarPlaca('abc 123'), 'AUTOMOVIL')).toBeNull();
   });
 });

@@ -22,7 +22,8 @@ const TOKENS_DEMO = [
   { valor: 'tok_rechazo_demo', etiqueta: 'Pago rechazado (CU-021B)' }
 ];
 
-const PLACA = /^[A-Za-z0-9-]{4,10}$/;
+/** Como la guarda el servidor: mayúsculas, sin guiones ni espacios. */
+const normalizar = (placa: string) => placa.replace(/[-\s]/g, '').toUpperCase();
 
 export const TIPOS: { valor: TipoVehiculo; etiqueta: string }[] = [
   { valor: 'AUTOMOVIL', etiqueta: 'Automóvil' },
@@ -35,7 +36,8 @@ const ESTADOS: Record<ReservaParqueadero['estado'], string> = {
   PAGANDO: 'Pago en proceso',
   CONFIRMADA: 'Confirmada',
   USADA: 'Usada',
-  EXPIRADA: 'Vencida'
+  EXPIRADA: 'Vencida',
+  CANCELADA: 'Cancelada'
 };
 
 /**
@@ -80,7 +82,22 @@ export class ParqueaderoComponent {
 
   readonly zona = computed(() => this.disponibilidad()?.zonas.find((z) => z.id === this.zonaSeleccionada()));
   readonly libresDelTipo = computed(() => this.zona()?.disponibles[this.tipo()] ?? 0);
-  readonly placaValida = computed(() => PLACA.test(this.placa().trim()));
+  /** Espacios libres para este tipo de vehículo en todo el parqueadero del evento. */
+  readonly libresTotales = computed(() => (this.disponibilidad()?.zonas ?? []).reduce((n, z) => n + (z.disponibles[this.tipo()] ?? 0), 0));
+  readonly etiquetaTipo = computed(() => TIPOS.find((t) => t.valor === this.tipo())!.etiqueta);
+  /** El formato que publica el servidor para este tipo (carro ABC123, moto ABC12D). */
+  readonly formatoPlaca = computed(() => this.disponibilidad()?.formatosPlaca?.[this.tipo()] ?? null);
+  readonly placaNormalizada = computed(() => normalizar(this.placa()));
+  readonly placaValida = computed(() => {
+    const formato = this.formatoPlaca();
+    return formato ? new RegExp(formato.patron).test(this.placaNormalizada()) : this.placaNormalizada().length >= 4;
+  });
+  /** Antes de apartar el espacio, la persona confirma placa, tipo y zona. */
+  readonly confirmando = signal(false);
+  /** La reserva cuya cancelación se está confirmando, y el resultado de la última. */
+  readonly porCancelar = signal<string | null>(null);
+  readonly cancelando = signal(false);
+  readonly avisoReservas = signal<string | null>(null);
 
   constructor() {
     effect(() => {
@@ -114,22 +131,42 @@ export class ParqueaderoComponent {
     this.zonaSeleccionada.set(id);
     this.alternativas.set([]);
     this.error.set(null);
+    this.confirmando.set(false);
+  }
+
+  /** Al cambiar el tipo, si la zona elegida no tiene espacios de ese tipo, se pasa a una que sí. */
+  elegirTipo(tipo: TipoVehiculo): void {
+    this.tipo.set(tipo);
+    this.confirmando.set(false);
+    this.error.set(null);
+    if (this.libresDelTipo() === 0) {
+      const conEspacio = this.disponibilidad()?.zonas.find((z) => z.disponibles[tipo] > 0);
+      if (conEspacio) this.zonaSeleccionada.set(conEspacio.id);
+    }
   }
 
   editarPlaca(evento: Event): void {
     this.placa.set((evento.target as HTMLInputElement).value.toUpperCase());
+    this.confirmando.set(false);
+  }
+
+  /** Primer clic: muestra los datos para confirmarlos. */
+  revisar(): void {
+    if (!this.zona() || !this.placaValida() || this.libresDelTipo() === 0) return;
+    this.confirmando.set(true);
   }
 
   /** Pasos 3-4: reserva; luego la pasarela cobra (pasos 5-9). */
   async reservar(): Promise<void> {
     const evento = this.eventoSeleccionado();
     if (!evento || !this.zona() || !this.placaValida() || this.reservando()) return;
+    this.confirmando.set(false);
     this.reservando.set(true);
     this.error.set(null);
     this.alternativas.set([]);
     try {
       const reserva = await this.parqueaderoService.reservar(evento, {
-        zonaId: this.zonaSeleccionada(), placa: this.placa().trim(), tipoVehiculo: this.tipo()
+        zonaId: this.zonaSeleccionada(), placa: this.placaNormalizada(), tipoVehiculo: this.tipo()
       });
       this.irAPagar(reserva);
     } catch (error) {
@@ -140,6 +177,24 @@ export class ParqueaderoComponent {
       void this.elegirEvento(evento);
     } finally {
       this.reservando.set(false);
+    }
+  }
+
+  /** Cancelar desde "Mis reservas"; el servidor decide si se puede y si hay devolución. */
+  async cancelar(reserva: ReservaParqueadero): Promise<void> {
+    if (this.cancelando()) return;
+    this.cancelando.set(true);
+    this.errorReservas.set(null);
+    try {
+      const r = await this.parqueaderoService.cancelar(reserva.id);
+      this.avisoReservas.set(r.mensaje);
+      this.porCancelar.set(null);
+      const evento = this.eventoSeleccionado();
+      if (evento) void this.elegirEvento(evento);
+    } catch (error) {
+      this.errorReservas.set(mensajeDeError(error));
+    } finally {
+      this.cancelando.set(false);
     }
   }
 

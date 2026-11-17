@@ -65,7 +65,7 @@ pasarela y referencias de pago; no se certifican todos los canales de PAN. &
 \subsection{Qué acredita el denominador 167/167}
 El inventario distingue \textbf{186 operaciones declaradas, 181 expuestas por el
 gateway y 167 protegidas}. Las diferencias y excepciones están enumeradas en
-\href{https://github.com/Emperador24/HEXACORE/blob/feature/sebastian/App/infra/informe-atributos/seguridad/INVENTARIO.md}{INVENTARIO.md};
+\href{https://github.com/Emperador24/HEXACORE/blob/main/App/infra/informe-atributos/seguridad/INVENTARIO.md}{INVENTARIO.md};
 no se usa ``0 rutas abiertas'' como afirmación sobre toda ruta pública o técnica.
 \href{https://github.com/Emperador24/HEXACORE/blob/9bc1ee5/App/infra/informe-atributos/seguridad/COBERTURA-RECURSOS.md}{COBERTURA-RECURSOS.md}
 traza cada operación protegida a su evidencia por gateway y servicio directo,
@@ -125,7 +125,7 @@ originales. CI no sustituye el ensayo local ni certifica el despliegue actual.\\
 Fuentes del bloque:
 \href{https://github.com/Emperador24/HEXACORE/blob/9bc1ee5/App/infra/informe-atributos/seguridad/RESULTADO.md}{resultado},
 \href{https://github.com/Emperador24/HEXACORE/blob/9bc1ee5/App/infra/informe-atributos/seguridad/COBERTURA-RECURSOS.md}{cobertura por operación},
-\href{https://github.com/Emperador24/HEXACORE/blob/feature/sebastian/App/infra/informe-atributos/seguridad/SECURITY-SAFETY.md}{relación Security/Safety},
+\href{https://github.com/Emperador24/HEXACORE/blob/main/App/infra/informe-atributos/seguridad/SECURITY-SAFETY.md}{relación Security/Safety},
 \href{https://github.com/Emperador24/HEXACORE/blob/9bc1ee5/App/infra/informe-atributos/seguridad/AUTORIZACION-CIERRE.md}{contrato y fallos}
 y \href{https://github.com/Emperador24/HEXACORE/blob/9bc1ee5/App/infra/informe-atributos/seguridad/CIERRE-EVIDENCIA.json}{evidencia saneada}.
 Las capturas SQL/Redis, sesiones, credenciales y QR completos permanecen privados,
@@ -232,8 +232,8 @@ dominio ni cumplimiento global de RNF-13 por ese ejemplo.
 
 Fuentes ejecutables y guion de ocho minutos:
 \href{https://github.com/Emperador24/HEXACORE/pull/64}{PR 64},
-\href{https://github.com/Emperador24/HEXACORE/blob/feature/sebastian/Documentation/Work/PLAN-CIERRE-SEBASTIAN.md}{plan de cierre vigente} y
-\href{https://github.com/Emperador24/HEXACORE/blob/feature/sebastian/App/infra/informe-atributos/seguridad/SECURITY-SAFETY.md}{Security/Safety}.
+\href{https://github.com/Emperador24/HEXACORE/blob/main/Documentation/Work/PLAN-CIERRE-SEBASTIAN.md}{plan de cierre vigente} y
+\href{https://github.com/Emperador24/HEXACORE/blob/main/App/infra/informe-atributos/seguridad/SECURITY-SAFETY.md}{Security/Safety}.
 
 \subsection{Límites de Seguridad y separación de Safety}
 \textbf{RNF-05/06 permanecen parciales.} Quedan DAST autenticado y combinaciones
@@ -252,7 +252,7 @@ Hallazgo funcional histórico corregido en PR 60: ingreso sin \texttt{puntoAcces
 se proyecta como «Acceso general», con sus pruebas de deduplicación/reintento.
 
 La preparación de dos servidores y un cliente sigue siendo
-\href{https://github.com/Emperador24/HEXACORE/blob/feature/sebastian/Documentation/Work/PLAN-DEMO-ZEROTIER.md}{un plan pendiente}:
+\href{https://github.com/Emperador24/HEXACORE/blob/main/Documentation/Work/PLAN-DEMO-ZEROTIER.md}{un plan pendiente}:
 A conserva gateway y datos; se podrá apagar B. A sigue siendo punto único de
 fallo. Este bloque no opera ni acredita la prueba distribuida de Samuel ni disponibilidad
 mensual; consultar el plan vigente para su estado real. El último control histórico de Redash terminó con

@@ -50,4 +50,10 @@ export class ReservasController {
   pagar(@Param('id', ParseUUIDPipe) id: string, @Body() dto: PagarReservaDto, @Req() peticion: PeticionConSesion) {
     return this.reservas.pagar(id, dto.token, peticion.sesion!.usuarioId);
   }
+
+  /** Cancelar la reserva: sin pagar, libera el espacio; pagada y si el evento no es hoy, con devolución completa. */
+  @Post('reservas/:id/cancelacion')
+  cancelar(@Param('id', ParseUUIDPipe) id: string, @Req() peticion: PeticionConSesion) {
+    return this.reservas.cancelar(id, peticion.sesion!.usuarioId);
+  }
 }

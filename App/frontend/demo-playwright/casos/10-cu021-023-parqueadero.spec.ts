@@ -22,7 +22,9 @@ test.describe.serial('Parqueadero · casos de uso de Daniel', () => {
     evento = d.evento;
     [zonaA, zonaB] = [`Cubierta ${d.sufijo}`, `Descubierta ${d.sufijo}`];
     [prefA, prefB] = [`C${corto}`, `D${corto}`];
-    [placaReserva, placaSinReserva] = [`RES${corto}`, `LLE${corto}`];
+    // Placas de carro colombianas (AAA111): CU-021 valida el formato según el vehículo.
+    const numero = String(Date.now() % 1000).padStart(3, '0');
+    [placaReserva, placaSinReserva] = [`RES${numero}`, `LLE${numero}`];
 
     // CU-024 es de Samuel: solo se fija una tarifa si todavía no hay ninguna.
     const admin = await sesion(ENTORNO.cuentas.administrador);
@@ -54,8 +56,13 @@ test.describe.serial('Parqueadero · casos de uso de Daniel', () => {
       await expect(page.getByText(/Total: \$/)).toBeVisible();
     });
 
-    await paso(page, 'Paso 6 · Apartar el espacio', 'El espacio queda bloqueado unos minutos mientras paga.', async () => {
+    await paso(page, 'Confirmar la placa', 'Antes de apartar el espacio se revisan placa, tipo de vehículo y zona.', async () => {
       await page.getByRole('button', { name: 'Continuar al pago' }).click();
+      await expect(page.locator('[data-prueba="confirmar-reserva"]')).toContainText(placaReserva);
+    });
+
+    await paso(page, 'Paso 6 · Apartar el espacio', 'El espacio queda bloqueado unos minutos mientras paga.', async () => {
+      await page.getByRole('button', { name: 'Sí, la placa es correcta' }).click();
       await expect(page).toHaveURL(/\/pago/);
     });
 
@@ -126,6 +133,8 @@ test.describe.serial('Parqueadero · casos de uso de Daniel', () => {
 
     await paso(page, 'Cambiar el tipo de un espacio', `${codigo} pasa a ser para motos.`, async () => {
       await libre.click();
+      // El tooltip del espacio se queda abierto con el mouse encima y tapa el selector.
+      await page.mouse.move(0, 0);
       await elegir(page, 'Tipo', 'Moto');
       await expect(page.locator('button.espacio').filter({ hasText: codigo })).toContainText('two_wheeler');
     });
