@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -18,13 +17,15 @@ import 'pages/seguimiento_pedidos_page.dart';
 import 'pages/restaurant_orders_page.dart';
 import 'pages/restaurant_menu_page.dart';
 import 'pages/change_password_page.dart';
+import 'pages/entradas_page.dart';
+import 'pages/validar_entradas_page.dart';
 import 'theme/app_theme.dart';
 import 'widgets/liquid_glass.dart';
 import 'widgets/qr_scanner_sheet.dart';
 import 'models/activity_log.dart';
 import 'models/requests_store.dart';
 import 'pages/verificar_cuenta_page.dart';
-import 'services/api_client.dart';
+import 'services/boleteria_api.dart';
 import 'services/cuentas_api.dart';
 import 'services/logistica_api_client.dart';
 import 'services/operacion_api.dart';
@@ -37,8 +38,6 @@ void main() {
   runApp(const HexacoreApp());
 }
 
-const _kInk = Color(0xFF0B0F1A);
-const _kPaper = Color(0xFFF5F3EF);
 const _kPink = Color(0xFFFF3D7F);
 const _kCyan = Color(0xFF22D3EE);
 const _kIndigo = Color(0xFF3B5BFF);
@@ -49,12 +48,6 @@ const _kRed = Color(0xFFFF5A5F);
 const _rowAccents = [_kPink, _kCyan, _kAmber, _kIndigo];
 const _dateFilters = ['Todos', 'Este mes', 'Próximos 3 meses'];
 
-// simula que una de cada ~7 acciones de validación falla por conexión, para
-// que las pantallas de escaneo de Personal no se sientan 100% infalibles
-final _random = Random();
-bool _networkGlitch() => _random.nextInt(7) == 0;
-const _kConnectionError =
-    'No se pudo conectar con el servidor, intenta de nuevo.';
 
 class User {
   const User(this.name, this.email, this.role, {this.position, this.credencial});
@@ -579,8 +572,8 @@ class _ClientShellState extends State<ClientShell> {
     );
   }
 
-  void _openTickets(Event event) => Navigator.of(context)
-      .push(MaterialPageRoute(builder: (_) => TicketsPage(event: event)));
+  void _openTickets(Event event) => Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => CompraEntradasPage(eventoId: event.id, nombre: event.name)));
   void _openNotifications() => Navigator.of(context)
       .push(MaterialPageRoute(builder: (_) => const NotificationsPage()))
       .then((_) => setState(() => _unread = 0));
@@ -634,6 +627,13 @@ class AppDrawer extends StatelessWidget {
           onTap: () => Navigator.of(context)
               .push(MaterialPageRoute(builder: (_) => ProfilePage(user: user))),
         ),
+        if (user.role == 'Cliente')
+          ListTile(
+            leading: const Icon(Icons.confirmation_number_outlined),
+            title: const Text('Mis entradas'),
+            onTap: () => Navigator.of(context)
+                .push(MaterialPageRoute(builder: (_) => const MisEntradasPage())),
+          ),
         ListTile(
           leading: const Icon(Icons.receipt_long_outlined),
           title: const Text('Mi actividad'),
@@ -663,19 +663,44 @@ class AppDrawer extends StatelessWidget {
   }
 }
 
+/// CU-005 desde la app: la cartelera real de Boletería (`GET /cartelera`), la
+/// misma que lee el portal web (RNF-14). Los filtros se aplican en memoria,
+/// como en el portal: la cartelera cabe entera en una página de 100.
 class EventsPage extends StatefulWidget {
-  const EventsPage({super.key, required this.onOpen});
+  const EventsPage({super.key, required this.onOpen, this.api});
   final ValueChanged<Event> onOpen;
+  final BoleteriaApi? api;
   @override
   State<EventsPage> createState() => _EventsPageState();
 }
 
+const _mesesCortos = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+Event _eventoDeCartelera(EventoResumen e) => Event(
+      e.id,
+      e.nombre,
+      '${e.fechaInicio.day} ${_mesesCortos[e.fechaInicio.month - 1]} ${e.fechaInicio.year}',
+      [e.lugar, e.ciudad].where((s) => s.isNotEmpty).join(', '),
+      e.precioDesde ?? 0,
+      day: e.fechaInicio,
+      past: e.pasado,
+      category: e.categoria,
+    );
+
 class _EventsPageState extends State<EventsPage> {
+  late final BoleteriaApi _api = widget.api ?? boleteriaApi;
   final _query = TextEditingController();
   String _category = 'Todos';
   String _dateFilter = 'Todos';
   bool _loadError = false;
-  final _rand = Random();
+  bool _loading = true;
+  List<Event> _events = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _refresh();
+  }
 
   bool _matchesDate(Event e) {
     if (_dateFilter == 'Todos') return true;
@@ -688,12 +713,23 @@ class _EventsPageState extends State<EventsPage> {
         e.day.isBefore(until);
   }
 
-  // Simula una recarga real: 1 de cada 4 veces "falla" para poder mostrar
-  // (y probar) el estado de error con reintento vía pull-to-refresh.
   Future<void> _refresh() async {
-    await Future.delayed(const Duration(milliseconds: 800));
-    if (!mounted) return;
-    setState(() => _loadError = _rand.nextInt(4) == 0);
+    try {
+      final eventos = await _api.cartelera();
+      if (!mounted) return;
+      setState(() {
+        _events = eventos.map(_eventoDeCartelera).toList();
+        _loadError = false;
+        _loading = false;
+      });
+    } on BoleteriaApiException {
+      if (mounted) {
+        setState(() {
+          _loadError = true;
+          _loading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -721,6 +757,7 @@ class _EventsPageState extends State<EventsPage> {
     final rest = upcoming.skip(1).toList();
     final noResults = filtered.isEmpty;
 
+    if (_loading) return const Center(child: CircularProgressIndicator());
     return RefreshIndicator(
         onRefresh: _refresh,
         child: ListView(padding: const EdgeInsets.all(16), children: [
@@ -957,406 +994,6 @@ class _PastEventRow extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class TicketsPage extends StatefulWidget {
-  const TicketsPage({super.key, required this.event});
-  final Event event;
-  @override
-  State<TicketsPage> createState() => _TicketsPageState();
-}
-
-const _kTiers = {
-  'General': 1.0,
-  'Platea Baja': 1.2,
-  'Palco VIP': 1.8,
-};
-
-class _TicketsPageState extends State<TicketsPage> {
-  bool _sent = false;
-  String? _code;
-  String? _seat;
-  String? _ticketId;
-  String? _txn;
-  String _tier = 'General';
-  int _qty = 1;
-  final _rand = Random();
-  CancellationRequest? _cancellationRequest;
-
-  @override
-  void initState() {
-    super.initState();
-    switch (widget.event.id) {
-      case 'evt-1':
-        _code = 'HXC-QR-000123';
-        _seat = 'Platea Baja · Fila 12 · Silla 34';
-        _ticketId = 'TCK-2026-000123';
-        _txn = 'TXN-2026-000501';
-      case 'evt-2':
-        _code = 'HXC-QR-000124';
-        _seat = 'General · Fila 3 · Silla 12';
-        _ticketId = 'TCK-2026-000124';
-        _txn = 'TXN-2026-000502';
-      case 'evt-4':
-        _code = 'HXC-QR-000099';
-        _seat = 'General · Fila 1 · Silla 5';
-        _ticketId = 'TCK-2026-000099';
-        _txn = 'TXN-2026-000099';
-    }
-  }
-
-  int get _tierPrice => (widget.event.price * _kTiers[_tier]!).round();
-  int get _subtotal => _tierPrice * _qty;
-
-  String _code6() => (100000 + _rand.nextInt(899999)).toString();
-
-  void _openCheckout() {
-    var method = 'Tarjeta de crédito o débito';
-    final promoCtrl = TextEditingController();
-    PromoCode? appliedPromo;
-    String? promoError;
-    showModalBottomSheet(
-        context: context,
-        builder: (context) =>
-            StatefulBuilder(builder: (context, setSheetState) {
-              final discount = appliedPromo == null
-                  ? 0
-                  : (_subtotal * appliedPromo!.discountPercent / 100).round();
-              final total = _subtotal - discount;
-              return Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const Text('Resumen de la compra',
-                          style: TextStyle(
-                              fontSize: 20, fontWeight: FontWeight.w600)),
-                      const SizedBox(height: 12),
-                      Text('$_tier x $_qty · \$$_subtotal'),
-                      const SizedBox(height: 10),
-                      Row(children: [
-                        Expanded(
-                          child: TextField(
-                              controller: promoCtrl,
-                              textCapitalization: TextCapitalization.characters,
-                              decoration: const InputDecoration(
-                                  labelText: 'Código promocional (opcional)')),
-                        ),
-                        const SizedBox(width: 8),
-                        OutlinedButton(
-                            onPressed: () => setSheetState(() {
-                                  final promo = requestsStore.validatePromo(
-                                      promoCtrl.text, widget.event.id);
-                                  appliedPromo = promo;
-                                  promoError = promo == null &&
-                                          promoCtrl.text.trim().isNotEmpty
-                                      ? 'Código inválido'
-                                      : null;
-                                }),
-                            child: const Text('Aplicar')),
-                      ]),
-                      if (promoError != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(promoError!,
-                              style: const TextStyle(color: _kRed)),
-                        ),
-                      if (appliedPromo != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                              '${appliedPromo!.code} aplicado · -${appliedPromo!.discountPercent}%',
-                              style: const TextStyle(color: _kGreen)),
-                        ),
-                      const Divider(),
-                      Text('Total: \$$total',
-                          style: const TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold)),
-                      DropdownButtonFormField<String>(
-                          initialValue: method,
-                          decoration: const InputDecoration(
-                              labelText: 'Método de pago'),
-                          items: const [
-                            DropdownMenuItem(
-                                value: 'Tarjeta de crédito o débito',
-                                child: Text('Tarjeta de crédito o débito')),
-                            DropdownMenuItem(value: 'PSE', child: Text('PSE'))
-                          ],
-                          onChanged: (value) =>
-                              setSheetState(() => method = value!)),
-                      const SizedBox(height: 8),
-                      LoadingFilledButton(
-                          label: 'Confirmar pago',
-                          onPressed: () async {
-                            await apiClient.confirmPayment(
-                                amount: total, method: method);
-                            if (!context.mounted) return;
-                            Navigator.pop(context);
-                            _confirmPurchase(total);
-                          })
-                    ]),
-              );
-            }));
-  }
-
-  void _confirmPurchase(int total) {
-    setState(() {
-      _code = 'HXC-QR-${_code6()}';
-      _ticketId = 'TCK-2026-${_code6()}';
-      _txn = 'TXN-2026-${_code6()}';
-      _seat = '$_tier · Cantidad: $_qty';
-      _sent = false;
-      _cancellationRequest = null;
-    });
-    activityLog.add(ActivityEntry(
-        type: ActivityType.ticket,
-        title: widget.event.name,
-        subtitle: '$_tier · Cantidad: $_qty',
-        amount: total));
-  }
-
-  void _requestCancellation() {
-    final reason = TextEditingController();
-    showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-                title: const Text('Solicitar cancelación'),
-                content: TextField(
-                    controller: reason,
-                    maxLines: 2,
-                    decoration: const InputDecoration(labelText: 'Motivo')),
-                actions: [
-                  TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancelar')),
-                  FilledButton(
-                      onPressed: () {
-                        if (reason.text.trim().isEmpty) return;
-                        final request = CancellationRequest(
-                            eventName: widget.event.name,
-                            ticketCode: _code!,
-                            reason: reason.text.trim());
-                        requestsStore.submitCancellation(request);
-                        setState(() => _cancellationRequest = request);
-                        Navigator.pop(context);
-                      },
-                      child: const Text('Enviar solicitud'))
-                ]));
-  }
-
-  void _send() {
-    final email = TextEditingController();
-    showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-                title: const Text('Enviar entrada'),
-                content: TextField(
-                    controller: email,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(
-                        labelText: 'Correo del destinatario')),
-                actions: [
-                  TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancelar')),
-                  FilledButton(
-                      onPressed: () {
-                        if (!email.text.contains('@')) return;
-                        Navigator.pop(context);
-                        setState(() => _sent = true);
-                      },
-                      child: const Text('Enviar'))
-                ]));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final scheme = Theme.of(context).colorScheme;
-    return GlassScaffold(
-      appBar: const GlassAppBar(title: Text('Mis entradas')),
-      body: ListView(
-        padding: EdgeInsets.fromLTRB(16,
-            kToolbarHeight + MediaQuery.of(context).padding.top + 20, 16, 24),
-        children: [
-          Text(widget.event.name, style: textTheme.headlineSmall),
-          const SizedBox(height: 4),
-          Text('${widget.event.date} · ${widget.event.place}',
-              style: textTheme.bodyMedium
-                  ?.copyWith(color: scheme.onSurface.withValues(alpha: 0.65))),
-          const SizedBox(height: 24),
-          if (_code == null)
-            LiquidGlassCard(
-              borderRadius: BorderRadius.circular(28),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text('Elige tu boletería', style: textTheme.titleMedium),
-                  const SizedBox(height: 10),
-                  Material(
-                      type: MaterialType.transparency,
-                      child: RadioGroup<String>(
-                        groupValue: _tier,
-                        onChanged: (value) => setState(() => _tier = value!),
-                        child: Column(children: [
-                          for (final tier in _kTiers.keys)
-                            RadioListTile<String>(
-                              contentPadding: EdgeInsets.zero,
-                              value: tier,
-                              title: Text(tier),
-                              subtitle: Text(
-                                  '\$${(widget.event.price * _kTiers[tier]!).round()}'),
-                            ),
-                        ]),
-                      )),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Text('Cantidad', style: textTheme.bodyMedium),
-                      const Spacer(),
-                      IconButton(
-                          onPressed:
-                              _qty > 1 ? () => setState(() => _qty--) : null,
-                          icon: const Icon(Icons.remove_circle_outline)),
-                      Text('$_qty', style: textTheme.titleSmall),
-                      IconButton(
-                          onPressed:
-                              _qty < 4 ? () => setState(() => _qty++) : null,
-                          icon: const Icon(Icons.add_circle_outline)),
-                    ],
-                  ),
-                  const DashedDivider(),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Text('Subtotal', style: textTheme.bodyMedium),
-                      const Spacer(),
-                      Text('\$$_subtotal', style: textTheme.titleMedium),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  FilledButton.icon(
-                      onPressed: _openCheckout,
-                      icon: const Icon(Icons.confirmation_number_outlined),
-                      label: const Text('Comprar entradas')),
-                ],
-              ),
-            )
-          else
-            AnimatedBuilder(
-              animation: requestsStore,
-              builder: (context, _) {
-                final cancellation = _cancellationRequest;
-                if (cancellation?.status == RequestStatus.approved) {
-                  return LiquidGlassCard(
-                    borderRadius: BorderRadius.circular(32),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const TintedIconBadge(
-                            icon: Icons.check_circle_outline,
-                            color: _kGreen,
-                            size: 52),
-                        const SizedBox(height: 14),
-                        Text('Entrada cancelada', style: textTheme.titleLarge),
-                        const SizedBox(height: 6),
-                        Text('Reembolso procesado a tu medio de pago original.',
-                            style: textTheme.bodyMedium?.copyWith(
-                                color:
-                                    scheme.onSurface.withValues(alpha: 0.7))),
-                      ],
-                    ),
-                  );
-                }
-                final isPending = cancellation?.status == RequestStatus.pending;
-                final isRejected =
-                    cancellation?.status == RequestStatus.rejected;
-                return LiquidGlassCard(
-                  borderRadius: BorderRadius.circular(32),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (isPending) ...[
-                        const Align(
-                          alignment: Alignment.centerLeft,
-                          child: StatusChip(
-                              label: 'Cancelación en revisión',
-                              color: _kAmber,
-                              icon: Icons.hourglass_top),
-                        ),
-                        const SizedBox(height: 14),
-                      ],
-                      if (isRejected) ...[
-                        Text('Tu solicitud de cancelación fue rechazada.',
-                            style: textTheme.bodySmall?.copyWith(color: _kRed)),
-                        const SizedBox(height: 12),
-                      ],
-                      Center(
-                        child: Container(
-                          width: 180,
-                          height: 180,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                              color: _kPaper,
-                              borderRadius: BorderRadius.circular(20)),
-                          child: const Icon(Icons.qr_code_2,
-                              size: 130, color: _kInk),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      Center(
-                        child: Text(_code!,
-                            style: const TextStyle(
-                                fontFamily: 'monospace',
-                                fontWeight: FontWeight.w700,
-                                fontSize: 16,
-                                letterSpacing: 1.2)),
-                      ),
-                      const SizedBox(height: 18),
-                      const DashedDivider(),
-                      const SizedBox(height: 18),
-                      Center(
-                        child: Column(
-                          children: [
-                            Text(_seat ?? '',
-                                style: textTheme.bodyMedium
-                                    ?.copyWith(fontWeight: FontWeight.w600)),
-                            const SizedBox(height: 4),
-                            Text('Ticket: $_ticketId',
-                                style: textTheme.bodySmall?.copyWith(
-                                    color: scheme.onSurface
-                                        .withValues(alpha: 0.55))),
-                            Text('Transacción: $_txn',
-                                style: textTheme.bodySmall?.copyWith(
-                                    color: scheme.onSurface
-                                        .withValues(alpha: 0.55))),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      FilledButton.icon(
-                          onPressed: isPending ? null : _send,
-                          icon: const Icon(Icons.send_outlined),
-                          label: Text(
-                              _sent ? 'Entrada enviada' : 'Enviar entrada')),
-                      if (!isPending) ...[
-                        const SizedBox(height: 8),
-                        Center(
-                          child: TextButton(
-                              onPressed: _requestCancellation,
-                              child: const Text('Solicitar cancelación')),
-                        ),
-                      ],
-                    ],
-                  ),
-                );
-              },
-            ),
-        ],
       ),
     );
   }
@@ -1691,8 +1328,8 @@ List<StaffDestination> _staffPages(User user) {
     ];
   }
   final operational = switch (position) {
-    'Entrada' => const StaffDestination('Validar entradas',
-        Icons.confirmation_number_outlined, EntryValidationPage()),
+    'Entrada' => StaffDestination('Validar entradas', Icons.confirmation_number_outlined,
+        ValidarEntradasPage(credencial: user.credencial ?? user.email)),
     'Parqueadero' => StaffDestination('Parqueadero', Icons.local_parking_outlined,
         ParkingOperationsPage(credencial: user.credencial ?? user.email)),
     _ => const StaffDestination(
@@ -2931,129 +2568,6 @@ class _AssignShiftPageState extends State<AssignShiftPage> {
                   onPressed: _empleados.isEmpty ? null : _asignar,
                   child: const Text('Asignar turno'),
                 ),
-            ],
-          ),
-        ),
-    ]);
-  }
-}
-
-
-const _kEventCapacity = 5000;
-
-class EntryValidationPage extends StatefulWidget {
-  const EntryValidationPage({super.key});
-  @override
-  State<EntryValidationPage> createState() => _EntryValidationPageState();
-}
-
-class _EntryValidationPageState extends State<EntryValidationPage> {
-  int? _selected;
-  int _admitted = 1180;
-  final _entries = [
-    'HXC-QR-000123 · Platea Baja',
-    'HXC-QR-000201 · General',
-    'HXC-QR-000202 · Palco VIP'
-  ];
-  final _valid = <int>{};
-
-  Future<void> _scan() async {
-    final value = await showQrScannerSheet(context, title: 'Escanear entrada');
-    if (value == null || !mounted) return;
-    final upper = value.toUpperCase();
-    final idx = _entries
-        .indexWhere((e) => upper.contains(e.split(' · ').first.toUpperCase()));
-    if (idx == -1) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content:
-              Text('Código no reconocido en la demo, mostrando un ejemplo.')));
-    }
-    setState(() => _selected = idx == -1 ? 0 : idx);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final scheme = Theme.of(context).colorScheme;
-    final ratio = _admitted / _kEventCapacity;
-    return ListView(padding: const EdgeInsets.all(16), children: [
-      LiquidGlassCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(children: [
-              Text('Aforo', style: textTheme.titleSmall),
-              const Spacer(),
-              Text('$_admitted/$_kEventCapacity',
-                  style: textTheme.titleSmall
-                      ?.copyWith(fontWeight: FontWeight.w700)),
-            ]),
-            const SizedBox(height: 10),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(6),
-              child: LinearProgressIndicator(
-                value: ratio.clamp(0, 1),
-                minHeight: 8,
-                backgroundColor: scheme.outlineVariant.withValues(alpha: 0.3),
-                color: ratio > 0.9 ? _kRed : _kIndigo,
-              ),
-            ),
-          ],
-        ),
-      ),
-      const SizedBox(height: 16),
-      FilledButton.icon(
-          onPressed: _scan,
-          icon: const Icon(Icons.qr_code_scanner),
-          label: const Text('Escanear entrada')),
-      const SizedBox(height: 16),
-      if (_selected == null)
-        Text('Escanea el QR de una boleta para revisar su validez.',
-            style: textTheme.bodyMedium
-                ?.copyWith(color: scheme.onSurface.withValues(alpha: 0.6)))
-      else
-        LiquidGlassCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text('HEXACORE Fest 2026', style: textTheme.titleMedium),
-              const SizedBox(height: 4),
-              Text(_entries[_selected!],
-                  style: const TextStyle(
-                      fontFamily: 'monospace', letterSpacing: 0.4)),
-              const SizedBox(height: 14),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: StatusChip(
-                    label: _valid.contains(_selected)
-                        ? 'Entrada validada'
-                        : 'Entrada válida',
-                    color: _valid.contains(_selected) ? _kGreen : _kAmber,
-                    icon: _valid.contains(_selected)
-                        ? Icons.check_circle_outline
-                        : Icons.info_outline),
-              ),
-              const SizedBox(height: 14),
-              if (!_valid.contains(_selected))
-                LoadingFilledButton(
-                    label: 'Validar ingreso',
-                    onPressed: () async {
-                      await Future.delayed(const Duration(milliseconds: 400));
-                      if (_networkGlitch()) {
-                        if (!context.mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text(_kConnectionError)));
-                        return;
-                      }
-                      setState(() {
-                        _valid.add(_selected!);
-                        _admitted++;
-                      });
-                    }),
-              const SizedBox(height: 8),
-              OutlinedButton(
-                  onPressed: () => setState(() => _selected = null),
-                  child: const Text('Escanear otra')),
             ],
           ),
         ),

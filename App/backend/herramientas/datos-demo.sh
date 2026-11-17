@@ -34,7 +34,9 @@ if grep -qv '^0$' <<<"$OCUPADAS"; then
   exit 0
 fi
 
-for tarea in semilla:identidad semilla:ventas semilla:catalogo semilla:logistica semilla:alimentos semilla:eventos; do
+# Acceso QR y Postventa guardan su propia copia de los eventos: sin ella la
+# puerta responde CU-002A "el evento no existe" a toda entrada.
+for tarea in semilla:identidad semilla:ventas semilla:catalogo semilla:acceso-qr semilla:postventa semilla:logistica semilla:alimentos semilla:eventos; do
   echo "→ $tarea"
   npm run --silent "$tarea"
 done
