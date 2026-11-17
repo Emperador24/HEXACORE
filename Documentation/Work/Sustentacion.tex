@@ -319,8 +319,8 @@ Image IDs SHA-256 iguales antes/después; \texttt{--no-build}. Sin recarga en ca
 \begin{frame}{Comprobabilidad · pruebas y cobertura}
 \begin{itemize}\setlength\itemsep{0.35em}
 \item \textbf{RNF-18:} cada servicio se prueba sin levantar los demás; base, broker, pasarela y correo se reemplazan por dobles.
-\item \textbf{En el CI:} \cifra{1\,141 pruebas unitarias}, pruebas HTTP contra el Núcleo, Boletería y el Trabajador reales, portales, app móvil y gateway.
-\item \textbf{Cobertura:} \texttt{npm run test:cov:total} une las unitarias y las e2e por línea; los módulos de Samuel están al 100\,\%.
+\item \textbf{En el CI:} \cifra{1\,162 pruebas unitarias}, pruebas HTTP contra el Núcleo, Boletería y el Trabajador reales, portales, app móvil y gateway.
+\item \textbf{Cobertura:} solo con unitarias, \cifra{68,7\,\%} por línea y 62,4\,\% en servicios y dominio: no llega al 70\,\% de RNF-18. \texttt{npm run test:cov:total} suma las e2e; los módulos de Samuel quedan al 100\,\%.
 \item \textbf{Falta:} publicar el reporte de cobertura de todos los servicios como paso de GitHub Actions.
 \end{itemize}
 \nota{Diego · \codigo{.github/workflows/ci.yml}{ci.yml} · \codigo{App/backend/test/cobertura-total.cjs}{cobertura-total.cjs}}
@@ -356,7 +356,7 @@ Image IDs SHA-256 iguales antes/después; \texttt{--no-build}. Sin recarga en ca
 \toprule
 \textbf{Grupo de pantallas} & \textbf{Patrón} & \textbf{Por qué}\\
 \midrule
-Cartelera (portal cliente) & Matricial & Se filtra por categoría, ciudad, artista y fechas\\
+Cartelera (portal cliente) & Matricial & Filtros combinables: texto, categoría, fecha y ciudad\\
 Compra con turno y pago & Secuencial & Pasos fijos: turno, localidad, pago, confirmación\\
 Portal administrativo & Jerárquico & Menú por módulo; cada rol ve solo sus módulos (CU-028)\\
 App móvil & Jerárquico por rol & Cliente y Personal ven secciones distintas\\
@@ -364,8 +364,8 @@ App móvil & Jerárquico por rol & Cliente y Personal ven secciones distintas\\
 \end{tabular}
 
 \vspace{0.6em}
-\textbf{RNF-12} (5 usuarios nuevos, $\geq$ 80\,\% de éxito) y \textbf{RNF-14} (paridad web y móvil)
-siguen sin prueba con usuarios. Cada integrante confirma el patrón de sus pantallas.
+\textbf{RNF-14:} 11 de 11 CU del cliente en web y app, sobre la misma API. \textbf{RNF-12:} la compra
+toma 4--5 pasos ($\leq$ 5); falta la prueba con 5 usuarios nuevos ($\geq$ 80\,\% de éxito).
 \nota{Daniel consolida; todos aportan.}
 \end{frame}
 
@@ -379,15 +379,16 @@ siguen sin prueba con usuarios. Cada integrante confirma el patrón de sus panta
 \item \textbf{RNF-07} se midió hasta 200 usuarios, no 2\,000; \textbf{RNF-10} con Boletería llega a 1,12--1,26$\times$ en un portátil.
 \item \textbf{RNF-03} (99,9\,\% mensual) no se mide en una demo: se muestra su mecanismo.
 \item \textbf{Seguridad:} escaneo integrado; falta ejecutarlo contra el servidor de presentación (cuenta de ensayo \texttt{OWASP\_CLIENTE\_*}).
-\item \textbf{Comprobabilidad:} falta publicar la cobertura de todos los servicios en Actions.
+\item \textbf{Comprobabilidad:} 68,7\,\% solo con unitarias; falta publicar la cobertura total en Actions.
+\item \textbf{Desplegabilidad:} la reversión automática no se ha provocado en vivo.
 \item \textbf{Usabilidad:} falta la prueba con cinco usuarios nuevos.
 \end{itemize}
 \end{frame}
 
 \begin{frame}{Evidencia y entregables}
 \begin{itemize}\setlength\itemsep{0.35em}
-\item \textbf{SAD actualizado} (\texttt{Documentation/Submission}): arquitectura vigente y diseño de cada atributo.
-\item \textbf{Repositorio:} \href{https://github.com/Emperador24/HEXACORE}{github.com/Emperador24/HEXACORE}, rama \texttt{develop}.
+\item \textbf{SAD actualizado} y estas diapositivas (\texttt{Documentation/Submission}): arquitectura vigente y diseño de todos los atributos.
+\item \textbf{Repositorio:} \href{https://github.com/Emperador24/HEXACORE}{github.com/Emperador24/HEXACORE}, rama \texttt{main}. Desplegado en \href{https://hexacore-javeriana.duckdns.org}{hexacore-javeriana.duckdns.org}.
 \item \textbf{Informes de medición:} \texttt{App/infra/informe-atributos/} (carga, tiempo real, seguridad).
 \item \textbf{Reparto de atributos y RNF:} \texttt{Documentation/Work/DISTRIBUCION-ATRIBUTOS.md}.
 \end{itemize}
