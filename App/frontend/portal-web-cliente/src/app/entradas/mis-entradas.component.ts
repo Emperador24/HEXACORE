@@ -8,6 +8,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { EntradaPropia, ReventaService, mensajeDeError } from '../core/reventa.service';
 import { COLOR } from '../shared/acentos';
+import { MisComprasComponent } from './mis-compras.component';
 
 /**
  * Mis entradas — el lado del vendedor del CU-006, contra el backend real.
@@ -28,7 +29,8 @@ import { COLOR } from '../shared/acentos';
     MatCardModule,
     MatFormFieldModule,
     MatInputModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    MisComprasComponent
   ],
   templateUrl: './mis-entradas.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
