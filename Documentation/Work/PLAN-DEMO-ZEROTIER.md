@@ -75,7 +75,8 @@ Python usa biblioteca estándar. No se añade una plataforma.
 1. A/B ejecutan los diagnósticos de solo lectura del documento por etapas.
    Revisar capacidad/puertos y coordinar el mismo SHA limpio. C no necesita Docker.
    Si un checkout tiene cambios/otra rama, preservarlo y usar una copia nueva de
-   `feature/sebastian`; no stash/reset/clean/switch forzados.
+   `main` (desde el 16/11 las herramientas exigen `main`, la versión que se entrega);
+   no stash/reset/clean/switch forzados.
 2. A genera secretos en un directorio privado **nuevo** con `crear-secretos`;
    A/B acuerdan su transferencia segura. Solo A conserva la privada TLS.
 3. A/B completan sus JSON con `<IP_ZT_A>`, `<IP_ZT_B>`, `<ID_RED_PRIVADA>`,

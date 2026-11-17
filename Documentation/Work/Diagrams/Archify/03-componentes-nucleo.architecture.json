@@ -71,7 +71,7 @@
       "id": "operacion",
       "type": "backend",
       "label": "Operación",
-      "sublabel": "evacuación · panel en vivo (SSE)",
+      "sublabel": "evacuación · panel en vivo (SSE, 1 s)",
       "pos": [
         810,
         200

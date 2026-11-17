@@ -13,7 +13,7 @@ reinicio, desconexión de ARPUJ o apagado para comprobarlo.
 
 | Equipo | Resultado observado | Pendiente antes de construir |
 |---|---|---|
-| A, Mac Samuel | `develop` limpio en c4c5793; Python3.15.2/OpenSSL3.5.9; Engine28.4.0 arm64, Compose2.39.2-desktop.1, contexto desktop-linux | Copia exclusiva feature/sebastian, SHA común, CPU/RAM física, disco del motor y puertos alternativos |
+| A, Mac Samuel | `develop` limpio en c4c5793; Python3.15.2/OpenSSL3.5.9; Engine28.4.0 arm64, Compose2.39.2-desktop.1, contexto desktop-linux | Copia exclusiva en `main`, SHA común, CPU/RAM física, disco del motor y puertos alternativos |
 | A, capacidad | Docker7.654GiB; 22 contenedores suman≈1044MiB y dejan≈6794MiB estimados por stats. Supera mínimos6144MiB y4096MiB restantes en esa instantánea | No acredita pico de construcción/uso del SO. Host35GiB disponibles/92% usado; no informa libre dentro del disco de la VM Docker |
 | A, servicios previos | Puertos de datos predeterminados ocupados; aplicaciones/monitoreo y otros recursos activos | Conservarlos. No detener, recrear, reconfigurar ni borrar para liberar puertos |
 | B, VM Javeriana | `main` limpio; solo SHA corto de captura, falta completo; Python3.10.12/OpenSSL3.0.2; cliente Docker29.1.3 amd64 | Copia exclusiva; consultar daemon/CPU/stats/disco. Docker permission denied no significa daemon detenido |
@@ -30,29 +30,29 @@ git status --short --branch
 git rev-parse HEAD
 ```
 
-PR54 ya se integró en5586b2a y PR55 dejó `develop` enc9b3b26. La rama de trabajo
-se actualizó mediante fast-forward, sin reset/force. Para estos servidores se
-usará **feature/sebastian**, con el SHA final publicado de esta entrega.
+**Actualización 16/11:** A y B montan **`main`**, la versión que se entrega. Antes
+se usaba `feature/sebastian`, pero quedó atrás de `develop` sin los arreglos de
+tiempo real (PR #60); las herramientas ahora exigen `main` (`comun.RAMA_DEMO`).
 
 Si el destino no existe, cada propietario crea su copia exclusiva:
 
 ```bash
-git clone --single-branch --branch feature/sebastian https://github.com/Emperador24/HEXACORE.git "$HOME/HEXACORE-demo-zt"
+git clone --single-branch --branch main https://github.com/Emperador24/HEXACORE.git "$HOME/HEXACORE-demo-zt"
 ```
 
 No cambiar de rama ni hacer pull/merge en los checkouts originales. Si el destino
 ya existe, inspeccionarlo; no borrarlo. Si es la copia exclusiva correcta, limpia
-y en feature/sebastian, actualizarla normalmente y reportar SHA:
+y en `main`, actualizarla normalmente y reportar SHA:
 
 ```bash
 (
 set -eu
 cd "$HOME/HEXACORE-demo-zt"
-test "$(git branch --show-current)" = feature/sebastian
+test "$(git branch --show-current)" = main
 test -z "$(git status --porcelain --untracked-files=all)"
 git remote get-url origin
-git fetch origin feature/sebastian
-git merge --ff-only origin/feature/sebastian
+git fetch origin main
+git merge --ff-only origin/main
 git status --short --branch
 git rev-parse HEAD
 )

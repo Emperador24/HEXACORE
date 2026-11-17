@@ -29,7 +29,7 @@ universitaria; ARPUJ se conserva para administración, sin cambiar rutas. A debe
 | C | Navegador, Python 3.10+ y ZeroTier del participante. URL HTTPS estable de A; observador de lecturas públicas/autenticadas |
 
 A/B: Python 3.10+, Docker local/Compose con `config --format json`, OpenSSL,
-repositorio en `feature/sebastian` y **el mismo commit limpio**. Se soporta el
+repositorio en `main` y **el mismo commit limpio**. Se soporta el
 guion de equipos en macOS/Linux; Windows requiere WSL2 y comprobar sus rutas desde
 Docker. El observador usa la biblioteca estándar de Python. No se usa `sudo`
 automático, Docker remoto o contexto SSH. Para B, tras autorización local, existe

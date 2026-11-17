@@ -133,8 +133,12 @@ def git(*args):
     return ejecutar(['git', *args]).strip()
 
 
+# A y B montan la misma versión publicada: la de main, que es lo que se entrega.
+RAMA_DEMO = 'main'
+
+
 def rama():
-    exigir(git('branch', '--show-current') == 'feature/sebastian', 'Solo feature/sebastian')
+    exigir(git('branch', '--show-current') == RAMA_DEMO, f'Solo {RAMA_DEMO}')
 
 
 def limpio(sha):
