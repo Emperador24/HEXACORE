@@ -1,0 +1,375 @@
+% Diseño, implementación y evidencia de desplegabilidad, comprobabilidad,
+% integrabilidad, usabilidad y portabilidad sobre la arquitectura vigente.
+% Responsables: Diego Coronado (RNF-15, RNF-18) y Daniel Cristancho (RNF-16,
+% RNF-12, RNF-14). Lo incluye DescripcionArquitecturaSoftware.tex con \input.
+% Las cifras salen de INTEGRABILIDAD-RNF16.md, USABILIDAD-PORTABILIDAD.md,
+% App/infra/DESPLIEGUE.md y de las ejecuciones citadas.
+
+\section{Desplegabilidad, comprobabilidad, integrabilidad, usabilidad y portabilidad}
+\label{sec:atributos-equipo}
+
+Esta sección completa el diseño de los atributos de calidad del prototipo con los que no se
+documentan en las secciones \ref{sec:atributos-vigentes} y \ref{sec:seguridad-vigente}:
+\textbf{desplegabilidad} (RNF-15) y \textbf{comprobabilidad} (RNF-18), a cargo de Diego Coronado;
+\textbf{integrabilidad} (RNF-16), \textbf{usabilidad} (RNF-12) y \textbf{portabilidad} (RNF-14), a
+cargo de Daniel Cristancho. Igual que en las secciones anteriores, para cada atributo se da el
+escenario de calidad, las tácticas con el mecanismo que las implementa, la evidencia y lo que
+todavía no está acreditado. A diferencia de la sección \ref{sec:tacticas}, todo se refiere a la
+arquitectura vigente (ADR-16).
+
+% ------------------------------------------------------------------
+\subsection{Desplegabilidad}
+\label{sec:desplegabilidad-vigente}
+
+\begin{center}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{3.2cm}|>{\raggedright\arraybackslash}p{10.4cm}|}
+\hline
+\multicolumn{2}{|l|}{\textbf{Escenario de calidad · Desplegabilidad (RNF-15)}}\\
+\hline
+Fuente & Un integrante del equipo que fusiona un cambio en \texttt{main}.\\
+\hline
+Estímulo & Una versión nueva de cualquiera de los programas.\\
+\hline
+Artefacto & Las ocho imágenes del sistema y el servidor de presentación.\\
+\hline
+Entorno & Operación normal del servidor, con datos.\\
+\hline
+Respuesta & GitHub Actions compila, publica, despliega y comprueba sin intervención manual. Si la
+versión nueva no queda sana, el servidor vuelve solo a la anterior.\\
+\hline
+Medida & Ventana de despliegue $\leq$ 10 min, reversión $\leq$ 5 min y 0 solicitudes fallidas
+durante el despliegue.\\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{center}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{2.8cm}|>{\raggedright\arraybackslash}p{6.7cm}|>{\raggedright\arraybackslash}p{3.8cm}|}
+\caption{Tácticas de desplegabilidad en la arquitectura vigente.}\label{tab:desplegabilidad-vigente}\\
+\hline
+\textbf{Táctica} & \textbf{Mecanismo} & \textbf{Dónde}\\
+\hline
+\endfirsthead
+\hline
+\textbf{Táctica} & \textbf{Mecanismo} & \textbf{Dónde}\\
+\hline
+\endhead
+Automatizar el despliegue &
+Cada merge a \texttt{main} pasa por el CI y, si sale verde, por el CD: compila las ocho imágenes
+para amd64 y arm64, las publica en GHCR y comprueba sus digests antes de desplegar. &
+\texttt{.github/\allowbreak workflows/\allowbreak cd.yml}\\
+\hline
+Versiones identificables &
+Se despliega siempre una etiqueta inmutable \texttt{sha-<commit>}, y el servidor anota la versión
+activa. Gateway y Caddy exponen \texttt{/version}. &
+\texttt{desplegar.sh}, \texttt{.version-\allowbreak desplegada}\\
+\hline
+Reversión automática &
+Si la versión nueva no llega a estar sana, \texttt{desplegar.sh} levanta la anterior y el trabajo
+del CD falla en rojo. Las migraciones solo van hacia delante: revertir cambia imágenes, no datos. &
+\texttt{desplegar.sh}, \texttt{CORTE-Y-\allowbreak REVERSION.md}\\
+\hline
+Configuración por entorno &
+El mismo artefacto sirve en local, en la demo y en producción; cambian el \texttt{.env}, el dominio
+y las claves JWT propias del servidor. &
+\texttt{preparar-\allowbreak servidor.sh}, \texttt{docker-compose.\allowbreak produccion.yml}\\
+\hline
+Acceso controlado al servidor &
+El CD entra por SSH con una llave exclusiva y la huella del servidor fijada en un secreto, en vez
+de aceptar la que diga el servidor al conectar. &
+Secretos \texttt{PRODUCCION\_SSH\_*}\\
+\hline
+\end{longtable}
+\end{center}
+
+\begin{sloppypar}\noindent\textbf{Evidencia.} El servidor de presentación corre en Google Cloud (\texttt{e2-standard-2},
+Ubuntu 24.04) con HTTPS de Let's Encrypt en
+\href{https://hexacore-javeriana.duckdns.org}{\texttt{hexacore-\allowbreak javeriana.\allowbreak duckdns.org}} y
+\texttt{admin.\allowbreak hexacore-\allowbreak javeriana.\allowbreak duckdns.org}
+(\href{https://github.com/Emperador24/HEXACORE/blob/main/App/infra/DESPLIEGUE.md}{DESPLIEGUE}). En
+la ejecución
+\href{https://github.com/Emperador24/HEXACORE/actions/runs/43987694799}{43987694799} del CD, el
+trabajo «Desplegar en producción» entró por SSH, desplegó \texttt{sha-9815d8e} y comprobó que
+\texttt{/api/v1/salud} respondiera, en \textbf{62 s}: dentro de los 10 min de RNF-15.\end{sloppypar}
+
+\paragraph{No acreditado.} No se ha provocado en vivo una versión que falle para medir la reversión
+(5 min), ni se han contado las solicitudes fallidas durante un despliegue: el compose de
+producción tiene una réplica por programa, así que al recrear un contenedor hay una ventana sin
+servicio que no está medida.
+
+% ------------------------------------------------------------------
+\subsection{Comprobabilidad}
+\label{sec:comprobabilidad-vigente}
+
+\begin{center}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{3.2cm}|>{\raggedright\arraybackslash}p{10.4cm}|}
+\hline
+\multicolumn{2}{|l|}{\textbf{Escenario de calidad · Comprobabilidad (RNF-18)}}\\
+\hline
+Fuente & Un integrante que cambia un módulo, o el CI en cada pull request.\\
+\hline
+Estímulo & Ejecutar las pruebas de un módulo.\\
+\hline
+Artefacto & Los módulos del Núcleo, Boletería y Trabajador.\\
+\hline
+Entorno & Desarrollo y CI, sin levantar los demás programas.\\
+\hline
+Respuesta & Cada módulo se prueba aislado: base, broker, pasarela y correo se reemplazan por dobles.\\
+\hline
+Medida & Cobertura de la lógica de dominio $\geq$ 70\% y 100\% de las dependencias externas
+sustituibles por dobles.\\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{center}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{2.8cm}|>{\raggedright\arraybackslash}p{6.7cm}|>{\raggedright\arraybackslash}p{3.8cm}|}
+\caption{Tácticas de comprobabilidad en la arquitectura vigente.}\label{tab:comprobabilidad-vigente}\\
+\hline
+\textbf{Táctica} & \textbf{Mecanismo} & \textbf{Dónde}\\
+\hline
+\endfirsthead
+\hline
+\textbf{Táctica} & \textbf{Mecanismo} & \textbf{Dónde}\\
+\hline
+\endhead
+Abstraer las dependencias externas &
+El negocio llega a lo externo por interfaces propias (\texttt{ProcesadorPagos}, correo, broker), que
+las pruebas reemplazan por dobles. La pasarela y el correo tienen además simuladores HTTP. &
+\texttt{modulos/\allowbreak finanzas/\allowbreak pagos}, \texttt{App/infra/\allowbreak pasarela-pagos-\allowbreak simulada}\\
+\hline
+Separar niveles de prueba &
+Unitarias (Jest) sin infraestructura; pruebas HTTP contra los programas reales; contratos de
+mensajería con RabbitMQ real; pruebas de imagen. Cada nivel tiene su configuración. &
+\texttt{jest-\allowbreak unitarias.json}, \texttt{test/\allowbreak jest-e2e.json}\\
+\hline
+Entornos de prueba exclusivos &
+Las pruebas que necesitan base o broker levantan los suyos, con nombres propios, sin tocar el
+entorno de desarrollo. &
+\texttt{test/README.md}\\
+\hline
+Hacer cumplir las fronteras &
+Una comprobación del CI impide que un módulo importe archivos internos de otro: solo su API
+pública. Así cada módulo se puede probar y reemplazar por separado. &
+\texttt{test/\allowbreak comprobar-\allowbreak configuracion.py}\\
+\hline
+Ejecutar todo en cada cambio &
+El CI corre en cada pull request las suites del backend, los portales, la app móvil y el gateway. &
+\texttt{.github/\allowbreak workflows/\allowbreak ci.yml}\\
+\hline
+\end{longtable}
+\end{center}
+
+\paragraph{Evidencia.} En el corte del 17/11/2026 pasan \textbf{1\,162 pruebas unitarias} del
+backend (39 omitidas), 90 de la app móvil y las suites de los portales; el CI del PR~66 salió
+verde en todos sus trabajos. Midiendo solo las pruebas unitarias
+(\texttt{npm run test:cov}), la cobertura por línea es \textbf{68,7\%} sobre los archivos que
+cargan, y \textbf{62,4\%} sobre los servicios y el dominio de los módulos.
+
+\paragraph{No acreditado.} Esas cifras no alcanzan el 70\% de RNF-18 contando solo unitarias.
+\texttt{npm run test:cov:total} une por línea la cobertura de las unitarias y de las pruebas HTTP,
+que ejecutan los programas reales, pero ese total no se ha publicado para esta revisión, ni el
+reporte de cobertura forma parte de GitHub Actions. Tampoco hay una matriz que acredite el 100\%
+de dependencias sustituibles.
+
+% ------------------------------------------------------------------
+\subsection{Integrabilidad}
+\label{sec:integrabilidad-vigente}
+
+\begin{center}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{3.2cm}|>{\raggedright\arraybackslash}p{10.4cm}|}
+\hline
+\multicolumn{2}{|l|}{\textbf{Escenario de calidad · Integrabilidad (RNF-16)}}\\
+\hline
+Fuente & La organización, que decide cambiar de proveedor de pagos.\\
+\hline
+Estímulo & Reemplazar la pasarela simulada por Stripe, o por otro proveedor.\\
+\hline
+Artefacto & El componente Pagos y los módulos que cobran: Entradas, Alimentos y Parqueaderos.\\
+\hline
+Entorno & Sistema desplegado, sin recompilar.\\
+\hline
+Respuesta & Se cambia una variable y los cobros, rechazos y reembolsos siguen funcionando.\\
+\hline
+Medida & 1 componente modificado (el adaptador) y 0 cambios en Entradas.\\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{center}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{2.8cm}|>{\raggedright\arraybackslash}p{6.7cm}|>{\raggedright\arraybackslash}p{3.8cm}|}
+\caption{Tácticas de integrabilidad en la arquitectura vigente.}\label{tab:integrabilidad-vigente}\\
+\hline
+\textbf{Táctica} & \textbf{Mecanismo} & \textbf{Dónde}\\
+\hline
+\endfirsthead
+\hline
+\textbf{Táctica} & \textbf{Mecanismo} & \textbf{Dónde}\\
+\hline
+\endhead
+Encapsular (interfaz propia) &
+El negocio cobra y reembolsa con \texttt{ProcesadorPagos} y siempre recibe uno de tres resultados:
+\texttt{APROBADO}, \texttt{RECHAZADO} o \texttt{INDETERMINADO}, iguales para cualquier proveedor. &
+\texttt{modulos/\allowbreak finanzas/\allowbreak pagos}\\
+\hline
+Adaptar &
+Un adaptador por proveedor: \texttt{PasarelaHttp} (simulada) y \texttt{PasarelaStripe}
+(PaymentIntents y Refunds). Traducen el protocolo de cada uno al contrato propio. &
+\texttt{pasarela-stripe.\allowbreak service.ts}, \texttt{pasarela-http.\allowbreak service.ts}\\
+\hline
+Vincular en la configuración &
+El único lugar que sabe qué pasarela hay es \texttt{crearProcesadorPagos}, que la elige por
+\texttt{PAGOS\_PROVEEDOR}. Cambiar de proveedor es cambiar una variable y reiniciar. &
+\texttt{pagos.module.ts}\\
+\hline
+Restringir dependencias &
+Los módulos de negocio llegan a Pagos solo por su API pública (\texttt{index.ts}); una prueba
+comprueba que ninguno nombra a Stripe, a un adaptador o a la variable. &
+\texttt{rnf16-cambio-\allowbreak pasarela.spec.ts}\\
+\hline
+\end{longtable}
+\end{center}
+
+\paragraph{Protocolos.} Internos: HTTP/JSON por el API Gateway (\texttt{/api/v1}, JWT RS256
+verificado en el gateway), AMQP con exchanges \emph{topic} entre módulos (bandeja de salida
+transaccional) y SSE para los paneles en vivo. Externo: Stripe, con la tarjeta tokenizada en el
+navegador por Stripe.js (la tarjeta nunca llega a HEXACORE), cobro por \texttt{POST
+/v1/payment\_intents} con \texttt{Idempotency-Key}, reembolso por \texttt{POST /v1/refunds} y
+confirmación tardía por un webhook firmado con HMAC-SHA256.
+
+\paragraph{Evidencia.} La prueba \texttt{rnf16-cambio-pasarela.spec.ts} (21 casos, en el CI) pasa la
+misma tabla de solicitudes por los dos adaptadores y obtiene los mismos resultados de negocio. En el
+sandbox de Stripe se cobró, se rechazó y se reembolsó de verdad por el camino completo. El cambio
+de pasarela se aplicó en \textbf{8 s}, sin recompilar y con \textbf{0 archivos de código
+modificados}
+(\href{https://github.com/Emperador24/HEXACORE/blob/main/Documentation/Work/INTEGRABILIDAD-RNF16.md}{INTEGRABILIDAD-RNF16}).
+La prueba real encontró y corrigió que el reembolso de un cobro de Stripe se rechazaba dentro de
+Pagos.
+
+\paragraph{Límites.} Un proveedor nuevo también necesita su formulario de tarjeta en los portales,
+porque la tokenización ocurre en el navegador; RNF-16 mide el backend. Stripe en modo de prueba no
+permite forzar un reembolso rechazado.
+
+% ------------------------------------------------------------------
+\subsection{Usabilidad y arquitectura de información}
+\label{sec:usabilidad-vigente}
+
+\begin{center}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{3.2cm}|>{\raggedright\arraybackslash}p{10.4cm}|}
+\hline
+\multicolumn{2}{|l|}{\textbf{Escenario de calidad · Usabilidad (RNF-12)}}\\
+\hline
+Fuente & Un cliente que nunca ha usado HEXACORE.\\
+\hline
+Estímulo & Quiere comprar una entrada (CU-001).\\
+\hline
+Artefacto & Portal web de clientes y app móvil.\\
+\hline
+Entorno & Uso normal, sin capacitación previa.\\
+\hline
+Respuesta & Completa la compra y ve su QR sin ayuda.\\
+\hline
+Medida & $\geq$ 80\% de éxito en una prueba con 5 usuarios, en $\leq$ 5 pasos desde el evento hasta
+la confirmación.\\
+\hline
+\end{tabular}
+\end{center}
+
+Cada grupo de pantallas sigue un patrón de arquitectura de información según la tarea que
+resuelve:
+
+\begin{center}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{3.2cm}|>{\raggedright\arraybackslash}p{2.5cm}|>{\raggedright\arraybackslash}p{7.6cm}|}
+\caption{Patrones de arquitectura de información por grupo de pantallas.}\label{tab:arquitectura-informacion}\\
+\hline
+\textbf{Grupo de pantallas} & \textbf{Patrón} & \textbf{Cómo se ve en el prototipo}\\
+\hline
+\endfirsthead
+\hline
+\textbf{Grupo de pantallas} & \textbf{Patrón} & \textbf{Cómo se ve en el prototipo}\\
+\hline
+\endhead
+Compra de entradas (CU-001) y pagos de pedidos y parqueadero & Secuencial &
+Una sola ruta hacia delante: evento $\rightarrow$ localidad y cantidad $\rightarrow$ pago
+$\rightarrow$ confirmación con QR. La cola virtual y la reserva ocurren dentro del mismo paso.\\
+\hline
+Registro, verificación y recuperación de cuenta (CU-027) & Secuencial &
+Pasos encadenados por el correo: registrarse, verificar con el enlace, iniciar sesión; o pedir
+el enlace y fijar la contraseña nueva.\\
+\hline
+Navegación del cliente (web y app) & Jerárquico plano (centro y radios) &
+Pocas secciones de primer nivel siempre visibles (en la app, la barra inferior: Eventos,
+Parqueadero, Pedidos, Reventa y Mis pedidos), y desde cada una su lista y su detalle.\\
+\hline
+Portal administrativo & Jerárquico, filtrado por rol &
+Menú lateral en tres grupos (General, Operación y Administración) $\rightarrow$ sección
+$\rightarrow$ lista $\rightarrow$ detalle o formulario nuevo (por ejemplo,
+\texttt{eventos}, \texttt{eventos/nuevo}, \texttt{eventos/:id}). Cada cuenta ve solo las
+secciones de sus roles; la barra superior muestra la ubicación (sección y página).\\
+\hline
+Gestión de personal (CU-007 a CU-009) & Jerárquico con pestañas &
+Dentro de Personal, pestañas para empleados, asignaciones, cambios de turno y asistencia: cuatro
+vistas de la misma información, al mismo nivel.\\
+\hline
+Paneles en vivo: monitoreo, parqueaderos y emergencias (CU-019, CU-025, CU-010) & Tablero &
+Una sola pantalla con las zonas y sus indicadores, que se actualiza sola (SSE); el detalle y las
+acciones se abren desde ahí sin salir del panel.\\
+\hline
+App del personal & Por audiencia (rol y puesto) &
+La pestaña operativa depende del puesto del turno: Entrada ve validar entradas; Parqueadero, el
+parqueadero; Restaurante, menú y pedidos. Todos ven además turnos, asistencia, incidentes y
+emergencia.\\
+\hline
+\end{longtable}
+\end{center}
+
+\paragraph{Evidencia.} Por diseño, la compra toma \textbf{4 pasos} en la app y \textbf{5} en la web
+desde el detalle del evento hasta ver el QR, dentro del límite de RNF-12; el código promocional es
+opcional y suma uno. Las demostraciones automatizadas recorren esos flujos en los portales reales
+(\href{https://github.com/Emperador24/HEXACORE/blob/main/Documentation/Work/USABILIDAD-PORTABILIDAD.md}{USABILIDAD-PORTABILIDAD}).
+
+\paragraph{No acreditado.} La prueba con cinco usuarios nuevos no se ha hecho: el porcentaje de
+éxito de RNF-12 es desconocido. El protocolo (consigna, criterio de éxito y plantilla) está
+escrito y listo para ejecutarse.
+
+% ------------------------------------------------------------------
+\subsection{Portabilidad}
+\label{sec:portabilidad-vigente}
+
+\begin{center}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{3.2cm}|>{\raggedright\arraybackslash}p{10.4cm}|}
+\hline
+\multicolumn{2}{|l|}{\textbf{Escenario de calidad · Portabilidad (RNF-14)}}\\
+\hline
+Fuente & Un cliente.\\
+\hline
+Estímulo & Usa una funcionalidad de su rol desde el navegador o desde el teléfono.\\
+\hline
+Artefacto & Portal web de clientes, app móvil y la API del gateway.\\
+\hline
+Entorno & Operación normal.\\
+\hline
+Respuesta & La misma funcionalidad está en las dos interfaces, sobre el mismo contrato.\\
+\hline
+Medida & 100\% de los CU del rol Cliente en ambas interfaces, con 0 reglas de negocio duplicadas en
+el cliente.\\
+\hline
+\end{tabular}
+\end{center}
+
+\paragraph{Diseño.} Las dos interfaces son clientes delgados del mismo API Gateway
+(\texttt{/api/v1}): precios, totales, descuentos, cupones y reembolsos los calcula el servidor, y los
+clientes solo validan la forma de lo que envían (largo de un texto, formato de una placa). La
+política de cancelación llega en la cotización y el cliente confirma con ese monto; si cambió, el
+servidor rechaza.
+
+\paragraph{Evidencia.} \textbf{11 de 11} CU con parte interactiva del Cliente (CU-001 a CU-006,
+CU-011, CU-013/014, CU-021, CU-022 y CU-027) están en la web y en la app sobre los mismos
+endpoints; CU-024 no tiene pantalla de Cliente en ninguna, por diseño del caso de uso. Antes de esta
+entrega la matriz daba 6 de 11 y el descuento se calculaba en el teléfono; se reemplazaron las
+pantallas simuladas de la app por las reales. Lo comprueban \texttt{boleteria\_test.dart}, la suite
+completa de la app (90 pruebas) y \texttt{entradas.service.spec.ts} del portal.
+
+\paragraph{Límites.} La app se probó en emulador Android: falta un teléfono físico contra la URL
+HTTPS de la demostración. La app usa los tokens de la pasarela simulada, que en modo de prueba se
+traducen a tarjetas de prueba de Stripe; no tiene formulario de tarjeta propio de Stripe.

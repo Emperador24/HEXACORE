@@ -391,14 +391,14 @@ Núcleo y Boletería y es la que se cae; C es el cliente que mide. A es el punto
 de falla. La red se usa con el rango \texttt{192.168.193.0/24}, porque un rango
 \texttt{10.x} choca con la VPN de la universidad, y la VM llega a A por un relevo de
 ZeroTier (unos 124 ms por ida y vuelta). El procedimiento está en
-\href{https://github.com/Emperador24/HEXACORE/blob/develop/Documentation/Work/PLAN-DEMO-ZEROTIER.md}{PLAN-DEMO-ZEROTIER}
+\href{https://github.com/Emperador24/HEXACORE/blob/main/Documentation/Work/PLAN-DEMO-ZEROTIER.md}{PLAN-DEMO-ZEROTIER}
 y \texttt{App/infra/zerotier/}.
 
 El 17/11 se midió con C haciendo dos lecturas cada 0,5\,s, sin reintentos: la cartelera
 (Boletería) y la sesión actual (Núcleo). Primero se mató el proceso del Núcleo de A
 (\texttt{kill -9}) y luego se detuvieron los contenedores de B; la VM no se apagó porque
 no hay forma confirmada de volver a encenderla
-(\href{https://github.com/Emperador24/HEXACORE/blob/develop/App/infra/informe-atributos/DISPONIBILIDAD-ZEROTIER.md}{informe}).
+(\href{https://github.com/Emperador24/HEXACORE/blob/main/App/infra/informe-atributos/DISPONIBILIDAD-ZEROTIER.md}{informe}).
 
 \begin{center}
 \small
