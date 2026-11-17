@@ -8,10 +8,11 @@ import { randomBytes } from 'node:crypto';
 import { DataSource, EntityManager, QueryFailedError } from 'typeorm';
 import { REDIS } from '../../../compartido/redis/redis.module';
 import { EventosService } from '../../eventos-recintos/eventos/eventos.service';
-import { CobrarDto, PagosService, ResultadoCobro, validarSolicitudPagos } from '../../finanzas/pagos';
+import { CobrarDto, PagosService, ReembolsarDto, ResultadoCobro, validarSolicitudPagos } from '../../finanzas/pagos';
 import { AsignacionService } from '../asignacion/asignacion.service';
 import { CobroService, horasEntre } from '../cobro/cobro.service';
-import { TIPOS_VEHICULO, TipoVehiculo, nombreTipo, normalizarPlaca } from '../comun/vehiculos';
+import { politicaCancelacion } from '../comun/cancelacion';
+import { FORMATO_PLACA, TIPOS_VEHICULO, TipoVehiculo, errorPlaca, nombreTipo, normalizarPlaca } from '../comun/vehiculos';
 import { ReservarDto } from '../dto/parqueaderos.dto';
 import { CONEXION_PARQUEADEROS } from '../persistencia/conexion';
 import { NotificadorReservas } from './notificador-reservas.service';
@@ -30,14 +31,14 @@ const COLUMNAS_RESERVA = `r.id, r.evento_id AS "eventoId", r.zona_id AS "zonaId"
   r.cliente_id AS "clienteId", r.placa, r.tipo_vehiculo AS "tipoVehiculo", r.llegada_estimada AS "llegadaEstimada", r.estado,
   r.valor_hora::float AS "valorHora", r.horas, r.monto::float AS monto, r.expira_en AS "expiraEn", r.intentos_rechazados AS "intentosRechazados",
   r.motivo, r.referencia_pago AS "referenciaPago", r.codigo_qr AS "codigoQr", r.creada_en AS "creadaEn", r.confirmada_en AS "confirmadaEn",
-  r.usada_en AS "usadaEn"`;
+  r.usada_en AS "usadaEn", r.cancelada_en AS "canceladaEn", r.referencia_reembolso AS "referenciaReembolso"`;
 const DESDE_RESERVA = `FROM reservas r JOIN zonas_parqueadero z ON z.id = r.zona_id JOIN espacios s ON s.id = r.espacio_id`;
 
 interface Reserva {
   id: string; eventoId: string; zonaId: string; zona: string; espacioId: string; espacio: string; clienteId: string; placa: string;
   tipoVehiculo: TipoVehiculo; llegadaEstimada: Date; estado: string; valorHora: number; horas: number; monto: number; expiraEn: Date;
   intentosRechazados: number; motivo: string | null; referenciaPago: string | null; codigoQr: string | null;
-  creadaEn: Date; confirmadaEn: Date | null; usadaEn: Date | null;
+  creadaEn: Date; confirmadaEn: Date | null; usadaEn: Date | null; canceladaEn: Date | null; referenciaReembolso: string | null;
 }
 
 /**
@@ -110,9 +111,15 @@ export class ReservasService implements OnModuleInit, OnModuleDestroy {
       horas,
       precio: tarifa ? horas * tarifa.valorHora : null,
       minutosParaPagar: MINUTOS_PARA_PAGAR,
+      // Quien reserva el mismo día del evento queda avisado antes de pagar: no hay devolución.
+      cancelacion: politicaCancelacion(evento.fechaInicio),
       reservable: !!tarifa && lista.some((z) => Object.values(z.disponibles).some((n) => n > 0)),
       motivo: !tarifa ? 'Todavía no hay tarifa de parqueadero: no se puede reservar.' : null,
       zonas: lista,
+      // Para que el portal y la app avisen antes de enviar, sin copiar la regla (RNF-14).
+      formatosPlaca: Object.fromEntries(TIPOS_VEHICULO.map((t) => [t, {
+        patron: FORMATO_PLACA[t].patron.source, ejemplo: FORMATO_PLACA[t].ejemplo, descripcion: FORMATO_PLACA[t].descripcion,
+      }])) as Record<TipoVehiculo, { patron: string; ejemplo: string; descripcion: string }>,
     };
   }
 
@@ -124,6 +131,8 @@ export class ReservasService implements OnModuleInit, OnModuleDestroy {
     const llegada = this.llegada(evento, dto.llegada);
     const placa = normalizarPlaca(dto.placa);
     const tipo = dto.tipoVehiculo ?? 'AUTOMOVIL';
+    const problemaPlaca = errorPlaca(placa, tipo);
+    if (problemaPlaca) throw new BadRequestException({ codigo: 'PLACA_INVALIDA', mensaje: problemaPlaca });
 
     const id = await this.datos.transaction(async (m) => {
       const tarifa = await this.cobro.tarifaVigente(m);
@@ -241,6 +250,78 @@ export class ReservasService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  // --- Cancelar (ampliación del 17/11) -------------------------------------------
+
+  /**
+   * Una reserva sin pagar se cancela siempre: solo libera el espacio. Una pagada,
+   * solo si el evento no es hoy, y con devolución completa por la pasarela.
+   *
+   * Primero se cancela (el espacio se libera y el QR deja de servir en el punto
+   * de control, en la misma transacción) y después se reembolsa con una clave de
+   * idempotencia fija: así nunca queda un vehículo entrando con una reserva ya
+   * devuelta, y reintentar el reembolso no devuelve dos veces.
+   */
+  async cancelar(reservaId: string, clienteId: string) {
+    const reserva = await this.datos.transaction(async (m) => {
+      const [actual]: Reserva[] = await m.query(`SELECT ${COLUMNAS_RESERVA} ${DESDE_RESERVA} WHERE r.id = $1 AND r.cliente_id = $2 FOR UPDATE OF r`, [reservaId, clienteId]);
+      if (!actual) throw new NotFoundException({ codigo: 'RESERVA_NO_ENCONTRADA', mensaje: 'La reserva no existe.' });
+      if (actual.estado !== 'PENDIENTE_PAGO' && actual.estado !== 'CONFIRMADA') {
+        throw new ConflictException({ codigo: 'RESERVA_NO_CANCELABLE', mensaje: 'Solo se cancelan reservas pendientes de pago o pagadas que aún no se usaron.' });
+      }
+      if (actual.estado === 'CONFIRMADA') {
+        const { evento } = await this.eventos.detalle(actual.eventoId);
+        const politica = politicaCancelacion(evento.fechaInicio);
+        if (!politica.conDevolucion) throw new ConflictException({ codigo: 'CANCELACION_FUERA_DE_PLAZO', mensaje: politica.mensaje });
+      }
+      await m.query(
+        `UPDATE reservas SET estado = 'CANCELADA', cancelada_en = now(), motivo = 'Cancelada por el cliente' WHERE id = $1`, [actual.id]);
+      await this.asignacion.registrar(m, {
+        eventoId: actual.eventoId, zonaId: actual.zonaId, espacioId: actual.espacioId, origen: 'LIBERACION', placa: actual.placa,
+        tipo: actual.tipoVehiculo, reservaId: actual.id, detalle: 'Reserva cancelada por el cliente', usuario: clienteId,
+      });
+      return actual;
+    });
+    await this.conRedis((r) => r.del(llaveBloqueo(reserva.espacioId)));
+    if (reserva.estado !== 'CONFIRMADA' || !reserva.referenciaPago) {
+      return { ...(await this.detalle(reserva.id, clienteId)), mensaje: 'Reserva cancelada; el espacio quedó libre. No se había cobrado nada.' };
+    }
+
+    const reembolso = await this.reembolsar(reserva);
+    if (reembolso.resultado === ResultadoCobro.APROBADO) {
+      await this.datos.query(`UPDATE reservas SET referencia_reembolso = $2 WHERE id = $1`, [reserva.id, reembolso.referencia]);
+      return { ...(await this.detalle(reserva.id, clienteId)), mensaje: `Reserva cancelada. Se devolvieron ${Math.round(reserva.monto)} COP a tu medio de pago.` };
+    }
+    // Cancelada pero sin confirmar la devolución: queda para conciliar, con la misma clave.
+    await this.datos.query(`UPDATE reservas SET motivo = $2 WHERE id = $1`, [reserva.id, `Reembolso pendiente: ${reembolso.motivo ?? 'sin respuesta de la pasarela'}`]);
+    this.log.error(`Reembolso de la reserva ${reserva.id} ${reembolso.resultado}: ${reembolso.motivo}. Requiere conciliación.`);
+    return {
+      ...(await this.detalle(reserva.id, clienteId)),
+      mensaje: 'Reserva cancelada. Estamos confirmando la devolución con la pasarela; si no la ves en unos días, escríbenos con la referencia de la reserva.',
+    };
+  }
+
+  private async reembolsar(reserva: Reserva) {
+    try {
+      const dto = await validarSolicitudPagos(ReembolsarDto, {
+        claveIdempotencia: `parqueadero-cancelacion-${reserva.id}`, solicitante: 'parqueaderos', referenciaCobro: reserva.referenciaPago,
+        monto: reserva.monto, moneda: 'COP', motivo: 'Cancelación de la reserva de parqueadero',
+      });
+      return await this.pagos.reembolsar(dto);
+    } catch (error) {
+      return { resultado: ResultadoCobro.INDETERMINADO, referencia: null, motivo: (error as Error).message.slice(0, 100) };
+    }
+  }
+
+  /** Lo que el portal y la app muestran: si se puede cancelar y por qué. Lo decide el servidor (RNF-14). */
+  private cancelacionDe(r: Reserva, evento: { fechaInicio: Date } | null) {
+    if (r.estado === 'PENDIENTE_PAGO') {
+      return { permitida: true, conDevolucion: false, mensaje: 'Aún no has pagado: cancelarla solo libera el espacio.' };
+    }
+    if (r.estado !== 'CONFIRMADA' || !evento) return { permitida: false, conDevolucion: false, mensaje: null };
+    const politica = politicaCancelacion(evento.fechaInicio);
+    return { permitida: politica.conDevolucion, conDevolucion: politica.conDevolucion, mensaje: politica.mensaje };
+  }
+
   // --- Consultas del cliente -----------------------------------------------------
 
   async mias(clienteId: string) {
@@ -329,6 +410,7 @@ export class ReservasService implements OnModuleInit, OnModuleDestroy {
       codigoQr: r.estado === 'CONFIRMADA' || r.estado === 'USADA' ? r.codigoQr : null,
       evento: evento ? { id: evento.id, nombre: evento.nombre, fechaInicio: evento.fechaInicio, fechaFin: evento.fechaFin } : null,
       segundosParaPagar: r.estado === 'PENDIENTE_PAGO' ? Math.max(0, Math.round((new Date(r.expiraEn).getTime() - Date.now()) / 1000)) : null,
+      cancelacion: this.cancelacionDe(r, evento),
     };
   }
 

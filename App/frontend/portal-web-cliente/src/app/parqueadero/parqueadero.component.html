@@ -30,13 +30,16 @@
           @if (d.zonas.length) {
             <mat-form-field appearance="outline" class="campo">
               <mat-label>Tipo de vehículo</mat-label>
-              <mat-select [value]="tipo()" (selectionChange)="tipo.set($event.value)">
+              <mat-select [value]="tipo()" (selectionChange)="elegirTipo($event.value)">
                 @for (t of tipos; track t.valor) {
                   <mat-option [value]="t.valor">{{ t.etiqueta }}</mat-option>
                 }
               </mat-select>
             </mat-form-field>
 
+            <p class="nota" data-prueba="libres-tipo">
+              {{ libresTotales() === 0 ? 'No hay espacios para ' + etiquetaTipo().toLowerCase() + ' en este evento.' : libresTotales() + ' espacios libres para ' + etiquetaTipo().toLowerCase() + ' en total.' }}
+            </p>
             <div class="zonas" role="radiogroup" aria-label="Zona">
               @for (z of d.zonas; track z.id) {
                 <button
@@ -56,9 +59,12 @@
 
             <mat-form-field appearance="outline" class="campo">
               <mat-label>Placa del vehículo</mat-label>
-              <input matInput [value]="placa()" (input)="editarPlaca($event)" maxlength="10" autocomplete="off" placeholder="ABC123" />
+              <input matInput [value]="placa()" (input)="editarPlaca($event)" maxlength="10" autocomplete="off" [placeholder]="formatoPlaca()?.ejemplo ?? 'ABC123'" />
+              @if (formatoPlaca(); as f) {
+                <mat-hint>Placa de {{ tipo() === 'MOTO' ? 'moto' : 'carro' }}: {{ f.descripcion }} ({{ f.ejemplo }})</mat-hint>
+              }
               @if (placa() && !placaValida()) {
-                <mat-error>Entre 4 y 10 letras o números.</mat-error>
+                <mat-error>No es una placa de {{ tipo() === 'MOTO' ? 'moto' : 'carro' }} válida: {{ formatoPlaca()?.descripcion ?? 'revisa la placa' }}.</mat-error>
               }
             </mat-form-field>
 
@@ -70,6 +76,9 @@
               </p>
             }
 
+            @if (d.cancelacion && !d.cancelacion.conDevolucion) {
+              <p class="aviso-devolucion" data-prueba="sin-devolucion">{{ d.cancelacion.mensaje }}</p>
+            }
             @if (error()) {
               <p class="error" role="alert">{{ error() }}</p>
             }
@@ -82,15 +91,33 @@
               </div>
             }
 
-            <button
-              mat-flat-button
-              color="primary"
-              class="campo"
-              (click)="reservar()"
-              [disabled]="!d.reservable || !zona() || libresDelTipo() === 0 || !placaValida() || reservando()"
-            >
-              {{ reservando() ? 'Reservando…' : 'Continuar al pago' }}
-            </button>
+            @if (confirmando()) {
+              <!-- Antes de apartar el espacio: que la placa y el vehículo sean los correctos. -->
+              <div class="confirmacion" data-prueba="confirmar-reserva">
+                <p><strong>Revisa los datos antes de pagar</strong></p>
+                <p>Placa <strong class="placa-grande">{{ placaNormalizada() }}</strong> · {{ etiquetaTipo() }}</p>
+                <p>{{ zona()?.nombre }}@if (d.precio !== null) { · Total ${{ d.precio | number: '1.0-0' }} }</p>
+                @if (d.cancelacion && !d.cancelacion.conDevolucion) {
+                  <p class="aviso-devolucion">Compras el mismo día del evento: no podrás cancelar esta reserva ni recibir devolución.</p>
+                }
+                <div class="acciones-confirmacion">
+                  <button mat-button type="button" (click)="confirmando.set(false)">Corregir</button>
+                  <button mat-flat-button color="primary" type="button" (click)="reservar()" [disabled]="reservando()">
+                    {{ reservando() ? 'Reservando…' : 'Sí, la placa es correcta' }}
+                  </button>
+                </div>
+              </div>
+            } @else {
+              <button
+                mat-flat-button
+                color="primary"
+                class="campo"
+                (click)="revisar()"
+                [disabled]="!d.reservable || !zona() || libresDelTipo() === 0 || !placaValida() || reservando()"
+              >
+                Continuar al pago
+              </button>
+            }
           }
         } @else if (error() && !cargando()) {
           <p class="error" role="alert">{{ error() }}</p>
@@ -99,9 +126,13 @@
     </mat-card>
   }
 } @else {
+  @if (avisoReservas()) {
+    <p class="nota" role="status" data-prueba="aviso-reservas">{{ avisoReservas() }}</p>
+  }
   @if (errorReservas()) {
     <p class="error" role="alert">{{ errorReservas() }}</p>
-  } @else if (reservas().length === 0) {
+  }
+  @if (reservas().length === 0) {
     <p class="vacio">Todavía no tienes reservas de parqueadero.</p>
   } @else {
     <div class="grilla">
@@ -127,10 +158,35 @@
             @if (reserva.estado === 'USADA') {
               <p class="nota">Ingresaste el {{ reserva.usadaEn | date: 'short' }}.</p>
             }
+            @if (reserva.estado === 'CONFIRMADA' && reserva.cancelacion?.mensaje) {
+              <p class="nota">{{ reserva.cancelacion!.mensaje }}</p>
+            }
+            @if (reserva.estado === 'CANCELADA' && reserva.referenciaReembolso) {
+              <p class="nota">Devuelto a tu medio de pago.</p>
+            }
+            @if (porCancelar() === reserva.id) {
+              <div class="confirmacion" data-prueba="confirmar-cancelacion">
+                <p><strong>¿Cancelar esta reserva?</strong></p>
+                @if (reserva.estado === 'CONFIRMADA') {
+                  <p>Se te devuelven ${{ reserva.monto | number: '1.0-0' }} y el QR deja de servir.</p>
+                } @else {
+                  <p>El espacio queda libre para otra persona.</p>
+                }
+                <div class="acciones-confirmacion">
+                  <button mat-button type="button" (click)="porCancelar.set(null)">No</button>
+                  <button mat-flat-button color="warn" type="button" (click)="cancelar(reserva)" [disabled]="cancelando()">
+                    {{ cancelando() ? 'Cancelando…' : 'Sí, cancelar' }}
+                  </button>
+                </div>
+              </div>
+            }
           </mat-card-content>
           <mat-card-actions>
             @if (reserva.estado === 'PENDIENTE_PAGO' && !vencida(reserva)) {
               <button mat-flat-button color="primary" (click)="irAPagar(reserva)">Pagar</button>
+            }
+            @if (reserva.cancelacion?.permitida && porCancelar() !== reserva.id) {
+              <button mat-button color="warn" type="button" data-prueba="cancelar-reserva" (click)="porCancelar.set(reserva.id); avisoReservas.set(null)">Cancelar reserva</button>
             }
             @if (enlaceComoLlegar(reserva); as enlace) {
               <a mat-button [href]="enlace" target="_blank" rel="noopener">Cómo llegar</a>

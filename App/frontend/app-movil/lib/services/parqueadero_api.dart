@@ -99,6 +99,10 @@ class ParqueaderoApi {
   Future<Map<String, dynamic>> pagar(String reservaId, String token) async =>
       await _pedir('POST', '/parqueaderos/reservas/$reservaId/pagar', cuerpo: {'token': token}) as Map<String, dynamic>;
 
+  /// Cancela la reserva: sin pagar libera el espacio; pagada y si el evento no es hoy, con devolución completa.
+  Future<Map<String, dynamic>> cancelar(String reservaId) async =>
+      await _pedir('POST', '/parqueaderos/reservas/$reservaId/cancelacion', cuerpo: const {}) as Map<String, dynamic>;
+
   Future<List<Map<String, dynamic>>> misReservas() async =>
       (await _pedir('GET', '/parqueaderos/reservas') as List).cast<Map<String, dynamic>>();
 }

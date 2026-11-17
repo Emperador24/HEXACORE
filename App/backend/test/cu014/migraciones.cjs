@@ -19,7 +19,7 @@ const {conectar,backend}=require('../cu012/entorno.cjs');
   const sufijo=randomUUID().replaceAll('-','').slice(0,12);
   for(const modo of ['vacia','actualizacion']){
    const base=`cu014_${sufijo}_${modo}`;await control.query(`CREATE DATABASE "${base}"`);
-   assert.equal(preparar(base,modo==='actualizacion').migraciones,modo==='vacia'?36:34);
+   assert.equal(preparar(base,modo==='actualizacion').migraciones,modo==='vacia'?37:35);
    const c=new Client({...comunes,database:base});await c.connect();
    try{
     let local,pedido,qr;
@@ -32,7 +32,7 @@ const {conectar,backend}=require('../cu012/entorno.cjs');
       const grupo=grupos.find(g=>g.esquema===t.schemaname);
       assert.equal(n,t.tablename===grupo.historial?grupo.migraciones.length:t.schemaname==='identidad'&&t.tablename==='roles'?4:0,`${t.schemaname}.${t.tablename}`);filas+=n;
      }
-     assert.equal(filas,40); // 36 historiales y cuatro roles; cero negocio.
+     assert.equal(filas,41); // 37 historiales y cuatro roles; cero negocio.
     }
     if(modo==='actualizacion'){
      const evento=randomUUID(),producto=randomUUID(),cliente=randomUUID(),pago=randomUUID();local=randomUUID();pedido=randomUUID();qr='e'.repeat(64);
@@ -59,7 +59,7 @@ const {conectar,backend}=require('../cu012/entorno.cjs');
     assert.ok(Object.values(preparar(base).esquemas).every(g=>g.aplicadas.length===0));
     assert.equal((await c.query('SELECT count(*)::int n FROM migracion_control.procedencia')).rows[0].n,18);
     assert.equal((await c.query("SELECT count(*)::int n FROM pg_tables WHERE schemaname='public'")).rows[0].n,0);
-    console.log(`${modo}: ${base}, 36 migraciones, 18 procedencias, repetición sin DDL; productos/reservas/pedidos/preparaciones/avisos/pagos locales y libro previos idénticos, QR conservado.`);
+    console.log(`${modo}: ${base}, 37 migraciones, 18 procedencias, repetición sin DDL; productos/reservas/pedidos/preparaciones/avisos/pagos locales y libro previos idénticos, QR conservado.`);
    }finally{await c.end();}
   }
  }finally{await control.end();await entorno.cerrar();}

@@ -87,3 +87,17 @@
 }
 .editor-espacio { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--hx-linea); }
 .lista-simple { list-style: none; margin: 0; padding: 0; li { padding: 6px 0; border-bottom: 1px solid var(--hx-linea); } }
+
+/* CU-022: el motivo de un ingreso o salida negados, junto a su formulario. */
+.rechazo {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(211, 47, 47, 0.1);
+  color: #b3261e;
+  mat-icon { flex: none; }
+  div { display: flex; flex-direction: column; gap: 2px; }
+}

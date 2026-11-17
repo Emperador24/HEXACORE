@@ -2623,18 +2623,58 @@ class _ParkingOperationsPageState extends State<ParkingOperationsPage> {
     super.dispose();
   }
 
+  /// Eventos que se pueden operar: los próximos de la cartelera.
+  List<({String id, String nombre})> _eventos = [];
+  static const _llaveEvento = 'parqueadero.operacion.evento';
+
+  /// El evento sale del turno; si no hay turno o apunta a un evento que no
+  /// existe, el operador lo elige de la cartelera (como en "Validar entradas").
+  /// El último elegido se recuerda para poder abrir sin red.
   Future<void> _iniciar() async {
+    final prefs = await SharedPreferences.getInstance();
+    String? delTurno;
     try {
-      final turno = await logisticaApiClient.miTurno(widget.credencial);
-      _eventoId = turno?['eventoId'] as String?;
-      if (_eventoId == null) {
-        setState(() {
-          _cargando = false;
-          _error = 'No tienes un turno asignado: no hay parqueadero que operar.';
-        });
-        return;
-      }
-      _local = PuntoControlLocal(_eventoId!);
+      delTurno = (await logisticaApiClient.miTurno(widget.credencial))?['eventoId'] as String?;
+    } catch (_) {}
+    try {
+      _eventos = [
+        for (final e in await boleteriaApi.cartelera())
+          if (!e.pasado) (id: e.id, nombre: e.nombre),
+      ];
+    } catch (_) {}
+    final guardado = prefs.getString(_llaveEvento);
+    bool existe(String? id) => id != null && _eventos.any((e) => e.id == id);
+    final elegido = existe(delTurno)
+        ? delTurno
+        : existe(guardado)
+            ? guardado
+            : _eventos.isNotEmpty
+                ? _eventos.first.id
+                : guardado ?? delTurno;
+    if (elegido == null) {
+      if (!mounted) return;
+      setState(() {
+        _cargando = false;
+        _error = 'No hay eventos próximos en la cartelera: no hay parqueadero que operar.';
+      });
+      return;
+    }
+    await _abrirEvento(elegido);
+  }
+
+  Future<void> _abrirEvento(String id) async {
+    _sondeo?.cancel();
+    setState(() {
+      _eventoId = id;
+      _cargando = true;
+      _error = null;
+      _zonas = [];
+      _vehiculos = [];
+      _recomendada = null;
+    });
+    try {
+      (await SharedPreferences.getInstance()).setString(_llaveEvento, id);
+      _local = PuntoControlLocal(id);
       await _local!.cargar();
       await _actualizar();
       _sondeo = Timer.periodic(const Duration(seconds: 5), (_) => _actualizar());
@@ -2794,14 +2834,29 @@ class _ParkingOperationsPageState extends State<ParkingOperationsPage> {
     final scheme = Theme.of(context).colorScheme;
     if (_cargando) return const Center(child: CircularProgressIndicator());
     final pendientes = _local?.pendientes.length ?? 0;
+    final selectorEvento = _eventos.isEmpty
+        ? const SizedBox.shrink()
+        : Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: DropdownButtonFormField<String>(
+              key: ValueKey(_eventoId),
+              initialValue: _eventos.any((e) => e.id == _eventoId) ? _eventoId : null,
+              isExpanded: true,
+              decoration: const InputDecoration(labelText: 'Evento del parqueadero'),
+              items: [for (final e in _eventos) DropdownMenuItem(value: e.id, child: Text(e.nombre, overflow: TextOverflow.ellipsis))],
+              onChanged: (v) => v == null || v == _eventoId ? null : _abrirEvento(v),
+            ),
+          );
     if (_error != null && _zonas.isEmpty && !_sinRed) {
       return ListView(padding: const EdgeInsets.all(16), children: [
+        selectorEvento,
         LiquidGlassCard(child: Text(_error!, style: textTheme.bodyMedium?.copyWith(color: _kRed))),
       ]);
     }
     return RefreshIndicator(
       onRefresh: _actualizar,
       child: ListView(padding: const EdgeInsets.all(16), children: [
+        selectorEvento,
         if (_sinRed || pendientes > 0)
           Padding(
             padding: const EdgeInsets.only(bottom: 12),

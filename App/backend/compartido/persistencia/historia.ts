@@ -29,6 +29,7 @@ import { EsquemaOperacionMonitoreo1793900000000 } from '../../modulos/operacion/
 import { Cu010Evacuacion1794100000000 } from '../../modulos/operacion/persistencia/migraciones/1794100000000-Cu010Evacuacion';
 import { EsquemaParqueaderos1794200000000 } from '../../modulos/parqueaderos/persistencia/migraciones/1794200000000-EsquemaParqueaderos';
 import { Cu021Cu023ReservasEspacios1794300000000 } from '../../modulos/parqueaderos/persistencia/migraciones/1794300000000-Cu021Cu023ReservasEspacios';
+import { CancelacionReservasCu0211795000000000 } from '../../modulos/parqueaderos/persistencia/migraciones/1795000000000-CancelacionReservasCu021';
 import { VersionEvento1794400000000 } from '../../modulos/entradas/ventas/persistencia/migraciones/1794400000000-VersionEvento';
 import { VersionEvento1794400000001 } from '../../modulos/entradas/catalogo/persistencia/migraciones/1794400000001-VersionEvento';
 import { VersionEvento1794400000002 } from '../../modulos/entradas/postventa/persistencia/migraciones/1794400000002-VersionEvento';
@@ -49,7 +50,7 @@ export const GRUPOS_MIGRACIONES = [
   // CU-019 y CU-010, módulo del futuro programa Operación (ADR-16), hoy dentro del Núcleo.
   { conexion: 'operacion' as const, esquema: 'operacion', historial: 'migraciones', migraciones: [EsquemaOperacionMonitoreo1793900000000, Cu010Evacuacion1794100000000] },
   // CU-021 a CU-025: Parqueaderos, undécimo esquema, sin procedencia histórica.
-  { conexion: 'parqueaderos' as const, esquema: 'parqueaderos', historial: 'migraciones', migraciones: [EsquemaParqueaderos1794200000000, Cu021Cu023ReservasEspacios1794300000000] }
+  { conexion: 'parqueaderos' as const, esquema: 'parqueaderos', historial: 'migraciones', migraciones: [EsquemaParqueaderos1794200000000, Cu021Cu023ReservasEspacios1794300000000, CancelacionReservasCu0211795000000000] }
 ];
 
 // Procedencia de las 18 fuentes que venían de los servicios anteriores. Las

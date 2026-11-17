@@ -7,7 +7,8 @@ import { elegir, entrarAdmin, menu, paso } from '../apoyo/portal';
 test('CU-024 y CU-025 · Cobro y control de ocupación del parqueadero', async ({ page }) => {
   const { evento, sufijo } = datos();
   const zonaA = `Norte ${sufijo}`, zonaB = `Sur ${sufijo}`;
-  const placa = (i: number) => `D${sufijo.slice(-3)}${i}`;
+  // Placa de carro colombiana (AAA111): desde el 17/11 el punto de control valida el formato según el vehículo.
+  const placa = (i: number) => `DEM${String(i).padStart(3, '0')}`;
   const panelZona = (nombre: string) => page.locator('ul.zonas > li').filter({ hasText: nombre });
   const ingreso = async (p: string, zona?: string) => {
     await page.getByRole('textbox', { name: 'QR de la reserva o placa' }).fill(p);

@@ -25,7 +25,12 @@ describe('CU-021 a CU-025 · Parqueaderos (e2e)', () => {
   let redis: Redis;
   const como = (c: { token: string }) => `Bearer ${c.token}`;
   const P = '/api/v1/parqueaderos';
-  const placa = () => `T${randomUUID().replace(/-/g, '').slice(0, 5).toUpperCase()}`;
+  // Placa de carro colombiana (AAA111): CU-021 rechaza las que no tienen el formato del vehículo.
+  const placa = () => {
+    const h = randomUUID().replace(/-/g, '');
+    const letras = [...h.slice(0, 3)].map((c) => String.fromCharCode(65 + (parseInt(c, 16) % 26))).join('');
+    return letras + String(parseInt(h.slice(3, 9), 16) % 1000).padStart(3, '0');
+  };
 
   beforeAll(async () => {
     nucleo = new NucleoPrueba('parqueaderos');
@@ -247,7 +252,10 @@ describe('CU-021 a CU-025 · Parqueaderos (e2e)', () => {
 
     // Pasos 2-4: cada vehículo al primer espacio de su tipo, el más cercano a la entrada.
     expect((await entrar(evento, { placa: placa(), zonaId: norte.id })).asignacion).toMatchObject({ espacio: 'N-03', zona: 'Zona Norte', reasignado: false, conReserva: false });
-    expect((await entrar(evento, { placa: placa(), zonaId: norte.id, tipoVehiculo: 'MOTO' })).estancia).toMatchObject({ espacio: 'N-02', tipoVehiculo: 'MOTO' });
+    // Sin reserva, la placa debe ser del tipo de vehículo: una moto no entra como automóvil.
+    const moto = `${placa().slice(0, 5)}M`;
+    expect(await entrar(evento, { placa: moto, zonaId: norte.id }, 400)).toMatchObject({ codigo: 'PLACA_INVALIDA' });
+    expect((await entrar(evento, { placa: moto, zonaId: norte.id, tipoVehiculo: 'MOTO' })).estancia).toMatchObject({ espacio: 'N-02', tipoVehiculo: 'MOTO' });
     expect((await entrar(evento, { placa: placa(), zonaId: norte.id, tipoVehiculo: 'DISCAPACIDAD' })).estancia.espacio).toBe('N-01');
     expect((await entrar(evento, { placa: placa(), zonaId: norte.id })).estancia.espacio).toBe('N-04');
     // Un espacio con vehículo no cambia de tipo.
@@ -303,12 +311,19 @@ describe('CU-021 a CU-025 · Parqueaderos (e2e)', () => {
     const disponibilidad = (await request(nucleo.url).get(`${P}/eventos/${evento}/disponibilidad`).set('Authorization', como(cliente)).expect(200)).body;
     expect(disponibilidad).toMatchObject({ reservable: true, tarifa: { valorHora: 5000 }, horas: 3, precio: 15000, minutosParaPagar: 10 });
     expect(disponibilidad.zonas).toEqual([
-      expect.objectContaining({ id: vip.id, disponibles: { AUTOMOVIL: 2, MOTO: 2, DISCAPACIDAD: 2 } }),
-      expect.objectContaining({ id: general.id, disponibles: { AUTOMOVIL: 10, MOTO: 10, DISCAPACIDAD: 10 } }),
+      // Cada tipo cuenta solo sus espacios: las zonas nuevas solo tienen de automóvil.
+      expect.objectContaining({ id: vip.id, disponibles: { AUTOMOVIL: 2, MOTO: 0, DISCAPACIDAD: 0 } }),
+      expect.objectContaining({ id: general.id, disponibles: { AUTOMOVIL: 10, MOTO: 0, DISCAPACIDAD: 0 } }),
     ]);
     // El cliente no administra el parqueadero, y el personal no reserva.
     await request(nucleo.url).get(`${P}/eventos/${evento}/ocupacion`).set('Authorization', como(cliente)).expect(403);
     await reservar(evento, { zonaId: vip.id, placa: placa() }, personal as typeof cliente, 403);
+    // La placa debe tener el formato del vehículo: carro AAA111, moto AAA11A.
+    expect(disponibilidad.formatosPlaca).toMatchObject({ AUTOMOVIL: { ejemplo: 'ABC123' }, MOTO: { ejemplo: 'ABC12D' }, DISCAPACIDAD: { ejemplo: 'ABC123' } });
+    expect(await reservar(evento, { zonaId: vip.id, placa: 'ABC12D' }, cliente, 400)).toMatchObject({ codigo: 'PLACA_INVALIDA' });
+    expect(await reservar(evento, { zonaId: vip.id, placa: 'ABC123', tipoVehiculo: 'MOTO' }, cliente, 400)).toMatchObject({ codigo: 'PLACA_INVALIDA' });
+    // Una moto no toma un espacio de automóvil: sin espacios de moto no hay cupo (CU-021A).
+    await reservar(evento, { zonaId: vip.id, placa: 'ABC12D', tipoVehiculo: 'MOTO' }, cliente, 409);
     await reservar(evento, { zonaId: vip.id, placa: placa(), llegada: new Date(Date.now() + 5 * 3_600_000).toISOString() }, cliente, 400);
 
     // Pasos 3-4: el espacio queda retenido mientras se paga, en la base y en Redis.
@@ -356,6 +371,46 @@ describe('CU-021 a CU-025 · Parqueaderos (e2e)', () => {
       .some((r: { id: string }) => r.id === reserva.id)).toBe(false);
     expect((await request(nucleo.url).get(`${P}/eventos/${evento}/reservas`).set('Authorization', como(organizador)).expect(200)).body[0])
       .toMatchObject({ id: reserva.id, estado: 'CONFIRMADA' });
+  });
+
+  it('CU-021, cancelar: sin pagar libera; pagada se devuelve si el evento no es hoy; el mismo día no', async () => {
+    await fijarTarifa(5000);
+    const cancelar = (reservaId: string, esperado = 201) =>
+      request(nucleo.url).post(`${P}/reservas/${reservaId}/cancelacion`).set('Authorization', como(cliente)).send({}).expect(esperado).then((r) => r.body);
+
+    // Evento de hoy: quien reserva queda avisado de que no hay devolución.
+    const hoy = await eventoEnCurso();
+    const zonaHoy = await zona(hoy, 'Zona Hoy', 3, 1);
+    const disponibilidad = (await request(nucleo.url).get(`${P}/eventos/${hoy}/disponibilidad`).set('Authorization', como(cliente)).expect(200)).body;
+    expect(disponibilidad.cancelacion).toMatchObject({ conDevolucion: false });
+
+    // Sin pagar se cancela siempre: solo libera el espacio.
+    const pendiente = await reservar(hoy, { zonaId: zonaHoy.id, placa: placa() });
+    expect(pendiente.cancelacion).toMatchObject({ permitida: true, conDevolucion: false });
+    expect(await cancelar(pendiente.id)).toMatchObject({ estado: 'CANCELADA', referenciaReembolso: null });
+    expect((await espacios(hoy, zonaHoy.id)).filter((e) => e.estado === 'LIBRE')).toHaveLength(3);
+
+    // Pagada para hoy: no se cancela.
+    const deHoy = await reservar(hoy, { zonaId: zonaHoy.id, placa: placa() });
+    expect((await pagar(deHoy.id, 'tok_ok_e2e')).cancelacion).toMatchObject({ permitida: false, conDevolucion: false });
+    expect(await cancelar(deHoy.id, 409)).toMatchObject({ codigo: 'CANCELACION_FUERA_DE_PLAZO' });
+
+    // Pagada para otro día: se cancela con devolución completa y no se cancela dos veces.
+    const otroDia = randomUUID(), recinto = randomUUID();
+    await eventos.query('INSERT INTO recintos (id,nombre,ciudad,capacidad) VALUES ($1,$2,$3,$4)', [recinto, `R ${recinto.slice(0, 8)}`, 'Bogotá', 5000]);
+    await eventos.query(
+      `INSERT INTO eventos (id,nombre,categoria,recinto_id,fecha_inicio,fecha_fin,aforo_maximo,estado,creado_por,publicado_en)
+       VALUES ($1,$2,'Conciertos',$3, now() + interval '2 days', now() + interval '2 days 4 hours', 5000, 'PUBLICADO', $4, now())`,
+      [otroDia, `Parqueo ${otroDia.slice(0, 8)}`, recinto, organizador.id]);
+    const zonaOtroDia = await zona(otroDia, 'Zona Otro Día', 2, 1);
+    const reserva = await reservar(otroDia, { zonaId: zonaOtroDia.id, placa: placa() });
+    const pagada = await pagar(reserva.id, 'tok_ok_e2e');
+    expect(pagada.cancelacion).toMatchObject({ permitida: true, conDevolucion: true });
+    const cancelada = await cancelar(reserva.id);
+    expect(cancelada).toMatchObject({ estado: 'CANCELADA', codigoQr: null });
+    expect(cancelada.referenciaReembolso).toEqual(expect.stringMatching(/^ree_/));
+    expect(await cancelar(reserva.id, 409)).toMatchObject({ codigo: 'RESERVA_NO_CANCELABLE' });
+    expect((await espacios(otroDia, zonaOtroDia.id)).every((e) => e.estado === 'LIBRE')).toBe(true);
   });
 
   it('CU-021A y C: sin disponibilidad sugiere otras zonas; la reserva vencida libera el espacio; sin doble reserva concurrente', async () => {

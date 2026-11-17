@@ -102,8 +102,11 @@ export interface ReservaParqueadero {
   placa: string;
   tipoVehiculo: TipoVehiculo;
   llegadaEstimada: string;
-  /** PENDIENTE_PAGO → PAGANDO → CONFIRMADA → USADA, o EXPIRADA si no se pagó a tiempo (CU-021C). */
-  estado: 'PENDIENTE_PAGO' | 'PAGANDO' | 'CONFIRMADA' | 'USADA' | 'EXPIRADA';
+  /** PENDIENTE_PAGO → PAGANDO → CONFIRMADA → USADA, EXPIRADA si no se pagó a tiempo (CU-021C) o CANCELADA por la persona. */
+  estado: 'PENDIENTE_PAGO' | 'PAGANDO' | 'CONFIRMADA' | 'USADA' | 'EXPIRADA' | 'CANCELADA';
+  /** Lo decide el servidor: si se puede cancelar ahora y si hay devolución (no el mismo día del evento). */
+  cancelacion?: { permitida: boolean; conDevolucion: boolean; mensaje: string | null };
+  referenciaReembolso?: string | null;
   valorHora: number;
   horas: number;
   monto: number;
@@ -127,6 +130,10 @@ export interface DisponibilidadParqueadero {
   reservable: boolean;
   motivo: string | null;
   zonas: { id: string; nombre: string; capacidad: number; disponibles: Record<TipoVehiculo, number> }[];
+  /** Formato de placa por tipo de vehículo; la regla es del servidor y aquí solo se usa para avisar antes de enviar. */
+  formatosPlaca?: Record<TipoVehiculo, { patron: string; ejemplo: string; descripcion: string }>;
+  /** Si una reserva de este evento se podrá cancelar con devolución (no si el evento es hoy). */
+  cancelacion?: { conDevolucion: boolean; mensaje: string };
 }
 
 // El pedido nace sin pagar (sin QR); al confirmarse el pago se le asigna el

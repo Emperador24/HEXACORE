@@ -182,7 +182,7 @@ class ComposeReal(unittest.TestCase):
         self.assertNotIn('Authorization',montaje.principal());self.assertNotIn('$request_uri',montaje.principal())
 
     def test_historial_real_y_no_cifra_historica(self):
-        h=comun.historial();self.assertEqual(len(h),11);self.assertEqual(sum(x['cantidad'] for x in h),36)
+        h=comun.historial();self.assertEqual(len(h),11);self.assertEqual(sum(x['cantidad'] for x in h),37)
 
 
 if __name__=='__main__':unittest.main()
