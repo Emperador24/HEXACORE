@@ -6,9 +6,9 @@
 > **Umbral:** 1 componente modificado (el adaptador) y 0 cambios en Entradas.
 
 **Resultado:** cumplido entre la pasarela simulada y Stripe. Se cambia con una variable
-(`PAGOS_PROVEEDOR`) en **8 s**, sin recompilar, con **0 archivos de código modificados**. Una prueba
-automática impide que el negocio vuelva a depender de un proveedor. **Pendiente:** el pago real en
-Stripe necesita las llaves de prueba (`sk_test_…`, `pk_test_…`) de una cuenta de Stripe.
+(`PAGOS_PROVEEDOR`) en **8–9 s**, sin recompilar, con **0 archivos de código modificados**. Con el
+sandbox de Stripe del equipo se cobró, se rechazó y se reembolsó de verdad (sección 3). Una prueba
+automática impide que el negocio vuelva a depender de un proveedor.
 
 ## 1. Cómo está hecho
 
@@ -59,16 +59,30 @@ de prueba el adaptador los traduce a las tarjetas de prueba de Stripe (`pm_card_
 ### Prueba automática
 
 [rnf16-cambio-pasarela.spec.ts](../../App/backend/modulos/finanzas/pagos/rnf16-cambio-pasarela.spec.ts),
-15 pruebas, en el CI con las demás:
+21 pruebas, en el CI con las demás:
 
 1. `PAGOS_PROVEEDOR=stripe` crea `PasarelaStripe`; `simulada`, `PasarelaHttp`.
 2. Ningún archivo de Entradas, Alimentos ni Parqueaderos nombra a Stripe, a un adaptador ni a
    `PAGOS_PROVEEDOR`, y todos llegan a Pagos solo por su API pública (nunca a un archivo interno).
 3. **Mismo contrato:** la misma solicitud contra los dos adaptadores da el mismo resultado de negocio
    (aprobado con referencia y clave de idempotencia, rechazado, caído, sin red, reembolso). Un
-   proveedor nuevo tiene que pasar esta misma tabla.
+   proveedor nuevo tiene que pasar esta misma tabla. Incluye la API de Pagos: acepta reembolsar un
+   cobro de cualquiera de las dos y rechaza referencias que no son de ninguna.
 
 Backend completo tras el cambio: `tsc` sin errores y 1155 pruebas unitarias aprobadas.
+
+### Pagos reales en el sandbox de Stripe (16/11)
+
+Por el camino completo: gateway → Boletería → Pagos → `api.stripe.com`, con las llaves de prueba del
+equipo en `App/infra/.env` (Git lo ignora).
+
+| Operación | HEXACORE | Libro de pagos (`finanzas_pagos.transacciones_pago`) |
+| --- | --- | --- |
+| Compra con tarjeta Visa de prueba | `PAGADA`, 1 entrada con QR | `COBRO APROBADO pi_3Uce7G… $70.000` |
+| Compra con tarjeta que el banco rechaza | `CU-001C`: *"El banco rechazó la tarjeta"* | `COBRO RECHAZADO pi_3Uce7I… $70.000` |
+| Cancelación al 50 % (CU-003) | `APROBADA`, entradas anuladas | `REEMBOLSO APROBADO re_3Uce7G… $35.000` |
+
+Los tres aparecen en el panel de Stripe (*Payments*), en pesos colombianos.
 
 ### Medición en vivo (16/11, Docker local)
 
@@ -80,9 +94,17 @@ Backend completo tras el cambio: `tsc` sin errores y 1155 pruebas unitarias apro
 | Vuelta a `simulada` | **8 s**; compra `PAGADA` |
 | Archivos de código cambiados por el cambio de pasarela | **0** |
 
-### Hallazgo corregido
+### Hallazgos corregidos
 
-El formato de los tokens de pago (`tok_` de la simulada, `pm_` de Stripe) estaba en
+**1. Con Stripe ningún reembolso funcionaba.** Lo encontró el pago real: `ReembolsarDto` solo aceptaba
+la referencia de un cobro de la simulada (`pas_<uuid>`), así que el reembolso de un cobro de Stripe
+(`pi_…`) se rechazaba dentro de Pagos antes de enviarse y quedaba `INDETERMINADO`/`FALLIDA`
+(cancelaciones CU-003, reventa y pedidos de comida). La regla es del 28/10, anterior al adaptador de
+Stripe (9/11). Ahora acepta las dos formas, sigue rechazando cualquier otra, y la prueba RNF-16 lo
+cubre. La cancelación que falló durante la prueba quedó `FALLIDA` (dinero de prueba): el sistema no
+reintenta solo, ver E2 en [REVISION-DANIEL.md](REVISION-DANIEL.md).
+
+**2. El formato de los tokens estaba fuera de Pagos.** El formato de los tokens de pago (`tok_` de la simulada, `pm_` de Stripe) estaba en
 `compartido/token-pago.ts`, fuera de Pagos, y lo usaban los DTO de Entradas, Alimentos y
 Parqueaderos. Con un tercer proveedor de tokens distintos había que tocar ese archivo, además del
 adaptador. Se movió **sin cambiar su contenido** a `modulos/finanzas/pagos/token-pago.ts` (con su

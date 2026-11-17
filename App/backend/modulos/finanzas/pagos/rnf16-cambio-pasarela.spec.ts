@@ -1,6 +1,8 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import type { ConfiguracionServicio } from './config/configuracion';
+import { ReembolsarDto } from './dto/pagos.dto';
+import { validarSolicitudPagos } from './dto/validar-solicitud';
 import { crearProcesadorPagos } from './pagos.module';
 import { PasarelaHttp } from './pasarela-http.service';
 import { PasarelaStripe } from './pasarela-stripe.service';
@@ -140,6 +142,27 @@ describe('RNF-16 · cambiar de pasarela sin tocar el negocio', () => {
       it('un reembolso aprobado es APROBADO', async () => {
         responder(respuestas.reembolsado);
         await expect(pasarela().reembolsar(reembolso)).resolves.toMatchObject({ resultado: ResultadoCobro.APROBADO });
+      });
+    });
+
+    // Lo encontró la prueba en vivo con Stripe (16/11): Pagos solo aceptaba
+    // reembolsar cobros de la simulada (`pas_…`), y todo reembolso con Stripe
+    // quedaba INDETERMINADO sin enviarse. El contrato es también la API de Pagos.
+    describe('la API de Pagos acepta reembolsar un cobro de cualquiera de las dos', () => {
+      const solicitud = (referenciaCobro: string) =>
+        validarSolicitudPagos(ReembolsarDto, {
+          claveIdempotencia: 'reembolso-0001', solicitante: 'entradas', referenciaCobro, monto: 42500, moneda: 'COP', motivo: 'CU-003',
+        });
+
+      it.each([
+        ['simulada', `pas_${uuid}`],
+        ['stripe', 'pi_3Uce4iReTLDBuFz01wkuIDJ3'],
+      ])('referencia de un cobro con %s', async (_proveedor, referencia) => {
+        await expect(solicitud(referencia)).resolves.toMatchObject({ referenciaCobro: referencia });
+      });
+
+      it.each(['cualquier-cosa', 'pi_', 'pas_123', 'pi_1 OR 1=1'])('rechaza una referencia que no es de ninguna: %s', async (referencia) => {
+        await expect(solicitud(referencia)).rejects.toThrow();
       });
     });
   });
