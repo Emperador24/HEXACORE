@@ -233,6 +233,53 @@ PostgreSQL, Redis y RabbitMQ siguen siendo una instancia.
 \franja{19:30--20:15 · Samuel · Informe: App/infra/DEMOSTRACION-ATRIBUTOS.md, sección 3. RNF-09/17 en 26:00--30:00.}
 \end{frame}
 
+% Solo en la presentación completa (Sustentacion.tex): en Presentacion.tex estas
+% cifras van en las láminas del equipo de tiempo real y Safety.
+\ifdefined\SustentacionCompleta
+% ---------------------------------------------------------------------------
+\begin{frame}{Disponibilidad · tres computadores por ZeroTier}
+\begin{columns}[T]
+\begin{column}{0.62\textwidth}
+\centering
+\includegraphics[width=\linewidth,height=0.66\textheight,keepaspectratio]{Diagrams/ArchifyPDF/09-despliegue-zerotier.pdf}
+\end{column}
+\begin{column}{0.36\textwidth}
+\footnotesize
+\begin{itemize}\setlength\itemsep{0.3em}
+\item \textbf{A}, Mac de Samuel: datos, gateway, HTTPS y una réplica de cada programa.
+\item \textbf{B}, VM Javeriana: otra réplica de Núcleo y Boletería.
+\item \textbf{C}, Mac de Sebastián: cliente que mide.
+\item \textbf{En vivo:} se apaga B y C sigue atendido por A; al volver, el gateway la retoma.
+\item \textbf{Límites:} A es punto único de falla; B llega por relevo (\cifra{$\sim$124 ms}).
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+% ---------------------------------------------------------------------------
+\begin{frame}{Disponibilidad · tiempo real y evacuación}
+\small
+\begin{tabular}{@{}L{5.6cm}rrL{3.6cm}@{}}
+\toprule
+\textbf{Medición (16/11)} & \textbf{p95} & \textbf{Máx.} & \textbf{Umbral}\\
+\midrule
+RNF-09 · ingreso $\rightarrow$ panel del parqueadero & 1,01 s & 1,01 s & \leavevmode\cifra{20/20} en $\leq$ 2 s\\
+RNF-09 · QR $\rightarrow$ RabbitMQ $\rightarrow$ panel de monitoreo & 1,12 s & 1,12 s & \leavevmode\cifra{20/20} en $\leq$ 2 s\\
+RNF-17 · evacuación a 300 dispositivos & 3,76 s & 3,99 s & \leavevmode\cifra{100\,\%} en $\leq$ 10 s\\
+RNF-17 · lo mismo con una réplica muerta & 3,83 s & 4,07 s & \leavevmode\cifra{100\,\%}, 0 errores\\
+\bottomrule
+\end{tabular}
+
+\vspace{0.6em}
+\footnotesize
+\begin{itemize}\setlength\itemsep{0.2em}
+\item \textbf{Qué hubo que cambiar:} paneles SSE cada 1 s (antes 3 s) y la bandeja de salida de QR,
+de $\sim$50 a $\sim$1\,700 avisos/s: antes, tras un pico de ingresos, el panel se atrasaba minutos.
+\item \textbf{Límite:} RNF-17 mide la app abierta; sin señal o con la app cerrada harían falta push o SMS.
+\end{itemize}
+\end{frame}
+\fi
+
 % ---------------------------------------------------------------------------
 \begin{frame}{Monitoreo y logs · diseño}
 \begin{columns}[T]

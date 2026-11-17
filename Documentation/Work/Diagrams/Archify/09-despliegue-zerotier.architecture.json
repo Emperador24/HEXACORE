@@ -1,0 +1,340 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "HEXACORE — Demostración en tres computadores por ZeroTier",
+    "output": "09-despliegue-zerotier.html",
+    "quality_profile": "standard",
+    "viewBox": [
+      1500,
+      880
+    ]
+  },
+  "components": [
+    {
+      "id": "cliente",
+      "type": "external",
+      "label": "C · Mac de Sebastián",
+      "sublabel": "navegador y observador · 192.168.193.132",
+      "pos": [
+        360,
+        30
+      ],
+      "size": [
+        340,
+        64
+      ]
+    },
+    {
+      "id": "caddy",
+      "type": "security",
+      "label": "Caddy HTTPS",
+      "sublabel": "única entrada para C",
+      "pos": [
+        70,
+        200
+      ],
+      "size": [
+        240,
+        64
+      ]
+    },
+    {
+      "id": "portales",
+      "type": "frontend",
+      "label": "Portales Cliente y Admin",
+      "sublabel": "Nginx, detrás de Caddy",
+      "pos": [
+        70,
+        360
+      ],
+      "size": [
+        240,
+        64
+      ]
+    },
+    {
+      "id": "gateway",
+      "type": "backend",
+      "label": "api-gateway",
+      "sublabel": "reparte entre A y B",
+      "pos": [
+        400,
+        200
+      ],
+      "size": [
+        300,
+        64
+      ]
+    },
+    {
+      "id": "nucleo-a",
+      "type": "backend",
+      "label": "Núcleo (A)",
+      "sublabel": ":3002",
+      "pos": [
+        370,
+        360
+      ],
+      "size": [
+        170,
+        64
+      ]
+    },
+    {
+      "id": "boleteria-a",
+      "type": "backend",
+      "label": "Boletería (A)",
+      "sublabel": ":3001",
+      "pos": [
+        560,
+        360
+      ],
+      "size": [
+        170,
+        64
+      ]
+    },
+    {
+      "id": "trabajador",
+      "type": "backend",
+      "label": "Trabajador",
+      "sublabel": "una réplica",
+      "pos": [
+        70,
+        540
+      ],
+      "size": [
+        190,
+        64
+      ]
+    },
+    {
+      "id": "datos",
+      "type": "database",
+      "label": "Datos y broker",
+      "sublabel": "PostgreSQL · Redis · RabbitMQ · pasarela y correo simulados",
+      "pos": [
+        370,
+        530
+      ],
+      "size": [
+        360,
+        84
+      ]
+    },
+    {
+      "id": "nucleo-b",
+      "type": "backend",
+      "label": "Núcleo (B)",
+      "sublabel": ":3002 en la IP de ZeroTier",
+      "pos": [
+        1130,
+        360
+      ],
+      "size": [
+        330,
+        64
+      ]
+    },
+    {
+      "id": "boleteria-b",
+      "type": "backend",
+      "label": "Boletería (B)",
+      "sublabel": ":3001 en la IP de ZeroTier",
+      "pos": [
+        1130,
+        540
+      ],
+      "size": [
+        330,
+        64
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "A · Mac de Samuel",
+      "wraps": [
+        "caddy",
+        "portales",
+        "gateway",
+        "nucleo-a",
+        "boleteria-a",
+        "trabajador",
+        "datos"
+      ],
+      "pad": 30
+    },
+    {
+      "kind": "region",
+      "label": "B · VM Javeriana",
+      "wraps": [
+        "nucleo-b",
+        "boleteria-b"
+      ],
+      "pad": 30
+    }
+  ],
+  "connections": [
+    {
+      "id": "c-caddy",
+      "from": "cliente",
+      "to": "caddy",
+      "label": "HTTPS por ZeroTier",
+      "fromSide": "left",
+      "toSide": "top",
+      "variant": "emphasis"
+    },
+    {
+      "id": "caddy-portales",
+      "from": "caddy",
+      "to": "portales",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "caddy-gw",
+      "from": "caddy",
+      "to": "gateway",
+      "label": "/api/v1",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "gw-na",
+      "from": "gateway",
+      "to": "nucleo-a",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "gw-ba",
+      "from": "gateway",
+      "to": "boleteria-a",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "gw-nb",
+      "from": "gateway",
+      "to": "nucleo-b",
+      "label": "ZeroTier",
+      "fromSide": "top",
+      "toSide": "top",
+      "variant": "dashed",
+      "via": [
+        [
+          550,
+          150
+        ],
+        [
+          1295,
+          150
+        ]
+      ],
+      "labelSegment": 1
+    },
+    {
+      "id": "gw-bb",
+      "from": "gateway",
+      "to": "boleteria-b",
+      "label": "ZeroTier",
+      "fromSide": "right",
+      "toSide": "left",
+      "variant": "dashed",
+      "via": [
+        [
+          1000,
+          232
+        ],
+        [
+          1000,
+          572
+        ]
+      ],
+      "labelSegment": 0
+    },
+    {
+      "id": "na-datos",
+      "from": "nucleo-a",
+      "to": "datos",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "ba-datos",
+      "from": "boleteria-a",
+      "to": "datos",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "trab-datos",
+      "from": "trabajador",
+      "to": "datos",
+      "label": "cola de correo",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "nb-datos",
+      "from": "nucleo-b",
+      "to": "datos",
+      "label": "SQL · Redis · AMQP",
+      "fromSide": "left",
+      "toSide": "right",
+      "variant": "dashed",
+      "via": [
+        [
+          850,
+          392
+        ],
+        [
+          850,
+          572
+        ]
+      ],
+      "labelSegment": 0
+    },
+    {
+      "id": "bb-datos",
+      "from": "boleteria-b",
+      "to": "datos",
+      "fromSide": "bottom",
+      "toSide": "bottom",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Qué se demuestra",
+      "items": [
+        "El gateway de A reparte entre las réplicas de A y de B",
+        "Se apaga B y C sigue atendido por las réplicas de A",
+        "Al volver B, el gateway la retoma sin reiniciar nada"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Límites",
+      "items": [
+        "A es el punto único de falla: datos, gateway y entrada HTTPS",
+        "B llega a A por un relevo de ZeroTier, unos 124 ms por ida y vuelta",
+        "Redis no tiene contraseña: los puertos de A solo se abren en la red privada"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Red",
+      "items": [
+        "A · Mac de Samuel · 192.168.193.59: no se apaga",
+        "B · VM de la Javeriana · 192.168.193.137: se apaga en la demostración",
+        "C · Mac de Sebastián · 192.168.193.132: cliente que mide",
+        "Red privada 192.168.193.0/24: un rango 10.x choca con la VPN de la universidad"
+      ]
+    }
+  ]
+}

@@ -41,7 +41,11 @@ class Entradas(unittest.TestCase):
         c['tls']=None;self.assertEqual(comun.validar_config(c)['rol'],'B')
 
     def test_fuera_rama_sin_escritura(self):
-        with patch.object(comun,'git',return_value='develop'),self.assertRaises(ValueError):comun.rama()
+        for otra in ('develop','feature/sebastian'):
+            with patch.object(comun,'git',return_value=otra),self.assertRaises(ValueError):comun.rama()
+
+    def test_main_es_la_rama_de_la_demo(self):
+        with patch.object(comun,'git',return_value='main'):comun.rama()
 
     def test_no_secretos_ni_compose_heredados(self):
         with patch.dict('os.environ',{'HOST_POSTGRES':'ajeno','STRIPE_CLAVE_SECRETA':'no-usar','COMPOSE_PROJECT_NAME':'redash'},clear=False):

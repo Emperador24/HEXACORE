@@ -183,7 +183,7 @@
       "id": "monitoreo",
       "type": "cloud",
       "label": "monitoreo",
-      "sublabel": "exportador · prometheus · loki · grafana",
+      "sublabel": "exportador · prometheus · loki · grafana con sesión",
       "pos": [
         900,
         380
@@ -329,7 +329,8 @@
         "docker-compose.remoto.yml separa el perfil datos en otra máquina",
         "docker-compose.escalado.yml quita los puertos fijos para replicar Núcleo y Boletería",
         "docker-compose.monitoreo.yml agrega el tablero de CPU, memoria y logs (iniciar.sh --monitoreo)",
-        "docker-compose.registro.yml usa las imágenes de GHCR en vez de compilar"
+        "docker-compose.registro.yml usa las imágenes de GHCR en vez de compilar",
+        "App/infra/zerotier reparte A y B en dos computadores (vista 09)"
       ]
     },
     {

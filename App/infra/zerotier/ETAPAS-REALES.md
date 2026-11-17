@@ -101,14 +101,14 @@ ejecutará antes de construir/arrancar; si falla, conservar y diagnosticar.
 ## 2. Acordar el mismo commit limpio sin perder trabajo
 
 **Después de revisar los diagnósticos**, fijar el SHA completo de
-`origin/feature/sebastian` publicado por el coordinador. No usar etiquetas móviles
+`origin/main` publicado por el coordinador. No usar etiquetas móviles
 como evidencia de igualdad; comunicar `git rev-parse HEAD` de ambos equipos.
 
-Si ya están en `feature/sebastian`, limpios y sin divergencia, sus propietarios:
+Si ya están en `main`, limpios y sin divergencia, sus propietarios:
 
 ```bash
-git fetch origin feature/sebastian
-git merge --ff-only origin/feature/sebastian
+git fetch origin main
+git merge --ff-only origin/main
 git status --short --branch
 git rev-parse HEAD
 ```
@@ -117,12 +117,12 @@ Si hay cambios, otra rama o divergencia, **conservar ese checkout**. Usar una
 copia nueva exclusiva, sin cambiar su rama ni stash/reset/clean/force:
 
 ```bash
-git clone --single-branch --branch feature/sebastian https://github.com/Emperador24/HEXACORE.git "$HOME/HEXACORE-demo-zt"
+git clone --single-branch --branch main https://github.com/Emperador24/HEXACORE.git "$HOME/HEXACORE-demo-zt"
 ```
 
 El destino debe ser inexistente. Si ya existe, inspeccionarlo y acordar otro;
 no borrarlo. No ejecutar estos comandos de servidores en C. Ambos deben reportar
-mismo SHA, rama `feature/sebastian` y árbol limpio antes de configurar/construir.
+mismo SHA, rama `main` y árbol limpio antes de configurar/construir.
 
 ## 3. Nombres internos y CA privada de ensayo, exclusivamente A
 

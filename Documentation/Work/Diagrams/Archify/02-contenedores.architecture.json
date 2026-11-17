@@ -60,7 +60,7 @@
           "boleteria",
           "trabajador"
         ],
-        "note": "CPU, memoria y logs de cada instancia, servidos por el mismo gateway en /grafana/."
+        "note": "CPU, memoria y logs de cada instancia, servidos por el mismo gateway en /grafana/, con usuario y contraseña."
       }
     ]
   },
