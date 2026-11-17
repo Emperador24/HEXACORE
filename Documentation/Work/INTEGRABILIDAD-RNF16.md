@@ -107,8 +107,10 @@ reintenta solo, ver E2 en [REVISION-DANIEL.md](REVISION-DANIEL.md).
 **2. El formato de los tokens estaba fuera de Pagos.** El formato de los tokens de pago (`tok_` de la simulada, `pm_` de Stripe) estaba en
 `compartido/token-pago.ts`, fuera de Pagos, y lo usaban los DTO de Entradas, Alimentos y
 Parqueaderos. Con un tercer proveedor de tokens distintos había que tocar ese archivo, además del
-adaptador. Se movió **sin cambiar su contenido** a `modulos/finanzas/pagos/token-pago.ts` (con su
-prueba, de Sebastián) y se exporta por la API pública de Pagos.
+adaptador. Se movió **sin cambiar su contenido** a `modulos/finanzas/pagos/token-pago.ts` y se
+exporta por la API pública de Pagos. Su prueba (de Sebastián) sigue en `compartido/`: valida los DTO
+de todos los módulos a la vez, y dentro de Pagos violaría la regla de fronteras del CI
+(`test/comprobar-configuracion.py`: un módulo no importa internos de otro).
 
 ## 4. Límites
 
