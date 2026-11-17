@@ -25,7 +25,9 @@ function direccionApi(valor: unknown): string {
       valor.startsWith('//') || /[\\\r\n]/.test(valor)) {
     throw new Error('HEXACORE_CONFIGURACION.api inválida: use una URL HTTP(S) o una ruta absoluta');
   }
-  const url = new URL(valor, typeof window === 'undefined' ? 'http://localhost' : window.location.origin);
+  let url: URL;
+  try { url = new URL(valor, typeof window === 'undefined' ? 'http://localhost' : window.location.origin); }
+  catch { throw new Error('HEXACORE_CONFIGURACION.api inválida: URL no interpretable'); }
   if ((!valor.startsWith('/') && !/^https?:\/\//.test(valor)) ||
       !['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.search || url.hash) {
     throw new Error('HEXACORE_CONFIGURACION.api inválida: sin credenciales, consulta ni fragmento');

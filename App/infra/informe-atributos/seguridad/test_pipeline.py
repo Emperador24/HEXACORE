@@ -3,6 +3,8 @@ import json
 import pathlib
 import tempfile
 import unittest
+import io
+import contextlib
 from unittest.mock import patch
 
 spec = importlib.util.spec_from_file_location('pipeline', pathlib.Path(__file__).with_name('pipeline.py'))
@@ -37,5 +39,28 @@ class Informe(unittest.TestCase):
             cfg={'revision':'a'*40,'tipoDespliegue':'presentacion','destinos':{'api':'https://ejemplo.test'},'tokens':{'cliente':'SECRETO'}}
             self.assertEqual(p.escanear(cfg,pathlib.Path(d),pathlib.Path(d)/'privado'),1)
             self.assertNotIn('SECRETO',(pathlib.Path(d)/'owasp.json').read_text())
+
+class VersionDesplegada(unittest.TestCase):
+    def modulo(self):
+        spec=importlib.util.spec_from_file_location('version',p.ROOT/'App/infra/verificar-version.py')
+        m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m);return m
+
+    def probar(self, revision='a'*40, falta=False):
+        m=self.modulo();llamadas=[]
+        def respuesta(args,**kw):
+            llamadas.append(args)
+            if 'inspect' in args:
+                return json.dumps([{'Config':{'Labels':{'org.opencontainers.image.revision':revision}},'State':{'Running':True},'Image':'sha256:ensayo'}])
+            return '' if falta else 'contenedor-ensayo'
+        with patch.object(m.sys,'argv',['verificar-version.py','a'*40]),patch.object(m.subprocess,'check_output',side_effect=respuesta),contextlib.redirect_stdout(io.StringIO()):
+            m.main()
+        self.assertEqual(len(llamadas),16)
+        self.assertTrue(all('ps' in x or 'inspect' in x for x in llamadas))
+
+    def test_ocho_aplicaciones_misma_revision_solo_lectura(self):self.probar()
+    def test_revision_divergente_no_acredita_despliegue(self):
+        with self.assertRaises(ValueError):self.probar(revision='b'*40)
+    def test_aplicacion_ausente_no_acredita_despliegue(self):
+        with self.assertRaises(ValueError):self.probar(falta=True)
 
 if __name__=='__main__': unittest.main()

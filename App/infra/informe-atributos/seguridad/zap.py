@@ -43,7 +43,9 @@ def interno():
     assert autenticadas, 'Falta cobertura autenticada'
     for ruta in publicas:
         assert ruta.startswith('/') and '?' not in ruta and '#' not in ruta
-        enviar(destinos['api']+'/api/v1'+ruta)
+        _,estado=enviar(destinos['api']+'/api/v1'+ruta)
+        esperado=cfg.get('esperadosPublicos',{}).get(ruta)
+        if esperado is not None: assert estado==esperado,'Respuesta pública distinta del contrato del escaneo'
     for ruta,actor in autenticadas:
         assert ruta.startswith('/') and '?' not in ruta and '#' not in ruta
         _,estado=enviar(destinos['api']+'/api/v1'+ruta,auth[actor]);assert estado==200,'No hubo cobertura autenticada fuera de login'

@@ -32,6 +32,25 @@ def guardar(salida, nombre, d):
     (salida / (nombre + '.html')).write_text('<!doctype html><html lang="es"><meta charset="utf-8">'
         '<title>HEXACORE ' + nombre + '</title><h1>HEXACORE ' + nombre + '</h1><pre>'
         + html.escape(json.dumps(d, ensure_ascii=False, indent=2)) + '</pre></html>')
+    resumen = os.environ.get('GITHUB_STEP_SUMMARY')
+    if resumen:
+        lineas = ['### HEXACORE: ' + nombre, '']
+        if nombre == 'owasp':
+            lineas += ['Estado: **' + d['estado'] + '**. Despliegue: **' + str(d.get('tipoDespliegue')) + '**.',
+                'ZAP no tiene Critical. Criterio: cero High.',
+                'High: **' + str(d.get('conteo', {}).get('High', 0) if d.get('versionZAP') else 'no medido') + '**.',
+                'Revisión: `' + d.get('revisionGatewayAntes', 'no acreditada') + '`.',
+                'Cobertura autenticada HTTP 200: ' + str(d.get('autenticadas200', 'no acreditada')) + '.',
+                'Error: ' + d.get('error', 'ninguno') + '.']
+        elif nombre == 'dependencias':
+            lineas += ['| Paquete | Alcance | Critical | High | Moderate | Low |', '|---|---|---:|---:|---:|---:|']
+            for x in d['resultados']:
+                v=x.get('vulnerabilidades') or {}
+                lineas.append('| ' + ' | '.join([x['paquete'],x['alcance'],*[str(v.get(k,'no medido')) for k in ['critical','high','moderate','low']]]) + ' |')
+        else:
+            lineas += ['Estado: **' + d.get('estado','incompleto') + '**. Mismas imágenes: ' + str(d.get('mismasImagenes','no acreditado')) + '.']
+        lineas += ['', 'HTML/JSON completos y saneados: artifact de esta ejecución. Las evidencias HTTP privadas no se publican.', '']
+        with open(resumen,'a') as f: f.write('\n'.join(lineas))
 
 def sanear_alertas(alertas, destinos):
     origenes = {urllib.parse.urlsplit(v).netloc: k for k, v in destinos.items()}
@@ -98,6 +117,7 @@ def escanear(cfg, salida, privada, red=None):
         if not listo: raise ValueError('ZAP_NO_INICIA')
         ejecutar(['docker', 'cp', str(pathlib.Path(__file__).with_name('zap.py')), nombre + ':/tmp/zap-hexacore.py'])
         peticion = {**cfg, 'clave': clave}
+        peticion['esperadosPublicos'] = {'/salud':200, '/cartelera':200, '/pagos/configuracion':200, '/cuentas/perfil':401}
         r = ejecutar(['docker', 'exec', '-i', nombre, 'python3', '/tmp/zap-hexacore.py', '--interno'], input=json.dumps(peticion))
         privada.mkdir(parents=True, exist_ok=True, mode=0o700)
         crudo = privada / 'zap-privado.json'

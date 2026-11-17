@@ -75,7 +75,10 @@ def preparar(privada):
     privada.mkdir(parents=True, mode=0o700, exist_ok=True)
     (privada / 'configuracion.js').write_text('window.HEXACORE_CONFIGURACION = {};\n')
     nginx = (ROOT / 'App/frontend/portal-web-cliente/nginx.conf').read_text()
-    nginx = nginx.replace('  location / {', '  location /ensayo-api/v1/ { proxy_pass http://gateway:8080/api/v1/; }\n  location / {')
+    # El gateway todavía puede no existir al arrancar el portal y se recrea
+    # durante el ensayo de puerto. Resolverlo dinámicamente evita fijar una IP.
+    nginx = 'resolver 127.0.0.11 valid=5s ipv6=off;\nupstream gateway_demo { zone gateway_demo 64k; server gateway:8080 resolve; }\n' + nginx
+    nginx = nginx.replace('  location / {', '  location /ensayo-api/v1/ { proxy_pass http://gateway_demo/api/v1/; }\n  location / {')
     (privada / 'portal.conf').write_text(nginx)
     (privada / 'gateway.conf').write_text((ROOT / 'App/gateway/nginx.conf').read_text())
     servicios = {
@@ -84,6 +87,7 @@ def preparar(privada):
             'networks': {'default': {'aliases': ['objetivo']}},
             'volumes': [str(privada / 'gateway.conf') + ':/etc/nginx/conf.d/default.conf:ro']},
         'cliente': {'build': str(ROOT / 'App/frontend/portal-web-cliente'), 'ports': ['127.0.0.1:4200:4200'],
+            'depends_on': {'gateway': {'condition':'service_healthy'}},
             'networks': {'default': {'aliases': ['cliente']}},
             'volumes': [str(privada / 'configuracion.js') + ':/usr/share/nginx/html/configuracion.js:ro', str(privada / 'portal.conf') + ':/etc/nginx/conf.d/default.conf:ro']},
         'admin': {'build': str(ROOT / 'App/frontend/portal-web-admin'), 'ports': ['127.0.0.1:4201:4201'],
@@ -107,9 +111,10 @@ def preparar(privada):
                 'oom':dato['State']['OOMKilled'],'salud':dato['State'].get('Health',{}).get('Status')}),flush=True)
             # Ninguna fixture ni token existe todavía. Mantener solo errores de
             # arranque, sin SQL completo, parámetros o configuración de entorno.
-            logs=ejecutar(['docker','logs','--tail','80',identificador])
+            log=subprocess.run(['docker','logs','--tail','80',identificador],capture_output=True,text=True,timeout=15)
+            logs=log.stdout+'\n'+log.stderr
             for linea in logs.splitlines():
-                if re.search(r'Error:|Exception:|ECONNREFUSED|ENOTFOUND|Falta la variable|Invalid|invalid',linea):
+                if re.search(r'Error:|Exception:|\[emerg\]|ECONNREFUSED|ENOTFOUND|Falta la variable|Invalid|invalid',linea):
                     print(re.sub(r'[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]+','[JWT OMITIDO]',linea)[:500],flush=True)
         raise
     c['imagenes'] = {s: imagen(c, s) for s in ['nucleo', 'boleteria', 'gateway', 'cliente', 'admin', 'trabajador']}
@@ -153,6 +158,8 @@ def modificabilidad(c, privada, salida):
             if valor: args += ['-e', 'POSTGRES_ESPERA_MAXIMA_MS=' + valor]
             texto = ejecutar([*args, contenedor, 'node'], input=script)
             espera.append(json.loads(texto.strip().splitlines()[-1]))
+        assert [x['limiteMs'] for x in espera] == [3000, 1000], 'No se acreditó el valor predeterminado'
+        assert espera[0]['duracionMs'] > espera[1]['duracionMs'] + 1000, 'No se observó el efecto de la espera'
         invalida = subprocess.run(['docker', 'exec', '-e', 'POSTGRES_ESPERA_MAXIMA_MS=499', contenedor, 'node', '-e', "require('./dist/modulos/identidad/comun/config/configuracion').cargarConfiguracion()"], capture_output=True, text=True)
         assert invalida.returncode != 0 and 'entre 500 y 30000' in invalida.stderr
         informe['parametros'].append({'nombre':'POSTGRES_ESPERA_MAXIMA_MS', 'medidas':espera, 'invalidoRechazado':True, 'alcance':'consulta SELECT pg_sleep(4) mediante DataSource compilado de Identidad; no mide carga'})

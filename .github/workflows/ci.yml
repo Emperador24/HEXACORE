@@ -309,6 +309,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Validar entrada HTTPS y ruta de procedencia de producción
+        run: >-
+          docker run --rm -e DOMINIO=portal.example.test -e DOMINIO_ADMIN=admin.example.test
+          -v "$PWD/App/infra/produccion/Caddyfile:/etc/caddy/Caddyfile:ro"
+          caddy:2.8.4-alpine caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
 
       - name: Validar nginx.conf y autenticacion.js
         run: docker build -t hexacore-gateway-ci App/gateway

@@ -1,10 +1,12 @@
-// Comprueba tráfico del navegador real; sin interceptar/simular la API.
+// Comprueba tráfico real del API local; aborta recursos de terceros del ensayo.
 const {chromium}=require('playwright');
 const assert=require('node:assert/strict');
 (async()=>{
   const browser=await chromium.launch({headless:true});
   try{
-    const page=await browser.newPage();
+    const contexto=await browser.newContext();
+    await contexto.route('**/*',ruta=>['127.0.0.1','localhost'].includes(new URL(ruta.request().url()).hostname)?ruta.continue():ruta.abort());
+    const page=await contexto.newPage();
     if(process.argv[2]==='invalida'){
       const error=page.waitForEvent('pageerror',{predicate:e=>e.message.includes('HEXACORE_CONFIGURACION.api'),timeout:10000});
       await page.goto('http://127.0.0.1:4200/');
