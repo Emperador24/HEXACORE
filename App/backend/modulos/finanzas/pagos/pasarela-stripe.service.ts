@@ -1,6 +1,6 @@
 import { Logger } from '@nestjs/common';
 import type { ConfiguracionServicio } from './config/configuracion';
-import { ProcesadorPagos, RespuestaCobro, ResultadoCobro, SolicitudCobro, SolicitudReembolso } from './procesador-pagos';
+import { ProcesadorPagos, RespuestaCobro, ResultadoCobro, SolicitudCobro, SolicitudReembolso, TransaccionExterna } from './procesador-pagos';
 
 /**
  * Tokens de la pasarela simulada que siguen mandando la app móvil, los pedidos
@@ -27,6 +27,10 @@ interface ObjetoStripe {
   last_payment_error?: { message?: string; decline_code?: string; code?: string } | null;
   failure_reason?: string | null;
 }
+
+/** CU-031: lo que trae cada fila de `GET /charges` y `GET /refunds`. */
+interface ObjetoStripeCargo { id: string; status: string; amount: number; currency: string; created: number }
+interface ObjetoStripeReembolso { id: string; status: string; amount: number; currency: string; created: number }
 
 interface ErrorStripe {
   error?: { type?: string; code?: string; decline_code?: string; message?: string; payment_intent?: { id?: string } };
@@ -99,6 +103,64 @@ export class PasarelaStripe implements ProcesadorPagos {
       'metadata[operacion]': 'REEMBOLSO',
       'metadata[motivo]': (solicitud.motivo ?? '').slice(0, 500),
     });
+  }
+
+  /**
+   * CU-031, paso 3: lo que Stripe procesó entre `desde` y `hasta`. `charges` y
+   * `refunds` son listas separadas en la API de Stripe (a diferencia del
+   * simulador, que ya las junta); aquí se unen para que `ProcesadorPagos` siga
+   * exponiendo una sola forma hacia la conciliación.
+   */
+  async listarTransacciones(desde: Date, hasta: Date): Promise<TransaccionExterna[]> {
+    const [cobros, reembolsos] = await Promise.all([
+      this.listarPaginado<ObjetoStripeCargo>('/charges', desde, hasta),
+      this.listarPaginado<ObjetoStripeReembolso>('/refunds', desde, hasta),
+    ]);
+    return [
+      ...cobros.map((c): TransaccionExterna => ({
+        referencia: referenciaStripe(c.id) ?? c.id,
+        tipo: 'COBRO',
+        estado: c.status === 'succeeded' ? ResultadoCobro.APROBADO : c.status === 'failed' ? ResultadoCobro.RECHAZADO : ResultadoCobro.INDETERMINADO,
+        monto: c.amount / 100,
+        moneda: c.currency.toUpperCase(),
+        procesadoEn: new Date(c.created * 1000),
+      })),
+      ...reembolsos.map((r): TransaccionExterna => ({
+        referencia: referenciaStripe(r.id) ?? r.id,
+        tipo: 'REEMBOLSO',
+        estado: r.status === 'succeeded' ? ResultadoCobro.APROBADO : r.status === 'failed' ? ResultadoCobro.RECHAZADO : ResultadoCobro.INDETERMINADO,
+        monto: r.amount / 100,
+        moneda: r.currency.toUpperCase(),
+        procesadoEn: new Date(r.created * 1000),
+      })),
+    ];
+  }
+
+  /** Avanza por `starting_after` hasta agotar `has_more`, con un tope de seguridad. */
+  private async listarPaginado<T extends { id: string }>(ruta: string, desde: Date, hasta: Date): Promise<T[]> {
+    const resultados: T[] = [];
+    let cursor: string | undefined;
+    for (let pagina = 0; pagina < 20; pagina++) {
+      const parametros = new URLSearchParams({
+        limit: '100',
+        'created[gte]': String(Math.floor(desde.getTime() / 1000)),
+        'created[lte]': String(Math.floor(hasta.getTime() / 1000)),
+      });
+      if (cursor) parametros.set('starting_after', cursor);
+      const respuesta = await fetch(`${this.url}${ruta}?${parametros}`, {
+        headers: { Authorization: `Bearer ${this.claveSecreta}` },
+        signal: AbortSignal.timeout(this.timeoutMs),
+      });
+      if (!respuesta.ok) {
+        this.log.error(`Stripe no pudo listar ${ruta} (${respuesta.status})`);
+        throw new Error(`Stripe respondió ${respuesta.status} al listar ${ruta}.`);
+      }
+      const cuerpo = (await respuesta.json()) as { data: T[]; has_more: boolean };
+      resultados.push(...cuerpo.data);
+      if (!cuerpo.has_more || cuerpo.data.length === 0) break;
+      cursor = cuerpo.data[cuerpo.data.length - 1].id;
+    }
+    return resultados;
   }
 
   /**

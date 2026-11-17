@@ -9,12 +9,13 @@ import { AlimentosModule } from '../../modulos/alimentos/alimentos.module';
 import { EventosRecintosModule } from '../../modulos/eventos-recintos/eventos-recintos.module';
 import { OperacionModule } from '../../modulos/operacion/operacion.module';
 import { ParqueaderosModule } from '../../modulos/parqueaderos/parqueaderos.module';
+import { ConciliacionModule } from '../../modulos/finanzas/conciliacion/conciliacion.module';
 import { SaludController } from './salud.controller';
 import { APP_FILTER } from '@nestjs/core';
 import { DiagnosticoPgFilter } from './diagnostico-pg.filter';
 
 @Module({
-  imports: [WebhookPagosModule, ConfiguracionProcesoModule, RedisModule, RabbitMqModule, IdentidadModule, AlimentosModule, PersonalLogisticaModule, EventosRecintosModule, OperacionModule, ParqueaderosModule],
+  imports: [WebhookPagosModule, ConfiguracionProcesoModule, RedisModule, RabbitMqModule, IdentidadModule, AlimentosModule, PersonalLogisticaModule, EventosRecintosModule, OperacionModule, ParqueaderosModule, ConciliacionModule],
   controllers: [SaludController],
   providers: [{ provide: APP_FILTER, useClass: DiagnosticoPgFilter }],
 })

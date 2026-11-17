@@ -57,6 +57,13 @@
  *
  * Solo se confirma lo que la pasarela decidió. Los tokens de timeout y de error
  * no generan webhook: simulan justamente la operación de la que nadie supo.
+ *
+ * ## Transacciones (CU-031)
+ *
+ * `GET /transacciones?desde=<ISO>&hasta=<ISO>` devuelve cobros y reembolsos
+ * ya resueltos en ese rango (por `procesadoEn`), para que la conciliación
+ * administrativa los compare contra el libro propio. Los de timeout no
+ * aparecen aquí tampoco: nunca llegaron a resolverse en esta pasarela.
  */
 
 const http = require('node:http');
@@ -76,6 +83,14 @@ const aprobados = new Map();
 
 /** Reembolsos ya resueltos, por clave de idempotencia. */
 const reembolsos = new Map();
+
+/**
+ * Historial cronológico de todo lo procesado, para CU-031 (conciliación):
+ * `GET /transacciones` es lo que la pasarela "reporta" sobre sí misma, aparte
+ * de lo que cada cobro/reembolso ya respondió por su cuenta. En memoria,
+ * como el resto de este simulador: se pierde si el contenedor reinicia.
+ */
+const historial = [];
 
 function responder(res, estado, cuerpo) {
   const texto = JSON.stringify(cuerpo);
@@ -213,6 +228,7 @@ async function cobrar(req, res) {
   if (resultado.estado === 'APROBADO') {
     aprobados.set(resultado.referencia, { monto, reembolsado: 0, permiteReembolso: !token.startsWith('tok_noreemb') });
   }
+  historial.push({ ...resultado, tipo: 'COBRO' });
   console.log(`[pasarela] ${resultado.estado} ${resultado.referencia} monto=${monto}`);
   responder(res, 200, resultado);
   confirmarPorWebhook({
@@ -267,6 +283,7 @@ async function reembolsar(req, res) {
     procesadoEn: new Date().toISOString(),
   };
   if (clave) reembolsos.set(clave, resultado);
+  historial.push({ ...resultado, moneda: cuerpo.moneda || 'COP', tipo: 'REEMBOLSO' });
   console.log(`[pasarela] reembolso ${resultado.estado} ${referenciaCobro} monto=${monto}`);
   responder(res, 200, resultado);
   confirmarPorWebhook({
@@ -278,6 +295,21 @@ async function reembolsar(req, res) {
   });
 }
 
+/** CU-031, paso 3: lo que la pasarela reporta haber procesado entre `desde` y `hasta`. */
+function transacciones(req, res) {
+  const url = new URL(req.url, 'http://localhost');
+  const desde = Date.parse(url.searchParams.get('desde') || '');
+  const hasta = Date.parse(url.searchParams.get('hasta') || '');
+  if (Number.isNaN(desde) || Number.isNaN(hasta)) {
+    return responder(res, 400, { error: 'desde y hasta deben ser fechas ISO válidas' });
+  }
+  const filas = historial.filter((h) => {
+    const t = Date.parse(h.procesadoEn);
+    return t >= desde && t <= hasta;
+  });
+  responder(res, 200, filas);
+}
+
 const servidor = http.createServer((req, res) => {
   if (req.method === 'GET' && req.url === '/salud') {
     return responder(res, 200, { servicio: 'pasarela-pagos-simulada', estado: 'arriba' });
@@ -287,6 +319,9 @@ const servidor = http.createServer((req, res) => {
   }
   if (req.method === 'POST' && req.url === '/reembolsos') {
     return void reembolsar(req, res);
+  }
+  if (req.method === 'GET' && req.url.startsWith('/transacciones')) {
+    return transacciones(req, res);
   }
   responder(res, 404, { error: 'Ruta no encontrada' });
 });

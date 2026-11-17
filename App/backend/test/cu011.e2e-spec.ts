@@ -189,8 +189,8 @@ describe('CU-011 Alimentos → Pagos → pasarela con persistencia y mensajería
     const salud = await fetch(`${base}/api/v1/salud`, { signal: AbortSignal.timeout(3000) });
     expect(salud.status).toBe(200);
     expect(await salud.json()).toMatchObject({ servicio: 'nucleo', entorno: 'test', estado: 'arriba' });
-    // +1: CU-020 (Gestionar incidentes) declara su propia cola de prioridad.
-    expect(salidaServidor.match(/8 topologías declaradas/g)).toHaveLength(1);
+    // +1: CU-020 (Gestionar incidentes); +1: CU-031 (Conciliación financiera).
+    expect(salidaServidor.match(/9 topologías declaradas/g)).toHaveLength(1);
     expect(salidaServidor.match(/Sondeo de reservas iniciado/g)).toHaveLength(1);
     expect(salidaServidor).toContain(`pid=${servidor.pid}`);
     expect(salidaServidor).toMatch(/hilos=\d+/);

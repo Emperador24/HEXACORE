@@ -73,8 +73,8 @@ export class NucleoPrueba {
     expect(await salud.json()).toMatchObject({ servicio: 'nucleo', dependencias: {
       postgres: { identidad: 'arriba', alimentos: 'arriba', logistica: 'arriba' } } });
     expect(this.salida).toContain(`pid=${this.proceso.pid}`);
-    // +1: CU-020 (Gestionar incidentes) declara su propia cola de prioridad.
-    expect(this.salida.match(/8 topologías declaradas/g)).toHaveLength(1);
+    // +1: CU-020 (Gestionar incidentes); +1: CU-031 (Conciliación financiera).
+    expect(this.salida.match(/9 topologías declaradas/g)).toHaveLength(1);
     expect(this.salida.match(/Escuchando la cola/g)).toHaveLength(1);
     await esperar(async () => (await this.conexionesRabbit()).length === 1);
     await esperar(async () => await this.consumidores() === 1);

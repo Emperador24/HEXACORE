@@ -36,6 +36,7 @@ import { VersionEvento1794400000001 } from '../../modulos/entradas/catalogo/pers
 import { VersionEvento1794400000002 } from '../../modulos/entradas/postventa/persistencia/migraciones/1794400000002-VersionEvento';
 import { VersionEvento1794400000003 } from '../../modulos/entradas/acceso-qr/persistencia/migraciones/1794400000003-VersionEvento';
 import { EsquemaPagos1790380800000 } from '../../modulos/finanzas/pagos/persistencia/migraciones/1790380800000-EsquemaPagos';
+import { EsquemaConciliacion1795000000000 } from '../../modulos/finanzas/conciliacion/persistencia/migraciones/1795000000000-EsquemaConciliacion';
 
 export const GRUPOS_MIGRACIONES = [
   { conexion: 'identidad' as const, esquema: 'identidad', historial: 'migraciones', migraciones: [EsquemaInicialCu0271789430400000, AdministracionCuentasCu027b1789516800000, RenovacionSesiones1789603200000, RolesPermisosCu0281794800000000] },
@@ -51,7 +52,9 @@ export const GRUPOS_MIGRACIONES = [
   // CU-019, CU-010 y CU-020, módulo del futuro programa Operación (ADR-16), hoy dentro del Núcleo.
   { conexion: 'operacion' as const, esquema: 'operacion', historial: 'migraciones', migraciones: [EsquemaOperacionMonitoreo1793900000000, Cu010Evacuacion1794100000000, Cu020Incidentes1794900000000] },
   // CU-021 a CU-025: Parqueaderos, undécimo esquema, sin procedencia histórica.
-  { conexion: 'parqueaderos' as const, esquema: 'parqueaderos', historial: 'migraciones', migraciones: [EsquemaParqueaderos1794200000000, Cu021Cu023ReservasEspacios1794300000000] }
+  { conexion: 'parqueaderos' as const, esquema: 'parqueaderos', historial: 'migraciones', migraciones: [EsquemaParqueaderos1794200000000, Cu021Cu023ReservasEspacios1794300000000] },
+  // CU-031: Conciliación financiera, duodécimo esquema, sin procedencia histórica.
+  { conexion: 'finanzas-conciliacion' as const, esquema: 'finanzas_conciliacion', historial: 'migraciones', migraciones: [EsquemaConciliacion1795000000000] }
 ];
 
 // Procedencia de las 18 fuentes que venían de los servicios anteriores. Las

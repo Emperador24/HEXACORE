@@ -1,12 +1,12 @@
 import { CONEXION_PAGOS } from './persistencia/conexion';
 import { ConflictException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
+import { Between, DataSource } from 'typeorm';
 import { TipoOperacion, TransaccionPago } from './persistencia/entidades/transaccion-pago.entity';
 import { CobrarDto, ReembolsarDto, RespuestaPagoDto } from './dto/pagos.dto';
 import { NotificacionPasarelaDto } from './dto/webhook.dto';
 import { EventoPago } from './contratos/evento-pago';
-import { PROCESADOR_PAGOS, ProcesadorPagos, RespuestaCobro, ResultadoCobro } from './procesador-pagos';
+import { PROCESADOR_PAGOS, ProcesadorPagos, RespuestaCobro, ResultadoCobro, TransaccionExterna } from './procesador-pagos';
 
 @Injectable()
 export class PagosService {
@@ -46,6 +46,23 @@ export class PagosService {
     const r = await this.datos.getRepository(TransaccionPago).findOne({ where: { claveIdempotencia, solicitante } });
     return r ? { tipo: r.tipo, monto: r.monto, moneda: r.moneda,
       resultado: r.resultado, referencia: r.referencia, motivo: r.motivo } : null;
+  }
+
+  /**
+   * CU-031, paso 3 (primera fuente): lo que el propio libro registró en el
+   * rango, opcionalmente acotado a un solicitante (`entradas`, `alimentos`,
+   * `parqueaderos`...). Es lectura pura; no es la conciliación en sí.
+   */
+  transaccionesEnRango(desde: Date, hasta: Date, solicitante?: string): Promise<TransaccionPago[]> {
+    return this.datos.getRepository(TransaccionPago).find({
+      where: { creadaEn: Between(desde, hasta), ...(solicitante ? { solicitante } : {}) },
+      order: { creadaEn: 'ASC' },
+    });
+  }
+
+  /** CU-031, paso 3 (segunda fuente): lo que la pasarela reporta haber procesado en el rango. */
+  transaccionesDeLaPasarela(desde: Date, hasta: Date): Promise<TransaccionExterna[]> {
+    return this.pasarela.listarTransacciones(desde, hasta);
   }
 
   /**

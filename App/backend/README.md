@@ -52,9 +52,10 @@ incluso vacías. Quitarlas del entorno y del .env; no se ignoran silenciosamente
 | eventos-recintos | eventos_recintos | migraciones / 2 |
 | operacion | operacion | migraciones / 3 |
 | parqueaderos | parqueaderos | migraciones / 1 |
+| finanzas-conciliacion | finanzas_conciliacion | migraciones / 1 |
 
 Cada pool usa solo su esquema, pg_catalog y extensiones en search_path. No se
-mezclan los once propietarios (38 migraciones; 18 procedencias históricas). synchronize=false, migrationsRun=false e
+mezclan los doce propietarios (39 migraciones; 18 procedencias históricas). synchronize=false, migrationsRun=false e
 installExtensions=false en todas las conexiones. Extensiones uuid-ossp 1.1 y
 pgcrypto 1.3 se preparan centralmente en extensiones. pg_catalog precede al
 homónimo gen_random_uuid de pgcrypto. No se modifican las 18 fuentes históricas:

@@ -13,6 +13,7 @@ import { CONEXION_ALIMENTOS } from '../../modulos/alimentos/persistencia/conexio
 import { CONEXION_EVENTOS } from '../../modulos/eventos-recintos/persistencia/conexion';
 import { CONEXION_OPERACION } from '../../modulos/operacion/persistencia/conexion';
 import { CONEXION_PARQUEADEROS } from '../../modulos/parqueaderos/persistencia/conexion';
+import { CONEXION_CONCILIACION } from '../../modulos/finanzas/conciliacion/persistencia/conexion';
 
 @Controller('salud')
 export class SaludController {
@@ -26,13 +27,14 @@ export class SaludController {
     @InjectDataSource(CONEXION_EVENTOS) private readonly eventos: DataSource,
     @InjectDataSource(CONEXION_OPERACION) private readonly operacion: DataSource,
     @InjectDataSource(CONEXION_PARQUEADEROS) private readonly parqueaderos: DataSource,
+    @InjectDataSource(CONEXION_CONCILIACION) private readonly conciliacion: DataSource,
     @Inject(REDIS) private readonly redis: Redis,
     private readonly rabbit: ConexionRabbitMq,
   ) {}
 
   @Get()
   async estado(@Res({ passthrough: true }) respuesta: Response) {
-    const [identidad, alimentos, logistica, pagos, eventos, operacion, parqueaderos, redis] = await Promise.all([
+    const [identidad, alimentos, logistica, pagos, eventos, operacion, parqueaderos, conciliacion, redis] = await Promise.all([
       this.responde(() => this.identidad.query('SELECT 1 FROM identidad.migraciones LIMIT 1')),
       this.responde(() => this.alimentos.query('SELECT 1 FROM alimentos.migraciones LIMIT 1')),
       this.responde(() => this.logistica.query('SELECT 1 FROM personal_logistica.migraciones LIMIT 1')),
@@ -40,16 +42,17 @@ export class SaludController {
       this.responde(() => this.eventos.query('SELECT 1 FROM eventos_recintos.migraciones LIMIT 1')),
       this.responde(() => this.operacion.query('SELECT 1 FROM operacion.migraciones LIMIT 1')),
       this.responde(() => this.parqueaderos.query('SELECT 1 FROM parqueaderos.migraciones LIMIT 1')),
+      this.responde(() => this.conciliacion.query('SELECT 1 FROM finanzas_conciliacion.migraciones LIMIT 1')),
       this.responde(() => this.redis.ping()),
     ]);
     // Redis es necesario para aceptar reservas. Rabbit se informa como antes.
-    const listo = identidad && alimentos && logistica && pagos && eventos && operacion && parqueaderos && redis;
+    const listo = identidad && alimentos && logistica && pagos && eventos && operacion && parqueaderos && conciliacion && redis;
     respuesta.status(listo ? 200 : 503);
     return {
       servicio: 'nucleo', entorno: this.config.entorno,
       estado: listo && this.rabbit.conectado ? 'arriba' : 'degradado',
       dependencias: {
-        postgres: { identidad: identidad ? 'arriba' : 'caido', alimentos: alimentos ? 'arriba' : 'caido', logistica: logistica ? 'arriba' : 'caido', pagos: pagos ? 'arriba' : 'caido', eventos: eventos ? 'arriba' : 'caido', operacion: operacion ? 'arriba' : 'caido', parqueaderos: parqueaderos ? 'arriba' : 'caido' },
+        postgres: { identidad: identidad ? 'arriba' : 'caido', alimentos: alimentos ? 'arriba' : 'caido', logistica: logistica ? 'arriba' : 'caido', pagos: pagos ? 'arriba' : 'caido', eventos: eventos ? 'arriba' : 'caido', operacion: operacion ? 'arriba' : 'caido', parqueaderos: parqueaderos ? 'arriba' : 'caido', conciliacion: conciliacion ? 'arriba' : 'caido' },
         redis: redis ? 'arriba' : 'caido', rabbitmq: this.rabbit.conectado ? 'arriba' : 'caido',
       },
       tiempoActivoSegundos: Math.floor((Date.now() - this.arranque) / 1000), marcaDeTiempo: new Date().toISOString(),

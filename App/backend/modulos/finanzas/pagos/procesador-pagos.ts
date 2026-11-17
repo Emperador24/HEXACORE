@@ -71,6 +71,19 @@ export interface SolicitudReembolso {
   claveIdempotencia: string;
 }
 
+/**
+ * CU-031, paso 3: lo que la pasarela reporta haber procesado en un rango de
+ * fechas, para comparar contra el libro propio (`transacciones_pago`).
+ */
+export interface TransaccionExterna {
+  referencia: string;
+  tipo: 'COBRO' | 'REEMBOLSO';
+  estado: ResultadoCobro;
+  monto: number;
+  moneda: string;
+  procesadoEn: Date;
+}
+
 export interface ProcesadorPagos {
   cobrar(solicitud: SolicitudCobro): Promise<RespuestaCobro>;
   /**
@@ -78,6 +91,12 @@ export interface ProcesadorPagos {
    * devolvió, RECHAZADO con certeza no, INDETERMINADO no se sabe.
    */
   reembolsar(solicitud: SolicitudReembolso): Promise<RespuestaCobro>;
+  /**
+   * CU-031: igual que `cobrar`/`reembolsar`, es el único método que cambia al
+   * cambiar de proveedor (RNF-16). Devuelve lo que la pasarela procesó entre
+   * `desde` y `hasta`, sin paginar hacia quien llama.
+   */
+  listarTransacciones(desde: Date, hasta: Date): Promise<TransaccionExterna[]>;
 }
 
 /** Clave de inyección del Procesador de Pagos. */

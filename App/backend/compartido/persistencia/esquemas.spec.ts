@@ -21,7 +21,8 @@ describe('Propiedad de esquemas e historia conservada',()=>{
       'PreparacionCu0131794500000000','EntregaCu0141794600000000','CancelacionCu011F1794700000000']);
     // +1: CU-020 (Gestionar incidentes), esquema operacion.
     // +1: CU-016/CU-030 (Planificación logística y Proveedores), esquema personal_logistica.
-    expect(GRUPOS_MIGRACIONES.reduce((n,g)=>n+g.migraciones.length,0)).toBe(38);
+    // +1: CU-031 (Conciliación financiera), esquema finanzas_conciliacion.
+    expect(GRUPOS_MIGRACIONES.reduce((n,g)=>n+g.migraciones.length,0)).toBe(39);
   });
   it('adapta la cualificación histórica sin cambiar nombres ni parámetros/filas',async()=>{
     class Original { name='Ejemplo1700000000000';async up(q:QueryRunner){await q.query('CREATE TYPE "public"."estado" AS ENUM (\'A\')');await q.query('SELECT $1',[ '"public"."dato"' ]);}async down(q:QueryRunner){await q.query('DROP TYPE "public"."estado"');} }

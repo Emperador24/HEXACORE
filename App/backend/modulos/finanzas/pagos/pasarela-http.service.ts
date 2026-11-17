@@ -1,12 +1,22 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { CONFIGURACION, ConfiguracionServicio } from './config/configuracion';
-import { ProcesadorPagos, RespuestaCobro, ResultadoCobro, SolicitudCobro, SolicitudReembolso } from './procesador-pagos';
+import { ProcesadorPagos, RespuestaCobro, ResultadoCobro, SolicitudCobro, SolicitudReembolso, TransaccionExterna } from './procesador-pagos';
 
 /** Forma de la respuesta de la pasarela. */
 interface CuerpoPasarela {
   referencia?: string;
   estado?: string;
   motivo?: string | null;
+}
+
+/** Forma de cada fila que devuelve `GET /transacciones` del simulador. */
+interface FilaTransaccion {
+  referencia?: string;
+  tipo?: string;
+  estado?: string;
+  monto?: number;
+  moneda?: string;
+  procesadoEn?: string;
 }
 
 /**
@@ -61,6 +71,27 @@ export class PasarelaHttp implements ProcesadorPagos {
       moneda: solicitud.moneda,
       motivo: solicitud.motivo,
     });
+  }
+
+  /** CU-031, paso 3: lo que el simulador registró entre `desde` y `hasta`. */
+  async listarTransacciones(desde: Date, hasta: Date): Promise<TransaccionExterna[]> {
+    const parametros = new URLSearchParams({ desde: desde.toISOString(), hasta: hasta.toISOString() });
+    const respuesta = await fetch(`${this.url}/transacciones?${parametros}`, { signal: AbortSignal.timeout(this.timeoutMs) });
+    if (!respuesta.ok) {
+      this.log.error(`La pasarela no pudo listar transacciones (${respuesta.status})`);
+      throw new Error(`La pasarela respondió ${respuesta.status} al listar transacciones.`);
+    }
+    const filas = (await respuesta.json()) as FilaTransaccion[];
+    return filas
+      .filter((f): f is Required<FilaTransaccion> => typeof f.referencia === 'string' && typeof f.procesadoEn === 'string')
+      .map((f) => ({
+        referencia: f.referencia,
+        tipo: f.tipo === 'REEMBOLSO' ? 'REEMBOLSO' : 'COBRO',
+        estado: f.estado === 'RECHAZADO' ? ResultadoCobro.RECHAZADO : f.estado === 'APROBADO' ? ResultadoCobro.APROBADO : ResultadoCobro.INDETERMINADO,
+        monto: f.monto ?? 0,
+        moneda: f.moneda ?? 'COP',
+        procesadoEn: new Date(f.procesadoEn),
+      }));
   }
 
   private async enviar(ruta: string, claveIdempotencia: string, cuerpoPeticion: object): Promise<RespuestaCobro> {
