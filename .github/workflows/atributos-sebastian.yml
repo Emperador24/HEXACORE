@@ -23,7 +23,7 @@ jobs:
         run: |
           python3 -m unittest discover -s App/infra/informe-atributos/seguridad -p 'test_pipeline.py' -v
           python3 -m unittest discover -s App/infra/informe-atributos/seguridad -p 'test_ensayo.py' -v
-          node --test App/backend/test/safety/verificador.test.cjs App/backend/test/atributos/portales.test.cjs
+          node --test App/backend/test/safety/verificador.test.cjs App/backend/test/atributos/*.test.cjs
       - name: Dependencias de producción y desarrollo, todas las severidades
         id: audit
         continue-on-error: true

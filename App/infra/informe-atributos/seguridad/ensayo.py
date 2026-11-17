@@ -19,8 +19,14 @@ BACKEND = ROOT / 'App/backend'
 PUERTOS = [15439, 16384, 15679, 16779, 13105, 13106, 13109, 13117, 13119, 13110, 18082, 8080, 4200, 4201]
 
 def ejecutar(args, **kw):
+    diagnostico = kw.pop('diagnostico_arranque', False)
     r = subprocess.run(args, capture_output=True, text=True, timeout=900, **kw)
     if r.returncode:
+        if diagnostico:
+            # Exclusivamente antes de crear cuentas/sesiones, con claves de prueba
+            # públicas y proyecto nuevo. Nunca imprimir respuestas de la fixture.
+            print('Diagnóstico Compose del arranque exclusivo:', flush=True)
+            print(r.stderr[-6000:], flush=True)
         raise RuntimeError('COMANDO_FALLIDO: ' + args[0] + ' (código ' + str(r.returncode) + ')')
     return r.stdout
 
@@ -37,10 +43,10 @@ def sondear_puertos():
             except OSError: ocupados.append(puerto)
     return ocupados
 
-def compose(c, *args):
+def compose(c, *args, **kw):
     return ejecutar(['docker', 'compose', '-p', c['proyecto'], '-f', str(BACKEND / 'test/docker-compose.e2e.yml'),
         '-f', str(BACKEND / 'test/docker-compose.imagen.yml'), '-f', c['override'], *args],
-        env={**os.environ, 'COMPOSE_PARALLEL_LIMIT':'1', 'COMPOSE_BAKE':'false'})
+        env={**os.environ, 'COMPOSE_PARALLEL_LIMIT':'1', 'COMPOSE_BAKE':'false'}, **kw)
 
 def ids(c):
     return ejecutar(['docker', 'ps', '-aq', '--filter', 'label=com.docker.compose.project=' + c['proyecto']]).split()
@@ -59,6 +65,9 @@ def preparar(privada):
     # En Desktop el df del host no acredita el del motor. No se crea un contenedor para medirlo.
     if info.get('OperatingSystem', '').startswith('Docker Desktop'):
         raise ValueError('Ensayo local Desktop bloqueado: capacidad del disco del motor no acreditada; usar Actions')
+    motor = pathlib.Path(info['DockerRootDir'])
+    if not motor.exists() or shutil.disk_usage(motor).free < 12 * 1024**3:
+        raise ValueError('No se acreditan 12 GiB libres en el almacenamiento local del motor')
     revision = ejecutar(['git', 'rev-parse', 'HEAD'], cwd=ROOT).strip()
     if ejecutar(['git', 'status', '--porcelain'], cwd=ROOT).strip(): raise ValueError('El ensayo exige un commit limpio')
     proyecto = 'hexacore-atributos-' + secrets.token_hex(5)
@@ -87,7 +96,22 @@ def preparar(privada):
     print('Configuración válida; construcción serial de artefactos exclusivos.', flush=True)
     compose(c, 'build')
     print('Imágenes construidas; arranque exclusivo y espera de sondas.', flush=True)
-    compose(c, 'up', '-d', '--no-build', '--wait', '--wait-timeout', '180')
+    try:
+        compose(c, 'up', '-d', '--no-build', '--wait', '--wait-timeout', '180', diagnostico_arranque=True)
+    except RuntimeError:
+        # IDs limitados por el proyecto recién creado, sin inspeccionar otros.
+        for identificador in ids(c):
+            dato=json.loads(ejecutar(['docker','inspect',identificador]))[0]
+            print(json.dumps({'servicio':dato['Config']['Labels'].get('com.docker.compose.service'),
+                'estado':dato['State']['Status'],'salida':dato['State']['ExitCode'],
+                'oom':dato['State']['OOMKilled'],'salud':dato['State'].get('Health',{}).get('Status')}),flush=True)
+            # Ninguna fixture ni token existe todavía. Mantener solo errores de
+            # arranque, sin SQL completo, parámetros o configuración de entorno.
+            logs=ejecutar(['docker','logs','--tail','80',identificador])
+            for linea in logs.splitlines():
+                if re.search(r'Error:|Exception:|ECONNREFUSED|ENOTFOUND|Falta la variable|Invalid|invalid',linea):
+                    print(re.sub(r'[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]+','[JWT OMITIDO]',linea)[:500],flush=True)
+        raise
     c['imagenes'] = {s: imagen(c, s) for s in ['nucleo', 'boleteria', 'gateway', 'cliente', 'admin', 'trabajador']}
     (privada / 'entorno.json').write_text(json.dumps(c))
     return c
