@@ -21,7 +21,7 @@ PUERTOS = [15439, 16384, 15679, 16779, 13105, 13106, 13109, 13117, 13119, 13110,
 def ejecutar(args, **kw):
     r = subprocess.run(args, capture_output=True, text=True, timeout=900, **kw)
     if r.returncode:
-        raise RuntimeError('COMANDO_FALLIDO: ' + args[0])
+        raise RuntimeError('COMANDO_FALLIDO: ' + args[0] + ' (código ' + str(r.returncode) + ')')
     return r.stdout
 
 def guardas(info, libre, ocupados):
@@ -84,7 +84,9 @@ def preparar(privada):
     # Antes del primer recurso; permite el cierre acotado incluso ante un build fallido.
     (privada / 'entorno.json').write_text(json.dumps(c))
     compose(c, 'config', '--quiet')
+    print('Configuración válida; construcción serial de artefactos exclusivos.', flush=True)
     compose(c, 'build')
+    print('Imágenes construidas; arranque exclusivo y espera de sondas.', flush=True)
     compose(c, 'up', '-d', '--no-build', '--wait', '--wait-timeout', '180')
     c['imagenes'] = {s: imagen(c, s) for s in ['nucleo', 'boleteria', 'gateway', 'cliente', 'admin', 'trabajador']}
     (privada / 'entorno.json').write_text(json.dumps(c))
@@ -105,6 +107,7 @@ def configurar(c, puerto):
 def modificabilidad(c, privada, salida):
     informe = {'revision': c['revision'], 'estado': 'incompleto', 'parametros': [], 'imagenesIniciales': c['imagenes']}
     try:
+        print('Modificabilidad: puerto, publicación, gateway y sonda.', flush=True)
         assert peticion('http://127.0.0.1:13109/api/v1/salud') == 200
         assert peticion('http://127.0.0.1:8080/api/v1/salud') == 200
         configurar(c, 3003)
@@ -117,6 +120,7 @@ def modificabilidad(c, privada, salida):
         assert invalida.returncode != 0 and 'Puerto' in invalida.stderr
         informe['parametros'].append({'nombre':'PUERTO', 'predeterminado':3002, 'configurado':3003, 'sondaYGateway':200, 'puertoAnteriorCerrado':True, 'invalidoRechazado':True})
         configurar(c, 3002)
+        print('Modificabilidad: límite real de consultas PostgreSQL.', flush=True)
         contenedor = compose(c, 'ps', '-q', 'nucleo').strip()
         espera = []
         script = (BACKEND / 'test/atributos/espera.cjs').read_text()
@@ -129,6 +133,7 @@ def modificabilidad(c, privada, salida):
         assert invalida.returncode != 0 and 'entre 500 y 30000' in invalida.stderr
         informe['parametros'].append({'nombre':'POSTGRES_ESPERA_MAXIMA_MS', 'medidas':espera, 'invalidoRechazado':True, 'alcance':'consulta SELECT pg_sleep(4) mediante DataSource compilado de Identidad; no mide carga'})
         navegador = ROOT / 'App/e2e/atributos-configuracion.cjs'
+        print('Modificabilidad: peticiones reales del portal y configuración inválida.', flush=True)
         observaciones = []
         for modo, api in [('predeterminada', None), ('externa', '/ensayo-api/v1'), ('invalida', 'javascript:alert(1)')]:
             (privada / 'configuracion.js').write_text('window.HEXACORE_CONFIGURACION = ' + json.dumps({} if api is None else {'api':api}) + ';\n')
@@ -142,6 +147,7 @@ def modificabilidad(c, privada, salida):
         guardar(salida, 'modificabilidad', informe)
 
 def comprobar(c, privada, salida):
+    print('OWASP: sesión exclusiva y revisión del gateway antes/después.', flush=True)
     ejecutar(['node', str(BACKEND / 'test/atributos/fixture.cjs'), str(privada / 'sesion.json')])
     cfg = {**json.loads((privada / 'sesion.json').read_text()), 'revision': c['revision'], 'tipoDespliegue':'ci-efimero',
         'destinos':{'cliente':'http://cliente:4200', 'admin':'http://admin:4201', 'api':'http://objetivo:8080'},

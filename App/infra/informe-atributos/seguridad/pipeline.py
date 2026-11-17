@@ -83,15 +83,16 @@ def escanear(cfg, salida, privada, red=None):
         informe['revisionGatewayAntes'] = revision(cfg)
         clave = secrets.token_hex(32)
         ejecutar(['docker', 'run', '-d', '--name', nombre, '--memory', '640m', '--cpus', '1',
-            '--network', red or 'bridge', IMAGEN, 'zap.sh', '-daemon', '-host', '0.0.0.0', '-port', '8080',
+            '--network', red or 'bridge', '-e', 'JAVA_OPTS=-Xmx384m -XX:ActiveProcessorCount=2',
+            IMAGEN, 'zap.sh', '-daemon', '-silent', '-host', '0.0.0.0', '-port', '8080',
             '-config', 'api.key=' + clave, '-config', 'api.addrs.addr.name=.*',
-            '-config', 'api.addrs.addr.regex=true', '-config', 'connection.timeoutInSecs=15',
-            '-jvmopts', '-Xmx384m'])
+            '-config', 'api.addrs.addr.regex=true', '-config', 'connection.timeoutInSecs=15'])
         propio = True
         listo = False
         for _ in range(90):
-            r = subprocess.run(['docker', 'exec', nombre, 'python3', '-c',
-                "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8080/',timeout=1)"], capture_output=True)
+            r = subprocess.run(['docker', 'exec', '-i', nombre, 'python3', '-c',
+                "import json,sys,urllib.request,urllib.parse;c=json.load(sys.stdin);urllib.request.urlopen('http://127.0.0.1:8080/JSON/core/view/version/?'+urllib.parse.urlencode(c),timeout=2)"],
+                input=json.dumps({'apikey':clave}), text=True, capture_output=True)
             if r.returncode == 0: listo = True; break
             time.sleep(1)
         if not listo: raise ValueError('ZAP_NO_INICIA')
