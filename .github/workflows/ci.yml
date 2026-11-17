@@ -35,6 +35,10 @@ env:
   FLUTTER_VERSION: '3.47.4'
 
 jobs:
+  atributos_sebastian:
+    uses: ./.github/workflows/atributos-sebastian.yml
+    permissions:
+      contents: read
   # --------------------------------------------------------------------------
   # Nada de compilación entra al repositorio. Es rápido y va primero porque es
   # el error más fácil de cometer y el más molesto de deshacer después.
@@ -154,6 +158,8 @@ jobs:
           npm test -- --runInBand --json --outputFile=.evidencia-e2e/unitarias.json
       - name: Seguridad de resúmenes y manifiestos publicados
         run: node --test test/publicadas/seguridad-ci.test.cjs
+      - name: Safety posterior de solo lectura y negativos controlados
+        run: node --test test/safety/verificador.test.cjs
       - name: Infraestructura de correo exclusiva
         run: npm run test:trabajador:infra
       - name: Contratos del correo y límites previos (RabbitMQ real)

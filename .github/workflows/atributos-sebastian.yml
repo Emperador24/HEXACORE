@@ -1,0 +1,50 @@
+name: Seguridad y Modificabilidad tras despliegue temporal
+on:
+  workflow_call:
+jobs:
+  ensayo:
+    name: OWASP y tres parámetros, mismo artefacto
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: App/backend/.nvmrc
+      - name: Herramientas y compilado de pruebas
+        run: |
+          npm ci --prefix App/backend
+          npm run build --prefix App/backend
+          npm ci --prefix App/e2e
+          cd App/e2e && npx playwright install --with-deps chromium
+      - name: Guardas, saneamiento, Safety y direcciones de ambos portales
+        run: |
+          python3 -m unittest discover -s App/infra/informe-atributos/seguridad -p 'test_pipeline.py' -v
+          python3 -m unittest discover -s App/infra/informe-atributos/seguridad -p 'test_ensayo.py' -v
+          node --test App/backend/test/safety/verificador.test.cjs App/backend/test/atributos/portales.test.cjs
+      - name: Dependencias de producción y desarrollo, todas las severidades
+        id: audit
+        continue-on-error: true
+        run: python3 App/infra/informe-atributos/seguridad/pipeline.py audit --salida "$RUNNER_TEMP/informe-publico"
+      - name: Desplegar imágenes propias en proyecto nuevo (solo runner)
+        id: preparar
+        run: python3 App/infra/informe-atributos/seguridad/ensayo.py preparar --privada "$RUNNER_TEMP/atributos-privado"
+      - name: ZAP posterior al despliegue y cambios sin reconstruir imágenes
+        if: ${{ !cancelled() && steps.preparar.outcome == 'success' }}
+        run: python3 App/infra/informe-atributos/seguridad/ensayo.py comprobar --privada "$RUNNER_TEMP/atributos-privado" --salida "$RUNNER_TEMP/informe-publico"
+      - name: Conservar HTML y JSON saneados, incluso ante fallo
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: atributos-sebastian
+          path: ${{ runner.temp }}/informe-publico/*
+          if-no-files-found: error
+          retention-days: 30
+      - name: Detener exclusivamente los contenedores propios; conservar volúmenes
+        if: always()
+        run: python3 App/infra/informe-atributos/seguridad/ensayo.py detener --privada "$RUNNER_TEMP/atributos-privado"
+      - name: Respetar el resultado de la auditoría
+        if: ${{ !cancelled() && steps.audit.outcome == 'failure' }}
+        run: exit 1
