@@ -153,8 +153,10 @@ por revisión OCI. Gateway/Caddy sirven \texttt{/version}; la revisión debe
 coincidir antes y después del escaneo. \textbf{Samuel confirma que el servidor de
 presentación nunca se creó}. El dominio utilizado en los ejemplos históricos
 pertenece a un tercero, incluidos sus subdominios; se retiró de las plantillas y
-queda excluido de pruebas. Faltan destino y nombres controlados por el equipo,
-HTTPS, acceso de Actions y cuenta exclusiva para conectar el despliegue de Diego. El workflow obtiene una sesión nueva por HTTPS
+queda excluido de pruebas. Desde el 16/11 el equipo tiene su propio servidor de
+presentación (Google Cloud, \texttt{hexacore-javeriana.duckdns.org} y \texttt{admin.}\ldots, HTTPS de
+Let's Encrypt) y Actions ya despliega en él; falta la cuenta exclusiva de ensayo
+(\texttt{OWASP\_CLIENTE\_*}) y ejecutar allí el ZAP. El workflow obtiene una sesión nueva por HTTPS
 después de verificar la revisión, con un login sin redirecciones ni reintentos;
 no amplía su TTL ni guarda un JWT que caduque durante CD. Las credenciales
 son secretos de Actions y no llegan al contenedor ZAP. El runner no acredita

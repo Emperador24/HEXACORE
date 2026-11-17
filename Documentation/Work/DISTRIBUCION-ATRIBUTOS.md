@@ -162,7 +162,7 @@ La cobertura de cada módulo depende de las pruebas que escriba su dueño; Diego
 
 **Entrega ejecutable 16/11 (PR #64):** los tres bloques de Sebastián se implementan
 sin nuevos CU. [Plan y comandos](PLAN-CIERRE-SEBASTIAN.md) separa prueba de herramientas,
-runner temporal y despliegue externo pendiente. ZAP exige cero **High** (no tiene
+runner temporal y el servidor propio de presentación (16/11), donde falta correr el ZAP. ZAP exige cero **High** (no tiene
 Critical); Safety usa verificador posterior de solo lectura; Modificabilidad mide
 tres parámetros con el mismo artefacto. RNF-05/06/02/11/13 permanecen limitados.
 
